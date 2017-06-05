@@ -21,10 +21,11 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 
 /**
- * SQL listener index metadata.
+ * JDBC index metadata.
  */
 public class JdbcIndexMeta implements JdbcRawBinarylizable {
     /** Index name. */
@@ -45,17 +46,26 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     /**
      * Default constructor is used for binary serialization.
      */
-    public JdbcIndexMeta() {
+    JdbcIndexMeta() {
         // No-op.
     }
 
     /**
      * @param idx Index info.
      */
-    public JdbcIndexMeta(GridQueryIndexDescriptor idx) {
+    JdbcIndexMeta(GridQueryIndexDescriptor idx) {
+        assert idx != null;
+        assert idx.fields() != null;
+
         name = idx.name();
         type = idx.type();
         inlineSize = idx.inlineSize();
+        fields = idx.fields().toArray(new String[idx.fields().size()]);
+
+        fieldsAsc = new boolean[fields.length];
+
+        for (int i = 0; i < fields.length; ++i)
+            fieldsAsc[i] = !idx.descending(fields[i]);
     }
 
     /**
@@ -112,5 +122,23 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         assert fields.length == fieldsAsc.length : "Fields info is broken: [fields.length=" + fields.length +
             ", fieldsAsc.length=" + fieldsAsc.length + ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        JdbcIndexMeta meta = (JdbcIndexMeta)o;
+
+        return name.equals(meta.name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return name.hashCode();
     }
 }

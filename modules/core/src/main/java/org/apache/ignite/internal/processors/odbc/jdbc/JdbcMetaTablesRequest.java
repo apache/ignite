@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * ODBC query get tables meta request.
+ * JDBC tables metadata request.
  */
 public class JdbcMetaTablesRequest extends JdbcRequest {
     /** Catalog search pattern. */
@@ -41,7 +41,7 @@ public class JdbcMetaTablesRequest extends JdbcRequest {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcMetaTablesRequest() {
+    JdbcMetaTablesRequest() {
         super(META_TABLES);
     }
 

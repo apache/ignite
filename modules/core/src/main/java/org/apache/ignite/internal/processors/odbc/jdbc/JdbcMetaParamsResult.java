@@ -26,23 +26,23 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Query get columns meta result.
+ * JDBC SQL query parameters metadata result.
  */
 public class JdbcMetaParamsResult extends JdbcResult {
-    /** Query result rows. */
+    /** Parameters meta results. */
     private List<JdbcParamMeta> meta;
 
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcMetaParamsResult() {
+    JdbcMetaParamsResult() {
         super(META_PARAMS);
     }
 
     /**
      * @param meta Column metadata.
      */
-    public JdbcMetaParamsResult(List<JdbcParamMeta> meta) {
+    JdbcMetaParamsResult(List<JdbcParamMeta> meta) {
         super(META_PARAMS);
         this.meta = meta;
     }

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
- * SQL listener column metadata.
+ * JDBC column metadata.
  */
 public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /** Cache name. */
@@ -47,13 +47,13 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /**
      * Default constructor is used for serialization.
      */
-    public JdbcColumnMeta() {
+    JdbcColumnMeta() {
     }
 
     /**
      * @param info Field metadata.
      */
-    public JdbcColumnMeta(GridQueryFieldMetadata info) {
+    JdbcColumnMeta(GridQueryFieldMetadata info) {
         this.schemaName = info.schemaName();
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
@@ -143,5 +143,32 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
         dataType = reader.readInt();
         dataTypeName = reader.readString();
         dataTypeClass = reader.readString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        JdbcColumnMeta meta = (JdbcColumnMeta)o;
+
+        if (schemaName != null ? !schemaName.equals(meta.schemaName) : meta.schemaName != null)
+            return false;
+
+        if (tableName != null ? !tableName.equals(meta.tableName) : meta.tableName != null)
+            return false;
+
+        return columnName.equals(meta.columnName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = schemaName != null ? schemaName.hashCode() : 0;
+        result = 31 * result + (tableName != null ? tableName.hashCode() : 0);
+        result = 31 * result + columnName.hashCode();
+        return result;
     }
 }

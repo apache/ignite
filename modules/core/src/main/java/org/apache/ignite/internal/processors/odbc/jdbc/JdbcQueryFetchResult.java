@@ -35,7 +35,7 @@ public class JdbcQueryFetchResult extends JdbcResult {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcQueryFetchResult() {
+    JdbcQueryFetchResult() {
         super(QRY_FETCH);
     }
 
@@ -43,7 +43,7 @@ public class JdbcQueryFetchResult extends JdbcResult {
      * @param items Query result rows.
      * @param last Flag indicating the query has no unfetched results.
      */
-    public JdbcQueryFetchResult(List<List<Object>> items, boolean last){
+    JdbcQueryFetchResult(List<List<Object>> items, boolean last){
         super(QRY_FETCH);
 
         this.items = items;

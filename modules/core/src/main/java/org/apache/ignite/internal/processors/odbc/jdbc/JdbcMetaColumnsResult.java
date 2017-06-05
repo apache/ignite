@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -26,7 +27,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Query get columns meta result.
+ * JDBC columns metadata result.
  */
 public class JdbcMetaColumnsResult extends JdbcResult {
     /** Query result rows. */
@@ -35,16 +36,16 @@ public class JdbcMetaColumnsResult extends JdbcResult {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcMetaColumnsResult() {
+    JdbcMetaColumnsResult() {
         super(META_COLUMNS);
     }
 
     /**
      * @param meta Column metadata.
      */
-    public JdbcMetaColumnsResult(List<JdbcColumnMeta> meta) {
+    JdbcMetaColumnsResult(Collection<JdbcColumnMeta> meta) {
         super(META_COLUMNS);
-        this.meta = meta;
+        this.meta = new ArrayList<>(meta);
     }
 
     /**

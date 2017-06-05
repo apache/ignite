@@ -31,7 +31,7 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
 
     /**
      */
-    public JdbcQueryCloseRequest() {
+    JdbcQueryCloseRequest() {
         super(QRY_CLOSE);
     }
 

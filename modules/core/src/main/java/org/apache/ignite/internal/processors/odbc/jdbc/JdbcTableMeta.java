@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 
 /**
- * ODBC table-related metadata.
+ * JDBC table metadata.
  */
 public class JdbcTableMeta implements JdbcRawBinarylizable {
     /** Catalog name. */
@@ -33,28 +33,28 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
     private String schema;
 
     /** Table name. */
-    private String table;
+    private String tbl;
 
     /** Table type. */
-    private String tableType;
+    private String tblType;
 
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcTableMeta() {
+    JdbcTableMeta() {
     }
 
     /**
      * @param catalog Catalog name.
      * @param schema Schema name.
-     * @param table Table name.
-     * @param tableType Table type.
+     * @param tbl Table name.
+     * @param tblType Table type.
      */
-    public JdbcTableMeta(String catalog, String schema, String table, String tableType) {
+    JdbcTableMeta(String catalog, String schema, String tbl, String tblType) {
         this.catalog = catalog;
         this.schema = OdbcUtils.addQuotationMarksIfNeeded(schema);
-        this.table = table;
-        this.tableType = tableType;
+        this.tbl = tbl;
+        this.tblType = tblType;
     }
 
     /**
@@ -75,29 +75,29 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
      * @return Table name.
      */
     public String table() {
-        return table;
+        return tbl;
     }
 
     /**
      * @return Table type.
      */
     public String tableType() {
-        return tableType;
+        return tblType;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         writer.writeString(catalog);
         writer.writeString(schema);
-        writer.writeString(table);
-        writer.writeString(tableType);
+        writer.writeString(tbl);
+        writer.writeString(tblType);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         catalog = reader.readString();
         schema = reader.readString();
-        table = reader.readString();
-        tableType = reader.readString();
+        tbl = reader.readString();
+        tblType = reader.readString();
     }
 }

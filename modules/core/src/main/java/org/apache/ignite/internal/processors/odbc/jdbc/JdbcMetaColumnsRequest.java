@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC query get columns meta request.
+ * JDBC get columns metadata request.
  */
 public class JdbcMetaColumnsRequest extends JdbcRequest {
     /** Cache name. */
@@ -39,7 +39,7 @@ public class JdbcMetaColumnsRequest extends JdbcRequest {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcMetaColumnsRequest() {
+    JdbcMetaColumnsRequest() {
         super(META_COLUMNS);
     }
 

@@ -35,7 +35,7 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
     /**
      * Constructor.
      */
-    public JdbcQueryFetchRequest() {
+    JdbcQueryFetchRequest() {
         super(QRY_FETCH);
     }
 

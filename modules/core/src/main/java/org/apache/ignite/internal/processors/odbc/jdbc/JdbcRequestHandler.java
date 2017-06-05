@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
@@ -36,6 +39,7 @@ import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetTablesMetaReq
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetTablesMetaResult;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcTableMeta;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
@@ -394,7 +398,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
 
-            List<JdbcColumnMeta> meta = new ArrayList<>();
+            Collection<JdbcColumnMeta> meta = new HashSet<>();
 
             for (GridQueryTypeDescriptor table : tablesMeta) {
                 if (!matches(table.name(), tableName))
@@ -428,7 +432,43 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @return Response.
      */
     private SqlListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
-        return null;
+        try {
+            String cacheName;
+            String tableName;
+
+            if (req.tableName().contains(".")) {
+                // Parsing two-part table name.
+                String[] parts = req.tableName().split("\\.");
+
+                cacheName = parts[0];
+
+                tableName = parts[1];
+            }
+            else {
+                cacheName = req.schema();
+
+                tableName = req.tableName();
+            }
+
+            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+
+            Collection<JdbcIndexMeta> meta = new HashSet<>();
+
+            for (GridQueryTypeDescriptor table : tablesMeta) {
+                if (!matches(table.name(), tableName))
+                    continue;
+
+                for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
+                    meta.add(new JdbcIndexMeta(idxDesc));
+            }
+
+            return new JdbcResponse(new JdbcMetaIndexesResult(meta));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
     }
 
     /**
@@ -436,7 +476,26 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @return Response.
      */
     private SqlListenerResponse getParamsMeta(JdbcMetaParamsRequest req) {
-        return null;
+        try {
+            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
+                .getParameterMetaData();
+
+            int size = paramMeta.getParameterCount();
+
+            List<JdbcParamMeta> meta = new ArrayList<>(size);
+
+            for (int i = 0; i < size; i++)
+                meta.add(new JdbcParamMeta(paramMeta, i + 1));
+
+            JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
+
+            return new JdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
     }
 
     /**

@@ -35,7 +35,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcQueryMetadataResult() {
+    JdbcQueryMetadataResult() {
         super(QRY_META);
     }
 
@@ -43,7 +43,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
      * @param queryId Query ID.
      * @param meta Query metadata.
      */
-    public JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta){
+    JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta){
         super(QRY_META);
 
         this.meta = meta;

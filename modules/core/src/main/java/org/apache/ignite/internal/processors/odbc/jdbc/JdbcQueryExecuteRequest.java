@@ -49,7 +49,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
     /**
      */
-    public JdbcQueryExecuteRequest() {
+    JdbcQueryExecuteRequest() {
         super(QRY_EXEC);
     }
 

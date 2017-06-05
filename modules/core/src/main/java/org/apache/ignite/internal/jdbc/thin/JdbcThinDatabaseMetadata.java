@@ -979,7 +979,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             row.add(true); // non unique
             row.add(null); // index qualifier (index catalog)
             row.add(upperCase(idxMeta.name()));
-            row.add((int)tableIndexOther); // type
+            row.add((short)tableIndexOther); // type
             row.add((Integer)i); // field ordinal position in index
             row.add(upperCase(idxMeta.fields()[i]));
             row.add(idxMeta.fieldsAsc()[i] ? "A" : "D");

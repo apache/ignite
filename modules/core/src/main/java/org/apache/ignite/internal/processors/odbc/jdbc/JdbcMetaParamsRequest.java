@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * ODBC query get params meta request.
+ * JDBC SQL query parameters metadata request.
  */
 public class JdbcMetaParamsRequest extends JdbcRequest {
     /** Cache. */
@@ -35,7 +35,7 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcMetaParamsRequest() {
+    JdbcMetaParamsRequest() {
         super(META_PARAMS);
     }
 
@@ -53,7 +53,7 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
     /**
      * @return SQL Query.
      */
-    public String query() {
+    public String sql() {
         return sql;
     }
 

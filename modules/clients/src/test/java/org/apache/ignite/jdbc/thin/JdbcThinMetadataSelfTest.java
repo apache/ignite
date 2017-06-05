@@ -21,9 +21,12 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,12 +36,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -327,12 +328,67 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testIndexMetadata() throws Exception {
+    public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
-             ResultSet tbls = conn.getMetaData().getIndexInfo(null, null, "pers", false, false)) {
+             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "Person", false, false)) {
 
-            int colCnt = tbls.getMetaData().getColumnCount();
+            int cnt = 0;
 
+            while (rs.next()) {
+                String idxName = rs.getString("INDEX_NAME");
+                String field = rs.getString("COLUMN_NAME");
+                String ascOrDesc = rs.getString("ASC_OR_DESC");
+
+                assert rs.getShort("TYPE") == DatabaseMetaData.tableIndexOther;
+
+                if ("PERSON_ORGID_ASC_IDX".equals(idxName)) {
+                    assert "ORGID".equals(field);
+                    assert "A".equals(ascOrDesc);
+                }
+                else if ("PERSON_NAME_ASC_AGE_DESC_IDX".equals(idxName)) {
+                    if ("NAME".equals(field))
+                        assert "A".equals(ascOrDesc);
+                    else if ("AGE".equals(field))
+                        assert "D".equals(ascOrDesc);
+                    else
+                        fail("Unexpected field: " + field);
+                }
+                else
+                    fail("Unexpected index: " + idxName);
+
+                cnt++;
+            }
+
+            assert cnt == 3;
+        }
+        catch (Exception e) {
+            log.error("Unexpected exception", e);
+
+            fail();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParametersMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema("pers");
+
+            PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+
+            ParameterMetaData meta = stmt.getParameterMetaData();
+
+            assert meta != null;
+
+            assert meta.getParameterCount() == 2;
+
+            assert meta.getParameterType(1) == Types.VARCHAR;
+            assert meta.isNullable(1) == ParameterMetaData.parameterNullableUnknown;
+            assert meta.getPrecision(1) == Integer.MAX_VALUE;
+
+            assert meta.getParameterType(2) == Types.INTEGER;
+            assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;
         }
         catch (Exception e) {
             log.error("Unexpected exception", e);

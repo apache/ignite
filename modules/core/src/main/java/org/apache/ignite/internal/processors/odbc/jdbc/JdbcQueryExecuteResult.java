@@ -44,7 +44,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /**
      * Condtructor.
      */
-    public JdbcQueryExecuteResult() {
+    JdbcQueryExecuteResult() {
         super(QRY_EXEC);
     }
 
@@ -53,7 +53,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
      */
-    public JdbcQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
+    JdbcQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
         super(QRY_EXEC);
 
         this.queryId = queryId;

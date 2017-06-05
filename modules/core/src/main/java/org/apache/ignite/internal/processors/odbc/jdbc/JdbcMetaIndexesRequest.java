@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC query get columns meta request.
+ * JDBC indexes metadata request.
  */
 public class JdbcMetaIndexesRequest extends JdbcRequest {
     /** Cache name. */
@@ -34,7 +34,7 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
     private String schema;
 
     /** Table name. */
-    private String tableName;
+    private String tblName;
 
     /** When true, return only indices for unique values. */
     private boolean unique;
@@ -45,23 +45,23 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcMetaIndexesRequest() {
+    JdbcMetaIndexesRequest() {
         super(META_INDEXES);
     }
 
     /**
      * @param catalog Catalog name.
      * @param schema Cache name.
-     * @param tableName Table name.
+     * @param tblName Table name.
      * @param unique {@code true} when only indices for unique values are requested.
      * @param approximate {@code true} when approximate or out of data values indexes are allowed in results.
      */
-    public JdbcMetaIndexesRequest(String catalog, String schema, String tableName, boolean unique, boolean approximate) {
+    public JdbcMetaIndexesRequest(String catalog, String schema, String tblName, boolean unique, boolean approximate) {
         super(META_INDEXES);
 
         this.catalog = catalog;
         this.schema = schema;
-        this.tableName = tableName;
+        this.tblName = tblName;
         this.unique = unique;
         this.approximate = approximate;
     }
@@ -84,7 +84,7 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
      * @return Table name.
      */
     public String tableName() {
-        return tableName;
+        return tblName;
     }
 
     /**
@@ -107,7 +107,7 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
 
         writer.writeString(catalog);
         writer.writeString(schema);
-        writer.writeString(tableName);
+        writer.writeString(tblName);
         writer.writeBoolean(unique);
         writer.writeBoolean(approximate);
     }
@@ -118,7 +118,7 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
 
         catalog = reader.readString();
         schema = reader.readString();
-        tableName = reader.readString();
+        tblName = reader.readString();
         unique = reader.readBoolean();
         approximate = reader.readBoolean();
     }

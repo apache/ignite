@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Query get columns meta result.
+ * JDBC tables metadata request.
  */
 public class JdbcMetaTablesResult extends JdbcResult {
     /** Query result rows. */
@@ -35,14 +35,14 @@ public class JdbcMetaTablesResult extends JdbcResult {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcMetaTablesResult() {
+    JdbcMetaTablesResult() {
         super(META_TABLES);
     }
 
     /**
      * @param meta Column metadata.
      */
-    public JdbcMetaTablesResult(List<JdbcTableMeta> meta) {
+    JdbcMetaTablesResult(List<JdbcTableMeta> meta) {
         super(META_TABLES);
         this.meta = meta;
     }
