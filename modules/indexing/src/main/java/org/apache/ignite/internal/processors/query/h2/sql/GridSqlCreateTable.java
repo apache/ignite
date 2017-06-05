@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,7 +36,13 @@ public class GridSqlCreateTable extends GridSqlStatement {
     private String tblName;
 
     /** Cache name upon which new cache configuration for this table must be based. */
-    private String tplCacheName;
+    private String templateName;
+
+    /** Atomicity mode for new cache. */
+    private CacheAtomicityMode atomicityMode;
+
+    /** Backups number for new cache. */
+    private int backups;
 
     /** Quietly ignore this command if table already exists. */
     private boolean ifNotExists;
@@ -51,15 +59,43 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
      */
-    public String templateCacheName() {
-        return tplCacheName;
+    public String templateName() {
+        return templateName;
     }
 
     /**
-     * @param tplCacheName Cache name upon which new cache configuration for this table must be based.
+     * @param templateName Cache name upon which new cache configuration for this table must be based.
      */
-    public void templateCacheName(String tplCacheName) {
-        this.tplCacheName = tplCacheName;
+    public void templateName(String templateName) {
+        this.templateName = templateName;
+    }
+
+    /**
+     * @return Atomicity mode for new cache.
+     */
+    public CacheAtomicityMode atomicityMode() {
+        return atomicityMode;
+    }
+
+    /**
+     * @param atomicityMode Atomicity mode for new cache.
+     */
+    public void atomicityMode(CacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
+    }
+
+    /**
+     * @return Backups number for new cache.
+     */
+    public int backups() {
+        return backups;
+    }
+
+    /**
+     * @param backups Backups number for new cache.
+     */
+    public void backups(int backups) {
+        this.backups = backups;
     }
 
     /**

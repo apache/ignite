@@ -123,8 +123,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Fact> cache = ignite(0).createCache(cfg);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name " +
-            "from InSENSitive_Cache.Fact f");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name from InSENSitive_Cache.Fact f");
 
         cache.put(1, new Fact(1, "cacheInsensitive"));
 

@@ -17,7 +17,10 @@
  
 namespace Apache.Ignite.Core.Impl.Deployment
 {
+    using System;
     using System.Diagnostics;
+    using System.IO;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -58,11 +61,36 @@ namespace Apache.Ignite.Core.Impl.Deployment
                 return new AssemblyRequestResult(AssemblyLoader.GetAssemblyBytes(asm), null);
             }
 
+            // Try cached assemblies.
             var bytes = AssemblyLoader.GetAssemblyBytes(arg.AssemblyName);
 
             if (bytes != null)
             {
                 return new AssemblyRequestResult(bytes, null);
+            }
+
+            // Assembly may be present but not loaded - attempt to load into main context.
+            try
+            {
+                asm = Assembly.Load(arg.AssemblyName);
+
+                if (asm != null)
+                {
+                    return new AssemblyRequestResult(AssemblyLoader.GetAssemblyBytes(asm), null);
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
+            catch (FileLoadException ex)
+            {
+                return new AssemblyRequestResult(null, string.Format("Failed to load assembly: {0} ({1})", asm, ex));
+            }
+
+            catch (BadImageFormatException ex)
+            {
+                return new AssemblyRequestResult(null, string.Format("Failed to load assembly: {0} ({1})", asm, ex));
             }
 
             return null;

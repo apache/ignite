@@ -115,6 +115,12 @@ include /app/helpers/jade/mixins
 
                         .group-content-empty(ng-if=`!(${exclude}.length) && !group.add.length`)
                             | Not defined
+
+                //- Since ignite 2.0
+                .settings-row(ng-if='$ctrl.available("2.0.0")')
+                    +java-class('Class loader:', model + '.classLoader', '"classLoader"', 'true', 'false',
+                        'Loader which will be used for instantiating execution context')
+
                 .settings-row
                     +dropdown('Deployment variant:', modelDeployment + '.kind', '"deploymentKind"', 'true', 'Default',
                         '[\
@@ -214,7 +220,7 @@ include /app/helpers/jade/mixins
 
                                 div(type='internal' name='Scanner')
                                     label.col-xs-12.col-sm-12.col-md-12
-                                        // (lbl, name, model, items, valid, save, newItem)
+                                        //- (lbl, name, model, items, valid, save, newItem)
                                         +table-java-class-field('Scanner:', name, model, scannerModel, valid, save, true)
                                             +table-save-button(valid, save, true)
                                             +unique-feedback(name, uniqueTip)
