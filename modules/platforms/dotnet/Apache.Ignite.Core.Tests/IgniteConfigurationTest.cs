@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
@@ -81,6 +82,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new MemoryEventStorageSpi());
             CheckDefaultValueAttributes(new MemoryConfiguration());
             CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
+            CheckDefaultValueAttributes(new SqlConnectorConfiguration());
         }
 
         /// <summary>
