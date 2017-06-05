@@ -457,6 +457,17 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultClientFailureDetectionTimeout,
                 cfg.ClientFailureDetectionTimeout);
+
+            // Thread pools.
+            Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.PublicThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.StripedThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.ServiceThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.SystemThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.AsyncCallbackThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.DataStreamerThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.UtilityCacheThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.QueryThreadPoolSize);
         }
 
         /// <summary>
