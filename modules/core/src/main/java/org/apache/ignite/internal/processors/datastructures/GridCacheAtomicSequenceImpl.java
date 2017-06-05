@@ -330,7 +330,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
             if (rmvd)
                 return;
 
-            ctx.kernalContext().dataStructures().removeSequence(name);
+            ctx.kernalContext().dataStructures().removeSequence(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1023,7 +1024,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
     @Override public void close() {
         if (!rmvd) {
             try {
-                ctx.kernalContext().dataStructures().removeSemaphore(name);
+                ctx.kernalContext().dataStructures().removeSemaphore(name, ctx.group().name());
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

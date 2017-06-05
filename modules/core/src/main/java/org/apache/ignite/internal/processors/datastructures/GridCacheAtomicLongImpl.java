@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache atomic long implementation.
@@ -357,7 +358,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicLong(name);
+            ctx.kernalContext().dataStructures().removeAtomicLong(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -64,9 +64,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     /** Atomic reference name. */
     private String name;
 
-    /** Group name. */
-    private String groupName;
-
     /** Status.*/
     private volatile boolean rmvd;
 
@@ -98,7 +95,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param ctx Cache context.
      */
     public GridCacheAtomicReferenceImpl(String name,
-        @Nullable String groupName,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
         GridCacheContext ctx) {
@@ -111,16 +107,11 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;
-        this.groupName = groupName;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
-    }
-
-    @Nullable public String groupName() {
-        return groupName;
     }
 
     /** {@inheritDoc} */
@@ -298,7 +289,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicReference(name, groupName);
+            ctx.kernalContext().dataStructures().removeAtomicReference(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
