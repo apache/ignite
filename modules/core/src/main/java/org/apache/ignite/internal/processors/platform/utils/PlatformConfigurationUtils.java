@@ -562,6 +562,26 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
 
+        // Thread pools.
+        if (in.readBoolean())
+            cfg.setPublicThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setStripedPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setServiceThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setAsyncCallbackPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setManagementThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setDataStreamerThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setUtilityCachePoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setQueryThreadPoolSize(in.readInt());
+
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
 
@@ -977,6 +997,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getClientFailureDetectionTimeout());
+
+        // Thread pools.
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
