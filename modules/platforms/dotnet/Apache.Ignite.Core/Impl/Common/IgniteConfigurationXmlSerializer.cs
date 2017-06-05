@@ -533,9 +533,10 @@ namespace Apache.Ignite.Core.Impl.Common
                 return attr.Value;
             }
 
-            if (property.DeclaringType != null)
+            var declType = property.DeclaringType;
+            if (declType != null && !declType.IsAbstract && declType.GetConstructor(new Type[0]) != null)
             {
-                return property.GetValue(Activator.CreateInstance(property.DeclaringType), null);
+                return property.GetValue(Activator.CreateInstance(declType), null);
             }
 
             var propertyType = property.PropertyType;
