@@ -1458,6 +1458,11 @@
                     <xs:documentation>Size of the async callback thread pool.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="managementThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the management thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="dataStreamerThreadPoolSize" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Size of the data streamer thread pool.</xs:documentation>
