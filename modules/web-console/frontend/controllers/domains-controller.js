@@ -18,8 +18,7 @@
 import templateUrl from 'views/configuration/domains-import.tpl.pug';
 
 // Controller for Domain model screen.
-export default ['domainsController', [
-    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'AgentManager', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
+export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'AgentManager', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
     function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Input, Loading, ModelNormalizer, UnsavedChangesGuard, agentMgr, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
         UnsavedChangesGuard.install($scope);
 
@@ -462,7 +461,7 @@ export default ['domainsController', [
 
                 $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
-                agentMgr.startAgentWatch('Back to Domain models', 'import domain model from database')
+                agentMgr.startAgentWatch('Back to Domain models')
                     .then(() => {
                         ActivitiesData.post({
                             group: 'configuration',
@@ -1875,4 +1874,4 @@ export default ['domainsController', [
                 });
         };
     }
-]];
+];

@@ -18,7 +18,7 @@ include /app/helpers/jade/mixins
 
 .docs-header
     h1 Configure Ignite In-memory File Systems
-.docs-body(ng-controller='igfsController')
+.docs-body
     ignite-information(data-title='Configure IGFS only if you are going to use In-memory File System')
         ul
             li Ignite File System (#[a(href='https://apacheignite-fs.readme.io/docs/in-memory-file-system' target='_blank') IGFS]) is an in-memory file system allowing work with files and directories over existing cache infrastructure
@@ -45,6 +45,10 @@ include /app/helpers/jade/mixins
                             include /app/modules/states/configuration/igfs/secondary
                             include /app/modules/states/configuration/igfs/ipc
                             include /app/modules/states/configuration/igfs/fragmentizer
+
+                            //- Removed in ignite 2.0
+                            include /app/modules/states/configuration/igfs/dual
+
                             include /app/modules/states/configuration/igfs/misc
 
                             +advanced-options-toggle-default

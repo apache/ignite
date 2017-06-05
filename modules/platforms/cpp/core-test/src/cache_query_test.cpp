@@ -1094,14 +1094,14 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
             std::stringstream stream;
             stream << "A" << key;
-            BOOST_REQUIRE(entry.GetValue().GetName().compare(stream.str()) == 0);
+            BOOST_REQUIRE_EQUAL(entry.GetValue().GetName().compare(stream.str()), 0);
 
-            BOOST_REQUIRE(entry.GetValue().GetAge() == key * 10);
+            BOOST_REQUIRE_EQUAL(entry.GetValue().GetAge(), key * 10);
         }
     }
 
     // Ensure that all keys were read.
-    BOOST_REQUIRE(keys.size() == entryCnt);
+    BOOST_CHECK_EQUAL(keys.size(), entryCnt);
 }
 
 /**
@@ -1913,6 +1913,47 @@ BOOST_AUTO_TEST_CASE(TestKeyValFields)
 
         BOOST_CHECK(!row.HasNext());
     }
+}
+
+/**
+ * Test query for Public schema.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQuerySetSchema)
+{
+    Cache<int32_t, Time> timeCache = grid.GetCache<int32_t, Time>("TimeCache");
+
+    int32_t entryCnt = 1000; // Number of entries.
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        int secs = i % 60;
+        int mins = i / 60;
+        timeCache.Put(i, MakeTimeGmt(4, mins, secs));
+    }
+
+    Cache<int32_t, int32_t> intCache = grid.GetCache<int32_t, int32_t>("IntCache");
+
+    SqlFieldsQuery qry("select _key from Time where _val='04:11:02'");
+
+    BOOST_CHECK_EXCEPTION(intCache.Query(qry), IgniteError, ignite_test::IsGenericError);
+
+    qry.SetSchema("TimeCache");
+
+    QueryFieldsCursor cursor = intCache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int32_t key = row.GetNext<int32_t>();
+
+    BOOST_CHECK(key == 662);
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

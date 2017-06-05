@@ -14,19 +14,23 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin btn-group(actions, tip)
+mixin btn-group(disabled, options, tip)
     .btn-group.panel-tip-container&attributes(attributes)
         button.btn.btn-primary(
-            ng-click=`${actions[0].click}`
+            ng-click=`${options[0].click}`
+
+            data-ng-disabled=disabled && `${disabled}`
 
             bs-tooltip=''
             data-title=tip
 
             data-trigger='hover'
             data-placement='bottom'
-        ) #{actions[0].text}
+        ) #{options[0].text}
         button.btn.dropdown-toggle.btn-primary(
-            bs-dropdown=`${JSON.stringify(actions)}`
+            data-ng-disabled=disabled && `${disabled}` || `!${JSON.stringify(options)}.length`
+
+            bs-dropdown=`${JSON.stringify(options)}`
 
             data-toggle='dropdown'
             data-container='body'

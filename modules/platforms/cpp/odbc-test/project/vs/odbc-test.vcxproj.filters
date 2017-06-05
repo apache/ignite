@@ -155,6 +155,8 @@
     <None Include="..\..\config\queries-default.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\queries-test-default.xml" />
+    <None Include="..\..\config\queries-test-default.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>

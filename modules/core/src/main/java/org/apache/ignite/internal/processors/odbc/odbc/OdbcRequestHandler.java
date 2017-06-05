@@ -25,19 +25,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
@@ -171,20 +170,9 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
+            qry.setSchema(req.schema());
 
-            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
-
-            if (cache0 == null)
-                return new OdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
-
-            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
-
-            if (cache == null)
-                return new OdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Can not get cache with keep binary: " + req.cacheName());
-
-            QueryCursor qryCur = cache.query(qry);
+            QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
 
             qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
@@ -288,38 +276,47 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             List<OdbcColumnMeta> meta = new ArrayList<>();
 
-            String cacheName;
-            String tableName;
+            String schemaPattern;
+            String tablePattern;
 
-            if (req.tableName().contains(".")) {
+            if (req.tablePattern().contains(".")) {
                 // Parsing two-part table name.
-                String[] parts = req.tableName().split("\\.");
+                String[] parts = req.tablePattern().split("\\.");
 
-                cacheName = OdbcUtils.removeQuotationMarksIfNeeded(parts[0]);
+                schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(parts[0]);
 
-                tableName = parts[1];
+                tablePattern = parts[1];
             }
             else {
-                cacheName = OdbcUtils.removeQuotationMarksIfNeeded(req.cacheName());
+                schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(req.schemaPattern());
 
-                tableName = req.tableName();
+                tablePattern = req.tablePattern();
             }
 
-            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+            GridQueryIndexing indexing = ctx.query().getIndexing();
 
-            for (GridQueryTypeDescriptor table : tablesMeta) {
-                if (!matches(table.name(), tableName))
+            for (String cacheName : ctx.cache().cacheNames()) {
+                String cacheSchema = indexing.schema(cacheName);
+
+                if (!matches(cacheSchema, schemaPattern))
                     continue;
 
-                for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                    if (!matches(field.getKey(), req.columnName()))
+                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+
+                for (GridQueryTypeDescriptor table : tablesMeta) {
+                    if (!matches(table.name(), tablePattern))
                         continue;
 
-                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(req.cacheName(), table.name(),
+                    for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
+                        if (!matches(field.getKey(), req.columnPattern()))
+                            continue;
+
+                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(cacheSchema, table.name(),
                         field.getKey(), field.getValue());
 
-                    if (!meta.contains(columnMeta))
-                        meta.add(columnMeta);
+                        if (!meta.contains(columnMeta))
+                            meta.add(columnMeta);
+                    }
                 }
             }
 
@@ -344,11 +341,15 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             List<OdbcTableMeta> meta = new ArrayList<>();
 
-            String realSchema = OdbcUtils.removeQuotationMarksIfNeeded(req.schema());
+            String schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(req.schema());
+
+            GridQueryIndexing indexing = ctx.query().getIndexing();
 
             for (String cacheName : ctx.cache().cacheNames())
             {
-                if (!matches(cacheName, realSchema))
+                String cacheSchema = indexing.schema(cacheName);
+
+                if (!matches(cacheSchema, schemaPattern))
                     continue;
 
                 Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);

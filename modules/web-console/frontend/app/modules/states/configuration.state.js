@@ -34,6 +34,11 @@ import igfsTpl from 'views/configuration/igfs.tpl.pug';
 import summaryTpl from 'views/configuration/summary.tpl.pug';
 import summaryTabsTemplateUrl from 'views/configuration/summary-tabs.pug';
 
+import clustersCtrl from 'Controllers/clusters-controller';
+import domainsCtrl from 'Controllers/domains-controller';
+import cachesCtrl from 'Controllers/caches-controller';
+import igfsCtrl from 'Controllers/igfs-controller';
+
 angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...previewPanel)
     // Summary screen
@@ -62,7 +67,9 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Clusters'
-                }
+                },
+                controller: clustersCtrl,
+                controllerAs: '$ctrl'
             })
             .state('base.configuration.caches', {
                 url: '/caches',
@@ -70,7 +77,9 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Caches'
-                }
+                },
+                controller: cachesCtrl,
+                controllerAs: '$ctrl'
             })
             .state('base.configuration.domains', {
                 url: '/domains',
@@ -78,7 +87,9 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Domain Model'
-                }
+                },
+                controller: domainsCtrl,
+                controllerAs: '$ctrl'
             })
             .state('base.configuration.igfs', {
                 url: '/igfs',
@@ -86,7 +97,9 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure IGFS'
-                }
+                },
+                controller: igfsCtrl,
+                controllerAs: '$ctrl'
             })
             .state('base.configuration.summary', {
                 url: '/summary',

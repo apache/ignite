@@ -103,11 +103,7 @@ import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 
 // Controllers
-import caches from '../controllers/caches-controller';
-import clusters from '../controllers/clusters-controller';
-import domains from '../controllers/domains-controller';
-import igfs from '../controllers/igfs-controller';
-import profile from '../controllers/profile-controller';
+import profile from 'Controllers/profile-controller';
 import auth from './controllers/auth.controller';
 import resetPassword from './controllers/reset-password.controller';
 
@@ -119,6 +115,7 @@ import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
 import igniteIcon from './components/ignite-icon';
+import versionPicker from './components/version-picker';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -179,6 +176,7 @@ angular
     webConsoleHeader.name,
     webConsoleFooter.name,
     igniteIcon.name,
+    versionPicker.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -227,10 +225,6 @@ angular
 // Controllers.
 .controller(...auth)
 .controller(...resetPassword)
-.controller(...caches)
-.controller(...clusters)
-.controller(...domains)
-.controller(...igfs)
 .controller(...profile)
 // Filters.
 .filter('byName', byName)

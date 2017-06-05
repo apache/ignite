@@ -270,6 +270,13 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @return Test resources.
+     */
+    protected IgniteTestResources getTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return getTestCounters(cfg).getTestResources();
+    }
+
+    /**
      * @param msg Message to print.
      */
     protected void info(String msg) {
@@ -1867,6 +1874,15 @@ public abstract class GridAbstractTest extends TestCase {
         return tc;
     }
 
+    /**
+     * @param cfg Ignite configuration
+     * @return Test counters
+     * @throws IgniteCheckedException In case of error
+     */
+    protected synchronized TestCounters getTestCounters(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return new TestCounters(cfg);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     @Override protected void runTest() throws Throwable {
@@ -2221,6 +2237,14 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public TestCounters() throws IgniteCheckedException {
             rsrcs = new IgniteTestResources();
+        }
+
+        /**
+         * @param cfg Ignite configuration
+         * @throws IgniteCheckedException In case of error
+         */
+        public TestCounters(IgniteConfiguration cfg) throws IgniteCheckedException {
+            rsrcs = new IgniteTestResources(cfg);
         }
 
         /**
