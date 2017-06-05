@@ -1,20 +1,28 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
-import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
-import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.doInTransaction;
-
+/**
+ * Ignite benchmark that does put and get operations protected by ignite reentrant lock.
+ */
 public class IgniteReentrantLockBenchmark extends IgniteCacheAbstractBenchmark<Integer, Integer> {
     /** */
     private static final String CACHE_NAME = "atomic";
+
+    /** */
+    private static final int PRE_CREATED_REENTRANT_LOCK_COUNT = 1000;
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        for (int i = 0; i < PRE_CREATED_REENTRANT_LOCK_COUNT; i++)
+            ignite().reentrantLock(CACHE_NAME + "EXTRA" + i, true, false, true);
+    }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
@@ -24,23 +32,34 @@ public class IgniteReentrantLockBenchmark extends IgniteCacheAbstractBenchmark<I
 
         int key = r.nextRandom();
 
-        IgniteLock lock = ignite().reentrantLock(CACHE_NAME + key, true, false, true);
+        IgniteLock lock = null;
 
-        lock.lock();
+        boolean locked = false;
+
+        while (!locked) {
+            try {
+                lock = ignite().reentrantLock(CACHE_NAME + key, true, false, true);
+
+                locked = lock.tryLock();
+            } catch (Exception e) {
+                // no-op
+            }
+        }
 
         try {
             Integer val = cache.get(key);
 
-            if(val == null)
-                val = 0;
-            else
-                val++;
+            val = val == null ? 0 : val+1;
 
             cache.put(key, val);
         }
         finally {
-            lock.unlock();
-            lock.removed();
+            try {
+                lock.unlock();
+                lock.close();
+            } catch (IgniteException e) {
+                // no-op
+            }
         }
 
         return true;
