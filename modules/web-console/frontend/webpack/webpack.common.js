@@ -52,8 +52,7 @@ export default {
     output: {
         path: path.resolve('build'),
         filename: '[name].[chunkhash].js',
-        publicPath: '/',
-        sourceMapFilename: '[name].[chunkhash].map'
+        publicPath: '/'
     },
 
     // Resolves modules.
@@ -62,8 +61,9 @@ export default {
         // A list of module source folders.
         alias: {
             app,
-            images: path.resolve('public/images'),
-            views: path.resolve('views'),
+            images: path.join(basedir, 'public/images'),
+            views: path.join(basedir, 'views'),
+            Controllers: path.join(basedir, 'controllers'),
             IgniteModules
         }
     },

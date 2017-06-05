@@ -20,18 +20,22 @@ import DFLT_DIALECTS from 'app/data/dialects.json';
 import { EmptyBean, Bean } from './Beans';
 
 import IgniteClusterDefaults from './defaults/Cluster.service';
+import IgniteEventGroups from './defaults/Event-groups.service';
 import IgniteCacheDefaults from './defaults/Cache.service';
 import IgniteIGFSDefaults from './defaults/IGFS.service';
 
 import JavaTypes from '../../../services/JavaTypes.service';
+import VersionService from 'app/modules/configuration/Version.service';
 
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
 const igfsDflts = new IgniteIGFSDefaults();
-
 const javaTypes = new JavaTypes(clusterDflts, cacheDflts, igfsDflts);
+const versionService = new VersionService();
 
 export default class IgniteConfigurationGenerator {
+    static eventGrps = new IgniteEventGroups();
+
     static igniteConfigurationBean(cluster) {
         return new Bean('org.apache.ignite.configuration.IgniteConfiguration', 'cfg', cluster, clusterDflts);
     }
@@ -60,13 +64,16 @@ export default class IgniteConfigurationGenerator {
      * Function to generate ignite configuration.
      *
      * @param {Object} cluster Cluster to process.
-     * @param {Boolean} client
+     * @param {String} version Target version of configuration.
+     * @param {Boolean} client Is client configuration.
      * @return {Bean} Generated ignite configuration.
      */
-    static igniteConfiguration(cluster, client) {
+    static igniteConfiguration(cluster, version, client) {
+        const available = versionService.since.bind(versionService, version);
+
         const cfg = this.igniteConfigurationBean(cluster);
 
-        this.clusterGeneral(cluster, cfg, client);
+        this.clusterGeneral(cluster, available, cfg, client);
         this.clusterAtomics(cluster.atomicConfiguration, cfg);
         this.clusterBinary(cluster.binaryConfiguration, cfg);
         this.clusterCacheKeyConfiguration(cluster.cacheKeyConfiguration, cfg);
@@ -74,24 +81,37 @@ export default class IgniteConfigurationGenerator {
         this.clusterCollision(cluster.collision, cfg);
         this.clusterCommunication(cluster, cfg);
         this.clusterConnector(cluster.connector, cfg);
-        this.clusterDeployment(cluster, cfg);
-        this.clusterEvents(cluster, cfg);
-        this.clusterFailover(cluster, cfg);
+        this.clusterDeployment(cluster, available, cfg);
+        this.clusterEvents(cluster, available, cfg);
+        this.clusterFailover(cluster, available, cfg);
+        this.clusterHadoop(cluster.hadoopConfiguration, cfg);
         this.clusterLoadBalancing(cluster, cfg);
         this.clusterLogger(cluster.logger, cfg);
+        this.clusterMarshaller(cluster, available, cfg);
+
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            this.clusterMemory(cluster.memoryConfiguration, cfg);
+
+        this.clusterMisc(cluster, available, cfg);
+        this.clusterMetrics(cluster, available, cfg);
         this.clusterODBC(cluster.odbc, cfg);
-        this.clusterMarshaller(cluster, cfg);
-        this.clusterMetrics(cluster, cfg);
-        this.clusterTime(cluster, cfg);
-        this.clusterPools(cluster, cfg);
-        this.clusterTransactions(cluster.transactionConfiguration, cfg);
+        this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0']))
+            this.clusterSwap(cluster, cfg);
+
+        this.clusterPools(cluster, available, cfg);
+        this.clusterTime(cluster, available, cfg);
+        this.clusterTransactions(cluster.transactionConfiguration, cfg);
         this.clusterUserAttributes(cluster, cfg);
 
-        this.clusterCaches(cluster, cluster.caches, cluster.igfss, client, cfg);
+        this.clusterCaches(cluster, cluster.caches, cluster.igfss, available, client, cfg);
 
         if (!client)
-            this.clusterIgfss(cluster.igfss, cfg);
+            this.clusterIgfss(cluster.igfss, available, cfg);
 
         return cfg;
     }
@@ -154,12 +174,16 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate general section.
-    static clusterGeneral(cluster, cfg = this.igniteConfigurationBean(cluster), client = false) {
+    static clusterGeneral(cluster, available, cfg = this.igniteConfigurationBean(cluster), client = false) {
         if (client)
             cfg.prop('boolean', 'clientMode', true);
 
-        cfg.stringProperty('name', 'igniteInstanceName')
-            .stringProperty('localHost');
+        if (available('2.0.0'))
+            cfg.stringProperty('name', 'igniteInstanceName');
+        else
+            cfg.stringProperty('name', 'gridName');
+
+        cfg.stringProperty('localHost');
 
         if (_.isNil(cluster.discovery))
             return cfg;
@@ -338,12 +362,12 @@ export default class IgniteConfigurationGenerator {
         if (ipFinder)
             discovery.beanProperty('ipFinder', ipFinder);
 
-        this.clusterDiscovery(cluster.discovery, cfg, discovery);
+        this.clusterDiscovery(cluster.discovery, available, cfg, discovery);
 
         return cfg;
     }
 
-    static igfsDataCache(igfs) {
+    static igfsDataCache(igfs, available) {
         return this.cacheConfiguration({
             name: igfs.name + '-data',
             cacheMode: 'PARTITIONED',
@@ -351,25 +375,25 @@ export default class IgniteConfigurationGenerator {
             writeSynchronizationMode: 'FULL_SYNC',
             backups: 0,
             igfsAffinnityGroupSize: igfs.affinnityGroupSize || 512
-        });
+        }, available);
     }
 
-    static igfsMetaCache(igfs) {
+    static igfsMetaCache(igfs, available) {
         return this.cacheConfiguration({
             name: igfs.name + '-meta',
             cacheMode: 'REPLICATED',
             atomicityMode: 'TRANSACTIONAL',
             writeSynchronizationMode: 'FULL_SYNC'
-        });
+        }, available);
     }
 
-    static clusterCaches(cluster, caches, igfss, client, cfg = this.igniteConfigurationBean(cluster)) {
-        const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache));
+    static clusterCaches(cluster, caches, igfss, available, client, cfg = this.igniteConfigurationBean(cluster)) {
+        const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache, available));
 
         if (!client) {
             _.forEach(igfss, (igfs) => {
-                ccfgs.push(this.igfsDataCache(igfs));
-                ccfgs.push(this.igfsMetaCache(igfs));
+                ccfgs.push(this.igfsDataCache(igfs, available));
+                ccfgs.push(this.igfsMetaCache(igfs, available));
             });
         }
 
@@ -850,7 +874,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate deployment group.
-    static clusterDeployment(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterDeployment(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         cfg.enumProperty('deploymentMode')
             .boolProperty('peerClassLoadingEnabled');
 
@@ -860,6 +884,10 @@ export default class IgniteConfigurationGenerator {
                 .varArgProperty('p2pLocClsPathExcl', 'peerClassLoadingLocalClassPathExclude',
                    cluster.peerClassLoadingLocalClassPathExclude);
         }
+
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            cfg.emptyBeanProperty('classLoader');
 
         let deploymentBean = null;
 
@@ -905,9 +933,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate discovery group.
-    static clusterDiscovery(discovery, cfg = this.igniteConfigurationBean(), discoSpi = this.discoveryConfigurationBean(discovery)) {
-        // TODO IGNITE-4988 cfg.intProperty('metricsUpdateFrequency')
-
+    static clusterDiscovery(discovery, available, cfg = this.igniteConfigurationBean(), discoSpi = this.discoveryConfigurationBean(discovery)) {
         discoSpi.stringProperty('localAddress')
             .intProperty('localPort')
             .intProperty('localPortRange')
@@ -917,8 +943,16 @@ export default class IgniteConfigurationGenerator {
             .intProperty('maxAckTimeout')
             .intProperty('networkTimeout')
             .intProperty('joinTimeout')
-            .intProperty('threadPriority')
-            .intProperty('topHistorySize')
+            .intProperty('threadPriority');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0'])) {
+            discoSpi.intProperty('heartbeatFrequency')
+                .intProperty('maxMissedHeartbeats')
+                .intProperty('maxMissedClientHeartbeats');
+        }
+
+        discoSpi.intProperty('topHistorySize')
             .emptyBeanProperty('listener')
             .emptyBeanProperty('dataExchange')
             .emptyBeanProperty('metricsProvider')
@@ -936,7 +970,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate events group.
-    static clusterEvents(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterEvents(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const eventStorage = cluster.eventStorage;
 
         let eventStorageBean = null;
@@ -963,18 +997,55 @@ export default class IgniteConfigurationGenerator {
                 // No-op.
         }
 
-        if (eventStorageBean && eventStorageBean.nonEmpty())
-            cfg.beanProperty('eventStorageSpi', eventStorageBean);
+        if (eventStorageBean) {
+            if (!eventStorageBean.isEmpty() || !available(['1.0.0', '2.0.0']))
+                cfg.beanProperty('eventStorageSpi', eventStorageBean);
 
-        if (_.nonEmpty(cluster.includeEventTypes))
-            cfg.eventTypes('evts', 'includeEventTypes', cluster.includeEventTypes);
+            if (_.nonEmpty(cluster.includeEventTypes)) {
+                const eventGrps = _.filter(this.eventGrps, ({value}) => _.includes(cluster.includeEventTypes, value));
+
+                if (available('2.0.0')) {
+                    const events = _.reduce(eventGrps, (acc, eventGrp) => {
+                        switch (eventGrp.value) {
+                            case 'EVTS_SWAPSPACE':
+                                // Removed.
+
+                                break;
+                            case 'EVTS_CACHE':
+                                const eventGrpX2 = _.cloneDeep(eventGrp);
+
+                                eventGrpX2.events = _.filter(eventGrpX2.events, (ev) =>
+                                    !_.includes(['EVT_CACHE_OBJECT_SWAPPED', 'EVT_CACHE_OBJECT_UNSWAPPED'], ev));
+
+                                acc.push(eventGrpX2);
+
+                                break;
+                            default:
+                                acc.push(eventGrp);
+                        }
+
+                        return acc;
+                    }, []);
+
+                    cfg.eventTypes('evts', 'includeEventTypes', events);
+                }
+                else
+                    cfg.eventTypes('evts', 'includeEventTypes', eventGrps);
+            }
+        }
 
         return cfg;
     }
 
     // Generate failover group.
-    static clusterFailover(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterFailover(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const spis = [];
+
+        // Since ignite 2.0
+        if (available('2.0.0')) {
+            cfg.intProperty('failureDetectionTimeout')
+                .intProperty('clientFailureDetectionTimeout');
+        }
 
         _.forEach(cluster.failoverSpi, (spi) => {
             let failoverSpi;
@@ -1016,6 +1087,51 @@ export default class IgniteConfigurationGenerator {
 
         if (spis.length)
             cfg.arrayProperty('failoverSpi', 'failoverSpi', spis, 'org.apache.ignite.spi.failover.FailoverSpi');
+
+        return cfg;
+    }
+
+    // Generate failover group.
+    static clusterHadoop(hadoop, cfg = this.igniteConfigurationBean()) {
+        const hadoopBean = new Bean('org.apache.ignite.configuration.HadoopConfiguration', 'hadoop', hadoop, clusterDflts.hadoopConfiguration);
+
+        let plannerBean;
+
+        switch (_.get(hadoop, 'mapReducePlanner.kind')) {
+            case 'Weighted':
+                plannerBean = new Bean('org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner', 'planner',
+                    _.get(hadoop, 'mapReducePlanner.Weighted'), clusterDflts.hadoopConfiguration.mapReducePlanner.Weighted);
+
+                plannerBean.intProperty('localMapperWeight')
+                    .intProperty('remoteMapperWeight')
+                    .intProperty('localReducerWeight')
+                    .intProperty('remoteReducerWeight')
+                    .intProperty('preferLocalReducerThresholdWeight');
+
+                break;
+
+            case 'Custom':
+                const clsName = _.get(hadoop, 'mapReducePlanner.Custom.className');
+
+                if (clsName)
+                    plannerBean = new EmptyBean(clsName);
+
+                break;
+
+            default:
+                // No-op.
+        }
+
+        if (plannerBean)
+            hadoopBean.beanProperty('mapReducePlanner', plannerBean);
+
+        hadoopBean.intProperty('finishedJobInfoTtl')
+            .intProperty('maxParallelTasks')
+            .intProperty('maxTaskQueueSize')
+            .arrayProperty('nativeLibraryNames', 'nativeLibraryNames', _.get(hadoop, 'nativeLibraryNames'));
+
+        if (!hadoopBean.isEmpty())
+            cfg.beanProperty('hadoopConfiguration', hadoopBean);
 
         return cfg;
     }
@@ -1161,15 +1277,78 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
+    // Generate logger group.
+    static clusterMemory(memoryConfiguration, cfg = this.igniteConfigurationBean()) {
+        const memoryBean = new Bean('org.apache.ignite.configuration.MemoryConfiguration', 'memoryConfiguration', memoryConfiguration, clusterDflts.memoryConfiguration);
+
+        memoryBean.intProperty('pageSize')
+            .intProperty('concurrencyLevel')
+            .intProperty('systemCacheInitialSize')
+            .intProperty('systemCacheMaxSize')
+            .stringProperty('defaultMemoryPolicyName');
+
+        if (memoryBean.valueOf('defaultMemoryPolicyName') === 'default')
+            memoryBean.intProperty('defaultMemoryPolicySize');
+
+        const policies = [];
+
+        _.forEach(_.get(memoryConfiguration, 'memoryPolicies'), (plc) => {
+            const plcBean = new Bean('org.apache.ignite.configuration.MemoryPolicyConfiguration', 'policy', plc, clusterDflts.memoryConfiguration.memoryPolicies);
+
+            plcBean.stringProperty('name')
+                .intProperty('initialSize')
+                .intProperty('maxSize')
+                .stringProperty('swapFilePath')
+                .enumProperty('pageEvictionMode')
+                .intProperty('evictionThreshold')
+                .intProperty('emptyPagesPoolSize')
+                .boolProperty('metricsEnabled');
+
+            policies.push(plcBean);
+        });
+
+        if (!_.isEmpty(policies))
+            memoryBean.arrayProperty('memoryPolicies', 'memoryPolicies', policies, 'org.apache.ignite.configuration.MemoryPolicyConfiguration');
+
+        if (memoryBean.isEmpty())
+            return cfg;
+
+        cfg.beanProperty('memoryConfiguration', memoryBean);
+
+        return cfg;
+    }
+
+    // Generate miscellaneous configuration.
+    static clusterMisc(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        cfg.stringProperty('workDirectory');
+
+        // Since Ignite 2.0
+        if (available('2.0.0')) {
+            cfg.stringProperty('consistentId')
+                .emptyBeanProperty('warmupClosure')
+                .boolProperty('activeOnStart')
+                .boolProperty('cacheSanityCheckEnabled');
+        }
+
+        cfg.boolProperty('lateAffinityAssignment');
+
+        return cfg;
+    }
+
     // Generate IGFSs configs.
-    static clusterIgfss(igfss, cfg = this.igniteConfigurationBean()) {
+    static clusterIgfss(igfss, available, cfg = this.igniteConfigurationBean()) {
         const igfsCfgs = _.map(igfss, (igfs) => {
-            const igfsCfg = this.igfsGeneral(igfs);
+            const igfsCfg = this.igfsGeneral(igfs, available);
 
             this.igfsIPC(igfs, igfsCfg);
             this.igfsFragmentizer(igfs, igfsCfg);
+
+            // Removed in ignite 2.0
+            if (available(['1.0.0', '2.0.0']))
+                this.igfsDualMode(igfs, igfsCfg);
+
             this.igfsSecondFS(igfs, igfsCfg);
-            this.igfsMisc(igfs, igfsCfg);
+            this.igfsMisc(igfs, available, igfsCfg);
 
             return igfsCfg;
         });
@@ -1180,7 +1359,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate marshaller group.
-    static clusterMarshaller(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterMarshaller(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const kind = _.get(cluster.marshaller, 'kind');
         const settings = _.get(cluster.marshaller, kind);
 
@@ -1188,7 +1367,7 @@ export default class IgniteConfigurationGenerator {
 
         switch (kind) {
             case 'OptimizedMarshaller':
-                bean = new Bean('org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
+                bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
                     .intProperty('poolSize')
                     .intProperty('requireSerializable');
 
@@ -1208,15 +1387,24 @@ export default class IgniteConfigurationGenerator {
 
         cfg.intProperty('marshalLocalJobs');
 
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0'])) {
+            cfg.intProperty('marshallerCacheKeepAliveTime')
+                .intProperty('marshallerCacheThreadPoolSize', 'marshallerCachePoolSize');
+        }
+
         return cfg;
     }
 
     // Generate metrics group.
-    static clusterMetrics(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterMetrics(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         cfg.intProperty('metricsExpireTime')
             .intProperty('metricsHistorySize')
-            .intProperty('metricsLogFrequency')
-            .intProperty('metricsUpdateFrequency');
+            .intProperty('metricsLogFrequency');
+
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            cfg.intProperty('metricsUpdateFrequency');
 
         return cfg;
     }
@@ -1237,20 +1425,43 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
+    // Java code generator for cluster's service configurations.
+    static clusterServiceConfiguration(srvs, caches, cfg = this.igniteConfigurationBean()) {
+        const srvBeans = [];
+
+        _.forEach(srvs, (srv) => {
+            const bean = new Bean('org.apache.ignite.services.ServiceConfiguration', 'service', srv, clusterDflts.serviceConfigurations);
+
+            bean.stringProperty('name')
+                .emptyBeanProperty('service')
+                .intProperty('maxPerNodeCount')
+                .intProperty('totalCount')
+                .stringProperty('cache', 'cacheName', (_id) => _id ? _.find(caches, {_id}).name : null)
+                .stringProperty('affinityKey');
+
+            srvBeans.push(bean);
+        });
+
+        if (!_.isEmpty(srvBeans))
+            cfg.arrayProperty('services', 'serviceConfiguration', srvBeans, 'org.apache.ignite.services.ServiceConfiguration');
+
+        return cfg;
+    }
+
     // Java code generator for cluster's SSL configuration.
     static clusterSsl(cluster, cfg = this.igniteConfigurationBean(cluster)) {
         if (cluster.sslEnabled && _.nonNil(cluster.sslContextFactory)) {
             const bean = new Bean('org.apache.ignite.ssl.SslContextFactory', 'sslCtxFactory',
                 cluster.sslContextFactory);
 
-            bean.stringProperty('keyAlgorithm')
+            bean.intProperty('keyAlgorithm')
                 .pathProperty('keyStoreFilePath');
 
             if (_.nonEmpty(bean.valueOf('keyStoreFilePath')))
                 bean.propertyChar('keyStorePassword', 'ssl.key.storage.password', 'YOUR_SSL_KEY_STORAGE_PASSWORD');
 
-            bean.stringProperty('keyStoreType')
-                .stringProperty('protocol');
+            bean.intProperty('keyStoreType')
+                .intProperty('protocol');
 
             if (_.nonEmpty(cluster.sslContextFactory.trustManagers)) {
                 bean.arrayProperty('trustManagers', 'trustManagers',
@@ -1263,7 +1474,7 @@ export default class IgniteConfigurationGenerator {
                 if (_.nonEmpty(bean.valueOf('trustStoreFilePath')))
                     bean.propertyChar('trustStorePassword', 'ssl.trust.storage.password', 'YOUR_SSL_TRUST_STORAGE_PASSWORD');
 
-                bean.stringProperty('trustStoreType');
+                bean.intProperty('trustStoreType');
             }
 
             cfg.beanProperty('sslContextFactory', bean);
@@ -1272,8 +1483,31 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
+    // Generate swap group.
+    static clusterSwap(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+        if (_.get(cluster.swapSpaceSpi, 'kind') === 'FileSwapSpaceSpi') {
+            const bean = new Bean('org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi', 'swapSpaceSpi',
+                cluster.swapSpaceSpi.FileSwapSpaceSpi);
+
+            bean.pathProperty('baseDirectory')
+                .intProperty('readStripesNumber')
+                .floatProperty('maximumSparsity')
+                .intProperty('maxWriteQueueSize')
+                .intProperty('writeBufferSize');
+
+            cfg.beanProperty('swapSpaceSpi', bean);
+        }
+
+        return cfg;
+    }
+
     // Generate time group.
-    static clusterTime(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterTime(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (available(['1.0.0', '2.0.0'])) {
+            cfg.intProperty('clockSyncSamples')
+                .intProperty('clockSyncFrequency');
+        }
+
         cfg.intProperty('timeServerPortBase')
             .intProperty('timeServerPortRange');
 
@@ -1281,12 +1515,38 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate thread pools group.
-    static clusterPools(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterPools(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         cfg.intProperty('publicThreadPoolSize')
             .intProperty('systemThreadPoolSize')
+            .intProperty('serviceThreadPoolSize')
             .intProperty('managementThreadPoolSize')
             .intProperty('igfsThreadPoolSize')
-            .intProperty('rebalanceThreadPoolSize');
+            .intProperty('rebalanceThreadPoolSize')
+            .intProperty('utilityCacheThreadPoolSize', 'utilityCachePoolSize')
+            .intProperty('utilityCacheKeepAliveTime')
+            .intProperty('asyncCallbackPoolSize')
+            .intProperty('stripedPoolSize');
+
+        // Since ignite 2.0
+        if (available('2.0.0')) {
+            cfg.intProperty('dataStreamerThreadPoolSize')
+                .intProperty('queryThreadPoolSize');
+
+            const executors = [];
+
+            _.forEach(cluster.executorConfiguration, (exec) => {
+                const execBean = new Bean('org.apache.ignite.configuration.ExecutorConfiguration', 'executor', exec);
+
+                execBean.stringProperty('name')
+                    .intProperty('size');
+
+                if (!execBean.isEmpty())
+                    executors.push(execBean);
+            });
+
+            if (!_.isEmpty(executors))
+                cfg.arrayProperty('executors', 'executorConfiguration', executors, 'org.apache.ignite.configuration.ExecutorConfiguration');
+        }
 
         return cfg;
     }
@@ -1427,7 +1687,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate cache general group.
-    static cacheGeneral(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheGeneral(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.stringProperty('name')
             .enumProperty('cacheMode')
             .enumProperty('atomicityMode');
@@ -1437,7 +1697,9 @@ export default class IgniteConfigurationGenerator {
                 .intProperty('readFromBackup');
         }
 
-        ccfg.enumProperty('partitionLossPolicy');
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            ccfg.enumProperty('partitionLossPolicy');
 
         ccfg.intProperty('copyOnRead');
 
@@ -1459,7 +1721,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate cache memory group.
-    static cacheAffinity(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheAffinity(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         switch (_.get(cache, 'affinity.kind')) {
             case 'Rendezvous':
                 ccfg.beanProperty('affinity', this.cacheAffinityFunction('org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction', cache.affinity.Rendezvous));
@@ -1479,18 +1741,46 @@ export default class IgniteConfigurationGenerator {
 
         ccfg.emptyBeanProperty('affinityMapper');
 
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            ccfg.emptyBeanProperty('topologyValidator');
+
         return ccfg;
     }
 
     // Generate cache memory group.
-    static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheMemory(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            ccfg.stringProperty('memoryPolicyName');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0'])) {
+            ccfg.enumProperty('memoryMode');
+
+            if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
+                ccfg.intProperty('offHeapMaxMemory');
+        }
+
+        // Since ignite 2.0
+        if (available('2.0.0')) {
+            ccfg.boolProperty('onheapCacheEnabled')
+                .emptyBeanProperty('evictionFilter');
+        }
+
         this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0'])) {
+            ccfg.intProperty('startSize')
+                .boolProperty('swapEnabled');
+        }
 
         return ccfg;
     }
 
     // Generate cache queries & Indexing group.
-    static cacheQuery(cache, domains, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheQuery(cache, domains, available, ccfg = this.cacheConfigurationBean(cache)) {
         const indexedTypes = _.reduce(domains, (acc, domain) => {
             if (domain.queryMetadata === 'Annotations')
                 acc.push(domain.keyType, domain.valueType);
@@ -1498,19 +1788,34 @@ export default class IgniteConfigurationGenerator {
             return acc;
         }, []);
 
-        ccfg.stringProperty('sqlSchema')
-            .intProperty('longQueryWarningTimeout')
+        ccfg.stringProperty('sqlSchema');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0']))
+            ccfg.intProperty('sqlOnheapRowCacheSize');
+
+        ccfg.intProperty('longQueryWarningTimeout')
             .arrayProperty('indexedTypes', 'indexedTypes', indexedTypes, 'java.lang.Class')
             .intProperty('queryDetailMetricsSize')
-            .intProperty('queryParallelism')
-            .arrayProperty('sqlFunctionClasses', 'sqlFunctionClasses', cache.sqlFunctionClasses, 'java.lang.Class')
-            .intProperty('sqlEscapeAll');
+            .arrayProperty('sqlFunctionClasses', 'sqlFunctionClasses', cache.sqlFunctionClasses, 'java.lang.Class');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0']))
+            ccfg.intProperty('snapshotableIndex');
+
+        ccfg.intProperty('sqlEscapeAll');
+
+        // Since ignite 2.0
+        if (available('2.0.0')) {
+            ccfg.intProperty('queryParallelism')
+                .intProperty('sqlIndexMaxInlineSize');
+        }
 
         return ccfg;
     }
 
     // Generate cache store group.
-    static cacheStore(cache, domains, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheStore(cache, domains, available, ccfg = this.cacheConfigurationBean(cache)) {
         const kind = _.get(cache, 'cacheStoreFactory.kind');
 
         if (kind && cache.cacheStoreFactory[kind]) {
@@ -1611,52 +1916,66 @@ export default class IgniteConfigurationGenerator {
                 .intProperty('writeBehindFlushSize')
                 .intProperty('writeBehindFlushFrequency')
                 .intProperty('writeBehindFlushThreadCount');
+
+            // Since ignite 2.0
+            if (available('2.0.0'))
+                ccfg.boolProperty('writeBehindCoalescing');
         }
 
         return ccfg;
     }
 
     // Generate cache concurrency control group.
-    static cacheConcurrency(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheConcurrency(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.intProperty('maxConcurrentAsyncOperations')
-            .intProperty('defaultLockTimeout')
-            .enumProperty('writeSynchronizationMode');
+            .intProperty('defaultLockTimeout');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0']))
+            ccfg.enumProperty('atomicWriteOrderMode');
+
+        ccfg.enumProperty('writeSynchronizationMode');
 
         return ccfg;
     }
 
-    // Generate cache node filter group.
-    static cacheNodeFilter(cache, igfss, ccfg = this.cacheConfigurationBean(cache)) {
-        const kind = _.get(cache, 'nodeFilter.kind');
+    static nodeFilter(filter, igfss) {
+        const kind = _.get(filter, 'kind');
 
-        const settings = _.get(cache.nodeFilter, kind);
+        const settings = _.get(filter, kind);
 
-        if (_.isNil(settings))
-            return ccfg;
+        if (!_.isNil(settings)) {
+            switch (kind) {
+                case 'IGFS':
+                    const foundIgfs = _.find(igfss, {_id: settings.igfs});
 
-        let bean = null;
+                    if (foundIgfs) {
+                        return new Bean('org.apache.ignite.internal.processors.igfs.IgfsNodePredicate', 'nodeFilter', foundIgfs)
+                            .stringConstructorArgument('name');
+                    }
 
-        switch (kind) {
-            case 'IGFS':
-                const foundIgfs = _.find(igfss, {_id: settings.igfs});
+                    break;
+                case 'Custom':
+                    if (_.nonEmpty(settings.className))
+                        return new EmptyBean(settings.className);
 
-                if (foundIgfs) {
-                    bean = new Bean('org.apache.ignite.internal.processors.igfs.IgfsNodePredicate', 'nodeFilter', foundIgfs)
-                        .stringConstructorArgument('name');
-                }
-
-                break;
-            case 'Custom':
-                if (_.nonEmpty(settings.className))
-                    bean = new EmptyBean(settings.className);
-
-                break;
-            default:
+                    break;
+                default:
                 // No-op.
+            }
         }
 
-        if (bean)
-            ccfg.beanProperty('nodeFilter', bean);
+        return null;
+    }
+
+    // Generate cache node filter group.
+    static cacheNodeFilter(cache, igfss, ccfg = this.cacheConfigurationBean(cache)) {
+        const filter = _.get(cache, 'nodeFilter');
+
+        const filterBean = this.nodeFilter(filter, igfss);
+
+        if (filterBean)
+            ccfg.beanProperty('nodeFilter', filterBean);
 
         return ccfg;
     }
@@ -1744,16 +2063,16 @@ export default class IgniteConfigurationGenerator {
         ccfg.collectionProperty('qryEntities', 'queryEntities', qryEntities, 'org.apache.ignite.cache.QueryEntity');
     }
 
-    static cacheConfiguration(cache, ccfg = this.cacheConfigurationBean(cache)) {
-        this.cacheGeneral(cache, ccfg);
-        this.cacheAffinity(cache, ccfg);
-        this.cacheMemory(cache, ccfg);
-        this.cacheQuery(cache, cache.domains, ccfg);
-        this.cacheStore(cache, cache.domains, ccfg);
+    static cacheConfiguration(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
+        this.cacheGeneral(cache, available, ccfg);
+        this.cacheAffinity(cache, available, ccfg);
+        this.cacheMemory(cache, available, ccfg);
+        this.cacheQuery(cache, cache.domains, available, ccfg);
+        this.cacheStore(cache, cache.domains, available, ccfg);
 
         const igfs = _.get(cache, 'nodeFilter.IGFS.instance');
         this.cacheNodeFilter(cache, igfs ? [igfs] : [], ccfg);
-        this.cacheConcurrency(cache, ccfg);
+        this.cacheConcurrency(cache, available, ccfg);
         this.cacheRebalance(cache, ccfg);
         this.cacheNearServer(cache, ccfg);
         this.cacheStatistics(cache, ccfg);
@@ -1763,12 +2082,19 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate IGFS general group.
-    static igfsGeneral(igfs, cfg = this.igfsConfigurationBean(igfs)) {
+    static igfsGeneral(igfs, available, cfg = this.igfsConfigurationBean(igfs)) {
         if (_.isEmpty(igfs.name))
             return cfg;
 
-        cfg.stringProperty('name')
-            .enumProperty('defaultMode');
+        cfg.stringProperty('name');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0'])) {
+            cfg.stringProperty('name', 'dataCacheName', (name) => name + '-data')
+                .stringProperty('name', 'metaCacheName', (name) => name + '-meta');
+        }
+
+        cfg.enumProperty('defaultMode');
 
         return cfg;
     }
@@ -1830,19 +2156,49 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
+    // Generate IGFS Dual mode group.
+    static igfsDualMode(igfs, cfg = this.igfsConfigurationBean(igfs)) {
+        cfg.intProperty('dualModeMaxPendingPutsSize')
+            .emptyBeanProperty('dualModePutExecutorService')
+            .intProperty('dualModePutExecutorServiceShutdown');
+
+        return cfg;
+    }
+
     // Generate IGFS miscellaneous group.
-    static igfsMisc(igfs, cfg = this.igfsConfigurationBean(igfs)) {
-        cfg.intProperty('blockSize')
-            .intProperty('bufferSize')
-            .intProperty('maximumTaskRangeLength')
+    static igfsMisc(igfs, available, cfg = this.igfsConfigurationBean(igfs)) {
+        cfg.intProperty('blockSize');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0']))
+            cfg.intProperty('streamBufferSize');
+
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            cfg.intProperty('streamBufferSize', 'bufferSize');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0']))
+            cfg.intProperty('maxSpaceSize');
+
+        cfg.intProperty('maximumTaskRangeLength')
             .intProperty('managementPort')
             .intProperty('perNodeBatchSize')
             .intProperty('perNodeParallelBatchCount')
             .intProperty('prefetchBlocks')
-            .intProperty('sequentialReadsBeforePrefetch')
-            .intProperty('colocateMetadata')
+            .intProperty('sequentialReadsBeforePrefetch');
+
+        // Removed in ignite 2.0
+        if (available(['1.0.0', '2.0.0']))
+            cfg.intProperty('trashPurgeTimeout');
+
+        cfg.intProperty('colocateMetadata')
             .intProperty('relaxedConsistency')
             .mapProperty('pathModes', 'pathModes');
+
+        // Since ignite 2.0
+        if (available('2.0.0'))
+            cfg.boolProperty('updateFileLengthOnFlush');
 
         return cfg;
     }

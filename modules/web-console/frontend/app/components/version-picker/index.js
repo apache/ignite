@@ -15,23 +15,11 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteVersion', 'IgniteMavenGenerator', function($scope, Version, maven) {
-    const ctrl = this;
+import angular from 'angular';
+import component from './component';
 
-    // Watchers definition.
-    const clusterWatcher = (value) => {
-        delete ctrl.data;
-
-        if (!value)
-            return;
-
-        ctrl.data = maven.generate($scope.cluster, Version.currentSbj.getValue());
-    };
-
-    // Setup watchers.
-    Version.currentSbj.subscribe({
-        next: clusterWatcher
-    });
-
-    $scope.$watch('cluster', clusterWatcher);
-}];
+export default angular
+    .module('ignite-console.version-picker', [
+        'ignite-console.configuration'
+    ])
+    .component('versionPicker', component);

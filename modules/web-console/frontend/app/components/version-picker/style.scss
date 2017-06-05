@@ -15,23 +15,27 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteVersion', 'IgniteMavenGenerator', function($scope, Version, maven) {
-    const ctrl = this;
+version-picker {
+    display: inline-flex;
+    align-items: center;
 
-    // Watchers definition.
-    const clusterWatcher = (value) => {
-        delete ctrl.data;
+    .btn-ignite {
+        border-radius: 9px;
+        min-height: 0;
+        font-size: 12px;
+        font-weight: bold;
+        line-height: 17px;
+        padding-top: 0;
+        padding-bottom: 1px;
+    }
 
-        if (!value)
-            return;
+    .icon-help {
+        margin-left: 5px;
+        font-size: 16px;
+    }
 
-        ctrl.data = maven.generate($scope.cluster, Version.currentSbj.getValue());
-    };
-
-    // Setup watchers.
-    Version.currentSbj.subscribe({
-        next: clusterWatcher
-    });
-
-    $scope.$watch('cluster', clusterWatcher);
-}];
+    .dropdown-menu a {
+        // Fixes style leak from above
+        font-size: 14px !important;
+    }
+}

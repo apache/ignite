@@ -32,7 +32,7 @@ include /app/helpers/jade/mixins
         .panel-body
             .col-sm-6
                 .settings-row
-                    +text('Name:', `${model}.name`, '"clusterName"', 'true', 'Input name', 'Grid name allows to indicate to what grid this particular grid instance belongs to')
+                    +text('Name:', `${model}.name`, '"clusterName"', 'true', 'Input name', 'Instance name allows to indicate to what grid this particular grid instance belongs to')
                 .settings-row
                     +caches(model, 'Select caches to start in cluster or add a new cache')
                 .settings-row

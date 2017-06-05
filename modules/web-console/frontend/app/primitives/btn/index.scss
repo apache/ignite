@@ -58,6 +58,7 @@
     font-size: 14px;
     line-height: 16px;
     text-decoration: none;
+    cursor: pointer;
 
     .icon {
         &, &-right, &-left {
@@ -81,6 +82,11 @@
     .fa {
         line-height: inherit !important;
         font-size: 16px;
+    }
+
+    &[disabled] {
+        -webkit-pointer-events: none;
+        pointer-events: none;
     }
 }
 
