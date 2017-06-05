@@ -44,12 +44,8 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -181,12 +177,12 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridMessageCollection.class);
 //        gen.generateAndWrite(DataStreamerEntry.class);
 
-        gen.generateAndWrite(GridDistributedLockRequest.class);
-        gen.generateAndWrite(GridDistributedLockResponse.class);
-        gen.generateAndWrite(GridNearLockRequest.class);
-        gen.generateAndWrite(GridNearLockResponse.class);
-        gen.generateAndWrite(GridDhtLockRequest.class);
-        gen.generateAndWrite(GridDhtLockResponse.class);
+//        gen.generateAndWrite(GridDistributedLockRequest.class);
+//        gen.generateAndWrite(GridDistributedLockResponse.class);
+//        gen.generateAndWrite(GridNearLockRequest.class);
+//        gen.generateAndWrite(GridNearLockResponse.class);
+//        gen.generateAndWrite(GridDhtLockRequest.class);
+//        gen.generateAndWrite(GridDhtLockResponse.class);
 //
 //        gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
 //        gen.generateAndWrite(GridDistributedTxPrepareResponse.class);

@@ -919,6 +919,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @return Lock future.
      */
     IgniteInternalFuture<Exception> lockAllAsync(
@@ -999,6 +1000,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @return Lock future.
      */
     private IgniteInternalFuture<Exception> lockAllAsync0(

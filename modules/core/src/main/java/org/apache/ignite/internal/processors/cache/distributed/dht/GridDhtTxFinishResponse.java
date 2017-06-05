@@ -71,7 +71,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     public GridDhtTxFinishResponse(int part, GridCacheVersion xid, IgniteUuid futId, int miniId) {
         super(part, xid, futId);
 
-        assert miniId != 0;
+        assert miniId >= 0;
 
         this.miniId = miniId;
     }

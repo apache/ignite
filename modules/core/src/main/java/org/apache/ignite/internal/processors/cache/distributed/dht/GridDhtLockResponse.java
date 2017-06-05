@@ -65,6 +65,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param lockVer Lock version.
      * @param futId Future ID.
      * @param miniId Mini future ID.
@@ -87,6 +88,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param lockVer Lock ID.
      * @param futId Future ID.
      * @param miniId Mini future ID.

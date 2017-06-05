@@ -142,7 +142,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             txSize,
             addDepInfo);
 
-        assert miniId != 0;
+        assert miniId >= 0;
         assert nearNodeId != null;
         assert isolation != null;
 

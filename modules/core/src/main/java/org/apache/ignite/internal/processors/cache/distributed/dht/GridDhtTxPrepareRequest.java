@@ -145,7 +145,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             addDepInfo);
 
         assert futId != null;
-        assert miniId != 0;
+        assert miniId >= 0;
 
         this.topVer = topVer;
         this.futId = futId;

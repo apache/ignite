@@ -74,6 +74,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param cacheId Cache ID.
      * @param lockVer Lock version.
      * @param futId Future ID.
+     * @param part Partition.
      * @param cnt Key count.
      * @param addDepInfo Deployment info.
      */

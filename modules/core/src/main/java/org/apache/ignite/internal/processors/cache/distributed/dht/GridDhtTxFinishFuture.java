@@ -50,8 +50,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 /**
  *
  */
-public final class GridDhtTxFinishFuture<K, V>
-    extends GridCacheFutureAdapter<IgniteInternalTx>
+public final class GridDhtTxFinishFuture<K, V> extends GridCacheFutureAdapter<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -146,21 +145,27 @@ public final class GridDhtTxFinishFuture<K, V>
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        List<MiniFuture> miniFuts0;
+        MiniFuture miniFut0 = null;
 
         synchronized (this) {
             if (miniFuts == null)
                 return false;
 
-            miniFuts0 = new ArrayList<>(miniFuts);
+            for (int i = 0; i < miniFuts.size(); i++) {
+                MiniFuture miniFut = miniFuts.get(i);
+
+                if (miniFut.node().id().equals(nodeId)) {
+                    miniFut0 = miniFut;
+
+                    break;
+                }
+            }
         }
 
-        for (MiniFuture miniFut : miniFuts0) {
-            if (miniFut.node().id().equals(nodeId)) {
-                miniFut.onNodeLeft();
+        if (miniFut0 != null) {
+            miniFut0.onNodeLeft();
 
-                return true;
-            }
+            return true;
         }
 
         return false;
@@ -198,7 +203,6 @@ public final class GridDhtTxFinishFuture<K, V>
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         synchronized (this) {
             if (miniFuts != null && !miniFuts.get(miniId).isDone())
@@ -529,7 +533,7 @@ public final class GridDhtTxFinishFuture<K, V>
                     // Nothing to send.
                     continue;
 
-                MiniFuture fut = new MiniFuture(++miniId, null, nearMapping);
+                MiniFuture fut = new MiniFuture(miniId++, null, nearMapping);
 
                 add(fut); // Append new future.
 
@@ -726,7 +730,7 @@ public final class GridDhtTxFinishFuture<K, V>
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
+            return "MiniFuture [node=" + node.id() + ", loc=" + node.isLocal() + ", done=" + done + ']';
         }
     }
 }

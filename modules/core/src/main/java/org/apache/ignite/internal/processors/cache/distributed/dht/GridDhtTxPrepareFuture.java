@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -96,11 +97,13 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  *
  */
 @SuppressWarnings("unchecked")
-public final class GridDhtTxPrepareFuture
-    extends GridCacheFutureAdapter<GridNearTxPrepareResponse>
+public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNearTxPrepareResponse>
     implements GridCacheMvccFuture<GridNearTxPrepareResponse> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** */
+    private static final List<MiniFuture> CLEARED = Collections.emptyList();
 
     /** Error updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxPrepareFuture, Throwable> ERR_UPD =
@@ -149,10 +152,10 @@ public final class GridDhtTxPrepareFuture
     private volatile int mapped;
 
     /** Prepare reads. */
-    private Iterable<IgniteTxEntry> reads;
+    private Collection<IgniteTxEntry> reads;
 
     /** Prepare writes. */
-    private Iterable<IgniteTxEntry> writes;
+    private Collection<IgniteTxEntry> writes;
 
     /** Tx nodes. */
     private Map<UUID, Collection<UUID>> txNodes;
@@ -253,7 +256,7 @@ public final class GridDhtTxPrepareFuture
         boolean completed;
 
         synchronized (this) {
-            if (inited)
+            if (inited || miniFuts == CLEARED)
                 return;
 
             inited = true;
@@ -267,14 +270,20 @@ public final class GridDhtTxPrepareFuture
 
     /**
      * @param fut Mini future to add.
+     * @return {@code False} if future is already completed on timeout.
      */
-    private synchronized void add(MiniFuture fut) {
+    private synchronized boolean add(MiniFuture fut) {
+        if (miniFuts == CLEARED)
+            return false;
+
         if (miniFuts == null)
             miniFuts = new ArrayList<>();
 
         assert fut.futureId() == miniFuts.size();
 
         miniFuts.add(fut);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -339,21 +348,27 @@ public final class GridDhtTxPrepareFuture
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        List<MiniFuture> miniFuts0;
+        MiniFuture miniFut0 = null;
 
         synchronized (this) {
             if (miniFuts == null)
                 return false;
 
-            miniFuts0 = new ArrayList<>(miniFuts);
+            for (int i = 0; i < miniFuts.size(); i++) {
+                MiniFuture miniFut = miniFuts.get(i);
+
+                if (miniFut.node().id().equals(nodeId)) {
+                    miniFut0 = miniFut;
+
+                    break;
+                }
+            }
         }
 
-        for (MiniFuture miniFut : miniFuts0) {
-            if (miniFut.node().id().equals(nodeId)) {
-                miniFut.onNodeLeft();
+        if (miniFut0 != null) {
+            miniFut0.onNodeLeft();
 
-                return true;
-            }
+            return true;
         }
 
         return false;
@@ -400,7 +415,7 @@ public final class GridDhtTxPrepareFuture
                 if (readOld) {
                     boolean readThrough = !txEntry.skipStore() &&
                         (txEntry.op() == TRANSFORM || ((retVal || hasFilters) &&
-                            cacheCtx.config().isLoadPreviousValue()));
+                        cacheCtx.config().isLoadPreviousValue()));
 
                     boolean evt = retVal || txEntry.op() == TRANSFORM;
 
@@ -584,7 +599,6 @@ public final class GridDhtTxPrepareFuture
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         synchronized (this) {
             if (miniFuts != null && !miniFuts.get(miniId).isDone())
@@ -697,9 +711,6 @@ public final class GridDhtTxPrepareFuture
 
     /** {@inheritDoc} */
     @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err) {
-// TODO        assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
-//            "pending mini futures: " + this;
-
         ERR_UPD.compareAndSet(this, null, err);
 
         // Must clear prepare future before response is sent or listeners are notified.
@@ -851,8 +862,7 @@ public final class GridDhtTxPrepareFuture
         assert F.isEmpty(tx.invalidPartitions());
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-            tx.writeEntries() != null && !tx.writeEntries().isEmpty() ?
-                F.first(tx.writeEntries()).key().partition() : -1,
+            writes != null && !writes.isEmpty() ? F.first(writes).key().partition() : -1,
             tx.nearXidVersion(),
             tx.colocated() ? tx.xid() : tx.nearFutureId(),
             nearMiniId,
@@ -1250,7 +1260,8 @@ public final class GridDhtTxPrepareFuture
 
                     MiniFuture fut = new MiniFuture(n.id(), miniId++, dhtMapping, nearMapping);
 
-                    add(fut); // Append new future.
+                    if (!add(fut))
+                        return;
 
                     assert txNodes != null;
 
@@ -1362,9 +1373,10 @@ public final class GridDhtTxPrepareFuture
                         if (tx.remainingTime() == -1)
                             return;
 
-                        MiniFuture fut = new MiniFuture(nearMapping.primary().id(), ++miniId, null, nearMapping);
+                        MiniFuture fut = new MiniFuture(nearMapping.primary().id(), miniId++, null, nearMapping);
 
-                        add(fut); // Append new future.
+                        if (!add(fut))
+                            return;
 
                         GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
                             futId,
@@ -1568,8 +1580,7 @@ public final class GridDhtTxPrepareFuture
     }
 
     /**
-     * Mini-future for get operations. Mini-futures are only waiting on a single
-     * node as opposed to multiple nodes.
+     *
      */
     private class MiniFuture {
         /** */
@@ -1808,10 +1819,7 @@ public final class GridDhtTxPrepareFuture
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(MiniFuture.class, this,
-                "done", isDone(),
-                "cancelled", isCancelled(),
-                "err", error());
+            return "MiniFuture [node=" + nodeId + ", loc=" + node().isLocal() + ", done=" + done + ']';
         }
     }
 
@@ -1834,6 +1842,8 @@ public final class GridDhtTxPrepareFuture
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             synchronized (GridDhtTxPrepareFuture.this) {
+                miniFuts = CLEARED;
+
                 lockKeys.clear();
             }
 

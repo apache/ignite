@@ -80,6 +80,9 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** */
+    private static final List<MiniFuture> CLEARED = Collections.emptyList();
+
     /** Logger. */
     private static IgniteLogger log;
 
@@ -184,7 +187,9 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
      * @param tx Transaction.
      * @param threadId Thread ID.
      * @param accessTtl TTL for read operation.
+     * @param createTtl TTL for create operation.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      */
     public GridDhtLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -475,26 +480,30 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
      */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean onNodeLeft(UUID nodeId) {
-        boolean found = false;
-
-        List<MiniFuture> miniFuts0;
+        MiniFuture miniFut0 = null;
 
         synchronized (this) {
             if (miniFuts == null)
                 return false;
 
-            miniFuts0 = new ArrayList<>(miniFuts);
-        }
+            for (int i = 0; i < miniFuts.size(); i++) {
+                MiniFuture miniFut = miniFuts.get(i);
 
-        for (MiniFuture miniFut : miniFuts0) {
-            if (miniFut.node().id().equals(nodeId)) {
-                miniFut.onResult();
+                if (miniFut.node().id().equals(nodeId)) {
+                    miniFut0 = miniFut;
 
-                found = true;
+                    break;
+                }
             }
         }
 
-        return found;
+        if (miniFut0 != null) {
+            miniFut0.onResult();
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -657,9 +666,6 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
         }
 
         assert err == null || !success;
-//      TODO:
-//      assert !success || (initialized() && !hasPending()) : "Invalid done callback [success=" + success +
-//            ", fut=" + this + ']';
 
         if (log.isDebugEnabled())
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
@@ -909,7 +915,8 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
                             if (tx != null)
                                 tx.addLockTransactionNode(n);
 
-                            add(fut); // Append new future.
+                            if (!add(fut))
+                                return;
 
                             cctx.io().send(n, req, cctx.ioPolicy());
 
@@ -959,7 +966,7 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
         boolean completed;
 
         synchronized (this) {
-            if (inited)
+            if (inited || timedOut)
                 return;
 
             inited = true;
@@ -973,14 +980,20 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
 
     /**
      * @param fut Mini future to add.
+     * @return {@code False} if future is already completed on timeout.
      */
-    private synchronized void add(MiniFuture fut) {
+    private synchronized boolean add(MiniFuture fut) {
+        if (miniFuts == CLEARED)
+            return false;
+
         if (miniFuts == null)
             miniFuts = new ArrayList<>();
 
         assert fut.futureId() == miniFuts.size();
 
         miniFuts.add(fut);
+
+        return true;
     }
 
     /**
@@ -1126,6 +1139,8 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
 
                 // Stop locks and responses processing.
                 pendingLocks.clear();
+
+                miniFuts = CLEARED;
             }
 
             boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
@@ -1329,7 +1344,7 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(MiniFuture.class, this, "nodeId", node.id(), "super", super.toString());
+            return "MiniFuture [node=" + node.id() + ", loc=" + node.isLocal() + ", done=" + done + ']';
         }
     }
 }

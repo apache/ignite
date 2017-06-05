@@ -91,7 +91,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         super(part, xid, addDepInfo);
 
         assert futId != null;
-        assert miniId != 0;
+        assert miniId >= 0;
 
         this.futId = futId;
         this.miniId = miniId;
