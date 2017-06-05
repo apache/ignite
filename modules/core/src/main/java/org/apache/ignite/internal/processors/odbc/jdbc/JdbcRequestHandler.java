@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PRIMARY_KEYS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_TABLES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
@@ -144,6 +145,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 case META_PARAMS:
                     return getParamsMeta((JdbcMetaParamsRequest)req);
+
+                case META_PRIMARY_KEYS:
+                    return getPrimaryKeys((JdbcMetaPrimaryKeysRequest)req);
             }
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "Unsupported JDBC request [req=" + req + ']');
@@ -477,7 +481,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse getParamsMeta(JdbcMetaParamsRequest req) {
         try {
-            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
+            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schema(), req.sql())
                 .getParameterMetaData();
 
             int size = paramMeta.getParameterCount();
@@ -490,6 +494,50 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 
             return new JdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * @param req Request.
+     * @return Response.
+     */
+    private SqlListenerResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
+        try {
+            String cacheName;
+            String tableName;
+
+            if (req.tableName().contains(".")) {
+                // Parsing two-part table name.
+                String[] parts = req.tableName().split("\\.");
+
+                cacheName = parts[0];
+
+                tableName = parts[1];
+            }
+            else {
+                cacheName = req.schema();
+
+                tableName = req.tableName();
+            }
+
+            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+
+            Collection<JdbcIndexMeta> meta = new HashSet<>();
+
+            for (GridQueryTypeDescriptor table : tablesMeta) {
+                if (!matches(table.name(), tableName))
+                    continue;
+
+                for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
+                    meta.add(new JdbcIndexMeta(cacheName, table.name(), idxDesc));
+            }
+
+            return new JdbcResponse(new JdbcMetaIndexesResult(meta));
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);

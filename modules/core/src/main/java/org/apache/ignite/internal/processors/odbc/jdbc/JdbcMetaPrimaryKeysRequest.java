@@ -28,10 +28,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdbcMetaPrimaryKeysRequest extends JdbcRequest {
     /** Cache name. */
-    private String schemaName;
+    private String schema;
 
     /** Table name. */
-    private String tblName;
+    private String tbl;
 
     /**
      * Default constructor is used for deserialization.
@@ -41,44 +41,44 @@ public class JdbcMetaPrimaryKeysRequest extends JdbcRequest {
     }
 
     /**
-     * @param schemaName Cache name.
+     * @param schema Cache name.
      * @param tblName Table name.
      */
-    public JdbcMetaPrimaryKeysRequest(String schemaName, String tblName) {
+    public JdbcMetaPrimaryKeysRequest(String schema, String tblName) {
         super(META_PRIMARY_KEYS);
 
-        this.schemaName = schemaName;
-        this.tblName = tblName;
+        this.schema = schema;
+        this.tbl = tblName;
     }
 
     /**
-     * @return Cache name.
+     * @return Schema name.
      */
-    @Nullable public String cacheName() {
-        return schemaName;
+    @Nullable public String schema() {
+        return schema;
     }
 
     /**
      * @return Table name.
      */
     public String tableName() {
-        return tblName;
+        return tbl;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schemaName);
-        writer.writeString(tblName);
+        writer.writeString(schema);
+        writer.writeString(tbl);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schemaName = reader.readString();
-        tblName = reader.readString();
+        schema = reader.readString();
+        tbl = reader.readString();
     }
 
     /** {@inheritDoc} */

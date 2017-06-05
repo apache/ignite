@@ -824,7 +824,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         List<Object> row = new ArrayList<>(20);
 
         row.add((String)null);
-        row.add(upperCase(colMeta.schemaName()));
+        row.add(upperCase(colMeta.schema()));
         row.add(upperCase(colMeta.tableName()));
         row.add(upperCase(colMeta.columnName()));
         row.add(colMeta.dataType());

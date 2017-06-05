@@ -93,7 +93,7 @@ public class JdbcThinResultSetMetadata implements ResultSetMetaData {
 
     /** {@inheritDoc} */
     @Override public String getSchemaName(int col) throws SQLException {
-        return meta.get(col - 1).schemaName();
+        return meta.get(col - 1).schema();
     }
 
     /** {@inheritDoc} */

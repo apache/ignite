@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcMetaParamsRequest extends JdbcRequest {
     /** Cache. */
-    private String schemaName;
+    private String schema;
 
     /** Query. */
     private String sql;
@@ -40,13 +40,13 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
     }
 
     /**
-     * @param schemaName Schema name.
+     * @param schema Schema name.
      * @param sql SQL Query.
      */
-    public JdbcMetaParamsRequest(String schemaName, String sql) {
+    public JdbcMetaParamsRequest(String schema, String sql) {
         super(META_PARAMS);
 
-        this.schemaName = schemaName;
+        this.schema = schema;
         this.sql = sql;
     }
 
@@ -60,15 +60,15 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
     /**
      * @return Cache name.
      */
-    public String schemaName() {
-        return schemaName;
+    public String schema() {
+        return schema;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(schemaName);
+        writer.writeString(schema);
         writer.writeString(sql);
     }
 
@@ -76,7 +76,7 @@ public class JdbcMetaParamsRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        schemaName = reader.readString();
+        schema = reader.readString();
         sql = reader.readString();
     }
 
