@@ -139,9 +139,11 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
 
         res = create();
 
-        if (res == null || !validate(res) || closed.get()) {
-            if (res != null)
-                doDestroy(res);
+        if (res == null)
+            throw new NullPointerException();
+
+        if (!validate(res) || closed.get() || !allCreatedInstances.add(res)) {
+            doDestroy(res);
 
             throw new IllegalStateException();
         }
