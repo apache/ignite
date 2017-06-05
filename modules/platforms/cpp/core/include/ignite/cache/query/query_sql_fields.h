@@ -282,9 +282,11 @@ namespace ignite
                 }
 
                 /**
-                 * Set schema.
+                 * Set schema name for the query.
+                 * If not set, current cache name is used, which means you can
+                 * omit schema name for tables within the current cache.
                  * 
-                 * @param schema Schema
+                 * @param schema Schema. Empty string to unset.
                  */
                 void SetSchema(const std::string& schema)
                 {
@@ -292,9 +294,12 @@ namespace ignite
                 }
 
                 /**
-                 * Get schema.
+                 * Get schema name for the query.
                  *
-                 * @return Schema.
+                 * If not set, current cache name is used, which means you can
+                 * omit schema name for tables within the current cache.
+                 *
+                 * @return Schema. Empty string if not set.
                  */
                 const std::string& GetSchema() const
                 {
