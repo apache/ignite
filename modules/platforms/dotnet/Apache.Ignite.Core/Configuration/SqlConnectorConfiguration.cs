@@ -77,6 +77,7 @@ namespace Apache.Ignite.Core.Configuration
         {
             Debug.Assert(reader != null);
 
+            Host = reader.ReadString();
             Port = reader.ReadInt();
             PortRange = reader.ReadInt();
             SocketSendBufferSize = reader.ReadInt();
@@ -93,6 +94,7 @@ namespace Apache.Ignite.Core.Configuration
         {
             Debug.Assert(writer != null);
             
+            writer.WriteString(Host);
             writer.WriteInt(Port);
             writer.WriteInt(PortRange);
             writer.WriteInt(SocketSendBufferSize);

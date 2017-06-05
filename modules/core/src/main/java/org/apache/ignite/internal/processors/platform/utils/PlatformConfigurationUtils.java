@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -669,6 +670,9 @@ public class PlatformConfigurationUtils {
 
         if (in.readBoolean())
             cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+
+        if (in.readBoolean())
+            cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         readPluginConfiguration(cfg, in);
     }
@@ -1411,7 +1415,39 @@ public class PlatformConfigurationUtils {
         }
     }
 
+    /**
+     * Reads the SQL connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
+        return new SqlConnectorConfiguration()
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
+    }
 
+    /**
+     * Writes the SQL connector configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
+        w.writeString(cfg.getHost());
+        w.writeInt(cfg.getPort());
+        w.writeInt(cfg.getPortRange());
+        w.writeInt(cfg.getSocketSendBufferSize());
+        w.writeInt(cfg.getSocketReceiveBufferSize());
+        w.writeBoolean(cfg.isTcpNoDelay());
+        w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+        w.writeInt(cfg.getThreadPoolSize());
+    }
 
     /**
      * Private constructor.
