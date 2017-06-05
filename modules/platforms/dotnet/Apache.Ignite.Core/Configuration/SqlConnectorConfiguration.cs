@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Default SQL connector thread pool size.
         /// </summary>
-        public const int DefaultThreadPoolSize = 0; // TODO: Propagate thread pool sizes.
+        public static readonly int DefaultThreadPoolSize = IgniteConfiguration.DefaultThreadPoolSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlConnectorConfiguration"/> class.
