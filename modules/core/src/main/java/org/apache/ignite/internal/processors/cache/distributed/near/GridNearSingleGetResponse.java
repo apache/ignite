@@ -115,7 +115,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
+        return topVer != null ? topVer : super.topologyVersion();
     }
 
     /**

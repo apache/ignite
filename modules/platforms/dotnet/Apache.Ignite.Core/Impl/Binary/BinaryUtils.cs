@@ -1787,6 +1787,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(type != null);
 
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
             if (!type.IsEnum)
                 return false;
 
