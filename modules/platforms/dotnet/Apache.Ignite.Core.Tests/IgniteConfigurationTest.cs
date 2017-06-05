@@ -230,6 +230,18 @@ namespace Apache.Ignite.Core.Tests
                     Assert.AreEqual(plc.Name, resPlc.Name);
                     Assert.AreEqual(plc.SwapFilePath, resPlc.SwapFilePath);
                 }
+
+                var sql = cfg.SqlConnectorConfiguration;
+                var resSql = resCfg.SqlConnectorConfiguration;
+
+                Assert.AreEqual(sql.Host, resSql.Host);
+                Assert.AreEqual(sql.Port, resSql.Port);
+                Assert.AreEqual(sql.PortRange, resSql.PortRange);
+                Assert.AreEqual(sql.MaxOpenCursorsPerConnection, resSql.MaxOpenCursorsPerConnection);
+                Assert.AreEqual(sql.SocketReceiveBufferSize, resSql.SocketReceiveBufferSize);
+                Assert.AreEqual(sql.SocketSendBufferSize, resSql.SocketSendBufferSize);
+                Assert.AreEqual(sql.TcpNoDelay, resSql.TcpNoDelay);
+                Assert.AreEqual(sql.ThreadPoolSize, resSql.ThreadPoolSize);
             }
         }
 
@@ -648,7 +660,18 @@ namespace Apache.Ignite.Core.Tests
                 ManagementThreadPoolSize = 9,
                 DataStreamerThreadPoolSize = 10,
                 UtilityCacheThreadPoolSize = 11,
-                QueryThreadPoolSize = 12
+                QueryThreadPoolSize = 12,
+                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                {
+                    Host = "omg",
+                    Port = 1081,
+                    PortRange = 3,
+                    SocketReceiveBufferSize = 2048,
+                    MaxOpenCursorsPerConnection = 5,
+                    ThreadPoolSize = 4,
+                    TcpNoDelay = false,
+                    SocketSendBufferSize = 4096
+                }
             };
         }
     }
