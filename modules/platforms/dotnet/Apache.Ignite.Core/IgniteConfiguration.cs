@@ -995,5 +995,61 @@ namespace Apache.Ignite.Core
         /// Peer loading is enabled for <see cref="ICompute"/> functionality.
         /// </summary>
         public PeerAssemblyLoadingMode PeerAssemblyLoadingMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the public thread pool, which processes compute jpns and user messages.
+        /// </summary>
+        public int PublicThreadPoolSize { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the size of the striped thread pool, which processes cache requests.
+        /// </summary>
+        public int StripedThreadPoolSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the service thread pool, which processes Ignite services.
+        /// </summary>
+        public int ServiceThreadPoolSize { get;set; }
+
+        /// <summary>
+        /// Gets or sets the size of the system thread pool, which processes internal system messages.
+        /// </summary>
+        public int SystemThreadPoolSize { get;set; }
+
+        /// <summary>
+        /// Gets or sets the size of the asynchronous callback thread pool.
+        /// </summary>
+        public int AsyncCallbackThreadPoolSize { get;set; }
+
+        /// <summary>
+        /// Gets or sets the size of the management thread pool, which processes internal Ignite jobs.
+        /// </summary>
+        public int ManagementThreadPoolSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the peer class loading thread pool
+        /// (not to be confused with .NET peer assembly loading).
+        /// </summary>
+        public int PeerClassLoadingThreadPoolSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the IGFS thread pool.
+        /// </summary>
+        public int IgfsThreadPoolSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the data streamer thread pool.
+        /// </summary>
+        public int DataStreamerThreadPoolSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the utility cache thread pool.
+        /// </summary>
+        public int UtilityCacheThreadPoolSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the query thread pool.
+        /// </summary>
+        public int QueryThreadPoolSize { get; set; }
     }
 }
