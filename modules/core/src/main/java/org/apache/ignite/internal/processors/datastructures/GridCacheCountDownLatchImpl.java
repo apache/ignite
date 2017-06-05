@@ -119,27 +119,24 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
      * @param autoDel Auto delete flag.
      * @param key Latch key.
      * @param latchView Latch projection.
-     * @param ctx Cache context.
      */
     public GridCacheCountDownLatchImpl(String name,
         int initCnt,
         boolean autoDel,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView,
-        GridCacheContext ctx)
+        IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView)
     {
         assert name != null;
         assert initCnt >= 0;
         assert key != null;
         assert latchView != null;
-        assert ctx != null;
 
         this.name = name;
         this.initCnt = initCnt;
         this.autoDel = autoDel;
         this.key = key;
         this.latchView = latchView;
-        this.ctx = ctx;
+        this.ctx = latchView.context();
 
         log = ctx.logger(getClass());
     }

@@ -91,18 +91,15 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @param name Atomic stamped name.
      * @param key Atomic stamped key.
      * @param atomicView Atomic projection.
-     * @param ctx Cache context.
      */
     public GridCacheAtomicStampedImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView) {
         assert key != null;
         assert atomicView != null;
-        assert ctx != null;
         assert name != null;
 
-        this.ctx = ctx;
+        this.ctx = atomicView.context();
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;

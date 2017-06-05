@@ -122,27 +122,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** Internal storage of all dataStructures items (sequence, atomic long etc.). */
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
 
-    /** Cache contains only {@code GridCacheAtomicValue}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
-
-    /** Cache contains only {@code GridCacheCountDownLatchValue}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> cntDownLatchView;
-
-    /** Cache contains only {@code GridCacheSemaphoreState}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView;
-
-    /** Cache contains only {@code GridCacheLockState}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> reentrantLockView;
-
-    /** Cache contains only {@code GridCacheAtomicReferenceValue}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue> atomicRefView;
-
-    /** Cache contains only {@code GridCacheAtomicStampedValue}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue> atomicStampedView;
-
-    /** Cache contains only entry {@code GridCacheSequenceValue}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
-
     /** Cache context for atomic data structures. */
     private GridCacheContext dsCacheCtx;
 
@@ -233,20 +212,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             assert atomicsCache != null;
 
             dsView = atomicsCache;
-
-            cntDownLatchView = atomicsCache;
-
-            semView = atomicsCache;
-
-            reentrantLockView = atomicsCache;
-
-            atomicLongView = atomicsCache;
-
-            atomicRefView = atomicsCache;
-
-            atomicStampedView = atomicsCache;
-
-            seqView = atomicsCache;
 
             dsCacheCtx = atomicsCache.context();
         }
@@ -426,8 +391,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     // Only one thread can be in the transaction scope and create sequence.
                     seq = new GridCacheAtomicSequenceImpl(name,
                         key,
-                        seqView,
-                        dsCacheCtx,
+                        cache,
                         defaultAtomicCfg.getAtomicSequenceReserveSize(),
                         locCntr,
                         upBound);
@@ -509,7 +473,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     GridCacheAtomicLongValue retVal = (val == null ? new GridCacheAtomicLongValue(initVal) : null);
 
-                    a = new GridCacheAtomicLongImpl(name, key, cache, cache.context());
+                    a = new GridCacheAtomicLongImpl(name, key, cache);
 
                     dsMap.put(key, a);
 
@@ -755,7 +719,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     AtomicDataStructureValue retVal = (val == null ? new GridCacheAtomicReferenceValue<>(initVal) : null);
 
-                    ref = new GridCacheAtomicReferenceImpl(name, key, atomicRefView, dsCacheCtx);
+                    ref = new GridCacheAtomicReferenceImpl(name, key, cache);
 
                     dsMap.put(key, ref);
 
@@ -835,7 +799,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     AtomicDataStructureValue retVal = (val == null ? new GridCacheAtomicStampedValue(initVal, initStamp) : null);
 
-                    stmp = new GridCacheAtomicStampedImpl(name, key, atomicStampedView, dsCacheCtx);
+                    stmp = new GridCacheAtomicStampedImpl(name, key, cache);
 
                     dsMap.put(key, stmp);
 
@@ -1176,8 +1140,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     latch = new GridCacheCountDownLatchImpl(name, latchVal.initialCount(),
                         latchVal.autoDelete(),
                         key,
-                        cntDownLatchView,
-                        dsCacheCtx);
+                        cache);
 
                     dsMap.put(key, latch);
 
@@ -1274,11 +1237,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt, new HashMap<UUID, Integer>(), failoverSafe) : null);
 
-                    GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(
-                        name,
-                        key,
-                        cache,
-                        cache.context());
+                    GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
 
                     dsMap.put(key, sem0);
 
@@ -1370,11 +1329,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, dsCacheCtx.nodeId(), 0, failoverSafe, fair) : null);
 
-                    GridCacheLockEx reentrantLock0 = new GridCacheLockImpl(
-                        name,
-                        key,
-                        reentrantLockView,
-                        dsCacheCtx);
+                    GridCacheLockEx reentrantLock0 = new GridCacheLockImpl(name, key, cache);
 
                     dsMap.put(key, reentrantLock0);
 

@@ -84,18 +84,15 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
      * @param name Atomic long name.
      * @param key Atomic long key.
      * @param atomicView Atomic projection.
-     * @param ctx CacheContext.
      */
     public GridCacheAtomicLongImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView) {
         assert key != null;
         assert atomicView != null;
-        assert ctx != null;
         assert name != null;
 
-        this.ctx = ctx;
+        this.ctx = atomicView.context();
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;

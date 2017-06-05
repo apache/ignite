@@ -452,23 +452,20 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
      * @param name Semaphore name.
      * @param key Semaphore key.
      * @param semView Semaphore projection.
-     * @param ctx Cache context.
      */
     public GridCacheSemaphoreImpl(
         String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView,
-        GridCacheContext ctx
+        IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView
     ) {
         assert name != null;
         assert key != null;
         assert semView != null;
-        assert ctx != null;
 
         this.name = name;
         this.key = key;
         this.semView = semView;
-        this.ctx = ctx;
+        this.ctx = semView.context();
 
         log = ctx.logger(getClass());
     }
