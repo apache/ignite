@@ -22,9 +22,11 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -47,10 +49,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:ignite:thin://";
-
-    /** Host. */
-    private static final String HOST = "127.0.0.1";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -91,7 +90,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
+            Driver drv = DriverManager.getDriver(URL);
 
             if (drv != null)
                 DriverManager.deregisterDriver(drv);
@@ -117,7 +116,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     public void testExecuteQuery() throws Exception {
         final String sqlText = "select * from test";
 
-        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema(DEFAULT_CACHE_NAME);
 
             try (Statement stmt = conn.createStatement()) {
@@ -150,9 +149,9 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExecuteQueryTimeout() throws Exception {
-        final String sqlText = "select sleep_func(5)";
+        final String sqlText = "select sleep_func(3)";
 
-        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema(DEFAULT_CACHE_NAME);
 
             try (Statement stmt = conn.createStatement()) {
@@ -178,7 +177,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     public void testExecuteQueryMultipleResultSets() throws Exception {
         final String sqlText = "select * from test; select * from test";
 
-        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema(DEFAULT_CACHE_NAME);
 
             try (Statement stmt = conn.createStatement()) {
@@ -201,7 +200,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     public void testExecuteUpdate() throws Exception {
         final String sqlText = "update test set val=1 where _key=1";
 
-        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema(DEFAULT_CACHE_NAME);
 
             try (Statement stmt = conn.createStatement()) {
@@ -216,7 +215,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
                         }
                     },
                     SQLException.class,
-                    "Closed statement"
+                    "Statement is closed"
                 );
             }
         }
@@ -230,7 +229,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     public void testExecuteUpdateProducesResultSet() throws Exception {
         final String sqlText = "select * from test";
 
-        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema(DEFAULT_CACHE_NAME);
 
             try (Statement stmt = conn.createStatement()) {
@@ -241,7 +240,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
                         }
                     },
                     SQLException.class,
-                    "Produces result set"
+                    "The query is not DML"
                 );
             }
         }
@@ -251,9 +250,9 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExecuteUpdateTimeout() throws Exception {
-        final String sqlText = "update test set val=1 where _key=sleep_func(5)";
+        final String sqlText = "update test set val=1 where _key=sleep_func(3)";
 
-        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema(DEFAULT_CACHE_NAME);
 
             try (Statement stmt = conn.createStatement()) {
@@ -273,9 +272,269 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClose() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                String sqlText = "select * from test";
+
+                ResultSet rs = stmt.executeQuery(sqlText);
+
+                assertTrue(rs.next());
+                assertFalse(rs.isClosed());
+
+                assertFalse(stmt.isClosed());
+
+                stmt.close();
+                stmt.close(); // Closing closed is ok
+
+                assertTrue(stmt.isClosed());
+
+                // Current result set must be closed
+                assertTrue(rs.isClosed());
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetMaxFieldSizeUnsupported() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                assertEquals(0, stmt.getMaxFieldSize());
+
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            stmt.setMaxFieldSize(100);
+
+                            return null;
+                        }
+                    },
+                    SQLFeatureNotSupportedException.class,
+                    "Field size limitation is not supported"
+                );
+
+                assertEquals(0, stmt.getMaxFieldSize());
+
+                stmt.close();
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.getMaxFieldSize();
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            stmt.setMaxFieldSize(100);
+
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetMaxRows() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                assertEquals(0, stmt.getMaxRows());
+
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            stmt.setMaxRows(-1);
+
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Invalid max rows value"
+                );
+
+                assertEquals(0, stmt.getMaxRows());
+
+                final int maxRows = 1;
+
+                stmt.setMaxRows(maxRows);
+
+                assertEquals(maxRows, stmt.getMaxRows());
+
+                String sqlText = "select * from test";
+
+                ResultSet rs = stmt.executeQuery(sqlText);
+
+                assertTrue(rs.next());
+                assertFalse(rs.next()); //max rows reached
+
+                stmt.close();
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.getMaxRows();
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            stmt.setMaxRows(maxRows);
+
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetEscapeProcessing() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.setEscapeProcessing(false);
+
+                final String sqlText = "select {fn CONVERT(1, SQL_BOOLEAN)}";
+
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.executeQuery(sqlText);
+                        }
+                    },
+                    SQLException.class,
+                    "Failed to parse"
+                );
+
+                ResultSet rs = stmt.executeQuery(sqlText);
+
+                assertTrue(rs.next());
+
+                assertEquals(true, rs.getBoolean(1));
+
+                stmt.setEscapeProcessing(true);
+
+                stmt.close();
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            stmt.setEscapeProcessing(true);
+
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetQueryTimeout() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                assertEquals(0, stmt.getQueryTimeout());
+
+                // Invalid argument
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            stmt.setQueryTimeout(-1);
+
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Invalid timeout value"
+                );
+
+                assertEquals(0, stmt.getQueryTimeout());
+
+                final int timeout = 3;
+
+                stmt.setQueryTimeout(timeout);
+
+                assertEquals(timeout, stmt.getQueryTimeout());
+
+                stmt.close();
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.getQueryTimeout();
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            stmt.setQueryTimeout(timeout);
+
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+            }
+        }
+    }
+
     /** */
     private void fillCache() {
-        grid(0).cache(DEFAULT_CACHE_NAME).put(1, new Test(1));
+        IgniteCache<Integer, Test> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        int count = 10;
+
+        for (int i = 1; i <= count; i++)
+            cache.put(i, new Test(i));
     }
 
     /** */
