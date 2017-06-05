@@ -160,7 +160,7 @@ struct QueriesTestSuiteFixture
     template<typename T>
     void CheckTwoRowsInt(SQLSMALLINT type)
     {
-        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
         SQLRETURN ret;
 
@@ -375,12 +375,12 @@ BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestLegacyConnection)
 {
-    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_1_0)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=2.1.0");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.1.0");
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
@@ -425,7 +425,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsUint64)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowString)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
@@ -596,7 +596,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
@@ -648,7 +648,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
 BOOST_AUTO_TEST_CASE(TestOneRowObject)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache2");
 
     SQLRETURN ret;
 
@@ -705,7 +705,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowObject)
 
 BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
@@ -830,7 +830,7 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 
 BOOST_AUTO_TEST_CASE(TestNullFields)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
@@ -964,7 +964,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
         cache1.Put(i, entry);
     }
 
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
@@ -998,7 +998,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 
     Disconnect();
 
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;DISTRIBUTED_JOINS=true;");
 
     // Binding colums.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -1021,7 +1021,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 
 BOOST_AUTO_TEST_CASE(TestInsertSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1081,7 +1081,7 @@ BOOST_AUTO_TEST_CASE(TestInsertSelect)
 
 BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1155,7 +1155,7 @@ BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
 
 BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1223,7 +1223,7 @@ BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
 
 BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1312,7 +1312,7 @@ void CheckMeta(char columns[n][k], SQLLEN columnsLen[n])
 
 BOOST_AUTO_TEST_CASE(TestTablesMeta)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache2");
 
     SQLRETURN ret;
 
@@ -1376,7 +1376,7 @@ void CheckObjectData(int8_t* data, int32_t len, T const& value)
 
 BOOST_AUTO_TEST_CASE(TestKeyVal)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache2");
 
     SQLRETURN ret;
 
