@@ -463,6 +463,9 @@ public class IgniteConfiguration {
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
+    /** SQL connector configuration. */
+    private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -554,6 +557,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sqlConnCfg = cfg.getSqlConnectorConfiguration();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -2740,6 +2744,27 @@ public class IgniteConfiguration {
         this.longQryWarnTimeout = longQryWarnTimeout;
 
         return this;
+    }
+
+    /**
+     * Sets SQL connector configuration.
+     *
+     * @param sqlConnCfg SQL connector configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
+        this.sqlConnCfg = sqlConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets SQL connector configuration.
+     *
+     * @return SQL connector configuration.
+     */
+    public SqlConnectorConfiguration getSqlConnectorConfiguration() {
+        return sqlConnCfg;
     }
 
     /** {@inheritDoc} */
