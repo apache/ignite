@@ -663,7 +663,7 @@ namespace Apache.Ignite.Core.Tests
                 QueryThreadPoolSize = 12,
                 SqlConnectorConfiguration = new SqlConnectorConfiguration
                 {
-                    Host = "omg",
+                    Host = "127.0.0.2",
                     Port = 1081,
                     PortRange = 3,
                     SocketReceiveBufferSize = 2048,

@@ -1128,6 +1128,8 @@ public class PlatformConfigurationUtils {
 
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
 
+        writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
+
         w.writeString(cfg.getIgniteHome());
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
@@ -1439,14 +1441,22 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      */
     private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
-        w.writeString(cfg.getHost());
-        w.writeInt(cfg.getPort());
-        w.writeInt(cfg.getPortRange());
-        w.writeInt(cfg.getSocketSendBufferSize());
-        w.writeInt(cfg.getSocketReceiveBufferSize());
-        w.writeBoolean(cfg.isTcpNoDelay());
-        w.writeInt(cfg.getMaxOpenCursorsPerConnection());
-        w.writeInt(cfg.getThreadPoolSize());
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getHost());
+            w.writeInt(cfg.getPort());
+            w.writeInt(cfg.getPortRange());
+            w.writeInt(cfg.getSocketSendBufferSize());
+            w.writeInt(cfg.getSocketReceiveBufferSize());
+            w.writeBoolean(cfg.isTcpNoDelay());
+            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+            w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
     }
 
     /**
