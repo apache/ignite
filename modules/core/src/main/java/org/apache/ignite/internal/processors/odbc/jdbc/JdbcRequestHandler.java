@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -158,20 +160,16 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setPageSize(req.pageSize());
 
-            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.schemaName());
+            String schemaName = req.schemaName();
 
-            if (cache0 == null)
-                return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Cache doesn't exist (did you configure it?): " + req.schemaName());
+            if (F.isEmpty(schemaName))
+                schemaName = QueryUtils.DFLT_SCHEMA;
 
-            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
+            qry.setSchema(schemaName);
 
-            if (cache == null)
-                return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Can not get cache with keep binary: " + req.schemaName());
+            FieldsQueryCursor<List<?>> qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
 
-            JdbcQueryCursor cur = new JdbcQueryCursor(
-                qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)cache.query(qry));
+            JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
             qryCursors.put(qryId, cur);
 
