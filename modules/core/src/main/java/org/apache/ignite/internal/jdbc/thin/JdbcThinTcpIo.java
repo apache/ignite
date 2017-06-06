@@ -80,6 +80,9 @@ public class JdbcThinTcpIo {
     /** Enforce join order. */
     private final boolean enforceJoinOrder;
 
+    /** Automatically close server cursors. */
+    private final boolean autoCloseServerCursors;
+
     /** Socket send buffer. */
     private final int sockSndBuf;
 
@@ -108,16 +111,18 @@ public class JdbcThinTcpIo {
      * @param port Port.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param autoCloseServerCursors Automatically close server cursors.
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, int sockSndBuf,
-        int sockRcvBuf, boolean tcpNoDelay) {
+    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder,
+        boolean autoCloseServerCursors, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.autoCloseServerCursors = autoCloseServerCursors;
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
@@ -171,6 +176,7 @@ public class JdbcThinTcpIo {
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
+        writer.writeBoolean(autoCloseServerCursors);
 
         send(writer.array());
 
@@ -361,5 +367,12 @@ public class JdbcThinTcpIo {
      */
     public boolean tcpNoDelay() {
         return tcpNoDelay;
+    }
+
+    /**
+     * @return Auto close server cursors flag.
+     */
+    public boolean autoCloseServerCursors() {
+        return autoCloseServerCursors;
     }
 }

@@ -44,6 +44,7 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
@@ -108,9 +109,11 @@ public class JdbcThinConnection implements Connection {
 
         boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
 
+        boolean autoCloseServerCursors = extractBoolean(props, PROP_AUTO_CLOSE_SERVER_CURSORS, false);
+
         try {
             cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder,
-                sockSndBuf, sockRcvBuf, tcpNoDelay);
+                autoCloseServerCursors, sockSndBuf, sockRcvBuf, tcpNoDelay);
 
             cliIo.start();
         }

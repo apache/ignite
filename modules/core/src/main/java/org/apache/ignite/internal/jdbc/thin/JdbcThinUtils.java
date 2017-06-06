@@ -70,6 +70,9 @@ public class JdbcThinUtils {
     /** Parameter: TCP no-delay flag. */
     public static final String PARAM_TCP_NO_DELAY = "tcpNoDelay";
 
+    /** Parameter: Automatically close server cursors. */
+    public static final String PARAM_AUTO_CLOSE_SERVER_CURSORS = "autoCloseServerCursors";
+
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
@@ -84,6 +87,9 @@ public class JdbcThinUtils {
 
     /** TCP no delay property name. */
     public static final String PROP_TCP_NO_DELAY = PROP_PREFIX + PARAM_TCP_NO_DELAY;
+
+    /** Automatically close server cursors. */
+    public static final String PROP_AUTO_CLOSE_SERVER_CURSORS = PROP_PREFIX + PARAM_AUTO_CLOSE_SERVER_CURSORS;
 
     /** Default port. */
     public static final int DFLT_PORT = SqlConnectorConfiguration.DFLT_PORT;

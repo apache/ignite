@@ -68,6 +68,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
+    /** Automatic close of cursors. */
+    private final boolean autoCloseCursors;
+
     /**
      * Constructor.
      *
@@ -78,12 +81,13 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param enforceJoinOrder Enforce join order flag.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean autoCloseCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.autoCloseCursors = autoCloseCursors;
 
         log = ctx.log(getClass());
     }
@@ -186,10 +190,10 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
             }
 
-            if (!res.last())
-                qryCursors.put(qryId, cur);
-            else
+            if (res.last() && (!res.isQuery() || autoCloseCursors))
                 cur.close();
+            else
+                qryCursors.put(qryId, cur);
 
             return new JdbcResponse(res);
         }
@@ -251,7 +255,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             JdbcQueryFetchResult res = new JdbcQueryFetchResult(cur.fetchRows(), !cur.hasNext());
 
-            if (res.last()) {
+            if (res.last() && (!cur.isQuery() || autoCloseCursors)) {
                 qryCursors.remove(req.queryId());
 
                 cur.close();

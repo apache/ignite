@@ -253,7 +253,10 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             case JDBC_CLIENT:
                 parser = new JdbcMessageParser(ctx);
 
-                handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
+                boolean autoCloseCursors = reader.readBoolean();
+
+                handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
+                    autoCloseCursors);
 
                 break;
 
