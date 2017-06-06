@@ -1,0 +1,184 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "ignite/odbc/app/parameter_set.h"
+
+namespace ignite
+{
+    namespace odbc
+    {
+        namespace app
+        {
+            ParameterSet::ParameterSet():
+                parameters(),
+                paramTypes(),
+                paramBindOffset(0),
+                paramSetSize(1),
+                paramSetPos(0),
+                currentParamIdx(0),
+                typesSet(false)
+            {
+                // No-op.
+            }
+
+            void ParameterSet::SetParamSetSize(SqlUlen size)
+            {
+                paramSetSize = size;
+            }
+
+            void ParameterSet::BindParameter(uint16_t paramIdx, const Parameter& param)
+            {
+                parameters[paramIdx] = param;
+
+                parameters[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+            }
+
+            void ParameterSet::UnbindParameter(uint16_t paramIdx)
+            {
+                parameters.erase(paramIdx);
+            }
+
+            void ParameterSet::UnbindAll()
+            {
+                parameters.clear();
+            }
+
+            uint16_t ParameterSet::GetParametersNumber() const
+            {
+                return static_cast<uint16_t>(parameters.size());
+            }
+
+            void ParameterSet::SetParamBindOffsetPtr(int* ptr)
+            {
+                paramBindOffset = ptr;
+            }
+
+            int* ParameterSet::GetParamBindOffsetPtr()
+            {
+                return paramBindOffset;
+            }
+
+            void ParameterSet::Prepare()
+            {
+                paramTypes.clear();
+
+                typesSet = false;
+
+                paramSetPos = 0;
+
+                for (ParameterBindingMap::iterator it = parameters.begin(); it != parameters.end(); ++it)
+                    it->second.ResetStoredData();
+            }
+
+            bool ParameterSet::IsDataAtExecNeeded() const
+            {
+                for (ParameterBindingMap::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
+                {
+                    if (!it->second.IsDataReady())
+                        return true;
+                }
+
+                return false;
+            }
+
+            void ParameterSet::UpdateParamsTypes(const ParameterTypeVector& meta)
+            {
+                paramTypes = meta;
+
+                typesSet = true;
+            }
+
+            int8_t ParameterSet::GetParamType(int16_t idx, int8_t dflt)
+            {
+                if (idx > 0 && static_cast<size_t>(idx) <= paramTypes.size())
+                    return paramTypes[idx - 1];
+
+                return dflt;
+            }
+
+            uint16_t ParameterSet::GetExpectedParamNum()
+            {
+                return static_cast<uint16_t>(paramTypes.size());
+            }
+
+            bool ParameterSet::IsMetadataSet() const
+            {
+                return typesSet;
+            }
+
+            bool ParameterSet::IsParameterSelected() const
+            {
+                return currentParamIdx != 0;
+            }
+
+            Parameter* ParameterSet::GetParameter(uint16_t idx)
+            {
+                ParameterBindingMap::iterator it = parameters.find(currentParamIdx);
+
+                if (it != parameters.end())
+                    return &it->second;
+
+                return 0;
+            }
+
+            Parameter* ParameterSet::GetSelectedParameter()
+            {
+                return GetParameter(currentParamIdx);
+            }
+
+            Parameter* ParameterSet::SelectNextParameter()
+            {
+                for (ParameterBindingMap::iterator it = parameters.begin(); it != parameters.end(); ++it)
+                {
+                    uint16_t paramIdx = it->first;
+                    Parameter& param = it->second;
+
+                    if (!param.IsDataReady())
+                    {
+                        currentParamIdx = paramIdx;
+
+                        return &param;
+                    }
+                }
+
+                return 0;
+            }
+
+            void ParameterSet::Write(impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt32(static_cast<int32_t>(parameters.size()));
+
+                uint16_t prev = 0;
+
+                for (ParameterBindingMap::const_iterator i = parameters.begin(); i != parameters.end(); ++i)
+                {
+                    uint16_t current = i->first;
+
+                    while ((current - prev) > 1)
+                    {
+                        writer.WriteNull();
+                        ++prev;
+                    }
+
+                    i->second.Write(writer);
+
+                    prev = current;
+                }
+            }
+        }
+    }
+}

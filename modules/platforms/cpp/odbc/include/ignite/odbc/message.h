@@ -28,7 +28,7 @@
 #include "ignite/odbc/result_page.h"
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/meta/table_meta.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 
 namespace ignite
 {
@@ -144,7 +144,7 @@ namespace ignite
              * @param params Query arguments.
              */
             QueryExecuteRequest(const std::string& schema, const std::string& sql,
-                const app::ParameterBindingMap& params) :
+                const app::ParameterSet& params) :
                 schema(schema),
                 sql(sql),
                 params(params)
@@ -170,23 +170,7 @@ namespace ignite
                 utility::WriteString(writer, schema);
                 utility::WriteString(writer, sql);
 
-                writer.WriteInt32(static_cast<int32_t>(params.size()));
-
-                app::ParameterBindingMap::const_iterator i;
-                uint16_t prev = 0;
-
-                for (i = params.begin(); i != params.end(); ++i) {
-                    uint16_t current = i->first;
-
-                    while ((current - prev) > 1) {
-                        writer.WriteNull();
-                        ++prev;
-                    }
-
-                    i->second.Write(writer);
-
-                    prev = current;
-                }
+                params.Write(writer);
             }
 
         private:
@@ -197,7 +181,7 @@ namespace ignite
             std::string sql;
 
             /** Parameters bindings. */
-            const app::ParameterBindingMap& params;
+            const app::ParameterSet& params;
         };
 
 

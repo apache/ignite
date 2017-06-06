@@ -52,6 +52,7 @@ libignite_odbc_la_SOURCES = \
     os/linux/src/system/socket_client.cpp \
     src/app/application_data_buffer.cpp \
     src/app/parameter.cpp \
+    src/app/parameter_set.cpp \
     src/common_types.cpp \
     src/config/configuration.cpp \
     src/config/connection_info.cpp \

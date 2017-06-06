@@ -28,7 +28,7 @@ namespace ignite
         {
             DataQuery::DataQuery(diagnostic::Diagnosable& diag,
                 Connection& connection, const std::string& sql,
-                const app::ParameterBindingMap& params) :
+                const app::ParameterSet& params) :
                 Query(diag, QueryType::DATA),
                 connection(connection),
                 sql(sql),

@@ -22,12 +22,10 @@
 
 #include <map>
 
-#include <ignite/guid.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
 #include "ignite/odbc/app/application_data_buffer.h"
-#include "ignite/odbc/type_traits.h"
 
 namespace ignite
 {
@@ -70,7 +68,7 @@ namespace ignite
                 ~Parameter();
 
                 /**
-                 * Copy assigment operator.
+                 * Assignment operator.
                  *
                  * @param other Other instance.
                  * @return This.
@@ -78,7 +76,7 @@ namespace ignite
                 Parameter& operator=(const Parameter& other);
 
                 /**
-                 * Write request using provided writer.
+                 * Write parameter using provided writer.
                  * @param writer Writer.
                  */
                 void Write(impl::binary::BinaryWriterImpl& writer) const;
@@ -128,9 +126,6 @@ namespace ignite
                 /** Stored at-execution data. */
                 std::vector<int8_t> storedData;
             };
-
-            /** Parameter binging map type alias. */
-            typedef std::map<uint16_t, Parameter> ParameterBindingMap;
         }
     }
 }

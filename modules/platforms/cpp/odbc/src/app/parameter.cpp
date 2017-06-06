@@ -16,8 +16,6 @@
  */
 
 #include <algorithm>
-#include <string>
-#include <sstream>
 
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/app/parameter.h"

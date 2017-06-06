@@ -23,19 +23,12 @@
 #include <map>
 #include <memory>
 
-#include <ignite/impl/interop/interop_output_stream.h>
-#include <ignite/impl/interop/interop_input_stream.h>
-#include <ignite/impl/binary/binary_writer_impl.h>
-
 #include "ignite/odbc/meta/column_meta.h"
-#include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/application_data_buffer.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/common_types.h"
-#include "ignite/odbc/cursor.h"
-#include "ignite/odbc/utility.h"
 
 namespace ignite
 {
@@ -136,13 +129,6 @@ namespace ignite
              * @param ptr Parameter binding offset pointer.
              */
             void SetParamBindOffsetPtr(int* ptr);
-
-            /**
-             * Get parameter binding offset pointer.
-             *
-             * @return Parameter binding offset pointer.
-             */
-            int* GetParamBindOffsetPtr();
 
             /**
              * Get value of the column in the result set.
@@ -394,27 +380,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
-
-            /**
-             * Bind parameter.
-             *
-             * @param paramIdx Parameter index.
-             * @param param Parameter.
-             */
-            void SafeBindParameter(uint16_t paramIdx, const app::Parameter& param);
-
-            /**
-             * Unbind specified parameter.
-             *
-             * @param paramIdx Parameter index.
-             */
-            void SafeUnbindParameter(uint16_t paramIdx);
-
-            /**
-             * Unbind all parameters.
-             */
-            void SafeUnbindAllParameters();
-
+            
             /**
              * Bind parameter.
              *
@@ -688,12 +654,6 @@ namespace ignite
             /** Column bindings. */
             app::ColumnBindingMap columnBindings;
 
-            /** Parameter bindings. */
-            app::ParameterBindingMap paramBindings;
-
-            /** Parameter meta. */
-            std::vector<int8_t> paramTypes;
-
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
 
@@ -703,14 +663,10 @@ namespace ignite
             /** Array to store statuses of rows fetched by the last fetch. */
             uint16_t* rowStatuses;
 
-            /** Offset added to pointers to change binding of parameters. */
-            int* paramBindOffset;
-
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 
-            /** Index of the parameter, which is currently being set. */
-            uint16_t currentParamIdx;
+            app::ParameterSet parameters;
         };
     }
 }

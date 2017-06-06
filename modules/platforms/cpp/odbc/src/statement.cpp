@@ -39,9 +39,8 @@ namespace ignite
             currentQuery(),
             rowsFetched(0),
             rowStatuses(0),
-            paramBindOffset(0),
             columnBindOffset(0),
-            currentParamIdx(0)
+            parameters()
         {
             // No-op.
         }
@@ -149,11 +148,9 @@ namespace ignite
         SqlResult::Type Statement::InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
                                                    SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
-            using namespace odbc::type_traits;
-            using odbc::Statement;
-            using odbc::app::ApplicationDataBuffer;
-            using odbc::app::Parameter;
-            using odbc::type_traits::IsSqlTypeSupported;
+            using namespace type_traits;
+            using app::ApplicationDataBuffer;
+            using app::Parameter;
 
             if (paramIdx == 0)
             {
@@ -183,7 +180,7 @@ namespace ignite
 
             if (driverType == OdbcNativeType::AI_UNSUPPORTED)
             {
-                AddStatusRecord(odbc::SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE,
+                AddStatusRecord(SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE,
                     "The argument TargetType was not a valid data type.");
 
                 return SqlResult::AI_ERROR;
@@ -195,29 +192,12 @@ namespace ignite
 
                 Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
 
-                SafeBindParameter(paramIdx, param);
+                parameters.BindParameter(paramIdx, param);
             }
             else
-                SafeUnbindParameter(paramIdx);
+                parameters.UnbindParameter(paramIdx);
 
             return SqlResult::AI_SUCCESS;
-        }
-
-        void Statement::SafeBindParameter(uint16_t paramIdx, const app::Parameter& param)
-        {
-            paramBindings[paramIdx] = param;
-
-            paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
-        }
-
-        void Statement::SafeUnbindParameter(uint16_t paramIdx)
-        {
-            paramBindings.erase(paramIdx);
-        }
-
-        void Statement::SafeUnbindAllParameters()
-        {
-            paramBindings.clear();
         }
 
         void Statement::SetAttribute(int attr, void* value, SQLINTEGER valueLen)
@@ -231,7 +211,7 @@ namespace ignite
             {
                 case SQL_ATTR_ROW_ARRAY_SIZE:
                 {
-                    SQLULEN val = reinterpret_cast<SQLULEN>(value);
+                    SqlUlen val = reinterpret_cast<SqlUlen>(value);
 
                     LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: " << val);
 
@@ -270,6 +250,20 @@ namespace ignite
                 case SQL_ATTR_ROW_BIND_OFFSET_PTR:
                 {
                     SetColumnBindOffsetPtr(reinterpret_cast<int*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAMSET_SIZE:
+                {
+                    parameters.SetParamSetSize(reinterpret_cast<SqlUlen>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAMS_PROCESSED_PTR:
+                {
+                    // TODO: Implement me.
 
                     break;
                 }
@@ -345,7 +339,7 @@ namespace ignite
                 {
                     SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
 
-                    *val = reinterpret_cast<SQLULEN*>(GetParamBindOffsetPtr());
+                    *val = reinterpret_cast<SQLULEN*>(parameters.GetParamBindOffsetPtr());
 
                     break;
                 }
@@ -392,7 +386,7 @@ namespace ignite
                 return SqlResult::AI_SUCCESS;
             }
 
-            if (paramTypes.empty())
+            if (!parameters.IsMetadataSet())
             {
                 SqlResult::Type res = UpdateParamsMeta();
 
@@ -400,7 +394,7 @@ namespace ignite
                     return res;
             }
 
-            paramNum = static_cast<uint16_t>(paramTypes.size());
+            paramNum = parameters.GetExpectedParamNum();
 
             return SqlResult::AI_SUCCESS;
         }
@@ -409,12 +403,7 @@ namespace ignite
         {
             IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
-            paramBindOffset = ptr;
-        }
-
-        int* Statement::GetParamBindOffsetPtr()
-        {
-            return paramBindOffset;
+            parameters.SetParamBindOffsetPtr(ptr);
         }
 
         void Statement::GetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
@@ -448,10 +437,10 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::DataQuery(*this, connection, query, paramBindings));
+            currentQuery.reset(new query::DataQuery(*this, connection, query, parameters));
 
             // Resetting parameters types as we are changing the query.
-            paramTypes.clear();
+            parameters.Prepare();
 
             return SqlResult::AI_SUCCESS;
         }
@@ -485,19 +474,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            bool paramDataReady = true;
-
-            app::ParameterBindingMap::iterator it;
-            for (it = paramBindings.begin(); it != paramBindings.end(); ++it)
-            {
-                app::Parameter& param = it->second;
-
-                param.ResetStoredData();
-
-                paramDataReady &= param.IsDataReady();
-            }
-
-            if (!paramDataReady)
+            if (parameters.IsDataAtExecNeeded())
                 return SqlResult::AI_NEED_DATA;
 
             return currentQuery->Execute();
@@ -668,7 +645,7 @@ namespace ignite
 
                 case SQL_RESET_PARAMS:
                 {
-                    SafeUnbindAllParameters();
+                    parameters.UnbindAll();
 
                     break;
                 }
@@ -904,35 +881,24 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            app::ParameterBindingMap::iterator it;
+            app::Parameter *selected = parameters.GetSelectedParameter();
 
-            if (currentParamIdx)
+            if (selected && !selected->IsDataReady())
             {
-                it = paramBindings.find(currentParamIdx);
+                AddStatusRecord(SqlState::S22026_DATA_LENGTH_MISMATCH,
+                    "Less data was sent for a parameter than was specified with "
+                    "the StrLen_or_IndPtr argument in SQLBindParameter.");
 
-                if (it != paramBindings.end() && !it->second.IsDataReady())
-                {
-                    AddStatusRecord(SqlState::S22026_DATA_LENGTH_MISMATCH,
-                        "Less data was sent for a parameter than was specified with "
-                        "the StrLen_or_IndPtr argument in SQLBindParameter.");
-
-                    return SqlResult::AI_ERROR;
-                }
+                return SqlResult::AI_ERROR;
             }
 
-            for (it = paramBindings.begin(); it != paramBindings.end(); ++it)
+            selected = parameters.SelectNextParameter();
+
+            if (selected)
             {
-                uint16_t paramIdx = it->first;
-                app::Parameter& param = it->second;
+                *paramPtr = selected->GetBuffer().GetData();
 
-                if (!param.IsDataReady())
-                {
-                    *paramPtr = param.GetBuffer().GetData();
-
-                    currentParamIdx = paramIdx;
-
-                    return SqlResult::AI_NEED_DATA;
-                }
+                return SqlResult::AI_NEED_DATA;
             }
 
             SqlResult::Type res = currentQuery->Execute();
@@ -959,7 +925,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            if (currentParamIdx == 0)
+            if (parameters.IsParameterSelected())
             {
                 AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR,
                     "Parameter is not selected with the SQLParamData.");
@@ -967,9 +933,9 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            app::ParameterBindingMap::iterator it = paramBindings.find(currentParamIdx);
+            app::Parameter* param = parameters.GetSelectedParameter();
 
-            if (it == paramBindings.end())
+            if (!param)
             {
                 AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                     "Selected parameter has been unbound.");
@@ -977,9 +943,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            app::Parameter& param = it->second;
-
-            param.PutData(data, len);
+            param->PutData(data, len);
 
             return SqlResult::AI_SUCCESS;
         }
@@ -1009,10 +973,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            int8_t type = 0;
-
-            if (paramNum > 0 && static_cast<size_t>(paramNum) <= paramTypes.size())
-                type = paramTypes[paramNum - 1];
+            int8_t type = parameters.GetParamType(paramNum, 0);
 
             LOG_MSG("Type: " << type);
 
@@ -1023,10 +984,7 @@ namespace ignite
                 if (res != SqlResult::AI_SUCCESS)
                     return res;
 
-                if (paramNum < 1 || static_cast<size_t>(paramNum) > paramTypes.size())
-                    type = impl::binary::IGNITE_HDR_NULL;
-                else
-                    type = paramTypes[paramNum - 1];
+                type = parameters.GetParamType(paramNum, impl::binary::IGNITE_HDR_NULL);
             }
 
             if (dataType)
@@ -1079,11 +1037,11 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            paramTypes = rsp.GetTypeIds();
+            parameters.UpdateParamsTypes(rsp.GetTypeIds());
 
-            for (size_t i = 0; i < paramTypes.size(); ++i)
+            for (size_t i = 0; i < rsp.GetTypeIds().size(); ++i)
             {
-                LOG_MSG("[" << i << "] Parameter type: " << paramTypes[i]);
+                LOG_MSG("[" << i << "] Parameter type: " << rsp.GetTypeIds()[i]);
             }
 
             return SqlResult::AI_SUCCESS;
