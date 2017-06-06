@@ -633,21 +633,21 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
-        Object obj0 = ldr == null ? obj : null;
+        if (ldr == null)
+            return deserialize();
 
-        if (obj0 == null) {
-            ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
-
-            obj0 = deserializeValue(resolveLdr);
-        }
-
-        return (T)obj0;
+        return (T)reader(null, ldr, true).deserialize();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
-        return (T)deserialize(null);
+        Object obj0 = obj;
+
+        if (obj0 == null)
+            obj0 = deserializeValue(null);
+
+        return (T)obj0;
     }
 
     /** {@inheritDoc} */
@@ -791,19 +791,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
-    }
-
-    /**
-     * Runs value deserialization regardless of whether obj already has the deserialized value.
-     * @param ldr Class loader.
-     * @return Object.
-     */
-    private Object deserializeValue(ClassLoader ldr) {
-        BinaryReaderExImpl reader = reader(null, ldr, true);
-
-        Object obj0 = reader.deserialize();
-
-        return obj0;
     }
 
     /**
