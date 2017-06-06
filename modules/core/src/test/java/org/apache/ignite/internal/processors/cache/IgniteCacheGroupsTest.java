@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -41,6 +43,7 @@ import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.integration.CacheLoaderException;
@@ -81,9 +84,12 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.ContainsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -93,6 +99,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -124,6 +131,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
     /** */
     private static final String CACHE2 = "cache2";
+
+    /** */
+    private static final int ASYNC_TIMEOUT = 5000;
 
     /** */
     private boolean client;
@@ -1978,19 +1988,47 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void cacheApiTest(IgniteCache cache) throws Exception {
-        cachePutAllGetAll(cache);
+        cachePutAllGetAllContainsAll(cache);
+
+        cachePutAllGetAllContainsAllAsync(cache);
 
         cachePutRemove(cache);
 
-        cachePutGet(cache);
+        cachePutRemoveAsync(cache);
+
+        cachePutGetContains(cache);
+
+        cachePutGetContainsAsync(cache);
 
         cachePutGetAndPut(cache);
+
+        cachePutGetAndPutAsync(cache);
+
+        cachePutGetAndRemove(cache);
+
+        cachePutGetAndRemoveAsync(cache);
+
+        cachePutGetAndReplace(cache);
+
+        cachePutGetAndReplaceAsync(cache);
+
+        cachePutIfAbsent(cache);
+
+        cachePutIfAbsentAsync(cache);
+
+        cachePutGetAndPutIfAbsent(cache);
+
+        cachePutGetAndPutIfAbsentAsync(cache);
 
         cacheQuery(cache);
 
         cacheInvokeAll(cache);
 
         cacheInvoke(cache);
+
+        cacheInvokeAllAsync(cache);
+
+        cacheInvokeAsync(cache);
 
         cacheDataStreamer(cache);
     }
@@ -2009,7 +2047,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void cacheDataStreamer(final IgniteCache cache) throws Exception {
-        final int keys = 1000;
+        final int keys = 400;
         final int loaders = 4;
 
         final Integer[] data = generateData(keys * loaders);
@@ -2063,8 +2101,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @param cache Cache.
      */
-    private void cachePutAllGetAll(IgniteCache cache) {
-        Map<Integer, Integer> data = generateDataMap(1000);
+    private void cachePutAllGetAllContainsAll(IgniteCache cache) {
+        int keys = 100;
+
+        Map<Integer, Integer> data = generateDataMap(keys);
 
         cache.putAll(data);
 
@@ -2072,9 +2112,32 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         assertEquals(data.size(), data0.size());
 
-        for (Map.Entry<Integer, Integer> entry : data.entrySet()) {
+        for (Map.Entry<Integer, Integer> entry : data.entrySet())
             assertEquals(entry.getValue(), data0.get(entry.getKey()));
-        }
+
+        assertTrue(cache.containsKeys(data.keySet()));
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutAllGetAllContainsAllAsync(IgniteCache cache) {
+        int keys = 100;
+
+        Map<Integer, Integer> data = generateDataMap(keys);
+
+        cache.putAllAsync(data).get(ASYNC_TIMEOUT);
+
+        Map data0 = (Map)cache.getAllAsync(data.keySet()).get(ASYNC_TIMEOUT);
+
+        assertEquals(data.size(), data0.size());
+
+        for (Map.Entry<Integer, Integer> entry : data.entrySet())
+            assertEquals(entry.getValue(), data0.get(entry.getKey()));
+
+        assertTrue((Boolean)cache.containsKeysAsync(data.keySet()).get(ASYNC_TIMEOUT));
 
         tearDown(cache);
     }
@@ -2100,7 +2163,25 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @param cache Cache.
      */
-    private void cachePutGet(IgniteCache cache) {
+    private void cachePutRemoveAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.putAsync(key, val).get(ASYNC_TIMEOUT);
+
+        assertTrue((Boolean)cache.removeAsync(key).get(ASYNC_TIMEOUT));
+
+        assertNull(cache.get(key));
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetContains(IgniteCache cache) {
         Random rnd = ThreadLocalRandom.current();
 
         Integer key = rnd.nextInt();
@@ -2111,6 +2192,42 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Object val0 = cache.get(key);
 
         assertEquals(val, val0);
+
+        assertTrue(cache.containsKey(key));
+
+        Integer key2 = rnd.nextInt();
+
+        while (key2.equals(key))
+            key2 = rnd.nextInt();
+
+        assertFalse(cache.containsKey(key2));
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetContainsAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.putAsync(key, val).get(ASYNC_TIMEOUT);
+
+        Object val0 = cache.getAsync(key).get(ASYNC_TIMEOUT);
+
+        assertEquals(val, val0);
+
+        assertTrue((Boolean)cache.containsKeyAsync(key).get(ASYNC_TIMEOUT));
+
+        Integer key2 = rnd.nextInt();
+
+        while (key2.equals(key))
+            key2 = rnd.nextInt();
+
+        assertFalse((Boolean)cache.containsKeyAsync(key2).get(ASYNC_TIMEOUT));
 
         tearDown(cache);
     }
@@ -2141,8 +2258,239 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @param cache Cache.
      */
+    private void cachePutGetAndPutAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+        cache.put(key, val1);
+
+        Object val0 = cache.getAndPutAsync(key, val2).get(ASYNC_TIMEOUT);
+
+        assertEquals(val1, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(val2, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetAndReplace(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+        Object val0 = cache.getAndReplace(key, val1);
+
+        assertEquals(null, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(null, val0);
+
+        cache.put(key, val1);
+
+        val0 = cache.getAndReplace(key, val2);
+
+        assertEquals(val1, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(val2, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetAndReplaceAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+        Object val0 = cache.getAndReplaceAsync(key, val1).get(ASYNC_TIMEOUT);
+
+        assertEquals(null, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(null, val0);
+
+        cache.put(key, val1);
+
+        val0 = cache.getAndReplaceAsync(key, val2).get(ASYNC_TIMEOUT);
+
+        assertEquals(val1, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(val2, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetAndRemove(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+
+        cache.put(key, val);
+
+        Object val0 = cache.getAndRemove(key);
+
+        assertEquals(val, val0);
+
+        val0 = cache.get(key);
+
+        assertNull(val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetAndRemoveAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+
+        cache.put(key, val);
+
+        Object val0 = cache.getAndRemoveAsync(key).get(ASYNC_TIMEOUT);
+
+        assertEquals(val, val0);
+
+        val0 = cache.get(key);
+
+        assertNull(val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutIfAbsent(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+
+        assertTrue(cache.putIfAbsent(key, val1));
+
+        Object val0 = cache.get(key);
+
+        assertEquals(val1, val0);
+
+        assertFalse(cache.putIfAbsent(key, val2));
+
+        val0 = cache.get(key);
+
+        assertEquals(val1, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutIfAbsentAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+
+        assertTrue((Boolean)cache.putIfAbsentAsync(key, val1).get(ASYNC_TIMEOUT));
+
+        Object val0 = cache.get(key);
+
+        assertEquals(val1, val0);
+
+        assertFalse((Boolean)cache.putIfAbsentAsync(key, val2).get(ASYNC_TIMEOUT));
+
+        val0 = cache.get(key);
+
+        assertEquals(val1, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetAndPutIfAbsent(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+        cache.put(key, val1);
+
+        Object val0 = cache.getAndPutIfAbsent(key, val2);
+
+        assertEquals(val1, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(val1, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetAndPutIfAbsentAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+        cache.put(key, val1);
+
+        Object val0 = cache.getAndPutIfAbsentAsync(key, val2).get(ASYNC_TIMEOUT);
+
+        assertEquals(val1, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(val1, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
     private void cacheQuery(IgniteCache cache) {
-        Map<Integer, Integer> data = generateDataMap(1000);
+        int keys = 100;
+
+        Map<Integer, Integer> data = generateDataMap(keys);
 
         cache.putAll(data);
 
@@ -2168,7 +2516,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @param cache Cache.
      */
     private void cacheInvokeAll(IgniteCache cache) {
-        int keys = 1000;
+        int keys = 100;
         Map<Integer, Integer> data = generateDataMap(keys);
 
         cache.putAll(data);
@@ -2221,6 +2569,137 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         assertEquals(one + two, res);
 
         tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cacheInvokeAllAsync(IgniteCache cache) {
+        int keys = 100;
+        Map<Integer, Integer> data = generateDataMap(keys);
+
+        cache.putAll(data);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        int one = rnd.nextInt();
+        int two = rnd.nextInt();
+
+        Object res0 = cache.invokeAllAsync(data.keySet(), new CacheEntryProcessor<Integer, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<Integer, Integer> entry,
+                Object... arguments) throws EntryProcessorException {
+                Object expected = ((Map)arguments[0]).get(entry.getKey());
+
+                assertEquals(expected, entry.getValue());
+
+                // Some calculation.
+                return (Integer)arguments[1] + (Integer)arguments[2];
+            }
+        }, data, one, two).get(ASYNC_TIMEOUT);
+
+        Map<Integer, CacheInvokeResult<Integer>> res = (Map<Integer, CacheInvokeResult<Integer>>)res0;
+
+        assertEquals(keys, res.size());
+        assertEquals(one + two, (Object)res.get(0).get());
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cacheInvokeAsync(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.put(key, val);
+
+        int one = rnd.nextInt();
+        int two = rnd.nextInt();
+
+        Object res = cache.invokeAsync(key, new CacheEntryProcessor<Integer, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) throws EntryProcessorException {
+                assertEquals(arguments[0], entry.getValue());
+
+                // Some calculation.
+                return (Integer)arguments[1] + (Integer)arguments[2];
+            }
+        }, val, one, two).get(ASYNC_TIMEOUT);
+
+        assertEquals(one + two, res);
+
+        tearDown(cache);
+    }
+
+
+    public void testLoadCacheAtomicPartitioned() throws Exception {
+        loadCache(PARTITIONED, ATOMIC);
+    }
+
+    public void testLoadCacheAtomicReplicated() throws Exception {
+        loadCache(REPLICATED, ATOMIC);
+    }
+
+    public void testLoadCacheTxPartitioned() throws Exception {
+        loadCache(PARTITIONED, TRANSACTIONAL);
+    }
+
+    public void testLoadCacheTxReplicated() throws Exception {
+        loadCache(REPLICATED, TRANSACTIONAL);
+    }
+
+    public void testLoadCacheAtomicLocal() throws Exception {
+        loadCache(LOCAL, ATOMIC);
+    }
+
+    public void testLoadCacheTxLocal() throws Exception {
+        loadCache(LOCAL, TRANSACTIONAL);
+    }
+
+    /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     * @throws Exception If failed.
+     */
+    private void loadCache(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
+        int keys = 100;
+
+        boolean local = cacheMode == LOCAL;
+
+        Map<Integer, Integer> data1 = generateDataMap(keys);
+        Map<Integer, Integer> data2 = generateDataMap(keys);
+
+        Factory<? extends CacheStore<Integer, Integer>> fctr1 =
+            FactoryBuilder.factoryOf(new MapBasedStore<>(data1));
+
+        Factory<? extends CacheStore<Integer, Integer>> fctr2 =
+            FactoryBuilder.factoryOf(new MapBasedStore<>(data2));
+
+
+        CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 1, false)
+            .setCacheStoreFactory(fctr1);
+
+        CacheConfiguration ccfg2 = cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 1, false)
+            .setCacheStoreFactory(fctr2);
+
+        Ignite node = startGrids(local ? 1 : 4);
+
+        node.createCaches(F.asList(ccfg1, ccfg2));
+
+        IgniteCache<Integer, Integer> cache1 = node.cache(CACHE1);
+        IgniteCache<Integer, Integer> cache2 = node.cache(CACHE2);
+
+        cache1.loadCache(null);
+
+        checkCacheData(data1, CACHE1);
+
+        assertEquals(0, cache2.size());
+
+        cache2.loadCache(null);
+
+        checkCacheData(data2, CACHE2);
     }
 
     /**
@@ -3762,5 +4241,61 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         }
 
         return null;
+    }
+
+    /**
+     *
+     */
+    static class MapBasedStore<K,V> implements CacheStore<K,V>, Serializable {
+        private final Map<K,V> src;
+
+        /**
+         * @param src Source map.
+         */
+        MapBasedStore(Map<K, V> src) {
+            this.src = src;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws CacheLoaderException {
+            for (Map.Entry<K, V> e : src.entrySet())
+                clo.apply(e.getKey(), e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public V load(K key) throws CacheLoaderException {
+            return src.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<K, V> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
+            return F.view(src, new ContainsPredicate<>(Sets.newHashSet(keys)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) throws CacheWriterException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
+            throw new UnsupportedOperationException();
+        }
     }
 }
