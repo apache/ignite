@@ -28,6 +28,8 @@ import org.apache.ignite.resources.LoggerResource;
  * Trivial mapper to take extract field value from binary object of specific type as affinity key.
  */
 @SuppressWarnings("deprecation")
+// TODO: To internal package
+// TODO: Rename to DynamicTableAffinityKeyMapper
 public class BinaryFieldNameAffinityKeyMapper implements AffinityKeyMapper {
     /** Type name. */
     private final String typeName;
@@ -38,8 +40,11 @@ public class BinaryFieldNameAffinityKeyMapper implements AffinityKeyMapper {
     /** Field name. */
     private final String fieldName;
 
+    // TODO: Resolve field id.
+
     /** Logger. */
     @LoggerResource
+    // TODO: Remove this and all relevant checks
     protected transient IgniteLogger log;
 
     /**
@@ -62,29 +67,29 @@ public class BinaryFieldNameAffinityKeyMapper implements AffinityKeyMapper {
     @Override public Object affinityKey(Object key) {
         A.notNull(key, "key");
 
-        if (!(key instanceof BinaryObject)) {
-            U.warn(log, "");
-
+        if (!(key instanceof BinaryObject))
             return key;
-        }
 
         BinaryObject binKey = (BinaryObject)key;
 
-        if (typeId == null)
+        // TODO: Use BinaryObject.type().typeName() insteand
+        if (typeId == null) {
             typeId = BinaryContext.defaultMapper().typeId(typeName);
 
-        if (binKey.type().typeId() != typeId) {
-            U.warn(log, "");
-
-            return key;
+            // TODO: Initialize BinaryField
         }
 
+        if (binKey.type().typeId() != typeId)
+            return key;
+
+        // TODO: No double checks.
         if (!binKey.hasField(fieldName)) {
             U.warn(log, "");
 
             return key;
         }
 
+        // TODO: Return key if field is null.
         return binKey.field(fieldName);
     }
 

@@ -124,6 +124,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 /**
  * Binary context.
  */
+// TODO: REvert cahngse
 public class BinaryContext {
     /** System loader.*/
     private static final ClassLoader sysLdr = U.gridClassLoader();

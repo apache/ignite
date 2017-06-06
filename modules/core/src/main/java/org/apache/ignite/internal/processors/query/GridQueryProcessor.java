@@ -1318,9 +1318,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
+        // TODO: Check for null, enpty must be restrcited in DDL processor.
         if (!F.isEmpty(affinityKey)) {
-            assert ctx.config().getMarshaller() instanceof BinaryMarshaller;
-
             assert entity.getFields().containsKey(affinityKey) && entity.getKeyFields().contains(affinityKey);
 
             ccfg.setAffinityMapper(new BinaryFieldNameAffinityKeyMapper(entity.getKeyType(), affinityKey));
