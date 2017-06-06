@@ -17,6 +17,8 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.Statement;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -175,6 +177,75 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false")) {
             assertFalse(socket(conn).tcpNoDelay());
+        }
+    }
+
+    /**
+     * Test TCP no delay property handling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPropertyReplicatedOnly() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?replicatedOnly=0",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_REPLICATED_ONLY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?replicatedOnly=1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_REPLICATED_ONLY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?replicatedOnly=false1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_REPLICATED_ONLY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_REPLICATED_ONLY);
+
+        DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=false");
+        DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true");
+    }
+
+    /**
+     * Test TCP no delay property handling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPropertyColocated() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?collocated=0",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_COLLOCATED);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?collocated=1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_COLLOCATED);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?collocated=false1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_COLLOCATED);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?collocated=true1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_COLLOCATED);
+
+        DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true").close();
+        DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=false").close();
+    }
+
+    /**
+     * Test TCP no delay property handling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPropertyPageSize() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?pageSize=-1",
+            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_PAGE_SIZE);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?pageSize=0x10",
+            "Failed to parse int property [name=" + JdbcThinUtils.PARAM_PAGE_SIZE);
+
+        final int myPageSize = 28;
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?pageSize=" + myPageSize);
+             Statement stmt = conn.createStatement()) {
+            assert stmt.getFetchSize() == myPageSize : "Page size invalid: " + stmt.getFetchSize();
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+             Statement stmt = conn.createStatement()) {
+            assert stmt.getFetchSize() == SqlQuery.DFLT_PAGE_SIZE : "Default page size invalid: " + stmt.getFetchSize();
         }
     }
 

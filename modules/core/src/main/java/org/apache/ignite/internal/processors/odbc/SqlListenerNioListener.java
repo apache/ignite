@@ -250,12 +250,17 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
 
                 break;
 
-            case JDBC_CLIENT:
+            case JDBC_CLIENT: {
+                boolean replicatedOnly = reader.readBoolean();
+                boolean collocated = reader.readBoolean();
+
                 parser = new JdbcMessageParser(ctx);
 
-                handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
+                handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
+                    replicatedOnly, collocated);
 
                 break;
+            }
 
             default:
                 throw new IgniteException("Unknown client type: " + clientType);

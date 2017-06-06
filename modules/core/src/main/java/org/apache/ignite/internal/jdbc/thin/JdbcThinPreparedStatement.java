@@ -56,9 +56,10 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
      *
      * @param conn Connection.
      * @param sql SQL query.
+     * @param pageSize Page size.
      */
-    JdbcThinPreparedStatement(JdbcThinConnection conn, String sql) {
-        super(conn);
+    JdbcThinPreparedStatement(JdbcThinConnection conn, String sql, int pageSize) {
+        super(conn, pageSize);
 
         this.sql = sql;
     }

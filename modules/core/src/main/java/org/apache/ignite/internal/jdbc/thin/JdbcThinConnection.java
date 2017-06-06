@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.sql.Array;
@@ -44,10 +45,13 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PAGE_SIZE;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED_ONLY;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
@@ -82,6 +86,9 @@ public class JdbcThinConnection implements Connection {
     /** Ignite endpoint. */
     private JdbcThinTcpIo cliIo;
 
+    /** Page size. */
+    private int pageSize;
+
     /**
      * Creates new connection.
      *
@@ -97,19 +104,24 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
+
         String host = extractHost(props);
         int port = extractPort(props);
 
         boolean distributedJoins = extractBoolean(props, PROP_DISTRIBUTED_JOINS, false);
         boolean enforceJoinOrder = extractBoolean(props, PROP_ENFORCE_JOIN_ORDER, false);
+        boolean replicatedOnly  = extractBoolean(props, PROP_REPLICATED_ONLY, false);
+        boolean collocated  = extractBoolean(props, PROP_COLLOCATED, false);
 
         int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
         int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
 
         boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
 
+        pageSize = extractIntNonNegative(props, PROP_PAGE_SIZE, SqlQuery.DFLT_PAGE_SIZE);
+
         try {
-            cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder,
+            cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, replicatedOnly, collocated,
                 sockSndBuf, sockRcvBuf, tcpNoDelay);
 
             cliIo.start();
@@ -138,7 +150,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this, pageSize);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -164,7 +176,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql);
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, pageSize);
 
         if (timeout > 0)
             stmt.timeout(timeout);

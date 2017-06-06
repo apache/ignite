@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 
 import java.sql.Time;
@@ -61,6 +60,18 @@ public class JdbcThinUtils {
     /** Parameter: enforce join order flag. */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
+    /**
+     * Parameter: set to {@code true} if the all queries contains only replicated tables.
+     * This is a hint for potentially more effective execution.
+     */
+    public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
+
+    /** Parameter: Sets flag defining if this query is collocated. */
+    public static final String PARAM_COLLOCATED = "collocated";
+
+    /** Parameter: Sets flag defining if this query is collocated. */
+    public static final String PARAM_PAGE_SIZE = "pageSize";
+
     /** Parameter: socket send buffer. */
     public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
 
@@ -75,6 +86,15 @@ public class JdbcThinUtils {
 
     /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Replicated only property name. */
+    public static final String PROP_REPLICATED_ONLY = PROP_PREFIX + PARAM_REPLICATED_ONLY;
+
+    /** Colocated property name. */
+    public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
+
+    /** Colocated property name. */
+    public static final String PROP_PAGE_SIZE = PROP_PREFIX + PARAM_PAGE_SIZE;
 
     /** Socket send buffer property name. */
     public static final String PROP_SOCK_SND_BUF = PROP_PREFIX + PARAM_SOCK_SND_BUF;

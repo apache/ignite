@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -80,6 +79,12 @@ public class JdbcThinTcpIo {
     /** Enforce join order. */
     private final boolean enforceJoinOrder;
 
+    /** Replicated only. */
+    private final boolean replicatedOnly;
+
+    /** Colocated. */
+    private final boolean colocated;
+
     /** Socket send buffer. */
     private final int sockSndBuf;
 
@@ -108,12 +113,14 @@ public class JdbcThinTcpIo {
      * @param port Port.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param replicatedOnly Replicated only flag.
+     * @param colocated Colocated flag.
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, int sockSndBuf,
-        int sockRcvBuf, boolean tcpNoDelay) {
+    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
+        boolean colocated, int sockSndBuf,int sockRcvBuf, boolean tcpNoDelay) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
@@ -121,6 +128,8 @@ public class JdbcThinTcpIo {
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
+        this.replicatedOnly = replicatedOnly;
+        this.colocated = colocated;
     }
 
     /**
@@ -171,6 +180,8 @@ public class JdbcThinTcpIo {
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
+        writer.writeBoolean(replicatedOnly);
+        writer.writeBoolean(colocated);
 
         send(writer.array());
 

@@ -174,7 +174,10 @@ public class IgniteJdbcThinDriver implements Driver {
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(JdbcThinUtils.PROP_PORT), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), "")
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
+            new JdbcDriverPropertyInfo("Replicated Only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), ""),
+            new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
+            new JdbcDriverPropertyInfo("Page Size", info.getProperty(JdbcThinUtils.PROP_PAGE_SIZE), "")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);

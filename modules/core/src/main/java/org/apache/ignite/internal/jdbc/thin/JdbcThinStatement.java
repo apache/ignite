@@ -26,7 +26,6 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -38,9 +37,6 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
  * JDBC statement implementation.
  */
 public class JdbcThinStatement implements Statement {
-    /** Default queryPage size. */
-    private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
-
     /** Ignite endpoint and I/O protocol implementation. */
     private JdbcThinConnection conn;
 
@@ -57,7 +53,7 @@ public class JdbcThinStatement implements Statement {
     protected JdbcThinResultSet rs;
 
     /** Fetch size. */
-    private int pageSize = DFLT_PAGE_SIZE;
+    private int pageSize;
 
     /** */
     private boolean alreadyRead;
@@ -66,11 +62,13 @@ public class JdbcThinStatement implements Statement {
      * Creates new statement.
      *
      * @param conn JDBC connection.
+     * @param pageSize Page size.
      */
-    JdbcThinStatement(JdbcThinConnection conn) {
+    JdbcThinStatement(JdbcThinConnection conn, int pageSize) {
         assert conn != null;
 
         this.conn = conn;
+        this.pageSize = pageSize;
     }
 
     /** {@inheritDoc} */
