@@ -1772,8 +1772,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             partIds.add(req.partId);
 
-            // TODO IGNITE-5075.
-            pageMemSet.add((PageMemoryEx)cctx.cache().cacheGroup(req.grpId).memoryPolicy().pageMemory());
+            pageMemSet.add((PageMemoryEx)req.memPlc.pageMemory());
         }
 
         for (PageMemoryEx pageMem : pageMemSet) {
@@ -2906,6 +2905,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private int grpId;
 
         /** */
+        private final MemoryPolicy memPlc;
+
+        /** */
         private String name;
 
         /** */
@@ -2926,6 +2928,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private PartitionDestroyRequest(CacheGroupContext grp, int partId) {
             grpId = grp.groupId();
+            memPlc = grp.memoryPolicy();
             name = grp.cacheOrGroupName();
             allowFastEviction = grp.allowFastEviction();
 
