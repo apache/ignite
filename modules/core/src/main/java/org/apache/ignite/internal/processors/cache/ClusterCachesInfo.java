@@ -342,7 +342,7 @@ class ClusterCachesInfo {
                     }
                     else {
                         SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
-                            req.startCacheConfiguration(), ctx.cache().cacheDescriptors());
+                            req.startCacheConfiguration(), ctx.cache().cacheDescriptors().values());
 
                         if (err != null) {
                             ctx.cache().completeCacheStartFuture(req, false, err);
