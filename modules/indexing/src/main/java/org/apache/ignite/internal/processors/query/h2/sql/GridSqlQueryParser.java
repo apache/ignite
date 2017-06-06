@@ -1054,6 +1054,16 @@ public class GridSqlQueryParser {
             case PARAM_AFFINITY_KEY:
                 ensureNotEmpty(name, val);
 
+                if (val.startsWith("'")) {
+                    if (val.length() == 1 || !val.endsWith("'"))
+                        throw new IgniteSQLException("Affinity key column name does not have trailing quote: " + val,
+                            IgniteQueryErrorCode.PARSING);
+
+                    val = val.substring(1, val.length() - 1);
+
+                    ensureNotEmpty(name, val);
+                }
+
                 if (!res.columns().containsKey(val))
                     throw new IgniteSQLException("Affinity key column with given name not found: " + val,
                         IgniteQueryErrorCode.PARSING);

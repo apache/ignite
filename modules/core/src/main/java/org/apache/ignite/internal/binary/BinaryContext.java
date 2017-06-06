@@ -869,7 +869,7 @@ public class BinaryContext {
     /**
      * @return Default serializer.
      */
-    private BinarySerializer defaultSerializer() {
+    public BinarySerializer defaultSerializer() {
         BinaryConfiguration binCfg = igniteCfg.getBinaryConfiguration();
 
         return binCfg != null ? binCfg.getSerializer() : null;
@@ -1107,7 +1107,11 @@ public class BinaryContext {
         @Nullable String affKeyFieldName,
         boolean isEnum,
         @Nullable Map<String, Integer> enumMap) throws BinaryObjectException {
-        assert mapper != null;
+        String typeName = mapper.typeName(clsName);
+
+        int id = mapper.typeId(clsName);
+
+        Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
         Class<?> cls = null;
 
@@ -1117,31 +1121,6 @@ public class BinaryContext {
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
         }
-
-        String typeName = mapper.typeName(clsName);
-
-        int id = mapper.typeId(clsName);
-
-        //Workaround for IGNITE-1358
-        if (predefinedTypes.get(id) != null)
-            throw duplicateTypeIdException(clsName, id);
-
-        if (typeId2Mapper.put(id, mapper) != null)
-            throw duplicateTypeIdException(clsName, id);
-
-        if (identity != null) {
-            if (identities.put(id, identity) != null)
-                throw duplicateTypeIdException(clsName, id);
-        }
-
-        if (affKeyFieldName != null) {
-            if (affKeyFieldNames.put(id, affKeyFieldName) != null)
-                throw duplicateTypeIdException(clsName, id);
-        }
-
-        cls2Mappers.put(clsName, mapper);
-
-        Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1174,8 +1153,49 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id,
-            new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap).wrap(this));
+        BinaryMetadata meta = new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap);
+
+        registerUserType(meta, mapper, identity);
+    }
+
+    /**
+     * Register user type based on provided metadata.
+     *
+     * @param meta Binary type metadata.
+     * @param mapper ID mapper.
+     * @param identity Type identity.
+     * @throws BinaryObjectException In case of error.
+     */
+    @SuppressWarnings("ErrorNotRethrown")
+    public void registerUserType(BinaryMetadata meta,
+        BinaryInternalMapper mapper,
+        @Nullable BinaryIdentityResolver identity) throws BinaryObjectException {
+        assert mapper != null;
+
+        String typeName = meta.typeName();
+
+        int id = mapper.typeId(typeName);
+
+        //Workaround for IGNITE-1358
+        if (predefinedTypes.get(id) != null)
+            throw duplicateTypeIdException(typeName, id);
+
+        if (typeId2Mapper.put(id, mapper) != null)
+            throw duplicateTypeIdException(typeName, id);
+
+        if (identity != null) {
+            if (identities.put(id, identity) != null)
+                throw duplicateTypeIdException(typeName, id);
+        }
+
+        if (meta.affinityKeyFieldName() != null) {
+            if (affKeyFieldNames.put(id, meta.affinityKeyFieldName()) != null)
+                throw duplicateTypeIdException(typeName, id);
+        }
+
+        cls2Mappers.put(typeName, mapper);
+
+        metaHnd.addMeta(id, meta.wrap(this));
     }
 
     /**

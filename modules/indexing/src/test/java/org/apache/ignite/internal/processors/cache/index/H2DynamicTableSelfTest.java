@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 import javax.cache.CacheException;
@@ -29,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -37,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
@@ -379,11 +384,49 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testAffinityKey() throws Exception {
-        createTableWithParams("affinityKey=id");
+        executeDdl("CREATE TABLE \"City\" (\"name\" varchar primary key, \"code\" int) WITH \"affinityKey='name'\"");
 
-        assertEquals("id", client().binary().type("PersonKey").affinityKeyFieldName());
+        executeDdl("INSERT INTO \"City\" (\"name\", \"code\") values ('A', 1), ('B', 2), ('C', 3)");
 
-        executeDdl("INSERT INTO \"Person\" (\"id\", \"name\") values (1, 'A'), (2, 'B'), (3, 'C')");
+        List<String> cityNames = Arrays.asList("A", "B", "C");
+
+        List<Integer> cityCodes = Arrays.asList(1, 2, 3);
+
+        createTableWithParams("affinityKey=city");
+
+        assertEquals("city", client().binary().type("PersonKey").affinityKeyFieldName());
+
+        assertEquals("city", client().context().cacheObjects().affinityField("PersonKey"));
+
+        Random r = new Random();
+
+        Map<Integer, Integer> personId2cityCode = new HashMap<>();
+
+        for (int i = 0; i < 100; i++) {
+            int cityIdx = r.nextInt(3);
+
+            String cityName = cityNames.get(cityIdx);
+
+            int cityCode = cityCodes.get(cityIdx);
+
+            personId2cityCode.put(i, cityCode);
+
+            queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into \"Person\"(\"id\", " +
+                "\"city\") values (?, ?)").setArgs(i, cityName), true).getAll();
+        }
+
+        List<List<?>> res = queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("select \"id\", " +
+            "c.\"code\" from \"Person\" p left join \"City\" c on p.\"city\" = c.\"name\""), true).getAll();
+
+        assertEquals(100, res.size());
+
+        for (int i = 0; i < 100; i++) {
+            int id = (Integer)res.get(i).get(0);
+
+            int code = (Integer)res.get(i).get(1);
+
+            assertEquals((int)personId2cityCode.get(id), code);
+        }
     }
 
     /**

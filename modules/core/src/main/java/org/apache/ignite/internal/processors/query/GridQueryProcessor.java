@@ -35,10 +35,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1330,19 +1332,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
-            IgniteBinary bin = ctx.grid().binary();
-
             BinaryContext binCtx = proc0.binaryContext();
 
             Map<String, BinaryFieldMetadata> flds = new HashMap<>();
 
-            for (String f : entity.getKeyFields()) {
-                int fldType = bin.typeId(entity.getFields().get(f));
-
-                flds.put(f, new BinaryFieldMetadata(fldType, binCtx.fieldId(fldType, f)));
-            }
-
-            int typeId = ctx.grid().binary().typeId(entity.getKeyType());
+            int typeId = BinaryContext.defaultMapper().typeId(entity.getKeyType());
 
             BinaryMetadata meta = new BinaryMetadata(
                 typeId,
@@ -1354,7 +1348,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 null
             );
 
-            binCtx.updateMetadata(typeId, meta);
+            binCtx.registerUserType(meta, BinaryContext.defaultMapper(), BinaryArrayIdentityResolver.instance());
         }
 
         boolean res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
