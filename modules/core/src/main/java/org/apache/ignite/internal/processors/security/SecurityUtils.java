@@ -105,6 +105,6 @@ public class SecurityUtils {
                 return ver.compareToIgnoreTimestamp(v) >= 0;
         }
 
-        return ver.compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE[SERVICE_PERMISSIONS_SINCE.length]) >= 0;
+        return ver.compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE[SERVICE_PERMISSIONS_SINCE.length - 1]) >= 0;
     }
 }
