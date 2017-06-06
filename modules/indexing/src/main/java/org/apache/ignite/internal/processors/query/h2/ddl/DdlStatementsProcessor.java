@@ -290,11 +290,11 @@ public class DdlStatementsProcessor {
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
 
-        String rand = "_" + UUID.randomUUID().toString().replace("-", "_") + "_";
+        String valTypeName = createTbl.tableName() + "_" + UUID.randomUUID().toString().replace("-", "_");
+        String keyTypeName = valTypeName + "_Key";
 
-        res.setKeyType(createTbl.tableName() + rand + "Key");
-
-        res.setValueType(createTbl.tableName() + rand);
+        res.setValueType(valTypeName);
+        res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
 

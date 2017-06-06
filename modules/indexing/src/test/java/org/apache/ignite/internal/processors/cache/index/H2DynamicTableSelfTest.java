@@ -188,8 +188,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
 
             assertEquals(Object.class, desc.keyClass());
-
             assertEquals(Object.class, desc.valueClass());
+
+            assertTrue(desc.valueTypeName(), desc.valueTypeName().startsWith("Person"));
+
+            assertTrue(desc.keyTypeName(), desc.keyTypeName().startsWith(desc.valueTypeName()));
+            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("Key"));
 
             assertEquals(
                 F.asList("id", "city", "name", "surname", "age"),
