@@ -280,9 +280,9 @@ namespace ignite
             return len;
         }
 
-        const std::string& Connection::GetCache() const
+        const std::string& Connection::GetSchema() const
         {
-            return config.GetCache();
+            return config.GetSchema();
         }
 
         const config::Configuration& Connection::GetConfiguration() const

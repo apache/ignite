@@ -125,6 +125,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private byte[] paramsBytes;
 
+    /** Schema name. */
+    private String schemaName;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -148,6 +151,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         timeout = req.timeout;
         params = req.params;
         paramsBytes = req.paramsBytes;
+        schemaName = req.schemaName;
     }
 
     /**
@@ -343,6 +347,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         return this;
     }
 
+    /**
+     * @return Schema name.
+     */
+    public String schemaName() {
+        return schemaName;
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest schemaName(String schemaName) {
+        this.schemaName = schemaName;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
@@ -458,6 +479,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 writer.incrementState();
+
+            case 11:
+                if (!writer.writeString("schemaName", schemaName))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -559,6 +586,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 reader.incrementState();
+
+            case 11:
+                schemaName = reader.readString("schemaName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -571,7 +606,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

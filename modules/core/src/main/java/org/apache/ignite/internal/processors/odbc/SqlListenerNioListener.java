@@ -29,7 +29,9 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequestHandler;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -37,7 +39,7 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC message listener.
+ * SQL message listener.
  */
 public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** The value corresponds to ODBC driver of the parser field of the handshake request. */
@@ -118,6 +120,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         }
 
         SqlListenerMessageParser parser = connCtx.parser();
+        SqlListenerRequestHandler handler = connCtx.handler();
 
         SqlListenerRequest req;
 
@@ -125,7 +128,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse SQL client request [err=" + e + ']');
+            log.error("Failed to parse SQL client request.", e);
 
             ses.close();
 
@@ -146,8 +149,6 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                     ", req=" + req + ']');
             }
 
-            SqlListenerRequestHandler handler = connCtx.handler();
-
             SqlListenerResponse resp = handler.handle(req);
 
             if (log.isDebugEnabled()) {
@@ -162,9 +163,9 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             ses.send(outMsg);
         }
         catch (Exception e) {
-            log.error("Failed to process SQL client request [reqId=" + req.requestId() + ", err=" + e + ']');
+            log.error("Failed to process SQL client request [req=" + req + ']', e);
 
-            ses.send(parser.encode(new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString())));
+            ses.send(parser.encode(handler.handleException(e)));
         }
     }
 
@@ -235,29 +236,31 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     private SqlListenerConnectionContext prepareContext(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         byte clientType = reader.readByte();
 
-        boolean distributedJoins = reader.readBoolean();
-        boolean enforceJoinOrder = reader.readBoolean();
+        if (clientType == ODBC_CLIENT) {
+            boolean distributedJoins = reader.readBoolean();
+            boolean enforceJoinOrder = reader.readBoolean();
 
-        SqlListenerRequestHandlerImpl handler = new SqlListenerRequestHandlerImpl(ctx, busyLock, maxCursors,
-            distributedJoins, enforceJoinOrder);
+            SqlListenerRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
+                enforceJoinOrder);
 
-        SqlListenerMessageParser parser = null;
+            SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
 
-        switch (clientType) {
-            case ODBC_CLIENT:
-                parser = new OdbcMessageParser(ctx);
-
-                break;
-
-            case JDBC_CLIENT:
-                parser = new JdbcMessageParser(ctx);
-
-                break;
+            return new SqlListenerConnectionContext(handler, parser);
         }
+        else if (clientType == JDBC_CLIENT) {
+            boolean distributedJoins = reader.readBoolean();
+            boolean enforceJoinOrder = reader.readBoolean();
+            boolean collocated = reader.readBoolean();
+            boolean replicatedOnly = reader.readBoolean();
 
-        if (parser == null)
+            SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
+                enforceJoinOrder, collocated, replicatedOnly);
+
+            SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
+
+            return new SqlListenerConnectionContext(handler, parser);
+        }
+        else
             throw new IgniteException("Unknown client type: " + clientType);
-
-        return new SqlListenerConnectionContext(handler, parser);
     }
 }

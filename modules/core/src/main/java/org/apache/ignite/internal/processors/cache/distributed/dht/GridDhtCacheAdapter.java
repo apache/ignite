@@ -685,8 +685,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
         catch (GridDhtInvalidPartitionException e) {
             if (log.isDebugEnabled())
-                log.debug("Ignoring entry for partition that does not belong [key=" + key + ", val=" + val +
-                    ", err=" + e + ']');
+                log.debug(S.toString("Ignoring entry for partition that does not belong",
+                    "key", key, true,
+                    "val", val, true,
+                    "err", e, false));
         }
     }
 

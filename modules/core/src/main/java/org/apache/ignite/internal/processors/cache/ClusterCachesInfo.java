@@ -40,6 +40,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -339,6 +341,15 @@ class ClusterCachesInfo {
                             "client cache (a cache with the given name is not started): " + req.cacheName()));
                     }
                     else {
+                        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
+                            req.startCacheConfiguration(), ctx.cache().cacheDescriptors());
+
+                        if (err != null) {
+                            ctx.cache().completeCacheStartFuture(req, false, err);
+
+                            continue;
+                        }
+
                         CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
                         assert req.cacheType() != null : req;

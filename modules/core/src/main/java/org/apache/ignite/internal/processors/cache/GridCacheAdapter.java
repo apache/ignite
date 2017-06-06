@@ -2223,7 +2223,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "put [key=" + key + ", val=" + val + ", filter=" + filter + ']';
+                return S.toString("put",
+                    "key", key, true,
+                    "val", val, true,
+                    "filter", filter, false);
             }
         });
     }
@@ -2273,7 +2276,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "putAsync [key=" + key + ", val=" + val + ", filter=" + filter + ']';
+                return S.toString("putAsync",
+                    "key", key, true,
+                    "val", val, true,
+                    "filter", filter, false);
             }
         });
     }
@@ -2328,7 +2334,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "putx [key=" + key + ", val=" + val + ", filter=" + filter + ']';
+                return S.toString("putx",
+                    "key", key, true,
+                    "val", val, true,
+                    "filter", filter, false);
             }
         });
 
@@ -2486,7 +2495,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "invokeAsync [key=" + key + ", entryProcessor=" + entryProcessor + ']';
+                return S.toString("invokeAsync",
+                    "key", key, true,
+                    "entryProcessor", entryProcessor, false);
             }
         });
 
@@ -2533,7 +2544,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "invokeAllAsync [keys=" + keys + ", entryProcessor=" + entryProcessor + ']';
+                return S.toString("invokeAllAsync",
+                    "keys", keys, true,
+                    "entryProcessor", entryProcessor, false);
             }
         });
 
@@ -2571,7 +2584,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "invokeAllAsync [map=" + map + ']';
+                return S.toString("invokeAllAsync",
+                    "map", map, true);
             }
         });
 
@@ -2751,7 +2765,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "putAll [map=" + m + ']';
+                return S.toString("putAll",
+                    "map", m, true);
             }
         });
     }
@@ -2781,7 +2796,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "putAllAsync [map=" + m + ']';
+                return S.toString("putAllAsync",
+                    "map", m, true);
             }
         });
     }
@@ -2834,7 +2850,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "remove [key=" + key + ']';
+                return S.toString("remove",
+                    "key", key, true);
             }
         });
     }
@@ -2875,7 +2892,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "removeAsync [key=" + key + ']';
+                return S.toString("removeAsync",
+                    "key", key, true);
             }
         });
     }
@@ -2937,7 +2955,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "removeAll [keys=" + keys + ']';
+                return S.toString("removeAll",
+                    "keys", keys, true);
             }
         });
     }
@@ -2978,7 +2997,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "removeAllAsync [keys=" + keys + ']';
+                return S.toString("removeAllAsync",
+                    "keys", keys, true);
             }
         });
     }
@@ -3030,7 +3050,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "removex [key=" + key + ']';
+                return S.toString("removex",
+                    "key", key, true);
             }
         });
 
@@ -3087,7 +3108,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "removeAsync [key=" + key + ", filter=" + filter + ']';
+                return S.toString("removeAsync",
+                    "key", key, true,
+                    "filter", filter, false);
             }
         });
     }
