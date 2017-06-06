@@ -149,7 +149,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private volatile ExecutorService depExe;
 
     /** Busy lock. */
-    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+    private volatile GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Thread factory. */
     private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName());
@@ -281,8 +281,14 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         if (ctx.isDaemon())
             return;
 
+        GridSpinBusyLock busyLock = this.busyLock;
+
         // Will not release it.
-        busyLock.block();
+        if (busyLock != null) {
+            busyLock.block();
+
+            this.busyLock = null;
+        }
 
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
@@ -337,6 +343,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         if (log.isDebugEnabled())
             log.debug("Activate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
+
+        busyLock = new GridSpinBusyLock();
 
         depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
 
@@ -1338,7 +1346,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private class ServiceEntriesListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {
-            if (!busyLock.enterBusy())
+            GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
+
+            if (busyLock ==  null || !busyLock.enterBusy())
                 return;
 
             try {
@@ -1483,7 +1493,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 }
 
                 @Override public void onTimeout() {
-                    if (!busyLock.enterBusy())
+                    GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
+
+                    if (busyLock == null || !busyLock.enterBusy())
                         return;
 
                     try {
@@ -1504,7 +1516,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private class TopologyListener implements DiscoveryEventListener {
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
-            if (!busyLock.enterBusy())
+            GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
+
+            if (busyLock == null || !busyLock.enterBusy())
                 return;
 
             try {
@@ -1626,7 +1640,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
          */
         private void onReassignmentFailed(final AffinityTopologyVersion topVer,
             final Collection<GridServiceDeployment> retries) {
-            if (!busyLock.enterBusy())
+            GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
+
+            if (busyLock == null || !busyLock.enterBusy())
                 return;
 
             try {
@@ -1744,7 +1760,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private abstract class DepRunnable implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
-            if (!busyLock.enterBusy())
+            GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
+
+            if (busyLock == null || !busyLock.enterBusy())
                 return;
 
             // Won't block ServiceProcessor stopping process.
