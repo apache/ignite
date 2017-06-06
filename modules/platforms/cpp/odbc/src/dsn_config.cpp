@@ -96,7 +96,7 @@ namespace ignite
 
             uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
 
-            std::string cache = ReadDsnString(dsn, Configuration::Key::cache, config.GetCache().c_str());
+            std::string schema = ReadDsnString(dsn, Configuration::Key::schema, config.GetSchema().c_str());
 
             bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
 
@@ -113,7 +113,7 @@ namespace ignite
             config.SetAddress(address);
             config.SetHost(server);
             config.SetTcpPort(port);
-            config.SetCache(cache);
+            config.SetSchema(schema);
             config.SetDistributedJoins(distributedJoins);
             config.SetEnforceJoinOrder(enforceJoinOrder);
             config.SetProtocolVersion(version);
