@@ -25,7 +25,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -48,15 +47,19 @@ import org.jsr166.ConcurrentHashMap8;
 public class GridH2CustomDataTypesHandler implements CustomDataTypesHandler {
     /** */
     private static ConcurrentMap<Integer, EnumDataType> dataTypesById = new ConcurrentHashMap8<>();
+
     /** */
     private static ConcurrentMap<String, EnumDataType> dataTypesByName = new ConcurrentHashMap8<>();
+
     /** */
     private static ConcurrentMap<String, EnumDataType> dataTypesByClassName = new ConcurrentHashMap8<>();
 
     /** */
     private final static int INVALID_TYPE_ID_RANGE_BEGIN = -1;
+
     /** */
     private final static int INVALID_TYPE_ID_RANGE_END = 100;
+
     /** */
     private final static int ENUM_ORDER = 100_000;
 
