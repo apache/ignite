@@ -80,6 +80,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private static final boolean FULL_MAP_DEBUG = false;
 
     /** */
+    private static final int DUMP_PENDING_OBJECTS_THRESHOLD =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
+
+    /** */
     private static final Long ZERO = 0L;
 
     /** */
@@ -234,7 +238,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             break;
                         }
                         catch (IgniteFutureTimeoutCheckedException ignored) {
-                            if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            if (dumpCnt++ < DUMP_PENDING_OBJECTS_THRESHOLD) {
                                 U.warn(log, "Failed to wait for partition eviction [" +
                                     "topVer=" + topVer +
                                     ", group=" + grp.cacheOrGroupName() +
