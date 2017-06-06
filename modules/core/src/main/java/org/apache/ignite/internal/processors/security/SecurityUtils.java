@@ -29,8 +29,12 @@ import org.apache.ignite.plugin.security.SecurityPermission;
  * Security utilities.
  */
 public class SecurityUtils {
-    /** Version since service security supported. */
-    public static final IgniteProductVersion SERVICE_PERMISSIONS_SINCE = IgniteProductVersion.fromString("1.7.11");
+    /** Versions since service security supported. */
+    private static final IgniteProductVersion[] SERVICE_PERMISSIONS_SINCE = {
+        IgniteProductVersion.fromString("1.7.11"),
+        IgniteProductVersion.fromString("1.8.7"),
+        IgniteProductVersion.fromString("1.9.3")
+    };
 
     /** Default serialization version. */
     private final static int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
@@ -88,5 +92,20 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_INVOKE));
 
         return srvcPerms;
+    }
+
+    /**
+     * Checks whether provided release supports service security permissions.
+     *
+     * @param ver Version to ckeck.
+     * @return {@code True} if passed release supports service security permissions.
+     */
+    public static boolean isServiceSecuritySupported(IgniteProductVersion ver) {
+        for (IgniteProductVersion v : SERVICE_PERMISSIONS_SINCE) {
+            if (v.major() == ver.major() && v.minor() == ver.minor())
+                return ver.compareToIgnoreTimestamp(v) >= 0;
+        }
+
+        return ver.compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE[SERVICE_PERMISSIONS_SINCE.length]) >= 0;
     }
 }
