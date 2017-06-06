@@ -290,7 +290,7 @@ public class DdlStatementsProcessor {
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
 
-        String valTypeName = createTbl.tableName() + "_" + UUID.randomUUID().toString().replace("-", "_");
+        String valTypeName = valueType(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = valTypeName + "_Key";
 
         res.setValueType(valTypeName);
@@ -300,6 +300,18 @@ public class DdlStatementsProcessor {
 
         return res;
     }
+
+    /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    private static String valueType(String schemaName, String tblName) {
+        return "sql_" + schemaName + "_" + tblName + "_" + UUID.randomUUID().toString().replace("-", "_");
+    }
+
 
     /**
      * @param cmd Statement.

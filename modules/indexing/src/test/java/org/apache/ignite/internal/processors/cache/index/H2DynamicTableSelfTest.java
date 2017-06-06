@@ -190,7 +190,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             assertEquals(Object.class, desc.keyClass());
             assertEquals(Object.class, desc.valueClass());
 
-            assertTrue(desc.valueTypeName(), desc.valueTypeName().startsWith("Person"));
+            assertTrue(desc.valueTypeName(), desc.valueTypeName().contains("Person"));
 
             assertTrue(desc.keyTypeName(), desc.keyTypeName().startsWith(desc.valueTypeName()));
             assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("Key"));
