@@ -173,7 +173,7 @@ public class DdlStatementsProcessor {
                     ccfg.setSqlSchema(cmd.schemaName());
 
                     SchemaOperationException err =
-                        QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors());
+                        QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors().values());
 
                     if (err != null)
                         throw err;

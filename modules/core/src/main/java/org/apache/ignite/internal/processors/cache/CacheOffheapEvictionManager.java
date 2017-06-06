@@ -41,15 +41,10 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
             return;
 
         try {
-            if (e.markObsoleteIfEmpty(null) || e.obsolete()) {
-                e.context().cache().removeEntry(e);
+            boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false)
+                || e.markObsoleteIfEmpty(null);
 
-                return;
-            }
-
-            boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false);
-
-            if (evicted)
+            if (evicted && !e.isDht()) // GridDhtCacheEntry removes entry when obsoleted.
                 cctx.cache().removeEntry(e);
         }
         catch (IgniteCheckedException ex) {
