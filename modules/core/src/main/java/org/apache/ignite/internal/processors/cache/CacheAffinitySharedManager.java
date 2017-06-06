@@ -405,7 +405,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
-        Set<Integer> gprs = new HashSet<>();
+        Set<
+            Integer > gprs = new HashSet<>();
 
         for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
             Integer grpId = action.descriptor().groupId();
@@ -427,8 +428,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         List<ExchangeActions.ActionData> closeReqs = exchActions.closeRequests(cctx.localNodeId());
 
-        for (ExchangeActions.ActionData req : closeReqs) {
-            cctx.cache().blockGateway(req.request());
+        for (ExchangeActions.ActionData req : closeReqs) {    cctx.cache().blockGateway(req.request());
 
             if (crd) {
                 CacheGroupContext grp = cctx.cache().cacheGroup(req.descriptor().groupId());

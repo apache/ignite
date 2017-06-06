@@ -50,8 +50,8 @@ namespace ignite
                     /** Connection attribute keyword for Driver attribute. */
                     static const std::string driver;
 
-                    /** Connection attribute keyword for cache attribute. */
-                    static const std::string cache;
+                    /** Connection attribute keyword for schema attribute. */
+                    static const std::string schema;
 
                     /** Connection attribute keyword for address attribute. */
                     static const std::string address;
@@ -84,8 +84,8 @@ namespace ignite
                     /** Default value for Driver attribute. */
                     static const std::string driver;
 
-                    /** Default value for cache attribute. */
-                    static const std::string cache;
+                    /** Default value for schema attribute. */
+                    static const std::string schema;
 
                     /** Default value for address attribute. */
                     static const std::string address;
@@ -229,23 +229,23 @@ namespace ignite
                 void SetHost(const std::string& server);
 
                 /**
-                 * Get cache.
+                 * Get schema.
                  *
-                 * @return Cache name.
+                 * @return Schema.
                  */
-                const std::string& GetCache() const
+                const std::string& GetSchema() const
                 {
-                    return GetStringValue(Key::cache, DefaultValue::cache);
+                    return GetStringValue(Key::schema, DefaultValue::schema);
                 }
 
                 /**
-                 * Set cache.
+                 * Set schema.
                  *
-                 * @param cache Cache name.
+                 * @param schema Schema name.
                  */
-                void SetCache(const std::string& cache)
+                void SetSchema(const std::string& schema)
                 {
-                    arguments[Key::cache] = cache;
+                    arguments[Key::schema] = schema;
                 }
 
                 /**

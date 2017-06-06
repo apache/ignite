@@ -26,6 +26,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.IgniteVersionUtils;
@@ -101,9 +102,6 @@ import org.apache.ignite.internal.util.typedef.F;
  * </table>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
- * // Register JDBC driver.
- * Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
- *
  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//localhost:10800");
  *
@@ -133,6 +131,17 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
+    /*
+     * Static initializer.
+     */
+    static {
+        try {
+            DriverManager.registerDriver(new IgniteJdbcThinDriver());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to register " + IgniteJdbcThinDriver.class.getName(), e);
+        }
+    }
 
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
@@ -175,7 +184,9 @@ public class IgniteJdbcThinDriver implements Driver {
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(JdbcThinUtils.PROP_PORT), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), "")
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
+            new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
+            new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), "")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);

@@ -60,16 +60,11 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /** */
     private static final String GROUP2 = "grp2";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }

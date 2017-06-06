@@ -94,6 +94,8 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
     public void testNoClass() throws Exception {
         try {
             startGrid();
+
+            fail();
         }
         catch (Exception e) {
             assertTrue(e.getMessage().contains("default marshaller"));

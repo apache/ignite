@@ -130,6 +130,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
     /**
      * @param compress {@code True} if it is possible to use compression for message.
      */
@@ -197,8 +202,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition update counters.
      */
     @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int grpId) {
-        if (partCntrs != null)
-            return partCntrs.get(grpId);
+        if (partCntrs != null) {
+            Map<Integer, T2<Long, Long>> res = partCntrs.get(grpId);
+
+            return res != null ? res : Collections.<Integer, T2<Long, Long>>emptyMap();
+        }
 
         return Collections.emptyMap();
     }
@@ -426,13 +434,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeByteArray("partsToReloadBytes", partsToReloadBytes))
                     return false;
 
@@ -492,7 +500,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
@@ -500,7 +508,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 partsToReloadBytes = reader.readByteArray("partsToReloadBytes");
 
                 if (!reader.isLastRead())

@@ -74,15 +74,15 @@ param (
  )
 
 # 1) Build Java (Maven)
+# Detect Ignite root directory
+cd $PSScriptRoot\..
+
+while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
+{ cd .. }
+
+echo "Ignite home detected at '$pwd'."
+
 if (!$skipJava) {
-    # Detect Ignite root directory
-    cd $PSScriptRoot\..
-
-    while (!((Test-Path bin) -and (Test-Path examples) -and ((Test-Path modules) -or (Test-Path platforms))))
-    { cd .. }
-
-    echo "Ignite home detected at '$pwd'."
-
     # Detect Maven
     $mv = "mvn"
     if ((Get-Command $mv -ErrorAction SilentlyContinue) -eq $null) { 
@@ -107,22 +107,22 @@ if (!$skipJava) {
     if ($LastExitCode -ne 0) {
         echo "Java (Maven) build failed."; exit -1
     }
-
-    # Copy (relevant) jars
-    $libsDir = "$PSScriptRoot\bin\Libs"
-    mkdir -Force $libsDir; del -Force $libsDir\*.*
-    
-    ls modules\indexing\target,modules\core\target,modules\spring\target *.jar -recurse `
-	   -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
-	   -exclude "*-sources*","*-javadoc*","*-tests*" `
-	   | % { copy -Force $_ $libsDir }
-
-    # Restore directory
-    cd $PSScriptRoot
 }
 else {
     echo "Java (Maven) build skipped."
 }
+
+# Copy (relevant) jars
+$libsDir = "$PSScriptRoot\bin\Libs"
+mkdir -Force $libsDir; del -Force $libsDir\*.*
+
+ls modules\indexing\target,modules\core\target,modules\spring\target *.jar -recurse `
+   -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
+   -exclude "*-sources*","*-javadoc*","*-tests*" `
+   | % { copy -Force $_ $libsDir }
+
+# Restore directory
+cd $PSScriptRoot
 
 
 # 2) Build .NET

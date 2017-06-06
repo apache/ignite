@@ -1317,7 +1317,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
-        boolean res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
+        boolean res;
+
+        try {
+            res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
+        }
+        catch (CacheException e) {
+            if (e.getCause() instanceof SchemaOperationException)
+                throw (SchemaOperationException)e.getCause();
+            else
+                throw e;
+        }
 
         if (!res && !ifNotExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());

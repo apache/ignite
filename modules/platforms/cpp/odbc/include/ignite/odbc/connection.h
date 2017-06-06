@@ -107,11 +107,11 @@ namespace ignite
             void Receive(std::vector<int8_t>& msg);
 
             /**
-             * Get name of the assotiated cache.
+             * Get name of the assotiated schema.
              *
-             * @return Cache name.
+             * @return Schema name.
              */
-            const std::string& GetCache() const;
+            const std::string& GetSchema() const;
 
             /**
              * Get configuration.
