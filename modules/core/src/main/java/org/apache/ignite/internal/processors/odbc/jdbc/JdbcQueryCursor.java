@@ -67,7 +67,7 @@ class JdbcQueryCursor {
     List<List<Object>> fetchRows() {
         List<List<Object>> items = new ArrayList<>();
 
-        int fetchSize0 = (maxRows > 0) ? (int)Math.min(pageSize, maxRows - fetched) : pageSize;
+        long fetchSize0 = (maxRows > 0) ? Math.min(pageSize + fetched, maxRows) : pageSize + fetched;
 
         for (; fetched < fetchSize0 && iter.hasNext(); ++fetched)
             items.add(iter.next());

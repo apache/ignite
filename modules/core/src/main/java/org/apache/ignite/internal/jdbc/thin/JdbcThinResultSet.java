@@ -140,7 +140,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (rowsIter == null && !finished) {
+        if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
             try {
                 JdbcQueryFetchResult res = stmt.connection().io().queryFetch(qryId, fetchSize);
 
@@ -1623,6 +1623,9 @@ public class JdbcThinResultSet implements ResultSet {
      * @throws SQLException On error.
      */
     private List<JdbcColumnMeta> meta() throws SQLException {
+        if (finished && (!isQuery || autoClose))
+            throw new SQLException("Server cursor is already closed.");
+
         if (!metaInit) {
             try {
                 JdbcQueryMetadataResult res = stmt.connection().io().queryMeta(qryId);
