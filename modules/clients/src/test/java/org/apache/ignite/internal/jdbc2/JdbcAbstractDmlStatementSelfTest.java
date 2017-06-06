@@ -27,6 +27,7 @@ import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -59,8 +60,6 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -70,7 +69,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ignite(0).getOrCreateCache(cacheConfig());
+        ((IgniteEx)ignite(0)).context().cache().dynamicStartSqlCache(cacheConfig());
 
         conn = DriverManager.getConnection(getCfgUrl());
     }
@@ -136,7 +135,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+        ((IgniteEx)ignite(0)).context().cache().dynamicDestroyCache(DEFAULT_CACHE_NAME, true, true);
 
         conn.close();
         assertTrue(conn.isClosed());

@@ -34,11 +34,15 @@ import java.util.TreeSet;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -46,6 +50,8 @@ import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
 import org.h2.jdbc.JdbcPreparedStatement;
+import org.h2.table.IndexColumn;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
@@ -115,13 +121,17 @@ public class GridSqlQuerySplitter {
     /** */
     private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
+    /** */
+    private GridKernalContext ctx;
+
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
      */
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy) {
+    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, GridKernalContext ctx) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
+        this.ctx = ctx;
     }
 
     /**
@@ -181,7 +191,7 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy);
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2.kernalContext());
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -233,13 +243,16 @@ public class GridSqlQuerySplitter {
         twoStepQry.explain(explain);
         twoStepQry.distributedJoins(distributedJoins);
 
+        // all map queries must have non-empty derivedPartitions to use this feature.
+        twoStepQry.derivedPartitions(mergePartitionsFromMultipleQueries(twoStepQry.mapQueries()));
+
         return twoStepQry;
     }
 
     /**
      * @param qry Optimized and normalized query to split.
      */
-    private void splitQuery(GridSqlQuery qry) {
+    private void splitQuery(GridSqlQuery qry) throws IgniteCheckedException {
         // Create a fake parent AST element for the query to allow replacing the query in the parent by split.
         GridSqlSubquery fakeQryPrnt = new GridSqlSubquery(qry);
 
@@ -1015,7 +1028,7 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void splitQueryModel(QueryModel qrym) {
+    private void splitQueryModel(QueryModel qrym) throws IgniteCheckedException {
         switch (qrym.type) {
             case SELECT:
                 if (qrym.needSplit) {
@@ -1190,7 +1203,7 @@ public class GridSqlQuerySplitter {
     private void splitSelect(
         final GridSqlAst prnt,
         final int childIdx
-    ) {
+    ) throws IgniteCheckedException {
         if (++splitId > 99)
             throw new CacheException("Too complex query to process.");
 
@@ -1315,6 +1328,9 @@ public class GridSqlQuerySplitter {
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
         map.partitioned(hasPartitionedTables(mapQry));
+
+        if (map.isPartitioned())
+            map.derivedPartitions(derivePartitionsFromQuery(mapQry, ctx));
 
         mapSqlQrys.add(map);
     }
@@ -1836,12 +1852,12 @@ public class GridSqlQuerySplitter {
         /* Note Distinct aggregate can be performed only on reduce phase, so
            if query contains distinct aggregate then other aggregates must be processed the same way. */
         switch (agg.type()) {
-            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) )  or  AVG(CAST( x AS DOUBLE))
+            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) )  or  AVG(x)
                 if (hasDistinctAggregate) /* and has no collocated group by */ {
                     mapAgg = agg.child();
 
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).resultType(GridSqlType.DOUBLE)
-                        .addChild(function(CAST).resultType(GridSqlType.DOUBLE).addChild(column(mapAggAlias.alias())));
+                    rdcAgg = aggregate(agg.distinct(), agg.type()).resultType(agg.resultType())
+                        .addChild(column(mapAggAlias.alias()));
                 }
                 else {
                     //-- COUNT(x) map
@@ -1868,7 +1884,13 @@ public class GridSqlQuerySplitter {
 
                     GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
 
-                    rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
+                    if (!isFractionalType(agg.resultType().type())) {
+                        sumUpRdc =  function(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
+                        sumDownRdc = function(CAST).resultType(GridSqlType.BIGINT).addChild(sumDownRdc);
+                    }
+
+                    rdcAgg = function(CAST).resultType(agg.resultType())
+                        .addChild(op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc));
                 }
 
                 break;
@@ -1971,6 +1993,214 @@ public class GridSqlQuerySplitter {
      */
     private static GridSqlFunction function(GridSqlFunctionType type) {
         return new GridSqlFunction(type);
+    }
+
+    /**
+     * @param type data type id
+     * @return true if given type is fractional
+     */
+    private static boolean isFractionalType(int type) {
+        return type == Value.DECIMAL || type == Value.FLOAT || type == Value.DOUBLE;
+    }
+
+    /**
+     * Checks if given query contains expressions over key or affinity key
+     * that make it possible to run it only on a small isolated
+     * set of partitions.
+     *
+     * @param qry Query.
+     * @param ctx Kernal context.
+     * @return Array of partitions, or {@code null} if none identified
+     */
+    private static CacheQueryPartitionInfo[] derivePartitionsFromQuery(GridSqlQuery qry, GridKernalContext ctx)
+        throws IgniteCheckedException {
+
+        if (!(qry instanceof GridSqlSelect))
+            return null;
+
+        GridSqlSelect select = (GridSqlSelect)qry;
+
+        // no joins support yet
+        if (select.from() == null || select.from().size() != 1)
+            return null;
+
+        return extractPartition(select.where(), ctx);
+    }
+
+    /**
+     * @param el AST element to start with.
+     * @param ctx Kernal context.
+     * @return Array of partition info objects, or {@code null} if none identified
+     */
+    private static CacheQueryPartitionInfo[] extractPartition(GridSqlAst el, GridKernalContext ctx)
+        throws IgniteCheckedException {
+
+        if (!(el instanceof GridSqlOperation))
+            return null;
+
+        GridSqlOperation op = (GridSqlOperation)el;
+
+        switch (op.operationType()) {
+            case EQUAL: {
+                CacheQueryPartitionInfo partInfo = extractPartitionFromEquality(op, ctx);
+
+                if (partInfo != null)
+                    return new CacheQueryPartitionInfo[] { partInfo };
+
+                return null;
+            }
+
+            case AND: {
+                assert op.size() == 2;
+
+                CacheQueryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
+                CacheQueryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
+
+                if (partsLeft != null && partsRight != null)
+                    return null; //kind of conflict (_key = 1) and (_key = 2)
+
+                if (partsLeft != null)
+                    return partsLeft;
+
+                if (partsRight != null)
+                    return partsRight;
+
+                return null;
+            }
+
+            case OR: {
+                assert op.size() == 2;
+
+                CacheQueryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
+                CacheQueryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
+
+                if (partsLeft != null && partsRight != null)
+                    return mergePartitionInfo(partsLeft, partsRight);
+
+                return null;
+            }
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Analyses the equality operation and extracts the partition if possible
+     *
+     * @param op AST equality operation.
+     * @param ctx Kernal Context.
+     * @return partition info, or {@code null} if none identified
+     */
+    private static CacheQueryPartitionInfo extractPartitionFromEquality(GridSqlOperation op, GridKernalContext ctx)
+        throws IgniteCheckedException {
+
+        assert op.operationType() == GridSqlOperationType.EQUAL;
+
+        GridSqlElement left = op.child(0);
+        GridSqlElement right = op.child(1);
+
+        if (!(left instanceof GridSqlColumn))
+            return null;
+
+        if (!(right instanceof GridSqlConst) && !(right instanceof GridSqlParameter))
+            return null;
+
+        GridSqlColumn column = (GridSqlColumn)left;
+
+        assert column.column().getTable() instanceof GridH2Table;
+
+        GridH2Table tbl = (GridH2Table) column.column().getTable();
+
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
+
+        int colId = column.column().getColumnId();
+
+        if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+            return null;
+
+        if (right instanceof GridSqlConst) {
+            GridSqlConst constant = (GridSqlConst)right;
+
+            return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.cacheName(),
+                constant.value().getObject()), null, -1);
+        }
+
+        assert right instanceof GridSqlParameter;
+
+        GridSqlParameter param = (GridSqlParameter) right;
+
+        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), param.index());
+    }
+
+    /**
+     * Merges two partition info arrays, removing duplicates
+     *
+     * @param a Partition info array.
+     * @param b Partition info array.
+     * @return Result.
+     */
+    private static CacheQueryPartitionInfo[] mergePartitionInfo(CacheQueryPartitionInfo[] a, CacheQueryPartitionInfo[] b) {
+        assert a != null;
+        assert b != null;
+
+        if (a.length == 1 && b.length == 1) {
+            if (a[0].equals(b[0]))
+                return new CacheQueryPartitionInfo[] { a[0] };
+
+            return new CacheQueryPartitionInfo[] { a[0], b[0] };
+        }
+
+        ArrayList<CacheQueryPartitionInfo> list = new ArrayList<>(a.length + b.length);
+
+        for (CacheQueryPartitionInfo part: a)
+            list.add(part);
+
+        for (CacheQueryPartitionInfo part: b) {
+            int i = 0;
+
+            while (i < list.size() && !list.get(i).equals(part))
+                i++;
+
+            if (i == list.size())
+                list.add(part);
+        }
+
+        CacheQueryPartitionInfo[] result = new CacheQueryPartitionInfo[list.size()];
+
+        for (int i = 0; i < list.size(); i++)
+            result[i] = list.get(i);
+
+        return result;
+    }
+
+    /**
+     * Ensures all given queries have non-empty derived partitions and merges them.
+     *
+     * @param queries Collection of queries.
+     * @return Derived partitions for all queries, or {@code null}.
+     */
+    private static CacheQueryPartitionInfo[] mergePartitionsFromMultipleQueries(List<GridCacheSqlQuery> queries) {
+        CacheQueryPartitionInfo[] result = null;
+
+        for (GridCacheSqlQuery qry : queries) {
+            CacheQueryPartitionInfo[] partInfo = (CacheQueryPartitionInfo[])qry.derivedPartitions();
+
+            if (partInfo == null) {
+                result = null;
+
+                break;
+            }
+
+            if (result == null)
+                result = partInfo;
+            else
+                result = mergePartitionInfo(result, partInfo);
+        }
+
+        return result;
     }
 
     /**

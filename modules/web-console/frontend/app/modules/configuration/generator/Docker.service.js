@@ -23,13 +23,13 @@ export default class IgniteDockerGenerator {
      * Generate from section.
      *
      * @param {Object} cluster Cluster.
-     * @param {String} ver Ignite version.
+     * @param {Object} targetVer Target version.
      * @returns {String}
      */
-    from(cluster, ver) {
+    from(cluster, targetVer) {
         return [
             '# Start from Apache Ignite image.',
-            `FROM apacheignite/ignite:${ver}`
+            `FROM apacheignite/ignite:${targetVer.ignite}`
         ].join('\n');
     }
 
@@ -37,11 +37,11 @@ export default class IgniteDockerGenerator {
      * Generate Docker file for cluster.
      *
      * @param {Object} cluster Cluster.
-     * @param {String} ver Ignite version.
+     * @param {Object} targetVer Target version.
      */
-    generate(cluster, ver) {
+    generate(cluster, targetVer) {
         return [
-            this.from(cluster, ver),
+            this.from(cluster, targetVer),
             '',
             '# Set config uri for node.',
             `ENV CONFIG_URI config/${cluster.name}-server.xml`,

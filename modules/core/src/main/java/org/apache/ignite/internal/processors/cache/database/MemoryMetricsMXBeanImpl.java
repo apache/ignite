@@ -67,12 +67,20 @@ class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void rateTimeInterval(int rateTimeInterval) {
+    @Override public void rateTimeInterval(long rateTimeInterval) {
+        if (rateTimeInterval < 1000)
+            throw new IllegalArgumentException("rateTimeInterval property must be positive " +
+                "and greater than 1_000 milliseconds (one second)");
+
         memMetrics.rateTimeInterval(rateTimeInterval);
     }
 
     /** {@inheritDoc} */
     @Override public void subIntervals(int subInts) {
+        if (subInts <= 1)
+            throw new IllegalArgumentException("subIntervals property must be positive " +
+                "and greater than one");
+
         memMetrics.subIntervals(subInts);
     }
 
