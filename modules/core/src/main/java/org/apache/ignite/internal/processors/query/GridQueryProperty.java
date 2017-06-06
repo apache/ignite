@@ -65,7 +65,7 @@ public interface GridQueryProperty {
     public GridQueryProperty parent();
 
     /**
-     * @return type name defined by user
+     * @return Type name defined by user.
      */
     public String userTypeName();
 }

@@ -60,7 +60,15 @@ public class GridH2ValueEnum extends Value {
      */
     private CacheObject obj;
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     * @param type Type.
+     * @param val Value.
+     * @param name Name.
+     * @param obj Cache object.
+     */
     public GridH2ValueEnum(GridKernalContext ctx, int type, int val, String name, CacheObject obj) {
         assert ctx != null;
 

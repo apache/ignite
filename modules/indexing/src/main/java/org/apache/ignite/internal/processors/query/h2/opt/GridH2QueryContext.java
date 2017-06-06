@@ -104,6 +104,7 @@ public class GridH2QueryContext {
         assert type != MAP;
 
         key = new Key(locNodeId, nodeId, qryId, 0, type);
+
         this.ctx = ctx;
     }
 
@@ -115,10 +116,12 @@ public class GridH2QueryContext {
      * @param type Query type.
      * @param ctx Kernal context.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type, GridKernalContext ctx) {
+    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type,
+        GridKernalContext ctx) {
         assert segmentId == 0 || type == MAP;
 
         key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+
         this.ctx = ctx;
     }
 
