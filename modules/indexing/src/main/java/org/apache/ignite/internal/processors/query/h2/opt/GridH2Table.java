@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.cache.affinity.BinaryFieldNameAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -130,7 +131,9 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cctx = cctx;
 
-        if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
+        if (desc != null && desc.context() != null &&
+            (!desc.context().customAffinityMapper() ||
+                desc.context().config().getAffinityMapper() instanceof BinaryFieldNameAffinityKeyMapper)) {
             boolean affinityColExists = true;
 
             String affKey = desc.type().affinityKey();

@@ -36,6 +36,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cache.affinity.BinaryFieldNameAffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -427,16 +428,19 @@ public class QueryUtils {
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null) {
-                // Need to setup affinity key for distributed joins.
-                String affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
+            String affField = null;
 
-                if (affField != null) {
-                    if (!escape)
-                        affField = normalizeObjectName(affField, false);
+            // Need to setup affinity key for distributed joins.
+            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null)
+                affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
+            else if (cctx.config().getAffinityMapper() instanceof BinaryFieldNameAffinityKeyMapper)
+                affField = ((BinaryFieldNameAffinityKeyMapper)cctx.config().getAffinityMapper()).fieldName();
 
-                    desc.affinityKey(affField);
-                }
+            if (affField != null) {
+                if (!escape)
+                    affField = normalizeObjectName(affField, false);
+
+                desc.affinityKey(affField);
             }
         }
         else {

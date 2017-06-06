@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -26,9 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
-
 import javax.cache.CacheException;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -45,6 +44,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -439,6 +439,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testAffinityKey() throws Exception {
         executeDdl("CREATE TABLE \"City\" (\"name\" varchar primary key, \"code\" int) WITH \"affinityKey='name'\"");
 
+        assertAffinityCacheConfiguration("City", "name");
+
         executeDdl("INSERT INTO \"City\" (\"name\", \"code\") values ('A', 1), ('B', 2), ('C', 3)");
 
         List<String> cityNames = Arrays.asList("A", "B", "C");
@@ -448,11 +450,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         // We need unique name for this table to avoid conflicts with existing binary metadata.
         executeDdl("CREATE TABLE \"Person2\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"template=cache,affinitykey='city'\"");
+            "\"template=cache,affinityKey='city'\"");
 
-        assertEquals("city", client().binary().type("Person2Key").affinityKeyFieldName());
-
-        assertEquals("city", client().context().cacheObjects().affinityField("Person2Key"));
+        assertAffinityCacheConfiguration("Person2", "city");
 
         Random r = new Random();
 
@@ -483,6 +483,31 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertEquals((int)personId2cityCode.get(id), code);
         }
+    }
+
+    /**
+     * Check that dynamic cache created with {@code CREATE TABLE} is correctly configured affinity wise.
+     * @param cacheName Cache name to check.
+     * @param affKeyFieldName Expected affinity key field name.
+     */
+    private void assertAffinityCacheConfiguration(String cacheName, String affKeyFieldName) {
+        Collection<GridQueryTypeDescriptor> types = client().context().query().types(cacheName);
+
+        assertEquals(1, types.size());
+
+        GridQueryTypeDescriptor type = types.iterator().next();
+
+        assertEquals(cacheName, type.name());
+        assertEquals(cacheName, type.tableName());
+        assertEquals(affKeyFieldName, type.affinityKey());
+
+        GridH2Table tbl = ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).dataTable("PUBLIC", cacheName);
+
+        assertNotNull(tbl);
+
+        assertNotNull(tbl.getAffinityKeyColumn());
+
+        assertEquals(affKeyFieldName, tbl.getAffinityKeyColumn().columnName);
     }
 
     /**
