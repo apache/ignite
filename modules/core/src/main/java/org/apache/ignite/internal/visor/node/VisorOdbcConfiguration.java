@@ -28,6 +28,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  * Data transfer object for configuration of ODBC data structures.
  */
+@Deprecated
 public class VisorOdbcConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
