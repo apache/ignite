@@ -57,6 +57,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -522,7 +523,16 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 InetSocketAddress addr = it.next();
 
-                T3<SocketStream, Integer, Boolean> sockAndRes = sendJoinRequest(recon, addr);
+                T3<SocketStream, Integer, Boolean> sockAndRes;
+
+                SecurityUtils.serializeVersion(1);
+
+                try {
+                    sockAndRes = sendJoinRequest(recon, addr);
+                }
+                finally {
+                    SecurityUtils.restoreDefaultSerializeVersion();
+                }
 
                 if (sockAndRes == null) {
                     it.remove();
@@ -984,6 +994,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     while (!isInterrupted()) {
                         TcpDiscoveryAbstractMessage msg;
 
+                        SecurityUtils.serializeVersion(1);
+
                         try {
                             msg = U.unmarshal(spi.marshaller(), in, U.resolveClassLoader(spi.ignite().configuration()));
                         }
@@ -1008,6 +1020,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']');
 
                             continue;
+                        }
+                        finally {
+                            SecurityUtils.restoreDefaultSerializeVersion();
                         }
 
                         msg.senderNodeId(rmtNodeId);
