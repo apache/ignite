@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.sql.Array;
@@ -40,6 +41,7 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
@@ -64,7 +66,7 @@ public class JdbcThinConnection implements Connection {
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
     /** Schema name. */
-    private String schemaName;
+    private String schema;
 
     /** Closed flag. */
     private boolean closed;
@@ -98,6 +100,7 @@ public class JdbcThinConnection implements Connection {
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
+        schema = QueryUtils.DFLT_SCHEMA;
 
         String host = extractHost(props);
         int port = extractPort(props);
@@ -217,7 +220,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (sql == null)
-            throw new SQLException("Invalid argument");
+            throw new SQLException("Invalid arguments");
 
         return sql;
     }
@@ -334,6 +337,8 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public Map<String, Class<?>> getTypeMap() throws SQLException {
+        ensureNotClosed();
+
         throw new SQLFeatureNotSupportedException("Types mapping is not supported.");
     }
 
@@ -350,6 +355,9 @@ public class JdbcThinConnection implements Connection {
 
         if (holdability != HOLD_CURSORS_OVER_COMMIT)
             LOG.warning("Transactions are not supported.");
+
+        if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
+            throw new SQLException("Invalid result set holdability value");
 
         this.holdability = holdability;
     }
@@ -508,32 +516,46 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setSchema(String schema) throws SQLException {
-        schemaName = schema;
+        ensureNotClosed();
+
+        if (schema == null)
+            throw new SQLException("Invalid schema value");
+
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
-        return schemaName;
+        ensureNotClosed();
+
+        return schema;
     }
 
     /** {@inheritDoc} */
     @Override public void abort(Executor executor) throws SQLException {
         if (executor == null)
-            throw new SQLException("Invalid argument");
+            throw new SQLException("Invalid executor value");
 
         close();
     }
 
     /** {@inheritDoc} */
     @Override public void setNetworkTimeout(Executor executor, int ms) throws SQLException {
+        ensureNotClosed();
+
+        if (executor == null)
+            throw new SQLException("Invalid executor value");
+
         if (ms < 0)
-            throw new IllegalArgumentException("Timeout is below zero: " + ms);
+            throw new SQLException("Invalid timeout value");
 
         timeout = ms;
     }
 
     /** {@inheritDoc} */
     @Override public int getNetworkTimeout() throws SQLException {
+        ensureNotClosed();
+
         return timeout;
     }
 

@@ -808,6 +808,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            if (!conn.getMetaData().supportsTransactions())
+                return;
+
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -847,6 +850,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testRollback() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            if (!conn.getMetaData().supportsTransactions())
+                return;
+
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -953,6 +959,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testGetSetCatalog() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            if (!conn.getMetaData().supportsCatalogsInDataManipulation())
+                return;
+
             assertNull(conn.getCatalog());
 
             final String catalog = "catalog";
@@ -994,6 +1003,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testGetSetTransactionIsolation() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            if (!conn.getMetaData().supportsTransactions())
+                return;
+
             // Invalid parameter value
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1207,49 +1219,52 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSetSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
-            conn.setSavepoint();
+            if (!conn.getMetaData().supportsSavepoints()) {
+                // Unsupported
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            conn.setSavepoint();
 
-            // Disallowed in auto-commit mode
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setSavepoint();
+                            return null;
+                        }
+                    },
+                    SQLFeatureNotSupportedException.class,
+                    "Savepoints are not supported"
+                );
+            }
+            else {
+                conn.setSavepoint();
 
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Auto-commit mode"
-            );
+                // Disallowed in auto-commit mode
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            conn.setSavepoint();
 
-            conn.setAutoCommit(false);
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Auto-commit mode"
+                );
 
-            // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setSavepoint();
+                conn.setAutoCommit(false);
 
-                        return null;
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Savepoints are not supported"
-            );
+                conn.close();
 
-            conn.close();
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            conn.setSavepoint();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setSavepoint();
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Connection is closed"
+                );
+            }
         }
     }
 
@@ -1258,6 +1273,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSetSavepointName() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            if (!conn.getMetaData().supportsSavepoints())
+                return;
+
             // Invalid arg
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1324,6 +1342,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            if (!conn.getMetaData().supportsSavepoints())
+                return;
+
             // Invalid arg
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1388,6 +1409,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            if (!conn.getMetaData().supportsSavepoints())
+                return;
+
             // Invalid arg
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
