@@ -1315,15 +1315,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 log.info("Stopped cache [cacheName=" + cache.name() + ']');
         }
 
-        U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
-
-        if (log.isInfoEnabled()) {
-            if (ctx.group().sharedGroup())
-                log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + ctx.group().name() + ']');
-            else
-                log.info("Stopped cache [cacheName=" + cache.name() + ']');
-        }
-
         cleanup(ctx);
     }
 
@@ -1953,56 +1944,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (proxyRestart)
             proxy.onRestarted(cacheCtx, cache);
-    }
-
-    /**
-     * @param desc Group descriptor.
-     * @param cacheType Cache type.
-     * @param affNode Affinity node flag.
-     * @param cacheObjCtx Cache object context.
-     * @param exchTopVer Current topology version.
-     * @return Started cache group.
-     * @throws IgniteCheckedException If failed.
-     */
-    private CacheGroupContext startCacheGroup(
-        CacheGroupDescriptor desc,
-        CacheType cacheType,
-        boolean affNode,
-        CacheObjectContext cacheObjCtx,
-        AffinityTopologyVersion exchTopVer)
-        throws IgniteCheckedException {
-        CacheConfiguration cfg = new CacheConfiguration(desc.config());
-
-        String memPlcName = cfg.getMemoryPolicyName();
-
-        MemoryPolicy memPlc = sharedCtx.database().memoryPolicy(memPlcName);
-        FreeList freeList = sharedCtx.database().freeList(memPlcName);
-        ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
-
-        CacheGroupContext grp = new CacheGroupContext(sharedCtx,
-            desc.groupId(),
-            desc.receivedFrom(),
-            cacheType,
-            cfg,
-            affNode,
-            memPlc,
-            cacheObjCtx,
-            freeList,
-            reuseList,
-            exchTopVer);
-
-        for (Object obj : grp.configuredUserObjects())
-            prepare(cfg, obj, false);
-
-        U.startLifecycleAware(grp.configuredUserObjects());
-
-        grp.start();
-
-        CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
-
-        assert old == null : old.name();
-
-        return grp;
     }
 
     /**

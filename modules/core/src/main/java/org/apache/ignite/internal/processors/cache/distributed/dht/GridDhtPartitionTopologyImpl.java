@@ -502,15 +502,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         return grp.affinity().nodes(p, topVer).contains(ctx.localNode());
     }
 
-    /**
-     * @param p Partition number.
-     * @param topVer Topology version.
-     * @return {@code True} if given partition belongs to local node.
-     */
-    private boolean partitionLocalNode(int p, AffinityTopologyVersion topVer) {
-        return grp.affinity().nodes(p, topVer).contains(ctx.localNode());
-    }
-
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
         treatAllPartAsLoc = false;
@@ -1204,9 +1195,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             changed = true;
                         }
-                        else {
+                        else
                             locPart.reload(true);
-                        }
                     }
                 }
             }
