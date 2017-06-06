@@ -64,7 +64,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     private static final String TBL_NAME = Person.class.getSimpleName();
 
     /** Schema name. */
-    private static final String SCHEMA_NAME = TBL_NAME;
+    private static final String SCHEMA_NAME = "PUBLIC";
 
     /** Cache name. */
     private static final String CACHE_NAME = TBL_NAME;
