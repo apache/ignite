@@ -943,10 +943,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             boolean sameCaches = true;
 
-            Set<String> caches = discovery.nodeCaches(F.first(subgrid)).keySet();
+            Set<String> caches = discovery.nodePublicCaches(F.first(subgrid)).keySet();
 
             for (int i = 1; i < subgrid.size(); i++) {
-                if (!caches.equals(discovery.nodeCaches(subgrid.get(i)).keySet())) {
+                if (!caches.equals(discovery.nodePublicCaches(subgrid.get(i)).keySet())) {
                     sameCaches = false;
 
                     break;

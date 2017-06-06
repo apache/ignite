@@ -60,6 +60,7 @@ public class CacheTopologyCommandHandlerTest extends GridCommonAbstractTest {
             .setCacheConfiguration(ccfg);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -145,7 +146,7 @@ public class CacheTopologyCommandHandlerTest extends GridCommonAbstractTest {
         while (!fut.isDone())
             hnd.handleAsync(req).get();
 
-        if(ex.get() != null)
+        if (ex.get() != null)
             throw ex.get();
     }
 }
