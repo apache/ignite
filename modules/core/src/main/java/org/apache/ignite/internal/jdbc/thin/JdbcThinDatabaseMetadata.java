@@ -34,14 +34,14 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
  * See documentation of {@link org.apache.ignite.IgniteJdbcThinDriver} for details.
  */
 @SuppressWarnings("RedundantCast")
-public class JdbcDatabaseMetadata implements DatabaseMetaData {
+public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** Connection. */
     private final JdbcThinConnection conn;
 
     /**
      * @param conn Connection.
      */
-    JdbcDatabaseMetadata(JdbcThinConnection conn) {
+    JdbcThinDatabaseMetadata(JdbcThinConnection conn) {
         this.conn = conn;
     }
 

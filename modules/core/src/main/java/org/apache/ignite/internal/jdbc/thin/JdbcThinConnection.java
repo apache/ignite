@@ -168,6 +168,9 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
+        if (sql == null)
+            throw new SQLException("Invalid arguments");
+
         JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql);
 
         if (timeout > 0)
@@ -212,6 +215,9 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public String nativeSQL(String sql) throws SQLException {
         ensureNotClosed();
+
+        if (sql == null)
+            throw new SQLException("Invalid argument");
 
         return sql;
     }
@@ -269,7 +275,7 @@ public class JdbcThinConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcDatabaseMetadata(this);
+        return new JdbcThinDatabaseMetadata(this);
     }
 
     /** {@inheritDoc} */
@@ -512,6 +518,9 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void abort(Executor executor) throws SQLException {
+        if (executor == null)
+            throw new SQLException("Invalid argument");
+
         close();
     }
 

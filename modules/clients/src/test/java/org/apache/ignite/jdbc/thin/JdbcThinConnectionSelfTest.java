@@ -17,10 +17,6 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -48,11 +44,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.concurrent.Callable;
-
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
 import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
@@ -73,6 +64,12 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** URL prefix. */
+    private static final String URL_PREFIX = "jdbc:ignite:thin://";
+
+    /** Host. */
+    private static final String HOST = "127.0.0.1";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -1904,6 +1901,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     // setReadOnly
     //
 
+    /**
+     * @return Savepoint.
+     */
     private Savepoint getFakeSavepoint() {
         return new Savepoint() {
             @Override public int getSavepointId() throws SQLException {
