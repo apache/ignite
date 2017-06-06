@@ -490,12 +490,18 @@ public class JdbcThinConnection implements Connection {
     @Override public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
         ensureNotClosed();
 
+        if (typeName == null)
+            throw new SQLException("Invalid type name");
+
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Struct createStruct(String typeName, Object[] attrs) throws SQLException {
         ensureNotClosed();
+
+        if (typeName == null)
+            throw new SQLException("Invalid type name");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }

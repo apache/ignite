@@ -915,6 +915,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testGetSetReadOnly() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5426");
+
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
             assertFalse(conn.isReadOnly());
 
@@ -1580,6 +1582,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testGetSetClientInfoPair() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
+
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
@@ -1622,6 +1626,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testGetSetClientInfoProperties() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
+
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
