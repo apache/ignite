@@ -41,7 +41,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -196,12 +195,14 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
                     TestRecordingCommunicationSpi spi =
                         (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
+                    final int grpId = groupIdForCache(ignite, ccfg.getName());
+
                     spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                         @Override public boolean apply(ClusterNode node, Message msg) {
                             if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                                 return false;
 
-                            return ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(ccfg.getName());
+                            return ((GridDhtPartitionSupplyMessage)msg).groupId() == grpId;
                         }
                     });
                 }

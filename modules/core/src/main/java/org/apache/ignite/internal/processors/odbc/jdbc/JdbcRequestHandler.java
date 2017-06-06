@@ -68,6 +68,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
+    /** Collocated flag. */
+    private final boolean collocated;
+
+    /** Replicated only flag. */
+    private final boolean replicatedOnly;
+
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
@@ -79,14 +85,20 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param collocated Collocated flag.
+     * @param replicatedOnly Replicated only flag.
+     * @param autoCloseCursors Flag to automatically close server cursors.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean autoCloseCursors) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly, 
+        boolean autoCloseCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.collocated = collocated;
+        this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
 
         log = ctx.log(getClass());
@@ -157,6 +169,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
+            qry.setCollocated(collocated);
+            qry.setReplicatedOnly(replicatedOnly);
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,

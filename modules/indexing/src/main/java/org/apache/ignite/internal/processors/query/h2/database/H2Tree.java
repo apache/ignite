@@ -63,7 +63,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /**
      * @param name Tree name.
      * @param reuseList Reuse list.
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      * @param rowStore Row data store.
@@ -74,7 +74,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     protected H2Tree(
         String name,
         ReuseList reuseList,
-        int cacheId,
+        int grpId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
@@ -85,7 +85,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
 
         if (!initNew) {
             // Page is ready - read inline size from it.

@@ -48,6 +48,11 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId) {
         return Collections.emptyMap();
     }
@@ -89,7 +94,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 5;
     }
 
     /** {@inheritDoc} */

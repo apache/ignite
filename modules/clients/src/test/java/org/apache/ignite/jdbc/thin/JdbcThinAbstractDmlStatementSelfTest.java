@@ -55,8 +55,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
-
         startGridsMultiThreaded(3);
     }
 

@@ -25,7 +25,6 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
-import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
@@ -40,13 +39,10 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
     private AtomicInteger qryCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
         if (rnd.nextBoolean()) {
             double salary = rnd.nextDouble() * args.range() * 1000;

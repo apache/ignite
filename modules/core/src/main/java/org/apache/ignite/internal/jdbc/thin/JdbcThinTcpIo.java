@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -54,10 +53,10 @@ public class JdbcThinTcpIo {
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity for handshake. */
-    private static final int HANDSHAKE_MSG_SIZE = 10;
+    private static final int HANDSHAKE_MSG_SIZE = 13;
 
     /** Initial output for query message. */
-    private static final int QUERY_EXEC_MSG_INIT_CAP = 1024;
+    private static final int QUERY_EXEC_MSG_INIT_CAP = 256;
 
     /** Initial output for query fetch message. */
     private static final int QUERY_FETCH_MSG_SIZE = 13;
@@ -80,7 +79,13 @@ public class JdbcThinTcpIo {
     /** Enforce join order. */
     private final boolean enforceJoinOrder;
 
-    /** Automatically close server cursors. */
+    /** Collocated flag. */
+    private final boolean collocated;
+
+    /** Replicated only flag. */
+    private final boolean replicatedOnly;
+
+    /** Flag to automatically close server cursors. */
     private final boolean autoCloseServerCursors;
 
     /** Socket send buffer. */
@@ -111,17 +116,21 @@ public class JdbcThinTcpIo {
      * @param port Port.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param autoCloseServerCursors Automatically close server cursors.
+     * @param collocated Collocated flag.
+     * @param replicatedOnly Replicated only flag.
+     * @param autoCloseServerCursors Flag to automatically close server cursors.
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder,
-        boolean autoCloseServerCursors, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
+    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
+        boolean replicatedOnly, boolean autoCloseServerCursors, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.collocated = collocated;
+        this.replicatedOnly = replicatedOnly;
         this.autoCloseServerCursors = autoCloseServerCursors;
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
@@ -176,6 +185,8 @@ public class JdbcThinTcpIo {
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
+        writer.writeBoolean(collocated);
+        writer.writeBoolean(replicatedOnly);
         writer.writeBoolean(autoCloseServerCursors);
 
         send(writer.array());
@@ -349,6 +360,41 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * @return Distributed joins flag.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    public boolean enforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * @return Collocated flag.
+     */
+    public boolean collocated() {
+        return collocated;
+    }
+
+    /**
+     * @return Replicated only flag.
+     */
+    public boolean replicatedOnly() {
+        return replicatedOnly;
+    }
+
+    /**
+     * @return Auto close server cursors flag.
+     */
+    public boolean autoCloseServerCursors() {
+        return autoCloseServerCursors;
+    }
+
+    /**
      * @return Socket send buffer size.
      */
     public int socketSendBuffer() {
@@ -367,12 +413,5 @@ public class JdbcThinTcpIo {
      */
     public boolean tcpNoDelay() {
         return tcpNoDelay;
-    }
-
-    /**
-     * @return Auto close server cursors flag.
-     */
-    public boolean autoCloseServerCursors() {
-        return autoCloseServerCursors;
     }
 }

@@ -195,7 +195,10 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         try {
-            return cctx.offheap().entriesCount(true, false, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+                true,
+                false,
+                cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException ignored) {
             return 0;
@@ -205,7 +208,10 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
         try {
-            return cctx.offheap().entriesCount(false, true, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+                false,
+                true,
+                cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException ignored) {
             return 0;
