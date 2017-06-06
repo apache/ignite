@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -354,33 +355,37 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCreateStatement2() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
-            // Unsupported result set type
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY);
+            int [] rsTypes = new int[]
+                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+
+            int [] rsConcurs = new int[]
+                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    if (meta.supportsResultSetConcurrency(type, concur)) {
+                        try (Statement stmt = conn.createStatement(type, concur)) {
+                            assertNotNull(stmt);
+
+                            assertEquals(type, stmt.getResultSetType());
+                            assertEquals(concur, stmt.getResultSetConcurrency());
+                        }
+
+                        continue;
                     }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid result set type"
-            );
 
-            // Unsupported concurrency type
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_UPDATABLE);
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid concurrency"
-            );
-
-            // Accepted parameters
-            try (Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY)) {
-                assertNotNull(stmt);
-
-                stmt.close();
+                    GridTestUtils.assertThrows(log,
+                        new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                return conn.createStatement(type, concur);
+                            }
+                        },
+                        SQLFeatureNotSupportedException.class,
+                        null
+                    );
+                }
             }
 
             conn.close();
@@ -389,7 +394,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                        return conn.createStatement(TYPE_FORWARD_ONLY,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
                     }
                 },
                 SQLException.class,
@@ -403,43 +409,45 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCreateStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
-            // Unsupported result set type
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStatement(TYPE_SCROLL_INSENSITIVE,
-                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+            int [] rsTypes = new int[]
+                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+
+            int [] rsConcurs = new int[]
+                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+
+            int [] rsHoldabilities = new int[]
+                {ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CLOSE_CURSORS_AT_COMMIT};
+
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    for (final int holdabililty : rsHoldabilities) {
+                        if (meta.supportsResultSetConcurrency(type, concur)) {
+                            if (meta.supportsResultSetHoldability(holdabililty)) {
+                                try (Statement stmt = conn.createStatement(type, concur, holdabililty)) {
+                                    assertNotNull(stmt);
+
+                                    assertEquals(type, stmt.getResultSetType());
+                                    assertEquals(concur, stmt.getResultSetConcurrency());
+                                    assertEquals(holdabililty, stmt.getResultSetHoldability());
+                                }
+
+                                continue;
+                            }
+                        }
+
+                        GridTestUtils.assertThrows(log,
+                            new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    return conn.createStatement(type, concur, holdabililty);
+                                }
+                            },
+                            SQLFeatureNotSupportedException.class,
+                            null
+                        );
                     }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid result set type"
-            );
-
-            // Unsupported concurrency type
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStatement(TYPE_FORWARD_ONLY,
-                            CONCUR_UPDATABLE, HOLD_CURSORS_OVER_COMMIT);
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid concurrency"
-            );
-
-            // Accepted parameters
-            try (Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY,
-                CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT)) {
-                assertNotNull(stmt);
-
-                assertEquals(HOLD_CURSORS_OVER_COMMIT, stmt.getResultSetHoldability());
-            }
-
-            try (Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY,
-                CONCUR_UPDATABLE, CLOSE_CURSORS_AT_COMMIT)) {
-                assertNotNull(stmt);
-
-                assertEquals(CLOSE_CURSORS_AT_COMMIT, stmt.getResultSetHoldability());
+                }
             }
 
             conn.close();

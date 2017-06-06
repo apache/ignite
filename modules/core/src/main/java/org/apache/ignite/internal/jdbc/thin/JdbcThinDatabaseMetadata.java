@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
 
 /**
@@ -731,12 +732,12 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsResultSetType(int type) throws SQLException {
-        return true;
+        return type == TYPE_FORWARD_ONLY;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsResultSetConcurrency(int type, int concurrency) throws SQLException {
-        return concurrency == CONCUR_READ_ONLY;
+        return supportsResultSetType(type) && concurrency == CONCUR_READ_ONLY;
     }
 
     /** {@inheritDoc} */
