@@ -451,6 +451,9 @@ public final class IgniteSystemProperties {
     /** Cache operations that take more time than value of this property will be output to log. Set to {@code 0} to disable. */
     public static final String IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT";
 
+    /** Upper time limit between long running/hanging operations debug dumps. */
+    public static final String IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT";
+
     /** JDBC driver cursor remove delay. */
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
 
