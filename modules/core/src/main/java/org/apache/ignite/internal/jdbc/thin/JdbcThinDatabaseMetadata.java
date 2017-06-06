@@ -22,6 +22,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import java.util.logging.Logger;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -36,6 +37,9 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
  */
 @SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
+    /** Logger. */
+    private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
+
     /** Connection. */
     private final JdbcThinConnection conn;
 
@@ -841,7 +845,10 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsResultSetHoldability(int holdability) throws SQLException {
-        return holdability == HOLD_CURSORS_OVER_COMMIT;
+        if (holdability != HOLD_CURSORS_OVER_COMMIT)
+            LOG.warning("Transactions are not supported.");
+
+        return true;
     }
 
     /** {@inheritDoc} */

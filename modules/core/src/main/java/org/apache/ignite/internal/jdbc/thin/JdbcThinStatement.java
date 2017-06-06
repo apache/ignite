@@ -62,15 +62,19 @@ public class JdbcThinStatement implements Statement {
     /** */
     private boolean alreadyRead;
 
+    /** Result set  holdability*/
+    private final int resHoldability;
+
     /**
      * Creates new statement.
      *
      * @param conn JDBC connection.
      */
-    JdbcThinStatement(JdbcThinConnection conn) {
+    JdbcThinStatement(JdbcThinConnection conn, int resHoldability) {
         assert conn != null;
 
         this.conn = conn;
+        this.resHoldability = resHoldability;
     }
 
     /** {@inheritDoc} */
@@ -419,7 +423,7 @@ public class JdbcThinStatement implements Statement {
     @Override public int getResultSetHoldability() throws SQLException {
         ensureNotClosed();
 
-        return HOLD_CURSORS_OVER_COMMIT;
+        return resHoldability;
     }
 
     /** {@inheritDoc} */

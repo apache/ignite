@@ -142,7 +142,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -171,7 +171,7 @@ public class JdbcThinConnection implements Connection {
         if (sql == null)
             throw new SQLException("Invalid arguments");
 
-        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql);
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability);
 
         if (timeout > 0)
             stmt.timeout(timeout);
