@@ -80,9 +80,6 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
-    /** */
-    private static final List<MiniFuture> CLEARED = Collections.emptyList();
-
     /** Logger. */
     private static IgniteLogger log;
 
@@ -483,7 +480,7 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
         MiniFuture miniFut0 = null;
 
         synchronized (this) {
-            if (miniFuts == null)
+            if (miniFuts == null || timedOut)
                 return false;
 
             for (int i = 0; i < miniFuts.size(); i++) {
@@ -540,7 +537,7 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         synchronized (this) {
-            if (miniFuts != null) {
+            if (miniFuts != null && !timedOut) {
                 MiniFuture mini = miniFuts.get(miniId);
 
                 if (!mini.isDone())
@@ -983,7 +980,7 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
      * @return {@code False} if future is already completed on timeout.
      */
     private synchronized boolean add(MiniFuture fut) {
-        if (miniFuts == CLEARED)
+        if (timedOut)
             return false;
 
         if (miniFuts == null)
@@ -1139,8 +1136,6 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
 
                 // Stop locks and responses processing.
                 pendingLocks.clear();
-
-                miniFuts = CLEARED;
             }
 
             boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());

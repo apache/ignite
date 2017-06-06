@@ -351,7 +351,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNea
         MiniFuture miniFut0 = null;
 
         synchronized (this) {
-            if (miniFuts == null)
+            if (miniFuts == null || miniFuts == CLEARED)
                 return false;
 
             for (int i = 0; i < miniFuts.size(); i++) {
@@ -601,8 +601,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNea
      */
     private MiniFuture miniFuture(int miniId) {
         synchronized (this) {
-            if (miniFuts != null && !miniFuts.get(miniId).isDone())
-                return miniFuts.get(miniId);
+            if (miniFuts == null || miniFuts == CLEARED)
+                return null;
+
+            MiniFuture fut = miniFuts.get(miniId);
+
+            if (!fut.isDone())
+                return fut;
         }
 
         return null;
