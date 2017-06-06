@@ -481,6 +481,53 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test various cases of affinity key column specification.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testAffinityKeyCaseSensitivity() {
+        executeDdl("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) WITH \"affinityKey='name'\"");
+
+        assertAffinityCacheConfiguration("A", "name");
+
+        executeDdl("CREATE TABLE \"B\" (name varchar primary key, \"code\" int) WITH \"affinityKey=name\"");
+
+        assertAffinityCacheConfiguration("B", "NAME");
+
+        executeDdl("CREATE TABLE \"C\" (name varchar primary key, \"code\" int) WITH \"affinityKey=NamE\"");
+
+        assertAffinityCacheConfiguration("C", "NAME");
+
+        executeDdl("CREATE TABLE \"D\" (\"name\" varchar primary key, \"code\" int) WITH \"affinityKey=NAME\"");
+
+        assertAffinityCacheConfiguration("D", "name");
+
+        // Error arises because user has specified case sensitive affinity column name
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey='Name'\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Affinity key column with given name not found: Name");
+
+        // Error arises because user declares case insensitive affinity column name while having two 'name'
+        // columns whose names are equal in ignore case.
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
+                    "\"Name\")) WITH \"affinityKey=name\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Ambiguous affinity column name, use single quotes for case sensitivity: name");
+
+        executeDdl("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
+            "\"Name\")) WITH \"affinityKey='Name'\"");
+
+        assertAffinityCacheConfiguration("E", "Name");
+    }
+
+    /**
      * Check that dynamic cache created with {@code CREATE TABLE} is correctly configured affinity wise.
      * @param cacheName Cache name to check.
      * @param affKeyFieldName Expected affinity key field name.
@@ -492,7 +539,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         GridQueryTypeDescriptor type = types.iterator().next();
 
-        assertEquals(cacheName, type.name());
+        assertTrue(type.name().startsWith("sql_PUBLIC_" + cacheName));
         assertEquals(cacheName, type.tableName());
         assertEquals(affKeyFieldName, type.affinityKey());
 

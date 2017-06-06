@@ -44,7 +44,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.affinity.BinaryFieldNameAffinityKeyMapper;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -55,7 +54,6 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -1318,11 +1316,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
-        // TODO: Check for null, enpty must be restrcited in DDL processor.
-        if (!F.isEmpty(affinityKey)) {
+        if (affinityKey != null) {
             assert entity.getFields().containsKey(affinityKey) && entity.getKeyFields().contains(affinityKey);
 
-            ccfg.setAffinityMapper(new BinaryFieldNameAffinityKeyMapper(entity.getKeyType(), affinityKey));
+            ccfg.setAffinityMapper(new DynamicTableAffinityKeyMapper(entity.getKeyType(), affinityKey));
         }
 
         boolean res;

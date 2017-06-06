@@ -1054,6 +1054,8 @@ public class GridSqlQueryParser {
             case PARAM_AFFINITY_KEY:
                 ensureNotEmpty(name, val);
 
+                String affColName = null;
+
                 // Either strip column name off its quotes, or uppercase it.
                 if (val.startsWith("'")) {
                     if (val.length() == 1 || !val.endsWith("'"))
@@ -1063,15 +1065,26 @@ public class GridSqlQueryParser {
                     val = val.substring(1, val.length() - 1);
 
                     ensureNotEmpty(name, val);
-                }
-                else
-                    val = val.toUpperCase();
 
-                if (!res.columns().containsKey(val))
+                    affColName = val;
+                }
+                else {
+                    for (String pkColName : res.primaryKeyColumns()) {
+                        if (val.equalsIgnoreCase(pkColName)) {
+                            if (affColName != null)
+                                throw new IgniteSQLException("Ambiguous affinity column name, use single quotes " +
+                                    "for case sensitivity: " + val, IgniteQueryErrorCode.PARSING);
+
+                            affColName = pkColName;
+                        }
+                    }
+                }
+
+                if (affColName == null || !res.primaryKeyColumns().contains(affColName))
                     throw new IgniteSQLException("Affinity key column with given name not found: " + val,
                         IgniteQueryErrorCode.PARSING);
 
-                res.affinityKey(val);
+                res.affinityKey(affColName);
 
                 break;
 

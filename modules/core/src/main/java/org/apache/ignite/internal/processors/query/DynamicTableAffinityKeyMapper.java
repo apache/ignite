@@ -15,52 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity;
+package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Trivial mapper to take extract field value from binary object of specific type as affinity key.
  */
 @SuppressWarnings("deprecation")
-// TODO: To internal package
-// TODO: Rename to DynamicTableAffinityKeyMapper
-public class BinaryFieldNameAffinityKeyMapper implements AffinityKeyMapper {
+public class DynamicTableAffinityKeyMapper implements AffinityKeyMapper {
     /** Type name. */
     private final String typeName;
+
+    /** Field name. */
+    private final String fldName;
 
     /** Type id for faster type checks. */
     private transient volatile Integer typeId;
 
-    /** Field name. */
-    private final String fieldName;
-
-    // TODO: Resolve field id.
-
-    /** Logger. */
-    @LoggerResource
-    // TODO: Remove this and all relevant checks
-    protected transient IgniteLogger log;
+    /** Type id for faster type checks. */
+    private transient volatile BinaryField fld;
 
     /**
      * @param typeName Type name.
-     * @param fieldName Field name.
+     * @param fldName Field name.
      */
-    public BinaryFieldNameAffinityKeyMapper(String typeName, String fieldName) {
+    DynamicTableAffinityKeyMapper(String typeName, String fldName) {
         this.typeName = typeName;
-        this.fieldName = fieldName;
+        this.fldName = fldName;
     }
 
     /**
      * @return Field name.
      */
     public String fieldName() {
-        return fieldName;
+        return fldName;
     }
 
     /** {@inheritDoc} */
@@ -72,25 +65,21 @@ public class BinaryFieldNameAffinityKeyMapper implements AffinityKeyMapper {
 
         BinaryObject binKey = (BinaryObject)key;
 
-        // TODO: Use BinaryObject.type().typeName() insteand
         if (typeId == null) {
-            typeId = BinaryContext.defaultMapper().typeId(typeName);
+            if (!F.eq(binKey.type().typeName(), typeName))
+                return key;
 
-            // TODO: Initialize BinaryField
+            typeId = binKey.type().typeId();
+
+            fld = binKey.type().field(fldName);
         }
 
         if (binKey.type().typeId() != typeId)
             return key;
 
-        // TODO: No double checks.
-        if (!binKey.hasField(fieldName)) {
-            U.warn(log, "");
+        Object res = fld.value(binKey);
 
-            return key;
-        }
-
-        // TODO: Return key if field is null.
-        return binKey.field(fieldName);
+        return res != null ? res : key;
     }
 
     /** {@inheritDoc} */
