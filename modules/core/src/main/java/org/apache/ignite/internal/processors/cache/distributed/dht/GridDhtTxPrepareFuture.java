@@ -1096,7 +1096,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNea
 
             Collection<KeyCacheObject> keys = entry.getValue();
 
-            lastForceFut = cctx.cacheContext(cacheId).preloader().request(keys, tx.topologyVersion());
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            lastForceFut = ctx.group().preloader().request(ctx, keys, tx.topologyVersion());
 
             if (compFut != null && lastForceFut != null)
                 compFut.add(lastForceFut);

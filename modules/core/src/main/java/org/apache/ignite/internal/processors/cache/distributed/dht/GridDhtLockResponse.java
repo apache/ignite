@@ -163,7 +163,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         if (preloadEntries != null)
-            marshalInfos(preloadEntries, cctx);
+            marshalInfos(preloadEntries, cctx.shared(), cctx.cacheObjectContext());
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,7 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
@@ -47,7 +48,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 class GridDhtPartitionSupplier {
     /** */
-    private final GridCacheContext<?, ?> cctx;
+    private final CacheGroupContext grp;
 
     /** */
     private final IgniteLogger log;
@@ -65,18 +66,18 @@ class GridDhtPartitionSupplier {
     private final Map<T3<UUID, Integer, AffinityTopologyVersion>, SupplyContext> scMap = new HashMap<>();
 
     /**
-     * @param cctx Cache context.
+     * @param grp Cache group.
      */
-    GridDhtPartitionSupplier(GridCacheContext<?, ?> cctx) {
-        assert cctx != null;
+    GridDhtPartitionSupplier(CacheGroupContext grp) {
+        assert grp != null;
 
-        this.cctx = cctx;
+        this.grp = grp;
 
-        log = cctx.logger(getClass());
+        log = grp.shared().logger(getClass());
 
-        top = cctx.dht().topology();
+        top = grp.topology();
 
-        depEnabled = cctx.gridDeploy().enabled();
+        depEnabled = grp.shared().gridDeploy().enabled();
     }
 
     /**
@@ -171,7 +172,7 @@ class GridDhtPartitionSupplier {
         assert d != null;
         assert id != null;
 
-        AffinityTopologyVersion cutTop = cctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion cutTop = grp.affinity().lastVersion();
         AffinityTopologyVersion demTop = d.topologyVersion();
 
         T3<UUID, Integer, AffinityTopologyVersion> scId = new T3<>(id, idx, demTop);
@@ -197,9 +198,12 @@ class GridDhtPartitionSupplier {
                 ", from=" + id + ", idx=" + idx + "]");
 
         GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(
-            d.updateSequence(), cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
+            d.updateSequence(),
+            grp.groupId(),
+            d.topologyVersion(),
+            grp.deploymentEnabled());
 
-        ClusterNode node = cctx.discovery().node(id);
+        ClusterNode node = grp.shared().discovery().node(id);
 
         if (node == null)
             return; // Context will be cleaned at topology change.
@@ -225,7 +229,7 @@ class GridDhtPartitionSupplier {
 
             boolean newReq = true;
 
-            long maxBatchesCnt = cctx.config().getRebalanceBatchesPrefetchCount();
+            long maxBatchesCnt = grp.config().getRebalanceBatchesPrefetchCount();
 
             if (sctx != null) {
                 phase = sctx.phase;
@@ -234,7 +238,7 @@ class GridDhtPartitionSupplier {
             }
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Starting supplying rebalancing [cache=" + cctx.name() +
+                    log.debug("Starting supplying rebalancing [cache=" + grp.cacheOrGroupName() +
                         ", fromNode=" + node.id() + ", partitionsCount=" + d.partitions().size() +
                         ", topology=" + d.topologyVersion() + ", updateSeq=" + d.updateSequence() +
                         ", idx=" + idx + "]");
@@ -280,7 +284,7 @@ class GridDhtPartitionSupplier {
                         IgniteRebalanceIterator iter;
 
                         if (sctx == null || sctx.entryIt == null) {
-                            iter = cctx.offheap().rebalanceIterator(part, d.topologyVersion(), d.partitionCounter(part));
+                            iter = grp.offheap().rebalanceIterator(part, d.topologyVersion(), d.partitionCounter(part));
 
                             if (!iter.historical())
                                 s.clean(part);
@@ -289,7 +293,9 @@ class GridDhtPartitionSupplier {
                             iter = (IgniteRebalanceIterator)sctx.entryIt;
 
                         while (iter.hasNext()) {
-                            if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
+                            List<ClusterNode> nodes = grp.affinity().cachedAffinity(d.topologyVersion()).get(part);
+
+                            if (!nodes.contains(node)) {
                                 // Demander no longer needs this partition,
                                 // so we send '-1' partition and move on.
                                 s.missed(part);
@@ -313,7 +319,7 @@ class GridDhtPartitionSupplier {
                                 break;
                             }
 
-                            if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
+                            if (s.messageSize() >= grp.config().getRebalanceBatchSize()) {
                                 if (++bCnt >= maxBatchesCnt) {
                                     saveSupplyContext(scId,
                                         phase,
@@ -335,9 +341,9 @@ class GridDhtPartitionSupplier {
                                         return;
 
                                     s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
-                                        cctx.cacheId(),
+                                        grp.groupId(),
                                         d.topologyVersion(),
-                                        cctx.deploymentEnabled());
+                                        grp.deploymentEnabled());
                                 }
                             }
 
@@ -349,9 +355,10 @@ class GridDhtPartitionSupplier {
                             info.expireTime(row.expireTime());
                             info.version(row.version());
                             info.value(row.value());
+                            info.cacheId(row.cacheId());
 
                             if (preloadPred == null || preloadPred.apply(info))
-                                s.addEntry0(part, info, cctx);
+                                s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());
                             else {
                                 if (log.isDebugEnabled())
                                     log.debug("Rebalance predicate evaluated to false (will not send " +
@@ -400,7 +407,7 @@ class GridDhtPartitionSupplier {
             reply(node, d, s, scId);
 
             if (log.isDebugEnabled())
-                log.debug("Finished supplying rebalancing [cache=" + cctx.name() +
+                log.debug("Finished supplying rebalancing [cache=" + grp.cacheOrGroupName() +
                     ", fromNode=" + node.id() +
                     ", topology=" + d.topologyVersion() + ", updateSeq=" + d.updateSequence() +
                     ", idx=" + idx + "]");
@@ -427,16 +434,15 @@ class GridDhtPartitionSupplier {
         GridDhtPartitionSupplyMessage s,
         T3<UUID, Integer, AffinityTopologyVersion> scId)
         throws IgniteCheckedException {
-
         try {
             if (log.isDebugEnabled())
                 log.debug("Replying to partition demand [node=" + n.id() + ", demand=" + d + ", supply=" + s + ']');
 
-            cctx.io().sendOrderedMessage(n, d.topic(), s, cctx.ioPolicy(), d.timeout());
+            grp.shared().io().sendOrderedMessage(n, d.topic(), s, grp.ioPolicy(), d.timeout());
 
             // Throttle preloading.
-            if (cctx.config().getRebalanceThrottle() > 0)
-                U.sleep(cctx.config().getRebalanceThrottle());
+            if (grp.config().getRebalanceThrottle() > 0)
+                U.sleep(grp.config().getRebalanceThrottle());
 
             return true;
         }
@@ -469,7 +475,7 @@ class GridDhtPartitionSupplier {
         AffinityTopologyVersion topVer,
         long updateSeq) {
         synchronized (scMap) {
-            if (cctx.affinity().affinityTopologyVersion().equals(topVer)) {
+            if (grp.affinity().lastVersion().equals(topVer)) {
                 assert scMap.get(t) == null;
 
                 scMap.put(t,

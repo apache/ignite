@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -171,7 +173,7 @@ public class DdlStatementsProcessor {
                     ccfg.setSqlSchema(cmd.schemaName());
 
                     SchemaOperationException err =
-                        QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors());
+                        QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors().values());
 
                     if (err != null)
                         throw err;
@@ -288,14 +290,28 @@ public class DdlStatementsProcessor {
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
 
-        res.setKeyType(createTbl.tableName() + "Key");
+        String valTypeName = valueType(createTbl.schemaName(), createTbl.tableName());
+        String keyTypeName = valTypeName + "_Key";
 
-        res.setValueType(createTbl.tableName());
+        res.setValueType(valTypeName);
+        res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
 
         return res;
     }
+
+    /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    private static String valueType(String schemaName, String tblName) {
+        return "sql_" + schemaName + "_" + tblName + "_" + UUID.randomUUID().toString().replace("-", "_");
+    }
+
 
     /**
      * @param cmd Statement.
