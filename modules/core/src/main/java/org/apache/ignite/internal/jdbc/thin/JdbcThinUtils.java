@@ -61,6 +61,12 @@ public class JdbcThinUtils {
     /** Parameter: enforce join order flag. */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
+    /** Parameter: collocated flag. */
+    public static final String PARAM_COLLOCATED = "collocated";
+
+    /** Parameter: replicated only flag. */
+    public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
+
     /** Parameter: socket send buffer. */
     public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
 
@@ -75,6 +81,12 @@ public class JdbcThinUtils {
 
     /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Collocated property name. */
+    public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
+
+    /** Replicated only property name. */
+    public static final String PROP_REPLICATED_ONLY = PROP_PREFIX + PARAM_REPLICATED_ONLY;
 
     /** Socket send buffer property name. */
     public static final String PROP_SOCK_SND_BUF = PROP_PREFIX + PARAM_SOCK_SND_BUF;

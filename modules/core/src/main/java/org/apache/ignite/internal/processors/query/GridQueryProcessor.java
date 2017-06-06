@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1351,7 +1349,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             binCtx.registerUserType(meta, BinaryContext.defaultMapper(), BinaryArrayIdentityResolver.instance());
         }
 
-        boolean res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
+        boolean res;
+
+        try {
+            res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
+        }
+        catch (CacheException e) {
+            if (e.getCause() instanceof SchemaOperationException)
+                throw (SchemaOperationException)e.getCause();
+            else
+                throw e;
+        }
 
         if (!res && !ifNotExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
@@ -1586,7 +1594,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     fut.onDone(e);
                 }
                 catch (Throwable e) {
-                    log.error("Failed to rebuild indexes for type: " + typeName, e);
+                    U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName +
+                        ", type=" + typeName + ']', e);
 
                     fut.onDone(e);
 

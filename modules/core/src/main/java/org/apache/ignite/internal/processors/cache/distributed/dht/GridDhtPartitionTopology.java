@@ -88,9 +88,9 @@ public interface GridDhtPartitionTopology {
     public boolean stopping();
 
     /**
-     * @return Cache ID.
+     * @return Cache group ID.
      */
-    public int cacheId();
+    public int groupId();
 
     /**
      * Pre-initializes this topology.
@@ -134,13 +134,12 @@ public interface GridDhtPartitionTopology {
     public void releasePartitions(int... parts);
 
     /**
-     * @param key Cache key.
-     * @param create If {@code true}, then partition will be created if it's not there.
+     * @param part Partition number.
      * @return Local partition.
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition localPartition(Object key, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(int part)
         throws GridDhtInvalidPartitionException;
 
     /**
