@@ -925,7 +925,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            if (parameters.IsParameterSelected())
+            if (!parameters.IsParameterSelected())
             {
                 AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR,
                     "Parameter is not selected with the SQLParamData.");
