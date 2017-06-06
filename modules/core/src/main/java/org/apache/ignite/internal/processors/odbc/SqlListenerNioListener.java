@@ -243,7 +243,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             SqlListenerRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
                 enforceJoinOrder);
 
-            SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
+            SqlListenerMessageParser parser = new OdbcMessageParser(ctx);
 
             return new SqlListenerConnectionContext(handler, parser);
         }
