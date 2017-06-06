@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC message listener.
+ * SQL message listener.
  */
 public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** The value corresponds to ODBC driver of the parser field of the handshake request. */
@@ -236,31 +236,31 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
     private SqlListenerConnectionContext prepareContext(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
         byte clientType = reader.readByte();
 
-        boolean distributedJoins = reader.readBoolean();
-        boolean enforceJoinOrder = reader.readBoolean();
+        if (clientType == ODBC_CLIENT) {
+            boolean distributedJoins = reader.readBoolean();
+            boolean enforceJoinOrder = reader.readBoolean();
 
-        SqlListenerRequestHandler handler;
-        SqlListenerMessageParser parser;
+            SqlListenerRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
+                enforceJoinOrder);
 
-        switch (clientType) {
-            case ODBC_CLIENT:
-                parser = new OdbcMessageParser(ctx);
+            SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
 
-                handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
-
-                break;
-
-            case JDBC_CLIENT:
-                parser = new JdbcMessageParser(ctx);
-
-                handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
-
-                break;
-
-            default:
-                throw new IgniteException("Unknown client type: " + clientType);
+            return new SqlListenerConnectionContext(handler, parser);
         }
+        else if (clientType == JDBC_CLIENT) {
+            boolean distributedJoins = reader.readBoolean();
+            boolean enforceJoinOrder = reader.readBoolean();
+            boolean collocated = reader.readBoolean();
+            boolean replicatedOnly = reader.readBoolean();
 
-        return new SqlListenerConnectionContext(handler, parser);
+            SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
+                enforceJoinOrder, collocated, replicatedOnly);
+
+            SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
+
+            return new SqlListenerConnectionContext(handler, parser);
+        }
+        else
+            throw new IgniteException("Unknown client type: " + clientType);
     }
 }

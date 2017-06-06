@@ -35,7 +35,7 @@ namespace
     const std::string testDriverName = "Ignite Driver";
     const std::string testServerHost = "testhost.com";
     const uint16_t testServerPort = 4242;
-    const std::string testCacheName = "TestCache";
+    const std::string testSchemaName = "TestSchema";
     const std::string testDsn = "Ignite DSN";
     const int32_t testPageSize = 4321;
     const bool testDistributedJoins = true;
@@ -113,7 +113,7 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetHost(), testServerHost);
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), testServerPort);
     BOOST_CHECK_EQUAL(cfg.GetAddress(), testAddress);
-    BOOST_CHECK_EQUAL(cfg.GetCache(), testCacheName);
+    BOOST_CHECK_EQUAL(cfg.GetSchema(), testSchemaName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
     BOOST_CHECK_EQUAL(cfg.GetPageSize(), testPageSize);
     BOOST_CHECK_EQUAL(cfg.IsDistributedJoins(), testDistributedJoins);
@@ -122,11 +122,11 @@ void CheckConnectionConfig(const Configuration& cfg)
     std::stringstream constructor;
 
     constructor << "address=" << testAddress << ';'
-                << "cache=" << testCacheName << ';'
                 << "distributed_joins=" << (testDistributedJoins ? "true" : "false") << ';'
                 << "driver={" << testDriverName << "};"
                 << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false") << ';'
-                << "page_size=" << testPageSize << ';';
+                << "page_size=" << testPageSize << ';'
+                << "schema=" << testSchemaName << ';';
 
     const std::string& expectedStr = constructor.str();
 
@@ -137,7 +137,7 @@ void CheckDsnConfig(const Configuration& cfg)
 {
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), testDsn);
-    BOOST_CHECK_EQUAL(cfg.GetCache(), Configuration::DefaultValue::cache);
+    BOOST_CHECK_EQUAL(cfg.GetSchema(), Configuration::DefaultValue::schema);
     BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
     BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), Configuration::DefaultValue::port);
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
     BOOST_CHECK_NE(testDriverName, Configuration::DefaultValue::driver);
     BOOST_CHECK_NE(testAddress, Configuration::DefaultValue::address);
     BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::port);
-    BOOST_CHECK_NE(testCacheName, Configuration::DefaultValue::cache);
+    BOOST_CHECK_NE(testSchemaName, Configuration::DefaultValue::schema);
     BOOST_CHECK_NE(testDsn, Configuration::DefaultValue::dsn);
     BOOST_CHECK_NE(testPageSize, Configuration::DefaultValue::pageSize);
     BOOST_CHECK_NE(testDistributedJoins, Configuration::DefaultValue::distributedJoins);
@@ -168,10 +168,10 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
 
     constructor << "DRIVER={" << testDriverName << "};"
                 << "ADDRESS=" << testAddress << ';'
-                << "CACHE=" << testCacheName << ';'
                 << "DISTRIBUTED_JOINS=" << (testDistributedJoins ? "TRUE" : "FALSE") << ';'
                 << "ENFORCE_JOIN_ORDER=" << (testEnforceJoinOrder ? "TRUE" : "FALSE") << ';'
-                << "PAGE_SIZE=" << testPageSize;
+                << "PAGE_SIZE=" << testPageSize << ';'
+                << "SCHEMA=" << testSchemaName;
 
     const std::string& connectStr = constructor.str();
 
@@ -189,9 +189,9 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddress << ';'
                 << "page_size=" << testPageSize << ';'
-                << "cache=" << testCacheName << ';'
                 << "distributed_joins=" << (testDistributedJoins ? "true" : "false") << ';'
-                << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false");
+                << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false") << ';'
+                << "schema=" << testSchemaName;
 
     const std::string& connectStr = constructor.str();
 
@@ -209,9 +209,9 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddress << ';'
                 << "page_size=" << testPageSize << ';'
-                << "cache=" << testCacheName << ';'
                 << "distributed_joins=" << (testDistributedJoins ? "true" : "false") << ';'
-                << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false");
+                << "enforce_join_order=" << (testEnforceJoinOrder ? "true" : "false") << ';'
+                << "schema=" << testSchemaName;
 
     const std::string& connectStr = constructor.str();
 
@@ -229,9 +229,9 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
     constructor << "Driver={" << testDriverName << "};"
                 << "Address=" << testAddress << ';'
                 << "Page_Size=" << testPageSize << ';'
-                << "Cache=" << testCacheName << ';'
                 << "Distributed_Joins=" << (testDistributedJoins ? "True" : "False") << ';'
-                << "Enforce_Join_Order=" << (testEnforceJoinOrder ? "True" : "False");
+                << "Enforce_Join_Order=" << (testEnforceJoinOrder ? "True" : "False") << ';'
+                << "Schema=" << testSchemaName;
 
     const std::string& connectStr = constructor.str();
 
@@ -249,9 +249,9 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
     constructor << "DRIVER = {" << testDriverName << "} ;\n"
                 << " ADDRESS =" << testAddress << "; "
                 << "   PAGE_SIZE= " << testPageSize << ';'
-                << "CACHE = \n\r" << testCacheName << ';'
                 << "   DISTRIBUTED_JOINS=" << (testDistributedJoins ? "TRUE" : "FALSE") << ';'
-                << "ENFORCE_JOIN_ORDER=   " << (testEnforceJoinOrder ? "TRUE  " : "FALSE  ");
+                << "ENFORCE_JOIN_ORDER=   " << (testEnforceJoinOrder ? "TRUE  " : "FALSE  ") << ';'
+                << "SCHEMA = \n\r" << testSchemaName;
 
     const std::string& connectStr = constructor.str();
 

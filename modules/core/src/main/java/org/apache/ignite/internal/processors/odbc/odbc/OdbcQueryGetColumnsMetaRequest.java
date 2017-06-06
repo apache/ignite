@@ -24,47 +24,47 @@ import org.jetbrains.annotations.Nullable;
  * ODBC query get columns meta request.
  */
 public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
-    /** Cache name. */
-    private final String cacheName;
+    /** Schema pattern. */
+    private final String schemaPattern;
 
-    /** Table name. */
-    private final String tableName;
+    /** Table pattern. */
+    private final String tablePattern;
 
-    /** Column name. */
-    private final String columnName;
+    /** Column pattern. */
+    private final String columnPattern;
 
     /**
-     * @param cacheName Cache name.
-     * @param tableName Table name.
-     * @param columnName Column name.
+     * @param schemaPattern Schema pattern.
+     * @param tablePattern Table pattern.
+     * @param columnPattern Column pattern.
      */
-    public OdbcQueryGetColumnsMetaRequest(String cacheName, String tableName, String columnName) {
+    public OdbcQueryGetColumnsMetaRequest(String schemaPattern, String tablePattern, String columnPattern) {
         super(META_COLS);
 
-        this.cacheName = cacheName;
-        this.tableName = tableName;
-        this.columnName = columnName;
+        this.schemaPattern = schemaPattern;
+        this.tablePattern = tablePattern;
+        this.columnPattern = columnPattern;
     }
 
     /**
-     * @return Cache name.
+     * @return Schema pattern.
      */
-    @Nullable public String cacheName() {
-        return cacheName;
+    @Nullable public String schemaPattern() {
+        return schemaPattern;
     }
 
     /**
-     * @return Table name.
+     * @return Table pattern.
      */
-    public String tableName() {
-        return tableName;
+    public String tablePattern() {
+        return tablePattern;
     }
 
     /**
-     * @return Column name.
+     * @return Column pattern.
      */
-    public String columnName() {
-        return columnName;
+    public String columnPattern() {
+        return columnPattern;
     }
 
     /** {@inheritDoc} */

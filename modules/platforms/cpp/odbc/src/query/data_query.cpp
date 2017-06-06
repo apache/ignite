@@ -169,9 +169,9 @@ namespace ignite
 
             SqlResult::Type DataQuery::MakeRequestExecute()
             {
-                const std::string& cacheName = connection.GetCache();
+                const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(cacheName, sql, params);
+                QueryExecuteRequest req(schema, sql, params);
                 QueryExecuteResponse rsp;
 
                 try
@@ -199,12 +199,12 @@ namespace ignite
                 resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
 
                 LOG_MSG("Query id: " << cursor->GetQueryId());
-                for (size_t i = 0; i < rsp.GetMeta().size(); ++i)
+                for (size_t i = 0; i < resultMeta.size(); ++i)
                 {
-                    LOG_MSG("\n[" << i << "] SchemaName:     " << rsp.GetMeta()[i].GetSchemaName()
-                        <<  "\n[" << i << "] TypeName:       " << rsp.GetMeta()[i].GetTableName()
-                        <<  "\n[" << i << "] ColumnName:     " << rsp.GetMeta()[i].GetColumnName()
-                        <<  "\n[" << i << "] ColumnType:     " << rsp.GetMeta()[i].GetDataType());
+                    LOG_MSG("\n[" << i << "] SchemaName:     " << resultMeta[i].GetSchemaName()
+                        <<  "\n[" << i << "] TypeName:       " << resultMeta[i].GetTableName()
+                        <<  "\n[" << i << "] ColumnName:     " << resultMeta[i].GetColumnName()
+                        <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
                 }
 
                 return SqlResult::AI_SUCCESS;

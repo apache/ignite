@@ -48,6 +48,8 @@ import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED_ONLY;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
@@ -102,6 +104,8 @@ public class JdbcThinConnection implements Connection {
 
         boolean distributedJoins = extractBoolean(props, PROP_DISTRIBUTED_JOINS, false);
         boolean enforceJoinOrder = extractBoolean(props, PROP_ENFORCE_JOIN_ORDER, false);
+        boolean collocated = extractBoolean(props, PROP_COLLOCATED, false);
+        boolean replicatedOnly = extractBoolean(props, PROP_REPLICATED_ONLY, false);
 
         int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
         int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
@@ -109,7 +113,7 @@ public class JdbcThinConnection implements Connection {
         boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
 
         try {
-            cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder,
+            cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, collocated, replicatedOnly,
                 sockSndBuf, sockRcvBuf, tcpNoDelay);
 
             cliIo.start();
