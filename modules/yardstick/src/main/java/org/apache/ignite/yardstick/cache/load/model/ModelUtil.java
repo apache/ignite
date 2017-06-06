@@ -150,6 +150,9 @@ public class ModelUtil {
                 break;
             case "String":
                 res = String.valueOf(id);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported class: " + c.getSimpleName());
         }
 
         return res;

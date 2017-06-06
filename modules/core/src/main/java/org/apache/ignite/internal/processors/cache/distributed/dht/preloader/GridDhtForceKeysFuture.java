@@ -102,9 +102,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /** Future ID. */
     private IgniteUuid futId = IgniteUuid.randomUuid();
 
-    /** Preloader. */
-    private GridDhtPreloader preloader;
-
     /** Trackable flag. */
     private boolean trackable;
 
@@ -112,21 +109,19 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param cctx Cache context.
      * @param topVer Topology version.
      * @param keys Keys.
-     * @param preloader Preloader.
      */
     public GridDhtForceKeysFuture(
         GridCacheContext<K, V> cctx,
         AffinityTopologyVersion topVer,
-        Collection<KeyCacheObject> keys,
-        GridDhtPreloader preloader
+        Collection<KeyCacheObject> keys
     ) {
         assert topVer.topologyVersion() != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
+        assert !cctx.isNear();
 
         this.cctx = cctx;
         this.keys = keys;
         this.topVer = topVer;
-        this.preloader = preloader;
 
         top = cctx.dht().topology();
 
@@ -158,7 +153,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     @Override public boolean onDone(@Nullable Collection<K> res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
             if (trackable)
-                preloader.remoteFuture(this);
+                cctx.dht().removeFuture(this);
 
             return true;
         }
@@ -170,7 +165,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param evt Discovery event.
      */
     @SuppressWarnings( {"unchecked"})
-    void onDiscoveryEvent(DiscoveryEvent evt) {
+    public void onDiscoveryEvent(DiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
         int type = evt.type();
@@ -244,7 +239,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             int curTopVer = topCntr.get();
 
-            if (!preloader.addFuture(this)) {
+            if (!cctx.dht().addFuture(this)) {
                 assert isDone() : this;
 
                 return false;

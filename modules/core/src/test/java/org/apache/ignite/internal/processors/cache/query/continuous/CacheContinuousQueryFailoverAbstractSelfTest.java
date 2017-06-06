@@ -2243,13 +2243,11 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     public void testNoEventLossOnTopologyChange() throws Exception {
-        final int stableNodeCnt = 1;
-
         final int batchLoadSize = 2000;
 
         final int restartCycles = 5;
 
-        Ignite qryClient = startGridsMultiThreaded(stableNodeCnt);
+        Ignite qryClient = startGrid(0);
 
         final CacheEventListener4 lsnr = new CacheEventListener4(atomicityMode() == CacheAtomicityMode.ATOMIC);
 
@@ -2282,7 +2280,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                 log.info("Batch loaded. Iteration: " + iteration);
 
-                final long expCnt = putCnt * stableNodeCnt + ignoredDupEvts;
+                final long expCnt = putCnt + ignoredDupEvts;
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
@@ -2316,7 +2314,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     String msg = sb.toString();
 
                     // In atomic mode CQ can receive duplicate update events if update retried after fails.
-                    // E.g. topology change
                     if (atomicityMode() == CacheAtomicityMode.ATOMIC && msg.isEmpty() && cnt > expCnt)
                         ignoredDupEvts += cnt - expCnt;
                     else
