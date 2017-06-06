@@ -27,8 +27,6 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -51,7 +49,6 @@ import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -192,11 +189,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertEquals(Object.class, desc.keyClass());
 
-            assertEquals("PersonKey", desc.keyTypeName());
-
             assertEquals(Object.class, desc.valueClass());
-
-            assertEquals("Person", desc.valueTypeName());
 
             assertEquals(
                 F.asList("id", "city", "name", "surname", "age"),
@@ -204,13 +197,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             );
 
             assertProperty(desc, "id", Integer.class, true);
-
             assertProperty(desc, "city", String.class, true);
-
             assertProperty(desc, "name", String.class, false);
-
             assertProperty(desc, "surname", String.class, false);
-
             assertProperty(desc, "age", Integer.class, false);
 
             GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable("PUBLIC", "Person");
@@ -465,6 +454,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param params Engine parameters.
      * @param expErrMsg Expected error message.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertCreateTableWithParamsThrows(final String params, String expErrMsg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -585,13 +575,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private IgniteEx client() {
         return grid(CLIENT);
-    }
-
-    /**
-     * @return Cache to issue queries upon.
-     */
-    private IgniteCache<?, ?> cache() {
-        return client().cache(INDEXED_CACHE_NAME);
     }
 
     /**
