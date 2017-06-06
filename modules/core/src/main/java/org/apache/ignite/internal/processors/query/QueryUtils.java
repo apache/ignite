@@ -17,31 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
-import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
-import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
-import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor;
-import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
-import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -55,6 +30,31 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
+import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
+import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -74,6 +74,12 @@ public class QueryUtils {
 
     /** Version field name. */
     public static final String VER_FIELD_NAME = "_VER";
+
+    /** Well-known template name for PARTITIONED cache. */
+    public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
+
+    /** Well-known template name for REPLICATED cache. */
+    public static final String TEMPLATE_REPLICÄTED = "REPLICATED";
 
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
@@ -1013,6 +1019,49 @@ public class QueryUtils {
             return (SchemaOperationException)e;
 
         return new SchemaOperationException("Unexpected exception.", e);
+    }
+
+    /**
+     * Check given {@link CacheConfiguration} for conflicts in table and index names from any query entities
+     *     found in collection of {@link DynamicCacheDescriptor}s and belonging to the same schema.
+     *
+     * @param ccfg New cache configuration.
+     * @param descs Cache descriptors.
+     * @return Exception message describing found conflict or {@code null} if none found.
+     */
+    public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
+        Collection<DynamicCacheDescriptor> descs) {
+        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+
+        Set<String> idxNames = new HashSet<>();
+
+        Set<String> tblNames = new HashSet<>();
+
+        for (DynamicCacheDescriptor desc : descs) {
+            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                desc.cacheConfiguration().getSqlSchema());
+
+            if (!F.eq(schema, descSchema))
+                continue;
+
+            for (QueryEntity e : desc.schema().entities()) {
+                tblNames.add(e.getTableName());
+
+                for (QueryIndex idx : e.getIndexes())
+                    idxNames.add(idx.getName());
+            }
+        }
+
+        for (QueryEntity e : ccfg.getQueryEntities()) {
+            if (!tblNames.add(e.getTableName()))
+                return new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, e.getTableName());
+
+            for (QueryIndex idx : e.getIndexes())
+                if (!idxNames.add(idx.getName()))
+                    return new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idx.getName());
+        }
+
+        return null;
     }
 
     /**

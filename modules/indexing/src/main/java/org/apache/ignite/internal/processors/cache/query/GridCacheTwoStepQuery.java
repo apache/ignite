@@ -240,6 +240,7 @@ public class GridCacheTwoStepQuery {
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
         cp.derivedPartitions = derivedPartitions;
+        cp.local = local;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy());

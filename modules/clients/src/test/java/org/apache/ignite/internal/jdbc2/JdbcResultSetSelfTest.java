@@ -111,8 +111,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cache.put(1, o);
         cache.put(2, new TestObject(2));
         cache.put(3, new TestObject(3));
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

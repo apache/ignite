@@ -20,7 +20,7 @@ import _ from 'lodash';
 import template from './ui-ace-spring.pug';
 import controller from './ui-ace-spring.controller';
 
-export default ['igniteUiAceSpring', [() => {
+export default ['igniteUiAceSpring', ['IgniteVersion', (Version) => {
     const link = (scope, $el, attrs, [ctrl, igniteUiAceTabs, formCtrl, ngModelCtrl]) => {
         if (formCtrl && ngModelCtrl)
             formCtrl.$removeControl(ngModelCtrl);
@@ -39,10 +39,14 @@ export default ['igniteUiAceSpring', [() => {
 
         const noDeepWatch = !(typeof attrs.noDeepWatch !== 'undefined');
 
-        // Setup watchers.
-        scope.$watch('master', () => {
+        const next = () => {
             ctrl.data = _.isNil(scope.master) ? null : ctrl.generate(scope.master, scope.detail).asString();
-        }, noDeepWatch);
+        };
+
+        // Setup watchers.
+        scope.$watch('master', next, noDeepWatch);
+
+        Version.currentSbj.subscribe({next});
     };
 
     return {

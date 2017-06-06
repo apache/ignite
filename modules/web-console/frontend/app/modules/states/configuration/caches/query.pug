@@ -46,15 +46,18 @@ include /app/helpers/jade/mixins
                                 SELECT * FROM Persons.Person p INNER JOIN Organizations.Organization o on p.org = o.id\
                             </li>\
                         </ul>')
+
+                //- Removed in ignite 2.0
+                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                    +number('On-heap cache for off-heap indexes:', `${model}.sqlOnheapRowCacheSize`, '"sqlOnheapRowCacheSize"', 'true', '10240', '1',
+                        'Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access')
+
                 .settings-row
                     +number('Long query timeout:', `${model}.longQueryWarningTimeout`, '"longQueryWarningTimeout"', 'true', '3000', '0',
                         'Timeout in milliseconds after which long query warning will be printed')
                 .settings-row
                     +number('History size:', `${model}.queryDetailMetricsSize`, '"queryDetailMetricsSize"', 'true', '0', '0',
                         'Size of queries detail metrics that will be stored in memory for monitoring purposes')
-                .settings-row
-                    +number('Parallelism:', `${model}.queryParallelism`, '"queryParallelism"', 'true', '1', '1',
-                        'Defines a hint to query execution engine on desired degree of parallelism within a single node.')
                 .settings-row
                     -var form = 'querySqlFunctionClasses';
                     -var sqlFunctionClasses = `${model}.sqlFunctionClasses`;
@@ -102,10 +105,26 @@ include /app/helpers/jade/mixins
 
                         .group-content-empty(ng-if=`!(${sqlFunctionClasses}.length) && !group.add.length`)
                             | Not defined
+
+                //- Removed in ignite 2.0
+                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                    +checkbox('Snapshotable index', `${model}.snapshotableIndex`, '"snapshotableIndex"',
+                        'Flag indicating whether SQL indexes should support snapshots')
+
                 .settings-row
                     +checkbox('Escape table and filed names', `${model}.sqlEscapeAll`, '"sqlEscapeAll"',
                         'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
                         This enforces case sensitivity for field names and also allows having special characters in table and field names.<br/>\
                         Escaped names will be used for creation internal structures in Ignite SQL engine.')
+
+                //- Since ignite 2.0
+                div(ng-if='$ctrl.available("2.0.0")')
+                    .settings-row
+                        +number('Query parallelism', model + '.queryParallelism', '"queryParallelism"', 'true', '1', '1',
+                            'A hint to query execution engine on desired degree of parallelism within a single node')
+                    .settings-row
+                        +number('SQL index max inline size:', model + '.sqlIndexMaxInlineSize', '"sqlIndexMaxInlineSize"', 'true', '-1', '0',
+                            'Maximum inline size for sql indexes')
+
             .col-sm-6
                 +preview-xml-java(model, 'cacheQuery', 'domains')

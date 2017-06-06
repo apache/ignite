@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
 
 /**
  * Various ODBC utility methods.

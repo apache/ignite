@@ -1086,7 +1086,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Collection<KeyCacheObject> keys = entry.getValue();
 
-            lastForceFut = cctx.cacheContext(cacheId).preloader().request(keys, tx.topologyVersion());
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            lastForceFut = ctx.group().preloader().request(ctx, keys, tx.topologyVersion());
 
             if (compFut != null && lastForceFut != null)
                 compFut.add(lastForceFut);
@@ -1141,7 +1143,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             assert key != null : entry.key();
 
-            msg.append("key=").append(key.toString()).append(", keyCls=").append(key.getClass().getName());
+            if (S.INCLUDE_SENSITIVE)
+                msg.append("key=").append(key.toString()).append(", keyCls=").append(key.getClass().getName());
         }
         catch (Exception e) {
             msg.append("key=<failed to get key: ").append(e.toString()).append(">");
@@ -1154,8 +1157,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Object val = cacheVal != null ? cctx.unwrapBinaryIfNeeded(cacheVal, entry.keepBinary(), false) : null;
 
-            if (val != null)
-                msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
+            if (val != null) {
+                if (S.INCLUDE_SENSITIVE)
+                    msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
+            }
             else
                 msg.append(", val=null");
         }

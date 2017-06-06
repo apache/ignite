@@ -314,7 +314,7 @@ export default [
 
             ActivitiesData.post({ action: '/configuration/download' });
 
-            return new SummaryZipper({ cluster, data: ctrl.data || {}, IgniteDemoMode: $root.IgniteDemoMode })
+            return new SummaryZipper({ cluster, data: ctrl.data || {}, demo: $root.IgniteDemoMode, targetVer: Version.currentSbj.getValue() })
                 .then((data) => {
                     saver.saveAs(data, escapeFileName(cluster.name) + '-project.zip');
                 })

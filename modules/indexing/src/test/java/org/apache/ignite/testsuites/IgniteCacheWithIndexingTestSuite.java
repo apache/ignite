@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvi
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
 import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
@@ -71,6 +72,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(CacheQueryFilterExpiredTest.class);
 
         suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
 
         return suite;
     }

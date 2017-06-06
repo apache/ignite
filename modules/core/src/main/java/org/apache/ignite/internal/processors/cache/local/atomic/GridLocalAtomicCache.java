@@ -104,7 +104,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     public GridLocalAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        preldr = new GridCachePreloaderAdapter(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx.group());
     }
 
     /** {@inheritDoc} */
@@ -405,7 +405,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             boolean skipEntry = readNoEntry;
 
             if (readNoEntry) {
-                CacheDataRow row = ctx.offheap().read(cacheKey);
+                CacheDataRow row = ctx.offheap().read(ctx, cacheKey);
 
                 if (row != null) {
                     long expireTime = row.expireTime();
