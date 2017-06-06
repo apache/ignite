@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -32,6 +31,7 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -53,7 +53,8 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
+    @Override public void initializeForCache(CacheGroupDescriptor grpDesc,
+        StoredCacheData cacheData) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -171,8 +172,14 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, CacheConfiguration> readCacheConfigurations() throws IgniteCheckedException {
+    @Override public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException {
         return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void storeCacheData(CacheGroupDescriptor grpDesc,
+        StoredCacheData cacheData) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */

@@ -109,15 +109,15 @@ class ClusterCachesInfo {
         Map<String, CacheConfiguration> grpCfgs = new HashMap<>();
 
         for (CacheJoinNodeDiscoveryData.CacheInfo info : joinDiscoData.caches().values()) {
-            if (info.config().getGroupName() == null)
+            if (info.cacheData().config().getGroupName() == null)
                 continue;
 
-            CacheConfiguration ccfg = grpCfgs.get(info.config().getGroupName());
+            CacheConfiguration ccfg = grpCfgs.get(info.cacheData().config().getGroupName());
 
             if (ccfg == null)
-                grpCfgs.put(info.config().getGroupName(), info.config());
+                grpCfgs.put(info.cacheData().config().getGroupName(), info.cacheData().config());
             else
-                validateCacheGroupConfiguration(ccfg, info.config());
+                validateCacheGroupConfiguration(ccfg, info.cacheData().config());
         }
 
         String conflictErr = processJoiningNode(joinDiscoData, ctx.localNodeId(), true);
@@ -147,7 +147,7 @@ class ClusterCachesInfo {
 
         if (checkConsistency && joinDiscoData != null && gridData != null) {
             for (CacheJoinNodeDiscoveryData.CacheInfo locCacheInfo : joinDiscoData.caches().values()) {
-                CacheConfiguration locCfg = locCacheInfo.config();
+                CacheConfiguration locCfg = locCacheInfo.cacheData().config();
 
                 CacheData cacheData = gridData.gridData.caches().get(locCfg.getName());
 
@@ -173,7 +173,7 @@ class ClusterCachesInfo {
     private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
         GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.sql());
-        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.config(), locInfo.sql());
+        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.cacheData().config(), locInfo.sql());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
@@ -199,7 +199,7 @@ class ClusterCachesInfo {
 
             ClusterNode rmtNode = ctx.discovery().node(rmt);
 
-            if (CU.affinityNode(ctx.discovery().localNode(), locInfo.config().getNodeFilter())
+            if (CU.affinityNode(ctx.discovery().localNode(), locInfo.cacheData().config().getNodeFilter())
                 && rmtNode != null && CU.affinityNode(rmtNode, rmtData.cacheConfiguration().getNodeFilter())) {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
                     locAttr.storeFactoryClassName(), rmtAttr.storeFactoryClassName(), true);
@@ -860,7 +860,7 @@ class ClusterCachesInfo {
         if (joinDiscoData != null) {
             for (Map.Entry<String, CacheJoinNodeDiscoveryData.CacheInfo> e : joinDiscoData.caches().entrySet()) {
                 if (!registeredCaches.containsKey(e.getKey())) {
-                    conflictErr = checkCacheConflict(e.getValue().config());
+                    conflictErr = checkCacheConflict(e.getValue().cacheData().config());
 
                     if (conflictErr != null) {
                         conflictErr = "Failed to start configured cache due to conflict with started caches. " +
@@ -900,10 +900,10 @@ class ClusterCachesInfo {
                 NearCacheConfiguration nearCfg = null;
 
                 if (locCfg != null) {
-                    nearCfg = locCfg.config().getNearConfiguration();
+                    nearCfg = locCfg.cacheData().config().getNearConfiguration();
 
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
-                            locCfg.config(),
+                        locCfg.cacheData().config(),
                             desc.cacheType(),
                             desc.groupDescriptor(),
                             desc.template(),
@@ -911,7 +911,7 @@ class ClusterCachesInfo {
                             desc.staticallyConfigured(),
                             desc.sql(),
                             desc.deploymentId(),
-                            desc.schema());
+                        new QuerySchema(locCfg.cacheData().queryEntities()));
 
                     desc0.startTopologyVersion(desc.startTopologyVersion());
                     desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
@@ -1029,7 +1029,7 @@ class ClusterCachesInfo {
      */
     private String processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, boolean locJoin) {
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.templates().values()) {
-            CacheConfiguration<?, ?> cfg = cacheInfo.config();
+            CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
             if (!registeredTemplates.containsKey(cfg.getName())) {
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
@@ -1041,7 +1041,7 @@ class ClusterCachesInfo {
                     true,
                     false,
                     joinData.cacheDeploymentId(),
-                    new QuerySchema(cfg.getQueryEntities()));
+                    new QuerySchema(cacheInfo.cacheData().queryEntities()));
 
                 DynamicCacheDescriptor old = registeredTemplates.put(cfg.getName(), desc);
 
@@ -1050,7 +1050,7 @@ class ClusterCachesInfo {
         }
 
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
-            CacheConfiguration<?, ?> cfg = cacheInfo.config();
+            CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
             if (!registeredCaches.containsKey(cfg.getName())) {
                 String conflictErr = checkCacheConflict(cfg);
@@ -1087,7 +1087,7 @@ class ClusterCachesInfo {
                     true,
                     cacheInfo.sql(),
                     joinData.cacheDeploymentId(),
-                    new QuerySchema(cfg.getQueryEntities()));
+                    new QuerySchema(cacheInfo.cacheData().queryEntities()));
 
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 

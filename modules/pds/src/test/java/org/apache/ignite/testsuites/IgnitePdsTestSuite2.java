@@ -23,6 +23,7 @@ import org.apache.ignite.cache.database.IgnitePersistentStoreContinuousRestartSe
 import org.apache.ignite.cache.database.IgnitePersistentStoreDataStructuresTest;
 import org.apache.ignite.cache.database.IgnitePersistentStorePageSizesTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.cache.database.IgnitePersistentStoreSchemaLoadTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreTxCacheRebalancingTest;
 import org.apache.ignite.cache.database.db.DbPageEvictionDuringPartitionClearSelfTest;
 import org.apache.ignite.cache.database.db.IgniteDbWholeClusterRestartSelfTest;
@@ -71,6 +72,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePersistentStoreContinuousRestartSelfTest.class);
 
+        suite.addTestSuite(IgnitePersistentStoreSchemaLoadTest.class);
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
 
         return suite;

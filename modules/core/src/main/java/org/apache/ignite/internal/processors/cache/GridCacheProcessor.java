@@ -689,15 +689,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cfg Cache configuration.
+     * @param cacheData Cache data.
      * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
      * @param caches Caches map.
      * @param templates Templates map.
      * @throws IgniteCheckedException If failed.
      */
-    private void addCacheOnJoin(CacheConfiguration cfg, boolean sql,
+    private void addCacheOnJoin(StoredCacheData cacheData, boolean sql,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates) throws IgniteCheckedException {
+        CacheConfiguration<?, ?> cfg = cacheData.config();
+
         CU.validateCacheName(cfg.getName());
 
         cloneCheckSerializable(cfg);
@@ -732,10 +734,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else
                 stopSeq.addFirst(cfg.getName());
 
-            caches.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cfg, cacheType, sql, 0));
+            caches.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, sql, 0));
         }
         else
-            templates.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cfg, CacheType.USER, false, 0));
+            templates.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0));
     }
 
     /**
@@ -756,7 +758,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cfgs[i] = cfg; // Replace original configuration value.
 
-            addCacheOnJoin(cfg, false, caches, templates);
+            addCacheOnJoin(new StoredCacheData(cfg), false, caches, templates);
         }
     }
 
@@ -772,7 +774,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert !ctx.config().isDaemon();
 
         if (sharedCtx.pageStore() != null && sharedCtx.database().persistenceEnabled()) {
-            Map<String, CacheConfiguration> ccfgs = sharedCtx.pageStore().readCacheConfigurations();
+            Map<String, StoredCacheData> ccfgs = sharedCtx.pageStore().readCacheConfigurations();
 
             for (String cache : caches.keySet())
                 ccfgs.remove(cache);
@@ -785,7 +787,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     log.info("Register persistent caches: " + ccfgs.keySet());
 
                 // TODO IGNITE-5306 - set correct SQL flag below.
-                for (CacheConfiguration ccfg : ccfgs.values())
+                for (StoredCacheData ccfg : ccfgs.values())
                     addCacheOnJoin(ccfg, false, caches, templates);
             }
         }
@@ -1888,7 +1890,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (sharedCtx.pageStore() != null  && affNode)
-            sharedCtx.pageStore().initializeForCache(grpDesc, startCfg);
+            sharedCtx.pageStore().initializeForCache(grpDesc, new StoredCacheData(startCfg));
 
         String grpName = startCfg.getGroupName();
 
@@ -2747,10 +2749,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.config().isDaemon() &&
             sharedCtx.pageStore() != null &&
             sharedCtx.database().persistenceEnabled()) {
-            Map<String, CacheConfiguration> savedCaches = sharedCtx.pageStore().readCacheConfigurations();
+            Map<String, StoredCacheData> savedCaches = sharedCtx.pageStore().readCacheConfigurations();
 
-            for (CacheConfiguration cfg : savedCaches.values())
-                reqs.add(createRequest(cfg, false));
+            for (StoredCacheData cfg : savedCaches.values())
+                reqs.add(createRequest(cfg.config(), false));
 
             for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
                 if (!savedCaches.containsKey(cfg.getName()))

@@ -20,11 +20,11 @@ package org.apache.ignite.internal.pagemem.store;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -45,10 +45,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * Callback called when a cache is starting.
      *
      * @param grpDesc Cache group descriptor.
-     * @param ccfg Cache configuration of the cache being started.
+     * @param cacheData Cache data of the cache being started.
      * @throws IgniteCheckedException If failed to handle cache start callback.
      */
-    public void initializeForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException;
+    public void initializeForCache(CacheGroupDescriptor grpDesc,
+        StoredCacheData cacheData) throws IgniteCheckedException;
 
     /**
      * Callback called when a cache is stopping. After this callback is invoked, no data associated with
@@ -178,7 +179,14 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return Saved cache configurations.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<String, CacheConfiguration> readCacheConfigurations() throws IgniteCheckedException;
+    public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException;
+
+    /**
+     * @param grpDesc Cache group descriptor.
+     * @param cacheData Cache configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void storeCacheData(CacheGroupDescriptor grpDesc, StoredCacheData cacheData) throws IgniteCheckedException;
 
     /**
      * @param grpId Cache group ID.
