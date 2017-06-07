@@ -31,6 +31,8 @@ public enum GridRedisCommand {
     QUIT("QUIT"),
     /** Echo. */
     ECHO("ECHO"),
+    /** Select **/
+    SELECT("SELECT"),
 
     // String commands.
     /** GET. */
