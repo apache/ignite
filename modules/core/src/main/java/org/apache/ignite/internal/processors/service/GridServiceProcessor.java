@@ -249,8 +249,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         cache = ctx.cache().utilityCache();
 
-        if (!ctx.clientNode())
-            ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
+        addDiscoveryEventListener();
 
         try {
             if (ctx.deploy().enabled())
@@ -303,6 +302,23 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             log.debug("Started service processor.");
     }
 
+    /**
+     *
+     */
+    public void addDiscoveryEventListener() {
+        if (!ctx.clientNode() && !ctx.isDaemon())
+            ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
+    }
+
+
+    /**
+     *
+     */
+    public void removeDiscoveryEventListener() {
+        if (!ctx.clientNode() && !ctx.isDaemon())
+            ctx.event().removeDiscoveryEventListener(topLsnr);
+    }
+
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         busyLock.block();
@@ -311,8 +327,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.isDaemon())
                 return;
 
-            if (!ctx.clientNode())
-                ctx.event().removeDiscoveryEventListener(topLsnr);
+            removeDiscoveryEventListener();
 
             Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 

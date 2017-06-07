@@ -390,8 +390,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> stoppedCaches = null;
 
-        boolean systemCacheRestarted = false;
-
         for (DynamicCacheChangeRequest req : reqs) {
             if (!(req.clientStartOnly() || req.close()))
                 clientOnly = false;
