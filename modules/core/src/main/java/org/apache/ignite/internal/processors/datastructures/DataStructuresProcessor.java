@@ -34,7 +34,6 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
 import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CX1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -106,12 +104,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
-    private static final CacheDataStructuresConfigurationKey DATA_STRUCTURES_KEY =
-        new CacheDataStructuresConfigurationKey();
-
-    /** */
-    private static final CacheDataStructuresCacheKey DATA_STRUCTURES_CACHE_KEY =
-        new CacheDataStructuresCacheKey();
+    private static final DataStructuresCacheKey DATA_STRUCTURES_CACHE_KEY =
+        new DataStructuresCacheKey();
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -156,10 +150,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration atomicCfg;
 
     /** */
-    private IgniteInternalCache<T2<CacheDataStructuresConfigurationKey, String>, DataStructureInfo> utilityCache;
+    private IgniteInternalCache<DataStructureDefinitionKey, DataStructureInfo> utilityCache;
 
     /** */
-    private IgniteInternalCache<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
+    private IgniteInternalCache<DataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
 
     /** */
     private volatile UUID qryId;
@@ -227,9 +221,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (!activeOnStart && ctx.state().active())
             ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
+        utilityCache = ctx.cache().utilityCache();
 
-        utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
+        utilityDataCache = ctx.cache().utilityCache();
 
         assert utilityCache != null;
 
@@ -583,15 +577,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         Class<? extends T> cls)
         throws IgniteCheckedException
     {
-        final T2<CacheDataStructuresConfigurationKey, String> dsKey = new T2<>(DATA_STRUCTURES_KEY, dsInfo.name);
+        final DataStructureDefinitionKey dsKey = new DataStructureDefinitionKey(dsInfo.name);
 
-        DataStructureInfo cachedInfo = utilityCache.get(dsKey);
+        DataStructureInfo cached = utilityCache.get(dsKey);
 
-        if (!create && cachedInfo == null)
+        if (!create && cached == null)
             return null;
 
-        if (cachedInfo != null) {
-            IgniteCheckedException err = cachedInfo.validate(dsInfo, create);
+        if (cached != null) {
+            IgniteCheckedException err = cached.validate(dsInfo, create);
 
             if (err != null)
                 throw err;
@@ -672,21 +666,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable final IgniteInClosureX<T> afterRmv)
         throws IgniteCheckedException
     {
-        final T2<CacheDataStructuresConfigurationKey, String> dsKey = new T2<>(DATA_STRUCTURES_KEY, name);
+        final DataStructureDefinitionKey dsKey = new DataStructureDefinitionKey(name);
 
-        DataStructureInfo removeDs = utilityCache.get(dsKey);
+        DataStructureInfo rmvDs = utilityCache.get(dsKey);
 
-        if (removeDs == null)
+        if (rmvDs == null)
             return;
 
         final DataStructureInfo dsInfo = new DataStructureInfo(name, type, null);
 
-        if (removeDs != null) {
-            IgniteCheckedException err = removeDs.validate(dsInfo, false);
+        IgniteCheckedException err = rmvDs.validate(dsInfo, false);
 
-            if (err != null)
-                throw err;
-        }
+        if (err != null)
+            throw err;
 
         retryTopologySafe(new IgniteOutClosureX<Void>() {
             @Override public Void applyx() throws IgniteCheckedException {
@@ -1066,7 +1058,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     {
         awaitInitialization();
 
-        final T2<CacheDataStructuresConfigurationKey, String> dsKey = new T2<>(DATA_STRUCTURES_KEY, dsInfo.name);
+        final DataStructureDefinitionKey dsKey = new DataStructureDefinitionKey(dsInfo.name);
 
         DataStructureInfo cachedDsInfo = utilityCache.get(dsKey);
 
@@ -2117,168 +2109,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      *
      */
-    static class AddAtomicProcessor implements
-        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>, IgniteCheckedException>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private DataStructureInfo info;
-
-        /**
-         * @param info Data structure information.
-         */
-        AddAtomicProcessor(DataStructureInfo info) {
-            assert info != null;
-
-            this.info = info;
-        }
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public AddAtomicProcessor() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteCheckedException process(
-            MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
-            Object... args)
-            throws EntryProcessorException
-        {
-            Map<String, DataStructureInfo> map = entry.getValue();
-
-            if (map == null) {
-                map = new HashMap<>();
-
-                map.put(info.name, info);
-
-                entry.setValue(map);
-
-                return null;
-            }
-
-            DataStructureInfo oldInfo = map.get(info.name);
-
-            if (oldInfo == null) {
-                map = new HashMap<>(map);
-
-                map.put(info.name, info);
-
-                entry.setValue(map);
-
-                return null;
-            }
-
-            return oldInfo.validate(info, true);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            info.writeExternal(out);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            info = new DataStructureInfo();
-
-            info.readExternal(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(AddAtomicProcessor.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    static class AddCollectionProcessor implements
-        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>,
-            T2<String, IgniteCheckedException>>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private DataStructureInfo info;
-
-        /**
-         * @param info Data structure information.
-         */
-        AddCollectionProcessor(DataStructureInfo info) {
-            assert info != null;
-            assert info.info instanceof CollectionInfo;
-
-            this.info = info;
-        }
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public AddCollectionProcessor() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public T2<String, IgniteCheckedException> process(
-            MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
-            Object... args)
-        {
-            Map<String, DataStructureInfo> map = entry.getValue();
-
-            CollectionInfo colInfo = (CollectionInfo)info.info;
-
-            if (map == null) {
-                map = new HashMap<>();
-
-                map.put(info.name, info);
-
-                entry.setValue(map);
-
-                return new T2<>(colInfo.cacheName, null);
-            }
-
-            DataStructureInfo oldInfo = map.get(info.name);
-
-            if (oldInfo == null) {
-                map = new HashMap<>(map);
-
-                map.put(info.name, info);
-
-                entry.setValue(map);
-
-                return new T2<>(colInfo.cacheName, null);
-            }
-
-            return new T2<>(colInfo.cacheName, oldInfo.validate(info, true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            info.writeExternal(out);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            info = new DataStructureInfo();
-
-            info.readExternal(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(AddCollectionProcessor.class, this);
-        }
-    }
-
-    /**
-     *
-     */
     static class AddDataCacheProcessor implements
-        EntryProcessor<CacheDataStructuresCacheKey, List<CacheCollectionInfo>, String>, Externalizable {
+        EntryProcessor<DataStructuresCacheKey, List<CacheCollectionInfo>, String>, Externalizable {
         /** Cache name prefix. */
         private static final String CACHE_NAME_PREFIX = "datastructures_";
 
@@ -2304,7 +2136,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         /** {@inheritDoc} */
         @Override public String process(
-            MutableEntry<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> entry,
+            MutableEntry<DataStructuresCacheKey, List<CacheCollectionInfo>> entry,
             Object... args)
         {
             List<CacheCollectionInfo> list = entry.getValue();
@@ -2351,77 +2183,4 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
     }
 
-    /**
-     *
-     */
-    static class RemoveDataStructureProcessor implements
-        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>,
-            T2<Boolean, IgniteCheckedException>>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private DataStructureInfo info;
-
-        /**
-         * @param info Data structure information.
-         */
-        RemoveDataStructureProcessor(DataStructureInfo info) {
-            assert info != null;
-
-            this.info = info;
-        }
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public RemoveDataStructureProcessor() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public T2<Boolean, IgniteCheckedException> process(
-            MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
-            Object... args)
-        {
-            Map<String, DataStructureInfo> map = entry.getValue();
-
-            if (map == null)
-                return new T2<>(false, null);
-
-            DataStructureInfo oldInfo = map.get(info.name);
-
-            if (oldInfo == null)
-                return new T2<>(false, null);
-
-            IgniteCheckedException err = oldInfo.validate(info, false);
-
-            if (err == null) {
-                map = new HashMap<>(map);
-
-                map.remove(info.name);
-
-                entry.setValue(map);
-            }
-
-            return new T2<>(true, err);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            info.writeExternal(out);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            info = new DataStructureInfo();
-
-            info.readExternal(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(RemoveDataStructureProcessor.class, this);
-        }
-    }
 }
