@@ -43,8 +43,10 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
@@ -187,6 +189,8 @@ public class GridSqlQuerySplitter {
 
         String originalSql = qry.getSQL();
 
+//        debug("ORIGINAL", originalSql);
+
         final boolean explain = qry.explain();
 
         qry.explain(false);
@@ -196,6 +200,8 @@ public class GridSqlQuerySplitter {
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
         splitter.normalizeQuery(qry);
+
+//        debug("NORMALIZED", qry.getSQL());
 
         Connection conn = stmt.getConnection();
 
@@ -270,13 +276,19 @@ public class GridSqlQuerySplitter {
         // Setup the needed information for split.
         analyzeQueryModel(qrym);
 
+//        debug("ANALYZED", printQueryModel(qrym));
+
         // If we have child queries to split, then go hard way.
         if (qrym.needSplitChild) {
             // All the siblings to selects we are going to split must be also wrapped into subqueries.
             pushDownQueryModel(qrym);
 
+//            debug("PUSHED_DOWN", printQueryModel(qrym));
+
             // Need to make all the joined subqueries to be ordered by join conditions.
             setupMergeJoinSorting(qrym);
+
+//            debug("SETUP_MERGE_JOIN", printQueryModel(qrym));
         }
         else if (!qrym.needSplit)  // Just split the top level query.
             setNeedSplit(qrym);
@@ -314,6 +326,20 @@ public class GridSqlQuerySplitter {
         }
         else
             throw new IllegalStateException("Type: " + qrym.type);
+    }
+
+    /**
+     * @param label Label.
+     * @param info Info.
+     * @deprecated Must be commented out.
+     */
+    @Deprecated
+    @SuppressWarnings("unused")
+    private static void debug(String label, String info) {
+        X.println();
+        X.println("  ==" + label + "== ");
+        X.println(info);
+        X.println("  ======== ");
     }
 
     /**
@@ -546,6 +572,8 @@ public class GridSqlQuerySplitter {
             // and mark that subquery as splittable.
             doPushDownQueryModelRange(qrym, begin, end, true);
         }
+
+//        debug("PUSH_DOWN_PARTIAL", printQueryModel(qrym));
     }
 
     /**
@@ -645,6 +673,9 @@ public class GridSqlQuerySplitter {
         int end,
         GridSqlAlias wrapAlias
     ) {
+        // Get the original SELECT.
+        GridSqlSelect select = qrym.ast();
+
         GridSqlSelect wrapSelect = GridSqlAlias.<GridSqlSubquery>unwrap(wrapAlias).subquery();
 
         final int last = qrym.size() - 1;
@@ -716,6 +747,7 @@ public class GridSqlQuerySplitter {
             wrapSelect.from(endJoin);
             afterBeginJoin.leftTable(beginJoin.rightTable());
             beginJoin.rightTable(wrapAlias);
+            select.from(beginJoin);
         }
         else if (begin == 0) {
             //  From the first model to some middle one.
@@ -780,8 +812,6 @@ public class GridSqlQuerySplitter {
             beginJoin.rightTable(wrapAlias);
         }
 
-        // Get the original SELECT.
-        GridSqlSelect select = qrym.ast();
         GridSqlAst from = select.from();
 
         // Push down related ON conditions for all the related joins.
@@ -2174,6 +2204,41 @@ public class GridSqlQuerySplitter {
             result[i] = list.get(i);
 
         return result;
+    }
+
+    /**
+     * @param root Root model.
+     * @return Tree as a string.
+     */
+    @SuppressWarnings("unused")
+    private String printQueryModel(QueryModel root) {
+        GridTreePrinter<QueryModel> mp = new GridTreePrinter<QueryModel>() {
+            /** {@inheritDoc} */
+            @Override protected List<QueryModel> getChildren(QueryModel m) {
+                return m;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected String formatTreeNode(QueryModel m) {
+                return "[ " +(m.uniqueAlias == null ? "+" : m.uniqueAlias.alias()) +
+                    " -> " + m.type +
+                    " ns:" + m.needSplit + " nsch:" + m.needSplitChild +
+                    " ast: " + ast(m) +" ]";
+            }
+
+            private String ast(QueryModel m) {
+                if (m.prnt == null)
+                    return "-+-+-";
+
+                String ast = m.ast().getSQL().replace('\n', ' ');
+
+                int maxLen = 2000;
+
+                return ast.length() <= maxLen ? ast : ast.substring(0, maxLen);
+            }
+        };
+
+        return mp.print(root);
     }
 
     /**
