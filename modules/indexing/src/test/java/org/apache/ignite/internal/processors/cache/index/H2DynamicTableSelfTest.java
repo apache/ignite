@@ -190,8 +190,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertTrue(cacheDesc.sql());
 
-            if (!F.isEmpty(cacheGrp))
-                assertEquals(cacheGrp, cacheDesc.groupDescriptor().groupName());
+            assertEquals(cacheGrp, cacheDesc.groupDescriptor().groupName());
 
             if (mode != null)
                 assertEquals(mode, cacheDesc.cacheConfiguration().getCacheMode());
