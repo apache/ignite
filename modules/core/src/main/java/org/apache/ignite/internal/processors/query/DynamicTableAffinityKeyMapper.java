@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.internal.binary.BinaryFieldEx;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Trivial mapper to take extract field value from binary object of specific type as affinity key.
@@ -35,54 +36,53 @@ public class DynamicTableAffinityKeyMapper implements AffinityKeyMapper {
     private final String typeName;
 
     /** Field name. */
-    private final String fldName;
+    private final String fieldName;
 
     /** Type id for faster type checks. */
-    private transient volatile Integer typeId;
-
-    /** Type id for faster type checks. */
-    private transient volatile BinaryField fld;
+    private transient volatile BinaryFieldEx field;
 
     /**
+     * Constructor.
+     *
      * @param typeName Type name.
-     * @param fldName Field name.
+     * @param fieldName Field name.
      */
-    DynamicTableAffinityKeyMapper(String typeName, String fldName) {
+    DynamicTableAffinityKeyMapper(String typeName, String fieldName) {
         this.typeName = typeName;
-        this.fldName = fldName;
+        this.fieldName = fieldName;
     }
 
     /**
      * @return Field name.
      */
     public String fieldName() {
-        return fldName;
+        return fieldName;
     }
 
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
-        A.notNull(key, "key");
-
         if (!(key instanceof BinaryObject))
             return key;
 
-        BinaryObject binKey = (BinaryObject)key;
+        assert key instanceof BinaryObjectEx;
 
-        if (typeId == null) {
-            if (!F.eq(binKey.type().typeName(), typeName))
+        BinaryObjectEx key0 = (BinaryObjectEx)key;
+
+        if (field == null) {
+            BinaryType type = key0.type();
+
+            if (!F.eq(type.typeName(), typeName))
                 return key;
 
-            typeId = binKey.type().typeId();
-
-            fld = binKey.type().field(fldName);
+            field = (BinaryFieldEx)type.field(fieldName);
         }
 
-        if (binKey.type().typeId() != typeId)
+        if (F.eq(key0.typeId(), field.typeId()))
             return key;
 
-        Object res = fld.value(binKey);
+        Object affKey = field.value(key0);
 
-        return res != null ? res : key;
+        return affKey != null ? affKey : key;
     }
 
     /** {@inheritDoc} */
