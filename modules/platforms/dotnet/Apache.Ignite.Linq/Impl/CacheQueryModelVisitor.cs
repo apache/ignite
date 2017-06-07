@@ -523,11 +523,20 @@ namespace Apache.Ignite.Linq.Impl
                     {
                         throw new NotSupportedException("STRON WAS HERE");
                     }
+                    var isOuter = false;
+
+                    var constantValueType = ((ConstantExpression) joinClause.InnerSequence).Value.GetType();
+                    if (constantValueType.IsGenericType)
+                    {
+                        var defaultEnumeratorType = new object[0].DefaultIfEmpty().GetType().GetGenericTypeDefinition();
+                        isOuter = defaultEnumeratorType == constantValueType.GetGenericTypeDefinition();
+                    }
 
                     //  no table name required
                     var tableAlias = _aliases.GetTableAlias(joinClause);
                     var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
-                    _builder.AppendFormat("join table({0} {1} = ?) {2} on(", fieldAlias, sqlTypeName, tableAlias);
+
+                    _builder.AppendFormat("{0} join table({1} {2} = ?) {3} on(", isOuter ? "left outer" : "inner", fieldAlias, sqlTypeName, tableAlias);
 
 
                     //TODO - rewrite?
