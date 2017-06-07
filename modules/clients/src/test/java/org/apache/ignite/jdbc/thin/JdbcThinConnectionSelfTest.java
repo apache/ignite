@@ -685,7 +685,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPrepare CallUnsupported() throws Exception {
+    public void testPrepareCallUnsupported() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "exec test()";
 
