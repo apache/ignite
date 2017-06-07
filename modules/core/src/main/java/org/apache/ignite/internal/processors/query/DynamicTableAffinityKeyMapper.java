@@ -77,7 +77,7 @@ public class DynamicTableAffinityKeyMapper implements AffinityKeyMapper {
             field = (BinaryFieldEx)type.field(fieldName);
         }
 
-        if (F.eq(key0.typeId(), field.typeId()))
+        if (!F.eq(key0.typeId(), field.typeId()))
             return key;
 
         Object affKey = field.value(key0);

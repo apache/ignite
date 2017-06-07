@@ -468,11 +468,16 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }
 
         List<List<?>> res = queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("select \"id\", " +
-            "c.\"code\" from \"Person2\" p left join \"City\" c on p.\"city\" = c.\"name\""), true).getAll();
+            "c.\"code\" from \"Person2\" p left join \"City\" c on p.\"city\" = c.\"name\" where c.\"name\" " +
+            "is not null"), true).getAll();
 
         assertEquals(100, res.size());
 
         for (int i = 0; i < 100; i++) {
+            assertNotNull(res.get(i).get(0));
+
+            assertNotNull(res.get(i).get(1));
+
             int id = (Integer)res.get(i).get(0);
 
             int code = (Integer)res.get(i).get(1);
@@ -529,18 +534,50 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Tests that attempting to specify an affinity key that actually is a value column yields an error.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testAffinityKeyNotKeyColumn() {
+        // Error arises because user has specified case sensitive affinity column name
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=code\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Affinity key column must be one of key columns: code");
+    }
+
+    /**
+     * Tests that attempting to specify an affinity key that actually is a value column yields an error.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testAffinityKeyNotFound() {
+        // Error arises because user has specified case sensitive affinity column name
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=missing\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Affinity key column with given name not found: missing");
+    }
+
+    /**
      * Check that dynamic cache created with {@code CREATE TABLE} is correctly configured affinity wise.
      * @param cacheName Cache name to check.
      * @param affKeyFieldName Expected affinity key field name.
      */
     private void assertAffinityCacheConfiguration(String cacheName, String affKeyFieldName) {
-        Collection<GridQueryTypeDescriptor> types = client().context().query().types(cacheName);
+        String actualCacheName = cacheName(cacheName);
+
+        Collection<GridQueryTypeDescriptor> types = client().context().query().types(actualCacheName);
 
         assertEquals(1, types.size());
 
         GridQueryTypeDescriptor type = types.iterator().next();
 
-        assertTrue(type.name().startsWith("sql_PUBLIC_" + cacheName));
+        assertTrue(type.name().startsWith(actualCacheName));
         assertEquals(cacheName, type.tableName());
         assertEquals(affKeyFieldName, type.affinityKey());
 

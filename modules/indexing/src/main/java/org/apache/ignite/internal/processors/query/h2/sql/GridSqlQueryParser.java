@@ -1069,19 +1069,23 @@ public class GridSqlQueryParser {
                     affColName = val;
                 }
                 else {
-                    for (String pkColName : res.primaryKeyColumns()) {
-                        if (val.equalsIgnoreCase(pkColName)) {
+                    for (String colName : res.columns().keySet()) {
+                        if (val.equalsIgnoreCase(colName)) {
                             if (affColName != null)
                                 throw new IgniteSQLException("Ambiguous affinity column name, use single quotes " +
                                     "for case sensitivity: " + val, IgniteQueryErrorCode.PARSING);
 
-                            affColName = pkColName;
+                            affColName = colName;
                         }
                     }
                 }
 
-                if (affColName == null || !res.primaryKeyColumns().contains(affColName))
+                if (affColName == null || !res.columns().containsKey(affColName))
                     throw new IgniteSQLException("Affinity key column with given name not found: " + val,
+                        IgniteQueryErrorCode.PARSING);
+
+                if (!res.primaryKeyColumns().contains(affColName))
+                    throw new IgniteSQLException("Affinity key column must be one of key columns: " + affColName,
                         IgniteQueryErrorCode.PARSING);
 
                 res.affinityKey(affColName);
