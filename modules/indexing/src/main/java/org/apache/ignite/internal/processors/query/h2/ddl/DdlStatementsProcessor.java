@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -189,6 +190,12 @@ public class DdlStatementsProcessor {
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
+                if (tbl == null && cmd.ifExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
+
                 if (tbl == null) {
                     if (!cmd.ifExists())
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
@@ -288,9 +295,11 @@ public class DdlStatementsProcessor {
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
 
-        res.setKeyType(createTbl.tableName() + "Key");
+        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
+        String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
-        res.setValueType(createTbl.tableName());
+        res.setValueType(valTypeName);
+        res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
 

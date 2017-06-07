@@ -110,7 +110,10 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 nativeLibraryNames: []
             },
             serviceConfigurations: [],
-            executorConfiguration: []
+            executorConfiguration: [],
+            sqlConnectorConfiguration: {
+                tcpNoDelay: true
+            }
         };
 
         const pairFields = {

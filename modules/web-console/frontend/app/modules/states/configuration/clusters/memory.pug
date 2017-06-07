@@ -110,5 +110,14 @@ include /app/helpers/jade/mixins
                                         .settings-row
                                             +checkbox('Metrics enabled', 'model.metricsEnabled', '"MemoryPolicyMetricsEnabled" + $index',
                                             'Whether memory metrics are enabled by default on node startup')
+
+                                        //- Since ignite 2.1
+                                        .div(ng-if='$ctrl.available("2.1.0")')
+                                            .settings-row
+                                                +number('Sub intervals:', 'model.subIntervals', '"MemoryPolicySubIntervals" + $index',
+                                                    'true', '5', '1', 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates')
+                                            .settings-row
+                                                +number('Rate time interval:', 'model.rateTimeInterval', '"MemoryPolicyRateTimeInterval" + $index',
+                                                    'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
             .col-sm-6
                 +preview-xml-java(model, 'clusterMemory')
