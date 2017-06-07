@@ -58,7 +58,11 @@ namespace ignite
 
                 GET_TABLES_METADATA = 6,
 
-                GET_PARAMS_METADATA = 7
+                GET_PARAMS_METADATA = 7,
+
+                EXECUTE_SQL_QUERY_BATCH_START = 8,
+
+                EXECUTE_SQL_QUERY_BATCH_CONTINUE = 9
             };
         };
 
@@ -183,6 +187,69 @@ namespace ignite
             const app::ParameterSet& params;
         };
 
+        /**
+         * Query execute batch request.
+         */
+        class QueryExecuteBatchRequestStart
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param schema Schema.
+             * @param sql SQL query.
+             * @param params Query arguments.
+             * @param begin Beginng of the interval.
+             * @param end End of the interval.
+             */
+            QueryExecuteBatchRequestStart(const std::string& schema, const std::string& sql,
+                const app::ParameterSet& params, SqlUlen begin, SqlUlen end) :
+                schema(schema),
+                sql(sql),
+                params(params),
+                begin(begin),
+                end(end)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryExecuteBatchRequestStart()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH_START);
+                utility::WriteString(writer, schema);
+                utility::WriteString(writer, sql);
+
+                params.Write(writer, begin, end);
+            }
+
+        private:
+            /** Schema name. */
+            std::string schema;
+
+            /** SQL query. */
+            std::string sql;
+
+            /** Parameters bindings. */
+            const app::ParameterSet& params;
+
+            /** Beginng of the interval. */
+            SqlUlen begin;
+
+            /** End of the interval. */
+            SqlUlen end;
+        };
 
         /**
          * Query close request.
@@ -682,6 +749,72 @@ namespace ignite
 
             /** Query ID. */
             int64_t queryId;
+
+            /** Columns metadata. */
+            meta::ColumnMetaVector meta;
+        };
+
+        /**
+         * Query execute batch start response.
+         */
+        class QueryExecuteBatchStartResponse : public Response
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryExecuteBatchStartResponse() :
+                queryId(0),
+                affectedRows(0),
+                meta()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryExecuteBatchStartResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Get query ID.
+             * @return Query ID.
+             */
+            int64_t GetQueryId() const
+            {
+                return queryId;
+            }
+
+            /**
+             * Get column metadata.
+             * @return Column metadata.
+             */
+            const meta::ColumnMetaVector& GetMeta() const
+            {
+                return meta;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                queryId = reader.ReadInt64();
+                affectedRows = reader.ReadInt64();
+
+                meta::ReadColumnMetaVector(reader, meta);
+            }
+
+            /** Query ID. */
+            int64_t queryId;
+
+            /** Affected rows. */
+            int64_t affectedRows;
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;

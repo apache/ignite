@@ -179,6 +179,9 @@ namespace ignite
 
                     writer.WriteInt32(intervalLen);
 
+                    // Last page flag.
+                    writer.WriteBool(intervalEnd == paramSetSize);
+
                     for (SqlUlen i = begin; i < intervalEnd; ++i)
                         WriteRow(writer, i);
                 }

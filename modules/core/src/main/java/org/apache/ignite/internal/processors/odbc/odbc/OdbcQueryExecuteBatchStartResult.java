@@ -20,21 +20,26 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 import java.util.Collection;
 
 /**
- * SQL listener query execute result.
+ * ODBC query execute with batch of parameters result.
  */
-public class OdbcQueryExecuteResult {
+public class OdbcQueryExecuteBatchStartResult {
     /** Query ID. */
     private final long queryId;
+
+    /** Rows affected. */
+    private final long rowsAffected;
 
     /** Fields metadata. */
     private final Collection<OdbcColumnMeta> columnsMeta;
 
     /**
      * @param queryId Query ID.
+     * @param rowsAffected Number of rows affected by the query.
      * @param columnsMeta Columns metadata.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta) {
+    public OdbcQueryExecuteBatchStartResult(long queryId, long rowsAffected, Collection<OdbcColumnMeta> columnsMeta) {
         this.queryId = queryId;
+        this.rowsAffected = rowsAffected;
         this.columnsMeta = columnsMeta;
     }
 
@@ -43,6 +48,13 @@ public class OdbcQueryExecuteResult {
      */
     public long queryId() {
         return queryId;
+    }
+
+    /**
+     * @return Number of rows affected by the query.
+     */
+    public long rowsAffected() {
+        return rowsAffected;
     }
 
     /**
