@@ -91,11 +91,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (client().cache("Person") != null)
-            executeDdl("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
-
-
-            executeDdl("DROP TABLE IF EXISTS PUBLIC.\"City\"");
+        executeDdl("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
+        executeDdl("DROP TABLE IF EXISTS PUBLIC.\"City\"");
 
         super.afterTest();
     }
@@ -164,12 +161,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"");
 
+        String cacheName = cacheName("Person");
+
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
 
-            assertNotNull(node.cache("Person"));
+            assertNotNull(node.cache(cacheName));
 
-            DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor("Person");
+            DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor(cacheName);
 
             assertNotNull(cacheDesc);
 
@@ -185,7 +184,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (mode != null)
                 assertEquals(mode, cacheDesc.cacheConfiguration().getCacheMode());
 
-            QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
+            QueryTypeDescriptorImpl desc = typeExisting(node, cacheName, "Person");
 
             assertEquals(Object.class, desc.keyClass());
             assertEquals(Object.class, desc.valueClass());
@@ -193,7 +192,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             assertTrue(desc.valueTypeName(), desc.valueTypeName().contains("Person"));
 
             assertTrue(desc.keyTypeName(), desc.keyTypeName().startsWith(desc.valueTypeName()));
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("Key"));
+            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("KEY"));
 
             assertEquals(
                 F.asList("id", "city", "name", "surname", "age"),
@@ -352,12 +351,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                client().destroyCache("Person");
+                client().destroyCache(cacheName("Person"));
 
                 return null;
             }
         }, CacheException.class,
-        "Only cache created with cache API may be removed with direct call to destroyCache [cacheName=Person]");
+        "Only cache created with cache API may be removed with direct call to destroyCache");
     }
 
     /**
@@ -372,7 +371,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration("Person")));
+                String cacheName = cacheName("Person");
+
+                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration(cacheName)));
 
                 return null;
             }
@@ -397,7 +398,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setKeyFields(Collections.singleton("name"));
                 e.setFields(new LinkedHashMap<>(Collections.singletonMap("name", String.class.getName())));
                 e.setIndexes(Collections.singleton(new QueryIndex("name").setName("idx")));
-                e.setValueType("CityKey");
+                e.setKeyType("CityKey");
                 e.setValueType("City");
 
                 queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(),
@@ -620,5 +621,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             .setName(INDEXED_CACHE_NAME_2)
             .setSqlSchema(QueryUtils.DFLT_SCHEMA)
             .setNodeFilter(F.not(new DynamicIndexAbstractSelfTest.NodeFilter()));
+    }
+
+    /**
+     * Get cache name.
+     *
+     * @param tblName Table name.
+     * @return Cache name.
+     */
+    private static String cacheName(String tblName) {
+        return QueryUtils.createTableCacheName("PUBLIC", tblName);
     }
 }
