@@ -21,14 +21,17 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -83,8 +86,8 @@ import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -109,6 +112,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** */
     private static final CacheDataStructuresCacheKey DATA_STRUCTURES_CACHE_KEY =
         new CacheDataStructuresCacheKey();
+
+    private static final String DATA_STRUCTURES_CACHE_NAME_PREFIX = "datastructures_";
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -421,7 +426,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeSequence(final String name, @Nullable final String groupName) throws IgniteCheckedException {
-        removeAtomic(null, name, null, ATOMIC_SEQ, null);
+        removeDataStructure(null, name, null, ATOMIC_SEQ, null);
     }
 
     /**
@@ -513,7 +518,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (dataStructure != null)
             return dataStructure;
 
-        String cacheName = (cfg.getGroupName() != null ? cfg.getGroupName() + "$" : "") + CU.ATOMICS_CACHE_NAME;
+        String cacheName = CU.ATOMICS_CACHE_NAME + (cfg.getGroupName() != null ? "@" + cfg.getGroupName() : "");
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = create ?
             ctx.cache().<GridCacheInternalKey, AtomicDataStructureValue>getOrStartCache(cacheName, cacheConfiguration(cfg, cacheName)) :
@@ -562,10 +567,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicLong(final String name, @Nullable final String groupNane) throws IgniteCheckedException {
-        removeAtomic(null, name, groupNane, ATOMIC_LONG, null);
+        removeDataStructure(null, name, groupNane, ATOMIC_LONG, null);
     }
 
-    private <T> void removeAtomic(@Nullable final IgnitePredicateX<AtomicDataStructureValue> predicate,
+    private <T> void removeDataStructure(@Nullable final IgnitePredicateX<AtomicDataStructureValue> predicate,
             String name,
             @Nullable String groupName,
             DataStructureType type,
@@ -575,7 +580,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         awaitInitialization();
 
-        final String cacheName = (groupName != null ? groupName + "$" : "") + CU.ATOMICS_CACHE_NAME;
+        final String cacheName = CU.ATOMICS_CACHE_NAME + (groupName != null ? "@" + groupName : "");
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -609,89 +614,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 return null;
             }
         });
-    }
-
-    /**
-     * @param c Closure.
-     * @param name Data structure name.
-     * @param type Data structure type.
-     * @param afterRmv Optional closure to run after data structure removed.
-     * @throws IgniteCheckedException If failed.
-     */
-    private <T> void removeDataStructure(final IgniteOutClosureX<T> c,
-        String name,
-        @Nullable String groupName,
-        DataStructureType type,
-        @Nullable final IgniteInClosureX<T> afterRmv)
-        throws IgniteCheckedException
-    {
-        final String cacheName = (groupName != null ? groupName + "$" : "") + CU.ATOMICS_CACHE_NAME;
-
-        retryTopologySafe(new IgniteOutClosureX<Object>() {
-            @Override public Object applyx() throws IgniteCheckedException {
-                IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
-
-                if (cache != null && cache.context().gate().enterIfNotStopped()) {
-                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        // TODO : validate
-
-                        c.applyx();
-
-                        tx.commit();
-
-                        if (afterRmv != null)
-                            afterRmv.applyx(null);
-                    }
-                    finally {
-                        cache.context().gate().leave();
-                    }
-                }
-
-                return null;
-            }
-        });
-
-//        Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_INFO_KEY);
-//
-//        if (dsMap == null || !dsMap.containsKey(name))
-//            return;
-//
-//        final DataStructureInfo dsInfo = new DataStructureInfo(name, null, type, null);
-//
-//        IgniteCheckedException err = validateDataStructure(dsMap, dsInfo, false);
-//
-//        if (err != null)
-//            throw err;
-//
-//        retryTopologySafe(new IgniteOutClosureX<Void>() {
-//            @Override public Void applyx() throws IgniteCheckedException {
-//                try (GridNearTxLocal tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-//                    T2<Boolean, IgniteCheckedException> res =
-//                        utilityCache.invoke(DATA_STRUCTURES_INFO_KEY, new RemoveDataStructureProcessor(dsInfo)).get();
-//
-//                    IgniteCheckedException err = res.get2();
-//
-//                    if (err != null)
-//                        throw err;
-//
-//                    assert res.get1() != null;
-//
-//                    boolean exists = res.get1();
-//
-//                    if (!exists)
-//                        return null;
-//
-//                    T rmvInfo = c.applyx();
-//
-//                    tx.commit();
-//
-//                    if (afterRmv != null && rmvInfo != null)
-//                        afterRmv.applyx(rmvInfo);
-//
-//                    return null;
-//                }
-//            }
-//        });
     }
 
     /**
@@ -755,7 +677,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicReference(final String name, @Nullable final String groupName) throws IgniteCheckedException {
-        removeAtomic(null, name, groupName, ATOMIC_REF, null);
+        removeDataStructure(null, name, groupName, ATOMIC_REF, null);
     }
 
     /**
@@ -817,7 +739,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicStamped(final String name, @Nullable final String groupName) throws IgniteCheckedException {
-        removeAtomic(null, name, null, ATOMIC_STAMPED, null);
+        removeDataStructure(null, name, null, ATOMIC_STAMPED, null);
     }
 
     /**
@@ -830,27 +752,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public final <T> IgniteQueue<T> queue(final String name,
-        int cap,
-        @Nullable final CollectionConfiguration cfg)
+    public final <T> IgniteQueue<T> queue(final String name, int cap, @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
-
-        awaitInitialization();
-
-        String cacheName = null;
 
         if (cfg != null) {
             if (cap <= 0)
                 cap = Integer.MAX_VALUE;
-
-            cacheName = compatibleConfiguration(cfg);
         }
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
-            null,
+            cfg != null ? cfg.getGroupName() : null,
             QUEUE,
-            cfg != null ? new QueueInfo(cacheName, cfg.isCollocated(), cap) : null);
+            cfg != null ? cfg.isCollocated() : null);
 
         final int cap0 = cap;
 
@@ -860,7 +774,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public IgniteQueue<T> applyx(GridCacheContext ctx) throws IgniteCheckedException {
                 return ctx.dataStructures().queue(name, cap0, create && cfg.isCollocated(), create);
             }
-        }, dsInfo, create);
+        }, cfg, name, QUEUE, cfg != null && cfg.isCollocated(), create);
     }
 
     private CacheConfiguration cacheConfiguration(AtomicConfiguration cfg, String name) {
@@ -890,6 +804,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
+        ccfg.setGroupName(cfg.getGroupName());
         ccfg.setBackups(cfg.getBackups());
         ccfg.setCacheMode(cfg.getCacheMode());
         ccfg.setAtomicityMode(cfg.getAtomicityMode());
@@ -905,22 +820,27 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Cache name.
      * @throws IgniteCheckedException If failed.
      */
-    private String compatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
-        List<CacheCollectionInfo> caches = utilityDataCache.context().affinityNode() ?
-            utilityDataCache.localPeek(DATA_STRUCTURES_CACHE_KEY, null, null) :
-            utilityDataCache.get(DATA_STRUCTURES_CACHE_KEY);
+    private IgniteInternalCache compatibleCache(
+        IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache,
+        CollectionConfiguration cfg) throws IgniteCheckedException
+    {
+        Iterator<Cache.Entry<GridCacheInternalKey, AtomicDataStructureValue>> iterator = metaCache.scanIterator(false, new IgniteBiPredicate<Object, Object>() {
+            @Override public boolean apply(Object key, Object value) {
+                return key instanceof GridCacheInternalKey && value instanceof DistributedCollectionMetadata;
+            }
+        });
 
-        String cacheName = findCompatibleConfiguration(cfg, caches);
+        String cacheName = findCompatibleConfiguration(cfg, iterator);
 
         if (cacheName == null)
-            cacheName = utilityDataCache.invoke(DATA_STRUCTURES_CACHE_KEY, new AddDataCacheProcessor(cfg)).get();
+            cacheName = DATA_STRUCTURES_CACHE_NAME_PREFIX + UUID.randomUUID();
 
-        assert cacheName != null;
+        CacheConfiguration cacheCfg = cacheConfiguration(cfg, cacheName);
 
-        CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
+        IgniteInternalCache cache = ctx.cache().cache(cacheName);
 
-        if (ctx.cache().cache(cacheName) == null) {
-            ctx.cache().dynamicStartCache(newCfg,
+        if (cache == null) {
+            ctx.cache().dynamicStartCache(cacheCfg,
                 cacheName,
                 null,
                 CacheType.INTERNAL,
@@ -930,9 +850,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 true).get();
         }
 
-        assert ctx.cache().cache(cacheName) != null : cacheName;
+        cache = ctx.cache().cache(cacheName);
 
-        return cacheName;
+        assert cache != null;
+
+        return cache;
     }
 
     /**
@@ -940,17 +862,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param cctx Queue cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeQueue(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
+    public void removeQueue(final String name, final GridCacheContext cctx, final IgniteUuid id) throws IgniteCheckedException {
         assert name != null;
         assert cctx != null;
-
-        awaitInitialization();
-
-        IgniteOutClosureX<GridCacheQueueHeader> rmv = new IgniteOutClosureX<GridCacheQueueHeader>() {
-            @Override public GridCacheQueueHeader applyx() throws IgniteCheckedException {
-                return (GridCacheQueueHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheQueueHeaderKey(name));
-            }
-        };
 
         CIX1<GridCacheQueueHeader> afterRmv = new CIX1<GridCacheQueueHeader>() {
             @Override public void applyx(GridCacheQueueHeader hdr) throws IgniteCheckedException {
@@ -967,26 +881,40 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             }
         };
 
-        removeDataStructure(rmv, name, null, QUEUE, afterRmv);
+        removeDataStructure(null, name, null, QUEUE, afterRmv);
     }
 
     /**
      * @param c Closure creating collection.
-     * @param dsInfo Data structure info.
      * @param create Create flag.
      * @return Collection instance.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private <T> T getCollection(final IgniteClosureX<GridCacheContext, T> c,
-        final DataStructureInfo dsInfo,
+        @Nullable CollectionConfiguration cfg,
+        String name,
+        final DataStructureType type,
+        boolean colocated,
         boolean create)
         throws IgniteCheckedException
     {
         awaitInitialization();
 
-        Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_INFO_KEY);
+        assert name != null;
+        assert type == SET || type == QUEUE;
 
-        if (!create && (dsMap == null || !dsMap.containsKey(dsInfo.name)))
+        final String groupName = cfg != null ? cfg.getGroupName() : null;
+
+        final String metaCacheName = CU.ATOMICS_CACHE_NAME + (groupName != null ? "@" + groupName : "");
+
+        assert !create || cfg != null;
+
+        final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = create ?
+            ctx.cache().<GridCacheInternalKey, AtomicDataStructureValue>getOrStartCache(metaCacheName,
+                cacheConfiguration(new AtomicConfiguration(), metaCacheName)) :
+            ctx.cache().<GridCacheInternalKey, AtomicDataStructureValue>cache(metaCacheName);
+
+        if (!create && metaCache == null)
             return null;
 
 //        IgniteCheckedException err = validateDataStructure(dsMap, dsInfo, create);
@@ -994,34 +922,39 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 //        if (err != null)
 //            throw err;
 
-        if (!create) {
-            DataStructureInfo oldInfo = dsMap.get(dsInfo.name);
+        assert metaCache != null;
 
-            assert oldInfo.info instanceof CollectionInfo : oldInfo.info;
+        AtomicDataStructureValue oldVal;
 
-            String cacheName = ((CollectionInfo)oldInfo.info).cacheName;
+        final IgniteInternalCache cache;
 
-            GridCacheContext cacheCtx = ctx.cache().getOrStartCache(cacheName).context();
+        if (create) {
+            cache = compatibleCache(metaCache, cfg);
 
-            return c.applyx(cacheCtx);
+            DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
+
+            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name), newVal);
+        }
+        else {
+            oldVal = metaCache.get(new GridCacheInternalKeyImpl(name));
+
+            if (oldVal == null || !(oldVal instanceof DistributedCollectionMetadata))
+                return null;
+
+            cache = ctx.cache().cache(((DistributedCollectionMetadata)oldVal).cacheName());
+
+            if (cache == null)
+                return null;
+        }
+
+        if (oldVal != null) {
+            // TODO : validate
         }
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-                try (GridNearTxLocal tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    T2<String, IgniteCheckedException> res =
-                        utilityCache.invoke(DATA_STRUCTURES_INFO_KEY, new AddCollectionProcessor(dsInfo)).get();
-
-                    IgniteCheckedException err = res.get2();
-
-                    if (err != null)
-                        throw err;
-
-                    String cacheName = res.get1();
-
-                    final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
-
-                    T col = c.applyx(cacheCtx);
+                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    T col = c.applyx(cache.context());
 
                     tx.commit();
 
@@ -1140,7 +1073,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If operation failed.
      */
     public void removeCountDownLatch(final String name, @Nullable final String groupName) throws IgniteCheckedException {
-        removeAtomic(new IgnitePredicateX<AtomicDataStructureValue>() {
+        removeDataStructure(new IgnitePredicateX<AtomicDataStructureValue>() {
             @Override public boolean applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
                 assert val != null && val instanceof GridCacheCountDownLatchValue;
 
@@ -1215,7 +1148,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If operation failed.
      */
     public void removeSemaphore(final String name, @Nullable final String groupName) throws IgniteCheckedException {
-        removeAtomic(new IgnitePredicateX<AtomicDataStructureValue>() {
+        removeDataStructure(new IgnitePredicateX<AtomicDataStructureValue>() {
             @Override public boolean applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
                 assert val != null && val instanceof GridCacheSemaphoreState;
 
@@ -1287,7 +1220,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If operation failed.
      */
     public void removeReentrantLock(final String name, @Nullable final String groupName, final boolean broken) throws IgniteCheckedException {
-        removeAtomic(new IgnitePredicateX<AtomicDataStructureValue>() {
+        removeDataStructure(new IgnitePredicateX<AtomicDataStructureValue>() {
             @Override public boolean applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
                 assert val != null && val instanceof GridCacheLockState;
 
@@ -1459,22 +1392,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> IgniteSet<T> set(final String name,
-        @Nullable final CollectionConfiguration cfg)
+    @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
-        awaitInitialization();
-
-        String cacheName = null;
-
-        if (cfg != null)
-            cacheName = compatibleConfiguration(cfg);
-
         DataStructureInfo dsInfo = new DataStructureInfo(name,
-            null,
+            cfg != null ? cfg.getGroupName() : null,
             SET,
-            cfg != null ? new CollectionInfo(cacheName, cfg.isCollocated()) : null);
+            cfg != null ? cfg.isCollocated() : null);
 
         final boolean create = cfg != null;
 
@@ -1482,7 +1407,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
                 return cctx.dataStructures().set(name, create ? cfg.isCollocated() : false, create);
             }
-        }, dsInfo, create);
+        }, cfg, name, SET, cfg != null && cfg.isCollocated(), create);
     }
 
     /**
@@ -1490,25 +1415,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param cctx Set cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeSet(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
+    public void removeSet(final String name, final GridCacheContext cctx, final IgniteUuid id) throws IgniteCheckedException {
         assert name != null;
         assert cctx != null;
 
-        awaitInitialization();
-
-        IgniteOutClosureX<GridCacheSetHeader> rmv = new IgniteOutClosureX<GridCacheSetHeader>() {
-            @Override public GridCacheSetHeader applyx() throws IgniteCheckedException {
-                return (GridCacheSetHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
-            }
-        };
-
         CIX1<GridCacheSetHeader> afterRmv = new CIX1<GridCacheSetHeader>() {
             @Override public void applyx(GridCacheSetHeader hdr) throws IgniteCheckedException {
-                cctx.dataStructures().removeSetData(hdr.id());
+                cctx.dataStructures().removeSetData(id);
             }
         };
 
-        removeDataStructure(rmv, name, null, SET, afterRmv);
+        removeDataStructure(null, name, null, SET, afterRmv);
     }
 
     /**
@@ -1569,22 +1486,30 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /**
      * @param cfg Collection configuration.
-     * @param infos Data structure caches.
+     * @param iterator Data structure metadata iterator.
      * @return Name of the cache with compatible configuration or null.
      */
-    private static String findCompatibleConfiguration(CollectionConfiguration cfg, List<CacheCollectionInfo> infos) {
-        if (infos == null)
+    private static String findCompatibleConfiguration(CollectionConfiguration cfg, Iterator<Cache.Entry<GridCacheInternalKey, AtomicDataStructureValue>> iterator) {
+        if (iterator == null)
             return null;
 
-        for (CacheCollectionInfo col : infos) {
-            if (col.cfg.getAtomicityMode() == cfg.getAtomicityMode() &&
-                col.cfg.getCacheMode() == cfg.getCacheMode() &&
-                col.cfg.getBackups() == cfg.getBackups() &&
-                col.cfg.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory() &&
-                ((col.cfg.getNodeFilter() == null && cfg.getNodeFilter() == null) ||
-                (col.cfg.getNodeFilter() != null && col.cfg.getNodeFilter().equals(cfg.getNodeFilter()))))
-                return col.cacheName;
+        while (iterator.hasNext()) {
+            Cache.Entry<GridCacheInternalKey, AtomicDataStructureValue> e = iterator.next();
+
+            assert e.getValue() instanceof DistributedCollectionMetadata;
+
+            CollectionConfiguration cfg2 = ((DistributedCollectionMetadata)e.getValue()).configuration();
+
+            if (cfg2.getAtomicityMode() == cfg.getAtomicityMode() &&
+                cfg2.getCacheMode() == cfg.getCacheMode() &&
+                cfg2.getBackups() == cfg.getBackups() &&
+                cfg2.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory() &&
+                ((cfg2.getNodeFilter() == null && cfg.getNodeFilter() == null) ||
+                (cfg2.getNodeFilter() != null && cfg2.getNodeFilter().equals(cfg.getNodeFilter()))))
+                return ((DistributedCollectionMetadata)e.getValue()).cacheName();
         }
+
+
 
         return null;
     }
@@ -1793,7 +1718,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
          * @param type Data structure type.
          * @param info Data structure information.
          */
-        DataStructureInfo(String name, @Nullable String groupName, DataStructureType type, Externalizable info) {
+        DataStructureInfo(String name, @Nullable String groupName, DataStructureType type, Serializable info) {
             this.name = name;
             this.groupName = groupName;
             this.type = type;
@@ -2054,32 +1979,34 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             MutableEntry<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> entry,
             Object... args)
         {
-            List<CacheCollectionInfo> list = entry.getValue();
+            throw new UnsupportedOperationException();
 
-            if (list == null) {
-                list = new ArrayList<>();
-
-                String newName = CACHE_NAME_PREFIX + 0;
-
-                list.add(new CacheCollectionInfo(newName, cfg));
-
-                entry.setValue(list);
-
-                return newName;
-            }
-
-            String oldName = findCompatibleConfiguration(cfg, list);
-
-            if (oldName != null)
-                return oldName;
-
-            String newName = CACHE_NAME_PREFIX + list.size();
-
-            List<CacheCollectionInfo> newList = new ArrayList<>(list);
-
-            newList.add(new CacheCollectionInfo(newName, cfg));
-
-            return newName;
+//            List<CacheCollectionInfo> list = entry.getValue();
+//
+//            if (list == null) {
+//                list = new ArrayList<>();
+//
+//                String newName = CACHE_NAME_PREFIX + 0;
+//
+//                list.add(new CacheCollectionInfo(newName, cfg));
+//
+//                entry.setValue(list);
+//
+//                return newName;
+//            }
+//
+//            String oldName = findCompatibleConfiguration(cfg, list);
+//
+//            if (oldName != null)
+//                return oldName;
+//
+//            String newName = CACHE_NAME_PREFIX + list.size();
+//
+//            List<CacheCollectionInfo> newList = new ArrayList<>(list);
+//
+//            newList.add(new CacheCollectionInfo(newName, cfg));
+//
+//            return newName;
         }
 
         /** {@inheritDoc} */

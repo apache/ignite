@@ -52,6 +52,8 @@ public class CollectionConfiguration implements Serializable {
     /** Collocated flag. */
     private boolean collocated;
 
+    private String groupName;
+
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
      */
@@ -161,7 +163,7 @@ public class CollectionConfiguration implements Serializable {
      * @return Group name.
      */
     public String getGroupName() {
-        throw new UnsupportedOperationException("Not implemented");
+        return groupName;
     }
 
     /**
@@ -169,7 +171,9 @@ public class CollectionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public CollectionConfiguration setGroupName(String groupName) {
-        throw new UnsupportedOperationException("Not implemented");
+        this.groupName = groupName;
+
+        return this;
     }
 
     /** {@inheritDoc} */
