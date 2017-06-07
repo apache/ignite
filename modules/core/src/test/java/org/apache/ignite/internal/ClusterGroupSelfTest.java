@@ -286,9 +286,8 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
 
         IgniteInternalFuture fut = runCacheCreateDestroyTask(ex);
 
-        while (!fut.isDone()) {
-            ignite.cluster().forCacheNodes("cache" + rnd.nextInt(16));
-        }
+        while (!fut.isDone())
+            ignite.cluster().forCacheNodes("cache" + rnd.nextInt(16)).nodes();
 
         if (ex.get() != null)
             throw ex.get();
@@ -304,9 +303,8 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
 
         IgniteInternalFuture fut = runCacheCreateDestroyTask(ex);
 
-        while (!fut.isDone()) {
-            ignite.cluster().forClientNodes("cache" + rnd.nextInt(16));
-        }
+        while (!fut.isDone())
+            ignite.cluster().forClientNodes("cache" + rnd.nextInt(16)).nodes();
 
         if (ex.get() != null)
             throw ex.get();
