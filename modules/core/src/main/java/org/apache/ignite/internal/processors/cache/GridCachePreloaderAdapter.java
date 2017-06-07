@@ -21,9 +21,9 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -39,14 +39,14 @@ import org.jetbrains.annotations.Nullable;
  * Adapter for preloading which always assumes that preloading finished.
  */
 public class GridCachePreloaderAdapter implements GridCachePreloader {
-    /** Cache context. */
-    protected final GridCacheContext<?, ?> cctx;
+    /** */
+    protected final CacheGroupContext grp;
+
+    /** */
+    protected final GridCacheSharedContext ctx;
 
     /** Logger. */
     protected final IgniteLogger log;
-
-    /** Affinity. */
-    protected final AffinityFunction aff;
 
     /** Start future (always completed by default). */
     private final IgniteInternalFuture finFut;
@@ -55,31 +55,22 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     protected IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /**
-     * @param cctx Cache context.
+     * @param grp Cache group.
      */
-    public GridCachePreloaderAdapter(GridCacheContext<?, ?> cctx) {
-        assert cctx != null;
+    public GridCachePreloaderAdapter(CacheGroupContext grp) {
+        assert grp != null;
 
-        this.cctx = cctx;
+        this.grp = grp;
 
-        log = cctx.logger(getClass());
-        aff = cctx.config().getAffinity();
+        ctx = grp.shared();
+
+        log = ctx.logger(getClass());
 
         finFut = new GridFinishedFuture();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -130,7 +121,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
     /** {@inheritDoc} */
     @Override public void unwindUndeploys() {
-        cctx.deploy().unwind(cctx);
+        grp.unwindUndeploys();
     }
 
     /** {@inheritDoc} */
@@ -144,15 +135,15 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys,
+    @Override public GridDhtFuture<Object> request(GridCacheContext ctx, Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer) {
-        return new GridFinishedFuture<>();
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(GridNearAtomicAbstractUpdateRequest req,
+    @Override public GridDhtFuture<Object> request(GridCacheContext ctx, GridNearAtomicAbstractUpdateRequest req,
         AffinityTopologyVersion topVer) {
-        return new GridFinishedFuture<>();
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -168,7 +159,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     /** {@inheritDoc} */
     @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
-        Collection<String> caches,
         int cnt,
         Runnable next,
         @Nullable GridFutureAdapter<Boolean> forcedRebFut) {

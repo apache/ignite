@@ -134,7 +134,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         cacheProc = ctx.cache();
         sharedCtx = cacheProc.context();
 
-        sharedCtx.io().addHandler(0,
+        sharedCtx.io().addCacheHandler(0,
             GridChangeGlobalStateMessageResponse.class,
             new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
                 @Override public void apply(UUID nodeId, GridChangeGlobalStateMessageResponse msg) {
@@ -194,7 +194,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        sharedCtx.io().removeHandler(0, GridChangeGlobalStateMessageResponse.class);
+        sharedCtx.io().removeHandler(false, 0, GridChangeGlobalStateMessageResponse.class);
         ctx.event().removeLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         IgniteCheckedException stopErr = new IgniteInterruptedCheckedException(
@@ -377,7 +377,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         actx.setFail();
 
-        // revert change if activation request fail
+        // Revert change if activation request fail.
         if (actx.activate) {
             try {
                 cacheProc.onKernalStopCaches(true);

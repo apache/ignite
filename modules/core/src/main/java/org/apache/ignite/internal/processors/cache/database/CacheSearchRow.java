@@ -37,4 +37,9 @@ public interface CacheSearchRow {
      * @return Key hash code.
      */
     public int hash();
+
+    /**
+     * @return Cache ID or {@code 0} if cache ID is not defined.
+     */
+    public int cacheId();
 }

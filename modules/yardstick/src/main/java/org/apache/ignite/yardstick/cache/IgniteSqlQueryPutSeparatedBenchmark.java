@@ -55,6 +55,8 @@ public class IgniteSqlQueryPutSeparatedBenchmark extends IgniteCacheAbstractBenc
             }
         }
         else {
+            IgniteCache<Integer, Object> cache = cacheForOperation(true);
+
             int i = rnd.nextInt(args.range());
 
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
@@ -70,6 +72,8 @@ public class IgniteSqlQueryPutSeparatedBenchmark extends IgniteCacheAbstractBenc
      * @throws Exception If failed.
      */
     private Collection<Cache.Entry<Integer, Object>> executeQuery(double minSalary, double maxSalary) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
+
         SqlQuery qry = new SqlQuery(Person.class, "salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);

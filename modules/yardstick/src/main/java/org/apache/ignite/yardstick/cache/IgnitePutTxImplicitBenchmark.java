@@ -37,6 +37,8 @@ public class IgnitePutTxImplicitBenchmark extends IgniteCacheAbstractBenchmark<I
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         int key = nextRandom(args.range());
 
         // Implicit transaction is used.
