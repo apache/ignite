@@ -85,7 +85,7 @@ public class JdbcThinTcpIo {
     /** Replicated only flag. */
     private final boolean replicatedOnly;
 
-    /** Flag to automatically close server cursors. */
+    /** Flag to automatically close server cursor. */
     private final boolean autoCloseServerCursor;
 
     /** Socket send buffer. */
