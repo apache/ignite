@@ -57,7 +57,20 @@ namespace Apache.Ignite.Linq.Impl
 
             string res;
 
-            return !NetToSql.TryGetValue(type, out res) ? null : res;
+            if (NetToSql.TryGetValue(type, out res))
+                return res;
+
+            type = StripNullableType(type);
+
+            if (NetToSql.TryGetValue(type, out res))
+                return res;
+
+            return null;
+        }
+
+        private static Type StripNullableType(this Type type)
+        {
+            return Nullable.GetUnderlyingType(type) ?? type;
         }
     }
 }
