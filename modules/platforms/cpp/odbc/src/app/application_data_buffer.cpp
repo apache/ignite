@@ -46,7 +46,7 @@ namespace ignite
             }
 
             ApplicationDataBuffer::ApplicationDataBuffer(type_traits::OdbcNativeType::Type type,
-                void* buffer, SqlLen buflen, SqlLen* reslen, int** offset) :
+                void* buffer, SqlLen buflen, SqlLen* reslen, int offset) :
                 type(type),
                 buffer(buffer),
                 buflen(buflen),
@@ -1647,10 +1647,10 @@ namespace ignite
             template<typename T>
             T* ApplicationDataBuffer::ApplyOffset(T* ptr) const
             {
-                if (!ptr || !offset || !*offset)
+                if (!ptr)
                     return ptr;
 
-                return utility::GetPointerWithOffset(ptr, **offset);
+                return utility::GetPointerWithOffset(ptr, offset);
             }
 
             bool ApplicationDataBuffer::IsDataAtExec() const

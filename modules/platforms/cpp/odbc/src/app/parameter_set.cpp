@@ -43,8 +43,6 @@ namespace ignite
             void ParameterSet::BindParameter(uint16_t paramIdx, const Parameter& param)
             {
                 parameters[paramIdx] = param;
-
-                parameters[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
             }
 
             void ParameterSet::UnbindParameter(uint16_t paramIdx)
@@ -164,19 +162,22 @@ namespace ignite
 
                 uint16_t prev = 0;
 
-                for (ParameterBindingMap::const_iterator i = parameters.begin(); i != parameters.end(); ++i)
-                {
-                    uint16_t current = i->first;
+                int appOffset = paramBindOffset ? *paramBindOffset : 0;
 
-                    while ((current - prev) > 1)
+                for (ParameterBindingMap::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
+                {
+                    uint16_t paramIdx = it->first;
+                    const Parameter& param = it->second;
+
+                    while ((paramIdx - prev) > 1)
                     {
                         writer.WriteNull();
                         ++prev;
                     }
 
-                    i->second.Write(writer);
+                    param.Write(writer, appOffset);
 
-                    prev = current;
+                    prev = paramIdx;
                 }
             }
         }

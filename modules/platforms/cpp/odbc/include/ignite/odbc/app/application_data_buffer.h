@@ -55,10 +55,10 @@ namespace ignite
                  * @param buffer Data buffer pointer.
                  * @param buflen Data buffer length.
                  * @param reslen Resulting data length.
-                 * @param offset Pointer to buffer and reslen offset pointer.
+                 * @param offset Buffer and reslen offset.
                  */
                 ApplicationDataBuffer(type_traits::OdbcNativeType::Type type, void* buffer,
-                    SqlLen buflen, SqlLen* reslen, int** offset = 0);
+                    SqlLen buflen, SqlLen* reslen, int offset = 0);
 
                 /**
                  * Copy constructor.
@@ -81,11 +81,11 @@ namespace ignite
                 ApplicationDataBuffer& operator=(const ApplicationDataBuffer& other);
 
                 /**
-                 * Set pointer to offset pointer.
+                 * Set offset.
                  *
-                 * @param offset Pointer to offset pointer.
+                 * @param offset Offset.
                  */
-                void SetPtrToOffsetPtr(int** offset)
+                void SetOffset(int offset)
                 {
                     this->offset = offset;
                 }
@@ -424,8 +424,8 @@ namespace ignite
                 /** Result length. */
                 SqlLen* reslen;
 
-                /** Pointer to implementation pointer to application offset */
-                int** offset;
+                /** Current offset */
+                int offset;
             };
 
             /** Column binging map type alias. */

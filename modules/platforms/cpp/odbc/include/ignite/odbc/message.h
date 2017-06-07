@@ -143,8 +143,7 @@ namespace ignite
              * @param sql SQL query.
              * @param params Query arguments.
              */
-            QueryExecuteRequest(const std::string& schema, const std::string& sql,
-                const app::ParameterSet& params) :
+            QueryExecuteRequest(const std::string& schema, const std::string& sql, const app::ParameterSet& params) :
                 schema(schema),
                 sql(sql),
                 params(params)

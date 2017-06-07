@@ -57,19 +57,19 @@ namespace ignite
 
         SqlResult::Type Statement::InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
         {
-            using namespace odbc::type_traits;
+            using namespace type_traits;
             OdbcNativeType::Type driverType = ToDriverType(targetType);
 
             if (driverType == OdbcNativeType::AI_UNSUPPORTED)
             {
-                AddStatusRecord(odbc::SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE, "The argument TargetType was not a valid data type.");
+                AddStatusRecord(SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE, "The argument TargetType was not a valid data type.");
 
                 return SqlResult::AI_ERROR;
             }
 
             if (bufferLength < 0)
             {
-                AddStatusRecord(odbc::SqlState::SHY090_INVALID_STRING_OR_BUFFER_LENGTH,
+                AddStatusRecord(SqlState::SHY090_INVALID_STRING_OR_BUFFER_LENGTH,
                     "The value specified for the argument BufferLength was less than 0.");
 
                 return SqlResult::AI_ERROR;
@@ -90,8 +90,6 @@ namespace ignite
         void Statement::SafeBindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
         {
             columnBindings[columnIdx] = buffer;
-
-            columnBindings[columnIdx].SetPtrToOffsetPtr(&columnBindOffset);
         }
 
         void Statement::SafeUnbindColumn(uint16_t columnIdx)
@@ -713,6 +711,12 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
+            if (columnBindOffset)
+            {
+                for (app::ColumnBindingMap::iterator it = columnBindings.begin(); it != columnBindings.end(); ++it)
+                    it->second.SetOffset(*columnBindOffset);
+            }
+            
             SqlResult::Type res = currentQuery->FetchNextRow(columnBindings);
 
             if (res == SqlResult::AI_SUCCESS)
