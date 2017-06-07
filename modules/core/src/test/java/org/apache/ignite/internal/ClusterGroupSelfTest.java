@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +30,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -311,10 +313,10 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     }
 
     /**
-     * @param exceptionHolder Exception holder.
+     * @param exHldr Exception holder.
      * @return Task future.
      */
-    private IgniteInternalFuture runCacheCreateDestroyTask(final AtomicReference<Exception> exceptionHolder) {
+    private IgniteInternalFuture runCacheCreateDestroyTask(final AtomicReference<Exception> exHldr) {
         final long deadline = System.currentTimeMillis() + 5000;
 
         final AtomicInteger cntr = new AtomicInteger();
@@ -325,25 +327,48 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
                 int idx = 0;
                 boolean start = true;
 
+                Set<String> caches = U.newHashSet(4);
+
                 while (System.currentTimeMillis() < deadline) {
                     try {
-                        if (start)
+                        if (start) {
+                            caches.add("cache" + (startIdx + idx));
                             ignite.createCache("cache" + (startIdx + idx));
-                        else
+                        }
+                        else {
                             ignite.destroyCache("cache" + (startIdx + idx));
+                            caches.remove("cache" + (startIdx + idx));
+                        }
 
                         if ((idx = (idx + 1) % 4) == 0)
                             start = !start;
                     }
                     catch (Exception e) {
-                        if (exceptionHolder.get() != null || !exceptionHolder.compareAndSet(null, e))
-                            exceptionHolder.get().addSuppressed(e);
+                        addException(exHldr, e);
 
                         break;
                     }
                 }
+
+                for (String cache : caches) {
+                    try {
+                        ignite.destroyCache(cache);
+                    }
+                    catch (Exception e) {
+                        addException(exHldr, e);
+                    }
+                }
             }
         }, 4, "cache-start-destroy");
+    }
+
+    /**
+     * @param exHldr Exception holder.
+     * @param ex Exception.
+     */
+    private void addException(AtomicReference<Exception> exHldr, Exception ex) {
+        if (exHldr.get() != null || !exHldr.compareAndSet(null, ex))
+            exHldr.get().addSuppressed(ex);
     }
 
     /**
