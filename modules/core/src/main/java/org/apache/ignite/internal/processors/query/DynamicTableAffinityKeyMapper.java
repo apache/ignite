@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 @SuppressWarnings("deprecation")
 public class DynamicTableAffinityKeyMapper implements AffinityKeyMapper {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Type name. */
     private final String typeName;
 
