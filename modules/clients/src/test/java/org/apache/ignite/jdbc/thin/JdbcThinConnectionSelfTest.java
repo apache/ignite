@@ -1907,38 +1907,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         }
     }
 
-    // TODO: Methods to throw SQLException when database access fails (network conn lost / cluster stop)
-    // createStatement
-    // prepareStatement
-    // nativeSql
-    // getAutoCommit/setAutoCommit
-    // commit/rollback
-    // getMetaData
-    // setReadOnly/isReadOnly
-    // setCatalog/getCatalog
-    // setTransactionIsolationLevel/getTransactionIsolationLevel
-    // getWarnings/clearWarnings
-    // getTypeMap/setTypeMap
-    // getHoldability/setHoldability
-    // setSavepoint
-    // releaseSavepoint
-    // createClob/createBlob/createNClob/createSQLXML
-    // setClientInfo/getClientInfo
-    // createArrayOf
-    // createStruct
-    // setSchema/getSchema
-    // abort
-    // setNetworTimeout/getNetworkTimeout
-    //
-    // TODO: methods disallowed during distributed transactions
-    // setAutoCommit
-    // commit/rollback
-    // setSavePoint
-    //
-    // TODO: methods disallowed during transaction
-    // setReadOnly
-    //
-
     /**
      * @return Savepoint.
      */
