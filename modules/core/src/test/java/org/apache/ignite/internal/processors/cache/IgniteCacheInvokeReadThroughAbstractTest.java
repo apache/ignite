@@ -90,6 +90,13 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ignite(0).destroyCache(DEFAULT_CACHE_NAME);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
@@ -127,76 +134,71 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
 
         ignite0.createCache(ccfg);
 
-        try {
-            int key = 0;
+        int key = 0;
 
-            for (Ignite node : G.allGrids()) {
-                if (node.configuration().isClientMode() && ccfg.getNearConfiguration() != null)
-                    node.createNearCache(ccfg.getName(), ccfg.getNearConfiguration());
-            }
+        for (Ignite node : G.allGrids()) {
+            if (node.configuration().isClientMode() && ccfg.getNearConfiguration() != null)
+                node.createNearCache(ccfg.getName(), ccfg.getNearConfiguration());
+        }
 
-            for (Ignite node : G.allGrids()) {
-                log.info("Test for node: " + node.name());
+        for (Ignite node : G.allGrids()) {
+            log.info("Test for node: " + node.name());
 
-                IgniteCache<Object, Object> cache = node.cache(ccfg.getName());
+            IgniteCache<Object, Object> cache = node.cache(ccfg.getName());
 
-                for (int i = 0; i < 50; i++)
-                    checkReadThrough(cache, key++, null, null);
+            for (int i = 0; i < 50; i++)
+                checkReadThrough(cache, key++, null, null);
 
-                Set<Object> keys = new HashSet<>();
+            Set<Object> keys = new HashSet<>();
 
-                for (int i = 0; i < 5; i++)
-                    keys.add(key++);
+            for (int i = 0; i < 5; i++)
+                keys.add(key++);
 
-                checkReadThroughInvokeAll(cache, keys, null, null);
+            checkReadThroughInvokeAll(cache, keys, null, null);
 
-                keys = new HashSet<>();
+            keys = new HashSet<>();
 
-                for (int i = 0; i < 100; i++)
-                    keys.add(key++);
+            for (int i = 0; i < 100; i++)
+                keys.add(key++);
 
-                checkReadThroughInvokeAll(cache, keys, null, null);
+            checkReadThroughInvokeAll(cache, keys, null, null);
 
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                    for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                            log.info("Test tx [concurrency=" + concurrency + ", isolation=" + isolation + ']');
+            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        log.info("Test tx [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-                            for (int i = 0; i < 50; i++)
-                                checkReadThrough(cache, key++, concurrency, isolation);
+                        for (int i = 0; i < 50; i++)
+                            checkReadThrough(cache, key++, concurrency, isolation);
 
-                            keys = new HashSet<>();
+                        keys = new HashSet<>();
 
-                            for (int i = 0; i < 5; i++)
-                                keys.add(key++);
+                        for (int i = 0; i < 5; i++)
+                            keys.add(key++);
 
-                            checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
+                        checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
 
-                            keys = new HashSet<>();
+                        keys = new HashSet<>();
 
-                            for (int i = 0; i < 100; i++)
-                                keys.add(key++);
+                        for (int i = 0; i < 100; i++)
+                            keys.add(key++);
 
-                            checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
-                        }
+                        checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
                     }
+                }
 
-                    for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                            log.info("Test tx2 [concurrency=" + concurrency + ", isolation=" + isolation + ']');
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        log.info("Test tx2 [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-                            for (int i = 0; i < 50; i++)
-                                checkReadThroughGetAndInvoke(cache, key++, concurrency, isolation);
-                        }
+                        for (int i = 0; i < 50; i++)
+                            checkReadThroughGetAndInvoke(cache, key++, concurrency, isolation);
                     }
                 }
             }
+        }
 
-            ignite0.cache(ccfg.getName()).removeAll();
-        }
-        finally {
-            ignite0.destroyCache(ccfg.getName());
-        }
+        ignite0.cache(ccfg.getName()).removeAll();
     }
 
     /**

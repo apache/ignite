@@ -46,8 +46,8 @@ namespace ignite
                             NAME_LABEL,
                             ADDRESS_EDIT,
                             ADDRESS_LABEL,
-                            CACHE_EDIT,
-                            CACHE_LABEL,
+                            SCHEMA_EDIT,
+                            SCHEMA_LABEL,
                             PAGE_SIZE_EDIT,
                             PAGE_SIZE_LABEL,
                             DISTRIBUTED_JOINS_CHECK_BOX,
@@ -119,11 +119,11 @@ namespace ignite
                     /** DSN address edit field. */
                     std::auto_ptr<Window> addressEdit;
 
-                    /** DSN cache edit field label. */
-                    std::auto_ptr<Window> cacheLabel;
+                    /** DSN schema edit field label. */
+                    std::auto_ptr<Window> schemaLabel;
 
-                    /** DSN cache edit field. */
-                    std::auto_ptr<Window> cacheEdit;
+                    /** DSN schema edit field. */
+                    std::auto_ptr<Window> schemaEdit;
 
                     /** DSN fetch page size edit field label. */
                     std::auto_ptr<Window> pageSizeLabel;

@@ -58,9 +58,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
-import org.apache.ignite.internal.binary.BinaryIdentityResolver;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
@@ -564,6 +563,26 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
 
+        // Thread pools.
+        if (in.readBoolean())
+            cfg.setPublicThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setStripedPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setServiceThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setAsyncCallbackPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setManagementThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setDataStreamerThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setUtilityCachePoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setQueryThreadPoolSize(in.readInt());
+
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
 
@@ -651,6 +670,9 @@ public class PlatformConfigurationUtils {
 
         if (in.readBoolean())
             cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+
+        if (in.readBoolean())
+            cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         readPluginConfiguration(cfg, in);
     }
@@ -980,6 +1002,26 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true);
         w.writeLong(cfg.getClientFailureDetectionTimeout());
 
+        // Thread pools.
+        w.writeBoolean(true);
+        w.writeInt(cfg.getPublicThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getStripedPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getServiceThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getSystemThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getAsyncCallbackPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getManagementThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getDataStreamerThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getUtilityCacheThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getQueryThreadPoolSize());
+
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
         if (cacheCfg != null) {
@@ -1085,6 +1127,8 @@ public class PlatformConfigurationUtils {
         }
 
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
+
+        writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1194,40 +1238,6 @@ public class PlatformConfigurationUtils {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());
-    }
-
-    /**
-     * Reads resolver
-     *
-     * @param r Reader.
-     * @return Resolver.
-     */
-    private static BinaryIdentityResolver readBinaryIdentityResolver(BinaryRawReader r) {
-        int type = r.readByte();
-
-        switch (type) {
-            case 0:
-                return null;
-
-            case 1:
-                return new BinaryArrayIdentityResolver();
-            default:
-                assert false;
-                return null;
-        }
-    }
-
-    /**
-     * Writes the resolver.
-     *
-     * @param w Writer.
-     * @param resolver Resolver.
-     */
-    private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
-        if (resolver instanceof BinaryArrayIdentityResolver)
-            w.writeByte((byte)1);
-        else
-            w.writeByte((byte)0);
     }
 
     /**
@@ -1351,7 +1361,9 @@ public class PlatformConfigurationUtils {
                         .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
                         .setEvictionThreshold(in.readDouble())
                         .setEmptyPagesPoolSize(in.readInt())
-                        .setMetricsEnabled(in.readBoolean());
+                        .setMetricsEnabled(in.readBoolean())
+                        .setSubIntervals(in.readInt())
+                        .setRateTimeInterval(in.readLong());
 
                 plcs[i] = cfg;
             }
@@ -1396,6 +1408,8 @@ public class PlatformConfigurationUtils {
                 w.writeDouble(plc.getEvictionThreshold());
                 w.writeInt(plc.getEmptyPagesPoolSize());
                 w.writeBoolean(plc.isMetricsEnabled());
+                w.writeInt(plc.getSubIntervals());
+                w.writeLong(plc.getRateTimeInterval());
             }
         }
         else {
@@ -1403,7 +1417,47 @@ public class PlatformConfigurationUtils {
         }
     }
 
+    /**
+     * Reads the SQL connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
+        return new SqlConnectorConfiguration()
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
+    }
 
+    /**
+     * Writes the SQL connector configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getHost());
+            w.writeInt(cfg.getPort());
+            w.writeInt(cfg.getPortRange());
+            w.writeInt(cfg.getSocketSendBufferSize());
+            w.writeInt(cfg.getSocketReceiveBufferSize());
+            w.writeBoolean(cfg.isTcpNoDelay());
+            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+            w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
+    }
 
     /**
      * Private constructor.

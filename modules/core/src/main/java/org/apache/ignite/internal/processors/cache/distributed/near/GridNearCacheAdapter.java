@@ -86,11 +86,23 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param ctx Context.
      */
     protected GridNearCacheAdapter(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getNearConfiguration().getNearStartSize());
+        super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
+    @Override public void start() throws IgniteCheckedException {
+        if (map == null) {
+            map = new GridCacheLocalConcurrentMap(
+                ctx,
+                entryFactory(),
+                ctx.config().getNearConfiguration().getNearStartSize());
+        }
+    }
+
+    /**
+     * @return Entry factory.
+     */
+    private GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,

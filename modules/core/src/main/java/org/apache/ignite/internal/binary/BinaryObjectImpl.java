@@ -474,13 +474,15 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
                 byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + 9, dataLen);
 
+                boolean negative = data[0] < 0;
+
+                if (negative)
+                    data[0] &= 0x7F;
+
                 BigInteger intVal = new BigInteger(data);
 
-                if (scale < 0) {
-                    scale &= 0x7FFFFFFF;
-
+                if (negative)
                     intVal = intVal.negate();
-                }
 
                 val = new BigDecimal(intVal, scale);
 

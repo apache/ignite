@@ -110,16 +110,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** Number of retries using to send messages. */
     private int retryCnt;
 
-    /** Indexed class handlers. */
-    private volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
+    /** */
+    private final MessageHandlers cacheHandlers = new MessageHandlers();
 
-    /** Handler registry. */
-    private ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
-        clsHandlers = new ConcurrentHashMap8<>();
-
-    /** Ordered handler registry. */
-    private ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =
-        new ConcurrentHashMap8<>();
+    /** */
+    private final MessageHandlers grpHandlers = new MessageHandlers();
 
     /** Stopping flag. */
     private boolean stopping;
@@ -144,17 +139,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (cacheMsg.partitionExchangeMessage()) {
                 if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
+                    GridDhtAffinityAssignmentRequest msg0 = (GridDhtAffinityAssignmentRequest)cacheMsg;
+
                     assert cacheMsg.topologyVersion() != null : cacheMsg;
 
                     AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 
-                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
+                    CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptors().get(msg0.groupId());
 
-                    if (cacheDesc != null) {
-                        if (cacheDesc.startTopologyVersion() != null)
-                            startTopVer = cacheDesc.startTopologyVersion();
-                        else if (cacheDesc.receivedFromStartVersion() != null)
-                            startTopVer = cacheDesc.receivedFromStartVersion();
+                    if (desc != null) {
+                        if (desc.startTopologyVersion() != null)
+                            startTopVer = desc.startTopologyVersion();
+                        else if (desc.receivedFromStartVersion() != null)
+                            startTopVer = desc.receivedFromStartVersion();
                     }
 
                     // Need to wait for exchange to avoid race between cache start and affinity request.
@@ -165,7 +162,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             log.debug("Wait for exchange before processing message [msg=" + msg +
                                 ", node=" + nodeId +
                                 ", waitVer=" + startTopVer +
-                                ", cacheDesc=" + cacheDesc + ']');
+                                ", cacheDesc=" + descriptorForMessage(cacheMsg) + ']');
                         }
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -260,21 +257,31 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg) {
+        handleMessage(nodeId, cacheMsg, cacheMsg.cacheGroupMessage() ? grpHandlers : cacheHandlers);
+    }
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param cacheMsg Message.
+     * @param msgHandlers Message handlers.
+     */
+    @SuppressWarnings("unchecked")
+    private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, MessageHandlers msgHandlers) {
         int msgIdx = cacheMsg.lookupIndex();
 
         IgniteBiInClosure<UUID, GridCacheMessage> c = null;
 
         if (msgIdx >= 0) {
-            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = idxClsHandlers;
+            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheMsg.cacheId());
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheMsg.handlerId());
 
             if (cacheClsHandlers != null)
                 c = cacheClsHandlers[msgIdx];
         }
 
         if (c == null)
-            c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
+            c = msgHandlers.clsHandlers.get(new ListenerKey(cacheMsg.handlerId(), cacheMsg.getClass()));
 
         if (c == null) {
             IgniteLogger log = cacheMsg.messageLogger(cctx);
@@ -285,12 +292,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             msg0.append(", locTopVer=").append(cctx.exchange().readyAffinityVersion()).
                 append(", msgTopVer=").append(cacheMsg.topologyVersion()).
-                append(", cacheDesc=").append(cctx.cache().cacheDescriptor(cacheMsg.cacheId())).
+                append(", desc=").append(descriptorForMessage(cacheMsg)).
                 append(']');
 
             msg0.append(U.nl()).append("Registered listeners:");
 
-            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = idxClsHandlers;
+            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
             for (Map.Entry<Integer, IgniteBiInClosure[]> e : idxClsHandlers0.entrySet())
                 msg0.append(U.nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue()));
@@ -323,7 +330,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_CACHE);
 
-        for (Object ordTopic : orderedHandlers.keySet())
+        for (Object ordTopic : cacheHandlers.orderedHandlers.keySet())
+            cctx.gridIO().removeMessageListener(ordTopic);
+
+        for (Object ordTopic : grpHandlers.orderedHandlers.keySet())
             cctx.gridIO().removeMessageListener(ordTopic);
 
         boolean interrupted = false;
@@ -520,14 +530,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     private void processFailedMessage(UUID nodeId, GridCacheMessage msg, IgniteBiInClosure<UUID, GridCacheMessage> c)
         throws IgniteCheckedException {
-        GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
+        assert msg != null;
+
+        GridCacheContext ctx = msg instanceof GridCacheIdMessage ?
+            cctx.cacheContext(((GridCacheIdMessage)msg).cacheId()) : null;
 
         switch (msg.directType()) {
             case 30: {
                 GridDhtLockRequest req = (GridDhtLockRequest)msg;
 
                 GridDhtLockResponse res = new GridDhtLockResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
@@ -560,17 +573,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     req.partition(),
                     req.futureId(),
-                    ctx.deploymentEnabled());
+                    false);
 
                 res.onError(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
 
                 if (req.nearNodeId() != null) {
-                    GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(ctx.cacheId(),
+                    GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
                         req.partition(),
                         req.nearFutureId(),
                         nodeId,
@@ -588,12 +601,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicFullUpdateRequest req = (GridNearAtomicFullUpdateRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
                     false,
-                    ctx.deploymentEnabled());
+                    false);
 
                 res.error(req.classError());
 
@@ -606,10 +619,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtForceKeysRequest req = (GridDhtForceKeysRequest)msg;
 
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     req.futureId(),
                     req.miniId(),
-                    ctx.deploymentEnabled()
+                    false
                 );
 
                 res.error(req.classError());
@@ -629,7 +642,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 
                 GridNearGetResponse res = new GridNearGetResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     req.futureId(),
                     req.miniId(),
                     req.version(),
@@ -645,7 +658,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 50: {
                 GridNearGetResponse res = (GridNearGetResponse)msg;
 
-                CacheGetFuture fut = (CacheGetFuture)ctx.mvcc().future(res.futureId());
+                CacheGetFuture fut = (CacheGetFuture)cctx.mvcc().future(res.futureId());
 
                 if (fut == null) {
                     if (log.isDebugEnabled())
@@ -665,7 +678,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearLockRequest req = (GridNearLockRequest)msg;
 
                 GridNearLockResponse res = new GridNearLockResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
@@ -673,7 +686,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     0,
                     req.classError(),
                     null,
-                    ctx.deploymentEnabled());
+                    false);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
@@ -712,7 +725,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     cctx.deploymentEnabled());
 
                 cctx.io().sendOrderedMessage(
-                    ctx.node(nodeId),
+                    cctx.node(nodeId),
                     TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
                     res,
                     ctx.ioPolicy(),
@@ -731,7 +744,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearSingleGetRequest req = (GridNearSingleGetRequest)msg;
 
                 GridNearSingleGetResponse res = new GridNearSingleGetResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     req.futureId(),
                     req.topologyVersion(),
                     null,
@@ -748,7 +761,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 117: {
                 GridNearSingleGetResponse res = (GridNearSingleGetResponse)msg;
 
-                GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
+                GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)cctx.mvcc()
                     .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
 
                 if (fut == null) {
@@ -769,12 +782,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicSingleUpdateRequest req = (GridNearAtomicSingleUpdateRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
                     false,
-                    ctx.deploymentEnabled());
+                    false);
 
                 res.error(req.classError());
 
@@ -787,12 +800,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicSingleUpdateInvokeRequest req = (GridNearAtomicSingleUpdateInvokeRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
                     false,
-                    ctx.deploymentEnabled());
+                    false);
 
                 res.error(req.classError());
 
@@ -805,12 +818,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicSingleUpdateFilterRequest req = (GridNearAtomicSingleUpdateFilterRequest)msg;
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
                     false,
-                    ctx.deploymentEnabled());
+                    false);
 
                 res.error(req.classError());
 
@@ -823,17 +836,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtAtomicSingleUpdateRequest req = (GridDhtAtomicSingleUpdateRequest)msg;
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
-                    ctx.cacheId(),
+                    req.cacheId(),
                     req.partition(),
                     req.futureId(),
-                    ctx.deploymentEnabled());
+                    false);
 
                 res.onError(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
 
                 if (req.nearNodeId() != null) {
-                    GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(ctx.cacheId(),
+                    GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
                         req.partition(),
                         req.nearFutureId(),
                         nodeId,
@@ -874,7 +887,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         finally {
             // Reset thread local context.
             cctx.tm().resetContext();
-            cctx.mvcc().contextReset();
+
+            GridCacheMvccManager mvcc = cctx.mvcc();
+
+            if (mvcc != null)
+                mvcc.contextReset();
 
             // Unwind eviction notifications.
             if (msg instanceof IgniteTxStateAware) {
@@ -883,8 +900,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (txState != null)
                     txState.unwindEvicts(cctx);
             }
-            else {
-                GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
+            else if (msg instanceof GridCacheIdMessage) {
+                GridCacheContext ctx = cctx.cacheContext(((GridCacheIdMessage)msg).cacheId());
 
                 if (ctx != null)
                     CU.unwindEvicts(ctx);
@@ -1176,79 +1193,125 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Adds message handler.
-     *
-     * @param cacheId Cache ID.
+     * @param hndId Message handler ID.
      * @param type Type of message.
      * @param c Handler.
      */
-    @SuppressWarnings({"unchecked"})
-    public void addHandler(
-        int cacheId,
+    public void addCacheHandler(
+        int hndId,
         Class<? extends GridCacheMessage> type,
         IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
+
+        addHandler(hndId, type, c, cacheHandlers);
+    }
+
+    /**
+     * @param hndId Message handler ID.
+     * @param type Type of message.
+     * @param c Handler.
+     */
+    public void addCacheGroupHandler(
+        int hndId,
+        Class<? extends GridCacheGroupIdMessage> type,
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        assert !type.isAssignableFrom(GridCacheIdMessage.class) : type;
+
+        addHandler(hndId, type, c, grpHandlers);
+    }
+
+    /**
+     * @param hndId Message handler ID.
+     * @param type Type of message.
+     * @param c Handler.
+     * @param msgHandlers Message handlers.
+     */
+    @SuppressWarnings({"unchecked"})
+    private void addHandler(
+        int hndId,
+        Class<? extends GridCacheMessage> type,
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c,
+        MessageHandlers msgHandlers) {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
-            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = idxClsHandlers;
+            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheId);
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(hndId);
 
             if (cacheClsHandlers == null) {
                 cacheClsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
-                idxClsHandlers0.put(cacheId, cacheClsHandlers);
+                idxClsHandlers0.put(hndId, cacheClsHandlers);
             }
 
             if (cacheClsHandlers[msgIdx] != null)
-                throw new IgniteException("Duplicate cache message ID found [cacheId=" + cacheId +
+                throw new IgniteException("Duplicate cache message ID found [hndId=" + hndId +
                     ", type=" + type + ']');
 
             cacheClsHandlers[msgIdx] = c;
 
-            idxClsHandlers = idxClsHandlers0;
+            msgHandlers.idxClsHandlers = idxClsHandlers0;
 
             return;
         }
         else {
-            ListenerKey key = new ListenerKey(cacheId, type);
+            ListenerKey key = new ListenerKey(hndId, type);
 
-            if (clsHandlers.putIfAbsent(key,
+            if (msgHandlers.clsHandlers.putIfAbsent(key,
                 (IgniteBiInClosure<UUID, GridCacheMessage>)c) != null)
-                assert false : "Handler for class already registered [cacheId=" + cacheId + ", cls=" + type +
-                    ", old=" + clsHandlers.get(key) + ", new=" + c + ']';
+                assert false : "Handler for class already registered [hndId=" + hndId + ", cls=" + type +
+                    ", old=" + msgHandlers.clsHandlers.get(key) + ", new=" + c + ']';
         }
 
         IgniteLogger log0 = log;
 
         if (log0 != null && log0.isTraceEnabled())
             log0.trace(
-                "Registered cache communication handler [cacheId=" + cacheId + ", type=" + type +
+                "Registered cache communication handler [hndId=" + hndId + ", type=" + type +
                     ", msgIdx=" + msgIdx + ", handler=" + c + ']');
     }
 
     /**
      * @param cacheId Cache ID to remove handlers for.
      */
-    public void removeHandlers(int cacheId) {
-        assert cacheId != 0;
+    void removeCacheHandlers(int cacheId) {
+        removeHandlers(cacheHandlers, cacheId);
+    }
 
-        idxClsHandlers.remove(cacheId);
+    /**
+     * @param grpId Cache group ID to remove handlers for.
+     */
+    void removeCacheGroupHandlers(int grpId) {
+        removeHandlers(grpHandlers, grpId);
+    }
 
-        for (Iterator<ListenerKey> iter = clsHandlers.keySet().iterator(); iter.hasNext(); ) {
+    /**
+     * @param msgHandlers Handlers.
+     * @param hndId ID to remove handlers for.
+     */
+    private void removeHandlers(MessageHandlers msgHandlers, int hndId) {
+        assert hndId != 0;
+
+        msgHandlers.idxClsHandlers.remove(hndId);
+
+        for (Iterator<ListenerKey> iter = msgHandlers.clsHandlers.keySet().iterator(); iter.hasNext(); ) {
             ListenerKey key = iter.next();
 
-            if (key.cacheId == cacheId)
+            if (key.hndId == hndId)
                 iter.remove();
         }
     }
 
     /**
-     * @param cacheId Cache ID to remove handlers for.
+     * @param cacheGrp {@code True} if cache group handler, {@code false} if cache handler.
+     * @param hndId Handler ID.
      * @param type Message type.
      */
-    public void removeHandler(int cacheId, Class<? extends GridCacheMessage> type) {
-        clsHandlers.remove(new ListenerKey(cacheId, type));
+    public void removeHandler(boolean cacheGrp, int hndId, Class<? extends GridCacheMessage> type) {
+        MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
+
+        msgHandlers.clsHandlers.remove(new ListenerKey(hndId, type));
     }
 
     /**
@@ -1270,16 +1333,35 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param topic Topic.
+     * @param c Handler.
+     */
+    public void addOrderedCacheHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheIdMessage> c) {
+        addOrderedHandler(false, topic, c);
+    }
+
+    /**
+     * @param topic Topic.
+     * @param c Handler.
+     */
+    public void addOrderedCacheGroupHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
+        addOrderedHandler(true, topic, c);
+    }
+
+    /**
      * Adds ordered message handler.
      *
+     * @param cacheGrp {@code True} if cache group message, {@code false} if cache message.
      * @param topic Topic.
      * @param c Handler.
      */
     @SuppressWarnings({"unchecked"})
-    public void addOrderedHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+    private void addOrderedHandler(boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
+
         IgniteLogger log0 = log;
 
-        if (orderedHandlers.putIfAbsent(topic, c) == null) {
+        if (msgHandlers.orderedHandlers.putIfAbsent(topic, c) == null) {
             cctx.gridIO().addMessageListener(topic, new OrderedMessageListener(
                 (IgniteBiInClosure<UUID, GridCacheMessage>)c));
 
@@ -1294,10 +1376,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /**
      * Removed ordered message handler.
      *
+     * @param cacheGrp {@code True} if cache group message, {@code false} if cache message.
      * @param topic Topic.
      */
-    public void removeOrderedHandler(Object topic) {
-        if (orderedHandlers.remove(topic) != null) {
+    public void removeOrderedHandler(boolean cacheGrp, Object topic) {
+        MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
+
+        if (msgHandlers.orderedHandlers.remove(topic) != null) {
             cctx.gridIO().removeMessageListener(topic);
 
             if (log != null && log.isDebugEnabled())
@@ -1348,12 +1433,43 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
     }
 
+    /**
+     * @param msg Message.
+     * @return Cache or group descriptor.
+     */
+    private Object descriptorForMessage(GridCacheMessage msg) {
+        if (msg instanceof GridCacheIdMessage)
+            return cctx.cache().cacheDescriptor(((GridCacheIdMessage)msg).cacheId());
+        else if (msg instanceof GridCacheGroupIdMessage)
+            return cctx.cache().cacheGroupDescriptors().get(((GridCacheGroupIdMessage)msg).groupId());
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
         X.println(">>> Cache IO manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
-        X.println(">>>   clsHandlersSize: " + clsHandlers.size());
-        X.println(">>>   orderedHandlersSize: " + orderedHandlers.size());
+        X.println(">>>   cacheClsHandlersSize: " + cacheHandlers.clsHandlers.size());
+        X.println(">>>   cacheOrderedHandlersSize: " + cacheHandlers.orderedHandlers.size());
+        X.println(">>>   cacheGrpClsHandlersSize: " + grpHandlers.clsHandlers.size());
+        X.println(">>>   cacheGrpOrderedHandlersSize: " + grpHandlers.orderedHandlers.size());
+    }
+
+    /**
+     *
+     */
+    static class MessageHandlers {
+        /** Indexed class handlers. */
+        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
+
+        /** Handler registry. */
+        ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
+            clsHandlers = new ConcurrentHashMap8<>();
+
+        /** Ordered handler registry. */
+        ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =
+            new ConcurrentHashMap8<>();
     }
 
     /**
@@ -1387,17 +1503,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     private static class ListenerKey {
         /** Cache ID. */
-        private int cacheId;
+        private int hndId;
 
         /** Message class. */
         private Class<? extends GridCacheMessage> msgCls;
 
         /**
-         * @param cacheId Cache ID.
+         * @param hndId Handler ID.
          * @param msgCls Message class.
          */
-        private ListenerKey(int cacheId, Class<? extends GridCacheMessage> msgCls) {
-            this.cacheId = cacheId;
+        private ListenerKey(int hndId, Class<? extends GridCacheMessage> msgCls) {
+            this.hndId = hndId;
             this.msgCls = msgCls;
         }
 
@@ -1411,12 +1527,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             ListenerKey that = (ListenerKey)o;
 
-            return cacheId == that.cacheId && msgCls.equals(that.msgCls);
+            return hndId == that.hndId && msgCls.equals(that.msgCls);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = cacheId;
+            int res = hndId;
 
             res = 31 * res + msgCls.hashCode();
 

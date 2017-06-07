@@ -20,47 +20,12 @@ package org.apache.ignite.internal.processors.odbc;
 /**
  * SQL listener command request.
  */
-public class SqlListenerRequest {
+public abstract class SqlListenerRequest {
     /** Handshake request. */
     public static final int HANDSHAKE = 1;
 
-    /** Execute sql query. */
-    public static final int QRY_EXEC = 2;
-
-    /** Fetch query results. */
-    public static final int QRY_FETCH = 3;
-
-    /** Close query. */
-    public static final int QRY_CLOSE = 4;
-
-    /** Get columns meta query. */
-    public static final int META_COLS = 5;
-
-    /** Get columns meta query. */
-    public static final int META_TBLS = 6;
-
-    /** Get parameters meta. */
-    public static final int META_PARAMS = 7;
-
-    /** Command. */
-    private final int cmd;
-
     /** Request ID. */
     private long reqId;
-
-    /**
-     * @param cmd Command type.
-     */
-    public SqlListenerRequest(int cmd) {
-        this.cmd = cmd;
-    }
-
-    /**
-     * @return Command.
-     */
-    public int command() {
-        return cmd;
-    }
 
     /**
      * @return Request ID.

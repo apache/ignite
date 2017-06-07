@@ -47,18 +47,24 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration. */
     private CacheConfiguration ccfg;
 
+    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
+    private boolean sql;
+
     /**
      * @param cfg Cache configuration.
+     * @param sql SQL flag.
      */
-    public GridCacheAttributes(CacheConfiguration cfg) {
+    public GridCacheAttributes(CacheConfiguration cfg, boolean sql) {
         ccfg = cfg;
+
+        this.sql = sql;
     }
 
     /**
-     * Public no-arg constructor for {@link Externalizable}.
+     * @return Cache group name.
      */
-    public GridCacheAttributes() {
-        // No-op.
+    public String groupName() {
+        return ccfg.getGroupName();
     }
 
     /**
@@ -270,6 +276,27 @@ public class GridCacheAttributes implements Serializable {
      */
     public String interceptorClassName() {
         return className(ccfg.getInterceptor());
+    }
+
+    /**
+     * @return Node filter class name.
+     */
+    String nodeFilterClassName() {
+        return className(ccfg.getNodeFilter());
+    }
+
+    /**
+     * @return Topology validator class name.
+     */
+    String topologyValidatorClassName() {
+        return className(ccfg.getTopologyValidator());
+    }
+
+    /**
+     * @return SQL flag.
+     */
+    public boolean sql() {
+        return sql;
     }
 
     /**

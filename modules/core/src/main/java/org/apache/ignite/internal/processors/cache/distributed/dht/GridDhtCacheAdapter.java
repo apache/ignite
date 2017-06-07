@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
-import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
@@ -34,13 +32,15 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
-import org.apache.ignite.internal.processors.cache.CachePeekModes;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
@@ -59,7 +59,9 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdat
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
@@ -70,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CI3;
@@ -78,6 +79,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -86,8 +88,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 
 /**
  * DHT cache adapter.
@@ -96,23 +101,211 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Topology. */
-    private GridDhtPartitionTopologyImpl top;
-
-    /** Preloader. */
-    protected GridCachePreloader preldr;
-
     /** Multi tx future holder. */
     private ThreadLocal<IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
 
     /** Multi tx futures. */
     private ConcurrentMap<IgniteUuid, MultiUpdateFuture> multiTxFuts = new ConcurrentHashMap8<>();
 
+    /** Force key futures. */
+    private final ConcurrentMap<IgniteUuid, GridDhtForceKeysFuture<?, ?>> forceKeyFuts = newMap();
+
+    /** */
+    private volatile boolean stopping;
+
+    /** Discovery listener. */
+    private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
+        @Override public void onEvent(Event evt) {
+            DiscoveryEvent e = (DiscoveryEvent)evt;
+
+            ClusterNode loc = ctx.localNode();
+
+            assert e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED : e;
+
+            final ClusterNode n = e.eventNode();
+
+            assert !loc.id().equals(n.id());
+
+            for (GridDhtForceKeysFuture<?, ?> f : forceKeyFuts.values())
+                f.onDiscoveryEvent(e);
+        }
+    };
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
     protected GridDhtCacheAdapter() {
         // No-op.
+    }
+
+    /**
+     * Adds future to future map.
+     *
+     * @param fut Future to add.
+     * @return {@code False} if node cache is stopping and future was completed with error.
+     */
+    public boolean addFuture(GridDhtForceKeysFuture<?, ?> fut) {
+        forceKeyFuts.put(fut.futureId(), fut);
+
+        if (stopping) {
+            fut.onDone(stopError());
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Removes future from future map.
+     *
+     * @param fut Future to remove.
+     */
+    public void removeFuture(GridDhtForceKeysFuture<?, ?> fut) {
+        forceKeyFuts.remove(fut.futureId(), fut);
+    }
+
+    /**
+     * @param node Node.
+     * @param msg Message.
+     */
+    protected final void processForceKeyResponse(ClusterNode node, GridDhtForceKeysResponse msg) {
+        GridDhtForceKeysFuture<?, ?> f = forceKeyFuts.get(msg.futureId());
+
+        if (f != null)
+            f.onResult(msg);
+        else if (log.isDebugEnabled())
+            log.debug("Receive force key response for unknown future (is it duplicate?) [nodeId=" + node.id() +
+                ", res=" + msg + ']');
+    }
+    /**
+     * @param node Node originated request.
+     * @param msg Force keys message.
+     */
+    protected final void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest msg) {
+        IgniteInternalFuture<?> fut = ctx.mvcc().finishKeys(msg.keys(), msg.cacheId(), msg.topologyVersion());
+
+        if (fut.isDone())
+            processForceKeysRequest0(node, msg);
+        else
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> t) {
+                    processForceKeysRequest0(node, msg);
+                }
+            });
+    }
+
+    /**
+     * @param node Node originated request.
+     * @param msg Force keys message.
+     */
+    private void processForceKeysRequest0(ClusterNode node, GridDhtForceKeysRequest msg) {
+        try {
+            ClusterNode loc = ctx.localNode();
+
+            GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
+                ctx.cacheId(),
+                msg.futureId(),
+                msg.miniId(),
+                ctx.deploymentEnabled());
+
+            GridDhtPartitionTopology top = ctx.topology();
+
+            for (KeyCacheObject k : msg.keys()) {
+                int p = ctx.affinity().partition(k);
+
+                GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
+
+                // If this node is no longer an owner.
+                if (locPart == null && !top.owners(p).contains(loc)) {
+                    res.addMissed(k);
+
+                    continue;
+                }
+
+                GridCacheEntryEx entry;
+
+                while (true) {
+                    try {
+                        entry = ctx.dht().entryEx(k);
+
+                        entry.unswap();
+
+                        GridCacheEntryInfo info = entry.info();
+
+                        if (info == null) {
+                            assert entry.obsolete() : entry;
+
+                            continue;
+                        }
+
+                        if (!info.isNew())
+                            res.addInfo(info);
+
+                        ctx.evicts().touch(entry, msg.topologyVersion());
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry: " + k);
+                    }
+                    catch (GridDhtInvalidPartitionException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Local node is no longer an owner: " + p);
+
+                        res.addMissed(k);
+
+                        break;
+                    }
+                }
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Sending force key response [node=" + node.id() + ", res=" + res + ']');
+
+            ctx.io().send(node, res, ctx.ioPolicy());
+        }
+        catch (ClusterTopologyCheckedException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("Received force key request form failed node (will ignore) [nodeId=" + node.id() +
+                    ", req=" + msg + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to reply to force key request [nodeId=" + node.id() + ", req=" + msg + ']', e);
+        }
+    }
+
+    /**
+     *
+     */
+    public void dumpDebugInfo() {
+        if (!forceKeyFuts.isEmpty()) {
+            U.warn(log, "Pending force key futures [cache=" + ctx.name() + "]:");
+
+            for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+                U.warn(log, ">>> " + fut);
+        }
+    }
+
+    @Override public void onKernalStop() {
+        super.onKernalStop();
+
+        stopping = true;
+
+        IgniteCheckedException err = stopError();
+
+        for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+            fut.onDone(err);
+
+        ctx.gridEvents().removeLocalEventListener(discoLsnr);
+    }
+
+    /**
+     * @return Node stop exception.
+     */
+    private IgniteCheckedException stopError() {
+        return new NodeStoppingException("Operation has been cancelled (cache or node is stopping).");
     }
 
     /**
@@ -160,7 +353,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param ctx Context.
      */
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx) {
-        this(ctx, new GridCachePartitionedConcurrentMap(ctx));
+        this(ctx, new GridCachePartitionedConcurrentMap(ctx.group()));
     }
 
     /**
@@ -174,83 +367,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void init() {
-        super.init();
-
-        top = new GridDhtPartitionTopologyImpl(ctx, entryFactory());
-    }
-
-    /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
-        ctx.io().addHandler(ctx.cacheId(), GridCacheTtlUpdateRequest.class, new CI2<UUID, GridCacheTtlUpdateRequest>() {
+        ctx.io().addCacheHandler(ctx.cacheId(), GridCacheTtlUpdateRequest.class, new CI2<UUID, GridCacheTtlUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridCacheTtlUpdateRequest req) {
                 processTtlUpdateRequest(req);
             }
         });
-    }
 
-    /** {@inheritDoc} */
-    @Override public void stop() {
-        super.stop();
-
-        if (preldr != null)
-            preldr.stop();
-
-        // Clean up to help GC.
-        preldr = null;
-        top = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onReconnected() {
-        super.onReconnected();
-
-        ctx.affinity().onReconnected();
-
-        top.onReconnected();
-
-        if (preldr != null)
-            preldr.onReconnected();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
-
-        if (preldr != null)
-            preldr.onKernalStart();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop() {
-        super.onKernalStop();
-
-        if (preldr != null)
-            preldr.onKernalStop();
+        ctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         super.printMemoryStats();
 
-        top.printMemoryStats(1024);
-    }
-
-    /**
-     * @return Cache map entry factory.
-     */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
-        return new GridCacheMapEntryFactory() {
-            @Override public GridCacheMapEntry create(
-                GridCacheContext ctx,
-                AffinityTopologyVersion topVer,
-                KeyCacheObject key
-            ) {
-                return new GridDhtCacheEntry(ctx, topVer, key);
-            }
-        };
+        ctx.group().topology().printMemoryStats(1024);
     }
 
     /**
@@ -262,21 +393,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Partition topology.
      */
     public GridDhtPartitionTopology topology() {
-        return top;
+        return ctx.group().topology();
     }
 
     /** {@inheritDoc} */
     @Override public GridCachePreloader preloader() {
-        return preldr;
-    }
-
-    /**
-     * @return DHT preloader.
-     */
-    public GridDhtPreloader dhtPreloader() {
-        assert preldr instanceof GridDhtPreloader;
-
-        return (GridDhtPreloader)preldr;
+        return ctx.group().preloader();
     }
 
     /**
@@ -299,6 +421,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         if (tup != null)
             throw new IgniteCheckedException("Nested multi-update locks are not supported");
+
+        GridDhtPartitionTopology top = ctx.group().topology();
 
         top.readLock();
 
@@ -342,7 +466,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (tup == null)
             throw new IgniteCheckedException("Multi-update was not started or released twice.");
 
-        top.readLock();
+        ctx.group().topology().readLock();
 
         try {
             IgniteUuid lockId = tup.get1();
@@ -355,7 +479,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             multiFut.onDone(lockId);
         }
         finally {
-            top.readUnlock();
+            ctx.group().topology().readUnlock();
         }
     }
 
@@ -516,7 +640,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             return;
 
         try {
-            GridDhtLocalPartition part = top.localPartition(ctx.affinity().partition(key),
+            GridDhtLocalPartition part = ctx.group().topology().localPartition(ctx.affinity().partition(key),
                 AffinityTopologyVersion.NONE, true);
 
             // Reserve to make sure that partition does not get unloaded.
@@ -561,8 +685,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
         catch (GridDhtInvalidPartitionException e) {
             if (log.isDebugEnabled())
-                log.debug("Ignoring entry for partition that does not belong [key=" + key + ", val=" + val +
-                    ", err=" + e + ']');
+                log.debug(S.toString("Ignoring entry for partition that does not belong",
+                    "key", key, true,
+                    "val", val, true,
+                    "err", e, false));
         }
     }
 
@@ -576,7 +702,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         long sum = 0;
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions())
-            sum += p.dataStore().size();
+            sum += p.dataStore().cacheSize(ctx.cacheId());
 
         return sum;
     }
@@ -594,7 +720,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
             if (p.primary(topVer))
-                sum += p.dataStore().size();
+                sum += p.dataStore().cacheSize(ctx.cacheId());
         }
 
         return sum;
@@ -809,7 +935,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                         res = new GridNearSingleGetResponse(ctx.cacheId(),
                             req.futureId(),
-                            req.topologyVersion(),
+                            null,
                             res0,
                             false,
                             req.addDeploymentInfo());
@@ -818,9 +944,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             res.setContainsValue();
                     }
                     else {
-                        AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
+                        AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().topologyVersion();
 
-                        assert topVer.compareTo(req.topologyVersion()) >= 0 : "Wrong ready topology version for " +
+                        assert topVer.compareTo(req.topologyVersion()) > 0 : "Wrong ready topology version for " +
                             "invalid partitions response [topVer=" + topVer + ", req=" + req + ']';
 
                         res = new GridNearSingleGetResponse(ctx.cacheId(),
@@ -908,9 +1034,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
 
                 if (!F.isEmpty(fut.invalidPartitions()))
-                    res.invalidPartitions(fut.invalidPartitions(), ctx.shared().exchange().readyAffinityVersion());
-                else
-                    res.invalidPartitions(fut.invalidPartitions(), req.topologyVersion());
+                    res.invalidPartitions(fut.invalidPartitions(), ctx.shared().exchange().lastTopologyFuture().topologyVersion());
 
                 try {
                     ctx.io().send(nodeId, res, ctx.ioPolicy());
@@ -1096,7 +1220,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             false);
 
         if (part != null)
-            part.onDeferredDelete(entry.key(), ver);
+            part.onDeferredDelete(entry.context().cacheId(), entry.key(), ver);
     }
 
     /**
@@ -1108,8 +1232,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (expVer.equals(curVer))
             return false;
 
-        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.cacheId(), expVer);
-        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.cacheId(), curVer);
+        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
+        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
 
         if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
             return true;
@@ -1147,7 +1271,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Specified affinity topology version.
      * @return Local entries iterator.
      */
-    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+    private Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
         final boolean backup,
         final boolean keepBinary,
         final AffinityTopologyVersion topVer) {
@@ -1161,7 +1285,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Specified affinity topology version.
      * @return Local entries iterator.
      */
-    public Iterator<? extends GridCacheEntryEx> localEntriesIteratorEx(final boolean primary,
+    private Iterator<? extends GridCacheEntryEx> localEntriesIteratorEx(final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer) {
         assert primary || backup;
@@ -1208,7 +1332,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 GridDhtLocalPartition part = partIt.next();
 
                                 if (primary == part.primary(topVer)) {
-                                    curIt = part.entries().iterator();
+                                    curIt = part.entries(ctx.cacheId()).iterator();
 
                                     break;
                                 }
@@ -1252,5 +1376,36 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         private AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
+    }
+
+    /**
+     *
+     */
+    protected abstract class MessageHandler<M> implements IgniteBiInClosure<UUID, M> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void apply(UUID nodeId, M msg) {
+            ClusterNode node = ctx.node(nodeId);
+
+            if (node == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received message from failed node [node=" + nodeId + ", msg=" + msg + ']');
+
+                return;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
+
+            onMessage(node, msg);
+        }
+
+        /**
+         * @param node Node.
+         * @param msg Message.
+         */
+        protected abstract void onMessage(ClusterNode node, M msg);
     }
 }

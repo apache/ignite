@@ -37,7 +37,7 @@ namespace ignite
             ClusterGroupImpl::ClusterGroupImpl(SP_IgniteEnvironment env, jobject javaRef) :
                 InteropTarget(env, javaRef)
             {
-                // No-op.
+                computeImpl = InternalGetCompute();
             }
 
             ClusterGroupImpl::~ClusterGroupImpl()
@@ -45,21 +45,32 @@ namespace ignite
                 // No-op.
             }
 
-            ClusterGroupImpl::SP_ClusterGroupImpl ClusterGroupImpl::ForServers(IgniteError& err)
+            SP_ClusterGroupImpl ClusterGroupImpl::ForServers()
             {
-                JniErrorInfo jniErr;
+                IgniteError err;
 
                 jobject res = InOpObject(Command::FOR_SERVERS, err);
 
-                if (jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
-                    return SP_ClusterGroupImpl();
+                IgniteError::ThrowIfNeeded(err);
 
                 return FromTarget(res);
             }
 
-            ClusterGroupImpl::SP_ClusterGroupImpl ClusterGroupImpl::FromTarget(jobject javaRef)
+            ClusterGroupImpl::SP_ComputeImpl ClusterGroupImpl::GetCompute()
+            {
+                return computeImpl;
+            }
+
+            SP_ClusterGroupImpl ClusterGroupImpl::FromTarget(jobject javaRef)
             {
                 return SP_ClusterGroupImpl(new ClusterGroupImpl(GetEnvironmentPointer(), javaRef));
+            }
+
+            ClusterGroupImpl::SP_ComputeImpl ClusterGroupImpl::InternalGetCompute()
+            {
+                jobject computeProc = GetEnvironment().GetProcessorCompute(GetTarget());
+
+                return SP_ComputeImpl(new compute::ComputeImpl(GetEnvironmentPointer(), computeProc));
             }
         }
     }

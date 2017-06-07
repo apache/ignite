@@ -58,8 +58,6 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsWithSpringCtx(GRID_CNT, false, configURL());
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

@@ -488,13 +488,13 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            std::string cache(schema);
+            std::string schema0(schema);
 
-            if (cache.empty())
-                cache = connection.GetCache();
+            if (schema0.empty())
+                schema0 = connection.GetSchema();
 
             currentQuery.reset(new query::ColumnMetadataQuery(*this,
-                connection, cache, table, column));
+                connection, schema, table, column));
 
             return currentQuery->Execute();
         }
@@ -1026,10 +1026,10 @@ namespace ignite
 
             query::DataQuery* qry = static_cast<query::DataQuery*>(qry0);
 
-            const std::string& cacheName = connection.GetCache();
+            const std::string& schema = connection.GetSchema();
             const std::string& sql = qry->GetSql();
 
-            QueryGetParamsMetaRequest req(cacheName, sql);
+            QueryGetParamsMetaRequest req(schema, sql);
             QueryGetParamsMetaResponse rsp;
 
             try

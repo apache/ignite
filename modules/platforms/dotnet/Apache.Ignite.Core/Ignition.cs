@@ -84,7 +84,6 @@ namespace Apache.Ignite.Core
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static Ignition()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
         }
 
@@ -124,7 +123,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration
         /// <see cref="IgniteConfigurationSection"/> with <see cref="ConfigurationSectionName"/>
         /// name and starts Ignite.
         /// </summary>
@@ -284,7 +283,7 @@ namespace Apache.Ignite.Core
                     if (_startup.Error != null)
                     {
                         // Wrap in a new exception to preserve original stack trace.
-                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details", 
+                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details",
                             _startup.Error);
                     }
 
@@ -722,18 +721,7 @@ namespace Apache.Ignite.Core
 
             GC.Collect();
         }
-        
-        /// <summary>
-        /// Handles the AssemblyResolve event of the CurrentDomain control.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="args">The <see cref="ResolveEventArgs"/> instance containing the event data.</param>
-        /// <returns>Manually resolved assembly, or null.</returns>
-        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            return LoadedAssembliesResolver.Instance.GetAssembly(args.Name);
-        }
-                
+
         /// <summary>
         /// Handles the DomainUnload event of the CurrentDomain control.
         /// </summary>

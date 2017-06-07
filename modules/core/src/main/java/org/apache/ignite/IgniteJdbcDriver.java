@@ -243,10 +243,7 @@ import org.apache.ignite.logger.java.JavaLogger;
  * </table>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
- * // Register JDBC driver.
- * Class.forName("org.apache.ignite.IgniteJdbcDriver");
- *
- * // Open JDBC connection.
+  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:cfg//cache=persons@file:///etc/configs/ignite-jdbc.xml");
  *
  * // Query persons' names
@@ -371,8 +368,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Logger. */
     private static final IgniteLogger LOG = new JavaLogger();
 
-    /**
-     * Register driver.
+    /*
+     * Static initializer.
      */
     static {
         try {
@@ -385,6 +382,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
+        if (!acceptsURL(url))
+            return null;
+
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 

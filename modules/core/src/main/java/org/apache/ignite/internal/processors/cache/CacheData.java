@@ -35,7 +35,10 @@ public class CacheData implements Serializable {
     private final CacheConfiguration cacheCfg;
 
     /** */
-    private final Integer cacheId;
+    private final int cacheId;
+
+    /** */
+    private final int grpId;
 
     /** */
     private final CacheType cacheType;
@@ -53,51 +56,68 @@ public class CacheData implements Serializable {
     private final boolean staticCfg;
 
     /** */
+    private final boolean sql;
+
+    /** */
     private final boolean template;
 
     /** Flags added for future usage. */
-    private final byte flags;
+    private final long flags;
 
     /**
      * @param cacheCfg Cache configuration.
      * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param cacheType Cache ID.
      * @param deploymentId Cache deployment ID.
      * @param schema Query schema.
      * @param rcvdFrom Node ID cache was started from.
      * @param staticCfg {@code True} if cache was statically configured.
+     * @param sql {@code True} if cache was created by an SQL command such as {@code CREATE TABLE}.
      * @param template {@code True} if this is cache template.
      * @param flags Flags (added for future usage).
      */
     CacheData(CacheConfiguration cacheCfg,
         int cacheId,
+        int grpId,
         CacheType cacheType,
         IgniteUuid deploymentId,
         QuerySchema schema,
         UUID rcvdFrom,
         boolean staticCfg,
+        boolean sql,
         boolean template,
-        byte flags) {
+        long flags) {
         assert cacheCfg != null;
         assert rcvdFrom != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
         assert template || cacheId != 0 : cacheCfg.getName();
+        assert template || grpId != 0 : cacheCfg.getName();
 
         this.cacheCfg = cacheCfg;
         this.cacheId = cacheId;
+        this.grpId = grpId;
         this.cacheType = cacheType;
         this.deploymentId = deploymentId;
         this.schema = schema;
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
+        this.sql = sql;
         this.template = template;
         this.flags = flags;
     }
 
     /**
+     * @return Cache group ID.
+     */
+    public int groupId() {
+        return grpId;
+    }
+
+    /**
      * @return Cache ID.
      */
-    public Integer cacheId() {
+    public int cacheId() {
         return cacheId;
     }
 
@@ -127,6 +147,13 @@ public class CacheData implements Serializable {
      */
     public boolean staticallyConfigured() {
         return staticCfg;
+    }
+
+    /**
+     * @return {@code True} if cache was created by an SQL command such as {@code CREATE TABLE}.
+     */
+    public boolean sql() {
+        return sql;
     }
 
     /**

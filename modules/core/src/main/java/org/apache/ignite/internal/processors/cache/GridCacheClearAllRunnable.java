@@ -82,7 +82,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
         if (!ctx.isNear()) {
             if (id == 0)
-                ctx.offheap().clear(readers);
+                ctx.offheap().clearCache(ctx, readers);
         }
     }
 
