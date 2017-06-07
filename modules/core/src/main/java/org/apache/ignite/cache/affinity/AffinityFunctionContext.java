@@ -68,4 +68,18 @@ public interface AffinityFunctionContext {
      *      not available.
      */
     @Nullable public DiscoveryEvent discoveryEvent();
+
+    /**
+     * Gets an optional context attachment that will be passed across different cache affinity calculations.
+     *
+     * @return Optional user attachment.
+     */
+    @Nullable public <T> T attachment();
+
+    /**
+     * Sets an optional context attachment that will be passed across different cache affinity calculations.
+     *
+     * @param attachment Attachment to set.
+     */
+    public <T> void attachment(T attachment);
 }
