@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 import java.util.Objects;
-import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 
 /**
  * ODBC table-related metadata.

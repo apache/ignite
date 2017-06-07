@@ -1356,15 +1356,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (caches0.isEmpty())
-                    throw new IgniteSQLException("Failed to find at least one cache for SQL statement: " + sqlQry);
+                    twoStepQry.local(true);
+                else {
+                    //Prohibit usage indices with different numbers of segments in same query.
+                    List<Integer> cacheIds = new ArrayList<>(caches0);
 
-                //Prohibit usage indices with different numbers of segments in same query.
-                List<Integer> cacheIds = new ArrayList<>(caches0);
-
-                checkCacheIndexSegmentation(cacheIds);
-
-                twoStepQry.cacheIds(cacheIds);
-                twoStepQry.local(qry.isLocal());
+                    checkCacheIndexSegmentation(cacheIds);
+    
+                    twoStepQry.cacheIds(cacheIds);
+                    twoStepQry.local(qry.isLocal());
+                }
 
                 meta = H2Utils.meta(stmt.getMetaData());
             }
@@ -1829,7 +1830,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
 
-        org.h2.Driver.load();
+        //org.h2.Driver.load();
 
         try {
             if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {

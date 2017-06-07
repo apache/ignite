@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'JavaTransformer', function($scope, java) {
+export default ['IgniteVersion', 'JavaTransformer', function(Version, java) {
     const ctrl = this;
 
     delete ctrl.data;
 
     const client = ctrl.client === 'true';
 
+    const available = Version.available.bind(Version);
+
     // Setup generator.
     switch (ctrl.generator) {
         case 'igniteConfiguration':
             const clsName = client ? 'ClientConfigurationFactory' : 'ServerConfigurationFactory';
 
-            ctrl.generate = (cluster) => java.cluster(cluster, 'config', clsName, client);
+            ctrl.generate = (cluster) => java.cluster(cluster, Version.current, 'config', clsName, client);
 
             break;
         case 'clusterCaches':
@@ -39,9 +41,9 @@ export default ['$scope', 'JavaTransformer', function($scope, java) {
                     return acc;
                 }, []);
 
-                const cfg = java.generator.clusterGeneral(cluster);
+                const cfg = java.generator.clusterGeneral(cluster, available);
 
-                java.generator.clusterCaches(cluster, clusterCaches, null, false, cfg);
+                java.generator.clusterCaches(cluster, clusterCaches, null, available, false, cfg);
 
                 return java.toSection(cfg);
             };
@@ -57,7 +59,7 @@ export default ['$scope', 'JavaTransformer', function($scope, java) {
                     return acc;
                 }, []);
 
-                return java[ctrl.generator](cache, cacheDomains);
+                return java[ctrl.generator](cache, cacheDomains, available);
             };
 
             break;
@@ -73,6 +75,19 @@ export default ['$scope', 'JavaTransformer', function($scope, java) {
             };
 
             break;
+        case 'clusterServiceConfiguration':
+            ctrl.generate = (cluster, caches) => {
+                const clusterCaches = _.reduce(caches, (acc, cache) => {
+                    if (_.includes(cluster.caches, cache.value))
+                        acc.push(cache.cache);
+
+                    return acc;
+                }, []);
+
+                return java.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
+            };
+
+            break;
         case 'igfss':
             ctrl.generate = (cluster, igfss) => {
                 const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
@@ -82,11 +97,11 @@ export default ['$scope', 'JavaTransformer', function($scope, java) {
                     return acc;
                 }, []);
 
-                return java.clusterIgfss(clusterIgfss);
+                return java.clusterIgfss(clusterIgfss, available);
             };
 
             break;
         default:
-            ctrl.generate = (master, detail) => java[ctrl.generator](master, detail);
+            ctrl.generate = (master) => java[ctrl.generator](master, available);
     }
 }];

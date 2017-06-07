@@ -98,7 +98,8 @@ igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
 // AngularStrap dropdowns () configuration.
 igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
     angular.extend($dropdownProvider.defaults, {
-        templateUrl: dropdownTemplateUrl
+        templateUrl: dropdownTemplateUrl,
+        animation: ''
     });
 }]);
 

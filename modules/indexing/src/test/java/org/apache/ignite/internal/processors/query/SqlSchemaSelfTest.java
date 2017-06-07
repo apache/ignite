@@ -25,10 +25,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.Iterator;
+import java.util.List;
+
 /**
- * Tests for public schema.
+ * Tests for schemas.
  */
-public class SqlPublicSchemaSelfTest extends GridCommonAbstractTest {
+public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
 
@@ -41,11 +44,73 @@ public class SqlPublicSchemaSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         node = (IgniteEx)startGrid();
+
+        startGrid(2);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * Test query without caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQueryWithoutCacheOnPublicSchema() throws Exception {
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema("PUBLIC");
+
+        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(1, res.get(0).get(0));
+
+        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+
+        assertTrue(iter.hasNext());
+
+        List<?> row = iter.next();
+
+        assertEquals(1, row.size());
+        assertEquals(1, row.get(0));
+
+        assertFalse(iter.hasNext());
+    }
+
+    /**
+     * Test query without caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQueryWithoutCacheOnCacheSchema() throws Exception {
+        node.createCache(new CacheConfiguration<PersonKey, Person>()
+            .setName(CACHE_PERSON)
+            .setIndexedTypes(PersonKey.class, Person.class));
+
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema(CACHE_PERSON);
+
+        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(1, res.get(0).get(0));
+
+        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+
+        assertTrue(iter.hasNext());
+
+        List<?> row = iter.next();
+
+        assertEquals(1, row.size());
+        assertEquals(1, row.get(0));
+
+        assertFalse(iter.hasNext());
     }
 
     /**

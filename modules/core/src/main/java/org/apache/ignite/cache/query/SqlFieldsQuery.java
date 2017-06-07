@@ -291,18 +291,22 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Get schema.
+     * Get schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
      *
-     * @return Schema.
+     * @return Schema. Null if schema is not set.
      */
     @Nullable public String getSchema() {
         return schema;
     }
 
     /**
-     * Set schema.
+     * Set schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
      *
-     * @param schema Schema.
+     * @param schema Schema. Null to unset schema.
      * @return {@code this} for chaining.
      */
     public SqlFieldsQuery setSchema(@Nullable String schema) {

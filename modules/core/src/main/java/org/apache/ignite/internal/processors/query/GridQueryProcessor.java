@@ -1316,7 +1316,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
-        boolean res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
+        boolean res;
+
+        try {
+            res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
+        }
+        catch (CacheException e) {
+            if (e.getCause() instanceof SchemaOperationException)
+                throw (SchemaOperationException)e.getCause();
+            else
+                throw e;
+        }
 
         if (!res && !ifNotExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
@@ -1551,7 +1561,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     fut.onDone(e);
                 }
                 catch (Throwable e) {
-                    log.error("Failed to rebuild indexes for type: " + typeName, e);
+                    U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName +
+                        ", type=" + typeName + ']', e);
 
                     fut.onDone(e);
 
@@ -1810,7 +1821,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteException("Local query is not supported without specific cache.");
 
         if (qry.getSchema() == null)
-            throw new IgniteException("Query schema is not set.");
+            qry.setSchema(QueryUtils.DFLT_SCHEMA);
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");

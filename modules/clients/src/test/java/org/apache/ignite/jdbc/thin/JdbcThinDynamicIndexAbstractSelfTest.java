@@ -254,6 +254,8 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * @throws SQLException If failed.
      */
     public void testIndexState() throws SQLException {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5373");
+
         IgniteCache<String, Person> cache = cache();
 
         assertSize(3);

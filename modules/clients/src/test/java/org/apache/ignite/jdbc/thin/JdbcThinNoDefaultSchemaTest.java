@@ -44,7 +44,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     private static final String CACHE2_NAME = "cache2";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** Grid count. */
     private static final int GRID_CNT = 2;
@@ -86,8 +86,6 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
         startGridsMultiThreaded(GRID_CNT);
 
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
-
         Ignite ignite = ignite(0);
 
         IgniteCache<Integer, Integer> cache1 = ignite.cache(CACHE1_NAME);
@@ -107,15 +105,14 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"EmptyTryBlock", "unused"})
     public void testDefaults() throws Exception {
-        String url = URL;
-
-        try (Connection conn = DriverManager.getConnection(url)) {
-            assertNotNull(conn);
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // No-op.
         }
 
-        try (Connection conn = DriverManager.getConnection(url + '/')) {
-            assertNotNull(conn);
+        try (Connection conn = DriverManager.getConnection(URL + '/')) {
+            // No-op.
         }
     }
 
