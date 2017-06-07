@@ -237,6 +237,42 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Test autoCloseServerCursor property handling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAutoCloseServerCursorProperty() throws Exception {
+        String url = "jdbc:ignite:thin://127.0.0.1?" + JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR;
+
+        String err = "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR;
+
+        assertInvalid(url + "=0", err);
+        assertInvalid(url + "=1", err);
+        assertInvalid(url + "=false1", err);
+        assertInvalid(url + "=true1", err);
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            assertFalse(io(conn).autoCloseServerCursor());
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + "=true")) {
+            assertTrue(io(conn).autoCloseServerCursor());
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + "=True")) {
+            assertTrue(io(conn).autoCloseServerCursor());
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + "=false")) {
+            assertFalse(io(conn).autoCloseServerCursor());
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + "=False")) {
+            assertFalse(io(conn).autoCloseServerCursor());
+        }
+    }
+
+    /**
      * Get client socket for connection.
      *
      * @param conn Connection.
