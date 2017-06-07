@@ -1305,7 +1305,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
                 templateName);
 
-        ccfg.setName(entity.getTableName());
+        ccfg.setName(QueryUtils.createTableCacheName(schemaName, entity.getTableName()));
 
         if (atomicityMode != null)
             ccfg.setAtomicityMode(atomicityMode);

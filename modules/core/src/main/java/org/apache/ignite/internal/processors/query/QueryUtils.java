@@ -1115,6 +1115,38 @@ public class QueryUtils {
     }
 
     /**
+     * Construct cache name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Cache name.
+     */
+    public static String createTableCacheName(String schemaName, String tblName) {
+        return "SQL_" + schemaName + "_" + tblName;
+    }
+
+    /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    public static String createTableValueTypeName(String schemaName, String tblName) {
+        return createTableCacheName(schemaName, tblName) + "_" + UUID.randomUUID().toString().replace("-", "_");
+    }
+
+    /**
+     * Construct key type name for table.
+     *
+     * @param valTypeName Value type name.
+     * @return Key type name.
+     */
+    public static String createTableKeyTypeName(String valTypeName) {
+        return valTypeName + "_KEY";
+    }
+
+    /**
      * Private constructor.
      */
     private QueryUtils() {
