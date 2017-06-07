@@ -717,7 +717,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
                 private IgniteEx ignite;
 
                 @Override public void run() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cctx(queue2).cache().name()).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Queue2"));
 
                     assertEquals(100, queue2.take().intValue());
@@ -764,7 +764,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
                 private IgniteEx ignite;
 
                 @Override public Integer call() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cctx(queue2).cache().name()).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Queue2"));
 
                     return queue2.take();

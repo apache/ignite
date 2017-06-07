@@ -569,7 +569,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             return;
 
         try {
-            cctx.kernalContext().dataStructures().removeQueue(queueName, cctx, id);
+            cctx.kernalContext().dataStructures().removeQueue(queueName, cctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

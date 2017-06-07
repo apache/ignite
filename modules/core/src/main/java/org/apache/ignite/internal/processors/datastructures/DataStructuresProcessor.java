@@ -87,7 +87,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -862,13 +861,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param cctx Queue cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeQueue(final String name, final GridCacheContext cctx, final IgniteUuid id) throws IgniteCheckedException {
+    public void removeQueue(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
         assert name != null;
         assert cctx != null;
 
         CIX1<GridCacheQueueHeader> afterRmv = new CIX1<GridCacheQueueHeader>() {
             @Override public void applyx(GridCacheQueueHeader hdr) throws IgniteCheckedException {
-                if (hdr.empty())
+                hdr = (GridCacheQueueHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheQueueHeaderKey(name));
+
+                if (hdr == null || hdr.empty())
                     return;
 
                 GridCacheQueueAdapter.removeKeys(cctx.cache(),
@@ -951,17 +952,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             // TODO : validate
         }
 
-        return retryTopologySafe(new IgniteOutClosureX<T>() {
-            @Override public T applyx() throws IgniteCheckedException {
-                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    T col = c.applyx(cache.context());
-
-                    tx.commit();
-
-                    return col;
-                }
-            }
-        });
+        return c.applyx(cache.context());
     }
 
     /**
@@ -1415,13 +1406,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param cctx Set cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeSet(final String name, final GridCacheContext cctx, final IgniteUuid id) throws IgniteCheckedException {
+    public void removeSet(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
         assert name != null;
         assert cctx != null;
 
         CIX1<GridCacheSetHeader> afterRmv = new CIX1<GridCacheSetHeader>() {
             @Override public void applyx(GridCacheSetHeader hdr) throws IgniteCheckedException {
-                cctx.dataStructures().removeSetData(id);
+                hdr = (GridCacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
+
+                if (hdr != null)
+                    cctx.dataStructures().removeSetData(hdr.id());
             }
         };
 

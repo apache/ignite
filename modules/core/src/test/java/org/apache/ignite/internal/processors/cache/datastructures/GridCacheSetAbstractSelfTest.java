@@ -889,7 +889,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 private IgniteEx ignite;
 
                 @Override public void run() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cctx(set2).name()).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Set2"));
 
                     assertEquals(100, set2.iterator().next().intValue());
@@ -936,7 +936,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 private IgniteEx ignite;
 
                 @Override public Integer call() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cctx(set2).name()).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Set2"));
 
                     return set2.iterator().next();
