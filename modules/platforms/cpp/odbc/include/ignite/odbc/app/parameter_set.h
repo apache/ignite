@@ -178,12 +178,34 @@ namespace ignite
                 Parameter* SelectNextParameter();
 
                 /**
-                 * Write using provided writer.
+                 * Write only first row of the param set using provided writer.
                  * @param writer Writer.
                  */
                 void Write(impl::binary::BinaryWriterImpl& writer) const;
 
+                /**
+                 * Write rows of the param set in interval [begin, end) using provided writer.
+                 * @param writer Writer.
+                 * @param begin Beginng of the interval.
+                 * @param end End of the interval.
+                 */
+                void Write(impl::binary::BinaryWriterImpl& writer, SqlUlen begin, SqlUlen end) const;
+
+                /**
+                 * Calculate row length.
+                 *
+                 * @return Row length.
+                 */
+                int32_t CalculateRowLen() const;
+
             private:
+                /**
+                 * Write single row of the param set using provided writer.
+                 * @param writer Writer.
+                 * @param idx Row index.
+                 */
+                void WriteRow(impl::binary::BinaryWriterImpl& writer, SqlUlen idx) const;
+
                 IGNITE_NO_COPY_ASSIGNMENT(ParameterSet);
 
                 /** Parameters. */

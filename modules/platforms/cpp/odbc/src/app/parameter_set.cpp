@@ -158,30 +158,61 @@ namespace ignite
 
             void ParameterSet::Write(impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt32(static_cast<int32_t>(parameters.size()));
+                writer.WriteInt32(CalculateRowLen());
 
+                WriteRow(writer, 0);
+            }
+
+            void ParameterSet::Write(impl::binary::BinaryWriterImpl& writer, SqlUlen begin, SqlUlen end) const
+            {
+                int32_t rowLen = CalculateRowLen();
+
+                writer.WriteInt32(rowLen);
+
+                if (rowLen)
+                {
+                    SqlUlen intervalEnd = std::min(paramSetSize, end);
+
+                    assert(begin < intervalEnd);
+
+                    int32_t intervalLen = static_cast<int32_t>(intervalEnd - begin);
+
+                    writer.WriteInt32(intervalLen);
+
+                    for (SqlUlen i = begin; i < intervalEnd; ++i)
+                        WriteRow(writer, i);
+                }
+            }
+
+            void ParameterSet::WriteRow(impl::binary::BinaryWriterImpl& writer, SqlUlen idx) const
+            {
                 uint16_t prev = 0;
 
                 int appOffset = paramBindOffset ? *paramBindOffset : 0;
 
-                for (SqlUlen i = 0; i < paramSetSize; ++i)
+                for (ParameterBindingMap::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
                 {
-                    for (ParameterBindingMap::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
+                    uint16_t paramIdx = it->first;
+                    const Parameter& param = it->second;
+
+                    while ((paramIdx - prev) > 1)
                     {
-                        uint16_t paramIdx = it->first;
-                        const Parameter& param = it->second;
-
-                        while ((paramIdx - prev) > 1)
-                        {
-                            writer.WriteNull();
-                            ++prev;
-                        }
-
-                        param.Write(writer, appOffset, i);
-
-                        prev = paramIdx;
+                        writer.WriteNull();
+                        ++prev;
                     }
+
+                    param.Write(writer, appOffset, idx);
+
+                    prev = paramIdx;
                 }
+            }
+
+            int32_t ParameterSet::CalculateRowLen() const
+            {
+                if (!parameters.empty())
+                    return static_cast<int32_t>(parameters.rbegin()->first);
+
+                return  0;
             }
         }
     }
