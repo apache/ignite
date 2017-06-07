@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,6 +46,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private String cacheName;
 
     /** Cache start configuration. */
+    @GridToStringExclude
     private CacheConfiguration startCfg;
 
     /** Cache type. */
@@ -56,6 +56,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private UUID initiatingNodeId;
 
     /** Near cache configuration. */
+    @GridToStringExclude
     private NearCacheConfiguration nearCacheCfg;
 
     /** Start only client cache, do not start data nodes. */
@@ -446,6 +447,12 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheChangeRequest.class, this, "cacheName", cacheName());
+        return "DynamicCacheChangeRequest [cacheName=" + cacheName() +
+            ", hasCfg=" + (startCfg != null) +
+            ", nodeId=" + initiatingNodeId +
+            ", clientStartOnly=" + clientStartOnly +
+            ", close=" + close +
+            ", stop=" + stop +
+            ']';
     }
 }

@@ -113,6 +113,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -202,6 +203,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private ClusterCachesInfo cachesInfo;
+
+    /** Restarting caches */
+    private final Set<String> restartingCaches = new GridConcurrentHashSet<>();
 
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
@@ -2113,6 +2117,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
+        if (exchActions != null && exchActions.systemCacheStarting())
+            ctx.dataStructures().restoreStructuresState(ctx);
+
         if (exchActions != null && (err == null || forceClose)) {
             Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps = null;
 
@@ -2658,6 +2665,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
         boolean restart) {
+        return dynamicDestroyCaches(cacheNames, checkThreadTx, restart, true);
+    }
+
+    /**
+     * @param cacheNames Collection of cache names to destroy.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when cache is destroyed.
+     */
+    public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
+        boolean restart, boolean destroy) {
         if (checkThreadTx)
             checkEmptyTransactions();
 
@@ -2667,7 +2684,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, false, true);
 
             req.stop(true);
-            req.destroy(true);
+            req.destroy(destroy);
             req.restart(restart);
 
             reqs.add(req);
@@ -2943,7 +2960,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
         if (msg instanceof StartSnapshotOperationAckDiscoveryMessage &&
-            ((StartSnapshotOperationAckDiscoveryMessage)msg).error() == null)
+            ((StartSnapshotOperationAckDiscoveryMessage)msg).needExchange())
             return true;
 
         if (msg instanceof DynamicCacheChangeBatch)
@@ -2996,6 +3013,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
+            if (restartingCaches.size() > 0) {
+                String msg = "Joining server node during cache restarting is not allowed";
+
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
+            }
+
             for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 

@@ -13,22 +13,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+
+package org.apache.ignite.internal;
+
+/**
  *
  */
-package org.apache.ignite.internal.pagemem.snapshot;
-
-/** */
-public enum SnapshotOperationType {
-    /** Create. */
-    CREATE,
-    /** Restore. */
-    RESTORE,
-    /** Restore 2. */
-    RESTORE_2_PHASE,
-    /** Move. */
-    MOVE,
-    /** Delete. */
-    DELETE,
-    /** Check. */
-    CHECK
+public interface IgniteDiagnosticAware {
+    /**
+     *
+     */
+    public void dumpDiagnosticInfo();
 }

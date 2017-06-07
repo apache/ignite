@@ -137,9 +137,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         throws IgniteCheckedException {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ctx.database();
 
-        if (!grp.allowFastEviction())
-            dbMgr.cancelOrWaitPartitionDestroy(grp.groupId(), p);
-
         boolean exists = ctx.pageStore() != null
             && ctx.pageStore().exists(grp.groupId(), p);
 
@@ -213,14 +210,24 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 try {
                     long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
 
+                    if (pageAddr == 0L) {
+                        U.warn(log, "Failed to acquire write lock for meta page [metaPage=" + partMetaPage +
+                            ", saveMeta=" + saveMeta + ", beforeDestroy=" + beforeDestroy + ", size=" + size +
+                            ", updCntr=" + updCntr + ", state=" + state + ']');
+
+                        return false;
+                    }
+
+                    boolean changed = false;
+
                     try {
                         PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
 
-                        io.setUpdateCounter(pageAddr, updCntr);
-                        io.setGlobalRemoveId(pageAddr, rmvId);
-                        io.setSize(pageAddr, size);
+                        changed |= io.setUpdateCounter(pageAddr, updCntr);
+                        changed |= io.setGlobalRemoveId(pageAddr, rmvId);
+                        changed |= io.setSize(pageAddr, size);
 
-                        io.setPartitionState(pageAddr, (byte)state);
+                        changed |= io.setPartitionState(pageAddr, (byte)state);
 
                         long cntrsPageId;
 
@@ -237,7 +244,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (init) {
                                 cntrsPageId = pageMem.allocatePage(grpId, store.partId(), PageIdAllocator.FLAG_DATA);
+
                                 io.setCountersPageId(pageAddr, cntrsPageId);
+
+                                changed = true;
                             }
 
                             long nextId = cntrsPageId;
@@ -256,6 +266,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                         if (init) {
                                             partMetaIo = PagePartitionCountersIO.VERSIONS.latest();
+
                                             partMetaIo.initNewPage(curAddr, curId, pageSize);
                                         }
                                         else
@@ -299,6 +310,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                     try {
                                         long nextSnapshotTag = io.getNextSnapshotTag(metaPageAddr);
+
                                         io.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
 
                                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
@@ -326,6 +338,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 partMap.get(store.partId()) == GridDhtPartitionState.OWNING)
                                 addPartition(ctx.partitionStatMap(), pageAddr, io, grpId, store.partId(),
                                     this.ctx.pageStore().pages(grpId, store.partId()));
+
+                            changed = true;
                         }
                         else
                             pageCnt = io.getCandidatePageCount(pageAddr);
@@ -343,7 +357,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             ));
                     }
                     finally {
-                        pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, true);
+                        pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
                     }
                 }
                 finally {

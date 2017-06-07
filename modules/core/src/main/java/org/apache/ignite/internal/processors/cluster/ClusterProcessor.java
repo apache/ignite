@@ -24,24 +24,49 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteProperties;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridTimerTask;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
@@ -49,6 +74,13 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
  *
  */
 public class ClusterProcessor extends GridProcessorAdapter {
+    /** */
+    private final boolean DIAGNOSTIC_ENABLED =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED, false);
+
+    /** */
+    private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
+
     /** */
     private static final String ATTR_UPDATE_NOTIFIER_STATUS = "UPDATE_NOTIFIER_STATUS";
 
@@ -72,6 +104,16 @@ public class ClusterProcessor extends GridProcessorAdapter {
     @GridToStringExclude
     private GridUpdateNotifier verChecker;
 
+    /** */
+    private final IgniteLogger diagnosticLog;
+
+    /** */
+    private final AtomicReference<ConcurrentHashMap<Long, InternalDiagnosticFuture>> diagnosticFutMap =
+        new AtomicReference<>();
+
+    /** */
+    private final AtomicLong diagFutId = new AtomicLong();
+
     /**
      * @param ctx Kernal context.
      */
@@ -82,6 +124,102 @@ public class ClusterProcessor extends GridProcessorAdapter {
             Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default"))));
 
         cluster = new IgniteClusterImpl(ctx);
+
+        diagnosticLog = ctx.log(DIAGNOSTIC_LOG_CATEGORY);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void initListeners() throws IgniteCheckedException {
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent;
+                    assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
+
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+                    UUID nodeId = discoEvt.eventNode().id();
+
+                    ConcurrentHashMap<Long, InternalDiagnosticFuture> futs = diagnosticFutMap.get();
+
+                    if (futs != null) {
+                        for (InternalDiagnosticFuture fut : futs.values()) {
+                            if (fut.nodeId.equals(nodeId))
+                                fut.onDone("Target node failed: " + nodeId);
+                        }
+                    }
+                }
+            },
+            EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+        ctx.io().addMessageListener(GridTopic.TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (msg instanceof IgniteDiagnosticMessage) {
+                    IgniteDiagnosticMessage msg0 = (IgniteDiagnosticMessage)msg;
+
+                    if (msg0.request()) {
+                        ClusterNode node = ctx.discovery().node(nodeId);
+
+                        if (node == null) {
+                            if (diagnosticLog.isDebugEnabled()) {
+                                diagnosticLog.debug("Skip diagnostic request, sender node left " +
+                                    "[node=" + nodeId + ", msg=" + msg + ']');
+                            }
+
+                            return;
+                        }
+
+                        String resMsg;
+
+                        IgniteClosure<GridKernalContext, String> c;
+
+                        try {
+                            c = msg0.unmarshalClosure(ctx);
+
+                            resMsg = c.apply(ctx);
+                        }
+                        catch (Exception e) {
+                            U.error(diagnosticLog, "Failed to run diagnostic closure: " + e, e);
+
+                            resMsg = "Failed to run diagnostic closure: " + e;
+                        }
+
+                        IgniteDiagnosticMessage res = IgniteDiagnosticMessage.createResponse(resMsg, msg0.futureId());
+
+                        try {
+                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
+                        }
+                        catch (ClusterTopologyCheckedException ignore) {
+                            if (diagnosticLog.isDebugEnabled()) {
+                                diagnosticLog.debug("Failed to send diagnostic response, node left " +
+                                    "[node=" + nodeId + ", msg=" + msg + ']');
+                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(diagnosticLog, "Failed to send diagnostic response [msg=" + msg0 + "]", e);
+                        }
+                    }
+                    else {
+                        InternalDiagnosticFuture fut = diagnosticFuturesMap().get(msg0.futureId());
+
+                        if (fut != null)
+                            fut.onResponse(msg0);
+                        else
+                            U.warn(diagnosticLog, "Failed to find diagnostic message future [msg=" + msg0 + ']');
+                    }
+                }
+                else
+                    U.warn(diagnosticLog, "Received unexpected message: " + msg);
+            }
+        });
+    }
+
+    /**
+     * @return Logger for diagnostic category.
+     */
+    public IgniteLogger diagnosticLog() {
+        return diagnosticLog;
     }
 
     /**
@@ -215,6 +353,180 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param nodeId Target node ID.
+     * @param dhtVer Tx dht version.
+     * @param nearVer Tx near version.
+     * @param msg Local message to log.
+     */
+    public void dumpRemoteTxInfo(UUID nodeId, GridCacheVersion dhtVer, GridCacheVersion nearVer, final String msg) {
+        if (!DIAGNOSTIC_ENABLED)
+            return;
+
+        IgniteInternalFuture<String> fut = diagnosticInfo(nodeId,
+            new IgniteDiagnosticMessage.TxInfoClosure(ctx, dhtVer, nearVer),
+            msg);
+
+        listenAndLog(fut);
+    }
+
+    /**
+     * @param nodeId Target node ID.
+     * @param cacheId Cache ID.
+     * @param keys Keys.
+     * @param msg Local message to log.
+     */
+    public void dumpTxKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, final String msg) {
+        if (!DIAGNOSTIC_ENABLED)
+            return;
+
+        IgniteInternalFuture<String> fut = diagnosticInfo(nodeId, new IgniteDiagnosticMessage.TxEntriesInfoClosure(ctx, cacheId, keys), msg);
+
+        listenAndLog(fut);
+    }
+
+    /**
+     * @param nodeId Target node ID.
+     * @param msg Local message to log.
+     */
+    public void dumpBasicInfo(final UUID nodeId, final String msg,
+        @Nullable IgniteInClosure<IgniteInternalFuture<String>> lsnr) {
+        if (!DIAGNOSTIC_ENABLED)
+            return;
+
+        IgniteInternalFuture<String> fut = diagnosticInfo(nodeId, new IgniteDiagnosticMessage.BaseClosure(ctx), msg);
+
+        if (lsnr != null)
+            fut.listen(lsnr);
+
+        listenAndLog(fut);
+    }
+
+    /**
+     * @param nodeId Target node ID.
+     * @param topVer Exchange topology version.
+     * @param msg Local message to log.
+     */
+    public void dumpExchangeInfo(final UUID nodeId, AffinityTopologyVersion topVer, final String msg) {
+        if (!DIAGNOSTIC_ENABLED)
+            return;
+
+        IgniteInternalFuture<String> fut = diagnosticInfo(nodeId, new IgniteDiagnosticMessage.ExchangeInfoClosure(ctx, topVer), msg);
+
+        listenAndLog(fut);
+    }
+
+    /**
+     * @param fut Future.
+     */
+    private void listenAndLog(IgniteInternalFuture<String> fut) {
+        fut.listen(new CI1<IgniteInternalFuture<String>>() {
+            @Override public void apply(IgniteInternalFuture<String> msgFut) {
+                try {
+                    String msg = msgFut.get();
+
+                    diagnosticLog.info(msg);
+                }
+                catch (Exception e) {
+                    U.error(diagnosticLog, "Failed to dump diagnostic info: " + e, e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param nodeId Target node ID.
+     * @param c Closure.
+     * @param baseMsg Local message to log.
+     * @return Message future.
+     */
+    private IgniteInternalFuture<String> diagnosticInfo(final UUID nodeId,
+        IgniteClosure<GridKernalContext, String> c,
+        final String baseMsg) {
+        final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>();
+
+        final IgniteInternalFuture<String> rmtFut = sendDiagnosticMessage(nodeId, c);
+
+        rmtFut.listen(new CI1<IgniteInternalFuture<String>>() {
+            @Override public void apply(IgniteInternalFuture<String> fut) {
+                String rmtMsg;
+
+                try {
+                    rmtMsg = fut.get();
+                }
+                catch (Exception e) {
+                    rmtMsg = "Diagnostic processing error: " + e;
+                }
+
+                final String rmtMsg0 = rmtMsg;
+
+                IgniteInternalFuture<String> locFut = IgniteDiagnosticMessage.dumpCommunicationInfo(ctx, nodeId);
+
+                locFut.listen(new CI1<IgniteInternalFuture<String>>() {
+                    @Override public void apply(IgniteInternalFuture<String> locFut) {
+                        String locMsg;
+
+                        try {
+                            locMsg = locFut.get();
+                        }
+                        catch (Exception e) {
+                            locMsg = "Failed to get info for local node: " + e;
+                        }
+
+                        String sb = baseMsg + U.nl() +
+                            "Remote node information:" + U.nl() + rmtMsg0 +
+                            U.nl() + "Local communication statistics:" + U.nl() +
+                            locMsg;
+
+                        infoFut.onDone(sb);
+                    }
+                });
+            }
+        });
+
+        return infoFut;
+    }
+
+    /**
+     * @param nodeId Target node ID.
+     * @param c Message closure.
+     * @return Message future.
+     */
+    private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, IgniteClosure<GridKernalContext, String> c) {
+        try {
+            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(ctx,
+                c,
+                diagFutId.getAndIncrement());
+
+            InternalDiagnosticFuture fut = new InternalDiagnosticFuture(nodeId, msg.futureId());
+
+            diagnosticFuturesMap().put(msg.futureId(), fut);
+
+            ctx.io().sendToGridTopic(nodeId, GridTopic.TOPIC_INTERNAL_DIAGNOSTIC, msg, GridIoPolicy.SYSTEM_POOL);
+
+            return fut;
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to send diagnostic message: " + e);
+
+            return new GridFinishedFuture<>("Failed to send diagnostic message: " + e);
+        }
+    }
+
+    /**
+     * @return Diagnostic messages futures map.
+     */
+    private ConcurrentHashMap<Long, InternalDiagnosticFuture> diagnosticFuturesMap() {
+        ConcurrentHashMap<Long, InternalDiagnosticFuture> map = diagnosticFutMap.get();
+
+        if (map == null) {
+            if (!diagnosticFutMap.compareAndSet(null, map = new ConcurrentHashMap<>()))
+                map = diagnosticFutMap.get();
+        }
+
+        return map;
+    }
+
+    /**
      * Update notifier timer task.
      */
     private static class UpdateNotifierTimerTask extends GridTimerTask {
@@ -280,6 +592,48 @@ public class ClusterProcessor extends GridProcessorAdapter {
 
                 verChecker.reportOnlyNew(true);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    class InternalDiagnosticFuture extends GridFutureAdapter<String> {
+        /** */
+        private final long id;
+
+        /** */
+        private final UUID nodeId;
+
+        /**
+         * @param id Future ID.
+         */
+        InternalDiagnosticFuture(UUID nodeId, long id) {
+            this.nodeId = nodeId;
+            this.id = id;
+        }
+
+        /**
+         * @param msg Response message.
+         */
+        public void onResponse(IgniteDiagnosticMessage msg) {
+            onDone(msg.message());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable String res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                diagnosticFuturesMap().remove(id);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(InternalDiagnosticFuture.class, this);
         }
     }
 }

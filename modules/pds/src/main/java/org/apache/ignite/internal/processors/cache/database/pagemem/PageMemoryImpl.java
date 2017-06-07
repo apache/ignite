@@ -1187,7 +1187,19 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         long pageId = PageIO.getPageId(page + PAGE_OVERHEAD);
 
-        rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+        try {
+            rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+        }
+        catch (AssertionError ex) {
+            StringBuilder sb = new StringBuilder(sysPageSize * 2);
+
+            for (int i = 0; i < systemPageSize(); i += 8)
+                sb.append(U.hexLong(GridUnsafe.getLong(page + i)));
+
+            U.error(log, "Failed to unlock page [fullPageId=" + fullId + ", binPage=" + sb + ']');
+
+            throw ex;
+        }
     }
 
     /**

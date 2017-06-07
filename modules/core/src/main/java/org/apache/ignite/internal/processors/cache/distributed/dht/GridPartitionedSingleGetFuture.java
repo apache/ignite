@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -63,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  *
  */
 public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements GridCacheFuture<Object>,
-    CacheGetFuture {
+    CacheGetFuture, IgniteDiagnosticAware {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -764,6 +765,27 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dumpDiagnosticInfo() {
+        if (!isDone()) {
+            UUID nodeId;
+            AffinityTopologyVersion topVer;
+
+            synchronized (this) {
+                nodeId = node != null ? node.id() : null;
+                topVer = this.topVer;
+            }
+
+            if (nodeId != null)
+                cctx.kernalContext().cluster().dumpBasicInfo(nodeId, "GridPartitionedSingleGetFuture waiting for " +
+                    "response [node=" + nodeId +
+                    ", key=" + key +
+                    ", futId=" + futId +
+                    ", topVer=" + topVer + ']',
+                    null);
+        }
     }
 
     /** {@inheritDoc} */

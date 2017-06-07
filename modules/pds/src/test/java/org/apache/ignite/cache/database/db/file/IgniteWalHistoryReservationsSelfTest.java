@@ -124,7 +124,6 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
         forceCheckpoint();
 
-
         Lock lock = cache.lock(0);
 
         lock.lock();

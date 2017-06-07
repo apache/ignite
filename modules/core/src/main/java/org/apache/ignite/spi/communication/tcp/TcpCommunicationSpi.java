@@ -46,7 +46,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -61,12 +60,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcToNioAdapter;
@@ -238,7 +239,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
+public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message>, IgniteDiagnosticAware {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -1764,68 +1765,46 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
+     * @param nodeId Target node ID.
+     * @return Future.
+     */
+    public IgniteInternalFuture<String> dumpNodeStatistics(final UUID nodeId) {
+        StringBuilder sb = new StringBuilder("Communication SPI statistics [rmtNode=").append(nodeId).append(']').append(U.nl());
+
+        dumpInfo(sb, nodeId);
+
+        GridNioServer<Message> nioSrvr = this.nioSrvr;
+
+        if (nioSrvr != null) {
+            sb.append("NIO sessions statistics:");
+
+            IgnitePredicate<GridNioSession> p = new IgnitePredicate<GridNioSession>() {
+                @Override public boolean apply(GridNioSession ses) {
+                    ConnectionKey connId = ses.meta(CONN_IDX_META);
+
+                    return connId != null && nodeId.equals(connId.nodeId());
+                }
+            };
+
+            return nioSrvr.dumpNodeStats(sb.toString(), p);
+        }
+        else {
+            sb.append(U.nl()).append("GridNioServer is null.");
+
+            return new GridFinishedFuture<>(sb.toString());
+        }
+    }
+
+    /**
      * Dumps SPI per-connection stats to logs.
      */
-    public void dumpStats() {
+    @Override public void dumpDiagnosticInfo() {
         IgniteLogger log = this.log;
 
         if (log != null) {
-            StringBuilder sb = new StringBuilder("Communication SPI recovery descriptors: ").append(U.nl());
+            StringBuilder sb = new StringBuilder();
 
-            for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : recoveryDescs.entrySet()) {
-                GridNioRecoveryDescriptor desc = entry.getValue();
-
-                sb.append("    [key=").append(entry.getKey())
-                    .append(", msgsSent=").append(desc.sent())
-                    .append(", msgsAckedByRmt=").append(desc.acked())
-                    .append(", msgsRcvd=").append(desc.received())
-                    .append(", lastAcked=").append(desc.lastAcknowledged())
-                    .append(", reserveCnt=").append(desc.reserveCount())
-                    .append(", descIdHash=").append(System.identityHashCode(desc))
-                    .append(']').append(U.nl());
-            }
-
-            for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : outRecDescs.entrySet()) {
-                GridNioRecoveryDescriptor desc = entry.getValue();
-
-                sb.append("    [key=").append(entry.getKey())
-                    .append(", msgsSent=").append(desc.sent())
-                    .append(", msgsAckedByRmt=").append(desc.acked())
-                    .append(", reserveCnt=").append(desc.reserveCount())
-                    .append(", connected=").append(desc.connected())
-                    .append(", reserved=").append(desc.reserved())
-                    .append(", descIdHash=").append(System.identityHashCode(desc))
-                    .append(']').append(U.nl());
-            }
-
-            for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : inRecDescs.entrySet()) {
-                GridNioRecoveryDescriptor desc = entry.getValue();
-
-                sb.append("    [key=").append(entry.getKey())
-                    .append(", msgsRcvd=").append(desc.received())
-                    .append(", lastAcked=").append(desc.lastAcknowledged())
-                    .append(", reserveCnt=").append(desc.reserveCount())
-                    .append(", connected=").append(desc.connected())
-                    .append(", reserved=").append(desc.reserved())
-                    .append(", handshakeIdx=").append(desc.handshakeIndex())
-                    .append(", descIdHash=").append(System.identityHashCode(desc))
-                    .append(']').append(U.nl());
-            }
-
-            sb.append("Communication SPI clients: ").append(U.nl());
-
-            for (Map.Entry<UUID, GridCommunicationClient[]> entry : clients.entrySet()) {
-                UUID nodeId = entry.getKey();
-                GridCommunicationClient[] clients0 = entry.getValue();
-
-                for (GridCommunicationClient client : clients0) {
-                    if (client != null) {
-                        sb.append("    [node=").append(nodeId)
-                            .append(", client=").append(client)
-                            .append(']').append(U.nl());
-                    }
-                }
-            }
+            dumpInfo(sb, null);
 
             U.warn(log, sb.toString());
         }
@@ -1836,11 +1815,81 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             nioSrvr.dumpStats();
     }
 
-    /** */
-    private final ThreadLocal<Integer> threadConnIdx = new ThreadLocal<>();
+    /**
+     * @param sb Message builder.
+     * @param dstNodeId Target node ID.
+     */
+    private void dumpInfo(StringBuilder sb, UUID dstNodeId) {
+        sb.append("Communication SPI recovery descriptors: ").append(U.nl());
 
-    /** */
-    private final AtomicInteger connIdx = new AtomicInteger();
+        for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : recoveryDescs.entrySet()) {
+            GridNioRecoveryDescriptor desc = entry.getValue();
+
+            if (dstNodeId != null && !dstNodeId.equals(entry.getKey().nodeId()))
+                continue;
+
+            sb.append("    [key=").append(entry.getKey())
+                    .append(", msgsSent=").append(desc.sent())
+                    .append(", msgsAckedByRmt=").append(desc.acked())
+                    .append(", msgsRcvd=").append(desc.received())
+                    .append(", lastAcked=").append(desc.lastAcknowledged())
+                    .append(", reserveCnt=").append(desc.reserveCount())
+                    .append(", descIdHash=").append(System.identityHashCode(desc))
+                    .append(']').append(U.nl());
+        }
+
+        for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : outRecDescs.entrySet()) {
+            GridNioRecoveryDescriptor desc = entry.getValue();
+
+            if (dstNodeId != null && !dstNodeId.equals(entry.getKey().nodeId()))
+                continue;
+
+            sb.append("    [key=").append(entry.getKey())
+                    .append(", msgsSent=").append(desc.sent())
+                    .append(", msgsAckedByRmt=").append(desc.acked())
+                    .append(", reserveCnt=").append(desc.reserveCount())
+                    .append(", connected=").append(desc.connected())
+                    .append(", reserved=").append(desc.reserved())
+                    .append(", descIdHash=").append(System.identityHashCode(desc))
+                    .append(']').append(U.nl());
+        }
+
+        for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : inRecDescs.entrySet()) {
+            GridNioRecoveryDescriptor desc = entry.getValue();
+
+            if (dstNodeId != null && !dstNodeId.equals(entry.getKey().nodeId()))
+                continue;
+
+            sb.append("    [key=").append(entry.getKey())
+                    .append(", msgsRcvd=").append(desc.received())
+                    .append(", lastAcked=").append(desc.lastAcknowledged())
+                    .append(", reserveCnt=").append(desc.reserveCount())
+                    .append(", connected=").append(desc.connected())
+                    .append(", reserved=").append(desc.reserved())
+                    .append(", handshakeIdx=").append(desc.handshakeIndex())
+                    .append(", descIdHash=").append(System.identityHashCode(desc))
+                    .append(']').append(U.nl());
+        }
+
+        sb.append("Communication SPI clients: ").append(U.nl());
+
+        for (Map.Entry<UUID, GridCommunicationClient[]> entry : clients.entrySet()) {
+            UUID clientNodeId = entry.getKey();
+
+            if (dstNodeId != null && !dstNodeId.equals(clientNodeId))
+                continue;
+
+            GridCommunicationClient[] clients0 = entry.getValue();
+
+            for (GridCommunicationClient client : clients0) {
+                if (client != null) {
+                    sb.append("    [node=").append(clientNodeId)
+                            .append(", client=").append(client)
+                            .append(']').append(U.nl());
+                }
+            }
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
@@ -2868,9 +2917,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         // Try to connect first on bound addresses.
         if (isRmtAddrsExist) {
-            List<InetSocketAddress> addrs0 = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
-
             boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
+
+            List<InetSocketAddress> addrs0;
+
+            Collection<InetSocketAddress> socketAddrs = U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort);
+
+            if (sameHost)
+                addrs0 = new ArrayList<>(socketAddrs);
+            else {
+                addrs0 = new ArrayList<>(socketAddrs.size());
+
+                for (InetSocketAddress addr0 : socketAddrs) {
+                    if (!addr0.getAddress().isLoopbackAddress())
+                        addrs0.add(addr0);
+                }
+            }
 
             Collections.sort(addrs0, U.inetAddressesComparator(sameHost));
 
@@ -3109,7 +3171,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
-                    errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
+                    errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
+                        "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
                     // Reconnect for the second time, if connection is not established.
                     if (!failureDetThrReached && connectAttempts < 2 &&
@@ -3139,11 +3202,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
                 X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
                     IgniteSpiOperationTimeoutException.class)) {
-                LT.warn(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+
+                U.error(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                     "cluster [" +
-                    "rmtNode=" + node +
-                    ", err=" + errs +
-                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+                    "rmtNode=" + node + "]", errs);
 
                 getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                     "rmtNode=" + node +
@@ -4848,7 +4910,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override public void dumpStats() {
-            TcpCommunicationSpi.this.dumpStats();
+            TcpCommunicationSpi.this.dumpDiagnosticInfo();
         }
 
         /** {@inheritDoc} */

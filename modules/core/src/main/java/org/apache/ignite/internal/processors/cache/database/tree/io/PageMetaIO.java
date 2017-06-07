@@ -204,8 +204,13 @@ public class PageMetaIO extends PageIO {
      * @param pageAddr Page address.
      * @param pageCnt Last page count.
      */
-    public void setCandidatePageCount(long pageAddr, int pageCnt) {
+    public boolean setCandidatePageCount(long pageAddr, int pageCnt) {
+        if (getCandidatePageCount(pageAddr) == pageCnt)
+            return false;
+
         PageUtils.putInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF, pageCnt);
+
+        return true;
     }
 
     /**

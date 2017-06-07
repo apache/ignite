@@ -1452,7 +1452,7 @@ public class RecordV1Serializer implements RecordSerializer {
             CacheState state = entry.getValue();
 
             // 2 bytes partition ID, size and counter per partition.
-            size += 18 * state.partitions().size();
+            size += 18 * state.size();
         }
 
         return size;
@@ -1495,13 +1495,13 @@ public class RecordV1Serializer implements RecordSerializer {
             CacheState state = entry.getValue();
 
             // Need 2 bytes for the number of partitions.
-            buf.putShort((short)state.partitions().size());
+            buf.putShort((short)state.size());
 
-            for (Map.Entry<Integer, CacheState.PartitionState> partEntry : state.partitions().entrySet()) {
-                buf.putShort((short)(int)partEntry.getKey());
+            for (int i = 0; i < state.size(); i++) {
+                buf.putShort((short)state.partitionByIndex(i));
 
-                buf.putLong(partEntry.getValue().size());
-                buf.putLong(partEntry.getValue().partitionCounter());
+                buf.putLong(state.partitionSizeByIndex(i));
+                buf.putLong(state.partitionCounterByIndex(i));
             }
         }
     }
@@ -1593,7 +1593,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             int parts = buf.readShort() & 0xFFFF;
 
-            CacheState state = new CacheState();
+            CacheState state = new CacheState(parts);
 
             for (int p = 0; p < parts; p++) {
                 int partId = buf.readShort() & 0xFFFF;

@@ -739,6 +739,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Needed action before any cache will stop
+     */
+    public void prepareCachesStop() {
+        // No-op.
+    }
+
+    /**
      * @param stoppedGrps A collection of tuples (cache group, destroy flag).
      */
     public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {

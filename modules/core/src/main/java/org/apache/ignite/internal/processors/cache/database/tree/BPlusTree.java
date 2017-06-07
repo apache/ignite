@@ -2091,9 +2091,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     assert pageId != 0;
 
                     do {
-                        long page = acquirePage(pageId);
+                        final long pId = pageId;
+
+                        long page = acquirePage(pId);
+
                         try {
-                            long pageAddr = writeLock(pageId, page); // No checks, we must be out of use.
+                            long pageAddr = writeLock(pId, page); // No checks, we must be out of use.
 
                             try {
                                 BPlusIO<L> io = io(pageAddr);
@@ -2109,11 +2112,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                                 pageId = fwdPageId;
                             }
                             finally {
-                                writeUnlock(pageId, page, pageAddr, true);
+                                writeUnlock(pId, page, pageAddr, true);
                             }
                         }
                         finally {
-                            releasePage(pageId, page);
+                            releasePage(pId, page);
                         }
 
                         if (bag.size() == 128) {

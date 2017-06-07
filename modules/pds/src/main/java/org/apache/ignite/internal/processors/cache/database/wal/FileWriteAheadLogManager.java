@@ -52,6 +52,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -209,9 +210,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        String consId = consistentId();
-
         if (!cctx.kernalContext().clientNode()) {
+            String consId = consistentId();
+
             A.notNullOrEmpty(consId, "consistentId");
 
             consId = U.maskForFileName(consId);
@@ -391,7 +392,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
-        if (serializer == null || mode == Mode.NONE || mode == Mode.BACKGROUND)
+        if (serializer == null || mode == Mode.NONE)
             return;
 
         FileWriteHandle cur = currentHandle();
@@ -402,7 +403,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
 
-        if (mode == Mode.LOG_ONLY) {
+        boolean forceFlush = filePtr != null && filePtr.forceFlush();
+
+        if (mode == Mode.BACKGROUND && !forceFlush)
+            return;
+
+        if (mode == Mode.LOG_ONLY || forceFlush) {
             cur.flushOrWait(filePtr);
 
             return;
@@ -1575,7 +1581,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 rec.chainSize(newChainSize);
                 rec.previous(h);
 
-                FileWALPointer ptr = new FileWALPointer(idx, (int)nextPos, rec.size());
+                FileWALPointer ptr = new FileWALPointer(
+                    idx,
+                    (int)nextPos,
+                    rec.size(),
+                    // We need to force checkpoint records into file in BACKGROUND mode.
+                    mode == Mode.BACKGROUND && rec instanceof CheckpointRecord);
 
                 rec.position(ptr);
 

@@ -33,14 +33,29 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     /** Written record length */
     private int len;
 
+    /** Force flush flag. Used in BACKGROUND WAL mode. */
+    private boolean forceFlush;
+
     /**
      * @param idx File timestamp index.
      * @param fileOffset Offset in file, from the beginning.
+     * @param len Record length.
      */
     public FileWALPointer(long idx, int fileOffset, int len) {
+        this(idx, fileOffset, len, false);
+    }
+
+    /**
+     * @param idx File timestamp index.
+     * @param fileOffset Offset in file, from the beginning.
+     * @param len Record length.
+     * @param forceFlush Force flush flag.
+     */
+    public FileWALPointer(long idx, int fileOffset, int len, boolean forceFlush) {
         this.idx = idx;
         this.fileOffset = fileOffset;
         this.len = len;
+        this.forceFlush = forceFlush;
     }
 
     /**
@@ -79,6 +94,13 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
 
         // Return a terminal pointer.
         return new FileWALPointer(idx, fileOffset + len, 0);
+    }
+
+    /**
+     * @return Force flush flag.
+     */
+    public boolean forceFlush() {
+        return forceFlush;
     }
 
     /** {@inheritDoc} */

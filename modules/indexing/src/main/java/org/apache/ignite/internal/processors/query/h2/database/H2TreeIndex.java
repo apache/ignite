@@ -324,12 +324,14 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy() {
         try {
             if (cctx.affinityNode()) {
-                for (int i = 0; i < segments.length; i++) {
-                    H2Tree tree = segments[i];
+                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()) {
+                    for (int i = 0; i < segments.length; i++) {
+                        H2Tree tree = segments[i];
 
-                    tree.destroy();
+                        tree.destroy();
 
-                    dropMetaPage(tree.getName(), i);
+                        dropMetaPage(tree.getName(), i);
+                    }
                 }
             }
         }

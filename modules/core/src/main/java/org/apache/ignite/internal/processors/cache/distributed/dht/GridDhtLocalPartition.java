@@ -737,7 +737,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @param updateSeq Update sequence.
      */
-    void tryEvictAsync(boolean updateSeq) {
+     public void tryEvictAsync(boolean updateSeq) {
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);

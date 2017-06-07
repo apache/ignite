@@ -13,22 +13,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+
+package org.apache.ignite.internal.managers;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+
+/**
  *
  */
-package org.apache.ignite.internal.pagemem.snapshot;
+public class IgniteDiagnosticMessagesMultipleConnectionsTest extends IgniteDiagnosticMessagesTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-/** */
-public enum SnapshotOperationType {
-    /** Create. */
-    CREATE,
-    /** Restore. */
-    RESTORE,
-    /** Restore 2. */
-    RESTORE_2_PHASE,
-    /** Move. */
-    MOVE,
-    /** Delete. */
-    DELETE,
-    /** Check. */
-    CHECK
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(5);
+
+        return cfg;
+    }
 }
