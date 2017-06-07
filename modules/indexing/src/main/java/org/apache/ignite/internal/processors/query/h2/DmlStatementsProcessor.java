@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -79,8 +77,6 @@ import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.h2.table.Column;
-import org.h2.value.DataType;
-import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -599,7 +595,7 @@ public class DmlStatementsProcessor {
 
                 assert prop != null;
 
-                newColVals.put(plan.colNames[i], convert(e.get(i + 2), desc, prop.type(), plan.colTypes[i]));
+                newColVals.put(plan.colNames[i], H2Utils.convert(e.get(i + 2), desc, prop.type(), plan.colTypes[i]));
             }
 
             newVal = plan.valSupplier.apply(e);
@@ -680,63 +676,6 @@ public class DmlStatementsProcessor {
         }
 
         return new UpdateResult(res, failedKeys.toArray());
-    }
-
-    /**
-     * Convert value to column's expected type by means of H2.
-     *
-     * @param val Source value.
-     * @param desc Row descriptor.
-     * @param expCls Expected value class.
-     * @param type Expected column type to convert to.
-     * @return Converted object.
-     * @throws IgniteCheckedException if failed.
-     */
-    @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
-    private static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls, int type)
-        throws IgniteCheckedException {
-        if (val == null)
-            return null;
-
-        Class<?> currCls = val.getClass();
-
-        if (val instanceof Date && currCls != Date.class && expCls == Date.class) {
-            // H2 thinks that java.util.Date is always a Timestamp, while binary marshaller expects
-            // precise Date instance. Let's satisfy it.
-            return new Date(((Date) val).getTime());
-        }
-
-        // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
-        if (type == Value.UUID && currCls == byte[].class)
-            return U.unmarshal(desc.context().marshaller(), (byte[]) val,
-                U.resolveClassLoader(desc.context().gridConfig()));
-
-        // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
-        // Still, we only can convert from Object[] to something more precise.
-        if (type == Value.ARRAY && currCls != expCls) {
-            if (currCls != Object[].class)
-                throw new IgniteCheckedException("Unexpected array type - only conversion from Object[] is assumed");
-
-            // Why would otherwise type be Value.ARRAY?
-            assert expCls.isArray();
-
-            Object[] curr = (Object[]) val;
-
-            Object newArr = Array.newInstance(expCls.getComponentType(), curr.length);
-
-            System.arraycopy(curr, 0, newArr, 0, curr.length);
-
-            return newArr;
-        }
-
-        int objType = DataType.getTypeFromClass(val.getClass());
-
-        if (objType == type)
-            return val;
-
-        Value h2Val = desc.wrap(val, objType);
-
-        return h2Val.convertTo(type).getObject();
     }
 
     /**
@@ -950,7 +889,7 @@ public class DmlStatementsProcessor {
         if (QueryUtils.isSqlType(desc.keyClass())) {
             assert plan.keyColIdx != -1;
 
-            key = convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
+            key = H2Utils.convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
         }
 
         Object val = plan.valSupplier.apply(row);
@@ -958,7 +897,7 @@ public class DmlStatementsProcessor {
         if (QueryUtils.isSqlType(desc.valueClass())) {
             assert plan.valColIdx != -1;
 
-            val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
+            val = H2Utils.convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
         }
 
         if (key == null)
@@ -981,7 +920,7 @@ public class DmlStatementsProcessor {
 
             Class<?> expCls = prop.type();
 
-            newColVals.put(colName, convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
+            newColVals.put(colName, H2Utils.convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
         }
 
         // We update columns in the order specified by the table for a reason - table's

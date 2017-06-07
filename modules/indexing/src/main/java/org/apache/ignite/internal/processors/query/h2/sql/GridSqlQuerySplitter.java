@@ -2118,21 +2118,24 @@ public class GridSqlQuerySplitter {
 
         int colId = column.column().getColumnId();
 
-        if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+        boolean affinityColumn = (affKeyCol != null && (colId == affKeyCol.column.getColumnId()));
+
+        if (!affinityColumn && !desc.isKeyColumn(colId))
             return null;
 
         if (right instanceof GridSqlConst) {
             GridSqlConst constant = (GridSqlConst)right;
 
             return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.cacheName(),
-                constant.value().getObject()), null, -1);
+                constant.value().getObject()), null, null, false, -1, -1);
         }
 
         assert right instanceof GridSqlParameter;
 
         GridSqlParameter param = (GridSqlParameter) right;
 
-        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), param.index());
+        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(), affinityColumn,
+            param.index(), column.column().getType());
     }
 
     /**
