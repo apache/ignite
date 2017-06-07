@@ -86,7 +86,7 @@ public class JdbcThinTcpIo {
     private final boolean replicatedOnly;
 
     /** Flag to automatically close server cursors. */
-    private final boolean autoCloseServerCursors;
+    private final boolean autoCloseServerCursor;
 
     /** Socket send buffer. */
     private final int sockSndBuf;
@@ -118,20 +118,20 @@ public class JdbcThinTcpIo {
      * @param enforceJoinOrder Enforce join order flag.
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
-     * @param autoCloseServerCursors Flag to automatically close server cursors.
+     * @param autoCloseServerCursor Flag to automatically close server cursors.
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
     JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean autoCloseServerCursors, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
+        boolean replicatedOnly, boolean autoCloseServerCursor, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
-        this.autoCloseServerCursors = autoCloseServerCursors;
+        this.autoCloseServerCursor = autoCloseServerCursor;
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
@@ -187,7 +187,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(enforceJoinOrder);
         writer.writeBoolean(collocated);
         writer.writeBoolean(replicatedOnly);
-        writer.writeBoolean(autoCloseServerCursors);
+        writer.writeBoolean(autoCloseServerCursor);
 
         send(writer.array());
 
@@ -390,8 +390,8 @@ public class JdbcThinTcpIo {
     /**
      * @return Auto close server cursors flag.
      */
-    public boolean autoCloseServerCursors() {
-        return autoCloseServerCursors;
+    public boolean autoCloseServerCursor() {
+        return autoCloseServerCursor;
     }
 
     /**

@@ -107,7 +107,7 @@ public class JdbcThinConnection implements Connection {
         boolean enforceJoinOrder = extractBoolean(props, PROP_ENFORCE_JOIN_ORDER, false);
         boolean collocated = extractBoolean(props, PROP_COLLOCATED, false);
         boolean replicatedOnly = extractBoolean(props, PROP_REPLICATED_ONLY, false);
-        boolean autoCloseServerCursors = extractBoolean(props, PROP_AUTO_CLOSE_SERVER_CURSORS, false);
+        boolean autoCloseServerCursor = extractBoolean(props, PROP_AUTO_CLOSE_SERVER_CURSORS, false);
 
         int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
         int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
@@ -116,7 +116,7 @@ public class JdbcThinConnection implements Connection {
 
         try {
             cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, collocated, replicatedOnly,
-                autoCloseServerCursors, sockSndBuf, sockRcvBuf, tcpNoDelay);
+                autoCloseServerCursor, sockSndBuf, sockRcvBuf, tcpNoDelay);
 
             cliIo.start();
         }

@@ -52,7 +52,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
 
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/?" +
-        JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSORS + "=true";
+        JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR + "=true";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
