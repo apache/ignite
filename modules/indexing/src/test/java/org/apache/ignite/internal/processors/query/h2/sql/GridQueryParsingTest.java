@@ -589,14 +589,15 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
                 " \"name\" varchar, \"surname\" varchar, \"age\" integer) WITH " +
                 "\"template=cache\"");
 
+        assertCreateTableEquals(
+            buildCreateTable("sch1", "Person", "cache", F.asList("id"), false, c("id", Value.INT)),
+            "create table Person (\"id\" int primary key) WITH \"template=cache\"");
+
         assertParseThrows("create table Person (id int)",
             IgniteSQLException.class, "No PRIMARY KEY defined for CREATE TABLE");
 
         assertParseThrows("create table Person (id int) AS SELECT 2 * 2",
             IgniteSQLException.class, "CREATE TABLE ... AS ... syntax is not supported");
-
-        assertParseThrows("create table Person (id int primary key)",
-            IgniteSQLException.class, "No cache value related columns found");
 
         assertParseThrows("create table Person (id int primary key, age int not null) WITH \"cacheTemplate=cache\"",
             IgniteSQLException.class, "Non nullable columns are forbidden");

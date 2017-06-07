@@ -23,9 +23,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
-
 import javax.cache.CacheException;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -151,6 +149,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testCreateTableNoTemplate() throws Exception {
         doTestCreateTable(null, CacheMode.PARTITIONED);
+    }
+
+    /**
+     * Test that it's possible to create a table with only {@code PRIMARY KEY} columns and manipulate data in it.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableNoValue() throws Exception {
+        executeDdl("CREATE TABLE person (id int, name varchar, primary key (id, name))");
+
+        queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into person (name, id) values " +
+            "('Sam', 1)"), true).getAll();
+
+        assertEquals(Collections.singletonList(Arrays.asList("Sam", 1)),
+            queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("SELECT name, id from Person"), true)
+                .getAll());
+
+        queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("DELETE FROM person where id = 1"), true);
+
+        assertEquals(Collections.emptyList(),
+            queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("SELECT name, id from Person"), true)
+                .getAll());
     }
 
     /**

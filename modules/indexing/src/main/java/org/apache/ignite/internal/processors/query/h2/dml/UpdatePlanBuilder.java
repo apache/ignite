@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.lang.reflect.Constructor;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -140,7 +143,7 @@ public final class UpdatePlanBuilder {
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
         else throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+            IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
         // Let's set the flag only for subqueries that have their FROM specified.
         isTwoStepSubqry = (isTwoStepSubqry && (sel instanceof GridSqlUnion ||
@@ -266,8 +269,8 @@ public final class UpdatePlanBuilder {
 
                     colTypes[i] = updatedCols.get(i).resultType().type();
 
-                    Column column = updatedCols.get(i).column();
-                    if (desc.isValueColumn(column.getColumnId()))
+                    Column col = updatedCols.get(i).column();
+                    if (desc.isValueColumn(col.getColumnId()))
                         valColIdx = i;
                 }
 
@@ -325,9 +328,31 @@ public final class UpdatePlanBuilder {
         if (isSqlType || !hasProps) {
             if (colIdx != -1)
                 return new PlainValueSupplier(colIdx);
-            else if (isSqlType)
+            else if (isSqlType) {
+                // We don't have primitive value given, let's check if it's a table that does not have value columns.
+                DynamicCacheDescriptor cacheDesc = cctx.grid().context().cache().cacheDescriptor(cctx.name());
+
+                if (cacheDesc.sql()) {
+                    Collection<QueryEntity> entities = cacheDesc.schema().entities();
+
+                    assert entities.size() == 1;
+
+                    QueryEntity entity = entities.iterator().next();
+
+                    if (entity.getFields().size() == entity.getKeyFields().size()) {
+                        assert cls == Boolean.class;
+
+                        return new KeyValueSupplier() {
+                            @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                                return false;
+                            }
+                        };
+                    }
+                }
+
                 // Non constructable keys and values (SQL types) must be present in the query explicitly.
                 throw new IgniteCheckedException((key ? "Key" : "Value") + " is missing from query");
+            }
         }
 
         if (cctx.binaryMarshaller()) {

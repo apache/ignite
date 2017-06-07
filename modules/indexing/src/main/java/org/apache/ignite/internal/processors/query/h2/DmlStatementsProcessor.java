@@ -955,11 +955,9 @@ public class DmlStatementsProcessor {
 
         Object val = plan.valSupplier.apply(row);
 
-        if (QueryUtils.isSqlType(desc.valueClass())) {
-            assert plan.valColIdx != -1;
-
+        // We need to do conversion only for user supplied values.
+        if (plan.valColIdx != -1 && QueryUtils.isSqlType(desc.valueClass()))
             val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
-        }
 
         if (key == null)
             throw new IgniteSQLException("Key for INSERT or MERGE must not be null",  IgniteQueryErrorCode.NULL_KEY);

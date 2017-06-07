@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -292,6 +291,11 @@ public class DdlStatementsProcessor {
 
         String valTypeName = valueType(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = valTypeName + "_Key";
+
+        int valColsNum = createTbl.columns().size() - createTbl.primaryKeyColumns().size();
+
+        if (valColsNum == 0)
+            valTypeName = Boolean.class.getName();
 
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);

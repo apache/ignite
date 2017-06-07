@@ -935,11 +935,6 @@ public class GridSqlQueryParser {
             pkCols.add(gridCol.columnName());
         }
 
-        int valColsNum = cols.size() - pkCols.size();
-
-        if (valColsNum == 0)
-            throw new IgniteSQLException("No cache value related columns found");
-
         res.columns(cols);
         res.primaryKeyColumns(pkCols);
         res.tableName(data.tableName);
