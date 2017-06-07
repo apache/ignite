@@ -41,6 +41,15 @@ public class MemoryMetricsSnapshot implements MemoryMetrics {
     /** */
     private float pagesFillFactor;
 
+    /** */
+    private long dirtyPages;
+
+    /** */
+    private float pageReplaceRate;
+
+    /** */
+    private long physicalMemoryPages;
+
     /**
      * @param metrics Metrics instance to take a copy.
      */
@@ -51,6 +60,9 @@ public class MemoryMetricsSnapshot implements MemoryMetrics {
         evictionRate = metrics.getEvictionRate();
         largeEntriesPagesPercentage = metrics.getLargeEntriesPagesPercentage();
         pagesFillFactor = metrics.getPagesFillFactor();
+        dirtyPages = metrics.getDirtyPages();
+        pageReplaceRate = metrics.getPagesReplaceRate();
+        physicalMemoryPages = metrics.getPhysicalMemoryPages();
     }
 
     /** {@inheritDoc} */
@@ -81,5 +93,20 @@ public class MemoryMetricsSnapshot implements MemoryMetrics {
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
         return pagesFillFactor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDirtyPages() {
+        return dirtyPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getPagesReplaceRate() {
+        return pageReplaceRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemoryPages() {
+        return physicalMemoryPages;
     }
 }

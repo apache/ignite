@@ -16,12 +16,11 @@
  */
 package org.apache.ignite.internal.processors.cache.database;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.LongAdder8;
 
@@ -40,23 +39,29 @@ public class MemoryMetricsImpl implements MemoryMetrics {
      */
     private final LongAdder8 largeEntriesPages = new LongAdder8();
 
+    /** Counter for number of dirty pages. */
+    private LongAdder8 dirtyPages = new LongAdder8();
+
     /** */
     private volatile boolean metricsEnabled;
 
     /** */
+    private boolean persistenceEnabled;
+
+    /** */
     private volatile int subInts;
 
-    /** */
-    private volatile LongAdder8[] allocRateCounters;
+    /** Allocation rate calculator. */
+    private volatile HitRateMetrics allocRate = new HitRateMetrics(60_000, 5);
 
     /** */
-    private final AtomicInteger counterIdx = new AtomicInteger(0);
-
-    /** */
-    private final AtomicLong lastUpdTime = new AtomicLong(0);
+    private volatile HitRateMetrics pageReplaceRate = new HitRateMetrics(60_000, 5);
 
     /** */
     private final MemoryPolicyConfiguration memPlcCfg;
+
+    /** */
+    private PageMemory pageMem;
 
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
@@ -72,11 +77,6 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         rateTimeInterval = memPlcCfg.getRateTimeInterval();
 
         subInts = memPlcCfg.getSubIntervals();
-
-        allocRateCounters = new LongAdder8[subInts];
-
-        for (int i = 0; i < subInts; i++)
-            allocRateCounters[i] = new LongAdder8();
     }
 
     /** {@inheritDoc} */
@@ -94,12 +94,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         if (!metricsEnabled)
             return 0;
 
-        float res = 0;
-
-        for (int i = 0; i < subInts; i++)
-            res += allocRateCounters[i].floatValue();
-
-        return res * 1000 / rateTimeInterval;
+        return ((float) allocRate.getRate()) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -125,6 +120,64 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         return freeList.fillFactor();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getDirtyPages() {
+        if (!metricsEnabled || !persistenceEnabled)
+            return 0;
+
+        return dirtyPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getPagesReplaceRate() {
+        if (!metricsEnabled || !persistenceEnabled)
+            return 0;
+
+        return ((float) pageReplaceRate.getRate()) / rateTimeInterval;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemoryPages() {
+        if (!metricsEnabled || !persistenceEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.loadedPages();
+    }
+
+    /**
+     * Updates pageReplaceRate metric.
+     */
+    public void updatePageReplaceRate() {
+        if (metricsEnabled)
+            pageReplaceRate.onHit();
+    }
+
+    /**
+     * Increments dirtyPages counter.
+     */
+    public void incrementDirtyPages() {
+        if (metricsEnabled)
+            dirtyPages.increment();
+    }
+
+    /**
+     * Decrements dirtyPages counter.
+     */
+    public void decrementDirtyPages() {
+        if (metricsEnabled)
+            dirtyPages.decrement();
+    }
+
+    /**
+     * Resets dirtyPages counter to zero.
+     */
+    public void resetDirtyPages() {
+        if (metricsEnabled)
+            dirtyPages.reset();
+    }
+
     /**
      * Increments totalAllocatedPages counter.
      */
@@ -132,12 +185,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         if (metricsEnabled) {
             totalAllocatedPages.increment();
 
-            try {
-                updateAllocationRateMetrics();
-            }
-            catch (ArrayIndexOutOfBoundsException | NullPointerException ignored) {
-                // No-op.
-            }
+            updateAllocationRateMetrics();
         }
     }
 
@@ -145,56 +193,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
      *
      */
     private void updateAllocationRateMetrics() {
-        long lastUpdT = lastUpdTime.get();
-        long currT = IgniteUtils.currentTimeMillis();
-
-        int currIdx = counterIdx.get();
-
-        long deltaT = currT - lastUpdT;
-
-        int subInts = this.subInts;
-
-        LongAdder8[] rateCntrs = allocRateCounters;
-
-        if (subInts != rateCntrs.length)
-            return;
-
-        int cntrIdx = counterIdx.get();
-
-        for (int i = 1; i <= subInts; i++) {
-            if (deltaT < subInt(i)) {
-                if (i > 1) {
-                    if (!lastUpdTime.compareAndSet(lastUpdT, currT)) {
-                        rateCntrs[cntrIdx].increment();
-
-                        break;
-                    }
-                }
-
-                if (rotateIndex(currIdx, i - 1)) {
-                    currIdx = counterIdx.get();
-
-                    resetCounters(currIdx, i - 1);
-
-                    rateCntrs[currIdx].increment();
-
-                    break;
-                }
-                else {
-                    rateCntrs[cntrIdx].increment();
-
-                    break;
-                }
-            }
-            else if (i == subInts && lastUpdTime.compareAndSet(lastUpdT, currT))
-                resetAll();
-
-            if (currIdx != cntrIdx) {
-                rateCntrs[cntrIdx].increment();
-
-                break;
-            }
-        }
+        allocRate.onHit();
     }
 
     /**
@@ -202,48 +201,6 @@ public class MemoryMetricsImpl implements MemoryMetrics {
      */
     private long subInt(int intervalNum) {
         return (rateTimeInterval * intervalNum) / subInts;
-    }
-
-    /**
-     * @param idx Index.
-     * @param rotateStep Rotate step.
-     */
-    private boolean rotateIndex(int idx, int rotateStep) {
-        if (rotateStep == 0)
-            return true;
-
-        int subInts = this.subInts;
-
-        assert rotateStep < subInts;
-
-        int nextIdx = (idx + rotateStep) % subInts;
-
-        return counterIdx.compareAndSet(idx, nextIdx);
-    }
-
-    /**
-     *
-     */
-    private void resetAll() {
-        LongAdder8[] cntrs = allocRateCounters;
-
-        for (LongAdder8 cntr : cntrs)
-            cntr.reset();
-    }
-
-    /**
-     * @param currIdx Current index.
-     * @param resettingCntrs Resetting allocRateCounters.
-     */
-    private void resetCounters(int currIdx, int resettingCntrs) {
-        if (resettingCntrs == 0)
-            return;
-
-        for (int j = 0; j < resettingCntrs; j++) {
-            int cleanIdx = currIdx - j >= 0 ? currIdx - j : currIdx - j + subInts;
-
-            allocRateCounters[cleanIdx].reset();
-        }
     }
 
     /**
@@ -277,10 +234,27 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     }
 
     /**
+     * @param persistenceEnabled Persistence enabled.
+     */
+    public void persistenceEnabled(boolean persistenceEnabled) {
+        this.persistenceEnabled = persistenceEnabled;
+    }
+
+    /**
+     * @param pageMem Page mem.
+     */
+    public void pageMemory(PageMemory pageMem) {
+        this.pageMem = pageMem;
+    }
+
+    /**
      * @param rateTimeInterval Time interval (in milliseconds) used to calculate allocation/eviction rate.
      */
     public void rateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
+
+        allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
     }
 
     /**
@@ -297,13 +271,8 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         if (rateTimeInterval / subInts < 10)
             subInts = (int) rateTimeInterval / 10;
 
-        LongAdder8[] newCounters = new LongAdder8[subInts];
-
-        for (int i = 0; i < subInts; i++)
-            newCounters[i] = new LongAdder8();
-
-        this.subInts = subInts;
-        allocRateCounters = newCounters;
+        allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
     }
 
     /**

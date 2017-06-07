@@ -294,7 +294,7 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
                 if (pageIds.contains(fullId)) {
                     long cpStart = System.nanoTime();
 
-                    Integer tag = mem.getForCheckpoint(fullId, tmpBuf);
+                    Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
 
                     if (tag == null)
                         continue;

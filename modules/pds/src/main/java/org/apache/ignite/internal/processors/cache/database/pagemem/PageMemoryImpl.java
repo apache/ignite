@@ -55,6 +55,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.database.wal.crc.IgniteDataIntegrityViolationException;
@@ -221,6 +222,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** */
     private long[] sizes;
 
+    /** */
+    private MemoryMetricsImpl memMetrics;
+
     /**
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
@@ -235,7 +239,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         int pageSize,
         GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPage,
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
-        CheckpointLockStateChecker stateChecker
+        CheckpointLockStateChecker stateChecker,
+        MemoryMetricsImpl memMetrics
     ) {
         assert sharedCtx != null;
 
@@ -257,6 +262,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
         rwLock = new OffheapReadWriteLock(128);
+
+        this.memMetrics = memMetrics;
     }
 
     /** {@inheritDoc} */
@@ -555,6 +562,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                     try {
                         ByteBuffer buf = wrapPointer(pageAddr, pageSize());
 
+                        memMetrics.updatePageReplaceRate();
+
                         storeMgr.read(cacheId, pageId, buf);
                     }
                     catch (IgniteDataIntegrityViolationException ignore) {
@@ -769,6 +778,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.dirtyPages = new GridConcurrentHashSet<>();
         }
 
+        memMetrics.resetDirtyPages();
+
         return new GridMultiCollectionWrapper<>(collections);
     }
 
@@ -780,7 +791,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer getForCheckpoint(FullPageId fullId, ByteBuffer tmpBuf) {
+    @Override public Integer getForCheckpoint(FullPageId fullId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker) {
         assert tmpBuf.remaining() == pageSize();
 
         Segment seg = segment(fullId.cacheId(), fullId.pageId());
@@ -858,7 +869,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         }
         else {
-            copyPageForCheckpoint(absPtr, fullId, tmpBuf);
+            copyPageForCheckpoint(absPtr, fullId, tmpBuf, tracker);
 
             return tag;
         }
@@ -869,7 +880,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param fullId Full id.
      * @param tmpBuf Tmp buffer.
      */
-    private void copyPageForCheckpoint(long absPtr, FullPageId fullId, ByteBuffer tmpBuf) {
+    private void copyPageForCheckpoint(long absPtr, FullPageId fullId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker) {
         assert absPtr != 0;
 
         long tmpRelPtr;
@@ -906,6 +917,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
         PageHeader.dirty(tmpAbsPtr, false);
+
+        if (tracker != null)
+            tracker.onCowPageWritten();
 
         checkpointPool.releaseFreePage(tmpRelPtr);
 
@@ -1264,11 +1278,19 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean wasDirty = PageHeader.dirty(absPtr, dirty);
 
         if (dirty) {
-            if (!wasDirty || forceAdd)
-                segment(pageId.cacheId(), pageId.pageId()).dirtyPages.add(pageId);
+            if (!wasDirty || forceAdd) {
+                boolean added = segment(pageId.cacheId(), pageId.pageId()).dirtyPages.add(pageId);
+
+                if (added)
+                    memMetrics.incrementDirtyPages();
+            }
         }
-        else
-            segment(pageId.cacheId(), pageId.pageId()).dirtyPages.remove(pageId);
+        else {
+            boolean rmv = segment(pageId.cacheId(), pageId.pageId()).dirtyPages.remove(pageId);
+
+            if (rmv)
+                memMetrics.decrementDirtyPages();
+        }
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.cache.database.pagemem;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
@@ -87,7 +89,8 @@ public class PageMemoryImplNoLoadSelfTest extends PageMemoryNoLoadSelfTest {
                 @Override public boolean checkpointLockIsHeldByThread() {
                     return true;
                 }
-            });
+            },
+            new MemoryMetricsImpl(new MemoryPolicyConfiguration()));
     }
 
     /** {@inheritDoc} */

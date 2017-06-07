@@ -116,10 +116,11 @@ public interface PageMemoryEx extends PageMemory {
      * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
      *      the {@link #beginCheckpoint()} method call.
      * @param tmpBuf Temporary buffer to write changes into.
+     * @param tracker Checkpoint metrics tracker.
      * @return {@code True} if data were read, {@code false} otherwise (data already saved to storage).
      * @throws IgniteException If failed to obtain page data.
      */
-    @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf);
+    @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker);
 
     /**
      * Marks partition as invalid / outdated.

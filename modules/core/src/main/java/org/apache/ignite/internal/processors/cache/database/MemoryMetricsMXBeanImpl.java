@@ -67,6 +67,21 @@ class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getDirtyPages() {
+        return memMetrics.getDirtyPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getPagesReplaceRate() {
+        return memMetrics.getPagesReplaceRate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemoryPages() {
+        return memMetrics.getPhysicalMemoryPages();
+    }
+
+    /** {@inheritDoc} */
     @Override public void rateTimeInterval(long rateTimeInterval) {
         if (rateTimeInterval < 1000)
             throw new IllegalArgumentException("rateTimeInterval property must be positive " +

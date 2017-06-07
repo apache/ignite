@@ -32,6 +32,15 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
 
     /** */
+    public static final boolean DFLT_METRICS_ENABLED = false;
+
+    /** Default amount of sub intervals to calculate rate-based metric. */
+    public static final int DFLT_SUB_INTERVALS = 5;
+
+    /** Default length of interval over which rate-based metric is calculated. */
+    public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
+
+    /** */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = new Long(256L * 1024 * 1024);
 
@@ -48,7 +57,7 @@ public class PersistentStoreConfiguration implements Serializable {
     private static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** */
-    private String persistenteStorePath;
+    private String persistenceStorePath;
 
     /** Checkpointing frequency. */
     private long checkpointingFreq = DFLT_CHECKPOINTING_FREQ;
@@ -77,11 +86,27 @@ public class PersistentStoreConfiguration implements Serializable {
     /** WAL archive path. */
     private String walArchivePath;
 
+    /** Metrics enabled flag. */
+    private boolean metricsEnabled = DFLT_METRICS_ENABLED;
+
+    /**
+     * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
+     * rate-based metrics.
+     * <p>
+     * Setting it to a bigger value will result in more precise calculation and smaller drops of
+     * rate-based metrics when next sub-interval has to be recycled but introduces bigger
+     * calculation overhead.
+     */
+    private int subIntervals = DFLT_SUB_INTERVALS;
+
+    /** Time interval (in milliseconds) for rate-based metrics. */
+    private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
+
     /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
      */
     public String getPersistentStorePath() {
-        return persistenteStorePath;
+        return persistenceStorePath;
     }
 
     /**
@@ -91,7 +116,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param persistenceStorePath Persistence store path.
      */
     public PersistentStoreConfiguration setPersistentStorePath(String persistenceStorePath) {
-        this.persistenteStorePath = persistenceStorePath;
+        this.persistenceStorePath = persistenceStorePath;
 
         return this;
     }
@@ -288,6 +313,70 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public PersistentStoreConfiguration setWalArchivePath(String walArchivePath) {
         this.walArchivePath = walArchivePath;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether persistence metrics collection is enabled.
+     * Default value is {@link #DFLT_METRICS_ENABLED}.
+     *
+     * @return Metrics enabled flag.
+     */
+    public boolean isMetricsEnabled() {
+        return metricsEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether persistence metrics collection is enabled.
+     *
+     * @param metricsEnabled Metrics enabled flag.
+     */
+    public PersistentStoreConfiguration setMetricsEnabled(boolean metricsEnabled) {
+        this.metricsEnabled = metricsEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets the length of the time interval for rate-based metrics. This interval defines a window over which
+     * hits will be tracked. Default value is {@link #DFLT_RATE_TIME_INTERVAL_MILLIS}.
+     *
+     * @return Time interval in milliseconds.
+     */
+    public long getRateTimeInterval() {
+        return rateTimeInterval;
+    }
+
+    /**
+     * Sets the length of the time interval for rate-based metrics. This interval defines a window over which
+     * hits will be tracked.
+     *
+     * @param rateTimeInterval Time interval in milliseconds.
+     */
+    public PersistentStoreConfiguration setRateTimeInterval(long rateTimeInterval) {
+        this.rateTimeInterval = rateTimeInterval;
+
+        return this;
+    }
+
+    /**
+     * Gets the number of sub-intervals to split the {@link #getRateTimeInterval()} into to track the update history.
+     * Default value is {@link #DFLT_SUB_INTERVALS}.
+     *
+     * @return The number of sub-intervals for history tracking.
+     */
+    public int getSubIntervals() {
+        return subIntervals;
+    }
+
+    /**
+     * Sets the number of sub-intervals to split the {@link #getRateTimeInterval()} into to track the update history.
+     *
+     * @param subIntervals The number of sub-intervals for history tracking.
+     */
+    public PersistentStoreConfiguration setSubIntervals(int subIntervals) {
+        this.subIntervals = subIntervals;
 
         return this;
     }

@@ -66,7 +66,9 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertEquals(4, watcher.rateDropsCntr);
+        assertTrue(watcher.rateDropsCntr > 3);
+
+        assertTrue(watcher.rateDropsCntr < 6);
     }
 
     /**
@@ -87,7 +89,9 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllocationThreads();
 
-        assertEquals(4, watcher.rateDropsCntr);
+        assertTrue(watcher.rateDropsCntr > 3);
+
+        assertTrue(watcher.rateDropsCntr < 6);
 
         sleep(3);
 
@@ -150,7 +154,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++) {
             Thread.sleep(25);
 
-            memMetrics.subIntervals((2 + i * 5) % 3 + 1);
+            memMetrics.subIntervals((2 + i * 5) % 3 + 2);
         }
 
         joinAllThreads();

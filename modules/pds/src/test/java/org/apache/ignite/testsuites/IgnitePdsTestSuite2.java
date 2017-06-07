@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.database.IgnitePersistenceMetricsSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreAtomicCacheRebalancingTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreContinuousRestartSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreDataStructuresTest;
@@ -34,6 +35,7 @@ import org.apache.ignite.cache.database.db.file.IgniteWalHistoryReservationsSelf
 import org.apache.ignite.cache.database.db.file.IgniteWalRecoverySelfTest;
 import org.apache.ignite.cache.database.db.file.WalRecoveryTxLogicalRecordsTest;
 import org.apache.ignite.cache.database.db.wal.crc.IgniteDataIntegrityTests;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 
 /**
  *
@@ -46,10 +48,13 @@ public class IgnitePdsTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite");
 
-        // Integrity test
+        // Integrity test.
         suite.addTestSuite(IgniteDataIntegrityTests.class);
         suite.addTestSuite(IgnitePersistentStoreRecoveryAfterFileCorruptionTest.class);
         suite.addTestSuite(IgnitePersistentStorePageSizesTest.class);
+
+        // Metrics test.
+        suite.addTestSuite(IgnitePersistenceMetricsSelfTest.class);
 
         // WAL recovery test.
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);

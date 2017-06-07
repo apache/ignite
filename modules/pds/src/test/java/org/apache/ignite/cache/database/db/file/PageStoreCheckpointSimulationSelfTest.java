@@ -602,7 +602,7 @@ public class PageStoreCheckpointSimulationSelfTest extends GridCommonAbstractTes
 
                     buf.rewind();
 
-                    mem.getForCheckpoint(fullId, buf);
+                    mem.getForCheckpoint(fullId, buf, null);
 
                     buf.position(PageIO.COMMON_HEADER_END);
 
@@ -887,7 +887,7 @@ public class PageStoreCheckpointSimulationSelfTest extends GridCommonAbstractTes
                 for (FullPageId fullId : pageIds) {
                     long cpStart = System.nanoTime();
 
-                    Integer tag = mem.getForCheckpoint(fullId, tmpBuf);
+                    Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
 
                     if (tag == null)
                         continue;

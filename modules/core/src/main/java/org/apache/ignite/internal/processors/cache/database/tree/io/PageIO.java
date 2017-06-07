@@ -537,4 +537,12 @@ public abstract class PageIO {
 
         throw new IgniteCheckedException("Unknown page IO type: " + type);
     }
+
+    /**
+     * @param type Type to test.
+     * @return {@code True} if data page.
+     */
+    public static boolean isDataPageType(int type) {
+        return type == T_DATA;
+    }
 }

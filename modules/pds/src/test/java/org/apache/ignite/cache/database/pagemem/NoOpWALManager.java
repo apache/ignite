@@ -120,4 +120,9 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
 
     }
+
+    /** {@inheritDoc} */
+    @Override public int walArchiveSegments() {
+        return 0;
+    }
 }
