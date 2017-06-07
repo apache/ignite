@@ -24,11 +24,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -73,6 +75,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /** */
     private static volatile boolean busySpinFlag;
 
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -109,7 +112,14 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
         final AtomicInteger trickCompilerVar = new AtomicInteger(1);
 
         final Organization aOrg1 = new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA");
-        final Organization_D4pss2X99lE bOrg2 = new Organization_D4pss2X99lE(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
+        final Organization_mmemgdujy bOrg2 = new Organization_mmemgdujy(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
+
+        IgniteBinary ib = srv1.binary();
+
+        String clsName1 = aOrg1.getClass().getName();
+        String clsName2 = bOrg2.getClass().getName();
+
+        assertEquals(ib.typeId(clsName1), ib.typeId(clsName2));
 
         exec1.submit(new Runnable() {
             @Override public void run() {
@@ -255,7 +265,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * Class name is chosen to be in conflict with other class name this test put to cache.
      */
-    private static class Organization_D4pss2X99lE {
+    private static class Organization_mmemgdujy {
         /** */
         private final int id;
 
@@ -270,7 +280,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
          * @param name Name.
          * @param addr Address.
          */
-        Organization_D4pss2X99lE(int id, String name, String addr) {
+        Organization_mmemgdujy(int id, String name, String addr) {
             this.id = id;
             this.name = name;
             this.addr = addr;
