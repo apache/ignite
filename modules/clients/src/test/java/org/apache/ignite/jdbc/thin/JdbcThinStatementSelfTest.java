@@ -655,6 +655,25 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCloseOnCompletion() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5435");
+
+        assert !stmt.isCloseOnCompletion() : "Default value of CloseOnCompletion is invalid";
+
+        stmt.execute(SQL);
+
+        stmt.closeOnCompletion();
+
+        assert stmt.isCloseOnCompletion();
+
+        stmt.getResultSet().close();
+
+        assert stmt.isClosed() : "Must be closed on complete";
+    }
+
+    /**
      * @param r Runnable to check support.
      */
     private void checkNotSupported(final RunnableX r) {
