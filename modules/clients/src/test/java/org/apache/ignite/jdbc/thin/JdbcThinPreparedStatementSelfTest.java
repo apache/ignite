@@ -25,6 +25,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -171,7 +172,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                stmt.executeQuery(SQL_PART);
+                stmt.executeQuery("select 1");
 
                 return null;
             }
@@ -179,11 +180,43 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                stmt.execute(SQL_PART);
+                stmt.execute("select 1");
 
                 return null;
             }
         }, SQLException.class, "The method 'execute(String)' is called on PreparedStatement instance.");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                stmt.execute("select 1", Statement.NO_GENERATED_KEYS);
+
+                return null;
+            }
+        }, SQLException.class, "The method 'execute(String)' is called on PreparedStatement instance.");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                stmt.executeUpdate("select 1", Statement.NO_GENERATED_KEYS);
+
+                return null;
+            }
+        }, SQLException.class, "The method 'executeUpdate(String, int)' is called on PreparedStatement instance.");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                stmt.executeUpdate("select 1", new int[] {1});
+
+                return null;
+            }
+        }, SQLException.class, "The method 'executeUpdate(String, int[])' is called on PreparedStatement instance.");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                stmt.executeUpdate("select 1 as a", new String[]{"a"});
+
+                return null;
+            }
+        }, SQLException.class, "The method 'executeUpdate(String, String[])' is called on PreparedStatement instance.");
     }
 
     /**
@@ -692,6 +725,28 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         assert cnt == 1;
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClearParameter() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where boolVal is not distinct from ?");
+
+        stmt.setString(1, "");
+        stmt.setLong(2, 1L);
+        stmt.setInt(5, 1);
+
+        stmt.clearParameters();
+
+        stmt.setBoolean(1, true);
+
+        ResultSet rs = stmt.executeQuery();
+
+        assert rs.next();
+
+        assert rs.getInt("id") == 1;
+    }
+
 
     /**
      * Test object.
