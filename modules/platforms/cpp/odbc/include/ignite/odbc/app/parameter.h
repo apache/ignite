@@ -74,13 +74,14 @@ namespace ignite
                  * @return This.
                  */
                 Parameter& operator=(const Parameter& other);
-                
+
                 /**
                  * Write parameter using provided writer.
                  * @param writer Writer.
                  * @param offset Offset for the buffer.
+                 * @param idx Index for the array-of-parameters case.
                  */
-                void Write(impl::binary::BinaryWriterImpl& writer, int offset = 0) const;
+                void Write(impl::binary::BinaryWriterImpl& writer, int offset = 0, SqlUlen idx = 0) const;
 
                 /**
                  * Get data buffer.
@@ -88,6 +89,13 @@ namespace ignite
                  * @return underlying ApplicationDataBuffer instance.
                  */
                 ApplicationDataBuffer& GetBuffer();
+
+                /**
+                 * Get data buffer.
+                 *
+                 * @return underlying ApplicationDataBuffer instance.
+                 */
+                const ApplicationDataBuffer& GetBuffer() const;
 
                 /**
                  * Reset stored at-execution data.

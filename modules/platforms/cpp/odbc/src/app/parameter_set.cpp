@@ -164,20 +164,23 @@ namespace ignite
 
                 int appOffset = paramBindOffset ? *paramBindOffset : 0;
 
-                for (ParameterBindingMap::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
+                for (SqlUlen i = 0; i < paramSetSize; ++i)
                 {
-                    uint16_t paramIdx = it->first;
-                    const Parameter& param = it->second;
-
-                    while ((paramIdx - prev) > 1)
+                    for (ParameterBindingMap::const_iterator it = parameters.begin(); it != parameters.end(); ++it)
                     {
-                        writer.WriteNull();
-                        ++prev;
+                        uint16_t paramIdx = it->first;
+                        const Parameter& param = it->second;
+
+                        while ((paramIdx - prev) > 1)
+                        {
+                            writer.WriteNull();
+                            ++prev;
+                        }
+
+                        param.Write(writer, appOffset, i);
+
+                        prev = paramIdx;
                     }
-
-                    param.Write(writer, appOffset);
-
-                    prev = paramIdx;
                 }
             }
         }

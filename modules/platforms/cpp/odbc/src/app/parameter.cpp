@@ -76,7 +76,7 @@ namespace ignite
                 return *this;
             }
 
-            void Parameter::Write(impl::binary::BinaryWriterImpl& writer, int offset) const
+            void Parameter::Write(impl::binary::BinaryWriterImpl& writer, int offset, SqlUlen idx) const
             {
                 if (buffer.GetInputSize() == SQL_NULL_DATA)
                 {
@@ -87,7 +87,7 @@ namespace ignite
 
                 // Buffer to use to get data.
                 ApplicationDataBuffer buf(buffer);
-                buf.SetOffset(offset);
+                buf.SetOffset(offset + static_cast<int>(idx * buf.GetSize()));
 
                 SqlLen storedDataLen = static_cast<SqlLen>(storedData.size());
 
@@ -211,6 +211,11 @@ namespace ignite
             }
 
             ApplicationDataBuffer& Parameter::GetBuffer()
+            {
+                return buffer;
+            }
+
+            const ApplicationDataBuffer& Parameter::GetBuffer() const
             {
                 return buffer;
             }
