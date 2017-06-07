@@ -74,6 +74,9 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Replicated only flag. */
     private final boolean replicatedOnly;
 
+    /** Automatic close of cursors. */
+    private final boolean autoCloseCursors;
+
     /**
      * Constructor.
      *
@@ -84,9 +87,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
      * @param enforceJoinOrder Enforce join order flag.
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
+     * @param autoCloseCursors Flag to automatically close server cursors.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly, 
+        boolean autoCloseCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -94,6 +99,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
+        this.autoCloseCursors = autoCloseCursors;
 
         log = ctx.log(getClass());
     }
@@ -183,8 +189,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
-            qryCursors.put(qryId, cur);
-
             JdbcQueryExecuteResult res;
 
             if (cur.isQuery())
@@ -199,6 +203,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
             }
+
+            if (res.last() && (!res.isQuery() || autoCloseCursors))
+                cur.close();
+            else
+                qryCursors.put(qryId, cur);
 
             return new JdbcResponse(res);
         }
@@ -259,6 +268,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             cur.pageSize(req.pageSize());
 
             JdbcQueryFetchResult res = new JdbcQueryFetchResult(cur.fetchRows(), !cur.hasNext());
+
+            if (res.last() && (!cur.isQuery() || autoCloseCursors)) {
+                qryCursors.remove(req.queryId());
+
+                cur.close();
+            }
 
             return new JdbcResponse(res);
         }
