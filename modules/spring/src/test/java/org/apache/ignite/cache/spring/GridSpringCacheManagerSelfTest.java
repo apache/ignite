@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.spring;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -434,5 +437,44 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
         assertEquals(2, dynamicSvc.called());
 
         assertEquals(0, c.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSyncCache() throws Exception {
+        final int threads = 10;
+        final int entries = 1000;
+
+        final CyclicBarrier barrier = new CyclicBarrier(threads);
+
+        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
+
+        cacheCfg.setName(DYNAMIC_CACHE_NAME);
+
+        IgniteCache<Integer, String> cache = grid().createCache(cacheCfg);
+
+        GridTestUtils.runMultiThreaded(
+            new Callable() {
+                @Override public Object call() throws Exception {
+                    for (int i = 0; i < entries; i++) {
+                        barrier.await();
+
+                        assertEquals("value" + i, dynamicSvc.cacheableSync(i));
+                        assertEquals("value" + i, dynamicSvc.cacheableSync(i));
+                    }
+
+                    return null;
+                }
+            },
+            threads,
+            "testSyncCache");
+
+        assertEquals(entries, cache.size());
+
+        assertEquals(entries, dynamicSvc.called());
+
+        for (int i = 0; i < entries; i++)
+            assertEquals("value" + i, cache.get(i));
     }
 }
