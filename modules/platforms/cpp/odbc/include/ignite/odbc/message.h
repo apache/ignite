@@ -203,12 +203,13 @@ namespace ignite
              * @param end End of the interval.
              */
             QueryExecuteBatchRequestStart(const std::string& schema, const std::string& sql,
-                const app::ParameterSet& params, SqlUlen begin, SqlUlen end) :
+                const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last) :
                 schema(schema),
                 sql(sql),
                 params(params),
                 begin(begin),
-                end(end)
+                end(end),
+                last(last)
             {
                 // No-op.
             }
@@ -231,7 +232,7 @@ namespace ignite
                 utility::WriteString(writer, schema);
                 utility::WriteString(writer, sql);
 
-                params.Write(writer, begin, end);
+                params.Write(writer, begin, end, last);
             }
 
         private:
@@ -249,6 +250,9 @@ namespace ignite
 
             /** End of the interval. */
             SqlUlen end;
+
+            /** Last page flag. */
+            bool last;
         };
 
         /**

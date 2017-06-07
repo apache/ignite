@@ -188,8 +188,9 @@ namespace ignite
                  * @param writer Writer.
                  * @param begin Beginng of the interval.
                  * @param end End of the interval.
+                 * @param last Last page flag.
                  */
-                void Write(impl::binary::BinaryWriterImpl& writer, SqlUlen begin, SqlUlen end) const;
+                void Write(impl::binary::BinaryWriterImpl& writer, SqlUlen begin, SqlUlen end, bool last) const;
 
                 /**
                  * Calculate row length.
@@ -197,6 +198,13 @@ namespace ignite
                  * @return Row length.
                  */
                 int32_t CalculateRowLen() const;
+
+                /**
+                 * Get row number.
+                 *
+                 * @return Number of rows in set.
+                 */
+                int32_t GetRowNumber() const;
 
             private:
                 /**

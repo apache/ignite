@@ -38,7 +38,7 @@ namespace ignite
 
             DataQuery::~DataQuery()
             {
-                Close();
+                InternalClose();
             }
 
             SqlResult::Type DataQuery::Execute()
@@ -139,6 +139,11 @@ namespace ignite
             }
 
             SqlResult::Type DataQuery::Close()
+            {
+                return InternalClose();
+            }
+
+            SqlResult::Type DataQuery::InternalClose()
             {
                 if (!cursor.get())
                     return SqlResult::AI_SUCCESS;

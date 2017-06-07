@@ -163,7 +163,7 @@ namespace ignite
                 WriteRow(writer, 0);
             }
 
-            void ParameterSet::Write(impl::binary::BinaryWriterImpl& writer, SqlUlen begin, SqlUlen end) const
+            void ParameterSet::Write(impl::binary::BinaryWriterImpl& writer, SqlUlen begin, SqlUlen end, bool last) const
             {
                 int32_t rowLen = CalculateRowLen();
 
@@ -216,6 +216,11 @@ namespace ignite
                     return static_cast<int32_t>(parameters.rbegin()->first);
 
                 return  0;
+            }
+
+            int32_t ParameterSet::GetRowNumber() const
+            {
+                return static_cast<int32_t>(paramSetSize);
             }
         }
     }

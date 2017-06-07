@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_QUERY_DATA_QUERY
-#define _IGNITE_ODBC_QUERY_DATA_QUERY
+#ifndef _IGNITE_ODBC_QUERY_BATCH_QUERY
+#define _IGNITE_ODBC_QUERY_BATCH_QUERY
 
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/parameter_set.h"
@@ -34,7 +34,7 @@ namespace ignite
             /**
              * Query.
              */
-            class DataQuery : public Query
+            class BatchQuery : public Query
             {
             public:
                 /**
@@ -45,13 +45,13 @@ namespace ignite
                  * @param sql SQL query string.
                  * @param params SQL params.
                  */
-                DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                BatchQuery(diagnostic::Diagnosable& diag, Connection& connection,
                     const std::string& sql, const app::ParameterSet& params);
 
                 /**
                  * Destructor.
                  */
-                virtual ~DataQuery();
+                virtual ~BatchQuery();
 
                 /**
                  * Execute query.
@@ -116,36 +116,29 @@ namespace ignite
                 }
 
             private:
-                IGNITE_NO_COPY_ASSIGNMENT(DataQuery);
+                IGNITE_NO_COPY_ASSIGNMENT(BatchQuery);
 
                 /**
                  * Make query execute request and use response to set internal
                  * state.
                  *
+                 * @param begin Paramset interval beginning.
+                 * @param end Paramset interval end.
+                 * @param last Last page flag.
                  * @return Result.
                  */
-                SqlResult::Type MakeRequestExecute();
+                SqlResult::Type MakeRequestExecuteStart(SqlUlen begin, SqlUlen end, bool last);
 
                 /**
-                 * Make query close request.
+                 * Make query execute request and use response to set internal
+                 * state.
                  *
+                 * @param begin Paramset interval beginning.
+                 * @param end Paramset interval end.
+                 * @param last Last page flag.
                  * @return Result.
                  */
-                SqlResult::Type MakeRequestClose();
-
-                /**
-                 * Make data fetch request and use response to set internal state.
-                 *
-                 * @return Result.
-                 */
-                SqlResult::Type MakeRequestFetch();
-                
-                /**
-                 * Close query.
-                 *
-                 * @return Result.
-                 */
-                SqlResult::Type InternalClose();
+                SqlResult::Type MakeRequestExecuteContinue(SqlUlen begin, SqlUlen end, bool last);
 
                 /** Connection associated with the statement. */
                 Connection& connection;
@@ -159,11 +152,17 @@ namespace ignite
                 /** Columns metadata. */
                 meta::ColumnMetaVector resultMeta;
 
-                /** Cursor. */
-                std::auto_ptr<Cursor> cursor;
+                /** Number of rows affected. */
+                int64_t rowsAffected;
+
+                /** Query executed. */
+                bool executed;
+
+                /** Data retrieved. */
+                bool dataRetrieved;
             };
         }
     }
 }
 
-#endif //_IGNITE_ODBC_QUERY_DATA_QUERY
+#endif //_IGNITE_ODBC_QUERY_BATCH_QUERY

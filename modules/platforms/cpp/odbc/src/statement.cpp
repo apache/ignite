@@ -152,24 +152,30 @@ namespace ignite
 
             if (paramIdx == 0)
             {
-                AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
-                    "The value specified for the argument ParameterNumber was less than 1.");
+                std::stringstream builder;
+                builder << "The value specified for the argument ParameterNumber was less than 1. [ParameterNumber=" << paramIdx << ']';
+
+                AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE, builder.str());
 
                 return SqlResult::AI_ERROR;
             }
 
             if (ioType != SQL_PARAM_INPUT)
             {
-                AddStatusRecord(SqlState::SHY105_INVALID_PARAMETER_TYPE,
-                    "The value specified for the argument InputOutputType was not SQL_PARAM_INPUT.");
+                std::stringstream builder;
+                builder << "The value specified for the argument InputOutputType was not SQL_PARAM_INPUT. [ioType=" << ioType << ']';
+
+                AddStatusRecord(SqlState::SHY105_INVALID_PARAMETER_TYPE, builder.str());
 
                 return SqlResult::AI_ERROR;
             }
 
             if (!IsSqlTypeSupported(paramSqlType))
             {
-                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                    "Data type is not supported.");
+                std::stringstream builder;
+                builder << "Data type is not supported. [typeId=" << paramSqlType << ']';
+
+                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, builder.str());
 
                 return SqlResult::AI_ERROR;
             }
@@ -178,8 +184,10 @@ namespace ignite
 
             if (driverType == OdbcNativeType::AI_UNSUPPORTED)
             {
-                AddStatusRecord(SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE,
-                    "The argument TargetType was not a valid data type.");
+                std::stringstream builder;
+                builder << "The argument TargetType was not a valid data type. [TargetType=" << bufferType << ']';
+
+                AddStatusRecord(SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE, builder.str());
 
                 return SqlResult::AI_ERROR;
             }
@@ -599,8 +607,10 @@ namespace ignite
         {
             if (!type_traits::IsSqlTypeSupported(sqlType))
             {
-                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                    "Data type is not supported.");
+                std::stringstream builder;
+                builder << "Data type is not supported. [typeId=" << sqlType << ']';
+
+                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, builder.str());
 
                 return SqlResult::AI_ERROR;
             }
