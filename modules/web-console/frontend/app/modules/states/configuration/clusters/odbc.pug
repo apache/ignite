@@ -20,7 +20,7 @@ include /app/helpers/jade/mixins
 -var model = 'backupItem.odbc'
 -var enabled = model + '.odbcEnabled'
 
-.panel.panel-default(ng-form=form novalidate)
+.panel.panel-default(ng-if='$ctrl.available(["1.0.0", "2.1.0"])' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label ODBC configuration

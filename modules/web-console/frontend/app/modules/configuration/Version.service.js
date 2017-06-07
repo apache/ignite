@@ -75,6 +75,10 @@ export default class IgniteVersion {
     constructor() {
         this.supportedVersions = [
             {
+                label: 'Ignite 2.1',
+                ignite: '2.1.0'
+            },
+            {
                 label: 'Ignite 2.0',
                 ignite: '2.0.0'
             },
