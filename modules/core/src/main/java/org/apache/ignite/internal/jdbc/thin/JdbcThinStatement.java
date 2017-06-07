@@ -180,6 +180,9 @@ public class JdbcThinStatement implements Statement {
     @Override public void setMaxRows(int maxRows) throws SQLException {
         ensureNotClosed();
 
+        if (maxRows < 0)
+            throw new SQLException("Invalid max rows value.");
+
         this.maxRows = maxRows;
     }
 
@@ -198,6 +201,9 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void setQueryTimeout(int timeout) throws SQLException {
         ensureNotClosed();
+
+        if (timeout < 0)
+            throw new SQLException("Invalid timeout value.");
 
         this.timeout = timeout * 1000;
     }

@@ -62,7 +62,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 /**
  * Connection test.
  */
-public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
