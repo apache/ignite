@@ -23,11 +23,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
-
 import javax.cache.CacheException;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -50,6 +49,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -366,18 +367,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testSqlFlagCompatibilityCheck() throws Exception {
-        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
-            "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"template=cache\"");
+        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                String cacheName = cacheName("Person");
+        assertTrue(IgniteSystemProperties.getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK));
 
-                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration(cacheName)));
+        try {
+            executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
+                "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"template=cache\"");
 
-                return null;
-            }
-        }, IgniteException.class, "SQL flag mismatch (fix sql flag in cache configuration");
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    String cacheName = cacheName("Person");
+
+                    Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration(cacheName)));
+
+                    return null;
+                }
+            }, IgniteException.class, "SQL flag mismatch [cacheName=SQL_PUBLIC_Person, local=false, remote=true");
+        }
+        finally {
+            System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "false");
+        }
     }
 
     /**

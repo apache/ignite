@@ -145,16 +145,25 @@ class ClusterCachesInfo {
         if (gridData != null && gridData.conflictErr != null)
             throw new IgniteCheckedException(gridData.conflictErr);
 
-        if (checkConsistency && joinDiscoData != null && gridData != null) {
+        if (joinDiscoData != null && gridData != null) {
             for (CacheJoinNodeDiscoveryData.CacheInfo locCacheInfo : joinDiscoData.caches().values()) {
                 CacheConfiguration locCfg = locCacheInfo.config();
 
                 CacheData cacheData = gridData.gridData.caches().get(locCfg.getName());
 
-                if (cacheData != null)
-                    checkCache(locCacheInfo, cacheData, cacheData.receivedFrom());
+                if (cacheData != null) {
+                    if (!F.eq(cacheData.sql(), locCacheInfo.sql())) {
+                        throw new IgniteCheckedException("SQL flag mismatch [cacheName=" +
+                            locCacheInfo.config().getName() + ", local=" + locCacheInfo.sql() + ", remote=" +
+                            cacheData.sql() + ", rmtNodeId=" + cacheData.receivedFrom() + ']');
+                    }
 
-                validateStartCacheConfiguration(locCfg);
+                    if (checkConsistency)
+                        checkCache(locCacheInfo, cacheData, cacheData.receivedFrom());
+                }
+
+                if (checkConsistency)
+                    validateStartCacheConfiguration(locCfg);
             }
         }
 
@@ -172,17 +181,14 @@ class ClusterCachesInfo {
     @SuppressWarnings("unchecked")
     private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
-        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.sql());
-        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.config(), locInfo.sql());
+        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration());
+        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.config());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
         CU.checkAttributeMismatch(log, rmtAttr.groupName(), rmt, "groupName", "Cache group name",
             locAttr.groupName(), rmtAttr.groupName(), true);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "sql", "SQL flag",
-            locAttr.sql(), rmtAttr.sql(), true);
 
         if (rmtAttr.cacheMode() != LOCAL) {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
@@ -1219,8 +1225,8 @@ class ClusterCachesInfo {
      */
     private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg)
         throws IgniteCheckedException {
-        GridCacheAttributes attr1 = new GridCacheAttributes(cfg, false);
-        GridCacheAttributes attr2 = new GridCacheAttributes(startCfg, false);
+        GridCacheAttributes attr1 = new GridCacheAttributes(cfg);
+        GridCacheAttributes attr2 = new GridCacheAttributes(startCfg);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
