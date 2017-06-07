@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -790,7 +791,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public GridDhtPartitionMap2 localPartitionMap() {
-        Map<Integer, GridDhtPartitionState> map = new HashMap<>();
+        GridPartitionStateMap map = new GridPartitionStateMap(locParts.length());
 
         lock.readLock().lock();
 
@@ -807,7 +808,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             return new GridDhtPartitionMap2(cctx.nodeId(),
                 updateSeq.get(),
                 topVer,
-                Collections.unmodifiableMap(map),
+                map,
                 true);
         }
         finally {
@@ -1848,7 +1849,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 map = new GridDhtPartitionMap2(locNodeId,
                     updateSeq,
                     topVer,
-                    Collections.<Integer, GridDhtPartitionState>emptyMap(),
+                    GridPartitionStateMap.EMPTY,
                     false);
 
                 node2part.put(locNodeId, map);
