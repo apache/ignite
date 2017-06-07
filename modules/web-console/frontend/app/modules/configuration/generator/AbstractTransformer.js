@@ -154,8 +154,13 @@ export default class AbstractTransformer {
     }
 
     // Generate ODBC group.
-    static clusterODBC(odbc) {
-        return this.toSection(this.generator.clusterODBC(odbc));
+    static clusterODBC(odbc, available) {
+        return this.toSection(this.generator.clusterODBC(odbc, available));
+    }
+
+    // Generate cluster query group.
+    static clusterQuery(odbc, available) {
+        return this.toSection(this.generator.clusterQuery(odbc, available));
     }
 
     // Generate cache node filter group.

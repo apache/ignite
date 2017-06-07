@@ -204,7 +204,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             throws IgniteSpiException {
 
             if (((GridIoMessage)msg).message() instanceof GridCacheMessage) {
-                int msgCacheId = ((GridCacheMessage)((GridIoMessage)msg).message()).cacheId();
+                int msgCacheId = ((GridCacheIdMessage)((GridIoMessage)msg).message()).cacheId();
 
                 if (filterCacheId == null || filterCacheId == msgCacheId) {
                     AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());

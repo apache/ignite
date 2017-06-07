@@ -111,7 +111,7 @@ class CacheJoinNodeDiscoveryData implements Serializable {
         private final boolean sql;
 
         /** Flags added for future usage. */
-        private final byte flags;
+        private final long flags;
 
         /**
          * @param ccfg Cache configuration.
@@ -119,7 +119,7 @@ class CacheJoinNodeDiscoveryData implements Serializable {
          * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
          * @param flags Flags (for future usage).
          */
-        CacheInfo(CacheConfiguration ccfg, CacheType cacheType, boolean sql, byte flags) {
+        CacheInfo(CacheConfiguration ccfg, CacheType cacheType, boolean sql, long flags) {
             this.ccfg = ccfg;
             this.cacheType = cacheType;
             this.sql = sql;

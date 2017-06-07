@@ -34,14 +34,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -804,17 +804,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
         for (int i = 0; i < gridCount(); i++) {
-            Iterator<GridCacheMapEntry> entries =
-                (grid(i)).context().cache().internalCache(cctx.name()).map().entries().iterator();
+            GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
-            while (entries.hasNext()) {
-                GridCacheEntryEx entry = entries.next();
+            for (Object e : cache.localEntries(new CachePeekMode[]{CachePeekMode.ALL})) {
+                cnt++;
 
-                if (entry.hasValue()) {
-                    cnt++;
-
-                    log.info("Unexpected entry: " + entry);
-                }
+                log.info("Unexpected entry: " + e);
             }
         }
 

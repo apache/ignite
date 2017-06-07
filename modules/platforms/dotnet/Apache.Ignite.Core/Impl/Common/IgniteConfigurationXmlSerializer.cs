@@ -529,12 +529,22 @@ namespace Apache.Ignite.Core.Impl.Common
             var attr = property.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
 
             if (attr != null)
+            {
                 return attr.Value;
+            }
+
+            var declType = property.DeclaringType;
+            if (declType != null && !declType.IsAbstract && declType.GetConstructor(new Type[0]) != null)
+            {
+                return property.GetValue(Activator.CreateInstance(declType), null);
+            }
 
             var propertyType = property.PropertyType;
 
             if (propertyType.IsValueType)
+            {
                 return Activator.CreateInstance(propertyType);
+            }
 
             return null;
         }
