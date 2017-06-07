@@ -190,7 +190,7 @@ namespace ignite
         /**
          * Query execute batch request.
          */
-        class QueryExecuteBatchRequestStart
+        class QueryExecuteBatchStartRequest
         {
         public:
             /**
@@ -202,7 +202,7 @@ namespace ignite
              * @param begin Beginng of the interval.
              * @param end End of the interval.
              */
-            QueryExecuteBatchRequestStart(const std::string& schema, const std::string& sql,
+            QueryExecuteBatchStartRequest(const std::string& schema, const std::string& sql,
                 const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last) :
                 schema(schema),
                 sql(sql),
@@ -217,7 +217,7 @@ namespace ignite
             /**
              * Destructor.
              */
-            ~QueryExecuteBatchRequestStart()
+            ~QueryExecuteBatchStartRequest()
             {
                 // No-op.
             }
@@ -241,6 +241,67 @@ namespace ignite
 
             /** SQL query. */
             std::string sql;
+
+            /** Parameters bindings. */
+            const app::ParameterSet& params;
+
+            /** Beginng of the interval. */
+            SqlUlen begin;
+
+            /** End of the interval. */
+            SqlUlen end;
+
+            /** Last page flag. */
+            bool last;
+        };
+
+        /**
+         * Query execute batch request.
+         */
+        class QueryExecuteBatchContinueRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param id Query ID.
+             * @param params Query arguments.
+             * @param begin Beginng of the interval.
+             * @param end End of the interval.
+             */
+            QueryExecuteBatchContinueRequest(int64_t id, const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last) :
+                id(id),
+                params(params),
+                begin(begin),
+                end(end),
+                last(last)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryExecuteBatchContinueRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH_CONTINUE);
+                writer.WriteInt64(id);
+
+                params.Write(writer, begin, end, last);
+            }
+
+        private:
+            /** Query ID. */
+            int64_t id;
 
             /** Parameters bindings. */
             const app::ParameterSet& params;
@@ -793,6 +854,15 @@ namespace ignite
             }
 
             /**
+             * Affected rows.
+             * @return Affected rows.
+             */
+            int64_t GetAffectedRows() const
+            {
+                return affectedRows;
+            }
+
+            /**
              * Get column metadata.
              * @return Column metadata.
              */
@@ -806,7 +876,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader)
             {
                 queryId = reader.ReadInt64();
                 affectedRows = reader.ReadInt64();
@@ -822,6 +892,52 @@ namespace ignite
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
+        };
+
+        /**
+         * Query execute batch continue response.
+         */
+        class QueryExecuteBatchContinueResponse : public Response
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryExecuteBatchContinueResponse() :
+                affectedRows(0)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryExecuteBatchContinueResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Affected rows.
+             * @return Affected rows.
+             */
+            int64_t GetAffectedRows() const
+            {
+                return affectedRows;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader)
+            {
+                affectedRows = reader.ReadInt64();
+            }
+
+            /** Affected rows. */
+            int64_t affectedRows;
         };
 
         /**

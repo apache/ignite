@@ -178,9 +178,7 @@ namespace ignite
                     int32_t intervalLen = static_cast<int32_t>(intervalEnd - begin);
 
                     writer.WriteInt32(intervalLen);
-
-                    // Last page flag.
-                    writer.WriteBool(intervalEnd == paramSetSize);
+                    writer.WriteBool(last);
 
                     for (SqlUlen i = begin; i < intervalEnd; ++i)
                         WriteRow(writer, i);

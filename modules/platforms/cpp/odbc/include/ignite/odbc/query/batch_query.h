@@ -155,6 +155,9 @@ namespace ignite
                 /** Number of rows affected. */
                 int64_t rowsAffected;
 
+                /** ID. */
+                int64_t id;
+
                 /** Query executed. */
                 bool executed;
 

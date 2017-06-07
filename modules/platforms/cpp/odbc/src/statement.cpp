@@ -16,6 +16,7 @@
  */
 
 #include "ignite/odbc/system/odbc_constants.h"
+#include "ignite/odbc/query/batch_query.h"
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 #include "ignite/odbc/query/table_metadata_query.h"
@@ -443,7 +444,10 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::DataQuery(*this, connection, query, parameters));
+            if (parameters.GetRowNumber() > 1 && parameters.GetParametersNumber() > 0)
+                currentQuery.reset(new query::BatchQuery(*this, connection, query, parameters));
+            else
+                currentQuery.reset(new query::DataQuery(*this, connection, query, parameters));
 
             // Resetting parameters types as we are changing the query.
             parameters.Prepare();

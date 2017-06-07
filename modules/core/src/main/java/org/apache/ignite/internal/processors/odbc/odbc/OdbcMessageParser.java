@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * JDBC message parser.
@@ -87,10 +88,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 String sql = reader.readString();
                 int paramNum = reader.readInt();
 
-                Object[] params = new Object[paramNum];
-
-                for (int i = 0; i < paramNum; ++i)
-                    params[i] = SqlListenerUtils.readObject(reader, true);
+                Object[] params = readParameterRow(reader, paramNum);
 
                 res = new OdbcQueryExecuteRequest(schema, sql, params);
 
@@ -104,13 +102,28 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 int rowNum = reader.readInt();
                 boolean last = reader.readBoolean();
 
+                Object[][] params = new Object[paramRowLen][];
+
+                for (int i = 0; i < rowNum; ++i)
+                    params[i] = readParameterRow(reader, paramRowLen);
+
+                res = new OdbcQueryExecuteBatchStartRequest(schema, sql, last, params);
+
+                break;
+            }
+
+            case OdbcRequest.QRY_EXEC_BATCH_CONTINUE: {
+                long id = reader.readLong();
+                int paramRowLen = reader.readInt();
+                int rowNum = reader.readInt();
+                boolean last = reader.readBoolean();
+
                 Object[][] params = new Object[paramRowLen][rowNum];
 
                 for (int i = 0; i < rowNum; ++i)
-                    for (int j = 0; i < paramRowLen; ++j)
-                        params[i][j] = SqlListenerUtils.readObject(reader, true);
+                    params[i] = readParameterRow(reader, paramRowLen);
 
-                res = new OdbcQueryExecuteBatchStartRequest(schema, sql, last, params);
+                res = new OdbcQueryExecuteBatchContinueRequest(id, last, params);
 
                 break;
             }
@@ -167,6 +180,21 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
         }
 
         return res;
+    }
+
+    /**
+     * Read row of parameters using reader.
+     * @param reader reader
+     * @param paramNum Number of parameters in a row
+     * @return Parameters array.
+     */
+    @NotNull private static Object[] readParameterRow(BinaryReaderExImpl reader, int paramNum) {
+        Object[] params = new Object[paramNum];
+
+        for (int i = 0; i < paramNum; ++i)
+            params[i] = SqlListenerUtils.readObject(reader, true);
+
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -228,6 +256,11 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
+        }
+        else if (res0 instanceof OdbcQueryExecuteBatchContinueResult) {
+            OdbcQueryExecuteBatchContinueResult res = (OdbcQueryExecuteBatchContinueResult) res0;
+
+            writer.writeLong(res.rowsAffected());
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;

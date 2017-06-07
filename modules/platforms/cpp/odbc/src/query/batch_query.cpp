@@ -33,6 +33,7 @@ namespace ignite
                 sql(sql),
                 params(params),
                 rowsAffected(-1),
+                id(0),
                 executed(false),
                 dataRetrieved(false)
             {
@@ -103,28 +104,28 @@ namespace ignite
 
             SqlResult::Type BatchQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
             {
-                //if (!cursor.get())
-                //{
-                //    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
+                if (!executed)
+                {
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                //    return SqlResult::AI_ERROR;
-                //}
+                    return SqlResult::AI_ERROR;
+                }
 
-                //Row* row = cursor->GetRow();
+                if (dataRetrieved)
+                    return SqlResult::AI_NO_DATA;
 
-                //if (!row)
-                //    return SqlResult::AI_NO_DATA;
+                if (columnIdx != 1)
+                {
+                    std::stringstream builder;
+                    builder << "Column with id " << columnIdx << " is not available in result set.";
 
-                //SqlResult::Type result = row->ReadColumnToBuffer(columnIdx, buffer);
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, builder.str());
 
-                //if (result == SqlResult::AI_ERROR)
-                //{
-                //    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Unknown column type.");
+                    return SqlResult::AI_ERROR;
+                }
 
-                //    return SqlResult::AI_ERROR;
-                //}
+                buffer.PutInt64(rowsAffected);
 
-                //return result;
                 return SqlResult::AI_SUCCESS;
             }
 
@@ -145,49 +146,77 @@ namespace ignite
 
             SqlResult::Type BatchQuery::MakeRequestExecuteStart(SqlUlen begin, SqlUlen end, bool last)
             {
-                //const std::string& schema = connection.GetSchema();
+                const std::string& schema = connection.GetSchema();
 
-                //QueryExecuteBatchRequestStart req(schema, sql, params, begin, end, last);
-                //QueryExecuteResponse rsp;
+                QueryExecuteBatchStartRequest req(schema, sql, params, begin, end, last);
+                QueryExecuteBatchStartResponse rsp;
 
-                //try
-                //{
-                //    connection.SyncMessage(req, rsp);
-                //}
-                //catch (const IgniteError& err)
-                //{
-                //    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                try
+                {
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
 
-                //    return SqlResult::AI_ERROR;
-                //}
+                    return SqlResult::AI_ERROR;
+                }
 
-                //if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                //{
-                //    LOG_MSG("Error: " << rsp.GetError());
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                {
+                    LOG_MSG("Error: " << rsp.GetError());
 
-                //    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
 
-                //    return SqlResult::AI_ERROR;
-                //}
+                    return SqlResult::AI_ERROR;
+                }
 
-                //cursor.reset(new Cursor(rsp.GetQueryId()));
+                id = rsp.GetQueryId();
+                rowsAffected = rsp.GetAffectedRows();
 
-                //resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
+                resultMeta = rsp.GetMeta();
 
-                //LOG_MSG("Query id: " << cursor->GetQueryId());
-                //for (size_t i = 0; i < resultMeta.size(); ++i)
-                //{
-                //    LOG_MSG("\n[" << i << "] SchemaName:     " << resultMeta[i].GetSchemaName()
-                //        <<  "\n[" << i << "] TypeName:       " << resultMeta[i].GetTableName()
-                //        <<  "\n[" << i << "] ColumnName:     " << resultMeta[i].GetColumnName()
-                //        <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
-                //}
+                LOG_MSG("Query id: " << id);
+                for (size_t i = 0; i < resultMeta.size(); ++i)
+                {
+                    LOG_MSG("\n[" << i << "] SchemaName:     " << resultMeta[i].GetSchemaName()
+                        <<  "\n[" << i << "] TypeName:       " << resultMeta[i].GetTableName()
+                        <<  "\n[" << i << "] ColumnName:     " << resultMeta[i].GetColumnName()
+                        <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
+                }
 
                 return SqlResult::AI_SUCCESS;
             }
 
             SqlResult::Type BatchQuery::MakeRequestExecuteContinue(SqlUlen begin, SqlUlen end, bool last)
             {
+                const std::string& schema = connection.GetSchema();
+
+                QueryExecuteBatchContinueRequest req(id, params, begin, end, last);
+                QueryExecuteBatchContinueResponse rsp;
+
+                try
+                {
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                {
+                    LOG_MSG("Error: " << rsp.GetError());
+
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                rowsAffected += rsp.GetAffectedRows();
+
                 return SqlResult::AI_SUCCESS;
             }
         }

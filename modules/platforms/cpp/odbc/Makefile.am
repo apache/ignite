@@ -69,6 +69,7 @@ libignite_odbc_la_SOURCES = \
     src/dsn_config.cpp \
     src/query/column_metadata_query.cpp \
     src/query/data_query.cpp \
+    src/query/batch_query.cpp \
     src/query/foreign_keys_query.cpp \
     src/query/primary_keys_query.cpp \
     src/query/table_metadata_query.cpp \
