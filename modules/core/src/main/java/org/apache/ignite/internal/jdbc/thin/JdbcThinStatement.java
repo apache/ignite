@@ -69,6 +69,7 @@ public class JdbcThinStatement implements Statement {
      * Creates new statement.
      *
      * @param conn JDBC connection.
+     * @param resHoldability Result set holdability.
      */
     JdbcThinStatement(JdbcThinConnection conn, int resHoldability) {
         assert conn != null;
@@ -161,6 +162,9 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void setMaxFieldSize(int max) throws SQLException {
         ensureNotClosed();
+
+        if (max < 0)
+            throw new SQLException("Invalid field limit.");
 
         throw new SQLFeatureNotSupportedException("Field size limitation is not supported.");
     }
@@ -274,15 +278,19 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean getMoreResults() throws SQLException {
         ensureNotClosed();
 
-        return false;
+        return getMoreResults(CLOSE_CURRENT_RESULT);
     }
 
     /** {@inheritDoc} */
     @Override public void setFetchDirection(int direction) throws SQLException {
         ensureNotClosed();
 
+        if (direction != ResultSet.FETCH_FORWARD && direction != ResultSet.FETCH_REVERSE
+            && direction != ResultSet.FETCH_UNKNOWN)
+            throw new SQLException("Invalid fetch direction.");
+
         if (direction != FETCH_FORWARD)
-            throw new SQLFeatureNotSupportedException("Only forward direction is supported");
+            throw new SQLFeatureNotSupportedException("Only forward direction is supported.");
     }
 
     /** {@inheritDoc} */
@@ -355,8 +363,20 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean getMoreResults(int curr) throws SQLException {
         ensureNotClosed();
 
-        if (curr == KEEP_CURRENT_RESULT || curr == CLOSE_ALL_RESULTS)
-            throw new SQLFeatureNotSupportedException("Multiple open results are not supported.");
+        switch (curr) {
+            case CLOSE_CURRENT_RESULT:
+            case CLOSE_ALL_RESULTS:
+                if (rs != null)
+                    rs.close();
+
+                break;
+
+            case KEEP_CURRENT_RESULT:
+                break;
+
+            default:
+                throw new SQLException("Invalid 'current' parameter.");
+        }
 
         return false;
     }

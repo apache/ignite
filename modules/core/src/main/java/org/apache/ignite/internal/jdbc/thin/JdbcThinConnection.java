@@ -172,7 +172,7 @@ public class JdbcThinConnection implements Connection {
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
         if (sql == null)
-            throw new SQLException("Invalid arguments");
+            throw new SQLException("Invalid arguments.");
 
         JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability);
 
@@ -191,7 +191,7 @@ public class JdbcThinConnection implements Connection {
     private void checkCursorOptions(int resSetType, int resSetConcurrency,
         int resSetHoldability) throws SQLException {
         if (resSetType != TYPE_FORWARD_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
+            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported).");
 
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
@@ -220,7 +220,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (sql == null)
-            throw new SQLException("Invalid arguments");
+            throw new SQLException("Invalid arguments.");
 
         return sql;
     }
@@ -357,7 +357,7 @@ public class JdbcThinConnection implements Connection {
             LOG.warning("Transactions are not supported.");
 
         if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
-            throw new SQLException("Invalid result set holdability value");
+            throw new SQLException("Invalid result set holdability value.");
 
         this.holdability = holdability;
     }
@@ -491,7 +491,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Invalid type name");
+            throw new SQLException("Invalid type name.");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -501,7 +501,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (typeName == null)
-            throw new SQLException("Invalid type name");
+            throw new SQLException("Invalid type name.");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -525,7 +525,7 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (schema == null)
-            throw new SQLException("Invalid schema value");
+            throw new SQLException("Invalid schema value.");
 
         this.schema = schema;
     }
@@ -540,7 +540,7 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void abort(Executor executor) throws SQLException {
         if (executor == null)
-            throw new SQLException("Invalid executor value");
+            throw new SQLException("Invalid executor value.");
 
         close();
     }
@@ -550,10 +550,10 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (executor == null)
-            throw new SQLException("Invalid executor value");
+            throw new SQLException("Invalid executor value.");
 
         if (ms < 0)
-            throw new SQLException("Invalid timeout value");
+            throw new SQLException("Invalid timeout value.");
 
         timeout = ms;
     }

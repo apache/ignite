@@ -21,7 +21,10 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -199,6 +203,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     public void testMaxRows() throws Exception {
         stmt.setMaxRows(1);
 
+        assert stmt.getMaxRows() == 1;
+
         ResultSet rs = stmt.executeQuery(SQL);
 
         assert rs != null;
@@ -297,6 +303,304 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         assert stmt.isClosed() : "Statement must be implicitly closed after close connection";
         assert rs.isClosed() : "ResultSet must be implicitly closed after close connection";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMaxFieldSize() throws Exception {
+        assert stmt.getMaxFieldSize() >= 0;
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setMaxFieldSize(-1);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid field limit"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setMaxFieldSize(100);
+
+                    return null;
+                }
+            },
+            SQLFeatureNotSupportedException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEscapeProcessing() throws Exception {
+        stmt.setEscapeProcessing(true);
+        stmt.setEscapeProcessing(false);
+
+        stmt.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setEscapeProcessing(true);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryTimeout() throws Exception {
+        assert stmt.getQueryTimeout() == 0 : "Default timeout invalid: " + stmt.getQueryTimeout();
+
+        stmt.setQueryTimeout(10);
+
+        assert stmt.getQueryTimeout() == 10;
+
+        stmt.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.getQueryTimeout();
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setQueryTimeout(10);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWarningsOnClosedStatement() throws Exception {
+        stmt.clearWarnings();
+
+        assert stmt.getWarnings() == null;
+
+        stmt.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.getWarnings();
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.clearWarnings();
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCursorName() throws Exception {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setCursorName("test");
+
+                    return null;
+                }
+            },
+            SQLFeatureNotSupportedException.class, null);
+
+        stmt.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setCursorName("test");
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetMoreResults() throws Exception {
+        assert !stmt.getMoreResults();
+
+        stmt.execute(SQL);
+
+        ResultSet rs = stmt.getResultSet();
+
+        assert !stmt.getMoreResults();
+
+        assert rs.isClosed();
+
+        stmt.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.getMoreResults();
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetMoreResults1() throws Exception {
+        assert !stmt.getMoreResults(Statement.CLOSE_CURRENT_RESULT);
+        assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+        assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
+
+        stmt.execute(SQL);
+
+        ResultSet rs = stmt.getResultSet();
+
+        assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+
+        assert !rs.isClosed();
+
+        assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
+
+        assert rs.isClosed();
+
+        stmt.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBatch() throws Exception {
+        if (!conn.getMetaData().supportsBatchUpdates()) {
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        stmt.addBatch("");
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class, null);
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        stmt.clearBatch();
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class, null);
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        stmt.executeBatch();
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class, null);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFetchDirection() throws Exception {
+        assert stmt.getFetchDirection() == ResultSet.FETCH_FORWARD;
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setFetchDirection(-1);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid fetch direction"
+        );
+
+        stmt.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setFetchDirection(-1);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.getFetchDirection();
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Statement is closed"
+        );
     }
 
     /**
