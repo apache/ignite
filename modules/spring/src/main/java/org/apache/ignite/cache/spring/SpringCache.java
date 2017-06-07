@@ -19,7 +19,12 @@ package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -75,6 +80,22 @@ class SpringCache implements Cache {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T get(Object key, Callable<T> valueLoader) {
+        Object val = cache.get(key);
+
+        if (val != null)
+            return (T)fromStoreValue(val);
+
+        try {
+            return cache.invoke(key, new ValueLoaderEntryProcessor<T>(), valueLoader);
+        }
+        catch (Exception e) {
+            throw new ValueRetrievalException(key, valueLoader, e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void put(Object key, Object val) {
         if (val == null)
             cache.withSkipStore().put(key, NULL);
@@ -116,15 +137,64 @@ class SpringCache implements Cache {
     private static ValueWrapper fromValue(Object val) {
         assert val != null;
 
-        return new SimpleValueWrapper(NULL.equals(val) ? null : val);
+        return new SimpleValueWrapper(fromStoreValue(val));
     }
 
-    /**
-     */
+    /** */
     private static class NullValue implements Serializable {
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             return this == o || (o != null && getClass() == o.getClass());
         }
+    }
+
+    /**
+     * An invocable function that allows applications to perform compound operations
+     * on a {@link javax.cache.Cache.Entry} atomically, according the defined
+     * consistency of a {@link Cache}.
+     *
+     * @param <T> The type of the return value
+     */
+    private class ValueLoaderEntryProcessor<T> implements EntryProcessor<Object, Object, T> {
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public T process(MutableEntry<Object, Object> entry, Object... args)
+            throws EntryProcessorException {
+            Callable<T> valueLoader = (Callable<T>)args[0];
+
+            if (entry.exists())
+                return (T)fromStoreValue(entry.getValue());
+            else {
+                T val;
+
+                try {
+                    val = valueLoader.call();
+                }
+                catch (Exception e) {
+                    throw new EntryProcessorException("Value loader '" + valueLoader + "' failed " +
+                        "to compute  value for key '" + entry.getKey() + "'", e);
+                }
+
+                entry.setValue(toStoreValue(val));
+
+                return val;
+            }
+        }
+    }
+
+    /**
+     * @param val User value.
+     * @return Value to store.
+     */
+    private static Object toStoreValue(@Nullable Object val) {
+        return val == null ? NULL : val;
+    }
+
+    /**
+     * @param val Stored value.
+     * @return User value.
+     */
+    @Nullable private static Object fromStoreValue(@NotNull Object val) {
+        return NULL.equals(val) ? null : val;
     }
 }
