@@ -642,7 +642,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
                                 Collection<ClusterNode> owners = (topFut != null && topFut.isDone()) ?
-                                    top.nodes(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
+                                    top.owners(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
 
                                 int ownerNodesCnt = owners.size();
 
