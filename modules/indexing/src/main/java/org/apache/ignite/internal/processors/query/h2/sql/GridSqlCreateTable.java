@@ -53,6 +53,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Primary key columns. */
     private LinkedHashSet<String> pkCols;
 
+    /** Name of the column that represents affinity key. */
+    private String affinityKey;
+
     /** Extra WITH-params. */
     private List<String> params;
 
@@ -124,6 +127,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void primaryKeyColumns(LinkedHashSet<String> pkCols) {
         this.pkCols = pkCols;
+    }
+
+    /**
+     * @return Name of the column that represents affinity key.
+     */
+    public String affinityKey() {
+        return affinityKey;
+    }
+
+    /**
+     * @param affinityKey Name of the column that represents affinity key.
+     */
+    public void affinityKey(String affinityKey) {
+        this.affinityKey = affinityKey;
     }
 
     /**

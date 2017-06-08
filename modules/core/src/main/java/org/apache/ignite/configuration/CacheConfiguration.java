@@ -459,6 +459,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setMemoryPolicyName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
      * @return Cache group name.
      */
     public String getGroupName() {
@@ -466,6 +478,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Sets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setMemoryPolicyName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
      * @param grpName Cache group name.
      * @return {@code this} for chaining.
      */

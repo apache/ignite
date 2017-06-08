@@ -19,13 +19,15 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
-
 import javax.cache.CacheException;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -41,6 +43,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -91,11 +94,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (client().cache("Person") != null)
-            executeDdl("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
-
-
-            executeDdl("DROP TABLE IF EXISTS PUBLIC.\"City\"");
+        executeDdl("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
+        executeDdl("DROP TABLE IF EXISTS PUBLIC.\"City\"");
 
         super.afterTest();
     }
@@ -164,12 +164,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"");
 
+        String cacheName = cacheName("Person");
+
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
 
-            assertNotNull(node.cache("Person"));
+            assertNotNull(node.cache(cacheName));
 
-            DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor("Person");
+            DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor(cacheName);
 
             assertNotNull(cacheDesc);
 
@@ -185,7 +187,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (mode != null)
                 assertEquals(mode, cacheDesc.cacheConfiguration().getCacheMode());
 
-            QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
+            QueryTypeDescriptorImpl desc = typeExisting(node, cacheName, "Person");
 
             assertEquals(Object.class, desc.keyClass());
             assertEquals(Object.class, desc.valueClass());
@@ -193,7 +195,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             assertTrue(desc.valueTypeName(), desc.valueTypeName().contains("Person"));
 
             assertTrue(desc.keyTypeName(), desc.keyTypeName().startsWith(desc.valueTypeName()));
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("Key"));
+            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("KEY"));
 
             assertEquals(
                 F.asList("id", "city", "name", "surname", "age"),
@@ -352,12 +354,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                client().destroyCache("Person");
+                client().destroyCache(cacheName("Person"));
 
                 return null;
             }
         }, CacheException.class,
-        "Only cache created with cache API may be removed with direct call to destroyCache [cacheName=Person]");
+        "Only cache created with cache API may be removed with direct call to destroyCache");
     }
 
     /**
@@ -372,7 +374,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration("Person")));
+                String cacheName = cacheName("Person");
+
+                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration(cacheName)));
 
                 return null;
             }
@@ -397,10 +401,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setKeyFields(Collections.singleton("name"));
                 e.setFields(new LinkedHashMap<>(Collections.singletonMap("name", String.class.getName())));
                 e.setIndexes(Collections.singleton(new QueryIndex("name").setName("idx")));
-                e.setValueType("CityKey");
+                e.setKeyType("CityKey");
                 e.setValueType("City");
 
-                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(),
+                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null,
                     CacheAtomicityMode.ATOMIC, 10, false);
 
                 return null;
@@ -423,6 +427,167 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "Table already exists: Person");
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testAffinityKey() throws Exception {
+        executeDdl("CREATE TABLE \"City\" (\"name\" varchar primary key, \"code\" int) WITH \"affinityKey='name'\"");
+
+        assertAffinityCacheConfiguration("City", "name");
+
+        executeDdl("INSERT INTO \"City\" (\"name\", \"code\") values ('A', 1), ('B', 2), ('C', 3)");
+
+        List<String> cityNames = Arrays.asList("A", "B", "C");
+
+        List<Integer> cityCodes = Arrays.asList(1, 2, 3);
+
+        // We need unique name for this table to avoid conflicts with existing binary metadata.
+        executeDdl("CREATE TABLE \"Person2\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"template=cache,affinityKey='city'\"");
+
+        assertAffinityCacheConfiguration("Person2", "city");
+
+        Random r = new Random();
+
+        Map<Integer, Integer> personId2cityCode = new HashMap<>();
+
+        for (int i = 0; i < 100; i++) {
+            int cityIdx = r.nextInt(3);
+
+            String cityName = cityNames.get(cityIdx);
+
+            int cityCode = cityCodes.get(cityIdx);
+
+            personId2cityCode.put(i, cityCode);
+
+            queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into \"Person2\"(\"id\", " +
+                "\"city\") values (?, ?)").setArgs(i, cityName), true).getAll();
+        }
+
+        List<List<?>> res = queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("select \"id\", " +
+            "c.\"code\" from \"Person2\" p left join \"City\" c on p.\"city\" = c.\"name\" where c.\"name\" " +
+            "is not null"), true).getAll();
+
+        assertEquals(100, res.size());
+
+        for (int i = 0; i < 100; i++) {
+            assertNotNull(res.get(i).get(0));
+
+            assertNotNull(res.get(i).get(1));
+
+            int id = (Integer)res.get(i).get(0);
+
+            int code = (Integer)res.get(i).get(1);
+
+            assertEquals((int)personId2cityCode.get(id), code);
+        }
+    }
+
+    /**
+     * Test various cases of affinity key column specification.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testAffinityKeyCaseSensitivity() {
+        executeDdl("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) WITH \"affinityKey='name'\"");
+
+        assertAffinityCacheConfiguration("A", "name");
+
+        executeDdl("CREATE TABLE \"B\" (name varchar primary key, \"code\" int) WITH \"affinityKey=name\"");
+
+        assertAffinityCacheConfiguration("B", "NAME");
+
+        executeDdl("CREATE TABLE \"C\" (name varchar primary key, \"code\" int) WITH \"affinityKey=NamE\"");
+
+        assertAffinityCacheConfiguration("C", "NAME");
+
+        executeDdl("CREATE TABLE \"D\" (\"name\" varchar primary key, \"code\" int) WITH \"affinityKey=NAME\"");
+
+        assertAffinityCacheConfiguration("D", "name");
+
+        // Error arises because user has specified case sensitive affinity column name
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey='Name'\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Affinity key column with given name not found: Name");
+
+        // Error arises because user declares case insensitive affinity column name while having two 'name'
+        // columns whose names are equal in ignore case.
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
+                    "\"Name\")) WITH \"affinityKey=name\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Ambiguous affinity column name, use single quotes for case sensitivity: name");
+
+        executeDdl("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
+            "\"Name\")) WITH \"affinityKey='Name'\"");
+
+        assertAffinityCacheConfiguration("E", "Name");
+    }
+
+    /**
+     * Tests that attempting to specify an affinity key that actually is a value column yields an error.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testAffinityKeyNotKeyColumn() {
+        // Error arises because user has specified case sensitive affinity column name
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=code\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Affinity key column must be one of key columns: code");
+    }
+
+    /**
+     * Tests that attempting to specify an affinity key that actually is a value column yields an error.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testAffinityKeyNotFound() {
+        // Error arises because user has specified case sensitive affinity column name
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=missing\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Affinity key column with given name not found: missing");
+    }
+
+    /**
+     * Check that dynamic cache created with {@code CREATE TABLE} is correctly configured affinity wise.
+     * @param cacheName Cache name to check.
+     * @param affKeyFieldName Expected affinity key field name.
+     */
+    private void assertAffinityCacheConfiguration(String cacheName, String affKeyFieldName) {
+        String actualCacheName = cacheName(cacheName);
+
+        Collection<GridQueryTypeDescriptor> types = client().context().query().types(actualCacheName);
+
+        assertEquals(1, types.size());
+
+        GridQueryTypeDescriptor type = types.iterator().next();
+
+        assertTrue(type.name().startsWith(actualCacheName));
+        assertEquals(cacheName, type.tableName());
+        assertEquals(affKeyFieldName, type.affinityKey());
+
+        GridH2Table tbl = ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).dataTable("PUBLIC", cacheName);
+
+        assertNotNull(tbl);
+
+        assertNotNull(tbl.getAffinityKeyColumn());
+
+        assertEquals(affKeyFieldName, tbl.getAffinityKeyColumn().columnName);
     }
 
     /**
@@ -620,5 +785,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             .setName(INDEXED_CACHE_NAME_2)
             .setSqlSchema(QueryUtils.DFLT_SCHEMA)
             .setNodeFilter(F.not(new DynamicIndexAbstractSelfTest.NodeFilter()));
+    }
+
+    /**
+     * Get cache name.
+     *
+     * @param tblName Table name.
+     * @return Cache name.
+     */
+    private static String cacheName(String tblName) {
+        return QueryUtils.createTableCacheName("PUBLIC", tblName);
     }
 }
