@@ -58,6 +58,9 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         cpy = cpy && needCopy(ctx);
 
+        if (!cpy && val != null)
+            return (T)val;
+
         try {
             GridKernalContext kernalCtx = ctx.kernalContext();
 
@@ -81,9 +84,6 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
                 return (T)proc.unmarshal(ctx, valBytes, clsLdr);
             }
-
-            if (val != null)
-                return (T)val;
 
             assert valBytes != null;
 
