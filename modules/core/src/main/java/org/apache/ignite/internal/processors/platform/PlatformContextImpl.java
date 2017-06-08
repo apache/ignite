@@ -187,6 +187,7 @@ public class PlatformContextImpl implements PlatformContext {
         return new BinaryReaderExImpl(marsh.context(),
             in,
             ctx.config().getClassLoader(),
+            true,
             null,
             true,
             true);

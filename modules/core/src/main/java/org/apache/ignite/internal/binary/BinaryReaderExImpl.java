@@ -183,6 +183,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         this(ctx,
             in,
             ldr,
+            true,
             hnds,
             false,
             forUnmarshal);
@@ -194,6 +195,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
+     * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
@@ -201,6 +203,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     public BinaryReaderExImpl(BinaryContext ctx,
         BinaryInputStream in,
         ClassLoader ldr,
+        boolean useCache,
         @Nullable BinaryReaderHandles hnds,
         boolean skipHdrCheck,
         boolean forUnmarshal) {
@@ -263,7 +266,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
+                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0, useCache), false, useCache);
 
                     typeId = desc.typeId();
                 }
@@ -312,7 +315,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     BinaryClassDescriptor descriptor() {
         if (desc == null)
-            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true, true);
 
         return desc;
     }
@@ -1752,7 +1755,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case OBJ:
                 if (desc == null)
-                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true, true);
 
                 streamPosition(dataStart);
 
