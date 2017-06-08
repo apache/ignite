@@ -151,6 +151,7 @@ public class PlatformConfigurationUtils {
         ccfg.setStoreKeepBinary(in.readBoolean());
         ccfg.setLoadPreviousValue(in.readBoolean());
         ccfg.setDefaultLockTimeout(in.readLong());
+        //noinspection deprecation
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
         ccfg.setName(in.readString());
@@ -563,6 +564,8 @@ public class PlatformConfigurationUtils {
             cfg.setFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setLongQueryWarningTimeout(in.readLong());
 
         // Thread pools.
         if (in.readBoolean())
@@ -808,6 +811,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isStoreKeepBinary());
         writer.writeBoolean(ccfg.isLoadPreviousValue());
         writer.writeLong(ccfg.getDefaultLockTimeout());
+        //noinspection deprecation
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeString(ccfg.getName());
@@ -1003,6 +1007,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getClientFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getLongQueryWarningTimeout());
 
         // Thread pools.
         w.writeBoolean(true);
