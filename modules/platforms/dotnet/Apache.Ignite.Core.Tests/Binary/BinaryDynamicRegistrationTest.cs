@@ -328,9 +328,9 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check that Java can read what .NET has put
                 var qryRes = ignite.GetCompute().ExecuteJavaTask<IList>(
-                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field = 255");
+                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field = 7");
 
-                Assert.AreEqual(255, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
+                Assert.AreEqual(7, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
             }
         }
 
