@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
@@ -995,8 +996,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public void cancelRowUpdates() throws SQLException {
         ensureNotClosed();
 
-        if (getConcurrency() == CONCUR_READ_ONLY)
-            throw new SQLException("The result set concurrency is CONCUR_READ_ONLY");
+        throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -1143,12 +1143,16 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public URL getURL(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, URL.class);
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("URL type is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public URL getURL(String colLb) throws SQLException {
-        return getTypedValue(colLb, URL.class);
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("URL type is not supported.");
     }
 
     /** {@inheritDoc} */

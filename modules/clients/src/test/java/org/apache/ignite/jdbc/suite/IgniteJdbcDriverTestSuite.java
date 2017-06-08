@@ -46,7 +46,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementFullApiSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinResultSetFullApiSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionFullApiSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
@@ -106,7 +106,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         // New thin JDBC
         suite.addTest(new TestSuite(JdbcThinConnectionFullApiSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinResultSetSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinResultSetFullApiSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
         suite.addTest(new TestSuite(JdbcThinPreparedStatementFullApiSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinNoDefaultSchemaTest.class));
