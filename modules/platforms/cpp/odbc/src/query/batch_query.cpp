@@ -173,7 +173,6 @@ namespace ignite
 
                 id = rsp.GetQueryId();
                 rowsAffected = rsp.GetAffectedRows();
-
                 resultMeta = rsp.GetMeta();
 
                 LOG_MSG("Query id: " << id);

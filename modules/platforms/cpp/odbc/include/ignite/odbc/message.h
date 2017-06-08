@@ -829,9 +829,10 @@ namespace ignite
              * Constructor.
              */
             QueryExecuteBatchStartResponse() :
-                queryId(0),
+                queryId(-1),
                 affectedRows(0),
-                meta()
+                errorSetIdx(-1),
+                errorMessage()
             {
                 // No-op.
             }
@@ -863,12 +864,21 @@ namespace ignite
             }
 
             /**
-             * Get column metadata.
-             * @return Column metadata.
+             * Get index of the set which caused an error.
+             * @return Index of the set which caused an error.
              */
-            const meta::ColumnMetaVector& GetMeta() const
+            int64_t GetErrorSetIdx() const
             {
-                return meta;
+                return affectedRows;
+            }
+
+            /**
+             * Get error message.
+             * @return Error message.
+             */
+            const std::string& GetErrorMessage() const
+            {
+                return errorMessage;
             }
 
         private:
@@ -878,10 +888,16 @@ namespace ignite
              */
             virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader)
             {
-                queryId = reader.ReadInt64();
+                bool success = reader.ReadBool();
                 affectedRows = reader.ReadInt64();
 
-                meta::ReadColumnMetaVector(reader, meta);
+                if (success)
+                    queryId = reader.ReadInt64();
+                else
+                {
+                    errorSetIdx = reader.ReadInt64();
+                    errorMessage = reader.ReadObject<std::string>();
+                }
             }
 
             /** Query ID. */
@@ -890,8 +906,11 @@ namespace ignite
             /** Affected rows. */
             int64_t affectedRows;
 
-            /** Columns metadata. */
-            meta::ColumnMetaVector meta;
+            /** Index of the set which caused an error. */
+            int64_t errorSetIdx;
+
+            /** Error message. */
+            std::string errorMessage;
         };
 
         /**
@@ -904,7 +923,9 @@ namespace ignite
              * Constructor.
              */
             QueryExecuteBatchContinueResponse() :
-                affectedRows(0)
+                affectedRows(0),
+                errorSetIdx(-1),
+                errorMessage()
             {
                 // No-op.
             }
@@ -926,6 +947,24 @@ namespace ignite
                 return affectedRows;
             }
 
+            /**
+             * Get index of the set which caused an error.
+             * @return Index of the set which caused an error.
+             */
+            int64_t GetErrorSetIdx() const
+            {
+                return affectedRows;
+            }
+
+            /**
+             * Get error message.
+             * @return Error message.
+             */
+            const std::string& GetErrorMessage() const
+            {
+                return errorMessage;
+            }
+
         private:
             /**
              * Read response using provided reader.
@@ -933,11 +972,24 @@ namespace ignite
              */
             virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader)
             {
+                bool success = reader.ReadBool();
                 affectedRows = reader.ReadInt64();
+
+                if (!success)
+                {
+                    errorSetIdx = reader.ReadInt64();
+                    errorMessage = reader.ReadObject<std::string>();
+                }
             }
 
             /** Affected rows. */
             int64_t affectedRows;
+
+            /** Index of the set which caused an error. */
+            int64_t errorSetIdx;
+
+            /** Error message. */
+            std::string errorMessage;
         };
 
         /**
