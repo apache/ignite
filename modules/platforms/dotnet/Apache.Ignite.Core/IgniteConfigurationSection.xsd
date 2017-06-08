@@ -743,6 +743,11 @@
                                             <xs:documentation>Partition loss policy defines how Ignite will react to a situation when all nodes for some partition leave the cluster.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="groupName" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>Cache group name. Caches with the same group name share single underlying 'physical' cache (partition set), but are logically isolated.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>

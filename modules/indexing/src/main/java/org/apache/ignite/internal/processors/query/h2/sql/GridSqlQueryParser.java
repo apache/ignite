@@ -405,6 +405,9 @@ public class GridSqlQueryParser {
     private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** */
+    private static final String PARAM_CACHE_GROUP = "CACHEGROUP";
+
+    /** */
     private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
 
     /** */
@@ -1048,6 +1051,13 @@ public class GridSqlQueryParser {
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.atomicityMode(mode);
+
+                break;
+
+            case PARAM_CACHE_GROUP:
+                ensureNotEmpty(name, val);
+
+                res.cacheGroup(val);
 
                 break;
 

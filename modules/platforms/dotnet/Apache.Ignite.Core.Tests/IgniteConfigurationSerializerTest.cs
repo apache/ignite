@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
                             </lifecycleHandlers>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
                                             <fields>
@@ -179,6 +179,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cacheCfg.EnableStatistics);
             Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
             Assert.AreEqual(PartitionLossPolicy.ReadWriteAll, cacheCfg.PartitionLossPolicy);
+            Assert.AreEqual("fooGroup", cacheCfg.GroupName);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -725,7 +726,8 @@ namespace Apache.Ignite.Core.Tests
                             new MyPluginConfiguration()
                         },
                         MemoryPolicyName = "somePolicy",
-                        PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll
+                        PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll,
+                        GroupName = "abc"
                     }
                 },
                 ClientMode = true,

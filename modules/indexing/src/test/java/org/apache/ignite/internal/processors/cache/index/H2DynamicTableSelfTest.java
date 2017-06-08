@@ -108,7 +108,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTable() throws Exception {
-        doTestCreateTable(CACHE_NAME, null);
+        doTestCreateTable(CACHE_NAME, null, null);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithCacheGroup() throws Exception {
+        doTestCreateTable(CACHE_NAME, "MyGroup", null);
     }
 
     /**
@@ -117,7 +125,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableReplicated() throws Exception {
-        doTestCreateTable("REPLICATED", CacheMode.REPLICATED);
+        doTestCreateTable("REPLICATED", null, CacheMode.REPLICATED);
     }
 
     /**
@@ -126,7 +134,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTablePartitioned() throws Exception {
-        doTestCreateTable("PARTITIONED", CacheMode.PARTITIONED);
+        doTestCreateTable("PARTITIONED", null, CacheMode.PARTITIONED);
     }
 
     /**
@@ -135,7 +143,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableReplicatedCaseInsensitive() throws Exception {
-        doTestCreateTable("replicated", CacheMode.REPLICATED);
+        doTestCreateTable("replicated", null, CacheMode.REPLICATED);
     }
 
     /**
@@ -144,7 +152,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTablePartitionedCaseInsensitive() throws Exception {
-        doTestCreateTable("partitioned", CacheMode.PARTITIONED);
+        doTestCreateTable("partitioned", null, CacheMode.PARTITIONED);
     }
 
     /**
@@ -153,19 +161,21 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableNoTemplate() throws Exception {
-        doTestCreateTable(null, CacheMode.PARTITIONED);
+        doTestCreateTable(null, null, CacheMode.PARTITIONED);
     }
 
     /**
      * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
      * H2 table and type descriptor on all nodes, optionally with cache type check.
      * @param tplCacheName Template cache name.
+     * @param cacheGrp Cache group name, or {@code null} if no group is set.
      * @param mode Expected cache mode, or {@code null} if no check is needed.
      */
-    private void doTestCreateTable(String tplCacheName, CacheMode mode) {
+    private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode mode) {
         executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"");
+            (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"" +
+            (F.isEmpty(cacheGrp) ? "" : ",\"cacheGroup=" + cacheGrp + '"'));
 
         String cacheName = cacheName("Person");
 
@@ -186,6 +196,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             assertEquals(CacheAtomicityMode.ATOMIC, cacheDesc.cacheConfiguration().getAtomicityMode());
 
             assertTrue(cacheDesc.sql());
+
+            assertEquals(cacheGrp, cacheDesc.groupDescriptor().groupName());
 
             if (mode != null)
                 assertEquals(mode, cacheDesc.cacheConfiguration().getCacheMode());
@@ -239,11 +251,18 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to omit mandatory value of ATOMICITY parameter yields an error.
+     * Test that providing an invalid value of ATOMICITY parameter yields an error.
      */
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
             "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue");
+    }
+
+    /**
+     * Test that attempting to omit mandatory value of CACHEGROUP parameter yields an error.
+     */
+    public void testEmptyCacheGroup() {
+        assertCreateTableWithParamsThrows("cachegroup=", "Parameter value cannot be empty: CACHEGROUP");
     }
 
     /**
@@ -388,7 +407,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     return null;
                 }
-            }, IgniteException.class, "SQL flag mismatch [cacheName=SQL_PUBLIC_Person, local=false, remote=true");
+            }, IgniteException.class, "Cache configuration mismatch (local cache was created via cache API, while " +
+                    "remote cache was created via CREATE TABLE): SQL_PUBLIC_Person");
         }
         finally {
             System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "false");
@@ -417,7 +437,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setValueType("City");
 
                 queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null,
-                    CacheAtomicityMode.ATOMIC, 10, false);
+                    null, CacheAtomicityMode.ATOMIC, 10, false);
 
                 return null;
             }

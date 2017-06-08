@@ -178,6 +178,7 @@ public class PlatformConfigurationUtils {
             ccfg.setMemoryPolicyName(memoryPolicyName);
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
+        ccfg.setGroupName(in.readString());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -829,6 +830,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isStatisticsEnabled());
         writer.writeString(ccfg.getMemoryPolicyName());
         writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
+        writer.writeString(ccfg.getGroupName());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());

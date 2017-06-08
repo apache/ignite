@@ -247,6 +247,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
             Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
             Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
+            Assert.AreEqual(x.GroupName, y.GroupName);
 
             if (x.ExpiryPolicyFactory != null)
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
@@ -512,6 +513,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ReadThrough = true,
                 WriteThrough = true,
                 WriteBehindCoalescing = false,
+                GroupName = "someGroup",
                 QueryEntities = new[]
                 {
                     new QueryEntity
