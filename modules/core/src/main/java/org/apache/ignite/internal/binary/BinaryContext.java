@@ -225,9 +225,6 @@ public class BinaryContext {
     /** Maps typeId to mappers. */
     private final ConcurrentMap<Integer, BinaryInternalMapper> typeId2Mapper = new ConcurrentHashMap8<>(0);
 
-    /** Affinity key field names. */
-    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
-
     /** Maps className to mapper */
     private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
 
@@ -325,6 +322,8 @@ public class BinaryContext {
 
         // Classes with overriden default serialization flag.
         registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), false);
+        registerPredefinedType(CollocatedSetItemKey.class, 0, affinityFieldName(CollocatedSetItemKey.class), false);
+        registerPredefinedType(CollocatedQueueItemKey.class, 0, affinityFieldName(CollocatedQueueItemKey.class), false);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
@@ -472,19 +471,7 @@ public class BinaryContext {
             registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.identity, desc.affKeyFieldName,
                 desc.isEnum, desc.enumMap);
 
-        BinaryInternalMapper globalMapper = resolveMapper(globalNameMapper, globalIdMapper);
-
-        // Put affinity field names for unconfigured types.
-        for (Map.Entry<String, String> entry : affFields.entrySet()) {
-            String typeName = entry.getKey();
-
-            int typeId = globalMapper.typeId(typeName);
-
-            affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
-        }
-
-        addSystemClassAffinityKey(CollocatedSetItemKey.class);
-        addSystemClassAffinityKey(CollocatedQueueItemKey.class);
+        // TODO: Register rest classes from "affFields".
     }
 
     /**
@@ -531,17 +518,6 @@ public class BinaryContext {
      */
     public static BinaryNameMapper defaultNameMapper() {
         return DFLT_MAPPER.nameMapper();
-    }
-
-    /**
-     * @param cls Class.
-     */
-    private void addSystemClassAffinityKey(Class<?> cls) {
-        String fieldName = affinityFieldName(cls);
-
-        assert fieldName != null : cls;
-
-        affKeyFieldNames.putIfAbsent(cls.getName().hashCode(), affinityFieldName(cls));
     }
 
     /**
@@ -1082,9 +1058,6 @@ public class BinaryContext {
 
         descByCls.put(cls, desc);
 
-        if (affFieldName != null)
-            affKeyFieldNames.putIfAbsent(id, affFieldName);
-
         return desc;
     }
 
@@ -1130,11 +1103,6 @@ public class BinaryContext {
 
         if (identity != null) {
             if (identities.put(id, identity) != null)
-                throw duplicateTypeIdException(clsName, id);
-        }
-
-        if (affKeyFieldName != null) {
-            if (affKeyFieldNames.put(id, affKeyFieldName) != null)
                 throw duplicateTypeIdException(clsName, id);
         }
 
@@ -1248,7 +1216,9 @@ public class BinaryContext {
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName(int typeId) {
-        return affKeyFieldNames.get(typeId);
+        BinaryMetadata meta = metaHnd.metadata0(typeId);
+
+        return meta != null ? meta.affinityKeyFieldName() : null;
     }
 
     /**

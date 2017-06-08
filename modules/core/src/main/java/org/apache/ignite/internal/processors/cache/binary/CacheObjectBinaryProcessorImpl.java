@@ -393,7 +393,21 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (binaryCtx == null)
             return null;
 
-        return binaryCtx.affinityKeyFieldName(typeId(keyType));
+        int typeId = typeId(keyType);
+
+        return affinityField(typeId);
+    }
+
+    /**
+     * Get affinity field.
+     *
+     * @param typeId Type ID.
+     * @return Affinity field.
+     */
+    @Nullable private String affinityField(int typeId) {
+        BinaryMetadata meta = metadata0(typeId);
+
+        return meta != null ? meta.affinityKeyFieldName() : null;
     }
 
     /** {@inheritDoc} */
@@ -673,7 +687,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             else if (po instanceof BinaryObjectEx) {
                 int typeId = ((BinaryObjectEx)po).typeId();
 
-                String name = binaryCtx.affinityKeyFieldName(typeId);
+                String name = affinityField(typeId);
 
                 if (name != null)
                     return po.field(name);
