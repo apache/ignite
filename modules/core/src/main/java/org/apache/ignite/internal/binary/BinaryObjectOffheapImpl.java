@@ -424,7 +424,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (ldr == null)
             return deserialize();
 
-        return (T)reader(null, ldr, true).deserialize();
+        return (T)reader(null, ldr, true, false).deserialize();
     }
 
     /** {@inheritDoc} */
@@ -530,7 +530,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
-        return reader(rCtx, ctx.configuration().getClassLoader(), forUnmarshal);
+        return reader(rCtx, ctx.configuration().getClassLoader(), forUnmarshal, true);
     }
 
     /**
@@ -542,7 +542,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
-        boolean forUnmarshal) {
+        boolean forUnmarshal, boolean useCache) {
         BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
 
         stream.position(start);
@@ -550,7 +550,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         return new BinaryReaderExImpl(ctx,
             stream,
             ldr,
+            useCache,
             rCtx,
+            false,
             forUnmarshal);
     }
 }

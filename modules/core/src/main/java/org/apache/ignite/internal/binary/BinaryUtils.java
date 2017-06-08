@@ -1537,7 +1537,7 @@ public class BinaryUtils {
             return null;
         }
 
-        return doReadClass(in, ctx, ldr, typeId);
+        return doReadClass(in, ctx, ldr, typeId, true);
     }
 
     /**
@@ -1592,27 +1592,29 @@ public class BinaryUtils {
      * @param ctx Binary context.
      * @param ldr Class loader.
      * @param typeId Type id.
+     * @param useCache If true a classes cache will be used, false at otherwise.
      * @return Class object specified at the input stream.
      * @throws BinaryObjectException If failed.
      */
-    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
+    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId, boolean useCache)
         throws BinaryObjectException {
         Class cls;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, true).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, true, useCache).describedClass();
         else {
             String clsName = doReadClassName(in);
 
             try {
-                cls = U.forName(clsName, ldr);
+                cls = U.forName(clsName, ldr, useCache);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
             // forces registering of class by type id, at least locally
-            ctx.descriptorForClass(cls, true);
+            if (useCache)
+                ctx.descriptorForClass(cls, true);
         }
 
         return cls;
@@ -1625,17 +1627,19 @@ public class BinaryUtils {
      * @param typeId Type ID.
      * @param clsName Class name.
      * @param ldr Class loaded.
+     * @param deserialize Deserialize.
+     * @param useCache If true a classes cache will be used, false at otherwise.
      * @return Resovled class.
      */
     public static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
-        @Nullable ClassLoader ldr, boolean deserialize) {
+        @Nullable ClassLoader ldr, boolean deserialize, boolean useCache) {
         Class cls;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, deserialize).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, deserialize, useCache).describedClass();
         else {
             try {
-                cls = U.forName(clsName, ldr);
+                cls = U.forName(clsName, ldr, useCache);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);

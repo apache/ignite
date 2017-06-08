@@ -116,6 +116,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -608,14 +609,30 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param deserialize Deserialize.
+     */
+    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize) {
+        return descriptorForClass(cls, deserialize, true);
+    }
+
+    /**
+     * @param cls Class.
+     * @param deserialize Deserialize.
+     * @param useCache If true a classes cache will be used, false at otherwise.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
+    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean useCache)
         throws BinaryObjectException {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
+
+        if (desc != null && desc.registered())
+            return desc;
+        else
+            if (!useCache)
+                return createNewClassDescriptor(cls);
 
         if (desc == null)
             desc = registerClassDescriptor(cls, deserialize);
@@ -661,13 +678,16 @@ public class BinaryContext {
      * @param userType User type or not.
      * @param typeId Type ID.
      * @param ldr Class loader.
+     * @param deserialize Deserialize.
+     * @param useCache If true a classes cache will be used, false at otherwise.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
         boolean userType,
         int typeId,
         ClassLoader ldr,
-        boolean deserialize
+        boolean deserialize,
+        boolean useCache
     ) {
         assert typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
@@ -683,20 +703,36 @@ public class BinaryContext {
         Class cls;
 
         try {
-            cls = marshCtx.getClass(typeId, ldr);
+            if (useCache) {
+                cls = marshCtx.getClass(typeId, ldr);
 
-            desc = descByCls.get(cls);
+                desc = descByCls.get(cls);
+            }
+            else {
+                String clsName = marshCtx.getClassName(JAVA_ID, typeId);
+
+                if (clsName == null)
+                    throw new ClassNotFoundException("Unknown type ID: " + typeId);
+
+                cls = U.forName(clsName, ldr, false);
+
+                desc = descByCls.get(cls);
+
+                if (desc == null)
+                    return createNewClassDescriptor(cls);
+            }
+
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize, true)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize, true)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
@@ -710,6 +746,38 @@ public class BinaryContext {
         }
 
         return desc;
+    }
+
+    /**
+     * Creates descriptor, but not carry about registration.
+     *
+     * @param cls Class.
+     * @return Binary class descriptor.
+     */
+    @NotNull private BinaryClassDescriptor createNewClassDescriptor(Class cls) {
+        String clsName = cls.getName();
+
+        BinaryInternalMapper mapper = userTypeMapper(clsName);
+
+        int typeId = mapper.typeId(clsName);
+
+        String typeName = mapper.typeName(clsName);
+
+        BinarySerializer serializer = serializerForClass(cls);
+
+        String affFieldName = affinityFieldName(cls);
+
+        return new BinaryClassDescriptor(this,
+            cls,
+            true,
+            typeId,
+            typeName,
+            affFieldName,
+            mapper,
+            serializer,
+            true,
+            true
+        );
     }
 
     /**
