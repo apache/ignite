@@ -33,13 +33,19 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.nio.ByteBuffer;
+import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -297,7 +303,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQueryKeyTypeConversion() throws Exception {
+    public void testUnicastQueryKeyTypeConversionParameter() throws Exception {
         IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
         // Pass string argument to expression with integer
@@ -314,13 +320,43 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQueryAffinityKeyTypeConversion() throws Exception {
+    public void testUnicastQueryKeyTypeConversionConstant() throws Exception {
+        IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
+
+        // Use string within expression against integer key
+        List<List<?>> result = runQueryEnsureUnicast(cache,
+            new SqlFieldsQuery("select name, age from Person where _key = '5'"), 1);
+
+        Person person = cache.get(5);
+
+        assertEquals(1, result.size());
+
+        assertEquals(person.name, result.get(0).get(0));
+        assertEquals(person.age, result.get(0).get(1));
+    }
+
+    /** */
+    public void testUnicastQueryAffinityKeyTypeConversionParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         // Pass string argument to expression with integer
         List<List<?>> result = runQueryEnsureUnicast(cache,
             new SqlFieldsQuery("select id, name, duration from Call where personId=? order by id")
                 .setArgs("100"), 1);
+
+        assertEquals(2, result.size());
+
+        checkResultsRow(result, 0, 1, "caller1", 100);
+        checkResultsRow(result, 1, 2, "caller2", 200);
+    }
+
+    /** */
+    public void testUnicastQueryAffinityKeyTypeConversionConstant() throws Exception {
+        IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
+
+        // Use string within expression against integer key
+        List<List<?>> result = runQueryEnsureUnicast(cache,
+            new SqlFieldsQuery("select id, name, duration from Call where personId='100' order by id"), 1);
 
         assertEquals(2, result.size());
 
@@ -339,6 +375,106 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
             .setArgs(callKey, 100));
 
         assertEquals(cache.size() / 2, result.size());
+    }
+
+    /** */
+    public void testUuidKeyAsByteArrayParameter() throws Exception {
+        String cacheName = "uuidCache";
+
+        CacheConfiguration<UUID, UUID> ccfg = new CacheConfiguration<>(cacheName);
+
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+
+        ccfg.setIndexedTypes(UUID.class, UUID.class);
+
+        IgniteCache<UUID, UUID> cache = grid(NODE_CLIENT).createCache(ccfg);
+
+        try {
+            int count = 10;
+
+            UUID values[] = new UUID[count];
+
+            for (int i = 0; i < count; i++) {
+                UUID val = UUID.randomUUID();
+
+                cache.put(val, val);
+
+                values[i] = val;
+            }
+
+            for (UUID val : values) {
+                byte[] arr = convertUuidToByteArray(val);
+
+                List<List<?>> result = cache.query(new SqlFieldsQuery(
+                    "select _val from UUID where _key = ?").setArgs(arr)).getAll();
+
+                assertEquals(1, result.size());
+                assertEquals(val, result.get(0).get(0));
+            }
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /** */
+    public void testDateKeyAsTimestampParameter() throws Exception {
+        String cacheName = "dateCache";
+
+        CacheConfiguration<Date, Date> ccfg = new CacheConfiguration<>(cacheName);
+
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+
+        ccfg.setIndexedTypes(Date.class, Date.class);
+
+        IgniteCache<Date, Date> cache = grid(NODE_CLIENT).createCache(ccfg);
+
+        try {
+            int count = 30;
+
+            Date values[] = new Date[count];
+
+            DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+            for (int i = 0; i < count; i++) {
+                Date val = dateFormat.parse(String.format("%02d/06/2017", i + 1));
+
+                cache.put(val, val);
+
+                values[i] = val;
+            }
+
+            for (Date val : values) {
+                Timestamp ts = new Timestamp(val.getTime());
+
+                List<List<?>> result = cache.query(new SqlFieldsQuery(
+                    "select _val from Date where _key = ?").setArgs(ts)).getAll();
+
+                assertEquals(1, result.size());
+                assertEquals(val, result.get(0).get(0));
+            }
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * Convert UUID to byte[].
+     *
+     * @param val UUID to convert.
+     * @return Result.
+     */
+    private byte[] convertUuidToByteArray(UUID val) {
+        assert val != null;
+
+        ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+
+        bb.putLong(val.getMostSignificantBits());
+
+        bb.putLong(val.getLeastSignificantBits());
+
+        return bb.array();
     }
 
     /** */

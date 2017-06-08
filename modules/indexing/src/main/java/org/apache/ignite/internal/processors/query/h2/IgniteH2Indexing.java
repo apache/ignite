@@ -1362,7 +1362,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     List<Integer> cacheIds = new ArrayList<>(caches0);
 
                     checkCacheIndexSegmentation(cacheIds);
-    
+
                     twoStepQry.cacheIds(cacheIds);
                     twoStepQry.local(qry.isLocal());
                 }
@@ -2312,12 +2312,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridH2RowDescriptor desc = dataTable(partInfo.cacheName(),
                 partInfo.tableName()).rowDescriptor();
 
-        Class<?> cls = partInfo.affinityKey() ?
-            desc.type().fields().get(desc.type().affinityKey()) :
-            desc.type().keyClass();
-
         Object param = H2Utils.convert(params[partInfo.paramIdx()],
-                desc, cls, partInfo.dataType());
+                desc, partInfo.dataType());
 
         return kernalContext().affinity().partition(partInfo.cacheName(), param);
     }

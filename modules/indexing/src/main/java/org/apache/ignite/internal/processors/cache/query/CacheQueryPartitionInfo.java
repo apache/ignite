@@ -48,33 +48,27 @@ public class CacheQueryPartitionInfo {
     private final String tableName;
 
     /** */
-    private final boolean affinityKey;
+    private final int dataType;
 
     /** */
     private final int paramIdx;
-
-    /** */
-    private final int dataType;
 
     /**
      * @param partId Partition id, or -1 if parameter binding required.
      * @param cacheName Cache name required for partition calculation.
      * @param tableName Table name required for proper type conversion.
-     * @param affinityKey Flag indicating if query parameter is affinity key (otherwise, key).
-     * @param paramIdx Query parameter index required for partition calculation.
      * @param dataType Required data type id for the query parameter.
+     * @param paramIdx Query parameter index required for partition calculation.
      */
-    public CacheQueryPartitionInfo(int partId, String cacheName, String tableName,
-        boolean affinityKey, int paramIdx, int dataType) {
+    public CacheQueryPartitionInfo(int partId, String cacheName, String tableName, int dataType, int paramIdx) {
         // In case partition is not known, both cacheName and tableName must be provided.
         assert (partId >= 0) ^ ((cacheName != null) && (tableName != null));
 
         this.partId = partId;
         this.cacheName = cacheName;
         this.tableName = tableName;
-        this.affinityKey = affinityKey;
-        this.paramIdx = paramIdx;
         this.dataType = dataType;
+        this.paramIdx = paramIdx;
     }
 
     /**
@@ -99,11 +93,10 @@ public class CacheQueryPartitionInfo {
     }
 
     /**
-     * @return {@code true}, if query parameter must be bound to affinity key.
-     *         otherwise, query parameter must be bound to key.
+     * @return Required data type for the query parameter.
      */
-    public boolean affinityKey() {
-        return affinityKey;
+    public int dataType() {
+        return dataType;
     }
 
     /**
@@ -113,19 +106,11 @@ public class CacheQueryPartitionInfo {
         return paramIdx;
     }
 
-    /**
-     * @return Required data type for the query parameter.
-     */
-    public int dataType() {
-        return dataType;
-    }
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return partId ^ paramIdx ^ dataType ^
+        return partId ^ dataType ^ paramIdx ^
             (cacheName == null ? 0 : cacheName.hashCode()) ^
-            (tableName == null ? 0 : tableName.hashCode()) ^
-            (affinityKey ? 1 : 0);
+            (tableName == null ? 0 : tableName.hashCode());
     }
 
     /** {@inheritDoc} */
@@ -146,7 +131,6 @@ public class CacheQueryPartitionInfo {
 
         return other.cacheName.equals(cacheName) &&
             other.tableName.equals(tableName) &&
-            other.affinityKey == affinityKey &&
             other.dataType == dataType &&
             other.paramIdx == paramIdx;
     }
