@@ -878,6 +878,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
 
             Assert.AreEqual(945, res.Field);
+
+            // Binary mode.
+            var binRes = _grid1.GetCompute().WithKeepBinary().ExecuteJavaTask<IBinaryObject>(
+                EchoTask, EchoTypeBinarizable);
+
+            Assert.AreEqual(945, binRes.GetField<long>("Field"));
         }
 
         /// <summary>
@@ -1351,11 +1357,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
     class PlatformComputeBinarizable
     {
-        public int Field
-        {
-            get;
-            set;
-        }
+        public long Field { get; set; }
     }
 
     class PlatformComputeNetBinarizable : PlatformComputeBinarizable
