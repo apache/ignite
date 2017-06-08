@@ -110,23 +110,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Test insert.
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, id, name) " +
-                                               "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
+                                               "values (-1, 65500, 3, 'John'), (255, 128, 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
             Assert.AreEqual(2, res[0][0]);  // 2 affected rows
 
-            var foos = cache.OrderBy(x => x.Key.Lo).ToArray();
+            var foos = cache.OrderByDescending(x => x.Key.Lo).ToArray();
 
             Assert.AreEqual(2, foos.Length);
 
-            Assert.AreEqual(1, foos[0].Key.Hi);
-            Assert.AreEqual(2, foos[0].Key.Lo);
+            Assert.AreEqual(-1, foos[0].Key.Hi);
+            Assert.AreEqual(65500, foos[0].Key.Lo);
             Assert.AreEqual(3, foos[0].Value.Id);
             Assert.AreEqual("John", foos[0].Value.Name);
 
-            Assert.AreEqual(4, foos[1].Key.Hi);
-            Assert.AreEqual(5, foos[1].Key.Lo);
+            Assert.AreEqual(255, foos[1].Key.Hi);
+            Assert.AreEqual(128, foos[1].Key.Lo);
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
@@ -134,19 +134,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var binary = cache.Ignite.GetBinary();
             var binCache = cache.WithKeepBinary<IBinaryObject, IBinaryObject>();
 
-            Assert.IsTrue(cache.ContainsKey(new Key(2, 1)));
+            Assert.IsTrue(cache.ContainsKey(new Key(65500, -1)));
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
             Assert.IsTrue(binCache.ContainsKey(
-                binary.GetBuilder(typeof(Key)).SetField("hi", 1).SetField("lo", 2).Build()));
+                binary.GetBuilder(typeof(Key)).SetField("hi", -1).SetField("lo", 65500).Build()));
             Assert.IsTrue(binCache.ContainsKey(  // Fields are sorted.
-                binary.GetBuilder(typeof(Key)).SetField("lo", 2).SetField("hi", 1).Build()));
+                binary.GetBuilder(typeof(Key)).SetField("lo", 65500).SetField("hi", -1).Build()));
 
-            Assert.IsTrue(cache.ContainsKey(new Key(5, 4)));
+            Assert.IsTrue(cache.ContainsKey(new Key(128, 255)));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
             Assert.IsTrue(binCache.ContainsKey(
-                binary.GetBuilder(typeof(Key)).SetField("hi", 4).SetField("lo", 5).Build()));
+                binary.GetBuilder(typeof(Key)).SetField("hi", 255).SetField("lo", 128).Build()));
             Assert.IsTrue(binCache.ContainsKey(  // Fields are sorted.
-                binary.GetBuilder(typeof(Key)).SetField("lo", 5).SetField("hi", 4).Build()));
+                binary.GetBuilder(typeof(Key)).SetField("lo", 128).SetField("hi", 255).Build()));
         }
 
         /// <summary>
