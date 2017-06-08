@@ -190,9 +190,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition update counters.
      */
     @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId) {
-        if (partCntrs != null) {
+        if (partCntrs != null)
             return partCntrs.get(cacheId);
-        }
 
         return Collections.emptyMap();
     }

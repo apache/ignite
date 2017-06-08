@@ -339,6 +339,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     processSinglePartitionRequest(node, msg);
                 }
             });
+
+        cctx.io().addHandler(0, GridDhtPartitionsSingleRequest.class,
+            new MessageHandler<GridDhtPartitionsSingleRequest>() {
+                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
+                    processSinglePartitionRequest(node, msg);
+                }
+            });
     }
 
     /**

@@ -1819,6 +1819,34 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests scenario when coordinator leaves after node leaving.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAssignmentNodeLeftWithCoordinator() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        ccfg.setName(CACHE_NAME2);
+
+        ignite0.createCache(ccfg);
+
+        TestTcpDiscoverySpi discoSpi0 =
+            (TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi();
+        TestRecordingCommunicationSpi spi =
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+
+        startServer(1, 2);
+
+        discoSpi0.blockCustomEvent();
+
+        checkAffinity(2, new AffinityTopologyVersion(2, 0), false);
+
+        checkAffinity(2, new AffinityTopologyVersion(2, 1), true);
+    }
+
+    /**
      * @param cache Cache
      */
     private void cacheOperations(IgniteCache<Object, Object> cache) {
@@ -1939,7 +1967,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite node = grid(name);
 
-        assert  node != null;
+        assert node != null;
 
         return node;
     }
