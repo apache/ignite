@@ -195,10 +195,11 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testExecuteQueryMultipleResultSets() throws Exception {
-        if (!conn.getMetaData().supportsMultipleResultSets())
-            return;
+        assert !conn.getMetaData().supportsMultipleResultSets();
 
-        final String sqlText = "select * from test; select * from test";
+        fail("https://issues.apache.org/jira/browse/IGNITE-5456");
+
+        final String sqlText = "select 1; select 1";
 
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
@@ -406,18 +407,11 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.setEscapeProcessing(true);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setEscapeProcessing(true);
+            }
+        });
     }
 
     /**
