@@ -1278,6 +1278,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
      * @param templateName Template name.
+     * @param cacheGroup Cache group name.
      * @param affinityKey Affinity key column name.
      * @param atomicityMode Atomicity mode.
      * @param backups Backups.
@@ -1285,8 +1286,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String affinityKey,
-        @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists) throws IgniteCheckedException {
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheGroup,
+        String affinityKey, @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists)
+        throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups >= 0;
 
@@ -1306,6 +1308,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 templateName);
 
         ccfg.setName(QueryUtils.createTableCacheName(schemaName, entity.getTableName()));
+
+        if (!F.isEmpty(cacheGroup))
+            ccfg.setGroupName(cacheGroup);
 
         if (atomicityMode != null)
             ccfg.setAtomicityMode(atomicityMode);
