@@ -141,8 +141,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** */
     private IgniteInternalCache<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
 
-    /** */
-    private volatile UUID qryId;
+    private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
@@ -229,17 +228,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void startQuery() throws IgniteCheckedException {
-        if (qryId == null) {
+    private void startQuery(GridCacheContext cctx) throws IgniteCheckedException {
+        if (!qryIdMap.containsKey(cctx.cacheId())) {
             synchronized (this) {
-                if (qryId == null) {
-                    qryId = defaultDsCacheCtx.continuousQueries().executeInternalQuery(
-                        new DataStructuresEntryListener(),
-                        new DataStructuresEntryFilter(),
-                        defaultDsCacheCtx.isReplicated() && defaultDsCacheCtx.affinityNode(),
-                        false,
-                        false
-                    );
+                if (!qryIdMap.containsKey(cctx.cacheId())) {
+                    qryIdMap.put(cctx.cacheId(),
+                        defaultDsCacheCtx.continuousQueries().executeInternalQuery(
+                            new DataStructuresEntryListener(),
+                            new DataStructuresEntryFilter(),
+                            defaultDsCacheCtx.isReplicated() && defaultDsCacheCtx.affinityNode(),
+                            false,
+                            false
+                        ));
                 }
             }
         }
@@ -263,8 +263,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             initLatch.countDown();
         }
 
-        if (qryId != null)
-            defaultDsCacheCtx.continuousQueries().cancelInternalQuery(qryId);
+        synchronized (this) {
+            for (UUID qryId : qryIdMap.values())
+                defaultDsCacheCtx.continuousQueries().cancelInternalQuery(qryId);
+
+            qryIdMap.clear();
+        }
     }
 
     /** {@inheritDoc} */
@@ -277,7 +281,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         this.initLatch = new CountDownLatch(1);
 
-        this.qryId = null;
+        synchronized (this) {
+            qryIdMap.clear();
+        }
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
@@ -503,10 +509,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             cfg = defaultAtomicCfg;
         }
 
-        final String groupName = cfg.getGroupName();
-
-        startQuery();
-
         // -----
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(dsInfo.name);
@@ -528,6 +530,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             return null;
         }
+
+        startQuery(cache.context());
 
         assert cache.context().groupId() == CU.cacheId(cfg.getGroupName() != null ? cfg.getGroupName() : CU.ATOMICS_CACHE_NAME);
 
