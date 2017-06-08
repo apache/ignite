@@ -153,9 +153,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private IgniteInternalCache<DataStructureDefinitionKey, DataStructureInfo> utilityCache;
 
     /** */
-    private IgniteInternalCache<DataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
-
-    /** */
     private volatile UUID qryId;
 
     /** Listener. */
@@ -222,8 +219,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         utilityCache = ctx.cache().utilityCache();
-
-        utilityDataCache = ctx.cache().utilityCache();
 
         assert utilityCache != null;
 
@@ -581,15 +576,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         DataStructureInfo cached = utilityCache.get(dsKey);
 
-        if (!create && cached == null)
-            return null;
-
         if (cached != null) {
             IgniteCheckedException err = cached.validate(dsInfo, create);
 
             if (err != null)
                 throw err;
-        }
+        } else if (!create)
+            return null;
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(dsInfo.name);
 
@@ -980,6 +973,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private String compatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
+        IgniteInternalCache<DataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache =
+            ctx.cache().utilityCache();
+
         List<CacheCollectionInfo> caches = utilityDataCache.context().affinityNode() ?
             utilityDataCache.localPeek(DATA_STRUCTURES_CACHE_KEY, null, null) :
             utilityDataCache.get(DATA_STRUCTURES_CACHE_KEY);
