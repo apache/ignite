@@ -28,4 +28,6 @@ public interface GridCacheInternalKey extends GridCacheInternal {
      * @return Name of cache data structure.
      */
     public String name();
+
+    public String groupName();
 }
