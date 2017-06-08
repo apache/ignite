@@ -877,7 +877,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
 
-            Assert.AreEqual(1, res.Field);
+            Assert.AreEqual(945, res.Field);
         }
 
         /// <summary>
