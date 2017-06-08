@@ -610,6 +610,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_PDS_SKIP_CRC = "IGNITE_PDS_SKIP_CRC";
 
+    /** */
+    public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
+
     /**
      * WAL rebalance threshold.
      */

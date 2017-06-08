@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -45,6 +46,9 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
 
+    /** */
+    private Collection<String> restartingCaches;
+
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
@@ -54,7 +58,9 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
         Map<Integer, CacheGroupData> cacheGrps,
-        Map<String, Map<UUID, Boolean>> clientNodesMap) {
+        Map<String, Map<UUID, Boolean>> clientNodesMap,
+        Collection<String> restartingCaches
+    ) {
         assert caches != null;
         assert templates != null;
         assert cacheGrps != null;
@@ -64,6 +70,7 @@ class CacheNodeCommonDiscoveryData implements Serializable {
         this.templates = templates;
         this.cacheGrps = cacheGrps;
         this.clientNodesMap = clientNodesMap;
+        this.restartingCaches = restartingCaches;
     }
 
     /**
@@ -92,6 +99,13 @@ class CacheNodeCommonDiscoveryData implements Serializable {
      */
     Map<String, Map<UUID, Boolean>> clientNodesMap() {
         return clientNodesMap;
+    }
+
+    /**
+     * @return A collection of restarting cache names.
+     */
+    Collection<String> restartingCaches() {
+        return restartingCaches;
     }
 
     /** {@inheritDoc} */

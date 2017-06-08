@@ -156,8 +156,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         timeLog = ctx.logger(GridDhtPartitionsExchangeFuture.EXCHANGE_LOG);
 
         locParts = new AtomicReferenceArray<>(grp.affinityFunction().partitions());
-
-        part2node = new HashMap<>(grp.affinityFunction().partitions(), 1.0f);
     }
 
     /** {@inheritDoc} */
@@ -1138,10 +1136,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             node2part = partMap;
 
-            AffinityTopologyVersion affVer = ctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion affVer = grp.affinity().lastVersion();
 
             if (diffFromAffinityVer.compareTo(affVer) <= 0) {
-                AffinityAssignment affAssignment = ctx.affinity().assignment(affVer);
+                AffinityAssignment affAssignment = grp.affinity().cachedAffinity(affVer);
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : partMap.entrySet()) {
                     for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
@@ -1370,7 +1368,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             AffinityTopologyVersion affVer = grp.affinity().lastVersion();
 
             if (affVer.compareTo(diffFromAffinityVer) >= 0) {
-                AffinityAssignment affAssignment = grp.affinity().assignment(affVer);
+                AffinityAssignment affAssignment = grp.affinity().cachedAffinity(affVer);
 
                 // Add new mappings.
                 for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
@@ -1460,7 +1458,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return;
 
         if (FAST_DIFF_REBUILD) {
-            Collection<UUID> affNodes = F.nodeIds(ctx.discovery().cacheAffinityNodes(cctx.name(), affAssignment.topologyVersion()));
+            Collection<UUID> affNodes = F.nodeIds(ctx.discovery().cacheGroupAffinityNodes(grp.groupId(),
+                affAssignment.topologyVersion()));
 
             for (Map.Entry<Integer, Set<UUID>> e : diffFromAffinity.entrySet()) {
                 int p = e.getKey();
@@ -1891,17 +1890,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             map.put(p, state);
 
             if (state == MOVING || state == OWNING) {
-                    AffinityAssignment assignment = grp.affinity().assignment(diffFromAffinityVer);
+                AffinityAssignment assignment = grp.affinity().cachedAffinity(diffFromAffinityVer);
 
-                    if (!assignment.getIds(p).contains(ctx.localNodeId())) {
-                        Set<UUID> diffIds = diffFromAffinity.get(p);
+                if (!assignment.getIds(p).contains(ctx.localNodeId())) {
+                    Set<UUID> diffIds = diffFromAffinity.get(p);
 
-                        if (diffIds == null)
-                            diffFromAffinity.put(p, diffIds = U.newHashSet(3));
+                    if (diffIds == null)
+                        diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
-                        diffIds.add(ctx.localNodeId());
-                    }
+                    diffIds.add(ctx.localNodeId());
                 }
+            }
         }
 
         return updateSeq;

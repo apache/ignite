@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,6 +72,9 @@ class ClusterCachesInfo {
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
+
+    /** Caches currently being restarted. */
+    private final Collection<String> restartingCaches = new HashSet<>();
 
     /** */
     private final IgniteLogger log;
@@ -161,6 +165,7 @@ class ClusterCachesInfo {
         joinDiscoData = null;
         gridData = null;
     }
+
     /**
      * Checks that remote caches has configuration compatible with the local.
      *
@@ -324,6 +329,7 @@ class ClusterCachesInfo {
             AffinityTopologyVersion waitTopVer = null;
 
             if (req.start()) {
+                // Starting a new cache.
                 if (desc == null) {
                     String conflictErr = checkCacheConflict(req.startCacheConfiguration());
 
@@ -376,6 +382,8 @@ class ClusterCachesInfo {
                             req.schema());
 
                         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
+
+                        restartingCaches.remove(ccfg.getName());
 
                         assert old == null;
 
@@ -477,6 +485,9 @@ class ClusterCachesInfo {
 
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
+                    if (req.restart())
+                        restartingCaches.add(req.cacheName());
+
                     assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
                     ctx.discovery().removeCacheFilter(req.cacheName());
@@ -570,6 +581,20 @@ class ClusterCachesInfo {
     void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         if (!ctx.isDaemon())
             dataBag.addJoiningNodeData(CACHE_PROC.ordinal(), joinDiscoveryData());
+    }
+
+    /**
+     * @return {@code True} if there are currently restarting caches.
+     */
+    boolean hasRestartingCaches() {
+        return !F.isEmpty(restartingCaches);
+    }
+
+    /**
+     * @return Collection of currently restarting caches.
+     */
+    Collection<String> restartingCaches() {
+        return restartingCaches;
     }
 
     /**
@@ -759,10 +784,13 @@ class ClusterCachesInfo {
             templates.put(desc.cacheName(), cacheData);
         }
 
+        Collection<String> restarting = new HashSet<>(restartingCaches);
+
         return new CacheNodeCommonDiscoveryData(caches,
             templates,
             cacheGrps,
-            ctx.discovery().clientNodesMap());
+            ctx.discovery().clientNodesMap(),
+            restarting);
     }
 
     /**
@@ -1380,7 +1408,7 @@ class ClusterCachesInfo {
     /**
      *
      */
-    static class GridData {
+    private static class GridData {
         /** */
         private final CacheNodeCommonDiscoveryData gridData;
 

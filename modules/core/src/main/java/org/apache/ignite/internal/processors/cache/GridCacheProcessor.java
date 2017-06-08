@@ -113,7 +113,6 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -171,7 +170,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
-    private final boolean START_CLIENT_CACHES =
+    private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
 
     /** Shared cache context. */
@@ -203,9 +202,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private ClusterCachesInfo cachesInfo;
-
-    /** Restarting caches */
-    private final Set<String> restartingCaches = new GridConcurrentHashSet<>();
 
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
@@ -927,6 +923,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         });
 
+        // Avoid iterator creation.
+        //noinspection ForLoopReplaceableByForEach
         for (int i = 0, size = syncFuts.size(); i < size; i++)
             syncFuts.get(i).get();
 
@@ -2117,7 +2115,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (exchActions != null && exchActions.systemCacheStarting())
+        if (exchActions != null && exchActions.systemCachesStarting())
             ctx.dataStructures().restoreStructuresState(ctx);
 
         if (exchActions != null && (err == null || forceClose)) {
@@ -2327,7 +2325,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if need locally start all existing caches on client node start.
      */
     private boolean startAllCachesOnClientStart() {
-        return START_CLIENT_CACHES && ctx.clientNode();
+        return startClientCaches && ctx.clientNode();
     }
 
     /** {@inheritDoc} */
@@ -2463,10 +2461,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private CacheConfiguration getOrCreateConfigFromTemplate(String cacheName) throws IgniteCheckedException {
         CacheConfiguration cfg = getConfigFromTemplate(cacheName);
 
-        if (cfg != null)
-            return cfg;
-        else
-            return new CacheConfiguration(cacheName);
+        return cfg != null ? cfg : new CacheConfiguration(cacheName);
     }
 
     /**
@@ -3004,7 +2999,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
-        return validateHashIdResolvers(node);
+        IgniteNodeValidationResult res = validateHashIdResolvers(node);
+
+        if (res == null)
+            res = validateRestartingCaches(node);
+
+        return res;
+    }
+
+    /**
+     * @param node Joining node to validate.
+     * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
+     */
+    private IgniteNodeValidationResult validateRestartingCaches(ClusterNode node) {
+        if (cachesInfo.hasRestartingCaches()) {
+            String msg = "Joining node during caches restart is not allowed [joiningNodeId=" + node.id() +
+                ", restartingCaches=" + new HashSet<String>(cachesInfo.restartingCaches()) + ']';
+
+            return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
+
+        return null;
     }
 
     /**
@@ -3013,12 +3028,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
-            if (restartingCaches.size() > 0) {
-                String msg = "Joining server node during cache restarting is not allowed";
-
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
-            }
-
             for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 

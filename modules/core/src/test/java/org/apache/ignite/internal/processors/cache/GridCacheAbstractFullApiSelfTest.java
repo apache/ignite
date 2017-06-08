@@ -925,7 +925,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         final Set<String> c = new HashSet<>();
 
         c.add("key1");
-        c.add(null);
+//        c.add(null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
