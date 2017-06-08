@@ -33,6 +33,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
+#include "ignite/common/fixed_size_array.h"
 #include "ignite/ignition.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/binary/binary_object.h"
@@ -381,11 +382,11 @@ struct QueriesTestSuiteFixture
     {
         SQLCHAR insertReq[] = "INSERT "
             "INTO TestType(_key, i8Field, i16Field, i32Field, strField, floatField, doubleField, boolField, dateField, "
-            "timeField, timestampField, i8ArrayField) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "timeField, timestampField, i8ArrayField) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         SQLCHAR mergeReq[] = "MERGE "
             "INTO TestType(_key, i8Field, i16Field, i32Field, strField, floatField, doubleField, boolField, dateField, "
-            "timeField, timestampField, i8ArrayField) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "timeField, timestampField, i8ArrayField) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         SQLRETURN ret;
 
@@ -394,41 +395,147 @@ struct QueriesTestSuiteFixture
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        int64_t key = 0;
-        char strField[1024] = { 0 };
-        SQLLEN strFieldLen = 0;
+        FixedSizeArray<int64_t> keys(recordsNum);
+        FixedSizeArray<int8_t> i8Fields(recordsNum);
+        FixedSizeArray<int16_t> i16Fields(recordsNum);
+        FixedSizeArray<int32_t> i32Fields(recordsNum);
+        FixedSizeArray<char> strFields(recordsNum * 1024);
+        FixedSizeArray<float> floatFields(recordsNum);
+        FixedSizeArray<double> doubleFields(recordsNum);
+        FixedSizeArray<bool> boolFields(recordsNum);
+        FixedSizeArray<SQL_DATE_STRUCT> dateFields(recordsNum);
+        FixedSizeArray<SQL_TIME_STRUCT> timeFields(recordsNum);
+        FixedSizeArray<SQL_TIMESTAMP_STRUCT> timestampFields(recordsNum);
+        FixedSizeArray<int8_t> i8ArrayFields(recordsNum * 42);
 
-        // Binding parameters.
-        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+        FixedSizeArray<SQLLEN> strFieldsLen(recordsNum);
+        FixedSizeArray<SQLLEN> i8ArrayFieldsLen(recordsNum);
 
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        BOOST_CHECKPOINT("Filling param data");
 
-        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, sizeof(strField),
-            sizeof(strField), &strField, sizeof(strField), &strFieldLen);
-
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-        // Inserting values.
-        for (SQLSMALLINT i = 0; i < recordsNum; ++i)
+        // Feeling buffers
+        for (int i = 0; i < recordsNum; ++i)
         {
-            key = i + 1;
+            keys[i] = i;
+            i8Fields[i] = i * 8;
+            i16Fields[i] = i * 16;
+            i32Fields[i] = i * 32;
+
             std::string val = getTestString(i);
+            strncpy(strFields.GetData() + 1024 * i, val.c_str(), 1023);
+            strFieldsLen[i] = val.size();
 
-            strncpy(strField, val.c_str(), sizeof(strField));
-            strFieldLen = SQL_NTS;
+            floatFields[i] = i * 0.5f;
+            doubleFields[i] = i * 0.25f;
+            boolFields[i] = i % 2 == 0;
 
-            ret = SQLExecute(stmt);
+            dateFields[i].year = 2017 + i / 365;
+            dateFields[i].month = ((i / 28) % 12) + 1;
+            dateFields[i].day = (i % 28) + 1;
 
-            if (!SQL_SUCCEEDED(ret))
-                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            timeFields[i].hour = (i / 3600) % 24;
+            timeFields[i].minute = (i / 60) % 60;
+            timeFields[i].second = i % 60;
 
-            ret = SQLMoreResults(stmt);
+            timestampFields[i].year = dateFields[i].year;
+            timestampFields[i].month = dateFields[i].month;
+            timestampFields[i].day = dateFields[i].day;
+            timestampFields[i].hour = timeFields[i].hour;
+            timestampFields[i].minute = timeFields[i].minute;
+            timestampFields[i].second = timeFields[i].second;
+            timestampFields[i].fraction = (i * 914873) % 1000000000;
 
-            if (ret != SQL_NO_DATA)
-                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            for (int j = 0; j < 42; ++j)
+                i8ArrayFields[i * 42 + j] = i * 42 + j;
+            i8ArrayFieldsLen[i] = 42;
         }
+
+        BOOST_CHECKPOINT("Binding keys");
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, keys.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i8Fields");
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_STINYINT, SQL_TINYINT, 0, 0, i8Fields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i16Fields");
+        ret = SQLBindParameter(stmt, 3, SQL_PARAM_INPUT, SQL_C_SSHORT, SQL_SMALLINT, 0, 0, i16Fields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i32Fields");
+        ret = SQLBindParameter(stmt, 4, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, i32Fields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding strFields");
+        ret = SQLBindParameter(stmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, strFields.GetData(), 1024, strFieldsLen.GetData());
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding floatFields");
+        ret = SQLBindParameter(stmt, 6, SQL_PARAM_INPUT, SQL_C_FLOAT, SQL_FLOAT, 0, 0, floatFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding doubleFields");
+        ret = SQLBindParameter(stmt, 7, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, doubleFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding boolFields");
+        ret = SQLBindParameter(stmt, 8, SQL_PARAM_INPUT, SQL_C_BIT, SQL_BIT, 0, 0, boolFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding dateFields");
+        ret = SQLBindParameter(stmt, 9, SQL_PARAM_INPUT, SQL_C_DATE, SQL_DATE, 0, 0, dateFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding timeFields");
+        ret = SQLBindParameter(stmt, 10, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, 0, 0, timeFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding timestampFields");
+        ret = SQLBindParameter(stmt, 11, SQL_PARAM_INPUT, SQL_C_TIMESTAMP, SQL_TIMESTAMP, 0, 0, timestampFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i8ArrayFields");
+        ret = SQLBindParameter(stmt, 12, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, 42, 0, i8ArrayFields.GetData(), 42, i8ArrayFieldsLen.GetData());
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(recordsNum), 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         // Resetting parameters.
         ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
@@ -1369,14 +1476,14 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
     BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
 }
 
-BOOST_AUTO_TEST_CASE(TestInsertBatchSelect)
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect100)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
     // Inserting values.
-    InsertTestStrings(recordsNum);
+    InsertTestBatch(recordsNum);
 
     int64_t key = 0;
     char strField[1024] = { 0 };
