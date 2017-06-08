@@ -162,15 +162,11 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeQuery(sqlText);
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.executeQuery(sqlText);
+            }
+        });
     }
 
     /**
@@ -225,15 +221,11 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeUpdate(sqlText);
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.executeUpdate(sqlText);
+            }
+        });
     }
 
     /**
@@ -320,28 +312,18 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.getMaxFieldSize();
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getMaxFieldSize();
+            }
+        });
 
         // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.setMaxFieldSize(100);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setMaxFieldSize(100);
+            }
+        });
     }
 
     /**
@@ -380,28 +362,18 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.getMaxRows();
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getMaxRows();
+            }
+        });
 
         // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.setMaxRows(maxRows);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setMaxRows(maxRows);
+            }
+        });
     }
 
     /**
@@ -478,28 +450,18 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.getQueryTimeout();
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getQueryTimeout();
+            }
+        });
 
         // Call on a closed statement
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.setQueryTimeout(timeout);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setQueryTimeout(timeout);
+            }
+        });
     }
 
     /**
@@ -539,29 +501,17 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.getQueryTimeout();
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getQueryTimeout();
+            }
+        });
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.setQueryTimeout(10);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setQueryTimeout(10);
+            }
+        });
     }
 
     /**
@@ -574,29 +524,17 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.getWarnings();
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getWarnings();
+            }
+        });
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.clearWarnings();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.clearWarnings();
+            }
+        });
     }
 
     /**
@@ -611,17 +549,11 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.setCursorName("test");
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setCursorName("test");
+            }
+        });
     }
 
     /**
@@ -640,17 +572,11 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.getMoreResults();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getMoreResults();
+            }
+        });
     }
 
     /**
@@ -675,17 +601,11 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+            }
+        });
     }
 
     /**
@@ -733,29 +653,17 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.setFetchDirection(-1);
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setFetchDirection(-1);
+            }
+        });
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.getFetchDirection();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed"
-        );
+        checkStatementClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.getFetchDirection();
+            }
+        });
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -38,6 +39,34 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, SQLFeatureNotSupportedException.class, null);
+    }
+
+    /**
+     * @param r Runnable to check support.
+     */
+    protected void checkStatementClosed(final RunnableX r) {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
+
+                    return null;
+                }
+            }, SQLException.class, "Statement is closed");
+    }
+
+    /**
+     * @param r Runnable to check support.
+     */
+    protected void checkResultSetClosed(final RunnableX r) {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
+
+                    return null;
+                }
+            }, SQLException.class, "Result set is closed");
     }
 
     /**

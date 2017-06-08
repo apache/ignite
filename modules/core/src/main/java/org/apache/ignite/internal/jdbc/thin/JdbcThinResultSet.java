@@ -202,6 +202,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean wasNull() throws SQLException {
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
         return wasNull;
     }
 
@@ -227,6 +230,9 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(int colIdx) throws SQLException {
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
         try {
             Object val = curRow.get(colIdx - 1);
 

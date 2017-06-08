@@ -35,6 +35,7 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.GregorianCalendar;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1242,6 +1243,194 @@ public class JdbcThinResultSetFullApiSelfTest extends JdbcThinAbstractSelfTest {
         checkNotSupported(new RunnableX() {
             @Override public void run() throws Exception {
                 rs.moveToInsertRow();
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExceptionOnClosedResultSet() throws Exception {
+        final ResultSet rs = stmt.executeQuery(SQL);
+
+        rs.close();
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBoolean(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBoolean("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getByte(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getByte("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getShort(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getShort("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getInt(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getInt("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getLong(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getLong("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getFloat(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getFloat("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDouble(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDouble("id");
+            }
+        });
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getString(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getString("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBytes(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getBytes("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate(1, new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getDate("id", new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime(1, new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTime("id", new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp(1);
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp(1, new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getTimestamp("id", new GregorianCalendar());
             }
         });
     }
