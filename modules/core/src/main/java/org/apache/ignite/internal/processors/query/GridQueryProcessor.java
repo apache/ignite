@@ -1279,14 +1279,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param entity Entity to create table from.
      * @param templateName Template name.
      * @param cacheGroup Cache group name.
+     * @param affinityKey Affinity key column name.
      * @param atomicityMode Atomicity mode.
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName,
-                                   String cacheGroup, @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists) throws IgniteCheckedException {
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheGroup,
+        String affinityKey, @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists)
+        throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups >= 0;
 
@@ -1318,6 +1320,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
+
+        if (affinityKey != null) {
+            assert entity.getFields().containsKey(affinityKey) && entity.getKeyFields().contains(affinityKey);
+
+            ccfg.setAffinityMapper(new DynamicTableAffinityKeyMapper(entity.getKeyType(), affinityKey));
+        }
 
         boolean res;
 
