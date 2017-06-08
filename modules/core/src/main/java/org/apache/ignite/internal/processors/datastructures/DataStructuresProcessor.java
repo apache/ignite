@@ -604,6 +604,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         utilityCache.put(dsKey, dsInfo);
                     else {
                         IgniteCheckedException err = oldInfo.validate(dsInfo, true);
+
                         if (err != null)
                             throw err;
                     }
@@ -1056,33 +1057,27 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final DataStructureDefinitionKey dsKey = new DataStructureDefinitionKey(dsInfo.name);
 
-        DataStructureInfo cachedDsInfo = utilityCache.get(dsKey);
+        DataStructureInfo cached = utilityCache.get(dsKey);
 
-        if (!create && cachedDsInfo == null)
-            return null;
-
-        if (cachedDsInfo != null) {
-            IgniteCheckedException err = cachedDsInfo.validate(dsInfo, create);
+        if (cached != null) {
+            IgniteCheckedException err = cached.validate(dsInfo, create);
 
             if (err != null)
                 throw err;
-        }
 
-        if (!create) {
-            assert cachedDsInfo.info instanceof CollectionInfo : cachedDsInfo.info;
+            assert cached.info instanceof CollectionInfo : cached.info;
 
-            String cacheName = ((CollectionInfo)cachedDsInfo.info).cacheName;
+            String cacheName = ((CollectionInfo)cached.info).cacheName;
 
             GridCacheContext cacheCtx = ctx.cache().getOrStartCache(cacheName).context();
 
             return c.applyx(cacheCtx);
-        }
+        } else if (!create)
+            return null;
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
                 try (GridNearTxLocal tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    CollectionInfo colInfo = (CollectionInfo)dsInfo.info;
-
                     DataStructureInfo oldInfo = utilityCache.get(dsKey);
 
                     if (oldInfo == null)
@@ -1092,7 +1087,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                         if (err != null)
                             throw err;
+
+
                     }
+
+                    CollectionInfo colInfo = (CollectionInfo)dsInfo.info;
 
                     final GridCacheContext cacheCtx = ctx.cache().internalCache(colInfo.cacheName).context();
 
