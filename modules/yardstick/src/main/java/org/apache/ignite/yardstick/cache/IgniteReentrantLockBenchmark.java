@@ -1,10 +1,11 @@
 package org.apache.ignite.yardstick.cache;
 
+import java.io.Closeable;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
-import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that does put and get operations protected by ignite reentrant lock.
@@ -14,53 +15,35 @@ public class IgniteReentrantLockBenchmark extends IgniteCacheAbstractBenchmark<I
     private static final String CACHE_NAME = "atomic";
 
     /** */
-    private static final int PRE_CREATED_REENTRANT_LOCK_COUNT = 1000;
+    private static final int MAX_BUF_SIZE = 10;
 
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
+    /** */
+    private static final String BUFFER_KEY = "cycleBuffer";
 
-        for (int i = 0; i < PRE_CREATED_REENTRANT_LOCK_COUNT; i++)
-            ignite().reentrantLock(CACHE_NAME + "EXTRA" + i, true, false, true);
-    }
+    /** */
+    private static final String COUNTER_KEY = "counter";
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final ThreadRange r = threadRange();
-
-        IgniteCache<Integer, Integer> cache = cache();
-
-        int key = r.nextRandom();
-
-        IgniteLock lock = null;
-
-        boolean locked = false;
-
-        while (!locked) {
-            try {
-                lock = ignite().reentrantLock(CACHE_NAME + key, true, false, true);
-
-                locked = lock.tryLock();
-            } catch (Exception e) {
-                // no-op
-            }
+        Queue<Closeable> buf = (Queue<Closeable>)ctx.get(BUFFER_KEY);
+        if (buf == null) {
+            buf = new LinkedList<>();
+            ctx.put(BUFFER_KEY, buf);
+        }
+        if(buf.size() == MAX_BUF_SIZE) {
+            Closeable closeable = buf.poll();
+            closeable.close();
         }
 
-        try {
-            Integer val = cache.get(key);
+        Integer cntr = (Integer)ctx.get(COUNTER_KEY);
+        if (cntr == null)
+            cntr = 0;
 
-            val = val == null ? 0 : val+1;
+        IgniteLock lock = ignite().reentrantLock(Thread.currentThread().getName() + cntr++, true, false, true);
 
-            cache.put(key, val);
-        }
-        finally {
-            try {
-                lock.unlock();
-                lock.close();
-            } catch (IgniteException e) {
-                // no-op
-            }
-        }
+        buf.offer(lock);
+
+        ctx.put(COUNTER_KEY, cntr);
 
         return true;
     }
