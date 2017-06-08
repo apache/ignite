@@ -24,7 +24,7 @@ import java.util.Arrays;
  */
 public class CacheState {
     /** */
-    private short[] parts;
+    private int[] parts;
 
     /** */
     private long[] vals;
@@ -36,7 +36,7 @@ public class CacheState {
      * @param partsCnt Partitions count.
      */
     public CacheState(int partsCnt) {
-        parts = new short[partsCnt];
+        parts = new int[partsCnt];
         vals = new long[partsCnt * 2];
     }
 
@@ -56,7 +56,7 @@ public class CacheState {
                     ", cur=" + partId + ']');
         }
 
-        parts[idx] = (short)partId;
+        parts[idx] = partId;
         vals[2 * idx] = size;
         vals[2 * idx + 1] = cntr;
 
@@ -92,7 +92,7 @@ public class CacheState {
      * @return Partition ID.
      */
     public int partitionByIndex(int idx) {
-        return parts[idx] & 0xFFFF;
+        return parts[idx];
     }
 
     /**
@@ -123,7 +123,7 @@ public class CacheState {
      * @return Non-negative index of partition if found or negative value if not found.
      */
     private int indexByPartition(int partId) {
-        return Arrays.binarySearch(parts, 0, idx, (short)partId);
+        return Arrays.binarySearch(parts, 0, idx, partId);
     }
 
     /** {@inheritDoc} */
