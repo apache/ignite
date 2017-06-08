@@ -1977,8 +1977,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (reqs != null) {
             for (DynamicCacheChangeRequest req : reqs) {
+                if (req.stop() && GridCacheUtils.isSystemCache(req.cacheName()))
+                    ctx.service().removeDiscoveryEventListener();
+
                 if (req.start() && GridCacheUtils.isSystemCache(req.cacheName())) {
                     ctx.dataStructures().restoreStructuresState(ctx);
+
+                    if (!ctx.config().isDaemon()) {
+                        try {
+                            ctx.service().addDiscoveryEventListener();
+                            ctx.cacheObjects().onUtilityCacheStarted();
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.warn(log, "Error during handling utility cache start", e);
+                        }
+                    }
 
                     break;
                 }
