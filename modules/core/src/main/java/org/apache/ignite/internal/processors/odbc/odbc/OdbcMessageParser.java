@@ -102,7 +102,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 int rowNum = reader.readInt();
                 boolean last = reader.readBoolean();
 
-                Object[][] params = new Object[paramRowLen][];
+                Object[][] params = new Object[rowNum][];
 
                 for (int i = 0; i < rowNum; ++i)
                     params[i] = readParameterRow(reader, paramRowLen);
@@ -118,7 +118,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 int rowNum = reader.readInt();
                 boolean last = reader.readBoolean();
 
-                Object[][] params = new Object[paramRowLen][rowNum];
+                Object[][] params = new Object[rowNum][];
 
                 for (int i = 0; i < rowNum; ++i)
                     params[i] = readParameterRow(reader, paramRowLen);

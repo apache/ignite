@@ -169,17 +169,17 @@ namespace ignite
 
                 writer.WriteInt32(rowLen);
 
+                SqlUlen intervalEnd = std::min(paramSetSize, end);
+
+                assert(begin < intervalEnd);
+
+                int32_t intervalLen = static_cast<int32_t>(intervalEnd - begin);
+
+                writer.WriteInt32(intervalLen);
+                writer.WriteBool(last);
+
                 if (rowLen)
                 {
-                    SqlUlen intervalEnd = std::min(paramSetSize, end);
-
-                    assert(begin < intervalEnd);
-
-                    int32_t intervalLen = static_cast<int32_t>(intervalEnd - begin);
-
-                    writer.WriteInt32(intervalLen);
-                    writer.WriteBool(last);
-
                     for (SqlUlen i = begin; i < intervalEnd; ++i)
                         WriteRow(writer, i);
                 }

@@ -44,6 +44,9 @@ namespace ignite
                     /** Data query type. */
                     DATA,
 
+                    /** Batch query type. */
+                    BATCH,
+
                     /** Foreign keys query type. */
                     FOREIGN_KEYS,
 

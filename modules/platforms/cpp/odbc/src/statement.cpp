@@ -444,13 +444,10 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            if (parameters.GetRowNumber() > 1 && parameters.GetParametersNumber() > 0)
-                currentQuery.reset(new query::BatchQuery(*this, connection, query, parameters));
-            else
-                currentQuery.reset(new query::DataQuery(*this, connection, query, parameters));
-
             // Resetting parameters types as we are changing the query.
             parameters.Prepare();
+
+            currentQuery.reset(new query::DataQuery(*this, connection, query, parameters));
 
             return SqlResult::AI_SUCCESS;
         }
@@ -484,8 +481,31 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
+            if (parameters.GetRowNumber() > 1 && currentQuery->GetType() == query::QueryType::DATA)
+            {
+                query::DataQuery& qry = static_cast<query::DataQuery&>(*currentQuery);
+
+                currentQuery.reset(new query::BatchQuery(*this, connection, qry.GetSql(), parameters));
+            }
+            else if (parameters.GetRowNumber() == 1 && currentQuery->GetType() == query::QueryType::BATCH)
+            {
+                query::BatchQuery& qry = static_cast<query::BatchQuery&>(*currentQuery);
+
+                currentQuery.reset(new query::DataQuery(*this, connection, qry.GetSql(), parameters));
+            }
+
             if (parameters.IsDataAtExecNeeded())
+            {
+                if (currentQuery->GetType() == query::QueryType::BATCH)
+                {
+                    AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        "Data-at-execution is not supported together with batching.");
+
+                    return SqlResult::AI_ERROR;
+                }
+
                 return SqlResult::AI_NEED_DATA;
+            }
 
             return currentQuery->Execute();
         }
