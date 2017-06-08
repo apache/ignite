@@ -245,22 +245,26 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             if (log.isDebugEnabled())
                 log.debug("Resulting batch query ID: " + res.queryId());
 
-            writer.writeLong(res.queryId());
+            writer.writeBoolean(res.errorMessage() == null);
             writer.writeLong(res.rowsAffected());
 
-            Collection<OdbcColumnMeta> metas = res.getColumnsMetadata();
-
-            assert metas != null;
-
-            writer.writeInt(metas.size());
-
-            for (OdbcColumnMeta meta : metas)
-                meta.write(writer);
+            if (res.errorMessage() == null)
+                writer.writeLong(res.queryId());
+            else {
+                writer.writeLong(res.errorSetIdx());
+                writer.writeString(res.errorMessage());
+            }
         }
         else if (res0 instanceof OdbcQueryExecuteBatchContinueResult) {
             OdbcQueryExecuteBatchContinueResult res = (OdbcQueryExecuteBatchContinueResult) res0;
 
+            writer.writeBoolean(res.errorMessage() == null);
             writer.writeLong(res.rowsAffected());
+
+            if (res.errorMessage() != null) {
+                writer.writeLong(res.errorSetIdx());
+                writer.writeString(res.errorMessage());
+            }
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * ODBC query execute with batch of parameters result.
@@ -29,18 +29,33 @@ public class OdbcQueryExecuteBatchStartResult {
     /** Rows affected. */
     private final long rowsAffected;
 
-    /** Fields metadata. */
-    private final Collection<OdbcColumnMeta> columnsMeta;
+    /** Index of the set which caused an error. */
+    private final long errorSetIdx;
+
+    /** Error message. */
+    private final String errorMessage;
 
     /**
      * @param queryId Query ID.
      * @param rowsAffected Number of rows affected by the query.
-     * @param columnsMeta Columns metadata.
      */
-    public OdbcQueryExecuteBatchStartResult(long queryId, long rowsAffected, Collection<OdbcColumnMeta> columnsMeta) {
+    public OdbcQueryExecuteBatchStartResult(long queryId, long rowsAffected) {
         this.queryId = queryId;
         this.rowsAffected = rowsAffected;
-        this.columnsMeta = columnsMeta;
+        this.errorSetIdx = -1;
+        this.errorMessage = null;
+    }
+
+    /**
+     * @param rowsAffected Number of rows affected by the query.
+     * @param errorSetIdx Sets processed.
+     * @param errorMessage Error message.
+     */
+    public OdbcQueryExecuteBatchStartResult(long rowsAffected, long errorSetIdx, String errorMessage) {
+        this.queryId = -1;
+        this.rowsAffected = rowsAffected;
+        this.errorSetIdx = errorSetIdx;
+        this.errorMessage = errorMessage;
     }
 
     /**
@@ -58,9 +73,16 @@ public class OdbcQueryExecuteBatchStartResult {
     }
 
     /**
-     * @return Columns metadata.
+     * @return Index of the set which caused an error or -1 if no error occurred.
      */
-    public Collection<OdbcColumnMeta> getColumnsMetadata() {
-        return columnsMeta;
+    public long errorSetIdx() {
+        return errorSetIdx;
+    }
+
+    /**
+     * @return Error message.
+     */
+    @Nullable public String errorMessage() {
+        return errorMessage;
     }
 }

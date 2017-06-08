@@ -216,7 +216,9 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                     "opened cursors or increase the limit through OdbcConfiguration.setMaxOpenCursors()) " +
                     "[maximum=" + maxCursors + ", current=" + cursorCnt + ']');
 
-        long qryId = 0;
+        long qryId = -1;
+        long rowsAffected = 0;
+        int currentSet = 0;
 
         try {
             qryId = BATCH_QRY_ID_GEN.getAndIncrement();
@@ -241,8 +243,6 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                 throw new IgniteException("Batch execute request with non-positive batch length. [len="
                         + paramSet.length + ']');
 
-            long rowsAffected = 0;
-
             // Getting meta and do the checks for the first execution.
             qry.setArgs(paramSet[0]);
 
@@ -254,17 +254,10 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             rowsAffected += getRowsAffected(qryCur);
 
-            List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
+            for (currentSet = 1; currentSet < paramSet.length; ++currentSet)
+                rowsAffected += executeQuery(qry, paramSet[currentSet]);
 
-            for (int i = 1; i < paramSet.length; ++i) {
-                qry.setArgs(paramSet[i]);
-
-                QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
-
-                rowsAffected += getRowsAffected(cur);
-            }
-
-            OdbcQueryExecuteBatchStartResult res = new OdbcQueryExecuteBatchStartResult(qryId, rowsAffected, convertMetadata(fieldsMeta));
+            OdbcQueryExecuteBatchStartResult res = new OdbcQueryExecuteBatchStartResult(qryId, rowsAffected);
 
             if (req.last())
                 batchQueries.remove(qryId);
@@ -276,7 +269,10 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            OdbcQueryExecuteBatchStartResult res = new OdbcQueryExecuteBatchStartResult(rowsAffected, currentSet,
+                    e.getMessage());
+
+            return new OdbcResponse(res);
         }
     }
 
@@ -288,6 +284,8 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse executeBatchQueryContinue(OdbcQueryExecuteBatchContinueRequest req) {
         long qryId = req.queryId();
+        long rowsAffected = 0;
+        int currentSet = 0;
 
         try {
             SqlFieldsQuery qry = batchQueries.get(qryId);
@@ -301,15 +299,8 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                 throw new IgniteException("Batch execute request with non-positive batch length. [len="
                         + paramSet.length + ']');
 
-            long rowsAffected = 0;
-
-            for (Object[] row : paramSet) {
-                qry.setArgs(row);
-
-                QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
-
-                rowsAffected += getRowsAffected(cur);
-            }
+            for (currentSet = 0; currentSet < paramSet.length; ++currentSet)
+                rowsAffected += executeQuery(qry, paramSet[currentSet]);
 
             OdbcQueryExecuteBatchContinueResult res = new OdbcQueryExecuteBatchContinueResult(rowsAffected);
 
@@ -323,8 +314,25 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            OdbcQueryExecuteBatchContinueResult res = new OdbcQueryExecuteBatchContinueResult(rowsAffected, currentSet,
+                    e.getMessage());
+
+            return new OdbcResponse(res);
         }
+    }
+
+    /**
+     * Execute query.
+     * @param qry Query
+     * @param row Row
+     * @return Affected rows.
+     */
+    private long executeQuery(SqlFieldsQuery qry, Object[] row) {
+        qry.setArgs(row);
+
+        QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
+
+        return getRowsAffected(cur);
     }
 
     /**

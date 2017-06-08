@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * ODBC query execute with batch of parameters result.
  */
@@ -24,11 +26,28 @@ public class OdbcQueryExecuteBatchContinueResult {
     /** Rows affected. */
     private final long rowsAffected;
 
+    /** Index of the set which caused an error. */
+    private final long errorSetIdx;
+
+    /** Error message. */
+    private final String errorMessage;
+
     /**
      * @param rowsAffected Number of rows affected by the query.
      */
     public OdbcQueryExecuteBatchContinueResult(long rowsAffected) {
+        this(rowsAffected, -1, null);
+    }
+
+    /**
+     * @param rowsAffected Number of rows affected by the query.
+     * @param errorSetIdx Sets processed.
+     * @param errorMessage Error message.
+     */
+    public OdbcQueryExecuteBatchContinueResult(long rowsAffected, long errorSetIdx, String errorMessage) {
         this.rowsAffected = rowsAffected;
+        this.errorSetIdx = errorSetIdx;
+        this.errorMessage = errorMessage;
     }
 
     /**
@@ -36,5 +55,20 @@ public class OdbcQueryExecuteBatchContinueResult {
      */
     public long rowsAffected() {
         return rowsAffected;
+    }
+
+    /**
+     * @return Index of the set which caused an error or -1 if no error occurred.
+     */
+    public long errorSetIdx() {
+        return errorSetIdx;
+    }
+
+    /**
+     * @return Error message.
+     */
+    @Nullable
+    public String errorMessage() {
+        return errorMessage;
     }
 }
