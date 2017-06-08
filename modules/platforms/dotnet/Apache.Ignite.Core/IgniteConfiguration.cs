@@ -114,6 +114,11 @@ namespace Apache.Ignite.Core
         /// </summary>
         public const int DefaultManagementThreadPoolSize = 4;
 
+        /// <summary>
+        /// Default timeout after which long query warning will be printed.
+        /// </summary>
+        public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -176,6 +181,9 @@ namespace Apache.Ignite.Core
 
         /** */
         private int? _queryThreadPoolSize;
+
+        /** */
+        private TimeSpan? _longQueryWarningTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -259,6 +267,7 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
+            writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
 
             // Thread pools
             writer.WriteIntNullable(_publicThreadPoolSize);
@@ -497,6 +506,7 @@ namespace Apache.Ignite.Core
             _isLateAffinityAssignment = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
+            _longQueryWarningTimeout = r.ReadTimeSpanNullable();
 
             // Thread pools
             _publicThreadPoolSize = r.ReadIntNullable();
@@ -1159,5 +1169,15 @@ namespace Apache.Ignite.Core
         /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
         /// </summary>
         public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timeout after which long query warning will be printed.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:03")]
+        public TimeSpan LongQueryWarningTimeout
+        {
+            get { return _longQueryWarningTimeout ?? DefaultLongQueryWarningTimeout; }
+            set { _longQueryWarningTimeout = value; }
+        }
     }
 }

@@ -66,6 +66,9 @@ public class GridClientNodeImpl implements GridClientNode {
     /** Cache for REST TCP socket addresses. */
     private final AtomicReference<Collection<InetSocketAddress>> tcpSockAddrs = new AtomicReference<>();
 
+    /** Node order within grid topology */
+    private long order;
+
     /**
      * Default constructor (private).
      */
@@ -99,7 +102,8 @@ public class GridClientNodeImpl implements GridClientNode {
             .tcpAddresses(from.tcpAddresses())
             .tcpPort(from.tcpPort())
             .caches(from.caches())
-            .connectable(from.connectable());
+            .connectable(from.connectable())
+            .order(from.order());
 
         if (!skipAttrs)
             b.attributes(from.attributes());
@@ -184,6 +188,11 @@ public class GridClientNodeImpl implements GridClientNode {
             return filterIfNecessary(addrsCache.get(), filterResolved);
 
         return filterIfNecessary(addrs0, filterResolved);
+    }
+
+    /** {@inheritDoc} */
+    public long order() {
+        return order;
     }
 
     /**
@@ -374,6 +383,17 @@ public class GridClientNodeImpl implements GridClientNode {
          */
         public Builder connectable(boolean connectable) {
             impl.connectable = connectable;
+
+            return this;
+        }
+
+        /**
+         * Set node order within grid topology
+         *
+         * @param order Node order within grid topology
+         */
+        public Builder order(long order) {
+            impl.order = order;
 
             return this;
         }

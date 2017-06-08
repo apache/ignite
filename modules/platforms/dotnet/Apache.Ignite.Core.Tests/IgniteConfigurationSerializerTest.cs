@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' peerAssemblyLoadingMode='CurrentAppDomain'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false' keepDeserialized='true'>
                                 <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
                             </lifecycleHandlers>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
                                             <fields>
@@ -167,6 +167,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
             Assert.AreEqual(@"c:\myconfig.xml", cfg.SpringConfigUrl);
             Assert.IsTrue(cfg.AutoGenerateIgniteInstanceName);
+            Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
@@ -179,6 +180,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cacheCfg.EnableStatistics);
             Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
             Assert.AreEqual(PartitionLossPolicy.ReadWriteAll, cacheCfg.PartitionLossPolicy);
+            Assert.AreEqual("fooGroup", cacheCfg.GroupName);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -662,7 +664,6 @@ namespace Apache.Ignite.Core.Tests
                         KeepBinaryInStore = true,
                         LoadPreviousValue = true,
                         LockTimeout = TimeSpan.FromSeconds(56),
-                        LongQueryWarningTimeout = TimeSpan.FromSeconds(99),
                         MaxConcurrentAsyncOperations = 24,
                         QueryEntities = new[]
                         {
@@ -725,7 +726,8 @@ namespace Apache.Ignite.Core.Tests
                             new MyPluginConfiguration()
                         },
                         MemoryPolicyName = "somePolicy",
-                        PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll
+                        PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll,
+                        GroupName = "abc"
                     }
                 },
                 ClientMode = true,
@@ -814,6 +816,7 @@ namespace Apache.Ignite.Core.Tests
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
                 ClientFailureDetectionTimeout = TimeSpan.FromMinutes(3),
+                LongQueryWarningTimeout = TimeSpan.FromDays(4),
                 PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
                 EventStorageSpi = new MemoryEventStorageSpi
                 {
