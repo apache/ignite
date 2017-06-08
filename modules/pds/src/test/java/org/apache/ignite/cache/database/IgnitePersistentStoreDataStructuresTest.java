@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -60,7 +60,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
 
         cfg.setActiveOnStart(false);
 
@@ -68,16 +68,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE, "LOG_ONLY");
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE);
-
         GridTestUtils.deleteDbFiles();
     }
 

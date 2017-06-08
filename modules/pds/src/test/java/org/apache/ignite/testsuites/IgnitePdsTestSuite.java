@@ -19,21 +19,21 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.database.IgnitePersistentStoreCacheGroupsTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreClientNearCachePutGetWithPersistenceSelfTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreDynamicCacheTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreSingleNodePutGetPersistenceSelfTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreSingleNodeWithIndexingPutGetPersistenceSelfTest;
-import org.apache.ignite.cache.database.db.IgniteDbMultiNodePutGetRestartSelfTest;
-import org.apache.ignite.cache.database.db.IgniteDbPageEvictionSelfTest;
-import org.apache.ignite.cache.database.db.file.IgniteCachePageStoreIntegrationSelfTest;
-import org.apache.ignite.cache.database.db.file.IgniteWalDirectoriesConfigurationTest;
-import org.apache.ignite.cache.database.db.file.PageStoreCheckpointSimulationSelfTest;
-import org.apache.ignite.cache.database.db.file.PageStoreEvictionSelfTest;
-import org.apache.ignite.cache.database.pagemem.BPlusTreeReuseListPageMemoryImplSelfTest;
-import org.apache.ignite.cache.database.pagemem.BPlusTreeSelfTestPageMemoryImplSelfTest;
-import org.apache.ignite.cache.database.pagemem.MetadataStoragePageMemoryImplSelfTest;
-import org.apache.ignite.cache.database.pagemem.PageMemoryImplNoLoadSelfTest;
+import org.apache.ignite.cache.database.IgnitePdsClientNearCachePutGetTest;
+import org.apache.ignite.cache.database.IgnitePdsDynamicCacheTest;
+import org.apache.ignite.cache.database.IgnitePdsSingleNodePutGetPersistenceTest;
+import org.apache.ignite.cache.database.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
+import org.apache.ignite.cache.database.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
+import org.apache.ignite.cache.database.db.IgnitePdsMultiNodePutGetRestartTest;
+import org.apache.ignite.cache.database.db.IgnitePdsPageEvictionTest;
+import org.apache.ignite.cache.database.db.file.IgnitePdsCacheIntegrationTest;
+import org.apache.ignite.cache.database.db.wal.IgniteWalDirectoriesConfigurationTest;
+import org.apache.ignite.cache.database.db.file.ignitePdsCheckpointSimulationTest;
+import org.apache.ignite.cache.database.db.file.IgnitePdsEvictionTest;
+import org.apache.ignite.cache.database.pagemem.BPlusTreeReuseListPageMemoryImplTest;
+import org.apache.ignite.cache.database.pagemem.BPlusTreePageMemoryImplTest;
+import org.apache.ignite.cache.database.pagemem.MetadataStoragePageMemoryImplTest;
+import org.apache.ignite.cache.database.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.cache.database.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
@@ -56,18 +56,18 @@ public class IgnitePdsTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
 
         // Basic PageMemory tests.
-        suite.addTestSuite(PageMemoryImplNoLoadSelfTest.class);
-        suite.addTestSuite(MetadataStoragePageMemoryImplSelfTest.class);
-        suite.addTestSuite(PageStoreEvictionSelfTest.class);
+        suite.addTestSuite(PageMemoryImplNoLoadTest.class);
+        suite.addTestSuite(MetadataStoragePageMemoryImplTest.class);
+        suite.addTestSuite(IgnitePdsEvictionTest.class);
         suite.addTestSuite(PageMemoryImplTest.class);
 
         // Checkpointing smoke-test.
-        suite.addTestSuite(IgniteCachePageStoreIntegrationSelfTest.class);
-        suite.addTestSuite(PageStoreCheckpointSimulationSelfTest.class);
+        suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
+        suite.addTestSuite(ignitePdsCheckpointSimulationTest.class);
 
         // BTree tests with store page memory.
-        suite.addTestSuite(BPlusTreeSelfTestPageMemoryImplSelfTest.class);
-        suite.addTestSuite(BPlusTreeReuseListPageMemoryImplSelfTest.class);
+        suite.addTestSuite(BPlusTreePageMemoryImplTest.class);
+        suite.addTestSuite(BPlusTreeReuseListPageMemoryImplTest.class);
 
         // Basic API tests.
         suite.addTestSuite(IgniteDbSingleNodePutGetTest.class);
@@ -79,14 +79,14 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDbClientNearCachePutGetTest.class);
 
         // Persistence-enabled.
-        suite.addTestSuite(IgniteDbMultiNodePutGetRestartSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreSingleNodePutGetPersistenceSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreSingleNodeWithIndexingPutGetPersistenceSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class);
-        suite.addTestSuite(IgniteDbPageEvictionSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreDynamicCacheTest.class);
+        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
+        suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
+        suite.addTestSuite(IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class);
+        suite.addTestSuite(IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class);
+        suite.addTestSuite(IgnitePdsPageEvictionTest.class);
+        suite.addTestSuite(IgnitePdsDynamicCacheTest.class);
         suite.addTestSuite(IgniteWalDirectoriesConfigurationTest.class);
-        suite.addTestSuite(IgnitePersistentStoreClientNearCachePutGetWithPersistenceSelfTest.class);
+        suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
 

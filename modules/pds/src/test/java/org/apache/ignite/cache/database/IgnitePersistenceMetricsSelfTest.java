@@ -31,8 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -60,16 +60,7 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
     private boolean activeOnStart = true;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE, "LOG_ONLY");
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE);
-
         GridTestUtils.deleteDbFiles();
     }
 
@@ -102,7 +93,8 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(memCfg);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setMetricsEnabled(true));
+        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration()
+            .setMetricsEnabled(true).setWalMode(WALMode.LOG_ONLY));
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 

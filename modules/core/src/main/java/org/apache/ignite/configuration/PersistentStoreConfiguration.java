@@ -48,13 +48,37 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final int DFLT_CHECKPOINTING_THREADS = 1;
 
     /** */
-    private static final int DFLT_WAL_HISTORY_SIZE = 20;
+    public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
     /** */
     public static final int DFLT_WAL_SEGMENTS = 10;
 
     /** */
-    private static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
+    public static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
+
+    /** Default wal mode. */
+    public static final WALMode DFLT_WAL_MODE = WALMode.DEFAULT;
+
+    /** Default thread local buffer size. */
+    public static final int DFLT_TLB_SIZE = 128 * 1024;
+
+    /** Default Wal flush frequency. */
+    public static final int DFLT_WAL_FLUSH_FREQ = 2000;
+
+    /** Default wal fsync delay. */
+    public static final int DFLT_WAL_FSYNC_DELAY = 1;
+
+    /** Default wal record iterator buffer size. */
+    public static final int DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE = 64 * 1024 * 1024;
+
+    /** Default wal always write full pages. */
+    public static final boolean DFLT_WAL_ALWAYS_WRITE_FULL_PAGES = false;
+
+    /** Default wal directory. */
+    public static final String DFLT_WAL_STORE_PATH = "db/wal";
+
+    /** Default wal archive directory. */
+    public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
     /** */
     private String persistenceStorePath;
@@ -81,13 +105,31 @@ public class PersistentStoreConfiguration implements Serializable {
     private int walSegmentSize = DFLT_WAL_SEGMENT_SIZE;
 
     /** WAL persistence path. */
-    private String walStorePath;
+    private String walStorePath = DFLT_WAL_STORE_PATH;
 
     /** WAL archive path. */
-    private String walArchivePath;
+    private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
 
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
+
+    /** Wal mode. */
+    private WALMode walMode = DFLT_WAL_MODE;
+
+    /** WAl thread local buffer size. */
+    private int tlbSize = DFLT_TLB_SIZE;
+
+    /** Wal flush frequency. */
+    private int walFlushFreq = DFLT_WAL_FLUSH_FREQ;
+
+    /** Wal fsync delay. */
+    private int walFsyncDelay = DFLT_WAL_FSYNC_DELAY;
+
+    /** Wal record iterator buffer size. */
+    private int walRecordIterBuffSize = DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE;
+
+    /** Always write full pages. */
+    private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
 
     /**
      * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
@@ -377,6 +419,114 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public PersistentStoreConfiguration setSubIntervals(int subIntervals) {
         this.subIntervals = subIntervals;
+
+        return this;
+    }
+
+    /**
+     * Type define behavior wal fsync.
+     * Different type provide different guarantees for consistency.
+     *
+     * @return WAL mode.
+     */
+    public WALMode getWalMode() {
+        return walMode == null ? DFLT_WAL_MODE : walMode;
+    }
+
+    /**
+     * @param walMode Wal mode.
+     */
+    public PersistentStoreConfiguration setWalMode(WALMode walMode) {
+        this.walMode = walMode;
+
+        return this;
+    }
+
+    /**
+     * Property define size thread local buffer.
+     * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
+     *
+     * @return Thread local buffer size.
+     */
+    public int getTlbSize() {
+        return tlbSize <= 0 ? DFLT_TLB_SIZE : tlbSize;
+    }
+
+    /**
+     * @param tlbSize Tlb size.
+     */
+    public PersistentStoreConfiguration setTlbSize(int tlbSize) {
+        this.tlbSize = tlbSize;
+
+        return this;
+    }
+
+    /**
+     *  Property define how often will be fsync.
+     *  In background mode, exist thread which do fsync by timeout.
+     *
+     * @return Flush frequency.
+     */
+    public int getWalFlushFrequency() {
+        return walFlushFreq;
+    }
+
+    /**
+     * @param walFlushFreq Wal flush frequency.
+     */
+    public PersistentStoreConfiguration setWalFlushFrequency(int walFlushFreq) {
+        this.walFlushFreq = walFlushFreq;
+
+        return this;
+    }
+
+    /**
+     *
+     */
+    public int getWalFsyncDelay() {
+        return walFsyncDelay <= 0 ? DFLT_WAL_FSYNC_DELAY : walFsyncDelay;
+    }
+
+    /**
+     * @param walFsyncDelay Wal fsync delay.
+     */
+    public PersistentStoreConfiguration setWalFsyncDelay(int walFsyncDelay) {
+        this.walFsyncDelay = walFsyncDelay;
+
+        return this;
+    }
+
+    /**
+     *  Property define how many bytes iterator read from
+     *  disk (for one reading), during go ahead wal.
+     *
+     * @return Record iterator buffer size.
+     */
+    public int getWalRecordIteratorBufferSize() {
+        return walRecordIterBuffSize <= 0 ? DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE : walRecordIterBuffSize;
+    }
+
+    /**
+     * @param walRecordIterBuffSize Wal record iterator buffer size.
+     */
+    public PersistentStoreConfiguration setWalRecordIteratorBufferSize(int walRecordIterBuffSize) {
+        this.walRecordIterBuffSize = walRecordIterBuffSize;
+
+        return this;
+    }
+
+    /**
+     *
+     */
+    public boolean isAlwaysWriteFullPages() {
+        return alwaysWriteFullPages;
+    }
+
+    /**
+     * @param alwaysWriteFullPages Always write full pages.
+     */
+    public PersistentStoreConfiguration setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
+        this.alwaysWriteFullPages = alwaysWriteFullPages;
 
         return this;
     }

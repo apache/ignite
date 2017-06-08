@@ -603,7 +603,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         snapshotMgr.stop(cancel);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private long[] calculateFragmentSizes(int concLvl, long cacheSize) {
         if (concLvl < 2)
             concLvl = Runtime.getRuntime().availableProcessors();

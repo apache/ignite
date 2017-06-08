@@ -15,24 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.cache.database.db.wal.IgnitePdsWalTlbTest;
+package org.apache.ignite.configuration;
 
 /**
- *
+ * WAL Mode. This enum defines crash recovery guarantees when Ignite persistence is enabled.
  */
-public class IgnitePdsOutOfMemoryTestSuite extends TestSuite {
+public enum WALMode {
     /**
-     * @return Suite.
-     * @throws Exception If failed.
+     *
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store OOM Test Suite");
+    DEFAULT,
 
-        suite.addTestSuite(IgnitePdsWalTlbTest.class);
+    /**
+     *
+     */
+    LOG_ONLY,
 
-        return suite;
-    }
+    /**
+     *
+     */
+    BACKGROUND,
+
+    /**
+     *
+     */
+    NONE
 }

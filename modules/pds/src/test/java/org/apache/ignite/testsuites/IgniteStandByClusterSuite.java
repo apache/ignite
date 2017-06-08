@@ -18,11 +18,11 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateCacheTest;
-import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateDataStreamerTest;
-import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateDataStructureTest;
-import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateFailOverTest;
-import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateTest;
+import org.apache.ignite.cache.database.standbycluster.IgniteChangeGlobalStateCacheTest;
+import org.apache.ignite.cache.database.standbycluster.IgniteChangeGlobalStateDataStreamerTest;
+import org.apache.ignite.cache.database.standbycluster.IgniteChangeGlobalStateDataStructureTest;
+import org.apache.ignite.cache.database.standbycluster.IgniteChangeGlobalStateFailOverTest;
+import org.apache.ignite.cache.database.standbycluster.IgniteChangeGlobalStateTest;
 
 /**
  *
@@ -34,12 +34,12 @@ public class IgniteStandByClusterSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suit");
 
-        suite.addTestSuite(GridChangeGlobalStateTest.class);
-        suite.addTestSuite(GridChangeGlobalStateCacheTest.class);
-        suite.addTestSuite(GridChangeGlobalStateDataStructureTest.class);
-        suite.addTestSuite(GridChangeGlobalStateDataStreamerTest.class);
-        suite.addTestSuite(GridChangeGlobalStateFailOverTest.class);
-//        suite.addTestSuite(GridChangeGlobalStateServiceTest.class);
+        suite.addTestSuite(IgniteChangeGlobalStateTest.class);
+        suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
+        suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
+        suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
+        suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
 
         return suite;
     }

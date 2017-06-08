@@ -18,24 +18,23 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.database.IgnitePdsAtomicCacheRebalancingTest;
+import org.apache.ignite.cache.database.IgnitePdsTxCacheRebalancingTest;
+import org.apache.ignite.cache.database.IgnitePdsContinuousRestartTest;
+import org.apache.ignite.cache.database.IgnitePdsPageSizesTest;
+import org.apache.ignite.cache.database.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.cache.database.IgnitePersistenceMetricsSelfTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreAtomicCacheRebalancingTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreContinuousRestartSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreDataStructuresTest;
-import org.apache.ignite.cache.database.IgnitePersistentStorePageSizesTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreSchemaLoadTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreTxCacheRebalancingTest;
-import org.apache.ignite.cache.database.db.DbPageEvictionDuringPartitionClearSelfTest;
-import org.apache.ignite.cache.database.db.IgniteDbWholeClusterRestartSelfTest;
-import org.apache.ignite.cache.database.db.RebalancingOnNotStableTopologyTest;
-import org.apache.ignite.cache.database.db.TransactionsHangTest;
-import org.apache.ignite.cache.database.db.file.IgniteNoActualWalHistorySelfTest;
-import org.apache.ignite.cache.database.db.file.IgniteWalHistoryReservationsSelfTest;
-import org.apache.ignite.cache.database.db.file.IgniteWalRecoverySelfTest;
-import org.apache.ignite.cache.database.db.file.WalRecoveryTxLogicalRecordsTest;
+import org.apache.ignite.cache.database.db.IgnitePdsPageEvictionDuringPartitionClearTest;
+import org.apache.ignite.cache.database.db.IgnitePdsTransactionsHangTest;
+import org.apache.ignite.cache.database.db.IgnitePdsWholeClusterRestartTest;
+import org.apache.ignite.cache.database.db.IgnitePdsRebalancingOnNotStableTopologyTest;
+import org.apache.ignite.cache.database.db.file.IgnitePdsNoActualWalHistoryTest;
+import org.apache.ignite.cache.database.db.wal.IgniteWalHistoryReservationsTest;
+import org.apache.ignite.cache.database.db.wal.IgniteWalRecoveryTest;
+import org.apache.ignite.cache.database.db.wal.WalRecoveryTxLogicalRecordsTest;
 import org.apache.ignite.cache.database.db.wal.crc.IgniteDataIntegrityTests;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 
 /**
  *
@@ -46,36 +45,36 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite persistent Store Test Suite");
+        TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 2");
 
         // Integrity test.
         suite.addTestSuite(IgniteDataIntegrityTests.class);
-        suite.addTestSuite(IgnitePersistentStoreRecoveryAfterFileCorruptionTest.class);
-        suite.addTestSuite(IgnitePersistentStorePageSizesTest.class);
+        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
+        suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
         // Metrics test.
         suite.addTestSuite(IgnitePersistenceMetricsSelfTest.class);
 
         // WAL recovery test.
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
-        suite.addTestSuite(IgniteWalRecoverySelfTest.class);
+        suite.addTestSuite(IgniteWalRecoveryTest.class);
 
-        suite.addTestSuite(TransactionsHangTest.class);
+        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
 
-        suite.addTestSuite(IgniteNoActualWalHistorySelfTest.class);
+        suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
 
-        suite.addTestSuite(RebalancingOnNotStableTopologyTest.class);
+        suite.addTestSuite(IgnitePdsRebalancingOnNotStableTopologyTest.class);
 
-        suite.addTestSuite(IgniteDbWholeClusterRestartSelfTest.class);
+        suite.addTestSuite(IgnitePdsWholeClusterRestartTest.class);
 
-        suite.addTestSuite(DbPageEvictionDuringPartitionClearSelfTest.class);
+        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
 
         // Rebalancing test
-        suite.addTestSuite(IgnitePersistentStoreAtomicCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePersistentStoreTxCacheRebalancingTest.class);
-        suite.addTestSuite(IgniteWalHistoryReservationsSelfTest.class);
+        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
+        suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
+        suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
 
-        suite.addTestSuite(IgnitePersistentStoreContinuousRestartSelfTest.class);
+        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreSchemaLoadTest.class);
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
