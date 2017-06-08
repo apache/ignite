@@ -51,6 +51,33 @@ public interface IgniteMXBean {
     public String getStartTimestampFormatted();
 
     /**
+     * Gets rebalance enabled flag.
+     *
+     * @return Rebalance enabled flag.
+     */
+    @MXBeanDescription("Rebalance enabled flag.")
+    public boolean isRebalanceEnabled();
+
+    /**
+     * Enable or disable cache partition rebalance per node.
+     *
+     * @param rebalanceEnabled If {@code true} then set rebalance to enabled state.
+     */
+    @MXBeanDescription("Restart JVM.")
+    @MXBeanParametersNames(
+        {
+            "true",
+            "false"
+        })
+    @MXBeanParametersDescriptions(
+        {
+            "Enable cache partitions rebalance on node.",
+            "Disable cache partitions rebalance on node."
+        }
+    )
+    public void rebalanceEnabled(boolean rebalanceEnabled);
+
+    /**
      * Gets string presentation of up-time for the kernal.
      *
      * @return String presentation of up-time for the kernal.
