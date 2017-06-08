@@ -203,7 +203,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultKeepVinaryInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultLoadPreviousValue, cfg.LoadPreviousValue);
             Assert.AreEqual(CacheConfiguration.DefaultLockTimeout, cfg.LockTimeout);
+#pragma warning disable 618
             Assert.AreEqual(CacheConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
+#pragma warning restore 618
             Assert.AreEqual(CacheConfiguration.DefaultMaxConcurrentAsyncOperations, cfg.MaxConcurrentAsyncOperations);
             Assert.AreEqual(CacheConfiguration.DefaultReadFromBackup, cfg.ReadFromBackup);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchSize, cfg.RebalanceBatchSize);
@@ -233,7 +235,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.KeepBinaryInStore, y.KeepBinaryInStore);
             Assert.AreEqual(x.LoadPreviousValue, y.LoadPreviousValue);
             Assert.AreEqual(x.LockTimeout, y.LockTimeout);
+#pragma warning disable 618
             Assert.AreEqual(x.LongQueryWarningTimeout, y.LongQueryWarningTimeout);
+#pragma warning restore 618
             Assert.AreEqual(x.MaxConcurrentAsyncOperations, y.MaxConcurrentAsyncOperations);
             Assert.AreEqual(x.ReadFromBackup, y.ReadFromBackup);
             Assert.AreEqual(x.RebalanceBatchSize, y.RebalanceBatchSize);
@@ -487,7 +491,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Name = name ?? CacheName,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
+#pragma warning disable 618
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
+#pragma warning restore 618
                 LoadPreviousValue = true,
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
@@ -577,7 +583,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Name = name ?? CacheName2,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
+#pragma warning disable 618
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
+#pragma warning restore 618
                 LoadPreviousValue = true,
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),

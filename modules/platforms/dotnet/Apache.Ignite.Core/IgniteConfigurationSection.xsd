@@ -1480,6 +1480,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="longQueryWarningTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Timeout after which long query warning will be printed.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="peerAssemblyLoadingMode" type="peerAssemblyLoadingMode">
                 <xs:annotation>
                     <xs:documentation>Indicates whether user assemblies should be loaded on remote nodes automatically.</xs:documentation>
