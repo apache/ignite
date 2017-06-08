@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.F;
-
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -40,21 +37,22 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
 
 /**
@@ -75,7 +73,7 @@ public class JdbcThinConnection implements Connection {
     /** Current transaction isolation. */
     private int txIsolation;
 
-    /** Auto commit flag. */
+    /** Auto-commit flag. */
     private boolean autoCommit;
 
     /** Current transaction holdability. */
@@ -251,12 +249,18 @@ public class JdbcThinConnection implements Connection {
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
+        if (autoCommit)
+            throw new SQLException("Auto-commit mode.");
+
         LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
+
+        if (autoCommit)
+            throw new SQLException("Auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -311,7 +315,21 @@ public class JdbcThinConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        LOG.warning("Transactions are not supported.");
+        switch (level) {
+            case Connection.TRANSACTION_READ_UNCOMMITTED:
+            case Connection.TRANSACTION_READ_COMMITTED:
+            case Connection.TRANSACTION_REPEATABLE_READ:
+            case Connection.TRANSACTION_SERIALIZABLE:
+                LOG.warning("Transactions are not supported.");
+
+                break;
+
+            case Connection.TRANSACTION_NONE:
+                break;
+
+            default:
+                throw new SQLException("Invalid transaction isolation level.");
+        }
 
         txIsolation = level;
     }
@@ -375,12 +393,21 @@ public class JdbcThinConnection implements Connection {
     @Override public Savepoint setSavepoint() throws SQLException {
         ensureNotClosed();
 
+        if (autoCommit)
+            throw new SQLException("Auto-commit mode.");
+
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Savepoint setSavepoint(String name) throws SQLException {
         ensureNotClosed();
+
+        if (name == null)
+            throw new SQLException("Invalid savepoint name.");
+
+        if (autoCommit)
+            throw new SQLException("Auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -389,12 +416,21 @@ public class JdbcThinConnection implements Connection {
     @Override public void rollback(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
+        if (savepoint == null)
+            throw new SQLException("Invalid savepoint.");
+
+        if (autoCommit)
+            throw new SQLException("Auto-commit mode.");
+
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
+
+        if (savepoint == null)
+            throw new SQLException("Invalid savepoint");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }

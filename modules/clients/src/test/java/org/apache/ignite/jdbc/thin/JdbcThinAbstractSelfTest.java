@@ -58,6 +58,21 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @param r Runnable to check support.
      */
+    protected void checkConnectionClosed(final RunnableX r) {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
+
+                    return null;
+                }
+            }, SQLException.class, "Connection is closed");
+    }
+
+
+    /**
+     * @param r Runnable to check support.
+     */
     protected void checkResultSetClosed(final RunnableX r) {
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {

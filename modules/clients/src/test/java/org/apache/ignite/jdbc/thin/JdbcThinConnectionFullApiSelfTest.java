@@ -52,10 +52,8 @@ import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
-import static java.sql.ResultSet.CONCUR_UPDATABLE;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 
@@ -370,15 +368,11 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                 conn.close();
 
                 // Exception when called on closed connection
-                GridTestUtils.assertThrows(log,
-                    new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            return conn.createStatement();
-                        }
-                    },
-                    SQLException.class,
-                    "Connection is closed"
-                );
+                checkConnectionClosed(new RunnableX() {
+                    @Override public void run() throws Exception {
+                        conn.createStatement();
+                    }
+                });
             }
         }
     }
@@ -399,6 +393,9 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             for (final int type : rsTypes) {
                 for (final int concur : rsConcurs) {
                     if (meta.supportsResultSetConcurrency(type, concur)) {
+                        assert type == ResultSet.TYPE_FORWARD_ONLY;
+                        assert concur == ResultSet.CONCUR_READ_ONLY;
+
                         try (Statement stmt = conn.createStatement(type, concur)) {
                             assertNotNull(stmt);
 
@@ -424,16 +421,12 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStatement(TYPE_FORWARD_ONLY,
-                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStatement(TYPE_FORWARD_ONLY,
+                        CONCUR_READ_ONLY);
+                }
+            });
         }
     }
 
@@ -456,18 +449,20 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             for (final int type : rsTypes) {
                 for (final int concur : rsConcurs) {
                     for (final int holdabililty : rsHoldabilities) {
-                        if (meta.supportsResultSetConcurrency(type, concur)) {
-                            if (meta.supportsResultSetHoldability(holdabililty)) {
-                                try (Statement stmt = conn.createStatement(type, concur, holdabililty)) {
-                                    assertNotNull(stmt);
+                        if (meta.supportsResultSetConcurrency(type, concur)
+                            && meta.supportsResultSetHoldability(holdabililty)) {
+                            assert type == ResultSet.TYPE_FORWARD_ONLY;
+                            assert concur == ResultSet.CONCUR_READ_ONLY;
 
-                                    assertEquals(type, stmt.getResultSetType());
-                                    assertEquals(concur, stmt.getResultSetConcurrency());
-                                    assertEquals(holdabililty, stmt.getResultSetHoldability());
-                                }
+                            try (Statement stmt = conn.createStatement(type, concur, holdabililty)) {
+                                assertNotNull(stmt);
 
-                                continue;
+                                assertEquals(type, stmt.getResultSetType());
+                                assertEquals(concur, stmt.getResultSetConcurrency());
+                                assertEquals(holdabililty, stmt.getResultSetHoldability());
                             }
+
+                            continue;
                         }
 
                         GridTestUtils.assertThrows(log,
@@ -486,16 +481,12 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStatement(TYPE_FORWARD_ONLY,
-                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStatement(TYPE_FORWARD_ONLY,
+                        CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                }
+            });
         }
     }
 
@@ -524,15 +515,11 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(sqlText);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.prepareStatement(sqlText);
+                }
+            });
         }
     }
 
@@ -541,58 +528,58 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testPrepareStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            // null query text
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(null, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
-                    }
-                },
-                SQLException.class,
-                "Invalid arguments"
-            );
-
             final String sqlText = "select * from test where param = ?";
 
-            // Unsupported result set type
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(sqlText, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY);
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid result set type"
-            );
+            int [] rsTypes = new int[]
+                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            // Unsupported concurrency
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE);
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid concurrency"
-            );
+            int [] rsConcurs = new int[]
+                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
-            try (PreparedStatement prepared = conn.prepareStatement(sqlText,
-                TYPE_FORWARD_ONLY, CONCUR_READ_ONLY)) {
-                assertNotNull(prepared);
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    if (meta.supportsResultSetConcurrency(type, concur)) {
+                        assert type == ResultSet.TYPE_FORWARD_ONLY;
+                        assert concur == ResultSet.CONCUR_READ_ONLY;
+
+                        // null query text
+                        GridTestUtils.assertThrows(log,
+                            new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    return conn.prepareStatement(null, type, concur);
+                                }
+                            },
+                            SQLException.class,
+                            "Invalid arguments"
+                        );
+
+                        continue;
+                    }
+
+                    GridTestUtils.assertThrows(log,
+                        new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                return conn.prepareStatement(sqlText, type, concur);
+                            }
+                        },
+                        SQLFeatureNotSupportedException.class,
+                        null
+                    );
+                }
             }
 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                }
+            });
+
+            conn.close();
         }
     }
 
@@ -601,71 +588,64 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testPrepareStatement4() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            // null query text
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(null, TYPE_FORWARD_ONLY,
-                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                    }
-                },
-                SQLException.class,
-                "Invalid arguments"
-            );
-
             final String sqlText = "select * from test where param = ?";
 
-            // Unsupported result set type
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(sqlText, TYPE_SCROLL_INSENSITIVE,
-                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+            int [] rsTypes = new int[]
+                {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
+
+            int [] rsConcurs = new int[]
+                {ResultSet.CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
+
+            int [] rsHoldabilities = new int[]
+                {ResultSet.HOLD_CURSORS_OVER_COMMIT, ResultSet.CLOSE_CURSORS_AT_COMMIT};
+
+            DatabaseMetaData meta = conn.getMetaData();
+
+            for (final int type : rsTypes) {
+                for (final int concur : rsConcurs) {
+                    for (final int holdabililty : rsHoldabilities) {
+                        if (meta.supportsResultSetConcurrency(type, concur)
+                            && meta.supportsResultSetHoldability(holdabililty)) {
+                            assert type == ResultSet.TYPE_FORWARD_ONLY;
+                            assert concur == ResultSet.CONCUR_READ_ONLY;
+
+                            // null query text
+                            GridTestUtils.assertThrows(log,
+                                new Callable<Object>() {
+                                    @Override public Object call() throws Exception {
+                                        return conn.prepareStatement(null, type, concur);
+                                    }
+                                },
+                                SQLException.class,
+                                "Invalid arguments"
+                            );
+
+                            continue;
+                        }
+
+                        GridTestUtils.assertThrows(log,
+                            new Callable<Object>() {
+                                @Override public Object call() throws Exception {
+                                    return conn.prepareStatement(sqlText, type, concur);
+                                }
+                            },
+                            SQLFeatureNotSupportedException.class,
+                            null
+                        );
                     }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid result set type"
-            );
-
-            // Unsupported concurrency
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
-                            CONCUR_UPDATABLE, HOLD_CURSORS_OVER_COMMIT);
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Invalid concurrency"
-            );
-
-            try (PreparedStatement prepared = conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
-                CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT)) {
-                assertNotNull(prepared);
-
-                assertEquals(HOLD_CURSORS_OVER_COMMIT, prepared.getResultSetHoldability());
-            }
-
-            try (PreparedStatement prepared = conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
-                CONCUR_READ_ONLY, CLOSE_CURSORS_AT_COMMIT)) {
-                assertNotNull(prepared);
-
-                assertEquals(CLOSE_CURSORS_AT_COMMIT, prepared.getResultSetHoldability());
+                }
             }
 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
-                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                }
+            });
+
+            conn.close();
         }
     }
 
@@ -781,15 +761,11 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.nativeSQL(sqlText);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.nativeSQL(sqlText);
+                }
+            });
         }
     }
 
@@ -811,28 +787,11 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setAutoCommit(true);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
-
-            // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getAutoCommit();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setAutoCommit(true);
+                }
+            });
         }
     }
 
@@ -841,8 +800,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsTransactions())
-                return;
+            assert !conn.getMetaData().supportsTransactions();
 
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
@@ -854,7 +812,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                     }
                 },
                 SQLException.class,
-                "Auto commit mode"
+                "Auto-commit mode"
             );
 
             conn.setAutoCommit(false);
@@ -864,17 +822,11 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.commit();
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.commit();
+                }
+            });
         }
     }
 
@@ -883,8 +835,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testRollback() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsTransactions())
-                return;
+            assert !conn.getMetaData().supportsTransactions();
 
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
@@ -896,7 +847,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                     }
                 },
                 SQLException.class,
-                "Auto commit mode"
+                "Auto-commit mode"
             );
 
             conn.setAutoCommit(false);
@@ -906,17 +857,11 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.rollback();
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.rollback();
+                }
+            });
         }
     }
 
@@ -932,15 +877,11 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getMetaData();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getMetaData();
+                }
+            });
         }
     }
 
@@ -964,28 +905,18 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setReadOnly(true);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setReadOnly(true);
+                }
+            });
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.isReadOnly();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.isReadOnly();
+                }
+            });
         }
     }
 
@@ -994,42 +925,29 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testGetSetCatalog() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsCatalogsInDataManipulation())
-                return;
+            assert !conn.getMetaData().supportsCatalogsInDataManipulation();
 
             assertNull(conn.getCatalog());
 
-            final String catalog = "catalog";
+            conn.setCatalog("catalog");
 
-            conn.setCatalog(catalog);
-
-            assertEquals(catalog, conn.getCatalog());
+            assertEquals(null, conn.getCatalog());
 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setCatalog(catalog);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setCatalog("");
+                }
+            });
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getCatalog();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getCatalog();
+                }
+            });
         }
     }
 
@@ -1038,8 +956,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testGetSetTransactionIsolation() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsTransactions())
-                return;
+            assert !conn.getMetaData().supportsTransactions();
 
             // Invalid parameter value
             GridTestUtils.assertThrows(log,
@@ -1051,7 +968,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                     }
                 },
                 SQLException.class,
-                "Invalid parameter"
+                "Invalid transaction isolation level"
             );
 
             // default level
@@ -1069,28 +986,19 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getTransactionIsolation();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getTransactionIsolation();
+                }
+            });
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
+                }
+            });
         }
     }
 
@@ -1114,28 +1022,19 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.close();
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getWarnings();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getWarnings();
+                }
+            });
+
 
             // Exception when called on closed connection
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.clearWarnings();
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.clearWarnings();
+                }
+            });
         }
     }
 
@@ -1254,52 +1153,37 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testSetSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsSavepoints()) {
-                // Unsupported
-                GridTestUtils.assertThrows(log,
-                    new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            conn.setSavepoint();
+            assert !conn.getMetaData().supportsSavepoints();
 
-                            return null;
-                        }
-                    },
-                    SQLFeatureNotSupportedException.class,
-                    "Savepoints are not supported"
-                );
-            }
-            else {
-                conn.setSavepoint();
+            // Disallowed in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint();
 
-                // Disallowed in auto-commit mode
-                GridTestUtils.assertThrows(log,
-                    new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            conn.setSavepoint();
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Auto-commit mode"
+            );
 
-                            return null;
-                        }
-                    },
-                    SQLException.class,
-                    "Auto-commit mode"
-                );
+            conn.setAutoCommit(false);
 
-                conn.setAutoCommit(false);
+            // Unsupported
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint();
+                }
+            });
 
-                conn.close();
+            conn.close();
 
-                GridTestUtils.assertThrows(log,
-                    new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            conn.setSavepoint();
-
-                            return null;
-                        }
-                    },
-                    SQLException.class,
-                    "Connection is closed"
-                );
-            }
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint();
+                }
+            });
         }
     }
 
@@ -1308,8 +1192,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testSetSavepointName() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsSavepoints())
-                return;
+            assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             GridTestUtils.assertThrows(log,
@@ -1321,12 +1204,10 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                     }
                 },
                 SQLException.class,
-                "Invalid argument"
+                "Invalid savepoint name"
             );
 
             final String name = "savepoint";
-
-            conn.setSavepoint();
 
             // Disallowed in auto-commit mode
             GridTestUtils.assertThrows(log,
@@ -1344,31 +1225,19 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.setAutoCommit(false);
 
             // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setSavepoint(name);
-
-                        return null;
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Savepoints are not supported"
-            );
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint(name);
+                }
+            });
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setSavepoint(name);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSavepoint(name);
+                }
+            });
         }
     }
 
@@ -1377,8 +1246,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsSavepoints())
-                return;
+            assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             GridTestUtils.assertThrows(log,
@@ -1390,7 +1258,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                     }
                 },
                 SQLException.class,
-                "Invalid argument"
+                "Invalid savepoint"
             );
 
             final Savepoint savepoint = getFakeSavepoint();
@@ -1411,31 +1279,19 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             conn.setAutoCommit(false);
 
             // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.rollback(savepoint);
-
-                        return null;
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Savepoints are not supported"
-            );
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.rollback(savepoint);
+                }
+            });
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.rollback(savepoint);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.rollback(savepoint);
+                }
+            });
         }
     }
 
@@ -1444,8 +1300,7 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
      */
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            if (!conn.getMetaData().supportsSavepoints())
-                return;
+            assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             GridTestUtils.assertThrows(log,
@@ -1457,37 +1312,24 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
                     }
                 },
                 SQLException.class,
-                "Invalid argument"
+                "Invalid savepoint"
             );
 
             final Savepoint savepoint = getFakeSavepoint();
 
-            // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.releaseSavepoint(savepoint);
-
-                        return null;
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "Savepoints are not supported"
-            );
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.releaseSavepoint(savepoint);
+                }
+            });
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.releaseSavepoint(savepoint);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.releaseSavepoint(savepoint);
+                }
+            });
         }
     }
 
@@ -1631,27 +1473,17 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getClientInfo(name);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getClientInfo(name);
+                }
+            });
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setClientInfo(name, val);
-
-                        return null;
-                    }
-                },
-                SQLClientInfoException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setClientInfo(name, val);
+                }
+            });
         }
     }
 
@@ -1678,27 +1510,18 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getClientInfo();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getClientInfo();
+                }
+            });
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setClientInfo(props);
 
-                        return null;
-                    }
-                },
-                SQLClientInfoException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setClientInfo(props);
+                }
+            });
         }
     }
 
@@ -1725,27 +1548,20 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
             );
 
             // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createArrayOf(typeName, elements);
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "SQL-specific types are not supported"
-            );
+
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createArrayOf(typeName, elements);
+                }
+            });
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createArrayOf(typeName, elements);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createArrayOf(typeName, elements);
+                }
+            });
         }
     }
 
@@ -1769,28 +1585,19 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
 
             final Object[] attrs = new Object[] {100, "Tom"};
 
-            // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStruct(typeName, attrs);
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "SQL-specific types are not supported"
-            );
+            checkNotSupported(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStruct(typeName, attrs);
+                }
+            });
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createStruct(typeName, attrs);
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.createStruct(typeName, attrs);
+                }
+            });
         }
     }
 
@@ -1822,27 +1629,17 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setSchema(schema);
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setSchema(schema);
+                }
+            });
 
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
-
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getSchema();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getSchema();
+                }
+            });
         }
     }
 
@@ -1916,27 +1713,17 @@ public class JdbcThinConnectionFullApiSelfTest extends JdbcThinAbstractSelfTest 
 
             conn.close();
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.getNetworkTimeout();
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.getNetworkTimeout();
+                }
+            });
 
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setNetworkTimeout(executor, timeout);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed"
-            );
+            checkConnectionClosed(new RunnableX() {
+                @Override public void run() throws Exception {
+                    conn.setNetworkTimeout(executor, timeout);
+                }
+            });
         }
     }
 
