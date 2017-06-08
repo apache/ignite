@@ -6,6 +6,8 @@ import java.io.ObjectOutput;
 import org.apache.ignite.configuration.CollectionConfiguration;
 
 public class DistributedCollectionMetadata extends AtomicDataStructureValue {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     private DataStructureType type;
 
@@ -14,6 +16,9 @@ public class DistributedCollectionMetadata extends AtomicDataStructureValue {
     private String cacheName;
 
     public DistributedCollectionMetadata(DataStructureType type, CollectionConfiguration cfg, String cacheName) {
+        if (cfg == null)
+            System.out.println("???");
+
         this.type = type;
         this.cfg = cfg;
         this.cacheName = cacheName;

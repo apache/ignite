@@ -22,5 +22,8 @@ import java.io.Externalizable;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 
 public abstract class AtomicDataStructureValue implements GridCacheInternal, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     public abstract DataStructureType type();
 }
