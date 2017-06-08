@@ -21,9 +21,15 @@ package org.apache.ignite.internal.processors.datastructures;
 import java.io.Externalizable;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 
+/**
+ *
+ */
 public abstract class AtomicDataStructureValue implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /**
+     * @return Data structure type.
+     */
     public abstract DataStructureType type();
 }

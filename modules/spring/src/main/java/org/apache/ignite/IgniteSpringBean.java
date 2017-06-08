@@ -447,6 +447,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         return g.atomicSequence(name, initVal, create);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
         boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Not implemented");
@@ -469,6 +470,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         return g.atomicReference(name, initVal, create);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
         @Nullable T initVal, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Not implemented");

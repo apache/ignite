@@ -94,6 +94,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Manager of data structures.
  */
 public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** */
     private static final String DATA_STRUCTURES_CACHE_NAME_PREFIX = "datastructures_";
 
     /** Initial capacity. */
@@ -114,6 +115,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** Atomic data structures configuration. */
     private final AtomicConfiguration defaultAtomicCfg;
 
+    /** Map of continuous query IDs. */
     private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
 
     /** Listener. */
@@ -475,8 +477,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             cfg = defaultAtomicCfg;
         }
 
-        // -----
-
         String cacheName = CU.ATOMICS_CACHE_NAME + (cfg.getGroupName() != null ? "@" + cfg.getGroupName() : "");
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = create ?
@@ -549,6 +549,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         removeDataStructure(null, name, groupNane, ATOMIC_LONG, null);
     }
 
+    /**
+     * @param predicate Remove predicate.
+     * @param name Data structure name.
+     * @param groupName Group name.
+     * @param type Data structure type.
+     * @param afterRmv Optional closure to run after data structure removed.
+     * @throws IgniteCheckedException If failed.
+     */
     private <T> void removeDataStructure(@Nullable final IgnitePredicateX<AtomicDataStructureValue> predicate,
             final String name,
             @Nullable String groupName,
@@ -755,6 +763,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }, cfg, name, QUEUE, create);
     }
 
+    /**
+     * @param cfg Atomic configuration.
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
     private CacheConfiguration cacheConfiguration(AtomicConfiguration cfg, String name) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -1470,8 +1483,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 (cfg2.getNodeFilter() != null && cfg2.getNodeFilter().equals(cfg.getNodeFilter()))))
                 return ((DistributedCollectionMetadata)e.getValue()).cacheName();
         }
-
-
 
         return null;
     }

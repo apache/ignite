@@ -146,6 +146,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         return name;
     }
 
+    /** {@inheritDoc} */
     @Override public String groupName() {
         return ctx.group().name();
     }

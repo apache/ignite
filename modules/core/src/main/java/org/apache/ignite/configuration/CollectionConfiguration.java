@@ -52,6 +52,7 @@ public class CollectionConfiguration implements Serializable {
     /** Collocated flag. */
     private boolean collocated;
 
+    /** Group name. */
     private String groupName;
 
     /**

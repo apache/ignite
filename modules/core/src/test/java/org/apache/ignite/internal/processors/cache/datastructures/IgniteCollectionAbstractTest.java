@@ -132,15 +132,22 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         return cache.configuration();
     }
 
+    /**
+     * @param queue Ignite queue.
+     * @return Cache context.
+     */
     protected static GridCacheContext cctx(IgniteQueue queue) {
         return GridTestUtils.getFieldValue(queue, "cctx");
     }
 
+    /**
+     * @param set Ignite set.
+     * @return Cache context.
+     */
     protected static GridCacheContext cctx(IgniteSet set) {
         if (set instanceof GridCacheSetProxy)
             return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
         else
             return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
     }
-
 }

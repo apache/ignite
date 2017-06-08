@@ -49,6 +49,9 @@ public class AtomicConfiguration {
     /** Affinity function */
     private AffinityFunction aff;
 
+    /** Group name. */
+    private String groupName;
+
     /**
      * @return Number of backup nodes.
      */
@@ -136,7 +139,7 @@ public class AtomicConfiguration {
      * @return Group name.
      */
     public String getGroupName() {
-        return null;
+        return groupName;
     }
 
     /**
@@ -144,7 +147,9 @@ public class AtomicConfiguration {
      * @return {@code this} for chaining.
      */
     public AtomicConfiguration setGroupName(String groupName) {
-        throw new UnsupportedOperationException("Not implemented");
+        this.groupName = groupName;
+
+        return this;
     }
 
     /** {@inheritDoc} */

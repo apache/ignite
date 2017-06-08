@@ -3458,6 +3458,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
         boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Not implemented");
@@ -3489,9 +3490,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return atomicReference(name, null, initVal, create);
     }
 
-    @Override
-    public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg, @Nullable T initVal,
-        boolean create) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, boolean create) throws IgniteException {
         guard();
 
         try {
