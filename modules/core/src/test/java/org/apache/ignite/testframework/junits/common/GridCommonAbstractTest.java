@@ -533,6 +533,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @return Maximum time of awaiting PartitionMapExchange operation (in milliseconds)
+     */
+    protected long getPartitionMapExchangeTimeout() {
+        return 30_000;
+    }
+
+    /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
      * @param nodes Optional nodes.
@@ -546,7 +553,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         @Nullable Collection<ClusterNode> nodes,
         boolean printPartState
     ) throws InterruptedException {
-        long timeout = 30_000;
+        long timeout = getPartitionMapExchangeTimeout();
 
         long startTime = -1;
 
