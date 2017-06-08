@@ -876,22 +876,34 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskBinarizable()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
+            var values = new[] {int.MinValue, int.MaxValue, 0, 1, -1, byte.MaxValue, byte.MinValue};
 
-            Assert.AreEqual(945, res.Field);
+            var cache = _grid1.GetCache<int, int>(DefaultCacheName);
 
-            // Binary mode.
-            var binRes = _grid1.GetCompute().WithKeepBinary().ExecuteJavaTask<BinaryObject>(
-                EchoTask, EchoTypeBinarizable);
+            foreach (var val in values)
+            {
+                cache[EchoTypeBinarizable] = val;
 
-            Assert.AreEqual(945, binRes.GetField<long>("Field"));
+                var res = _grid1.GetCompute()
+                    .ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
 
-            var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
-            
-            Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
+                Assert.AreEqual(val, res.Field);
 
-            Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
-            Assert.AreEqual(getData(dotNetBin), getData(binRes));
+                // Binary mode.
+                var binRes = _grid1.GetCompute()
+                    .WithKeepBinary()
+                    .ExecuteJavaTask<BinaryObject>(
+                        EchoTask, EchoTypeBinarizable);
+
+                Assert.AreEqual(val, binRes.GetField<long>("Field"));
+
+                var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
+
+                Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
+
+                Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
+                Assert.AreEqual(getData(dotNetBin), getData(binRes));
+            }
         }
 
         /// <summary>
