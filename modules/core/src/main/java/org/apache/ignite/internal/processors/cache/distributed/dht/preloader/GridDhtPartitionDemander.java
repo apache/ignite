@@ -383,7 +383,7 @@ public class GridDhtPartitionDemander {
             return;
         }
 
-        if (!this.cctx.grid().isRebalanceEnabled()) {
+        if (!ctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
                 log.debug("Cancel partition demand because rebalance disabled on current node.");
 
