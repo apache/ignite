@@ -959,6 +959,18 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 emptyPagesPoolSize: Number,
                 metricsEnabled: Boolean
             }]
+        },
+        longQueryWarningTimeout: Number,
+        sqlConnectorConfiguration: {
+            enabled: Boolean,
+            host: String,
+            port: Number,
+            portRange: Number,
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            tcpNoDelay: {type: Boolean, default: true},
+            maxOpenCursorsPerConnection: Number,
+            threadPoolSize: Number
         }
     });
 

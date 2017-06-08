@@ -112,7 +112,7 @@ public class JdbcThinStatement implements Statement {
             assert res != null;
 
             rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                res.isQuery(), res.updateCount());
+                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount());
         }
         catch (IOException e) {
             conn.close();
