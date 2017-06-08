@@ -421,7 +421,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     throw e;
                 }
             }
-        }, cfg, new DataStructureInfo(name, null, ATOMIC_SEQ, null), create, IgniteAtomicSequence.class);
+        }, cfg, name, DataStructureType.ATOMIC_SEQ, create, IgniteAtomicSequence.class);
     }
 
     /**
@@ -481,12 +481,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     throw e;
                 }
             }
-        }, cfg, new DataStructureInfo(name, null, ATOMIC_LONG, null), create, IgniteAtomicLong.class);
+        }, cfg, name, ATOMIC_LONG, create, IgniteAtomicLong.class);
     }
 
     /**
      * @param c Closure creating data structure instance.
-     * @param dsInfo Data structure info.
      * @param create Create flag.
      * @param cls Expected data structure class.
      * @return Data structure instance.
@@ -494,12 +493,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      */
     @Nullable private <T> T getAtomic(final AtomicBuilder<T> c,
         @Nullable AtomicConfiguration cfg,
-        final DataStructureInfo dsInfo,
+        final String name,
+        final DataStructureType type,
         final boolean create,
         Class<? extends T> cls)
         throws IgniteCheckedException
     {
-        A.notNull(dsInfo.name, "name");
+        A.notNull(name, "name");
 
         awaitInitialization();
 
@@ -510,14 +510,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
 
         // -----
-
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(dsInfo.name);
-
-        // Check type of structure received by key from local cache.
-        T dataStructure = cast(this.dsMap.get(key), cls);
-
-        if (dataStructure != null)
-            return dataStructure;
 
         String cacheName = CU.ATOMICS_CACHE_NAME + (cfg.getGroupName() != null ? "@" + cfg.getGroupName() : "");
 
@@ -535,6 +527,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert cache.context().groupId() == CU.cacheId(cfg.getGroupName() != null ? cfg.getGroupName() : CU.ATOMICS_CACHE_NAME);
 
+        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+
+        // Check type of structure received by key from local cache.
+        T dataStructure = cast(dsMap.get(key), cls);
+
+        if (dataStructure != null) {
+            AtomicDataStructureValue val = cache.get(key);
+
+            if (val != null && val.type() == type)
+                return dataStructure;
+        }
+
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
             cache.context().gate().enter();
@@ -545,7 +549,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return null;
 
-                // TODO : validate
+                if (val != null) {
+                    if (val.type() != type)
+                        throw new IgniteCheckedException("Another data structure with the same name already created " +
+                            "[name=" + name +
+                            ", newType=" + type +
+                            ", existingType=" + val.type() + ']');
+                }
 
                 T2<T, ? extends AtomicDataStructureValue> ret = c.build(val, cache);
 
@@ -574,9 +584,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     private <T> void removeDataStructure(@Nullable final IgnitePredicateX<AtomicDataStructureValue> predicate,
-            String name,
+            final String name,
             @Nullable String groupName,
-            DataStructureType type,
+            final DataStructureType type,
             @Nullable final IgniteInClosureX<T> afterRmv) throws IgniteCheckedException {
         assert name != null;
         assert type != null;
@@ -598,7 +608,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         if (val == null)
                             return null;
 
-                        // TODO : validate
+                        if (val.type() != type)
+                            throw new IgniteCheckedException("Data structure has different type " +
+                                "[name=" + name +
+                                ", expectedType=" + type +
+                                ", actualType=" + val.type() + ']');
 
                         if (predicate == null || predicate.applyx(val)) {
                             cache.remove(key);
@@ -670,7 +684,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     throw e;
                 }
             }
-        }, cfg, new DataStructureInfo(name, null, ATOMIC_REF, null), create, IgniteAtomicReference.class);
+        }, cfg, name, ATOMIC_REF, create, IgniteAtomicReference.class);
     }
 
     /**
@@ -732,7 +746,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     throw e;
                 }
             }
-        }, cfg, new DataStructureInfo(name, null, ATOMIC_STAMPED, null), create, IgniteAtomicStamped.class);
+        }, cfg, name, ATOMIC_STAMPED, create, IgniteAtomicStamped.class);
     }
 
     /**
@@ -777,7 +791,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public IgniteQueue<T> applyx(GridCacheContext ctx) throws IgniteCheckedException {
                 return ctx.dataStructures().queue(name, cap0, create && cfg.isCollocated(), create);
             }
-        }, cfg, name, QUEUE, cfg != null && cfg.isCollocated(), create);
+        }, cfg, name, QUEUE, create);
     }
 
     private CacheConfiguration cacheConfiguration(AtomicConfiguration cfg, String name) {
@@ -899,7 +913,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable CollectionConfiguration cfg,
         String name,
         final DataStructureType type,
-        boolean colocated,
         boolean create)
         throws IgniteCheckedException
     {
@@ -943,17 +956,26 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         else {
             oldVal = metaCache.get(new GridCacheInternalKeyImpl(name));
 
-            if (oldVal == null || !(oldVal instanceof DistributedCollectionMetadata))
+            if (oldVal == null)
                 return null;
+            else if (!(oldVal instanceof DistributedCollectionMetadata))
+                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name=" + name +
+                    ", newType=" + type +
+                    ", existingType=" + oldVal.type() + ']');
 
-            cache = ctx.cache().cache(((DistributedCollectionMetadata)oldVal).cacheName());
+            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
 
             if (cache == null)
                 return null;
         }
 
         if (oldVal != null) {
-            // TODO : validate
+            if (oldVal.type() != type)
+                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name=" + name +
+                    ", newType=" + type +
+                    ", existingType=" + oldVal.type() + ']');
         }
 
         return c.applyx(cache.context());
@@ -1058,7 +1080,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     throw e;
                 }
             }
-        }, cfg, new DataStructureInfo(name, null, COUNT_DOWN_LATCH, null), create, GridCacheCountDownLatchEx.class);
+        }, cfg, name, COUNT_DOWN_LATCH, create, GridCacheCountDownLatchEx.class);
     }
 
     /**
@@ -1133,7 +1155,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     throw e;
                 }
             }
-        }, cfg, new DataStructureInfo(name, null, SEMAPHORE, null), create, GridCacheSemaphoreEx.class);
+        }, cfg, name, SEMAPHORE, create, GridCacheSemaphoreEx.class);
     }
 
     /**
@@ -1204,7 +1226,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     throw e;
                 }
             }
-        }, cfg, new DataStructureInfo(name, null, REENTRANT_LOCK, null), create, GridCacheLockEx.class);
+        }, cfg, name, REENTRANT_LOCK, create, GridCacheLockEx.class);
     }
 
     /**
@@ -1402,7 +1424,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
                 return cctx.dataStructures().set(name, create ? cfg.isCollocated() : false, create);
             }
-        }, cfg, name, SET, cfg != null && cfg.isCollocated(), create);
+        }, cfg, name, SET, create);
     }
 
     /**
@@ -1461,8 +1483,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (cls.isInstance(obj))
             return (R)obj;
         else
-            throw new IgniteCheckedException("Failed to cast object [expected=" + cls +
-                ", actual=" + obj.getClass() + ']');
+            return null;
     }
 
     /** {@inheritDoc} */
