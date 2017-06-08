@@ -366,7 +366,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 else {
                     final GridFutureAdapter<Boolean> finalFut = fut;
 
-                    TimerTask task = new TimerTask() {
+                    timer.schedule(new TimerTask() {
                         @Override public void run() {
                             if (pingFuts.remove(nodeId, finalFut)) {
                                 if (ClientImpl.this.state == DISCONNECTED)
@@ -376,13 +376,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     finalFut.onDone(false);
                             }
                         }
-                    };
-
-                    try {
-                        timer.schedule(task, spi.netTimeout);
-                    } catch (IllegalStateException e) {
-                        return false;  // timer is cancelled because this client node is dying
-                    }
+                    }, spi.netTimeout);
 
                     sockWriter.sendMessage(new TcpDiscoveryClientPingRequest(getLocalNodeId(), nodeId));
                 }
@@ -815,13 +809,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.warn(log, "Simulating client node failure: " + getLocalNodeId());
 
         U.interrupt(sockWriter);
-        U.interrupt(sockReader);
         U.interrupt(msgWorker);
-        try {
-            timer.cancel();
-        } catch (Throwable e) {
-            // No-op.
-        }
 
         U.join(sockWriter, log);
         U.join(
@@ -888,9 +876,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 msg.client(true);
 
                 sockWriter.sendMessage(msg);
-
-                if (log.isDebugEnabled())
-                    log.debug("*** Send heartbeat message from node:    "+msg.creatorNodeId());
             }
         }
     }

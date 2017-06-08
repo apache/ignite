@@ -6164,11 +6164,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert msg.client();
 
             ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
-            if (wrk != null) {
-                msg.verify(getLocalNodeId());
 
-                wrk.addMessage(msg);
-            }
+            if (wrk != null)
+                wrk.metrics(msg.metrics());
             else if (log.isDebugEnabled())
                 log.debug("Received heartbeat message from unknown client node: " + msg);
         }
@@ -6301,9 +6299,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      */
     private class ClientMessageWorker extends MessageWorkerAdapter<T2<TcpDiscoveryAbstractMessage, byte[]>> {
-        /** minimal period of time which can be used as heartbeat timeout */
-        public static final int minHeartbeaTimeout = 10; // ms
-
         /** Node ID. */
         private final UUID clientNodeId;
 
@@ -6320,25 +6315,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         private IgniteProductVersion clientVer;
 
         /**
-         * Period of time after which client node which does not send heartbeat messages, is considered dead.
-         * Measured in milliseconds
-         */
-        private long heartBeatTimeOut;
-
-        /** timestamp of the last received heartbeat message, in milliseconds */
-        private long lastHeartBeatTime;
-
-        /**
          * @param sock Socket.
          * @param clientNodeId Node ID.
          */
         protected ClientMessageWorker(Socket sock, UUID clientNodeId) throws IOException {
-            super("tcp-disco-client-message-worker", Math.max(spi.getHeartbeatFrequency(), minHeartbeaTimeout));
+            super("tcp-disco-client-message-worker", 2000);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
-            this.heartBeatTimeOut = spi.getHeartbeatFrequency() * spi.getMaxMissedClientHeartbeats();
-            this.lastHeartBeatTime=U.currentTimeMillis();
         }
 
         /**
@@ -6387,32 +6371,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Message has been added to client queue: " + msg);
         }
 
-
-        /**
-         * Check the last time a heartbeat message received.
-         * In case of timeout, expel client node from the topology
-         */
-        @Override protected void noMessageLoop() {
-            long period = U.currentTimeMillis() - lastHeartBeatTime;
-
-            if (period >= heartBeatTimeOut) {
-                if (log.isInfoEnabled())
-                    log.info("Heartbeat timeout for node:" + clientNodeId + "; timeOut=" + heartBeatTimeOut + "; period=" + period);
-
-                TcpDiscoveryAbstractMessage msg = new TcpDiscoveryNodeLeftMessage(clientNodeId);
-
-                msg.senderNodeId(getLocalNodeId());
-
-                msgWorker.addMessage(msg);
-
-                clientMsgWorkers.remove(clientNodeId, this);
-
-                U.interrupt(this);
-
-                U.closeQuiet(sock);
-            }
-        }
-
         /** {@inheritDoc} */
         @Override protected void processMessage(T2<TcpDiscoveryAbstractMessage, byte[]> msgT) {
             boolean success = false;
@@ -6450,15 +6408,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
                             spi.failureDetectionTimeout() : spi.getSocketTimeout());
                     }
-                }
-                else if (msg instanceof TcpDiscoveryClientHeartbeatMessage) {
-                    TcpDiscoveryClientHeartbeatMessage hbmsg = (TcpDiscoveryClientHeartbeatMessage)msg;
-
-                    if (log.isDebugEnabled()) // TODO turn to debug
-                        log.debug("###  Received heartbeat message from node:" + hbmsg.creatorNodeId());
-
-                    this.metrics = hbmsg.metrics();
-                    this.lastHeartBeatTime=U.currentTimeMillis();
                 }
                 else {
                     if (msgLog.isDebugEnabled())
