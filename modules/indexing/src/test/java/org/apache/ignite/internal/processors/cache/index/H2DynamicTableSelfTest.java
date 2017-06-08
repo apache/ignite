@@ -248,11 +248,18 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to omit mandatory value of ATOMICITY parameter yields an error.
+     * Test that providing an invalid value of ATOMICITY parameter yields an error.
      */
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
             "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue");
+    }
+
+    /**
+     * Test that attempting to omit mandatory value of CACHEGROUP parameter yields an error.
+     */
+    public void testEmptyCacheGroup() {
+        assertCreateTableWithParamsThrows("cachegroup=", "Parameter value cannot be empty: CACHEGROUP");
     }
 
     /**
