@@ -890,10 +890,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.AreEqual(val, res.Field);
 
                 // Binary mode.
-                var binRes = _grid1.GetCompute()
-                    .WithKeepBinary()
-                    .ExecuteJavaTask<BinaryObject>(
-                        EchoTask, EchoTypeBinarizable);
+                var binRes = _grid1.GetCompute().WithKeepBinary()
+                    .ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinarizable);
 
                 Assert.AreEqual(val, binRes.GetField<long>("Field"));
 
