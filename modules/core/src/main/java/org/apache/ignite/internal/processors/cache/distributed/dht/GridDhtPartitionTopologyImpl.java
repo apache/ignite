@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,9 +72,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 @GridToStringExclude
 public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private static final GridDhtPartitionState[] MOVING_STATES = new GridDhtPartitionState[] {MOVING};
-    /** If true, then check consistency. */
-    private static final boolean CONSISTENCY_CHECK = false;
-
     /** Flag to control amount of output for full map. */
     private static final boolean FULL_MAP_DEBUG = false;
 
@@ -886,7 +884,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             List<ClusterNode> nodes = null;
 
             if (!topVer.equals(diffFromAffinityVer)) {
-                log.error("??? node2part [topVer=" + topVer + ", diffVer=" + diffFromAffinityVer + "]");
+                LT.warn(log, "Requested topology version does not match calculated diff, will require full iteration to" +
+                    "calculate mapping [topVer=" + topVer + ", diffVer=" + diffFromAffinityVer + "]");
 
                 nodes = new ArrayList<>();
 
@@ -1599,9 +1598,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            checkEvictions(updSeq, cctx.affinity().assignments(topVer));
+            checkEvictions(updSeq, grp.affinity().assignments(topVer));
 
-            cctx.needsRecovery(false);
+            grp.needsRecovery(false);
         }
         finally {
             lock.writeLock().unlock();
