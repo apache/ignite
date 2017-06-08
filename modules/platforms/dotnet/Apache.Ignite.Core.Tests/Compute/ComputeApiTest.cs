@@ -877,21 +877,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestEchoTaskBinarizable()
         {
             var values = new[] {int.MinValue, int.MaxValue, 0, 1, -1, byte.MaxValue, byte.MinValue};
-
             var cache = _grid1.GetCache<int, int>(DefaultCacheName);
+            var compute = _grid1.GetCompute();
 
             foreach (var val in values)
             {
                 cache[EchoTypeBinarizable] = val;
 
-                var res = _grid1.GetCompute()
-                    .ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
-
+                var res = compute.ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
                 Assert.AreEqual(val, res.Field);
 
                 // Binary mode.
-                var binRes = _grid1.GetCompute().WithKeepBinary()
-                    .ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinarizable);
+                var binRes = compute.WithKeepBinary().ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinarizable);
 
                 Assert.AreEqual(val, binRes.GetField<long>("Field"));
 
