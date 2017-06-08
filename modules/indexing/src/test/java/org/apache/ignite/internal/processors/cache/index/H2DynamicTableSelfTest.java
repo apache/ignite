@@ -30,7 +30,6 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -54,8 +53,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -391,28 +388,19 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testSqlFlagCompatibilityCheck() throws Exception {
-        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
+            "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"template=cache\"");
 
-        assertTrue(IgniteSystemProperties.getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK));
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                String cacheName = cacheName("Person");
 
-        try {
-            executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
-                "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"template=cache\"");
+                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration(cacheName)));
 
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    String cacheName = cacheName("Person");
-
-                    Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration(cacheName)));
-
-                    return null;
-                }
-            }, IgniteException.class, "Cache configuration mismatch (local cache was created via cache API, while " +
-                    "remote cache was created via CREATE TABLE): SQL_PUBLIC_Person");
-        }
-        finally {
-            System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "false");
-        }
+                return null;
+            }
+        }, IgniteException.class, "Cache configuration mismatch (local cache was created via Ignite API, while " +
+            "remote cache was created via CREATE TABLE): SQL_PUBLIC_Person");
     }
 
     /**
