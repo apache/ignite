@@ -407,7 +407,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     return null;
                 }
-            }, IgniteException.class, "SQL flag mismatch [cacheName=SQL_PUBLIC_Person, local=false, remote=true");
+            }, IgniteException.class, "Cache configuration mismatch (local cache was created via cache API, while " +
+                    "remote cache was created via CREATE TABLE): SQL_PUBLIC_Person");
         }
         finally {
             System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "false");

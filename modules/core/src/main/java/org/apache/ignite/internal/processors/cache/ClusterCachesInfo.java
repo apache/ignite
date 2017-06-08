@@ -153,9 +153,10 @@ class ClusterCachesInfo {
 
                 if (cacheData != null) {
                     if (!F.eq(cacheData.sql(), locCacheInfo.sql())) {
-                        throw new IgniteCheckedException("SQL flag mismatch [cacheName=" +
-                            locCacheInfo.config().getName() + ", local=" + locCacheInfo.sql() + ", remote=" +
-                            cacheData.sql() + ", rmtNodeId=" + cacheData.receivedFrom() + ']');
+                        throw new IgniteCheckedException("Cache configuration mismatch (local cache was created " +
+                            "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "cache API") + ", while remote cache was " +
+                            "created via " + (cacheData.sql() ? "CREATE TABLE" : "cache API") + "): " +
+                            locCacheInfo.config().getName());
                     }
 
                     if (checkConsistency)
@@ -170,6 +171,7 @@ class ClusterCachesInfo {
         joinDiscoData = null;
         gridData = null;
     }
+
     /**
      * Checks that remote caches has configuration compatible with the local.
      *
