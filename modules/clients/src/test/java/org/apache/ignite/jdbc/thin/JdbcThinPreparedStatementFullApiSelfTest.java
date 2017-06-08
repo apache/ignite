@@ -17,17 +17,24 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.InputStream;
+import java.io.Reader;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Date;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
@@ -58,7 +65,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Prepared statement test.
  */
-public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinPreparedStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -747,6 +754,203 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
         assert rs.getInt("id") == 1;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotSupportedTypes() throws Exception {
+        stmt = conn.prepareStatement("");
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setArray(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setAsciiStream(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setAsciiStream(1, null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setAsciiStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setBinaryStream(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setBinaryStream(1, null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setBinaryStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setBlob(1, (Blob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setBlob(1, (InputStream)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setBlob(1, (InputStream)null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setCharacterStream(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setCharacterStream(1, null, 0);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setCharacterStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setClob(1, (Clob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setClob(1, (Reader)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setClob(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setNCharacterStream(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setNCharacterStream(1, null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setNClob(1, (NClob)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setNClob(1, (Reader)null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setNClob(1, (Reader)null, 0L);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setNString(1, "");
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setRowId(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setRef(1, null);
+            }
+        });
+
+        checkNotSupported(new RunnableX() {
+            @Override public void run() throws Exception {
+                stmt.setSQLXML(1, null);
+            }
+        });
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setURL(1, new URL("http://test"));
+
+                    return null;
+                }
+            },
+            SQLException.class, "Parameter type is unsupported");
+
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setObject(1, new TestObject(0));
+
+                    return null;
+                }
+            },
+            SQLException.class, "Parameter type is unsupported");
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setObject(1, new TestObject(0), Types.JAVA_OBJECT);
+
+                    return null;
+                }
+            },
+            SQLException.class, "Parameter type is unsupported");
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    stmt.setObject(1, new TestObject(0), Types.JAVA_OBJECT, 0);
+
+                    return null;
+                }
+            },
+            SQLException.class, "Parameter type is unsupported");
+    }
 
     /**
      * Test object.

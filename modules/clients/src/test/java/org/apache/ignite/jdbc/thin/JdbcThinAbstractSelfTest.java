@@ -17,11 +17,38 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.concurrent.Callable;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Connection test.
  */
 public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
-    // No-op.
+    /**
+     * @param r Runnable to check support.
+     */
+    protected void checkNotSupported(final RunnableX r) {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
+
+                    return null;
+                }
+            }, SQLFeatureNotSupportedException.class, null);
+    }
+
+    /**
+     * Runnable that can throw an exception.
+     */
+    interface RunnableX {
+        /**
+         * @throws Exception On error.
+         */
+        void run() throws Exception;
+    }
+
+
 }
