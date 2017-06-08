@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             public unsafe int Invoke(byte* data, KeyValuePair<int, int> arg)
             {
                 var hash = 1;
-                var ptr = data + arg.Key;
+                sbyte* ptr = (sbyte*) (data + arg.Key);
 
                 for (var i = 0; i < arg.Value; i++)
                     hash = 31 * hash + *(ptr + i);

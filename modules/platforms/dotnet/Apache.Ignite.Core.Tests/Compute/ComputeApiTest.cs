@@ -890,8 +890,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             
             Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
 
-            Assert.AreEqual(dotNetBin.Data.Take(dotNetBin.Header.Length).ToArray(), 
-                binRes.Data.Take(binRes.Header.Length).ToArray());
+            Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
+            Assert.AreEqual(getData(dotNetBin), getData(binRes));
         }
 
         /// <summary>
