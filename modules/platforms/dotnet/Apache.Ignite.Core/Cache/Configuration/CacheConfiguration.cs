@@ -236,6 +236,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EnableStatistics = reader.ReadBoolean();
             MemoryPolicyName = reader.ReadString();
             PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
+            GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -293,6 +294,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(EnableStatistics);
             writer.WriteString(MemoryPolicyName);
             writer.WriteInt((int) PartitionLossPolicy);
+            writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -643,5 +645,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultPartitionLossPolicy)]
         public PartitionLossPolicy PartitionLossPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache group name. Caches with the same group name share single underlying 'physical'
+        /// cache (partition set), but are logically isolated. 
+        /// <para />
+        /// Since underlying cache is shared, the following configuration properties should be the same within group:
+        /// <see cref="AffinityFunction"/>, <see cref="CacheMode"/>, <see cref="PartitionLossPolicy"/>,
+        /// <see cref="MemoryPolicyName"/>
+        /// <para />
+        /// Grouping caches reduces overall overhead, since internal data structures are shared.
+        /// </summary>
+        public string GroupName { get;set; }
     }
 }
