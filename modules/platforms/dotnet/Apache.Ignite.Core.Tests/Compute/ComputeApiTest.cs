@@ -1365,7 +1365,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
     class PlatformComputeBinarizable
     {
-        public long Field { get; set; }
+        public int Field
+        {
+            get;
+            set;
+        }
     }
 
     class PlatformComputeNetBinarizable : PlatformComputeBinarizable

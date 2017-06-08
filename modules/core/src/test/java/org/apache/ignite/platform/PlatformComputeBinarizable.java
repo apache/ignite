@@ -22,7 +22,7 @@ package org.apache.ignite.platform;
  */
 public class PlatformComputeBinarizable {
     /** Field. */
-    public long field;
+    public int field;
 
     /**
      * Constructor.
@@ -36,7 +36,7 @@ public class PlatformComputeBinarizable {
      *
      * @param field Field.
      */
-    public PlatformComputeBinarizable(long field) {
+    public PlatformComputeBinarizable(int field) {
         this.field = field;
     }
 }
