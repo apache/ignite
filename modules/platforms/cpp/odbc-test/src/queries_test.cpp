@@ -413,7 +413,6 @@ struct QueriesTestSuiteFixture
 
         BOOST_CHECKPOINT("Filling param data");
 
-        // Feeling buffers
         for (int i = 0; i < recordsNum; ++i)
         {
             keys[i] = i;
@@ -443,7 +442,7 @@ struct QueriesTestSuiteFixture
             timestampFields[i].hour = timeFields[i].hour;
             timestampFields[i].minute = timeFields[i].minute;
             timestampFields[i].second = timeFields[i].second;
-            timestampFields[i].fraction = (i * 914873) % 1000000000;
+            timestampFields[i].fraction = std::abs((i * 914873)) % 1000000000;
 
             for (int j = 0; j < 42; ++j)
                 i8ArrayFields[i * 42 + j] = i * 42 + j;
@@ -451,7 +450,7 @@ struct QueriesTestSuiteFixture
         }
 
         BOOST_CHECKPOINT("Binding keys");
-        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, keys.GetData(), 0, 0);
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, keys.GetData(), 0, 0);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -522,26 +521,101 @@ struct QueriesTestSuiteFixture
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
+        BOOST_CHECKPOINT("Setting paramset size");
         ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(recordsNum), 0);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
+        BOOST_CHECKPOINT("Executing query");
         ret = SQLExecute(stmt);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
+        SQLLEN inserted = 0;
+        ret = SQLRowCount(stmt, &inserted);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(inserted, recordsNum);
+
+        BOOST_CHECKPOINT("Getting next result set");
         ret = SQLMoreResults(stmt);
 
         if (ret != SQL_NO_DATA)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        // Resetting parameters.
+        BOOST_CHECKPOINT("Resetting parameters.");
         ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Setting paramset size");
+        ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(1), 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    void InsertBatchSelect(int recordsNum)
+    {
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+        // Inserting values.
+        InsertTestBatch(recordsNum);
+
+        int64_t key = 0;
+        char strField[1024] = { 0 };
+        SQLLEN strFieldLen = 0;
+
+        // Binding columns.
+        SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Binding columns.
+        ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Just selecting everything to make sure everything is OK
+        SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+        ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int selectedRecordsNum = 0;
+
+        ret = SQL_SUCCESS;
+
+        while (ret == SQL_SUCCESS)
+        {
+            ret = SQLFetch(stmt);
+
+            if (ret == SQL_NO_DATA)
+                break;
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+            std::string expectedStr = getTestString(selectedRecordsNum);
+            int64_t expectedKey = selectedRecordsNum;
+
+            BOOST_CHECK_EQUAL(key, expectedKey);
+
+            BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+            ++selectedRecordsNum;
+        }
+
+        BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
     }
 
     /** Node started during the test. */
@@ -1476,64 +1550,54 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
     BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
 }
 
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2)
+{
+    InsertBatchSelect(2);
+}
+
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect100)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    InsertBatchSelect(100);
+}
 
-    const int recordsNum = 100;
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1000)
+{
+    InsertBatchSelect(1000);
+}
 
-    // Inserting values.
-    InsertTestBatch(recordsNum);
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1023)
+{
+    InsertBatchSelect(1024);
+}
 
-    int64_t key = 0;
-    char strField[1024] = { 0 };
-    SQLLEN strFieldLen = 0;
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1024)
+{
+    InsertBatchSelect(1024);
+}
 
-    // Binding columns.
-    SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1025)
+{
+    InsertBatchSelect(1025);
+}
 
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2000)
+{
+    InsertBatchSelect(2000);
+}
 
-    // Binding columns.
-    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2047)
+{
+    InsertBatchSelect(2048);
+}
 
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2048)
+{
+    InsertBatchSelect(2048);
+}
 
-    // Just selecting everything to make sure everything is OK
-    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
-
-    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
-
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-    int selectedRecordsNum = 0;
-
-    ret = SQL_SUCCESS;
-
-    while (ret == SQL_SUCCESS)
-    {
-        ret = SQLFetch(stmt);
-
-        if (ret == SQL_NO_DATA)
-            break;
-
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-        std::string expectedStr = getTestString(selectedRecordsNum);
-        int64_t expectedKey = selectedRecordsNum + 1;
-
-        BOOST_CHECK_EQUAL(key, expectedKey);
-
-        BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
-
-        ++selectedRecordsNum;
-    }
-
-    BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2049)
+{
+    InsertBatchSelect(2049);
 }
 
 template<size_t n, size_t k>

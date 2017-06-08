@@ -87,7 +87,8 @@ namespace ignite
 
                 // Buffer to use to get data.
                 ApplicationDataBuffer buf(buffer);
-                buf.SetOffset(offset + static_cast<int>(idx * buf.GetSize()));
+                buf.SetByteOffset(offset);
+                buf.SetElementOffset(idx);
 
                 SqlLen storedDataLen = static_cast<SqlLen>(storedData.size());
 

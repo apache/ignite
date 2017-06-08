@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
     double numBuf;
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_DOUBLE, &numBuf, sizeof(numBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_DOUBLE, &numBuf, sizeof(numBuf), &reslen);
 
     common::Decimal decimal;
 
@@ -276,7 +276,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
     long numBuf;
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
 
     common::Decimal decimal;
 
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
     char strBuf[64];
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     common::Decimal decimal;
 
@@ -330,7 +330,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     SQL_NUMERIC_STRUCT buf;
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_NUMERIC, &buf, sizeof(buf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_NUMERIC, &buf, sizeof(buf), &reslen);
 
     common::Decimal decimal;
 
@@ -381,7 +381,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
     char strBuf[64] = { 0 };
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     Date date = common::MakeDateGmt(1999, 2, 22);
 
@@ -432,7 +432,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimeToString)
     char strBuf[64] = { 0 };
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     Time time = common::MakeTimeGmt(7, 15, 0);
 
@@ -462,7 +462,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
     char strBuf[64] = { 0 };
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     Timestamp date = common::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
 
@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
     char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
     SqlLen reslen = sizeof(buffer) - 1;
 
-    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer) - 1, &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer) - 1, &reslen);
 
     ignite::Guid guid = appBuf.GetGuid();
 
@@ -762,13 +762,13 @@ BOOST_AUTO_TEST_CASE(TestGetIntWithOffset)
 
     BOOST_CHECK(val == 12);
 
-    appBuf.SetOffset(sizeof(TestStruct));
+    appBuf.SetByteOffset(sizeof(TestStruct));
 
     val = appBuf.GetInt64();
 
     BOOST_CHECK(val == 42);
 
-    appBuf.SetOffset(0);
+    appBuf.SetByteOffset(0);
 
     val = appBuf.GetInt64();
 
@@ -798,7 +798,7 @@ BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
     BOOST_CHECK(res == "Hello Ignite!");
     BOOST_CHECK(res.size() == strlen("Hello Ignite!"));
 
-    appBuf.SetOffset(sizeof(TestStruct));
+    appBuf.SetByteOffset(sizeof(TestStruct));
 
     appBuf.PutString("Hello with offset!");
 

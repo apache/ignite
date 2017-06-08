@@ -32,7 +32,7 @@ namespace ignite
                 connection(connection),
                 sql(sql),
                 params(params),
-                rowsAffected(-1),
+                rowsAffected(0),
                 id(0),
                 executed(false),
                 dataRetrieved(false)
@@ -177,6 +177,7 @@ namespace ignite
                 resultMeta = rsp.GetMeta();
 
                 LOG_MSG("Query id: " << id);
+                LOG_MSG("rowsAffected: " << rowsAffected);
                 for (size_t i = 0; i < resultMeta.size(); ++i)
                 {
                     LOG_MSG("\n[" << i << "] SchemaName:     " << resultMeta[i].GetSchemaName()
@@ -216,6 +217,8 @@ namespace ignite
                 }
 
                 rowsAffected += rsp.GetAffectedRows();
+
+                LOG_MSG("rowsAffected: " << rsp.GetAffectedRows());
 
                 return SqlResult::AI_SUCCESS;
             }
