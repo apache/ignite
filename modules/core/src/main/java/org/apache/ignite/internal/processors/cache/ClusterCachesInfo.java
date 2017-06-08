@@ -154,8 +154,8 @@ class ClusterCachesInfo {
                 if (cacheData != null) {
                     if (!F.eq(cacheData.sql(), locCacheInfo.sql())) {
                         throw new IgniteCheckedException("Cache configuration mismatch (local cache was created " +
-                            "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "cache API") + ", while remote cache was " +
-                            "created via " + (cacheData.sql() ? "CREATE TABLE" : "cache API") + "): " +
+                            "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "Ignite API") + ", while remote cache " +
+                            "was created via " + (cacheData.sql() ? "CREATE TABLE" : "Ignite API") + "): " +
                             locCacheInfo.config().getName());
                     }
 
