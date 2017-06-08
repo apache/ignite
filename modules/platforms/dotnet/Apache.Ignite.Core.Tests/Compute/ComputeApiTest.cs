@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -880,10 +881,17 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(945, res.Field);
 
             // Binary mode.
-            var binRes = _grid1.GetCompute().WithKeepBinary().ExecuteJavaTask<IBinaryObject>(
+            var binRes = _grid1.GetCompute().WithKeepBinary().ExecuteJavaTask<BinaryObject>(
                 EchoTask, EchoTypeBinarizable);
 
             Assert.AreEqual(945, binRes.GetField<long>("Field"));
+
+            var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
+            
+            Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
+
+            Assert.AreEqual(dotNetBin.Data.Take(dotNetBin.Header.Length).ToArray(), 
+                binRes.Data.Take(binRes.Header.Length).ToArray());
         }
 
         /// <summary>
