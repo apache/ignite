@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.io.Serializable;
+
 /**
  * Internal key for data structures processor.
  */
-public class DataStructuresCacheKey {
+public class DataStructuresCacheKey implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
