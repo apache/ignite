@@ -23,10 +23,7 @@ import java.util.Map;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.tests.pojos.Person;
-import org.apache.ignite.tests.pojos.PersonId;
-import org.apache.ignite.tests.pojos.Product;
-import org.apache.ignite.tests.pojos.ProductOrder;
+import org.apache.ignite.tests.pojos.*;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestCacheSession;
@@ -427,6 +424,74 @@ public class CassandraDirectPersistenceTest {
         orderStore.deleteAll(TestsHelper.getKeys(orderEntries));
 
         LOGGER.info("POJO strategy delete tests passed");
+    }
+
+    /** */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void pojoStrategySimpleObjectsTest() {
+        CacheStore store5 = CacheStoreHelper.createCacheStore("persons5",
+                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-5.xml"),
+                CassandraHelper.getAdminDataSrc());
+
+        CacheStore store6 = CacheStoreHelper.createCacheStore("persons6",
+                new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-6.xml"),
+                CassandraHelper.getAdminDataSrc());
+
+        Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> entries5 = TestsHelper.generateSimplePersonIdsPersonsEntries();
+        Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> entries6 = TestsHelper.generateSimplePersonIdsPersonsEntries();
+
+        LOGGER.info("Running POJO strategy write tests for simple objects");
+
+        LOGGER.info("Running single write operation tests");
+        store5.write(entries5.iterator().next());
+        store6.write(entries6.iterator().next());
+        LOGGER.info("Single write operation tests passed");
+
+        LOGGER.info("Running bulk write operation tests");
+        store5.writeAll(entries5);
+        store6.writeAll(entries6);
+        LOGGER.info("Bulk write operation tests passed");
+
+        LOGGER.info("POJO strategy write tests for simple objects passed");
+
+        LOGGER.info("Running POJO simple objects strategy read tests");
+
+        LOGGER.info("Running single read operation tests");
+
+        SimplePerson person = (SimplePerson)store5.load(entries5.iterator().next().getKey());
+        if (!entries5.iterator().next().getValue().equalsPrimitiveFields(person))
+            throw new RuntimeException("SimplePerson values were incorrectly deserialized from Cassandra");
+
+        person = (SimplePerson)store6.load(entries6.iterator().next().getKey());
+        if (!entries6.iterator().next().getValue().equalsPrimitiveFields(person))
+            throw new RuntimeException("SimplePerson values were incorrectly deserialized from Cassandra");
+
+        LOGGER.info("Single read operation tests passed");
+
+        LOGGER.info("Running bulk read operation tests");
+
+        Map persons = store5.loadAll(TestsHelper.getKeys(entries5));
+        if (!TestsHelper.checkSimplePersonCollectionsEqual(persons, entries5, true))
+            throw new RuntimeException("SimplePerson values were incorrectly deserialized from Cassandra");
+
+        persons = store6.loadAll(TestsHelper.getKeys(entries6));
+        if (!TestsHelper.checkSimplePersonCollectionsEqual(persons, entries6, true))
+            throw new RuntimeException("SimplePerson values were incorrectly deserialized from Cassandra");
+
+        LOGGER.info("Bulk read operation tests passed");
+
+        LOGGER.info("POJO strategy read tests for simple objects passed");
+
+        LOGGER.info("Running POJO strategy delete tests for simple objects");
+
+        store5.delete(entries5.iterator().next().getKey());
+        store5.deleteAll(TestsHelper.getKeys(entries5));
+
+        store6.delete(entries6.iterator().next().getKey());
+        store6.deleteAll(TestsHelper.getKeys(entries6));
+
+        LOGGER.info("POJO strategy delete tests for simple objects passed");
     }
 
     /** */
