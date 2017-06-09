@@ -430,8 +430,10 @@ public class QueryUtils {
             String affField = null;
 
             // Need to setup affinity key for distributed joins.
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null)
-                affField = cctx.affinityField(qryEntity.findKeyType());
+            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null) {
+                // TODO: How to get affinity field here?
+                affField = null;
+            }
             else if (cctx.config().getAffinityMapper() instanceof DynamicTableAffinityKeyMapper)
                 affField = ((DynamicTableAffinityKeyMapper)cctx.config().getAffinityMapper()).fieldName();
 
