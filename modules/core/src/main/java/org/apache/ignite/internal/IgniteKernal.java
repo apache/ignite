@@ -3443,12 +3443,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        return atomicSequence(name, null, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().sequence(name, null, initVal, create);
+            return ctx.dataStructures().sequence(name, cfg, initVal, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3459,13 +3465,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
-        boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Not implemented");
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        return atomicLong(name, null, initVal, create);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
         guard();
 
         try {
@@ -3513,12 +3519,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create) {
+        return atomicStamped(name, null, initVal, initStamp, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().atomicStamped(name, null, initVal, initStamp, create);
+            return ctx.dataStructures().atomicStamped(name, cfg, initVal, initStamp, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
