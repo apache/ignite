@@ -156,7 +156,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeepBinaryInStore = DefaultKeepVinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
+#pragma warning disable 618
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
@@ -214,7 +216,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeepBinaryInStore = reader.ReadBoolean();
             LoadPreviousValue = reader.ReadBoolean();
             LockTimeout = reader.ReadLongAsTimespan();
+#pragma warning disable 618
             LongQueryWarningTimeout = reader.ReadLongAsTimespan();
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = reader.ReadInt();
             Name = reader.ReadString();
             ReadFromBackup = reader.ReadBoolean();
@@ -272,7 +276,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(KeepBinaryInStore);
             writer.WriteBoolean(LoadPreviousValue);
             writer.WriteLong((long) LockTimeout.TotalMilliseconds);
+#pragma warning disable 618
             writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
+#pragma warning restore 618
             writer.WriteInt(MaxConcurrentAsyncOperations);
             writer.WriteString(Name);
             writer.WriteBoolean(ReadFromBackup);
@@ -538,8 +544,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
+        /// <para />
+        /// This property is obsolete, use <see cref="IgniteConfiguration.LongQueryWarningTimeout"/> instead.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:03")]
+        [Obsolete("Use IgniteConfiguration.LongQueryWarningTimeout instead.")]
         public TimeSpan LongQueryWarningTimeout { get; set; }
 
         /// <summary>
