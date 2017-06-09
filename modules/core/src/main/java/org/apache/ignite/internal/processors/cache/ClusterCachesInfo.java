@@ -517,7 +517,7 @@ class ClusterCachesInfo {
                         continue;
                     }
 
-                    DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
+                    DynamicCacheDescriptor old = removeRegisteredCache(req.cacheName());
 
                     assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
@@ -596,6 +596,16 @@ class ClusterCachesInfo {
         }
 
         return incMinorTopVer;
+    }
+
+    /**
+     * Removes cache from registered collection.
+     *
+     * @param cacheName Cache to remove.
+     * @return DynamicCacheDescriptor Descriptor of removed cache.
+     */
+    public DynamicCacheDescriptor removeRegisteredCache(String cacheName) {
+        return registeredCaches.remove(cacheName);
     }
 
     /**

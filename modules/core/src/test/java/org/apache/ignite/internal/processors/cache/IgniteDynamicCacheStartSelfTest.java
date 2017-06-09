@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -28,13 +29,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheCreationException;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -49,11 +53,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 /**
  * Test for dynamic cache start.
@@ -65,6 +71,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";
+
+    /** */
+    private static final String DYNAMIC_CACHE_NAME2 = "TestDynamicCache2";
 
     /** */
     private static final String STATIC_CACHE_NAME = "TestStaticCache";
@@ -1335,5 +1344,127 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }, nodeCount(), "start-stop-cache");
 
         fut.get();
+    }
+
+    /**
+     * Creating corrupted cache, checking cache is reverted.
+     *
+     * @throws InterruptedException If failed.
+     */
+    public void testBrokenCache() throws InterruptedException {
+        createCorruptedCache(false, null, 0, false);
+    }
+
+    /**
+     * Creating corrupted cache on certain node, checking cache is reverted.
+     *
+     * @throws InterruptedException If failed.
+     */
+    public void testBrokenCacheOnCertainNode() throws InterruptedException {
+        createCorruptedCache(false, 1, 0, false);
+    }
+
+    /**
+     * Creating corrupted cache with normal cache, checking both are reverted.
+     *
+     * @throws InterruptedException If failed.
+     */
+    public void testBrokenOneCacheRevertBoth() throws InterruptedException {
+        createCorruptedCache(true, null, 0, false);
+    }
+
+    /**
+     * Creating corrupted cache with normal cache on certain node, checking both are reverted.
+     *
+     * @throws InterruptedException If failed.
+     */
+    public void testBrokenOneCacheOnCertainNodeRevertBoth() throws InterruptedException {
+        createCorruptedCache(true, 1, 0, false);
+    }
+
+    /**
+     * Creating both corrupted caches, checking both are reverted.
+     *
+     * @throws InterruptedException If failed.
+     */
+    public void testBrokenBothCaches() throws InterruptedException {
+        createCorruptedCache(true, 1, 0, true);
+    }
+
+    /**
+     * @param coupleCachesMode If set true, then 2 caches will be created simultaneously, only one is corrupted. Both
+     * must be reverted on all nodes.
+     * @param unluckyNodeIdx Node id, where exception is raised.
+     * @param exceptionInitiatorIdx Node id, initiated corrupted cache.
+     * @param bothCorrupted Both caches must be corrupted.
+     * @throws InterruptedException If failed.
+     */
+    private void createCorruptedCache(final Boolean coupleCachesMode, Integer unluckyNodeIdx,
+        final Integer exceptionInitiatorIdx, final Boolean bothCorrupted) throws InterruptedException {
+        assert !bothCorrupted || coupleCachesMode : "both corrupted mode active only when a pair of caches are created";
+
+        final CacheConfiguration cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName(DYNAMIC_CACHE_NAME);
+        BrokenStoreFactory storeFactory = new BrokenStoreFactory();
+
+        if (unluckyNodeIdx != null) {
+            BrokenStoreFactory.gridName = ignite(unluckyNodeIdx).name();
+            storeFactory.exceptionOnAllNodes = false;
+        }
+        else
+            storeFactory.exceptionOnAllNodes = true;
+
+        cacheConfiguration.setCacheStoreFactory(storeFactory);
+
+        awaitPartitionMapExchange();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+
+                if (coupleCachesMode)
+                    if (bothCorrupted)
+                        grid(exceptionInitiatorIdx).createCaches(F.asList(cacheConfiguration,
+                            new CacheConfiguration<>(cacheConfiguration).setName(DYNAMIC_CACHE_NAME2)));
+                    else
+                        grid(exceptionInitiatorIdx).createCaches(Arrays.asList(cacheConfiguration, new CacheConfiguration(DYNAMIC_CACHE_NAME2)));
+                else
+                    grid(exceptionInitiatorIdx).createCache(cacheConfiguration);
+
+                return null;
+            }
+        }, CacheCreationException.class, null);
+
+        for (int i = 0; i < nodeCount(); i++) {
+            Assert.assertNull(grid(i).cache(DYNAMIC_CACHE_NAME));
+
+            if (coupleCachesMode)
+                Assert.assertNull(grid(i).cache(DYNAMIC_CACHE_NAME2));
+        }
+    }
+
+    /**
+     * Factory that breaks when is got created.
+     */
+    private static class BrokenStoreFactory implements Factory<CacheStore<Integer, String>> {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** Exception should arise on all nodes. */
+        boolean exceptionOnAllNodes = true;
+
+        /** Exception should arise on node with certain name. */
+        public static String gridName;
+
+        /** {@inheritDoc} */
+        @Override public CacheStore<Integer, String> create() {
+
+            if (exceptionOnAllNodes || ignite.name().equals(gridName)) {
+                throw new RuntimeException("This store factory is broken.");
+            }
+            else
+                return null;
+        }
     }
 }

@@ -35,6 +35,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheCreationException;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -59,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -592,12 +596,46 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else {
                 U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
 
-                onDone(e);
+                if (e instanceof CacheCreationException)
+                    handleCacheCreationException(e);
+                else
+                    onDone(e);
             }
 
             if (e instanceof Error)
                 throw (Error)e;
         }
+    }
+
+    /**
+     * Handles cache creation exception, and start cache creation rollback protocol.
+     *
+     * @param err Exception carrying cache creation failure info.
+     */
+    private void handleCacheCreationException(Throwable err) {
+        exchangeOnChangeGlobalState = true;
+        changeGlobalStateE = (Exception)err;
+
+        changeGlobalStateExceptions.put(cctx.localNodeId(), (Exception)err);
+
+        rollbackCacheCreation();
+
+        if (err instanceof CacheCreationException && !crd.isLocal())
+            sendPartitions(crd);
+        else if (err instanceof CacheCreationException) {
+            srvNodes.remove(cctx.localNode());
+
+            try {
+                sendAllPartitions(srvNodes);
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+
+                return;
+            }
+        }
+
+        onDone(exchangeId().topologyVersion(), err);
     }
 
     /**
@@ -1203,8 +1241,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.exchange().onExchangeDone(this, err);
 
-        if (exchActions != null && err == null)
-            exchActions.completeRequestFutures(cctx);
+        if (exchActions != null && localCacheCreationFailed())
+            exchActions.completeRequestFutures(cctx, changeGlobalStateE);
+        else if (exchActions != null && err == null)
+            exchActions.completeRequestFutures(cctx, (Exception)err);
 
         if (exchangeOnChangeGlobalState && err == null)
             cctx.kernalContext().state().onExchangeDone();
@@ -1232,6 +1272,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return dummy;
+    }
+
+    /**
+     * Removing all caches information from node.
+     */
+    private void rollbackCacheCreation() {
+        if (exchActions != null)
+            for (String cacheName : exchActions.cacheNames()) {
+                this.cctx.discovery().removeCacheFilter(cacheName);
+                this.cctx.cache().removeRegisteredCache(cacheName);
+
+                this.cctx.cache().stopGateway(cacheName);
+                this.cctx.cache().prepareCacheStop(cacheName, true);
+            }
     }
 
     /**
@@ -1319,6 +1373,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     updateSingleMap = true;
 
                     pendingSingleUpdates++;
+
+                    if (msg.getException() instanceof CacheCreationException) {
+                        changeGlobalStateE = msg.getException();
+
+                        exchangeOnChangeGlobalState = true;
+                    }
 
                     if (exchangeOnChangeGlobalState && msg.getException() != null)
                         changeGlobalStateExceptions.put(node.id(), msg.getException());
@@ -1574,8 +1634,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
-                if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
+                if (exchangeOnChangeGlobalState
+                    && !F.isEmpty(changeGlobalStateExceptions)
+                    && !checkCacheCreationFailed())
                     cctx.kernalContext().state().onFullResponseMessage(changeGlobalStateExceptions);
+
+                if (checkCacheCreationFailed())
+                    rollbackCacheCreation();
 
                 onDone(exchangeId().topologyVersion());
             }
@@ -1682,6 +1747,42 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Checks if cache creation failed during exchange process, if so extract creation exception {@link CacheCreationException}.
+     *
+     * @param msg Message from node.
+     * @return True if cache creation failed due to exception {@link CacheCreationException} occurred during current exchange phase.
+     */
+    private boolean checkCacheCreationFailed(GridDhtPartitionsFullMessage msg) {
+        if (exchActions == null || exchActions.cacheStartRequests().isEmpty())
+            return false;
+
+        if (changeGlobalStateE != null && changeGlobalStateE instanceof CacheCreationException)
+            return true;
+
+        if (msg == null)
+            return false;
+
+        for (Map.Entry<UUID, Exception> uuidExceptionEntry : msg.getExceptionsMap().entrySet()) {
+            if (uuidExceptionEntry.getValue() instanceof CacheCreationException) {
+                changeGlobalStateE = uuidExceptionEntry.getValue();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether cache creation failed with {@link CacheCreationException}.
+     *
+     * @return True if cache creation failed due to exception {@link CacheCreationException} occurred during current exchange phase.
+     */
+    private boolean checkCacheCreationFailed() {
+        return checkCacheCreationFailed(null);
+    }
+
+    /**
      * @param node Sender node.
      * @param msg Message.
      */
@@ -1710,7 +1811,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (exchangeOnChangeGlobalState && !F.isEmpty(msg.getExceptionsMap()))
             cctx.kernalContext().state().onFullResponseMessage(msg.getExceptionsMap());
 
+        if (checkCacheCreationFailed(msg))
+            rollbackCacheCreation();
+
         onDone(exchId.topologyVersion());
+    }
+
+    /**
+     * @return True If cache creation exception thrown by local node.
+     */
+    private boolean localCacheCreationFailed() {
+        if (checkCacheCreationFailed())
+            return ((CacheCreationException)changeGlobalStateE).getInitiatingNodeId().equals(this.cctx.localNodeId());
+        else
+            return false;
     }
 
     /**

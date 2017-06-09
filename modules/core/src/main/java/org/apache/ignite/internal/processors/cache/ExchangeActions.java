@@ -65,7 +65,7 @@ public class ExchangeActions {
     /**
      * @return New caches start requests.
      */
-    Collection<ActionData> cacheStartRequests() {
+    public Collection<ActionData> cacheStartRequests() {
         return cachesToStart != null ? cachesToStart.values() : Collections.<ActionData>emptyList();
     }
 
@@ -77,12 +77,20 @@ public class ExchangeActions {
     }
 
     /**
-     * @param ctx Context.
+     * @return New caches names.
      */
-    public void completeRequestFutures(GridCacheSharedContext ctx) {
-        completeRequestFutures(cachesToStart, ctx);
-        completeRequestFutures(cachesToStop, ctx);
-        completeRequestFutures(cachesToResetLostParts, ctx);
+    public Collection<String> cacheNames() {
+        return cachesToStart != null ? cachesToStart.keySet() : Collections.<String>emptyList();
+    }
+
+    /**
+     * @param ctx Context.
+     * @param exception Exception to return to futures.
+     */
+    public void completeRequestFutures(GridCacheSharedContext ctx, Exception exception) {
+        completeRequestFutures(cachesToStart, ctx, exception);
+        completeRequestFutures(cachesToStop, ctx, exception);
+        completeRequestFutures(cachesToResetLostParts, ctx, exception);
     }
 
     /**
@@ -90,9 +98,17 @@ public class ExchangeActions {
      * @param ctx Context.
      */
     private void completeRequestFutures(Map<String, ActionData> map, GridCacheSharedContext ctx) {
+        completeRequestFutures(map, ctx, null);
+    }
+
+    /**
+     * @param map Actions map.
+     * @param ctx Context.
+     */
+    private void completeRequestFutures(Map<String, ActionData> map, GridCacheSharedContext ctx, Exception exception) {
         if (map != null) {
             for (ActionData req : map.values())
-                ctx.cache().completeCacheStartFuture(req.req, true, null);
+                ctx.cache().completeCacheStartFuture(req.req, true, exception);
         }
     }
 
@@ -197,7 +213,7 @@ public class ExchangeActions {
      * @param req Request.
      * @param desc Cache descriptor.
      */
-    void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+    public void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.stop() : req;
 
         cachesToStop = add(cachesToStop, req, desc);
