@@ -109,6 +109,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             TestKey(byte.MinValue, byte.MaxValue);
             TestKey(sbyte.MinValue, sbyte.MaxValue);
+            TestKey(short.MinValue, short.MaxValue);
+            TestKey(int.MinValue, int.MaxValue);
+            TestKey(uint.MinValue, uint.MaxValue);
+            TestKey(long.MinValue, long.MaxValue);
+            TestKey(ulong.MinValue, ulong.MaxValue);
+            TestKey(float.MinValue, float.MaxValue);
+            TestKey(double.MinValue, double.MaxValue);
+            TestKey(decimal.MinValue, decimal.MaxValue);
+            TestKey(Guid.NewGuid());
         }
 
         /// <summary>
