@@ -697,16 +697,14 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                     _fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
 
-                    _.forEach(tables, function(tbl, idx) {
+                    _.forEach(tables, (tbl, idx) => {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;
-                        tbl.generatedCacheName = toJavaClassName(tbl.tbl) + 'Cache';
+                        tbl.generatedCacheName = toJavaClassName(tbl.table) + 'Cache';
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
-                        tbl.label = tbl.schema + '.' + tbl.tbl;
+                        tbl.label = tbl.schema + '.' + tbl.table;
                         tbl.edit = false;
-                        tbl.use = LegacyUtils.isDefined(_.find(tbl.cols, function(col) {
-                            return col.key;
-                        }));
+                        tbl.use = LegacyUtils.isDefined(_.find(tbl.columns, (col) => col.key));
                     });
 
                     $scope.importDomain.action = 'tables';
@@ -718,7 +716,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
         }
 
         $scope.applyDefaults = function() {
-            _.forEach($scope.importDomain.displayedTables, function(table) {
+            _.forEach($scope.importDomain.displayedTables, (table) => {
                 table.edit = false;
                 table.action = $scope.importCommon.action;
                 table.cacheOrTemplate = $scope.importCommon.cacheOrTemplate;
@@ -770,9 +768,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                         let lastItem;
                         const newItems = [];
 
-                        _.forEach(_mapCaches(data.generatedCaches), function(cache) {
-                            $scope.caches.push(cache);
-                        });
+                        _.forEach(_mapCaches(data.generatedCaches), (cache) => $scope.caches.push(cache));
 
                         _.forEach(data.savedDomains, function(savedItem) {
                             const idx = _.findIndex($scope.domains, function(domain) {
@@ -847,11 +843,11 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     const valFields = [];
                     const aliases = [];
 
-                    const tableName = table.tbl;
+                    const tableName = table.table;
                     let typeName = toJavaClassName(tableName);
 
                     if (_.find($scope.importDomain.tables,
-                            (tbl, ix) => tbl.use && ix !== curIx && tableName === tbl.tbl)) {
+                            (tbl, ix) => tbl.use && ix !== curIx && tableName === tbl.table)) {
                         typeName = typeName + '_' + toJavaClassName(table.schema);
 
                         containDup = true;
@@ -869,7 +865,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                     let _containKey = false;
 
-                    _.forEach(table.cols, function(col) {
+                    _.forEach(table.columns, function(col) {
                         const fld = dbField(col.name, SqlTypes.findJdbcType(col.type), col.nullable, col.unsigned);
 
                         qryFields.push({name: fld.javaFieldName, className: fld.javaType});
@@ -892,18 +888,17 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     });
 
                     containKey &= _containKey;
-
-                    if (table.idxs) {
-                        _.forEach(table.idxs, function(idx) {
-                            const fields = Object.keys(idx.fields);
+                    if (table.indexes) {
+                        _.forEach(table.indexes, (idx) => {
+                            const idxFields = _.map(idx.fields, (idxFld) => ({
+                                name: toJavaFieldName(idxFld.name),
+                                direction: idxFld.sortOrder
+                            }));
 
                             indexes.push({
-                                name: idx.name, indexType: 'SORTED', fields: _.map(fields, function(fieldName) {
-                                    return {
-                                        name: toJavaFieldName(fieldName),
-                                        direction: idx.fields[fieldName]
-                                    };
-                                })
+                                name: idx.name,
+                                indexType: 'SORTED',
+                                fields: idxFields
                             });
                         });
                     }
@@ -946,10 +941,11 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                         newDomain.keyType = keyField.javaType;
 
-                        // Exclude key column from query fields and indexes.
+                        // Exclude key column from query fields.
                         newDomain.fields = _.filter(newDomain.fields, (field) => field.name !== keyField.javaFieldName);
 
-                        _.forEach(newDomain.indexes, function(index) {
+                        // Exclude key column from indexes.
+                        _.forEach(newDomain.indexes, (index) => {
                             index.fields = _.filter(index.fields, (field) => field.name !== keyField.javaFieldName);
                         });
 
