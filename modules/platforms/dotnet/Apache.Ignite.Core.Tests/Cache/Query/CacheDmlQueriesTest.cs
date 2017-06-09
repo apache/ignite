@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Double = double.MaxValue,
                 Decimal = decimal.MaxValue,
                 Guid = Guid.NewGuid(),
-                String = BinarySelfTest.SpecialStrings.First(),
+                String = "привет",
                 Key = new Key(255, 65555)
             };
 
