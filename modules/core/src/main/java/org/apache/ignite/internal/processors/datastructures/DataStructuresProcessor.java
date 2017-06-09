@@ -1065,6 +1065,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             if (err != null)
                 throw err;
 
+        } else if (!create)
+            return null;
+
+        if (!create) {
             assert cached.info instanceof CollectionInfo : cached.info;
 
             String cacheName = ((CollectionInfo)cached.info).cacheName;
@@ -1072,8 +1076,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             GridCacheContext cacheCtx = ctx.cache().getOrStartCache(cacheName).context();
 
             return c.applyx(cacheCtx);
-        } else if (!create)
-            return null;
+        }
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
