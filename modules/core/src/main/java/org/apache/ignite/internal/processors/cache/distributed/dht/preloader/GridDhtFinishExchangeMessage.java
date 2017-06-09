@@ -65,6 +65,27 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     private GridDhtPartitionsFullMessage partFullMsg;
 
     /**
+     * Default constructor.
+     */
+    public GridDhtFinishExchangeMessage() {
+        // No-op.
+    }
+
+    /**
+     * @param exchId Exchange id.
+     * @param assignmentChange Assignment change.
+     * @param partFullMsg Partition full message.
+     */
+    public GridDhtFinishExchangeMessage(
+        GridDhtPartitionExchangeId exchId,
+        Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
+        GridDhtPartitionsFullMessage partFullMsg) {
+        this.exchId = exchId;
+        this.assignmentChange = assignmentChange;
+        this.partFullMsg = partFullMsg;
+    }
+
+    /**
      * @return Exchange id.
      */
     public GridDhtPartitionExchangeId exchangeId() {

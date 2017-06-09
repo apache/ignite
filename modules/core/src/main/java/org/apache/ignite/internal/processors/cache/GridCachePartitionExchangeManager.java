@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -271,15 +272,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else if (customMsg instanceof CacheAffinityChangeMessage) {
                         CacheAffinityChangeMessage msg = (CacheAffinityChangeMessage)customMsg;
 
-                        if (msg.exchangeId() == null) {
-                            if (msg.exchangeNeeded()) {
-                                exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
+                        //if (msg.exchangeId() == null) {
+                        if (msg.exchangeNeeded()) {
+                            exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
 
-                                exchFut = exchangeFuture(exchId, evt, cache, null, msg);
-                            }
+                            exchFut = exchangeFuture(exchId, evt, cache, null, msg);
                         }
-                        else
-                            exchangeFuture(msg.exchangeId(), null, null, null, null).onAffinityChangeMessage(evt.eventNode(), msg);
+//                        }
+//                        else
+//                            exchangeFuture(msg.exchangeId(), null, null, null, null).onAffinityChangeMessage(evt.eventNode(), msg);
                     }
                     else if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage
                         && ((StartSnapshotOperationAckDiscoveryMessage)customMsg).needExchange()) {
@@ -340,10 +341,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
-        cctx.io().addHandler(0, GridDhtPartitionsSingleRequest.class,
-            new MessageHandler<GridDhtPartitionsSingleRequest>() {
-                @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
-                    processSinglePartitionRequest(node, msg);
+        cctx.io().addHandler(0, GridDhtFinishExchangeMessage.class,
+            new MessageHandler<GridDhtFinishExchangeMessage>() {
+                @Override public void onMessage(ClusterNode node, GridDhtFinishExchangeMessage msg) {
+                    processFinishExchangeMessage(node, msg);
                 }
             });
     }
@@ -1372,6 +1373,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             sendLocalPartitions(node, msg.exchangeId());
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param node Node ID.
+     * @param msg Message.
+     */
+    private void processFinishExchangeMessage(ClusterNode node, GridDhtFinishExchangeMessage msg) {
+        if (!enterBusy())
+            return;
+
+        try {
+            exchangeFuture(msg.exchangeId(), null, null, null, null).onAffinityChangeMessage(node, msg);
         }
         finally {
             leaveBusy();

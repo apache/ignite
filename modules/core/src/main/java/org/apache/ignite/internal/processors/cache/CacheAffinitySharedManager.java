@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -526,7 +527,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Called when received {@link CacheAffinityChangeMessage} which should complete exchange.
+     * Called when received {@link GridDhtFinishExchangeMessage} which should complete exchange.
      *
      * @param exchFut Exchange future.
      * @param crd Coordinator flag.
@@ -534,7 +535,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public void onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture exchFut,
         boolean crd,
-        CacheAffinityChangeMessage msg) {
+        GridDhtFinishExchangeMessage msg) {
         if (log.isDebugEnabled()) {
             log.debug("Process exchange affinity change message [exchVer=" + exchFut.topologyVersion() +
                 ", msg=" + msg + ']');

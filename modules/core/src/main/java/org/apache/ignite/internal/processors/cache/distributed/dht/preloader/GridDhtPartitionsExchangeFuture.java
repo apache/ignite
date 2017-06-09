@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
@@ -1304,7 +1305,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             initFut.onDone(err == null);
 
-            affAttachmentHolder.attachment(null);
+            if(affAttachmentHolder != null)
+                affAttachmentHolder.attachment(null);
 
             if (exchId.isLeft()) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts())
@@ -1576,12 +1578,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
 
-            CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
+            GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage();
+
+            msg.exchangeId(exchId);
+            msg.assignmentChange(assignmentChange);
+            msg.partitionFullMessage(m);
 
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
 
-            cctx.discovery().sendCustomEvent(msg);
+            cctx.io().safeSend(F.view(srvNodes, F.remoteNodes(cctx.localNodeId())), msg, GridIoPolicy.SYSTEM_POOL, null);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -2019,7 +2025,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param node Message sender node.
      * @param msg Message.
      */
-    public void onAffinityChangeMessage(final ClusterNode node, final CacheAffinityChangeMessage msg) {
+    public void onAffinityChangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
 
         onDiscoveryEvent(new IgniteRunnable() {
@@ -2036,7 +2042,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             msg);
 
                         if (!crd.isLocal()) {
-                            GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
+                            GridDhtPartitionsFullMessage partsMsg = msg.partitionFullMessage();
 
                             assert partsMsg != null : msg;
                             assert partsMsg.lastVersion() != null : partsMsg;

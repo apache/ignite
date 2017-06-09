@@ -1839,8 +1839,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         startServer(1, 2);
 
-        discoSpi0.blockCustomEvent();
-
         checkAffinity(2, new AffinityTopologyVersion(2, 0), false);
 
         checkAffinity(2, new AffinityTopologyVersion(2, 1), true);
