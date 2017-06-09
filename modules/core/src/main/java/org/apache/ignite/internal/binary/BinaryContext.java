@@ -225,6 +225,9 @@ public class BinaryContext {
     /** Maps typeId to mappers. */
     private final ConcurrentMap<Integer, BinaryInternalMapper> typeId2Mapper = new ConcurrentHashMap8<>(0);
 
+    /** Affinity key field names. */
+    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
+
     /** Maps className to mapper */
     private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
 
@@ -457,13 +460,19 @@ public class BinaryContext {
                 if (clsName.endsWith(".*")) {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
-                    for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, mapper, serializer, identity, affFields.get(clsName0),
+                    for (String clsName0 : classesInPackage(pkgName)) {
+                        String affField = affFields.remove(clsName0);
+
+                        descs.add(clsName0, mapper, serializer, identity, affField,
                             typeCfg.isEnum(), typeCfg.getEnumValues(), true);
+                    }
                 }
-                else
+                else {
+                    String affField = affFields.remove(clsName);
+
                     descs.add(clsName, mapper, serializer, identity, affFields.get(clsName),
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
+                }
             }
         }
 
@@ -471,7 +480,16 @@ public class BinaryContext {
             registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.identity, desc.affKeyFieldName,
                 desc.isEnum, desc.enumMap);
 
-        // TODO: Register rest classes from "affFields".
+        BinaryInternalMapper globalMapper = resolveMapper(globalNameMapper, globalIdMapper);
+
+        // Put affinity field names for unconfigured types.
+        for (Map.Entry<String, String> entry : affFields.entrySet()) {
+            String typeName = entry.getKey();
+
+            int typeId = globalMapper.typeId(typeName);
+
+            affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
+        }
     }
 
     /**
