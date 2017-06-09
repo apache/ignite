@@ -1928,8 +1928,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 snapshotMgr.onCheckPointBegin();
 
-                int pages = chp.cpPages.size();
-
                 boolean interrupted = true;
 
                 try {
@@ -2016,7 +2014,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     "walSegmentsCleared=%d, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
                                 chp.cpEntry.checkpointId(),
-                                pages,
+                                chp.pagesSize,
                                 chp.cpEntry.checkpointMark(),
                                 chp.walFilesDeleted,
                                 tracker.markDuration(),
@@ -2031,7 +2029,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
                         tracker.totalDuration(),
-                        pages,
+                        chp.pagesSize,
                         tracker.dataPagesWritten(),
                         tracker.cowPagesWritten());
                 }
@@ -2042,7 +2040,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
                         tracker.totalDuration(),
-                        pages,
+                        chp.pagesSize,
                         tracker.dataPagesWritten(),
                         tracker.cowPagesWritten());
                 }
