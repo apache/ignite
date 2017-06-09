@@ -1238,13 +1238,22 @@ public class BinaryContext {
     }
 
     /**
+     * Get affinity key field name for type. First consult to predefined configuration, then delegate to metadata.
+     *
      * @param typeId Type ID.
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName(int typeId) {
-        BinaryMetadata meta = metaHnd.metadata0(typeId);
+        String res = affKeyFieldNames.get(typeId);
 
-        return meta != null ? meta.affinityKeyFieldName() : null;
+        if (res == null) {
+            BinaryMetadata meta = metaHnd.metadata0(typeId);
+
+            if (meta != null)
+                res = meta.affinityKeyFieldName();
+        }
+
+        return res;
     }
 
     /**
