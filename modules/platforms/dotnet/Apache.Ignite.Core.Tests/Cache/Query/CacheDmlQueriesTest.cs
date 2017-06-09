@@ -102,22 +102,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Tests the primitive key with .NET-only types like uint.
+        /// Tests all primitive key types.
         /// </summary>
         [Test]
-        public void TestPrimitiveKeyDotNetTypes()
+        public void TestPrimitiveKeyAllTypes()
         {
-            var cfg = new CacheConfiguration("primitive_key_dotnet", new QueryEntity(typeof(uint), typeof(string)));
-            var cache = Ignition.GetIgnite().CreateCache<uint, string>(cfg);
+            TestKey(byte.MinValue, byte.MaxValue);
+            TestKey(sbyte.MinValue, sbyte.MaxValue);
+        }
 
-            var res = cache.QueryFields(new SqlFieldsQuery(
-                "insert into string(_key, _val) values (?, ?)", uint.MaxValue, "x")).GetAll();
+        /// <summary>
+        /// Tests the key.
+        /// </summary>
+        private static void TestKey<T>(params T[] vals)
+        {
+            var cfg = new CacheConfiguration("primitive_key_dotnet_" + typeof(T), 
+                new QueryEntity(typeof(T), typeof(string)));
+            var cache = Ignition.GetIgnite().CreateCache<T, string>(cfg);
 
-            Assert.AreEqual(1, res.Count);
-            Assert.AreEqual(1, res[0].Count);
-            Assert.AreEqual(1, res[0][0]);
+            foreach (var val in vals)
+            {
+                var res = cache.QueryFields(new SqlFieldsQuery(
+                    "insert into string(_key, _val) values (?, ?)", val, val.ToString())).GetAll();
 
-            Assert.AreEqual("x", cache[uint.MaxValue]);
+                Assert.AreEqual(1, res.Count);
+                Assert.AreEqual(1, res[0].Count);
+                Assert.AreEqual(1, res[0][0]);
+
+                Assert.AreEqual(val.ToString(), cache[val]);
+            }
         }
 
         /// <summary>
