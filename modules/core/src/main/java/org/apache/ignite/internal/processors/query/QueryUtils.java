@@ -445,8 +445,6 @@ public class QueryUtils {
                         affField = field.name();
                 }
             }
-            else if (cctx.config().getAffinityMapper() instanceof DynamicTableAffinityKeyMapper)
-                affField = ((DynamicTableAffinityKeyMapper)cctx.config().getAffinityMapper()).fieldName();
 
             if (affField != null) {
                 if (!escape)
