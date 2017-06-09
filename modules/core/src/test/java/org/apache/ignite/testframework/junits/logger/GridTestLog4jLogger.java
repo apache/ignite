@@ -123,7 +123,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
      * log level.
      *
      * @param init If {@code true}, then a default console appender with
-     *      following pattern layout will be created: {@code %d{ABSOLUTE} %-5p [%c{1}] %m%n}.
+     *      following pattern layout will be created: {@code %d{ISO8601} %-5p [%c{1}] %m%n}.
      *      If {@code false}, then no implicit initialization will take place,
      *      and {@code Log4j} should be configured prior to calling this
      *      constructor.
@@ -367,7 +367,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
      * @return New console appender.
      */
     private Appender createConsoleAppender(Level maxLevel) {
-        String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
+        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
 
         // Configure output that should go to System.out
         Appender app = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);

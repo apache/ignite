@@ -38,6 +38,7 @@ public class ModelUtil {
      * Classes of keys.
      */
     private static Class[] keyClasses = {
+        Integer.class,
         Double.class,
         Identifier.class,
         Mark.class,

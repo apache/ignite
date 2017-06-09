@@ -15,36 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.console.agent.db;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObject;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Database schema names with catalog name.
  */
-public interface BinaryFieldEx extends BinaryField {
-    /**
-     * @return Type ID this field relates to.
-     */
-    public int typeId();
+public class DbSchema {
+    /** Catalog name. */
+    private final String catalog;
+
+    /** Schema names. */
+    private final Collection<String> schemas;
 
     /**
-     * Writes field value to the given byte buffer.
-     *
-     * @param obj Object from which the field should be extracted.
-     * @param buf Buffer to write the field value to.
-     * @return {@code True} if the value was successfully written, {@code false} if there is not enough space
-     *      for the field in the buffer.
+     * @param catalog Catalog name.
+     * @param schemas Schema names.
      */
-    public boolean writeField(BinaryObject obj, ByteBuffer buf);
+    public DbSchema(String catalog, Collection<String> schemas) {
+        this.catalog = catalog;
+        this.schemas = schemas;
+    }
 
     /**
-     * Reads field value from the given byte buffer.
-     *
-     * @param buf Buffer to read value from.
-     * @return Field value.
+     * @return Catalog name.
      */
-    public <F> F readField(ByteBuffer buf);
+    public String getCatalog() {
+        return catalog;
+    }
+
+    /**
+     * @return Schema names.
+     */
+    public Collection<String> getSchemas() {
+        return schemas;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DbSchema.class, this);
+    }
 }
