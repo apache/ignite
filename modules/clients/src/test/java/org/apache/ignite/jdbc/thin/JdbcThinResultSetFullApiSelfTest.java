@@ -1255,6 +1255,9 @@ public class JdbcThinResultSetFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
         rs.close();
 
+        // Must do nothing on closed result set
+        rs.close();
+
         checkResultSetClosed(new RunnableX() {
             @Override public void run() throws Exception {
                 rs.getBoolean(1);
@@ -1338,6 +1341,7 @@ public class JdbcThinResultSetFullApiSelfTest extends JdbcThinAbstractSelfTest {
                 rs.getDouble("id");
             }
         });
+
         checkResultSetClosed(new RunnableX() {
             @Override public void run() throws Exception {
                 rs.getString(1);
@@ -1431,6 +1435,60 @@ public class JdbcThinResultSetFullApiSelfTest extends JdbcThinAbstractSelfTest {
         checkResultSetClosed(new RunnableX() {
             @Override public void run() throws Exception {
                 rs.getTimestamp("id", new GregorianCalendar());
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.wasNull();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getMetaData();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.next();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.last();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.afterLast();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.beforeFirst();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.first();
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.findColumn("id");
+            }
+        });
+
+        checkResultSetClosed(new RunnableX() {
+            @Override public void run() throws Exception {
+                rs.getRow();
             }
         });
     }
