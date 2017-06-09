@@ -355,7 +355,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 String affFieldName0 = affFieldName;
 
                 if (affFieldName0 == null)
-                    ctx.affinityKeyFieldName(typeId);
+                    affFieldName0 = ctx.affinityKeyFieldName(typeId);
 
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
                     Collections.singleton(curSchema), false, null));
