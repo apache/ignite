@@ -77,9 +77,6 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
 
             BinaryField affField = affinityKeyField(key0.typeId());
 
-            if (affField == null)
-                affField = proc.affinityKeyField(key0);
-
             if (affField != null) {
                 Object res = affField.value(key0);
 
@@ -131,7 +128,12 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
             typeIdAffFields = typeIdAffFields0;
         }
 
-        return typeIdAffFields0.get(typeId);
+        BinaryField res = typeIdAffFields0.get(typeId);
+
+        if (res == null)
+            res = proc.affinityKeyField(typeId);
+
+        return res;
     }
 
     /** {@inheritDoc} */

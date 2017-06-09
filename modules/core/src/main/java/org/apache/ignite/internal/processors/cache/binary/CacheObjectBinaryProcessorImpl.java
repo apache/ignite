@@ -630,13 +630,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /**
      * Get affinity key field.
      *
-     * @param po Binary object.
+     * @param typeId Binary object type ID.
      * @return Affinity key.
      */
-    public BinaryField affinityKeyField(BinaryObjectEx po) {
+    public BinaryField affinityKeyField(int typeId) {
         // Fast path for already cached field.
-        int typeId = po.typeId();
-
         T1<BinaryField> fieldHolder = affKeyFields.get(typeId);
 
         if (fieldHolder != null)
