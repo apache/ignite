@@ -69,6 +69,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     private static String FINAL_QRY_PARAM = "Abracadabra";
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -88,14 +89,12 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
             ccfgs.add(ccfg);
 
         ccfgs.add(buildCacheConfiguration(CACHE_PERSON));
-        ccfgs.add(buildCacheConfiguration(CACHE_CALL));
+        ccfgs.add(buildCacheConfiguration(CACHE_CALL).setKeyConfiguration(new CacheKeyConfiguration(CallKey.class)));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         if (gridName.equals(NODE_CLIENT))
             c.setClientMode(true);
-
-        c.setCacheKeyConfiguration(new CacheKeyConfiguration(CallKey.class));
 
         return c;
     }
