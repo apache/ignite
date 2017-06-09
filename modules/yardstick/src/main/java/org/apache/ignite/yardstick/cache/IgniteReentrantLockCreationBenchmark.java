@@ -10,7 +10,7 @@ import org.apache.ignite.IgniteLock;
 /**
  * Ignite benchmark that does put and get operations protected by ignite reentrant lock.
  */
-public class IgniteReentrantLockBenchmark extends IgniteCacheAbstractBenchmark<Integer, Integer> {
+public class IgniteReentrantLockCreationBenchmark extends IgniteCacheAbstractBenchmark<Integer, Integer> {
     /** */
     private static final String CACHE_NAME = "atomic";
 
@@ -28,20 +28,24 @@ public class IgniteReentrantLockBenchmark extends IgniteCacheAbstractBenchmark<I
         Queue<Closeable> buf = (Queue<Closeable>)ctx.get(BUFFER_KEY);
         if (buf == null) {
             buf = new LinkedList<>();
+
             ctx.put(BUFFER_KEY, buf);
         }
-        if(buf.size() == MAX_BUF_SIZE) {
-            Closeable closeable = buf.poll();
-            closeable.close();
-        }
+
+
+        if(buf.size() == MAX_BUF_SIZE)
+            buf.poll().close();
 
         Integer cntr = (Integer)ctx.get(COUNTER_KEY);
+
         if (cntr == null)
             cntr = 0;
 
-        IgniteLock lock = ignite().reentrantLock(Thread.currentThread().getName() + cntr++, true, false, true);
+        IgniteLock lock = ignite().reentrantLock(Thread.currentThread().getName() + cntr, true, false, true);
 
         buf.offer(lock);
+
+        cntr++;
 
         ctx.put(COUNTER_KEY, cntr);
 
