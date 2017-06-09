@@ -257,9 +257,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         onKernalStart0(true);
 
-        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
-            GridCacheRemovable v = e.getValue();
-
+        for (GridCacheRemovable v : dsMap.values()) {
             if (v instanceof IgniteChangeGlobalStateSupport)
                 ((IgniteChangeGlobalStateSupport)v).onActivate(ctx);
         }
@@ -275,9 +273,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         onKernalStop(false);
 
-        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
-            GridCacheRemovable v = e.getValue();
-
+        for (GridCacheRemovable v : dsMap.values()) {
             if (v instanceof IgniteChangeGlobalStateSupport)
                 ((IgniteChangeGlobalStateSupport)v).onDeActivate(ctx);
         }
@@ -326,70 +322,58 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create)
         throws IgniteCheckedException
     {
-        return getAtomic(new AtomicAccessor<IgniteAtomicSequence>() {
-            @Override public T2<IgniteAtomicSequence, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new AtomicAccessor<GridCacheAtomicSequenceEx>() {
+            @Override public T2<GridCacheAtomicSequenceEx, AtomicDataStructureValue> get(GridCacheInternalKey key,
+                AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                GridCacheAtomicSequenceValue seqVal = cast(val, GridCacheAtomicSequenceValue.class);
 
-                try {
-                    GridCacheAtomicSequenceValue seqVal = cast(val, GridCacheAtomicSequenceValue.class);
+                // Check that sequence hasn't been created in other thread yet.
+                GridCacheAtomicSequenceEx seq = cast(dsMap.get(key), GridCacheAtomicSequenceEx.class);
 
-                    // Check that sequence hasn't been created in other thread yet.
-                    GridCacheAtomicSequenceEx seq = cast(dsMap.get(key), GridCacheAtomicSequenceEx.class);
+                if (seq != null) {
+                    assert seqVal != null;
 
-                    if (seq != null) {
-                        assert seqVal != null;
-
-                        return new T2<IgniteAtomicSequence, AtomicDataStructureValue>(seq, null);
-                    }
-
-                    if (seqVal == null && !create)
-                        return null;
-
-                    // We should use offset because we already reserved left side of range.
-                    long off = defaultAtomicCfg.getAtomicSequenceReserveSize() > 1 ?
-                        defaultAtomicCfg.getAtomicSequenceReserveSize() - 1 : 1;
-
-                    long upBound;
-                    long locCntr;
-
-                    if (seqVal == null) {
-                        locCntr = initVal;
-
-                        upBound = locCntr + off;
-
-                        // Global counter must be more than reserved region.
-                        seqVal = new GridCacheAtomicSequenceValue(upBound + 1);
-                    }
-                    else {
-                        locCntr = seqVal.get();
-
-                        upBound = locCntr + off;
-
-                        // Global counter must be more than reserved region.
-                        seqVal.set(upBound + 1);
-                    }
-
-                    // Only one thread can be in the transaction scope and create sequence.
-                    seq = new GridCacheAtomicSequenceImpl(name,
-                        key,
-                        cache,
-                        defaultAtomicCfg.getAtomicSequenceReserveSize(),
-                        locCntr,
-                        upBound);
-
-                    dsMap.put(key, seq);
-
-                    return new T2<IgniteAtomicSequence, AtomicDataStructureValue>(seq, seqVal);
+                    return new T2<>(seq, null);
                 }
-                catch (Error | Exception e) {
-                    dsMap.remove(key);
 
-                    U.error(log, "Failed to make atomic sequence: " + name, e);
+                if (seqVal == null && !create)
+                    return null;
 
-                    throw e;
+                // We should use offset because we already reserved left side of range.
+                long off = defaultAtomicCfg.getAtomicSequenceReserveSize() > 1 ?
+                    defaultAtomicCfg.getAtomicSequenceReserveSize() - 1 : 1;
+
+                long upBound;
+                long locCntr;
+
+                if (seqVal == null) {
+                    locCntr = initVal;
+
+                    upBound = locCntr + off;
+
+                    // Global counter must be more than reserved region.
+                    seqVal = new GridCacheAtomicSequenceValue(upBound + 1);
                 }
+                else {
+                    locCntr = seqVal.get();
+
+                    upBound = locCntr + off;
+
+                    // Global counter must be more than reserved region.
+                    seqVal.set(upBound + 1);
+                }
+
+                // Only one thread can be in the transaction scope and create sequence.
+                seq = new GridCacheAtomicSequenceImpl(name,
+                    key,
+                    cache,
+                    defaultAtomicCfg.getAtomicSequenceReserveSize(),
+                    locCntr,
+                    upBound);
+
+                return new T2<GridCacheAtomicSequenceEx, AtomicDataStructureValue>(seq, seqVal);
             }
-        }, cfg, name, DataStructureType.ATOMIC_SEQ, create, IgniteAtomicSequence.class);
+        }, cfg, name, DataStructureType.ATOMIC_SEQ, create, GridCacheAtomicSequenceEx.class);
     }
 
     /**
@@ -416,40 +400,27 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable AtomicConfiguration cfg,
         final long initVal,
         final boolean create) throws IgniteCheckedException {
-        return getAtomic(new AtomicAccessor<IgniteAtomicLong>() {
-            @Override public T2<IgniteAtomicLong, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new AtomicAccessor<GridCacheAtomicLongEx>() {
+            @Override public T2<GridCacheAtomicLongEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                // Check that atomic long hasn't been created in other thread yet.
+                GridCacheAtomicLongEx a = cast(dsMap.get(key), GridCacheAtomicLongEx.class);
 
-                try {
-                    // Check that atomic long hasn't been created in other thread yet.
-                    GridCacheAtomicLongEx a = cast(dsMap.get(key), GridCacheAtomicLongEx.class);
+                if (a != null) {
+                    assert val != null;
 
-                    if (a != null) {
-                        assert val != null;
-
-                        return new T2<IgniteAtomicLong, AtomicDataStructureValue>(a, null);
-                    }
-
-                    if (val == null && !create)
-                        return null;
-
-                    GridCacheAtomicLongValue retVal = (val == null ? new GridCacheAtomicLongValue(initVal) : null);
-
-                    a = new GridCacheAtomicLongImpl(name, key, cache);
-
-                    dsMap.put(key, a);
-
-                    return new T2<IgniteAtomicLong, AtomicDataStructureValue>(a, retVal);
+                    return new T2<>(a, null);
                 }
-                catch (Error | Exception e) {
-                    dsMap.remove(key);
 
-                    U.error(log, "Failed to make atomic long: " + name, e);
+                if (val == null && !create)
+                    return null;
 
-                    throw e;
-                }
+                GridCacheAtomicLongValue retVal = (val == null ? new GridCacheAtomicLongValue(initVal) : null);
+
+                a = new GridCacheAtomicLongImpl(name, key, cache);
+
+                return new T2<GridCacheAtomicLongEx, AtomicDataStructureValue>(a, retVal);
             }
-        }, cfg, name, ATOMIC_LONG, create, IgniteAtomicLong.class);
+        }, cfg, name, ATOMIC_LONG, create, GridCacheAtomicLongEx.class);
     }
 
     /**
@@ -459,7 +430,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Data structure instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private <T> T getAtomic(final AtomicAccessor<T> c,
+    @Nullable private <T extends GridCacheRemovable> T getAtomic(final AtomicAccessor<T> c,
         @Nullable AtomicConfiguration cfg,
         final String name,
         final DataStructureType type,
@@ -477,7 +448,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             cfg = defaultAtomicCfg;
         }
 
-        String cacheName = CU.ATOMICS_CACHE_NAME + (cfg.getGroupName() != null ? "@" + cfg.getGroupName() : "");
+        final String groupName = cfg.getGroupName();
+
+        String cacheName = CU.ATOMICS_CACHE_NAME + (groupName != null ? "@" + groupName : "");
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = create ?
             ctx.cache().<GridCacheInternalKey, AtomicDataStructureValue>getOrStartCache(cacheName, cacheConfiguration(cfg, cacheName)) :
@@ -493,7 +466,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert cache.context().groupId() == CU.cacheId(cfg.getGroupName() != null ? cfg.getGroupName() : CU.ATOMICS_CACHE_NAME);
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, groupName);
 
         // Check type of structure received by key from local cache.
         T dataStructure = cast(dsMap.get(key), cls);
@@ -523,10 +496,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                             ", existingType=" + val.type() + ']');
                 }
 
-                T2<T, ? extends AtomicDataStructureValue> ret = c.get(val, cache);
+                T2<T, ? extends AtomicDataStructureValue> ret;
 
-                if (ret.get2() != null)
-                    cache.put(key, ret.get2());
+                try {
+                    ret = c.get(key, val, cache);
+
+                    dsMap.put(key, ret.get1());
+
+                    if (ret.get2() != null)
+                        cache.put(key, ret.get2());
+                }
+                catch (Error | Exception e) {
+                    dsMap.remove(new T2<>(key, groupName));
+
+                    U.error(log, "Failed to make datastructure: " + name, e);
+
+                    throw e;
+                }
 
                 tx.commit();
 
@@ -569,7 +555,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final String cacheName = CU.ATOMICS_CACHE_NAME + (groupName != null ? "@" + groupName : "");
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, groupName);
 
         retryTopologySafe(new IgniteOutClosureX<Object>() {
             @Override public Object applyx() throws IgniteCheckedException {
@@ -624,41 +610,28 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create)
         throws IgniteCheckedException
     {
-        return getAtomic(new AtomicAccessor<IgniteAtomicReference>() {
-            @Override public T2<IgniteAtomicReference, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new AtomicAccessor<GridCacheAtomicReferenceEx>() {
+            @Override public T2<GridCacheAtomicReferenceEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                // Check that atomic reference hasn't been created in other thread yet.
+                GridCacheAtomicReferenceEx ref = cast(dsMap.get(key),
+                    GridCacheAtomicReferenceEx.class);
 
-                try {
-                    // Check that atomic reference hasn't been created in other thread yet.
-                    GridCacheAtomicReferenceEx ref = cast(dsMap.get(key),
-                        GridCacheAtomicReferenceEx.class);
+                if (ref != null) {
+                    assert val != null;
 
-                    if (ref != null) {
-                        assert val != null;
-
-                        return new T2<IgniteAtomicReference, AtomicDataStructureValue>(ref, null);
-                    }
-
-                    if (val == null && !create)
-                        return null;
-
-                    AtomicDataStructureValue retVal = (val == null ? new GridCacheAtomicReferenceValue<>(initVal) : null);
-
-                    ref = new GridCacheAtomicReferenceImpl(name, key, cache);
-
-                    dsMap.put(key, ref);
-
-                    return new T2<IgniteAtomicReference, AtomicDataStructureValue>(ref, retVal);
+                    return new T2<>(ref, null);
                 }
-                catch (Error | Exception e) {
-                    dsMap.remove(key);
 
-                    U.error(log, "Failed to make atomic reference: " + name, e);
+                if (val == null && !create)
+                    return null;
 
-                    throw e;
-                }
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheAtomicReferenceValue<>(initVal) : null);
+
+                ref = new GridCacheAtomicReferenceImpl(name, key, cache);
+
+                return new T2<>(ref, retVal);
             }
-        }, cfg, name, ATOMIC_REF, create, IgniteAtomicReference.class);
+        }, cfg, name, ATOMIC_REF, create, GridCacheAtomicReferenceEx.class);
     }
 
     /**
@@ -686,41 +659,28 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     @SuppressWarnings("unchecked")
     public final <T, S> IgniteAtomicStamped<T, S> atomicStamped(final String name, @Nullable AtomicConfiguration cfg,
         final T initVal, final S initStamp, final boolean create) throws IgniteCheckedException {
-        return getAtomic(new AtomicAccessor<IgniteAtomicStamped>() {
-            @Override public T2<IgniteAtomicStamped, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                GridCacheInternalKeyImpl key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new AtomicAccessor<GridCacheAtomicStampedEx>() {
+            @Override public T2<GridCacheAtomicStampedEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                // Check that atomic stamped hasn't been created in other thread yet.
+                GridCacheAtomicStampedEx stmp = cast(dsMap.get(key),
+                    GridCacheAtomicStampedEx.class);
 
-                try {
-                    // Check that atomic stamped hasn't been created in other thread yet.
-                    GridCacheAtomicStampedEx stmp = cast(dsMap.get(key),
-                        GridCacheAtomicStampedEx.class);
+                if (stmp != null) {
+                    assert val != null;
 
-                    if (stmp != null) {
-                        assert val != null;
-
-                        return new T2(stmp, null);
-                    }
-
-                    if (val == null && !create)
-                        return null;
-
-                    AtomicDataStructureValue retVal = (val == null ? new GridCacheAtomicStampedValue(initVal, initStamp) : null);
-
-                    stmp = new GridCacheAtomicStampedImpl(name, key, cache);
-
-                    dsMap.put(key, stmp);
-
-                    return new T2<IgniteAtomicStamped, AtomicDataStructureValue>(stmp, retVal);
+                    return new T2(stmp, null);
                 }
-                catch (Error | Exception e) {
-                    dsMap.remove(key);
 
-                    U.error(log, "Failed to make atomic stamped: " + name, e);
+                if (val == null && !create)
+                    return null;
 
-                    throw e;
-                }
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheAtomicStampedValue(initVal, initStamp) : null);
+
+                stmp = new GridCacheAtomicStampedImpl(name, key, cache);
+
+                return new T2<>(stmp, retVal);
             }
-        }, cfg, name, ATOMIC_STAMPED, create, IgniteAtomicStamped.class);
+        }, cfg, name, ATOMIC_STAMPED, create, GridCacheAtomicStampedEx.class);
     }
 
     /**
@@ -920,10 +880,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
-            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name), newVal);
+            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, groupName), newVal);
         }
         else {
-            oldVal = metaCache.get(new GridCacheInternalKeyImpl(name));
+            oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, groupName));
 
             if (oldVal == null)
                 return null;
@@ -1001,45 +961,32 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (create)
             A.ensure(cnt >= 0, "count can not be negative");
 
-        return getAtomic(new AtomicAccessor<IgniteCountDownLatch>() {
-            @Override public T2<IgniteCountDownLatch, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new AtomicAccessor<GridCacheCountDownLatchEx>() {
+            @Override public T2<GridCacheCountDownLatchEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                // Check that count down hasn't been created in other thread yet.
+                GridCacheCountDownLatchEx latch = cast(dsMap.get(key), GridCacheCountDownLatchEx.class);
 
-                try {
-                    // Check that count down hasn't been created in other thread yet.
-                    GridCacheCountDownLatchEx latch = cast(dsMap.get(key), GridCacheCountDownLatchEx.class);
+                if (latch != null) {
+                    assert val != null;
 
-                    if (latch != null) {
-                        assert val != null;
-
-                        return new T2<IgniteCountDownLatch, AtomicDataStructureValue>(latch, null);
-                    }
-
-                    if (val == null && !create)
-                        return null;
-
-                    GridCacheCountDownLatchValue retVal = (val == null ? new GridCacheCountDownLatchValue(cnt, autoDel) : null);
-
-                    GridCacheCountDownLatchValue latchVal = retVal != null ? retVal : (GridCacheCountDownLatchValue) val;
-
-                    assert latchVal != null;
-
-                    latch = new GridCacheCountDownLatchImpl(name, latchVal.initialCount(),
-                        latchVal.autoDelete(),
-                        key,
-                        cache);
-
-                    dsMap.put(key, latch);
-
-                    return new T2<IgniteCountDownLatch, AtomicDataStructureValue>(latch, retVal);
+                    return new T2<>(latch, null);
                 }
-                catch (Error | Exception e) {
-                    dsMap.remove(key);
 
-                    U.error(log, "Failed to create count down latch: " + name, e);
+                if (val == null && !create)
+                    return null;
 
-                    throw e;
-                }
+                GridCacheCountDownLatchValue retVal = (val == null ? new GridCacheCountDownLatchValue(cnt, autoDel) : null);
+
+                GridCacheCountDownLatchValue latchVal = retVal != null ? retVal : (GridCacheCountDownLatchValue) val;
+
+                assert latchVal != null;
+
+                latch = new GridCacheCountDownLatchImpl(name, latchVal.initialCount(),
+                    latchVal.autoDelete(),
+                    key,
+                    cache);
+
+                return new T2<GridCacheCountDownLatchEx, AtomicDataStructureValue>(latch, retVal);
             }
         }, cfg, name, COUNT_DOWN_LATCH, create, GridCacheCountDownLatchEx.class);
     }
@@ -1083,38 +1030,25 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public IgniteSemaphore semaphore(final String name, @Nullable AtomicConfiguration cfg, final int cnt,
         final boolean failoverSafe, final boolean create)
         throws IgniteCheckedException {
-        return getAtomic(new AtomicAccessor<IgniteSemaphore>() {
-            @Override public T2<IgniteSemaphore, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new AtomicAccessor<GridCacheSemaphoreEx>() {
+            @Override public T2<GridCacheSemaphoreEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                // Check that semaphore hasn't been created in other thread yet.
+                GridCacheSemaphoreEx sem = cast(dsMap.get(key), GridCacheSemaphoreEx.class);
 
-                try {
-                    // Check that semaphore hasn't been created in other thread yet.
-                    GridCacheSemaphoreEx sem = cast(dsMap.get(key), GridCacheSemaphoreEx.class);
+                if (sem != null) {
+                    assert val != null;
 
-                    if (sem != null) {
-                        assert val != null;
-
-                        return new T2<IgniteSemaphore, AtomicDataStructureValue>(sem, null);
-                    }
-
-                    if (val == null && !create)
-                        return null;
-
-                    AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt, new HashMap<UUID, Integer>(), failoverSafe) : null);
-
-                    GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
-
-                    dsMap.put(key, sem0);
-
-                    return new T2<IgniteSemaphore, AtomicDataStructureValue>(sem0, retVal);
+                    return new T2<>(sem, null);
                 }
-                catch (Error | Exception e) {
-                    dsMap.remove(key);
 
-                    U.error(log, "Failed to create semaphore: " + name, e);
+                if (val == null && !create)
+                    return null;
 
-                    throw e;
-                }
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt, new HashMap<UUID, Integer>(), failoverSafe) : null);
+
+                GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
+
+                return new T2<>(sem0, retVal);
             }
         }, cfg, name, SEMAPHORE, create, GridCacheSemaphoreEx.class);
     }
@@ -1154,38 +1088,25 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      */
     public IgniteLock reentrantLock(final String name, @Nullable AtomicConfiguration cfg, final boolean failoverSafe,
         final boolean fair, final boolean create) throws IgniteCheckedException {
-        return getAtomic(new AtomicAccessor<IgniteLock>() {
-            @Override public T2<IgniteLock, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new AtomicAccessor<GridCacheLockEx>() {
+            @Override public T2<GridCacheLockEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                // Check that reentrant lock hasn't been created in other thread yet.
+                GridCacheLockEx reentrantLock = cast(dsMap.get(key), GridCacheLockEx.class);
 
-                try {
-                    // Check that reentrant lock hasn't been created in other thread yet.
-                    GridCacheLockEx reentrantLock = cast(dsMap.get(key), GridCacheLockEx.class);
+                if (reentrantLock != null) {
+                    assert val != null;
 
-                    if (reentrantLock != null) {
-                        assert val != null;
-
-                        return new T2<IgniteLock, AtomicDataStructureValue>(reentrantLock, null);
-                    }
-
-                    if (val == null && !create)
-                        return null;
-
-                    AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, defaultDsCacheCtx.nodeId(), 0, failoverSafe, fair) : null);
-
-                    GridCacheLockEx reentrantLock0 = new GridCacheLockImpl(name, key, cache);
-
-                    dsMap.put(key, reentrantLock0);
-
-                    return new T2<IgniteLock, AtomicDataStructureValue>(reentrantLock0, retVal);
+                    return new T2<>(reentrantLock, null);
                 }
-                catch (Error | Exception e) {
-                    dsMap.remove(key);
 
-                    U.error(log, "Failed to create reentrant lock: " + name, e);
+                if (val == null && !create)
+                    return null;
 
-                    throw e;
-                }
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, defaultDsCacheCtx.nodeId(), 0, failoverSafe, fair) : null);
+
+                GridCacheLockEx reentrantLock0 = new GridCacheLockImpl(name, key, cache);
+
+                return new T2<>(reentrantLock0, retVal);
             }
         }, cfg, name, REENTRANT_LOCK, create, GridCacheLockEx.class);
     }
@@ -1519,6 +1440,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     private interface AtomicAccessor<T> {
-        T2<T, AtomicDataStructureValue> get(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException;
+        T2<T, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException;
     }
 }

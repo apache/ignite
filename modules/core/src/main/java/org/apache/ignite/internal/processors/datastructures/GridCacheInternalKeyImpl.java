@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Key is used for caching cache data structures.
@@ -37,15 +38,18 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     @AffinityKeyMapped
     private String name;
 
+    @Nullable private String groupName;
+
     /**
      * Default constructor.
      *
      * @param name - Name of cache data structure.
      */
-    public GridCacheInternalKeyImpl(String name) {
+    public GridCacheInternalKeyImpl(String name, @Nullable String groupName) {
         assert !F.isEmpty(name);
 
         this.name = name;
+        this.groupName = groupName;
     }
 
     /**
@@ -58,6 +62,11 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String groupName() {
+        return groupName;
     }
 
     /** {@inheritDoc} */
@@ -78,11 +87,13 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);
+        U.writeString(out, groupName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         name = U.readString(in);
+        groupName = U.readString(in);
     }
 
     /** {@inheritDoc} */

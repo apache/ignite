@@ -188,7 +188,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
             try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, null);
 
                 GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue) grid(i).cache(DEFAULT_CACHE_NAME).get(key));
 
@@ -270,7 +270,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put custom data
-            grid(0).cache(DEFAULT_CACHE_NAME).put(new GridCacheInternalKeyImpl(key), new GridCacheAtomicLongValue(INIT_GRID_NUM));
+            grid(0).cache(DEFAULT_CACHE_NAME).put(new GridCacheInternalKeyImpl(key, null), new GridCacheAtomicLongValue(INIT_GRID_NUM));
 
             tx.commit();
         }

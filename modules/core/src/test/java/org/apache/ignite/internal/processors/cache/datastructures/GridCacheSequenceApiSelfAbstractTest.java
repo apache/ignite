@@ -357,7 +357,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
         }, IllegalStateException.class, null);
 
         for (String seqName : seqNames)
-            assert null != cache.get(new GridCacheInternalKeyImpl(seqName));
+            assert null != cache.get(new GridCacheInternalKeyImpl(seqName, null));
     }
 
     /**
