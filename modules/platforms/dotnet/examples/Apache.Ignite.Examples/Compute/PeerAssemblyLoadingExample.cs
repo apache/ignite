@@ -40,7 +40,7 @@ namespace Apache.Ignite.Examples.Compute
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config
     /// 2) Start example.
     /// </summary>
-    public class PeerLoadingExample
+    public class PeerAssemblyLoadingExample
     {
         /// <summary>
         /// Runs the example.

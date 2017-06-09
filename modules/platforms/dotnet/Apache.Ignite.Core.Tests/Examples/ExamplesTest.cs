@@ -43,13 +43,13 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         private static readonly string[] RemoteOnlyExamples =
         {
-            "PeerLoadingExample", "MessagingExample", "NearCacheExample"
+            "PeerAssemblyLoadingExample", "MessagingExample", "NearCacheExample"
         };
 
         /** */
         private static readonly string[] NoDllExamples =
         {
-            "BinaryModeExample", "NearCacheExample", "PeerLoadingExample"
+            "BinaryModeExample", "NearCacheExample", "PeerAssemblyLoadingExample"
         };
 
         /** Config file path. */
