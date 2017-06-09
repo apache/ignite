@@ -42,7 +42,21 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param r Runnable to check support.
+     * @param r Runnable to check on closed connection.
+     */
+    protected void checkConnectionClosed(final RunnableX r) {
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
+
+                    return null;
+                }
+            }, SQLException.class, "Connection is closed");
+    }
+
+    /**
+     * @param r Runnable to check on closed statement.
      */
     protected void checkStatementClosed(final RunnableX r) {
         GridTestUtils.assertThrows(log,
@@ -56,22 +70,7 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param r Runnable to check support.
-     */
-    protected void checkConnectionClosed(final RunnableX r) {
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    r.run();
-
-                    return null;
-                }
-            }, SQLException.class, "Connection is closed");
-    }
-
-
-    /**
-     * @param r Runnable to check support.
+     * @param r Runnable to check on closed result set.
      */
     protected void checkResultSetClosed(final RunnableX r) {
         GridTestUtils.assertThrows(log,
@@ -93,6 +92,4 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
          */
         void run() throws Exception;
     }
-
-
 }
