@@ -176,8 +176,8 @@ public class DdlStatementsProcessor {
                     if (err != null)
                         throw err;
 
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(),
-                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheGroup(),
+                        cmd.affinityKey(), cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
@@ -188,6 +188,12 @@ public class DdlStatementsProcessor {
                         QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null && cmd.ifExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
 
                 if (tbl == null) {
                     if (!cmd.ifExists())
@@ -288,9 +294,11 @@ public class DdlStatementsProcessor {
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
 
-        res.setKeyType(createTbl.tableName() + "Key");
+        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
+        String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
-        res.setValueType(createTbl.tableName());
+        res.setValueType(valTypeName);
+        res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
 

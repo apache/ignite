@@ -19,14 +19,21 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
@@ -269,6 +276,99 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         assertEquals(2, srv.nodes().size());
         assertTrue(cli.nodes().contains(ignite(2).cluster().localNode()));
         assertTrue(cli.nodes().contains(ignite(3).cluster().localNode()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForCacheNodesOnDynamicCacheCreateDestroy() throws Exception {
+        Random rnd = ThreadLocalRandom.current();
+
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        IgniteInternalFuture fut = runCacheCreateDestroyTask(ex);
+
+        while (!fut.isDone())
+            ignite.cluster().forCacheNodes("cache" + rnd.nextInt(16)).nodes();
+
+        if (ex.get() != null)
+            throw ex.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForClientNodesOnDynamicCacheCreateDestroy() throws Exception {
+        Random rnd = ThreadLocalRandom.current();
+
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        IgniteInternalFuture fut = runCacheCreateDestroyTask(ex);
+
+        while (!fut.isDone())
+            ignite.cluster().forClientNodes("cache" + rnd.nextInt(16)).nodes();
+
+        if (ex.get() != null)
+            throw ex.get();
+    }
+
+    /**
+     * @param exHldr Exception holder.
+     * @return Task future.
+     */
+    private IgniteInternalFuture runCacheCreateDestroyTask(final AtomicReference<Exception> exHldr) {
+        final long deadline = System.currentTimeMillis() + 5000;
+
+        final AtomicInteger cntr = new AtomicInteger();
+
+        return GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                int startIdx = cntr.getAndAdd(4);
+                int idx = 0;
+                boolean start = true;
+
+                Set<String> caches = U.newHashSet(4);
+
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        if (start) {
+                            caches.add("cache" + (startIdx + idx));
+                            ignite.createCache("cache" + (startIdx + idx));
+                        }
+                        else {
+                            ignite.destroyCache("cache" + (startIdx + idx));
+                            caches.remove("cache" + (startIdx + idx));
+                        }
+
+                        if ((idx = (idx + 1) % 4) == 0)
+                            start = !start;
+                    }
+                    catch (Exception e) {
+                        addException(exHldr, e);
+
+                        break;
+                    }
+                }
+
+                for (String cache : caches) {
+                    try {
+                        ignite.destroyCache(cache);
+                    }
+                    catch (Exception e) {
+                        addException(exHldr, e);
+                    }
+                }
+            }
+        }, 4, "cache-start-destroy");
+    }
+
+    /**
+     * @param exHldr Exception holder.
+     * @param ex Exception.
+     */
+    private void addException(AtomicReference<Exception> exHldr, Exception ex) {
+        if (exHldr.get() != null || !exHldr.compareAndSet(null, ex))
+            exHldr.get().addSuppressed(ex);
     }
 
     /**

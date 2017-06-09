@@ -23,8 +23,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,11 +140,43 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     if (sys.contains(schema))
                         continue;
 
-                    Collection<String> pkCols = new HashSet<>();
+                    Collection<String> pkCols = new LinkedHashSet<>();
 
                     try (ResultSet pkRs = dbMeta.getPrimaryKeys(tblCatalog, tblSchema, tblName)) {
                         while (pkRs.next())
                             pkCols.add(pkRs.getString(PK_COL_NAME_IDX));
+                    }
+
+                    Map.Entry<String, Set<String>> uniqueIdxAsPk = null;
+
+                    // If PK not found, trying to use first UNIQUE index as key.
+                    if (pkCols.isEmpty()) {
+                        Map<String, Set<String>> uniqueIdxs = new LinkedHashMap<>();
+
+                        try (ResultSet idxRs = dbMeta.getIndexInfo(tblCatalog, tblSchema, tblName, true, true)) {
+                            while (idxRs.next()) {
+                                String idxName = idxRs.getString(IDX_NAME_IDX);
+                                String colName = idxRs.getString(IDX_COL_NAME_IDX);
+
+                                if (idxName == null || colName == null)
+                                    continue;
+
+                                Set<String> idxCols = uniqueIdxs.get(idxName);
+
+                                if (idxCols == null) {
+                                    idxCols = new LinkedHashSet<>();
+
+                                    uniqueIdxs.put(idxName, idxCols);
+                                }
+
+                                idxCols.add(colName);
+                            }
+                        }
+
+                        uniqueIdxAsPk = uniqueIndexAsPk(uniqueIdxs);
+
+                        if (uniqueIdxAsPk != null)
+                            pkCols.addAll(uniqueIdxAsPk.getValue());
                     }
 
                     Collection<DbColumn> cols = new ArrayList<>();
@@ -162,15 +194,17 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                         }
                     }
 
+                    String uniqueIdxAsPkName = uniqueIdxAsPk != null ? uniqueIdxAsPk.getKey() : null;
+
                     Map<String, QueryIndex> idxs = new LinkedHashMap<>();
 
                     try (ResultSet idxRs = dbMeta.getIndexInfo(tblCatalog, tblSchema, tblName, false, true)) {
                         while (idxRs.next()) {
                             String idxName = idxRs.getString(IDX_NAME_IDX);
-
                             String colName = idxRs.getString(IDX_COL_NAME_IDX);
 
-                            if (idxName == null || colName == null)
+                            // Skip {@code null} names and unique index used as PK.
+                            if (idxName == null || colName == null || idxName.equals(uniqueIdxAsPkName))
                                 continue;
 
                             QueryIndex idx = idxs.get(idxName);

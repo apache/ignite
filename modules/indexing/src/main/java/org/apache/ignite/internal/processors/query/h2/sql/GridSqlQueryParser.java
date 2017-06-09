@@ -405,6 +405,12 @@ public class GridSqlQueryParser {
     private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** */
+    private static final String PARAM_CACHE_GROUP = "CACHEGROUP";
+
+    /** */
+    private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -1045,6 +1051,54 @@ public class GridSqlQueryParser {
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.atomicityMode(mode);
+
+                break;
+
+            case PARAM_CACHE_GROUP:
+                ensureNotEmpty(name, val);
+
+                res.cacheGroup(val);
+
+                break;
+
+            case PARAM_AFFINITY_KEY:
+                ensureNotEmpty(name, val);
+
+                String affColName = null;
+
+                // Either strip column name off its quotes, or uppercase it.
+                if (val.startsWith("'")) {
+                    if (val.length() == 1 || !val.endsWith("'"))
+                        throw new IgniteSQLException("Affinity key column name does not have trailing quote: " + val,
+                            IgniteQueryErrorCode.PARSING);
+
+                    val = val.substring(1, val.length() - 1);
+
+                    ensureNotEmpty(name, val);
+
+                    affColName = val;
+                }
+                else {
+                    for (String colName : res.columns().keySet()) {
+                        if (val.equalsIgnoreCase(colName)) {
+                            if (affColName != null)
+                                throw new IgniteSQLException("Ambiguous affinity column name, use single quotes " +
+                                    "for case sensitivity: " + val, IgniteQueryErrorCode.PARSING);
+
+                            affColName = colName;
+                        }
+                    }
+                }
+
+                if (affColName == null || !res.columns().containsKey(affColName))
+                    throw new IgniteSQLException("Affinity key column with given name not found: " + val,
+                        IgniteQueryErrorCode.PARSING);
+
+                if (!res.primaryKeyColumns().contains(affColName))
+                    throw new IgniteSQLException("Affinity key column must be one of key columns: " + affColName,
+                        IgniteQueryErrorCode.PARSING);
+
+                res.affinityKey(affColName);
 
                 break;
 

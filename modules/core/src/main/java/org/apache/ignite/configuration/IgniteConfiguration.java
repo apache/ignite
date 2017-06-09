@@ -1183,7 +1183,10 @@ public class IgniteConfiguration {
      * without deserialization will be used.
      *
      * @return Marshaller to use in grid.
+     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
+     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
      */
+    @Deprecated
     public Marshaller getMarshaller() {
         return marsh;
     }
@@ -1194,7 +1197,10 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      * @return {@code this} for chaining.
+     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
+     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
      */
+    @Deprecated
     public IgniteConfiguration setMarshaller(Marshaller marsh) {
         this.marsh = marsh;
 
