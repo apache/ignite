@@ -111,7 +111,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
      * @param typeId Type ID.
      * @return Affinity field override if any.
      */
-    @Nullable private BinaryField affinityKeyField(int typeId) {
+    @Nullable public BinaryField affinityKeyField(int typeId) {
         Map<Integer, BinaryField> typeIdAffFields0 = typeIdAffFields;
 
         if (typeIdAffFields0 == null) {

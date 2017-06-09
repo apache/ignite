@@ -633,7 +633,7 @@ public class DmlStatementsProcessor {
             if (bin && hasProps) {
                 assert newVal instanceof BinaryObjectBuilder;
 
-                newVal = ((BinaryObjectBuilder) newVal).build();
+                newVal = ((BinaryObjectBuilder)newVal).build();
             }
 
             Object srcVal = e.get(1);
@@ -1005,10 +1005,10 @@ public class DmlStatementsProcessor {
 
         if (cctx.binaryMarshaller()) {
             if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder) key).build();
+                key = ((BinaryObjectBuilder)key).build();
 
             if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder) val).build();
+                val = ((BinaryObjectBuilder)val).build();
         }
 
         return new IgniteBiTuple<>(key, val);
