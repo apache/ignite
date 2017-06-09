@@ -371,7 +371,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
 
     /** Cache key configuration. */
-    private CacheKeyConfiguration[] cacheKeyCfg;
+    private CacheKeyConfiguration[] keyCfg;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -406,7 +406,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
         backups = cc.getBackups();
-        cacheKeyCfg = cc.getKeyConfiguration();
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
@@ -421,23 +420,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
-        qryParallelism = cc.getQueryParallelism();
         isWriteThrough = cc.isWriteThrough();
-        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
+        keyCfg = cc.getKeyConfiguration();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         memPlcName = cc.getMemoryPolicyName();
-        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
         partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
-        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
+        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
+        qryParallelism = cc.getQueryParallelism();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCnt = cc.getRebalanceBatchesPrefetchCount();
@@ -450,7 +448,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
+        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         storeFactory = cc.getCacheStoreFactory();
+        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
@@ -2300,7 +2300,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache key configuration.
      */
     public CacheKeyConfiguration[] getKeyConfiguration() {
-        return cacheKeyCfg;
+        return keyCfg;
     }
 
     /**
@@ -2309,7 +2309,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param cacheKeyCfg Cache key configuration.
      */
     public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
-        this.cacheKeyCfg = cacheKeyCfg;
+        this.keyCfg = cacheKeyCfg;
 
         return this;
     }
