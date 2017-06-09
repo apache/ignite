@@ -155,7 +155,7 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
             int val = rs.getInt(1);
 
-            assertTrue("Invalid val: " + val, 1 >= val && val <= 10);
+            assertTrue("Invalid val: " + val, val >= 1 && val <= 10);
         }
 
         stmt.close();
