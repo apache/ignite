@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Tests.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -262,6 +263,39 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cfg = new CacheConfiguration("composite_key_all", new QueryEntity(typeof(KeyAll), typeof(string)));
             var cache = Ignition.GetIgnite().CreateCache<KeyAll, string>(cfg);
+
+            var key = new KeyAll
+            {
+                Byte = byte.MaxValue,
+                SByte = sbyte.MaxValue,
+                Short = short.MaxValue,
+                UShort = ushort.MaxValue,
+                Int = int.MaxValue,
+                UInt = uint.MaxValue,
+                Long = long.MaxValue,
+                ULong = ulong.MaxValue,
+                Float = float.MaxValue,
+                Double = double.MaxValue,
+                Decimal = decimal.MaxValue,
+                Guid = Guid.NewGuid(),
+                String = BinarySelfTest.SpecialStrings.First(),
+                Key = new Key(255, 65555),
+
+                Bytes = new[] {byte.MinValue, byte.MaxValue},
+                SBytes = new[] {sbyte.MaxValue},
+                Shorts = new[] {short.MaxValue},
+                UShorts = new[] {ushort.MaxValue},
+                Ints = new[] {int.MaxValue},
+                UInts = new[] {uint.MaxValue},
+                Longs = new[] {long.MaxValue},
+                ULongs = new[] {ulong.MaxValue},
+                Floats = new[] {float.MaxValue},
+                Doubles = new[] {double.MaxValue},
+                Decimals = new[] {decimal.MaxValue},
+                Guids = new[] {Guid.NewGuid()},
+                Strings = BinarySelfTest.SpecialStrings,
+                Keys = new[] {new Key(255, 65555)}
+            };
 
             // Test insert.
             var res = cache.QueryFields(new SqlFieldsQuery(
