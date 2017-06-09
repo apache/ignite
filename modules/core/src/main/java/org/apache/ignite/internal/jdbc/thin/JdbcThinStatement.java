@@ -120,7 +120,7 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Failed to query Ignite.", e);
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw new SQLException("Failed to query Ignite. [err=\"" + e.getMessage() + "\"]", e);
         }
     }
 
