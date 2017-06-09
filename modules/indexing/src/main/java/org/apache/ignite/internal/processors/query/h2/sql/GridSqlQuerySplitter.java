@@ -106,6 +106,9 @@ public class GridSqlQuerySplitter {
     private Set<QueryTable> tbls = new HashSet<>();
 
     /** */
+    private Set<String> pushedDownCols = new HashSet<>();
+
+    /** */
     private boolean rdcQrySimple;
 
     /** */
@@ -337,22 +340,75 @@ public class GridSqlQuerySplitter {
     @SuppressWarnings("unused")
     private static void debug(String label, String info) {
         X.println();
-        X.println("  ==" + label + "== ");
+        X.println("  == " + label + " == ");
         X.println(info);
-        X.println("  ======== ");
+        X.println("  ======================= ");
+    }
+
+    /**
+     * @param expr Expression.
+     * @return {@code true} If the expression contains pushed down columns.
+     */
+    private boolean hasPushedDownColumn(GridSqlAst expr) {
+        if (expr instanceof GridSqlColumn)
+            return pushedDownCols.contains(((GridSqlColumn)expr).columnName());
+
+        for (int i = 0; i < expr.size(); i++) {
+            if (hasPushedDownColumn(expr.child(i)))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param from FROM clause.
+     * @return {@code true} If contains LEFT OUTER JOIN.
+     */
+    private static boolean hasLeftJoin(GridSqlAst from) {
+        while (from instanceof GridSqlJoin) {
+            GridSqlJoin join = (GridSqlJoin)from;
+
+            assert !(join.rightTable() instanceof GridSqlJoin);
+
+            if (join.isLeftOuter())
+                return true;
+
+            from = join.leftTable();
+        }
+
+        return false;
     }
 
     /**
      * @param qrym Query model for the SELECT.
      */
     private void pushDownQueryModelSelect(QueryModel qrym) {
+        assert qrym.type == Type.SELECT: qrym.type;
+
+        boolean hasLeftJoin = hasLeftJoin(qrym.<GridSqlSelect>ast().from());
+
         int begin = -1;
 
         // Here we iterate over joined FROM table filters.
+        // !!! qrym.size() can change, never assign it to a variable.
         for (int i = 0; i < qrym.size(); i++) {
             QueryModel child = qrym.get(i);
 
-            if (child.isQuery() && (child.needSplitChild || child.needSplit)) {
+            boolean hasPushedDownCol = false;
+
+            // It is either splittable subquery (it must remain in REDUCE query)
+            // or left join condition with pushed down columns (this condition
+            // can not be pushed down into a wrap query).
+            if ((child.isQuery() && (child.needSplitChild || child.needSplit)) ||
+                // We always must be at the right side of the join here to push down
+                // range on the left side. If there are no LEFT JOINs in the SELECT, then
+                // we will never have ON conditions, they are getting moved to WHERE clause.
+                (hasPushedDownCol = (hasLeftJoin && i != 0 && hasPushedDownColumn(findJoin(qrym, i).on())))) {
+                // Handle a single table push down case.
+                if (hasPushedDownCol && begin == -1)
+                    begin = i - 1;
+
                 // Push down the currently collected range.
                 if (begin != -1) {
                     pushDownQueryModelRange(qrym, begin, i - 1);
@@ -361,8 +417,10 @@ public class GridSqlQuerySplitter {
 
                     assert qrym.get(i) == child; // Adjustment check: we have to return to the same point.
 
-                    // Reset range begin.
-                    begin = -1;
+                    // Reset range begin: in case of pushed down column we can assume current child as
+                    // as new begin (because it is not a splittable subquery), otherwise reset begin
+                    // and try to find next range begin further.
+                    begin = hasPushedDownCol ? i : -1;
                 }
 
                 if (child.needSplitChild)
@@ -394,7 +452,7 @@ public class GridSqlQuerySplitter {
                 for (int i = 0; i < qrym.size(); i++) {
                     QueryModel child = qrym.get(i);
 
-                    assert child.isQuery() : qrym.type;
+                    assert child.isQuery() : child.type;
 
                     if (child.needSplit)
                         needSplitChild = true;
@@ -579,9 +637,12 @@ public class GridSqlQuerySplitter {
     /**
      * @param qrym Query model.
      */
-    private void setNeedSplit(QueryModel qrym) {
-        if (qrym.type == Type.SELECT)
+    private static void setNeedSplit(QueryModel qrym) {
+        if (qrym.type == Type.SELECT) {
+            assert !qrym.needSplitChild;
+
             qrym.needSplit = true;
+        }
         else if (qrym.type == Type.UNION) {
             qrym.needSplitChild = true;
 
@@ -816,6 +877,8 @@ public class GridSqlQuerySplitter {
 
         // Push down related ON conditions for all the related joins.
         while (from instanceof GridSqlJoin) {
+            assert !(((GridSqlJoin)from).rightTable() instanceof GridSqlJoin);
+
             pushDownColumnsInExpression(tblAliases, cols, wrapAlias, from, ON_CHILD);
 
             from = from.child(LEFT_TABLE_CHILD);
@@ -909,6 +972,9 @@ public class GridSqlQuerySplitter {
 
             // We have this map to avoid column duplicates in wrap query.
             cols.put(uniqueColAlias, colAlias);
+
+            if (!pushedDownCols.add(uniqueColAlias)) // Must be globally unique.
+                throw new IllegalStateException(uniqueColAlias);
         }
 
         col = column(uniqueColAlias);

@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -177,8 +176,8 @@ public class DdlStatementsProcessor {
                     if (err != null)
                         throw err;
 
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(),
-                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheGroup(),
+                        cmd.affinityKey(), cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
