@@ -32,7 +32,9 @@ namespace ignite
                 connection(connection),
                 sql(sql),
                 params(params),
+                resultMeta(),
                 rowsAffected(0),
+                setsProcessed(0),
                 id(0),
                 executed(false),
                 dataRetrieved(false)
@@ -171,19 +173,23 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                if (!rsp.GetErrorMessage().empty())
+                {
+                    LOG_MSG("Error: " << rsp.GetErrorMessage());
+
+                    setsProcessed += end - begin - rsp.GetErrorSetIdx();
+
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(), setsProcessed, 0);
+
+                    return SqlResult::AI_ERROR;
+                }
+
                 id = rsp.GetQueryId();
                 rowsAffected = rsp.GetAffectedRows();
-                resultMeta = rsp.GetMeta();
+                setsProcessed += end - begin;
 
                 LOG_MSG("Query id: " << id);
                 LOG_MSG("rowsAffected: " << rowsAffected);
-                for (size_t i = 0; i < resultMeta.size(); ++i)
-                {
-                    LOG_MSG("\n[" << i << "] SchemaName:     " << resultMeta[i].GetSchemaName()
-                        <<  "\n[" << i << "] TypeName:       " << resultMeta[i].GetTableName()
-                        <<  "\n[" << i << "] ColumnName:     " << resultMeta[i].GetColumnName()
-                        <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
-                }
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -215,7 +221,19 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                if (!rsp.GetErrorMessage().empty())
+                {
+                    LOG_MSG("Error: " << rsp.GetErrorMessage());
+
+                    setsProcessed += end - begin - rsp.GetErrorSetIdx();
+
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(), setsProcessed, 0);
+
+                    return SqlResult::AI_ERROR;
+                }
+
                 rowsAffected += rsp.GetAffectedRows();
+                setsProcessed += end - begin;
 
                 LOG_MSG("rowsAffected: " << rsp.GetAffectedRows());
 

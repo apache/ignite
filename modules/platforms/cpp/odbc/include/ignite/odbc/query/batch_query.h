@@ -155,6 +155,9 @@ namespace ignite
                 /** Number of rows affected. */
                 int64_t rowsAffected;
 
+                /** Number of parameter sets successfully processed. */
+                int64_t setsProcessed;
+
                 /** ID. */
                 int64_t id;
 
