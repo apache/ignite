@@ -282,19 +282,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Key = new Key(255, 65555),
 
                 Bytes = new[] {byte.MinValue, byte.MaxValue},
-                SBytes = new[] {sbyte.MaxValue},
-                Shorts = new[] {short.MaxValue},
-                UShorts = new[] {ushort.MaxValue},
-                Ints = new[] {int.MaxValue},
-                UInts = new[] {uint.MaxValue},
-                Longs = new[] {long.MaxValue},
-                ULongs = new[] {ulong.MaxValue},
-                Floats = new[] {float.MaxValue},
-                Doubles = new[] {double.MaxValue},
-                Decimals = new[] {decimal.MaxValue},
+                SBytes = new[] {sbyte.MinValue, sbyte.MaxValue},
+                Shorts = new[] {short.MinValue, short.MaxValue},
+                UShorts = new[] {ushort.MinValue, ushort.MaxValue},
+                Ints = new[] {int.MinValue, int.MaxValue},
+                UInts = new[] {uint.MinValue, uint.MaxValue},
+                Longs = new[] {long.MinValue, long.MaxValue},
+                ULongs = new[] {ulong.MinValue, ulong.MaxValue},
+                Floats = new[] {float.MinValue, float.MaxValue},
+                Doubles = new[] {double.MinValue, double.MaxValue},
+                Decimals = new[] {decimal.MinValue, decimal.MaxValue},
                 Guids = new[] {Guid.NewGuid()},
                 Strings = BinarySelfTest.SpecialStrings,
-                Keys = new[] {new Key(255, 65555)}
+                Keys = new[] {new Key(255, 65555), new Key(-1, 1)}
             };
 
             // Test insert.
