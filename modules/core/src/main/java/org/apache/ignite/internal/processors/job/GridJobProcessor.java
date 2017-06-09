@@ -621,6 +621,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             cancelPassiveJob(job);
                     }
                 }
+
                 for (GridJobWorker job : activeJobs.values()) {
                     if (idsMatch.apply(job))
                         cancelActiveJob(job, sys);

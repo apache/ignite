@@ -43,11 +43,11 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheCompoundFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -69,11 +69,9 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -82,7 +80,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,30 +96,15 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  *
  */
 @SuppressWarnings("unchecked")
-public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
+public final class GridDhtTxPrepareFuture
+    extends GridCacheFutureAdapter<GridNearTxPrepareResponse>
     implements GridCacheMvccFuture<GridNearTxPrepareResponse> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Error updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxPrepareFuture, Throwable> ERR_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxPrepareFuture.class, Throwable.class, "err");
-
-    /** */
-    private static final IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse> REDUCER =
-        new IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse>() {
-            @Override public boolean collect(IgniteInternalTx e) {
-                return true;
-            }
-
-            @Override public GridNearTxPrepareResponse reduce() {
-                // Nothing to aggregate.
-                return null;
-            }
-        };
 
     /** Replied flag updater. */
     private static final AtomicIntegerFieldUpdater<GridDhtTxPrepareFuture> REPLIED_UPD =
@@ -212,6 +194,15 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /** Timeout object. */
     private final PrepareTimeoutObject timeoutObj;
 
+    /** */
+    private List<MiniFuture> miniFuts;
+
+    /** */
+    private int completedMiniCnt;
+
+    /** */
+    private boolean inited;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -230,8 +221,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         boolean last,
         boolean retVal
     ) {
-        super(REDUCER);
-
         this.cctx = cctx;
         this.tx = tx;
         this.dhtVerMap = dhtVerMap;
@@ -255,6 +244,37 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert nearMap != null;
 
         timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
+    }
+
+    /**
+     * Marks future as initialized.
+     */
+    private void markInitialized() {
+        boolean completed;
+
+        synchronized (this) {
+            if (inited)
+                return;
+
+            inited = true;
+
+            completed = miniFuts == null || completedMiniCnt == miniFuts.size();
+        }
+
+        if (completed)
+            onDone();
+    }
+
+    /**
+     * @param fut Mini future to add.
+     */
+    private synchronized void add(MiniFuture fut) {
+        if (miniFuts == null)
+            miniFuts = new ArrayList<>();
+
+        assert fut.futureId() == miniFuts.size();
+
+        miniFuts.add(fut);
     }
 
     /** {@inheritDoc} */
@@ -319,16 +339,22 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (IgniteInternalFuture<?> fut : futures())
-            if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
+        List<MiniFuture> miniFuts0;
 
-                if (f.node().id().equals(nodeId)) {
-                    f.onNodeLeft();
+        synchronized (this) {
+            if (miniFuts == null)
+                return false;
 
-                    return true;
-                }
+            miniFuts0 = new ArrayList<>(miniFuts);
+        }
+
+        for (MiniFuture miniFut : miniFuts0) {
+            if (miniFut.node().id().equals(nodeId)) {
+                miniFut.onNodeLeft();
+
+                return true;
             }
+        }
 
         return false;
     }
@@ -373,7 +399,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 if (readOld) {
                     boolean readThrough = !txEntry.skipStore() &&
-                        (txEntry.op() == TRANSFORM || ((retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue()));
+                        (txEntry.op() == TRANSFORM || ((retVal || hasFilters) &&
+                            cacheCtx.config().isLoadPreviousValue()));
 
                     boolean evt = retVal || txEntry.op() == TRANSFORM;
 
@@ -538,11 +565,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         MiniFuture mini = miniFuture(res.miniId());
 
-        if (mini != null) {
-            assert mini.node().id().equals(nodeId);
-
+        if (mini != null)
             mini.onResult(res);
-        }
         else {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("DHT prepare fut, failed to find mini future [txId=" + tx.nearXidVersion() +
@@ -562,26 +586,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
-        // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
-            int size = futuresCountNoLock();
-
-            // Avoid iterator creation.
-            for (int i = 0; i < size; i++) {
-                IgniteInternalFuture<IgniteInternalTx> fut = future(i);
-
-                if (!isMini(fut))
-                    continue;
-
-                MiniFuture mini = (MiniFuture)fut;
-
-                if (mini.futureId() == miniId) {
-                    if (!mini.isDone())
-                        return mini;
-                    else
-                        return null;
-                }
-            }
+            if (miniFuts != null && !miniFuts.get(miniId).isDone())
+                return miniFuts.get(miniId);
         }
 
         return null;
@@ -690,8 +697,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
     /** {@inheritDoc} */
     @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err) {
-        assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
-            "pending mini futures: " + this;
+// TODO        assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
+//            "pending mini futures: " + this;
 
         ERR_UPD.compareAndSet(this, null, err);
 
@@ -844,7 +851,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert F.isEmpty(tx.invalidPartitions());
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-            -1,
+            tx.writeEntries() != null && !tx.writeEntries().isEmpty() ?
+                F.first(tx.writeEntries()).key().partition() : -1,
             tx.nearXidVersion(),
             tx.colocated() ? tx.xid() : tx.nearFutureId(),
             nearMiniId,
@@ -944,20 +952,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /**
-     * @param f Future.
-     * @return {@code True} if mini-future.
-     */
-    private boolean isMini(IgniteInternalFuture<?> f) {
-        return f.getClass().equals(MiniFuture.class);
-    }
-
-    /**
      * Completeness callback.
      *
      * @param res Response.
-     * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
-    private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
+    private void onComplete(@Nullable GridNearTxPrepareResponse res) {
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
@@ -967,11 +966,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
-
-            return true;
         }
-
-        return false;
     }
 
     /**
@@ -1255,7 +1250,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     if (tx.remainingTime() == -1)
                         return;
 
-                    MiniFuture fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
+                    MiniFuture fut = new MiniFuture(n.id(), miniId++, dhtMapping, nearMapping);
 
                     add(fut); // Append new future.
 
@@ -1397,11 +1392,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                         GridCacheMvccCandidate added = entry.cached().candidate(version());
 
                                         assert added != null : "Null candidate for non-group-lock entry " +
-                                            "[added=" + added + ", entry=" + entry + ']';
+                                            "[added=null, entry=" + entry + ']';
                                         assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
                                             "[added=" + added + ", entry=" + entry + ']';
 
-                                        if (added != null && added.ownerVersion() != null)
+                                        if (added.ownerVersion() != null)
                                             req.owned(entry.txKey(), added.ownerVersion());
                                     }
 
@@ -1567,18 +1562,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
-            }
-        });
-
+    @Override public synchronized String toString() {
         return S.toString(GridDhtTxPrepareFuture.class, this,
             "xid", tx.xidVersion(),
-            "innerFuts", futs,
+            "innerFuts", miniFuts,
             "super", super.toString());
     }
 
@@ -1586,7 +1573,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
+    private class MiniFuture {
         /** */
         private final int futId;
 
@@ -1600,6 +1587,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         /** Near mapping. */
         @GridToStringInclude
         private GridDistributedTxMapping nearMapping;
+
+        /** */
+        private volatile boolean done;
 
         /**
          * @param nodeId Node ID.
@@ -1643,7 +1633,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
 
             // Fail.
-            onDone(e);
+            GridDhtTxPrepareFuture.this.onDone(e);
         }
 
         /**
@@ -1658,7 +1648,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (tx != null)
                 tx.removeMapping(nodeId);
 
-            onDone(tx);
+            onDone();
         }
 
         /**
@@ -1751,9 +1741,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 drType,
                                 false)) {
                                 if (rec && !entry.isInternal())
-                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                        (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                        false, null, null, null, false);
+                                    cacheCtx.events().addEvent(
+                                        entry.partition(),
+                                        entry.key(),
+                                        cctx.localNodeId(),
+                                        (IgniteUuid)null,
+                                        null,
+                                        EVT_CACHE_REBALANCE_OBJECT_LOADED,
+                                        info.value(),
+                                        true,
+                                        null,
+                                        false,
+                                        null,
+                                        null,
+                                        null,
+                                        false);
 
                                 if (retVal && !invoke)
                                     ret.value(cacheCtx, info.value(), false);
@@ -1763,7 +1765,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         }
                         catch (IgniteCheckedException e) {
                             // Fail the whole thing.
-                            onDone(e);
+                            GridDhtTxPrepareFuture.this.onDone(e);
 
                             return;
                         }
@@ -1776,13 +1778,42 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 // Finish mini future.
-                onDone(tx);
+                onDone();
             }
+        }
+
+        /**
+         * @return {@code True} if done.
+         */
+        public boolean isDone() {
+            return done;
+        }
+
+        /**
+         *
+         */
+        public void onDone() {
+            boolean complete;
+
+            synchronized (GridDhtTxPrepareFuture.this) {
+                if (done)
+                    return;
+
+                done = true;
+
+                complete = (++completedMiniCnt == miniFuts.size()) && inited;
+            }
+
+            if (complete)
+                GridDhtTxPrepareFuture.this.onDone();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
+            return S.toString(MiniFuture.class, this,
+                "done", isDone(),
+                "cancelled", isCancelled(),
+                "err", error());
         }
     }
 
@@ -1805,8 +1836,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             synchronized (GridDhtTxPrepareFuture.this) {
-                clear();
-
                 lockKeys.clear();
             }
 

@@ -360,6 +360,12 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         this.txState = txState;
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return writes != null && !writes.isEmpty() ? F.first(writes).key().partition() :
+            reads != null && !reads.isEmpty() ? F.first(reads).key().partition() : -1;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -701,6 +707,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
         return GridToStringBuilder.toString(GridDistributedTxPrepareRequest.class, this,
             "flags", flags.toString(),
+            "part", partition(),
             "super", super.toString());
     }
 }

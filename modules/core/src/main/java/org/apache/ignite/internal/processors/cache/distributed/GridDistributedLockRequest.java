@@ -565,7 +565,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedLockRequest.class, this, "keysCnt", retVals.length,
+        return S.toString(GridDistributedLockRequest.class, this,
+            "keysCnt", retVals.length,
+            "part", partition(),
             "super", super.toString());
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,19 +27,16 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -52,11 +50,9 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 /**
  *
  */
-public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentityFuture<IgniteInternalTx>
+public final class GridDhtTxFinishFuture<K, V>
+    extends GridCacheFutureAdapter<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -94,14 +90,21 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     /** Near mappings. */
     private Map<UUID, GridDistributedTxMapping> nearMap;
 
+    /** */
+    private List<MiniFuture> miniFuts;
+
+    /** */
+    private int completedMiniCnt;
+
+    /** */
+    private volatile boolean inited;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
      * @param commit Commit flag.
      */
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter tx, boolean commit) {
-        super(F.<IgniteInternalTx>identityReducer(tx));
-
         this.cctx = cctx;
         this.tx = tx;
         this.commit = commit;
@@ -118,6 +121,18 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     }
 
     /**
+     * @param fut Mini future to add.
+     */
+    private synchronized void add(MiniFuture fut) {
+        if (miniFuts == null)
+            miniFuts = new ArrayList<>();
+
+        assert fut.futureId() == miniFuts.size();
+
+        miniFuts.add(fut);
+    }
+
+    /**
      * @return Transaction.
      */
     public GridDhtTxLocalAdapter tx() {
@@ -130,18 +145,23 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (IgniteInternalFuture<?> fut : futures())
-            if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
+        List<MiniFuture> miniFuts0;
 
-                if (f.node().id().equals(nodeId)) {
-                    f.onNodeLeft();
+        synchronized (this) {
+            if (miniFuts == null)
+                return false;
 
-                    return true;
-                }
+            miniFuts0 = new ArrayList<>(miniFuts);
+        }
+
+        for (MiniFuture miniFut : miniFuts0) {
+            if (miniFut.node().id().equals(nodeId)) {
+                miniFut.onNodeLeft();
+
+                return true;
             }
+        }
 
         return false;
     }
@@ -173,25 +193,37 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     }
 
     /**
+     * Finds pending mini future by the given mini ID.
+     *
+     * @param miniId Mini ID to find.
+     * @return Mini future.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private MiniFuture miniFuture(int miniId) {
+        synchronized (this) {
+            if (miniFuts != null && !miniFuts.get(miniId).isDone())
+                return miniFuts.get(miniId);
+        }
+
+        return null;
+    }
+
+    /**
      * @param nodeId Sender.
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridDhtTxFinishResponse res) {
         if (!isDone()) {
-            boolean found = false;
+            boolean found;
 
-            for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
-                if (isMini(fut)) {
-                    MiniFuture f = (MiniFuture)fut;
+            MiniFuture mini = miniFuture(res.miniId());
 
-                    if (f.futureId() == res.miniId()) {
-                        found = true;
+            if (mini == null)
+                found = false;
+            else {
+                found = true;
 
-                        assert f.node().id().equals(nodeId);
-
-                        f.onResult(res);
-                    }
-                }
+                mini.onResult(res);
             }
 
             if (!found) {
@@ -217,7 +249,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
-        if (initialized() || err != null) {
+        if (inited || err != null) {
             Throwable e = this.err;
 
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
@@ -252,14 +284,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         }
 
         return false;
-    }
-
-    /**
-     * @param f Future.
-     * @return {@code True} if mini-future.
-     */
-    private boolean isMini(IgniteInternalFuture<?> f) {
-        return f.getClass().equals(MiniFuture.class);
     }
 
     /**
@@ -314,7 +338,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         for (ClusterNode n : nodes) {
             assert !n.isLocal();
 
-            MiniFuture fut = new MiniFuture(++miniId, n);
+            MiniFuture fut = new MiniFuture(miniId++, n);
 
             add(fut); // Append new future.
 
@@ -361,7 +385,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft();
                 else {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, failed to send request lock tx [txId=" + tx.nearXidVersion() +
@@ -376,6 +400,25 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         }
 
         return res;
+    }
+
+    /**
+     * Marks future as initialized.
+     */
+    private void markInitialized() {
+        boolean completed;
+
+        synchronized (this) {
+            if (inited)
+                return;
+
+            inited = true;
+
+            completed = miniFuts == null || completedMiniCnt == miniFuts.size();
+        }
+
+        if (completed)
+            onDone();
     }
 
     /**
@@ -411,7 +454,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 // Nothing to send.
                 continue;
 
-            MiniFuture fut = new MiniFuture(++miniId, dhtMapping, nearMapping);
+            MiniFuture fut = new MiniFuture(miniId++, dhtMapping, nearMapping);
 
             add(fut); // Append new future.
 
@@ -466,7 +509,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft();
                 else {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
@@ -535,7 +578,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeft();
                     else {
                         if (msgLog.isDebugEnabled()) {
                             msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
@@ -554,19 +597,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @SuppressWarnings("unchecked")
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
-            }
-        });
-
+    @Override public synchronized String toString() {
         return S.toString(GridDhtTxFinishFuture.class, this,
             "xidVer", tx.xidVersion(),
-            "innerFuts", futs,
+            "innerFuts", miniFuts,
             "super", super.toString());
     }
 
@@ -574,7 +608,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
+    private class MiniFuture {
         /** */
         private final int futId;
 
@@ -589,6 +623,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         /** */
         @GridToStringInclude
         private ClusterNode node;
+
+        /** */
+        private volatile boolean done;
 
         /**
          * @param futId Future ID.
@@ -634,14 +671,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
 
             // Fail.
-            onDone(e);
-        }
-
-        /**
-         * @param e Node failure.
-         */
-        void onNodeLeft(ClusterTopologyCheckedException e) {
-            onNodeLeft();
+            GridDhtTxFinishFuture.this.onDone(e);
         }
 
         /**
@@ -654,7 +684,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             }
 
             // If node left, then there is nothing to commit on it.
-            onDone(tx);
+            onDone();
         }
 
         /**
@@ -666,6 +696,33 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             onDone();
         }
+
+        /**
+         * @return {@code True} if done.
+         */
+        public boolean isDone() {
+            return done;
+        }
+
+        /**
+         *
+         */
+        public void onDone() {
+            boolean complete;
+
+            synchronized (GridDhtTxFinishFuture.this) {
+                if (done)
+                    return;
+
+                done = true;
+
+                complete = (++completedMiniCnt == miniFuts.size()) && inited;
+            }
+
+            if (complete)
+                GridDhtTxFinishFuture.this.onDone(tx);
+        }
+
 
         /** {@inheritDoc} */
         @Override public String toString() {

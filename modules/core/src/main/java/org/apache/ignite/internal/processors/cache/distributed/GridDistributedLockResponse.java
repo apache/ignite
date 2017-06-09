@@ -48,6 +48,9 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     /** Future ID. */
     private IgniteUuid futId;
 
+    /** Partition. */
+    private int part;
+
     /** Error. */
     @GridDirectTransient
     private Throwable err;
@@ -74,17 +77,21 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param cnt Key count.
      * @param addDepInfo Deployment info.
      */
-    public GridDistributedLockResponse(int cacheId,
+    public GridDistributedLockResponse(
+        int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
+        int part,
         int cnt,
-        boolean addDepInfo) {
+        boolean addDepInfo
+    ) {
         super(lockVer, cnt, addDepInfo);
 
         assert futId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
+        this.part = part;
 
         vals = new ArrayList<>(cnt);
     }
@@ -93,20 +100,25 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param cacheId Cache ID.
      * @param lockVer Lock ID.
      * @param futId Future ID.
+     * @param part Partition.
      * @param err Error.
      * @param addDepInfo Deployment info.
      */
-    public GridDistributedLockResponse(int cacheId,
+    public GridDistributedLockResponse(
+        int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
+        int part,
         Throwable err,
-        boolean addDepInfo) {
+        boolean addDepInfo
+    ) {
         super(lockVer, 0, addDepInfo);
 
         assert futId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
+        this.part = part;
         this.err = err;
     }
 
@@ -114,13 +126,16 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param cacheId Cache ID.
      * @param lockVer Lock ID.
      * @param futId Future ID.
+     * @param part Partition.
      * @param cnt Count.
      * @param err Error.
      * @param addDepInfo Deployment info.
      */
-    public GridDistributedLockResponse(int cacheId,
+    public GridDistributedLockResponse(
+        int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
+        int part,
         int cnt,
         Throwable err,
         boolean addDepInfo) {
@@ -131,12 +146,17 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
+        this.part = part;
 
         vals = new ArrayList<>(cnt);
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return part;
+    }
+
     /**
-     *
      * @return Future ID.
      */
     public IgniteUuid futureId() {
@@ -234,6 +254,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
@@ -272,6 +298,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 9:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -291,7 +325,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
