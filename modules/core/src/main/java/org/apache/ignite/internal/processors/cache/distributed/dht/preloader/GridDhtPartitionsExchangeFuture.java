@@ -1304,7 +1304,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             initFut.onDone(err == null);
 
-            affAttachmentHolder.attachment(null);
+            if (affAttachmentHolder != null)
+                affAttachmentHolder.attachment(null);
 
             if (exchId.isLeft()) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts())

@@ -1945,6 +1945,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return ctx;
         }
+        else
+            sharedCtx.exchange().clearClientTopology(CU.cacheId(req.cacheName()));
 
         return null;
     }

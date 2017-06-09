@@ -182,10 +182,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         }
 
         MemoryConfiguration cfg1 = new MemoryConfiguration();
-        cfg1.setPageCacheSize(50*1024*1024L);
+        cfg1.setPageCacheSize(500 * 1024 * 1024L);
         cfg.setMemoryConfiguration(cfg1);
-
-
 
         cfg.setClientMode(client);
 
@@ -1764,7 +1762,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         final AtomicInteger nodeIdx = new AtomicInteger();
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+        final long stopTime = System.currentTimeMillis() + 30_000;
 
         IgniteInternalFuture<?> updateFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
