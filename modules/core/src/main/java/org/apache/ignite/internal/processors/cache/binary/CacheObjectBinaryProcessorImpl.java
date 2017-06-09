@@ -405,9 +405,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Affinity field.
      */
     @Nullable private String affinityField(int typeId) {
-        BinaryMetadata meta = metadata0(typeId);
-
-        return meta != null ? meta.affinityKeyFieldName() : null;
+        return binaryCtx.affinityKeyFieldName(typeId);
     }
 
     /** {@inheritDoc} */
