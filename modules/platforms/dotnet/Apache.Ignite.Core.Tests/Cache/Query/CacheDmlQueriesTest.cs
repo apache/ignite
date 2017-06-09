@@ -18,6 +18,7 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using System;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -38,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration(typeof(Foo), typeof(Key), typeof(Key2))
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     NameMapper = GetNameMapper()
                 }
@@ -254,6 +255,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the composite key with fields of all data types.
+        /// </summary>
+        [Test]
+        public void TestCompositeKeyAllDataTypes()
+        {
+            var cfg = new CacheConfiguration("composite_key_all", new QueryEntity(typeof(KeyAll), typeof(string)));
+            var cache = Ignition.GetIgnite().CreateCache<KeyAll, string>(cfg);
+
+            // Test insert.
+            var res = cache.QueryFields(new SqlFieldsQuery(
+                "insert into string(Int, _val) values (1, 'John')")).GetAll();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(1, res[0].Count);
+            Assert.AreEqual(1, res[0][0]);
+        }
+
+        /// <summary>
         /// Key.
         /// </summary>
         private struct Key
@@ -292,6 +311,42 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             [QuerySqlField] public int Id { get; set; }
             [QuerySqlField] public string Name { get; set; }
+        }
+
+        /// <summary>
+        /// Key with all kinds of fields.
+        /// </summary>
+        private class KeyAll
+        {
+            [QuerySqlField] public byte Byte { get; set; }
+            [QuerySqlField] public sbyte SByte { get; set; }
+            [QuerySqlField] public short Short { get; set; }
+            [QuerySqlField] public ushort UShort { get; set; }
+            [QuerySqlField] public int Int { get; set; }
+            [QuerySqlField] public uint UInt { get; set; }
+            [QuerySqlField] public long Long { get; set; }
+            [QuerySqlField] public ulong ULong { get; set; }
+            [QuerySqlField] public float Float { get; set; }
+            [QuerySqlField] public double Double { get; set; }
+            [QuerySqlField] public decimal Decimal { get; set; }
+            [QuerySqlField] public Guid Guid { get; set; }
+            [QuerySqlField] public string String { get; set; }
+            [QuerySqlField] public Key Key { get; set; }
+            
+            [QuerySqlField] public byte[] Bytes { get; set; }
+            [QuerySqlField] public sbyte[] SBytes { get; set; }
+            [QuerySqlField] public short[] Shorts { get; set; }
+            [QuerySqlField] public ushort[] UShorts { get; set; }
+            [QuerySqlField] public int[] Ints { get; set; }
+            [QuerySqlField] public uint[] UInts { get; set; }
+            [QuerySqlField] public long[] Longs { get; set; }
+            [QuerySqlField] public ulong[] ULongs { get; set; }
+            [QuerySqlField] public float[] Floats { get; set; }
+            [QuerySqlField] public double[] Doubles { get; set; }
+            [QuerySqlField] public decimal[] Decimals { get; set; }
+            [QuerySqlField] public Guid[] Guids { get; set; }
+            [QuerySqlField] public string[] Strings { get; set; }
+            [QuerySqlField] public Key[] Keys { get; set; }
         }
     }
 }
