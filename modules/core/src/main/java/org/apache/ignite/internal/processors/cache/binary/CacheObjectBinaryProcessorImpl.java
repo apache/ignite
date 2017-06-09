@@ -633,7 +633,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @param po Binary object.
      * @return Affinity key.
      */
-    // TODO: Take in count aff key fields.
     public BinaryField affinityKeyField(BinaryObjectEx po) {
         // Fast path for already cached field.
         int typeId = po.typeId();
@@ -644,31 +643,20 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return fieldHolder.get();
 
         // Slow path if affinity field is not cached yet.
-        BinaryType meta = po.rawType();
-
-        if (meta != null) {
-            String name = meta.affinityKeyFieldName();
-
-            if (name != null) {
-                BinaryField field = meta.field(name);
-
-                affKeyFields.putIfAbsent(meta.typeId(), new T1<>(field));
-
-                return field;
-            }
-            else {
-                affKeyFields.putIfAbsent(meta.typeId(), new T1<BinaryField>(null));
-
-                return null;
-            }
-        }
-
         String name = binaryCtx.affinityKeyFieldName(typeId);
 
-        if (name != null)
-            return po.field(name);
+        if (name != null) {
+            BinaryField field = binaryCtx.createField(typeId, name);
 
-        return null;
+            affKeyFields.putIfAbsent(typeId, new T1<>(field));
+
+            return field;
+        }
+        else {
+            affKeyFields.putIfAbsent(typeId, new T1<BinaryField>(null));
+
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
