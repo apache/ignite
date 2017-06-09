@@ -299,7 +299,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Test insert.
             var res = cache.QueryFields(new SqlFieldsQuery(
-                "insert into string(Int, _val) values (1, 'John')")).GetAll();
+                    "insert into string(byte, sbyte, short, ushort, int, uint, long, ulong, float, double, decimal, " +
+                    "guid, string, key, bytes, sbytes, shorts, ushorts, ints, uints, longs, ulongs, floats, " +
+                    "doubles, decimals, guids, strings, keys, _val) " +
+                    "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    key.Byte, key.SByte, key.Short, key.UShort, key.Int, key.UInt, key.Long, key.ULong, key.Float,
+                    key.Double, key.Decimal, key.Guid, key.String, key.Key, key.Bytes, key.SBytes, key.Shorts,
+                    key.UShorts, key.Ints, key.UInts, key.Longs, key.ULongs, key.Floats, key.Doubles, key.Decimals,
+                    key.Guids, key.Strings, key.Keys, "VALUE"))
+                .GetAll();
 
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
