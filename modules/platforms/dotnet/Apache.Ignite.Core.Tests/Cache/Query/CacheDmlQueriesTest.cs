@@ -40,7 +40,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration
+                // Type registration is required because we call DML first and cache.Get after.
+                BinaryConfiguration = new BinaryConfiguration(typeof(Foo), typeof(Key), typeof(Key2), typeof(KeyAll))
                 {
                     NameMapper = GetNameMapper()
                 }
