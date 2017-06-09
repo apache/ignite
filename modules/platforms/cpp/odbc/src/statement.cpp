@@ -270,7 +270,7 @@ namespace ignite
 
                 case SQL_ATTR_PARAMS_PROCESSED_PTR:
                 {
-                    // TODO: Implement me.
+                    parameters.SetParamsProcessedPtr(reinterpret_cast<SqlUlen*>(value));
 
                     break;
                 }

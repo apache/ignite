@@ -27,6 +27,7 @@ namespace ignite
                 parameters(),
                 paramTypes(),
                 paramBindOffset(0),
+                processedParamRows(0),
                 paramSetSize(1),
                 paramSetPos(0),
                 currentParamIdx(0),
@@ -91,6 +92,17 @@ namespace ignite
                 }
 
                 return false;
+            }
+
+            void ParameterSet::SetParamsProcessedPtr(SqlUlen* ptr)
+            {
+                processedParamRows = ptr;
+            }
+
+            void ParameterSet::SetParamsProcessed(SqlUlen processed) const
+            {
+                if (processedParamRows)
+                    *processedParamRows = processed;
             }
 
             void ParameterSet::UpdateParamsTypes(const ParameterTypeVector& meta)

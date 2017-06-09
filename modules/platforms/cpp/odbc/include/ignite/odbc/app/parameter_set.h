@@ -206,6 +206,20 @@ namespace ignite
                  */
                 int32_t GetRowNumber() const;
 
+                /**
+                 * Number of processed params should be written using provided address.
+                 *
+                 * @param ptr Pointer.
+                 */
+                void SetParamsProcessedPtr(SqlUlen* ptr);
+
+                /**
+                 * Set number of parameters processed in batch.
+                 *
+                 * @param processed Processed.
+                 */
+                void SetParamsProcessed(SqlUlen processed) const;
+
             private:
                 /**
                  * Write single row of the param set using provided writer.
@@ -224,6 +238,9 @@ namespace ignite
 
                 /** Offset added to pointers to change binding of parameters. */
                 int* paramBindOffset;
+
+                /** Processed parameters. */
+                SqlUlen* processedParamRows;
 
                 /** Parameter set size. */
                 SqlUlen paramSetSize;

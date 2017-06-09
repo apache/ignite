@@ -74,6 +74,8 @@ namespace ignite
                     processed += currentPageSize;
                 }
 
+                params.SetParamsProcessed(static_cast<SqlUlen>(setsProcessed));
+
                 return res;
             }
 
@@ -179,7 +181,8 @@ namespace ignite
 
                     setsProcessed += end - begin - rsp.GetErrorSetIdx();
 
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(), setsProcessed, 0);
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(),
+                        static_cast<int32_t>(setsProcessed), 0);
 
                     return SqlResult::AI_ERROR;
                 }
@@ -227,7 +230,8 @@ namespace ignite
 
                     setsProcessed += end - begin - rsp.GetErrorSetIdx();
 
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(), setsProcessed, 0);
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(),
+                        static_cast<int32_t>(setsProcessed), 0);
 
                     return SqlResult::AI_ERROR;
                 }
