@@ -22,12 +22,15 @@ namespace Apache.Ignite.Examples.Compute
     using Apache.Ignite.Core.Compute;
 
     /// <summary>
-    /// Example demonstrating closure execution with peer assembly loading.
-    /// Should be run with standalone Apache Ignite.NET node.
-    /// "-assembly" command line argument is not required on remote nodes: assemblies are loaded automatically when needed.
+    /// Example demonstrating compute execution with peer assembly loading.
     /// 
-    /// Start one or more standalone nodes with Apache.Ignite.exe (see below) and keep them running,
-    /// modify and re-run this example, and observe how new versions of this assembly are deployed and executed.
+    /// Before executing the example start one or more standalone Apache Ignite.NET nodes without "-assembly"
+    /// command line argument. That argument is not required on remote nodes because the assemblies are
+    /// loaded automatically whenever is needed.
+    /// 
+    /// Modify and re-run this example while keeping standalone nodes running to see that the
+    /// modified version of the computation will be executed because of automatic deployment of the updated assembly.
+    /// 
     /// Version is updated automatically on build because of '*' in AssemblyVersion (see AssemblyInfo.cs).
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
