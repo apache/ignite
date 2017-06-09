@@ -342,6 +342,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var binKeyRes = cache.WithKeepBinary<BinaryObject, string>().Single().Key;
 
             Assert.AreEqual(binKey.Header, binKeyRes.Header);
+            Assert.AreEqual(binKey, binKeyRes);
 
             // Get by key to verify identity.
             Assert.AreEqual("VALUE", cache[key]);
