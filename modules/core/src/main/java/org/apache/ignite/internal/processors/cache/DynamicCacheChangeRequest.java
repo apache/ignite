@@ -172,7 +172,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param destroy Destroy flag.
      * @return Cache stop request.
      */
-    static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean sql, boolean destroy) {
+   public static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean sql, boolean destroy) {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.sql(sql);
