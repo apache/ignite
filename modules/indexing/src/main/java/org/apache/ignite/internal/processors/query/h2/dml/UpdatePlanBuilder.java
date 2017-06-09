@@ -361,7 +361,7 @@ public final class UpdatePlanBuilder {
 
                         cctx.prepareAffinityField(builder);
 
-                        return cctx.grid().binary().builder(typeName);
+                        return builder;
                     }
                 };
             }
