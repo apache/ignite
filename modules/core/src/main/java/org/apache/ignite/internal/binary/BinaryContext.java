@@ -470,7 +470,7 @@ public class BinaryContext {
                 else {
                     String affField = affFields.remove(clsName);
 
-                    descs.add(clsName, mapper, serializer, identity, affFields.get(clsName),
+                    descs.add(clsName, mapper, serializer, identity, affField,
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
                 }
             }
@@ -1076,6 +1076,9 @@ public class BinaryContext {
 
         descByCls.put(cls, desc);
 
+        if (affFieldName != null)
+            affKeyFieldNames.putIfAbsent(id, affFieldName);
+
         return desc;
     }
 
@@ -1121,6 +1124,11 @@ public class BinaryContext {
 
         if (identity != null) {
             if (identities.put(id, identity) != null)
+                throw duplicateTypeIdException(clsName, id);
+        }
+
+        if (affKeyFieldName != null) {
+            if (affKeyFieldNames.put(id, affKeyFieldName) != null)
                 throw duplicateTypeIdException(clsName, id);
         }
 
