@@ -243,7 +243,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             SqlListenerRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
                 enforceJoinOrder);
 
-            SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
+            SqlListenerMessageParser parser = new OdbcMessageParser(ctx);
 
             return new SqlListenerConnectionContext(handler, parser);
         }
@@ -252,9 +252,10 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             boolean enforceJoinOrder = reader.readBoolean();
             boolean collocated = reader.readBoolean();
             boolean replicatedOnly = reader.readBoolean();
+            boolean autoCloseCursors = reader.readBoolean();
 
             SqlListenerRequestHandler handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly);
+                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors);
 
             SqlListenerMessageParser parser = new JdbcMessageParser(ctx);
 

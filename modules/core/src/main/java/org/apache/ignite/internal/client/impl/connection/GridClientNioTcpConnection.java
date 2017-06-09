@@ -946,7 +946,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             .nodeId(nodeBean.getNodeId())
             .consistentId(nodeBean.getConsistentId())
             .tcpAddresses(nodeBean.getTcpAddresses())
-            .tcpPort(nodeBean.getTcpPort());
+            .tcpPort(nodeBean.getTcpPort())
+            .order(nodeBean.getOrder());
 
         Map<String, GridClientCacheMode> caches = new HashMap<>();
 

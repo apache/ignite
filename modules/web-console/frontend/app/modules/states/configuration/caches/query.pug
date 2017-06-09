@@ -52,7 +52,8 @@ include /app/helpers/jade/mixins
                     +number('On-heap cache for off-heap indexes:', `${model}.sqlOnheapRowCacheSize`, '"sqlOnheapRowCacheSize"', 'true', '10240', '1',
                         'Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access')
 
-                .settings-row
+                //- Deprecated in ignite 2.1
+                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
                     +number('Long query timeout:', `${model}.longQueryWarningTimeout`, '"longQueryWarningTimeout"', 'true', '3000', '0',
                         'Timeout in milliseconds after which long query warning will be printed')
                 .settings-row

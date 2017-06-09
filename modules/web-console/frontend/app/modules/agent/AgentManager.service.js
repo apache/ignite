@@ -45,6 +45,7 @@ export default class IgniteAgentManager {
         $root.$on('$stateChangeSuccess', () => this.stopWatch());
 
         this.ignite2x = false;
+        this.ignite2_1 = false;
 
         if (!$root.IgniteDemoMode) {
             $root.$watch(() => _.get(this, 'cluster.clusterVersion'), (ver) => {
@@ -52,6 +53,7 @@ export default class IgniteAgentManager {
                     return;
 
                 this.ignite2x = ver.startsWith('2.');
+                this.ignite2_1 = ver.startsWith('2.1');
             }, true);
         }
 

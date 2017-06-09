@@ -64,7 +64,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     private static final String TBL_NAME = Person.class.getSimpleName();
 
     /** Schema name. */
-    private static final String SCHEMA_NAME = TBL_NAME;
+    private static final String SCHEMA_NAME = "PUBLIC";
 
     /** Cache name. */
     private static final String CACHE_NAME = TBL_NAME;
@@ -142,7 +142,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
 
         db.addCheckpointListener(new DbCheckpointListener() {
-            @Override public void onCheckpointBegin(Context context) throws IgniteCheckedException {
+            @Override public void onCheckpointBegin(Context context) {
                 cnt.incrementAndGet();
             }
         });
@@ -151,7 +151,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         idx.setName(IDX_NAME);
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, 1, true);
+        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, 1, true);
 
         assert indexCnt(ig0, CACHE_NAME) == 0;
 
@@ -178,12 +178,12 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
 
         db.addCheckpointListener(new DbCheckpointListener() {
-            @Override public void onCheckpointBegin(Context context) throws IgniteCheckedException {
+            @Override public void onCheckpointBegin(Context context) {
                 cnt.incrementAndGet();
             }
         });
 
-        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, 1, true);
+        ig0.context().query().dynamicTableCreate(SCHEMA_NAME, getEntity(), TMPL_NAME, null, null, null, 1, true);
 
         assert indexCnt(ig0, CACHE_NAME) == 0;
 

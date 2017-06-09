@@ -37,10 +37,10 @@ public class VisorQueryIndexField extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index field name. */
-    private String fldName;
+    private String name;
 
     /** Index field sort order. */
-    private boolean fldSort;
+    private boolean sort;
 
     /**
      * Create data transfer object for given cache type metadata.
@@ -50,14 +50,14 @@ public class VisorQueryIndexField extends VisorDataTransferObject {
     }
 
     /**
-     * Create data transfer object for given cache type metadata.
+     * Create data transfer object for index field.
      *
-     * @param fldName Index field name.
-     * @param fldSort Index field sort order.
+     * @param name Index field name.
+     * @param sort Index field sort order.
      */
-    public VisorQueryIndexField(String fldName, boolean fldSort) {
-        this.fldName = fldName;
-        this.fldSort = fldSort;
+    public VisorQueryIndexField(String name, boolean sort) {
+        this.name = name;
+        this.sort = sort;
     }
 
     /**
@@ -76,27 +76,27 @@ public class VisorQueryIndexField extends VisorDataTransferObject {
     /**
      * @return Index field name.
      */
-    public String getFieldName() {
-        return fldName;
+    public String getName() {
+        return name;
     }
 
     /**
      * @return Index field sort order.
      */
-    public boolean isFieldSort() {
-        return fldSort;
+    public boolean getSortOrder() {
+        return sort;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, fldName);
-        out.writeBoolean(fldSort);
+        U.writeString(out, name);
+        out.writeBoolean(sort);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        fldName = U.readString(in);
-        fldSort = in.readBoolean();
+        name = U.readString(in);
+        sort = in.readBoolean();
     }
 
     /** {@inheritDoc} */
