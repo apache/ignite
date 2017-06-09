@@ -74,7 +74,7 @@ mixin td-ellipses-lbl(w, lbl)
                         .settings-row.settings-row_small-label
                             +text('JDBC URL:', 'selectedPreset.jdbcUrl', '"jdbcUrl"', true, 'JDBC URL', 'JDBC URL for connecting to database<br>Refer to your database documentation for details')
                         .settings-row.settings-row_small-label
-                            +text('User:', 'selectedPreset.user', '"jdbdUser"', false, '', 'User name for connecting to database')
+                            +text('User:', 'selectedPreset.user', '"jdbcUser"', false, '', 'User name for connecting to database')
                         .settings-row.settings-row_small-label
                             +password('Password:', 'selectedPreset.password', '"jdbcPassword"', false, '', 'Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')(ignite-on-enter='importDomainNext()')
                         .settings-row
@@ -132,7 +132,7 @@ mixin td-ellipses-lbl(w, lbl)
                                                     td(width='30px' style='min-width: 30px; max-width: 30px')
                                                         input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                     +td-ellipses-lbl('130px', '{{table.schema}}')
-                                                    +td-ellipses-lbl('160px', '{{table.tbl}}')
+                                                    +td-ellipses-lbl('160px', '{{table.table}}')
                                                     td(colspan='2' width='288px' style='min-width: 160px; max-width: 160px')
                                                         div.td-ellipsis
                                                             a(ng-if='!table.edit' ng-click='startEditDbTableCache(table)') {{tableActionView(table)}}
