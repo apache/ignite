@@ -41,6 +41,9 @@ public class StoredCacheData implements Serializable {
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
 
+    /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
+    private boolean sql;
+
     /**
      * Constructor.
      *
@@ -72,5 +75,19 @@ public class StoredCacheData implements Serializable {
      */
     public void queryEntities(Collection<QueryEntity> qryEntities) {
         this.qryEntities = qryEntities;
+    }
+
+    /**
+     * @return SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
+     */
+    public boolean sql() {
+        return sql;
+    }
+
+    /**
+     * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
+     */
+    public void sql(boolean sql) {
+        this.sql = sql;
     }
 }
