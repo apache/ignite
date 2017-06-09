@@ -46,7 +46,7 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
         boolean depEnabled) {
         super(kernalCtx,
             ccfg.getName(),
-            binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper(ccfg.getCacheKeyConfiguration()) :
+            binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
                 new GridCacheDefaultAffinityKeyMapper(),
             cpyOnGet,
             storeVal,

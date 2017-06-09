@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -369,6 +370,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
 
+    /** Cache key configuration. */
+    private CacheKeyConfiguration[] cacheKeyCfg;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -402,6 +406,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
         backups = cc.getBackups();
+        cacheKeyCfg = cc.getKeyConfiguration();
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
@@ -2285,6 +2290,26 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** {@inheritDoc} */
     @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByVal) {
         super.setStoreByValue(isStoreByVal);
+
+        return this;
+    }
+
+    /**
+     * Gets cache key configuration.
+     *
+     * @return Cache key configuration.
+     */
+    public CacheKeyConfiguration[] getKeyConfiguration() {
+        return cacheKeyCfg;
+    }
+
+    /**
+     * Sets cache key configuration.
+     *
+     * @param cacheKeyCfg Cache key configuration.
+     */
+    public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
+        this.cacheKeyCfg = cacheKeyCfg;
 
         return this;
     }
