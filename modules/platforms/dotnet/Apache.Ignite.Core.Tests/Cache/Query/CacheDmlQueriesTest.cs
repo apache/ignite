@@ -102,6 +102,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the primitive key with .NET-only types like uint.
+        /// </summary>
+        [Test]
+        public void TestPrimitiveKeyDotNetTypes()
+        {
+            var cfg = new CacheConfiguration("primitive_key_dotnet", new QueryEntity(typeof(uint), typeof(string)));
+            var cache = Ignition.GetIgnite().CreateCache<uint, Foo>(cfg);
+
+            var res = cache.QueryFields(new SqlFieldsQuery(
+                "insert into string(_key, _val) values (?, ?)", uint.MaxValue, "x")).GetAll();
+
+            Assert.AreEqual(1, res.Count);
+            Assert.AreEqual(1, res[0].Count);
+            Assert.AreEqual(1, res[0][0]);
+        }
+
+        /// <summary>
         /// Tests composite key (which requires QueryField.IsKeyField).
         /// </summary>
         [Test]
