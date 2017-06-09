@@ -337,6 +337,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, res[0].Count);
             Assert.AreEqual(1, res[0][0]);
 
+            // Compare resulting keys.
+            Assert.AreEqual(key, cache.Single().Key);
+
             // Compare keys in binary form.
             var binKey = cache.Ignite.GetBinary().ToBinary<BinaryObject>(key);
             var binKeyRes = cache.WithKeepBinary<BinaryObject, string>().Single().Key;
@@ -408,6 +411,45 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField] public Guid Guid { get; set; }
             [QuerySqlField] public string String { get; set; }
             [QuerySqlField] public Key Key { get; set; }
+
+            private bool Equals(KeyAll other)
+            {
+                return Byte == other.Byte && SByte == other.SByte && Short == other.Short && 
+                    UShort == other.UShort && Int == other.Int && UInt == other.UInt && Long == other.Long && 
+                    ULong == other.ULong && Float.Equals(other.Float) && Double.Equals(other.Double) && 
+                    Decimal == other.Decimal && Guid.Equals(other.Guid) && string.Equals(String, other.String) && 
+                    Key.Equals(other.Key);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return Equals((KeyAll) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = Byte.GetHashCode();
+                    hashCode = (hashCode * 397) ^ SByte.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Short.GetHashCode();
+                    hashCode = (hashCode * 397) ^ UShort.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Int;
+                    hashCode = (hashCode * 397) ^ (int) UInt;
+                    hashCode = (hashCode * 397) ^ Long.GetHashCode();
+                    hashCode = (hashCode * 397) ^ ULong.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Float.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Double.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Decimal.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Guid.GetHashCode();
+                    hashCode = (hashCode * 397) ^ String.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Key.GetHashCode();
+                    return hashCode;
+                }
+            }
         }
     }
 }
