@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests composite key (which requires QueryField.IsKeyField).
         /// </summary>
         [Test]
-        public void TestCompositeKeyArrayEquality()
+        public void TestCompositeKey()
         {
             var cfg = new CacheConfiguration("composite_key_arr", new QueryEntity(typeof(Key), typeof(Foo)));
             var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests composite key (which requires QueryField.IsKeyField).
         /// </summary>
         [Test]
-        public void TestCompositeKeyFieldEquality()
+        public void TestCompositeKey2()
         {
             var cfg = new CacheConfiguration("composite_key_fld", new QueryEntity(typeof(Key2), typeof(Foo)));
             var cache = Ignition.GetIgnite().CreateCache<Key2, Foo>(cfg);
