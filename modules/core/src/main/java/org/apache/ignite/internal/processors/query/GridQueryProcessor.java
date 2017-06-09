@@ -1323,7 +1323,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setQueryEntities(Collections.singleton(entity));
 
         if (affinityKey != null)
-            ccfg.setKeyConfiguration(new CacheKeyConfiguration(entity.getValueType(), affinityKey));
+            ccfg.setKeyConfiguration(new CacheKeyConfiguration(entity.getKeyType(), affinityKey));
 
         boolean res;
 
