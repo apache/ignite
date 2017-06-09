@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Grid cache semaphore state.
  */
-public class GridCacheSemaphoreState extends AtomicDataStructureValue implements Cloneable {
+public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,6 +49,9 @@ public class GridCacheSemaphoreState extends AtomicDataStructureValue implements
     /** Flag indicating that semaphore is no longer safe to use. */
     private boolean broken;
 
+    /** */
+    private UUID gridId;
+
     /**
      * Constructor.
      *
@@ -56,10 +59,13 @@ public class GridCacheSemaphoreState extends AtomicDataStructureValue implements
      * @param waiters Waiters map.
      * @param failoverSafe Failover safe flag.
      */
-    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe) {
+    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe, UUID gridId) {
+        assert gridId != null;
+
         this.cnt = cnt;
         this.waiters = waiters;
         this.failoverSafe = failoverSafe;
+        this.gridId = gridId;
     }
 
     /**
@@ -72,6 +78,11 @@ public class GridCacheSemaphoreState extends AtomicDataStructureValue implements
     /** {@inheritDoc} */
     @Override public DataStructureType type() {
         return DataStructureType.SEMAPHORE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID gridId() {
+        return gridId;
     }
 
     /**
@@ -133,6 +144,7 @@ public class GridCacheSemaphoreState extends AtomicDataStructureValue implements
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(cnt);
         out.writeBoolean(failoverSafe);
+        U.writeUuid(out, gridId);
         out.writeBoolean(waiters != null);
 
         if (waiters != null) {
@@ -151,6 +163,7 @@ public class GridCacheSemaphoreState extends AtomicDataStructureValue implements
     @Override public void readExternal(ObjectInput in) throws IOException {
         cnt = in.readInt();
         failoverSafe = in.readBoolean();
+        gridId = U.readUuid(in);
 
         if (in.readBoolean()) {
             int size = in.readInt();

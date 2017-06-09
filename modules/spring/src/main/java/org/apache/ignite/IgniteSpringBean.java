@@ -450,7 +450,9 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
         boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Not implemented");
+        checkIgnite();
+
+        return g.atomicSequence(name, cfg, initVal, create);
     }
 
     /** {@inheritDoc} */
@@ -458,6 +460,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         return g.atomicLong(name, initVal, create);
+    }
+
+    @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicLong(name, cfg, initVal, create);
     }
 
     /** {@inheritDoc} */
@@ -473,7 +482,9 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
         @Nullable T initVal, boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Not implemented");
+        checkIgnite();
+
+        return g.atomicReference(name, cfg, initVal, create);
     }
 
     /** {@inheritDoc} */
@@ -485,6 +496,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         return g.atomicStamped(name, initVal, initStamp, create);
+    }
+
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicStamped(name, cfg, initVal, initStamp, create);
     }
 
     /** {@inheritDoc} */

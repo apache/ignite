@@ -20,6 +20,7 @@ package org.apache.ignite.cache.database;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -27,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -199,7 +201,59 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         for (int i = 0; i < 100; i++)
             assertTrue(set.contains(i));
-
+  
         assertEquals(100, set.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockNotPersisted() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        ignite.active(true);
+
+        IgniteLock lock = ignite.reentrantLock("test", true, true, true);
+
+        assert lock != null;
+
+        stopAllGrids();
+
+        ignite = startGrids(4);
+
+        ignite.active(true);
+
+        lock = ignite.reentrantLock("test", true, true, false);
+
+        assert lock == null;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicSequence() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        ignite.active(true);
+
+        IgniteAtomicSequence seq = ignite.atomicSequence("test", 0, true);
+
+        assert seq != null;
+
+        long val = seq.addAndGet(100);
+
+        assert val == 100;
+
+        stopAllGrids();
+
+        ignite = startGrids(4);
+
+        ignite.active(true);
+
+        seq = ignite.atomicSequence("test", 0, false);
+
+        assert seq != null;
+
+        assert seq.get() == Math.max(val, seq.batchSize()) : seq.get();
     }
 }

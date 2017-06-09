@@ -371,6 +371,12 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
         boolean create)
@@ -390,6 +396,12 @@ public class IgniteMock implements Ignite {
         @Nullable S initStamp,
         boolean create)
     {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         return null;
     }
 

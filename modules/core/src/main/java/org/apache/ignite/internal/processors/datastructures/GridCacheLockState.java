@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *  Grid cache reentrant lock state.
  */
-public final class GridCacheLockState extends AtomicDataStructureValue implements Cloneable {
+public final class GridCacheLockState extends VolatileAtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,6 +45,9 @@ public final class GridCacheLockState extends AtomicDataStructureValue implement
 
     /** Owner node ID. */
     private UUID id;
+
+    /** */
+    private UUID gridId;
 
     /** FailoverSafe flag. */
     private boolean failoverSafe;
@@ -79,8 +82,9 @@ public final class GridCacheLockState extends AtomicDataStructureValue implement
      * @param failoverSafe true if created in failoverSafe mode.
      * @param fair true if created in fair mode.
      */
-    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair) {
+    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair, UUID gridId) {
         assert cnt >= 0;
+        assert gridId != null;
 
         this.id = id;
 
@@ -95,6 +99,8 @@ public final class GridCacheLockState extends AtomicDataStructureValue implement
         this.fair = fair;
 
         this.failoverSafe = failoverSafe;
+
+        this.gridId = gridId;
     }
 
     /**
@@ -107,6 +113,11 @@ public final class GridCacheLockState extends AtomicDataStructureValue implement
     /** {@inheritDoc} */
     @Override public DataStructureType type() {
         return DataStructureType.REENTRANT_LOCK;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID gridId() {
+        return gridId;
     }
 
     /**
@@ -238,6 +249,7 @@ public final class GridCacheLockState extends AtomicDataStructureValue implement
         out.writeInt(cnt);
         out.writeLong(threadId);
         U.writeUuid(out, id);
+        U.writeUuid(out, gridId);
 
         out.writeBoolean(failoverSafe);
 
@@ -290,6 +302,7 @@ public final class GridCacheLockState extends AtomicDataStructureValue implement
         cnt = in.readInt();
         threadId = in.readLong();
         id = U.readUuid(in);
+        gridId = U.readUuid(in);
 
         failoverSafe = in.readBoolean();
 

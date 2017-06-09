@@ -21,14 +21,16 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Count down latch value.
  */
-public final class GridCacheCountDownLatchValue extends AtomicDataStructureValue implements Cloneable {
+public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,20 +45,26 @@ public final class GridCacheCountDownLatchValue extends AtomicDataStructureValue
     /** Auto delete flag. */
     private boolean autoDel;
 
+    /** */
+    private UUID gridId;
+
     /**
      * Constructor.
      *
      * @param cnt Initial count.
      * @param del {@code True} to auto delete on count down to 0.
      */
-    public GridCacheCountDownLatchValue(int cnt, boolean del) {
+    public GridCacheCountDownLatchValue(int cnt, boolean del, UUID gridId) {
         assert cnt >= 0;
+        assert gridId != null;
 
         this.cnt = cnt;
 
         initCnt = cnt;
 
         autoDel = del;
+
+        this.gridId = gridId;
     }
 
     /**
@@ -69,6 +77,11 @@ public final class GridCacheCountDownLatchValue extends AtomicDataStructureValue
     /** {@inheritDoc} */
     @Override public DataStructureType type() {
         return DataStructureType.COUNT_DOWN_LATCH;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID gridId() {
+        return gridId;
     }
 
     /**
@@ -109,6 +122,7 @@ public final class GridCacheCountDownLatchValue extends AtomicDataStructureValue
         out.writeInt(cnt);
         out.writeInt(initCnt);
         out.writeBoolean(autoDel);
+        U.writeUuid(out, gridId);
     }
 
     /** {@inheritDoc} */
@@ -116,6 +130,7 @@ public final class GridCacheCountDownLatchValue extends AtomicDataStructureValue
         cnt = in.readInt();
         initCnt = in.readInt();
         autoDel = in.readBoolean();
+        gridId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */

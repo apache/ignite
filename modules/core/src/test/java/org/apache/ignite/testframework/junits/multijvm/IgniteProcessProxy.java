@@ -607,6 +607,12 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal,
         boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
@@ -625,6 +631,12 @@ public class IgniteProcessProxy implements IgniteEx {
         @Nullable S initStamp,
         boolean create) throws IgniteException
     {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
