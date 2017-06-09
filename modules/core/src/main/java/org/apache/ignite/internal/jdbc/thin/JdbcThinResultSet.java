@@ -44,7 +44,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
@@ -1150,6 +1149,7 @@ public class JdbcThinResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public URL getURL(int colIdx) throws SQLException {
         ensureNotClosed();
+        ensureHasCurrentRow();
 
         throw new SQLFeatureNotSupportedException("URL type is not supported.");
     }
@@ -1157,6 +1157,7 @@ public class JdbcThinResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public URL getURL(String colLb) throws SQLException {
         ensureNotClosed();
+        ensureHasCurrentRow();
 
         throw new SQLFeatureNotSupportedException("URL type is not supported.");
     }
