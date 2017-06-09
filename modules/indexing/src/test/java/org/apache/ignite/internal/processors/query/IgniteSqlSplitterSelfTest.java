@@ -211,6 +211,56 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    public void testPushDownLeftJoin() {
+        IgniteCache<Integer, Person> c = ignite(0).getOrCreateCache(cacheConfig("ps", true,
+            Integer.class, Person.class));
+
+        try {
+            String subqryAgg = "(select max(p.id) as id, p.depId from Person p group by p.depId)";
+            String subqrySimple = "(select p.id, p.depId from Person p)";
+
+            for (int i = 0; i < 5; i++) {
+                for (int k = 0; k < 5; k++) {
+                    SB qry = new SB("select * from ");
+
+                    for (int j = 0; j < 5; j++) {
+                        if (j != 0)
+                            qry.a(j == i ? " left join " : " join ");
+
+                        if (j == 2)
+                            qry.a(subqryAgg);
+                        else
+                            qry.a(j == k ? subqrySimple : "Person");
+
+                        qry.a(" p").a(j);
+
+                        if (j != 0) {
+                            qry.a(" on ");
+
+                            qry.a(" p0.id").a(" = ").a("p").a(j).a(".depId");
+                        }
+                    }
+
+
+                    X.println(" ---> ik: : " + i + " " + k);
+                    X.println("\nqry: \n" + qry.toString());
+
+                    c.query(new SqlFieldsQuery(qry.toString())
+                        .setEnforceJoinOrder(true)).getAll();
+
+                    X.println("\nPlan:\n" +
+                        c.query(new SqlFieldsQuery("explain " + qry.toString())
+                            .setEnforceJoinOrder(true)).getAll());
+                }
+            }
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     */
     public void testReplicatedTablesUsingPartitionedCache() {
         doTestReplicatedTablesUsingPartitionedCache(1, false, false);
     }
