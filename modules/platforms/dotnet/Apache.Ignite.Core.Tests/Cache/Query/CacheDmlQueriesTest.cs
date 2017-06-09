@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Test insert.
             var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, str, id, name) " +
-                                               "values (1, 2, 'Foo', 3, 'John'), (4, 5, 'Bar', 6, 'Mary')")).GetAll();
+                                               "values (1, 2, 'Фу', 3, 'John'), (4, 5, 'Бар', 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
@@ -172,21 +172,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(1, foos[0].Key.Hi);
             Assert.AreEqual(2, foos[0].Key.Lo);
-            Assert.AreEqual("Foo", foos[0].Key.Str);
+            Assert.AreEqual("Фу", foos[0].Key.Str);
             Assert.AreEqual(3, foos[0].Value.Id);
             Assert.AreEqual("John", foos[0].Value.Name);
 
             Assert.AreEqual(4, foos[1].Key.Hi);
             Assert.AreEqual(5, foos[1].Key.Lo);
-            Assert.AreEqual("Bar", foos[1].Key.Str);
+            Assert.AreEqual("Бар", foos[1].Key.Str);
             Assert.AreEqual(6, foos[1].Value.Id);
             Assert.AreEqual("Mary", foos[1].Value.Name);
 
             // Existence tests check that hash codes are consistent.
-            Assert.IsTrue(cache.ContainsKey(new Key2(2, 1, "Foo")));
+            Assert.IsTrue(cache.ContainsKey(new Key2(2, 1, "Фу")));
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
 
-            Assert.IsTrue(cache.ContainsKey(new Key2(5, 4, "Bar")));
+            Assert.IsTrue(cache.ContainsKey(new Key2(5, 4, "Бар")));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
         }
 
