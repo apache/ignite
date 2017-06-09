@@ -349,6 +349,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 BinarySchema curSchema = writer.currentSchema();
 
+                // TODO: Put correct affinity key field name here.
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta,
                     ctx.affinityKeyFieldName(typeId), Collections.singleton(curSchema), false, null));
 
