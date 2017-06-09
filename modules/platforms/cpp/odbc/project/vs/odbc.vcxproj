@@ -173,6 +173,7 @@
     <ClCompile Include="..\..\src\dsn_config.cpp" />
     <ClCompile Include="..\..\src\entry_points.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
+    <ClCompile Include="..\..\src\message.cpp" />
     <ClCompile Include="..\..\src\meta\column_meta.cpp" />
     <ClCompile Include="..\..\src\meta\table_meta.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />

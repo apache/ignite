@@ -50,7 +50,7 @@ public class OdbcQueryExecuteBatchStartRequest extends OdbcRequest {
     public OdbcQueryExecuteBatchStartRequest(String schema, String sqlQry, boolean last, Object[][] args) {
         super(QRY_EXEC_BATCH_START);
 
-        this.schema = schema.isEmpty() ? null : schema;
+        this.schema = (schema != null && schema.isEmpty()) ? null : schema;
         this.sqlQry = sqlQry;
         this.last = last;
         this.args = args;

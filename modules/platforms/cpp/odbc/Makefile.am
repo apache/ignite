@@ -78,6 +78,7 @@ libignite_odbc_la_SOURCES = \
     src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \
+    src/message.cpp \
     src/column.cpp \
     src/statement.cpp \
     src/type_traits.cpp \

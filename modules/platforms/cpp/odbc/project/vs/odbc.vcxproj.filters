@@ -145,6 +145,9 @@
     <ClCompile Include="..\..\src\query\batch_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\message.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
