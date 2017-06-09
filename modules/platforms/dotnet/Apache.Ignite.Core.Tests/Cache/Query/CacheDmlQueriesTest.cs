@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Tests.Binary;
     using NUnit.Framework;
 
     /// <summary>
