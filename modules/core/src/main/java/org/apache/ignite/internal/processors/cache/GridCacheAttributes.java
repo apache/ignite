@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -47,17 +46,12 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration. */
     private CacheConfiguration ccfg;
 
-    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
-    private boolean sql;
-
     /**
      * @param cfg Cache configuration.
-     * @param sql SQL flag.
+     *
      */
-    public GridCacheAttributes(CacheConfiguration cfg, boolean sql) {
+    public GridCacheAttributes(CacheConfiguration cfg) {
         ccfg = cfg;
-
-        this.sql = sql;
     }
 
     /**
@@ -290,13 +284,6 @@ public class GridCacheAttributes implements Serializable {
      */
     String topologyValidatorClassName() {
         return className(ccfg.getTopologyValidator());
-    }
-
-    /**
-     * @return SQL flag.
-     */
-    public boolean sql() {
-        return sql;
     }
 
     /**

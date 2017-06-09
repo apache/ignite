@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -156,6 +157,102 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEqualsCollections(res.subList(9, 10), columnQuery(c, qry + "limit ? offset ?", 1, 9));
             assertEqualsCollections(res.subList(10, 10), columnQuery(c, qry + "limit ? offset ?", 1, 10));
             assertEqualsCollections(res.subList(9, 10), columnQuery(c, qry + "limit ? offset abs(-(4 + ?))", 1, 5));
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     */
+    public void testPushDown() {
+        IgniteCache<Integer, Person> c = ignite(0).getOrCreateCache(cacheConfig("ps", true,
+            Integer.class, Person.class));
+
+        try {
+            String subqry = "(select max(p.id) as id, p.depId from Person p group by p.depId)";
+
+            for (int i = 0; i < 5; i++) {
+                SB qry = new SB("select * from ");
+
+                for (int j = 0; j < 5; j++) {
+                    if (j != 0)
+                        qry.a(", ");
+
+                    if (j == i)
+                        qry.a(subqry);
+                    else
+                        qry.a("Person");
+
+                    qry.a(" p").a(j);
+                }
+
+                qry.a(" where");
+
+                for (int j = 1; j < 5; j++) {
+                    if (j != 1)
+                        qry.a(" and");
+
+                    qry.a(" p").a(j - 1).a(".id").a(" = ").a("p").a(j).a(".depId");
+                }
+
+                c.query(new SqlFieldsQuery(qry.toString())
+                    .setEnforceJoinOrder(true)).getAll();
+
+                X.println("\nPlan:\n" +
+                    c.query(new SqlFieldsQuery("explain " + qry.toString())
+                        .setEnforceJoinOrder(true)).getAll());
+            }
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     */
+    public void testPushDownLeftJoin() {
+        IgniteCache<Integer, Person> c = ignite(0).getOrCreateCache(cacheConfig("ps", true,
+            Integer.class, Person.class));
+
+        try {
+            String subqryAgg = "(select max(p.id) as id, p.depId from Person p group by p.depId)";
+            String subqrySimple = "(select p.id, p.depId from Person p)";
+
+            for (int i = 0; i < 5; i++) {
+                for (int k = 0; k < 5; k++) {
+                    SB qry = new SB("select * from ");
+
+                    for (int j = 0; j < 5; j++) {
+                        if (j != 0)
+                            qry.a(j == i ? " left join " : " join ");
+
+                        if (j == 2)
+                            qry.a(subqryAgg);
+                        else
+                            qry.a(j == k ? subqrySimple : "Person");
+
+                        qry.a(" p").a(j);
+
+                        if (j != 0) {
+                            qry.a(" on ");
+
+                            qry.a(" p0.id").a(" = ").a("p").a(j).a(".depId");
+                        }
+                    }
+
+
+                    X.println(" ---> ik: : " + i + " " + k);
+                    X.println("\nqry: \n" + qry.toString());
+
+                    c.query(new SqlFieldsQuery(qry.toString())
+                        .setEnforceJoinOrder(true)).getAll();
+
+                    X.println("\nPlan:\n" +
+                        c.query(new SqlFieldsQuery("explain " + qry.toString())
+                            .setEnforceJoinOrder(true)).getAll());
+                }
+            }
         }
         finally {
             c.destroy();

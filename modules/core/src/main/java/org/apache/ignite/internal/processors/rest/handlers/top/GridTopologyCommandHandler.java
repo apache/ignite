@@ -211,6 +211,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setNodeId(node.id());
         nodeBean.setConsistentId(node.consistentId());
         nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
+        nodeBean.setOrder(node.order());
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));

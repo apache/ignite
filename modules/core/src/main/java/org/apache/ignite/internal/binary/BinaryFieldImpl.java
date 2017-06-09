@@ -109,6 +109,11 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     }
 
     /** {@inheritDoc} */
+    @Override public int typeId() {
+        return typeId;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeField(BinaryObject obj, ByteBuffer buf) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 

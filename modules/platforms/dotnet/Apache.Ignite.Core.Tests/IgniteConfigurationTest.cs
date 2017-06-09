@@ -174,6 +174,7 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
                 Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
+                Assert.AreEqual(cfg.LongQueryWarningTimeout, resCfg.LongQueryWarningTimeout);
 
                 Assert.AreEqual(cfg.PublicThreadPoolSize, resCfg.PublicThreadPoolSize);
                 Assert.AreEqual(cfg.StripedThreadPoolSize, resCfg.StripedThreadPoolSize);
@@ -479,6 +480,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultClientFailureDetectionTimeout,
                 cfg.ClientFailureDetectionTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, cfg.IsLateAffinityAssignment);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
@@ -599,6 +602,7 @@ namespace Apache.Ignite.Core.Tests
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
                 ClientFailureDetectionTimeout = TimeSpan.FromMinutes(12.3),
+                LongQueryWarningTimeout = TimeSpan.FromMinutes(1.23),
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,
