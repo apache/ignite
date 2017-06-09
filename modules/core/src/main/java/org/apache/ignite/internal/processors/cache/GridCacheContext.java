@@ -2063,6 +2063,17 @@ public class GridCacheContext<K, V> implements Externalizable {
         return true;
     }
 
+    /**
+     * Get affinity field name for type.
+     *
+     * @param typeName Type name.
+     * @return Affinity field name.
+     */
+    @Nullable public String affinityField(String typeName) {
+        // TODO: Consult to config first.
+        return ctx.cacheObjects().affinityField(typeName);
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, igniteInstanceName());
