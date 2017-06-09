@@ -399,7 +399,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                 return null;
             }
-        }, IgniteException.class, "SQL flag mismatch (fix sql flag in cache configuration");
+        }, IgniteException.class, "Cache configuration mismatch (local cache was created via Ignite API, while " +
+            "remote cache was created via CREATE TABLE): SQL_PUBLIC_Person");
     }
 
     /**
