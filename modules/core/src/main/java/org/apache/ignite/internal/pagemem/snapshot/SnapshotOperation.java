@@ -54,7 +54,7 @@ public class SnapshotOperation implements Serializable {
      * @param snapshotId Snapshot id.
      * @param cacheGrpIds Cache group ids.
      * @param cacheNames Cache names.
-     * @param msg
+     * @param msg Extra user message.
      * @param extraParam Additional parameter.
      */
     public SnapshotOperation(
@@ -85,7 +85,7 @@ public class SnapshotOperation implements Serializable {
      *
      * @return Snapshot ID.
      */
-    public long id() {
+    public long snapshotId() {
         return snapshotId;
     }
 
