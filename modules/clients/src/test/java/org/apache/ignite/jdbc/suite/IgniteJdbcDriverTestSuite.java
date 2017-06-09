@@ -47,6 +47,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementFullApiSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetFullApiSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinStatementFullApiSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionFullApiSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
@@ -103,12 +104,15 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalPartitionedSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalReplicatedSelfTest.class));
 
-        // New thin JDBC
+        // === New thin JDBC
+        // Full API
         suite.addTest(new TestSuite(JdbcThinConnectionFullApiSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinResultSetFullApiSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinStatementFullApiSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinPreparedStatementFullApiSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinResultSetFullApiSelfTest.class));
+
+        suite.addTest(new TestSuite(JdbcThinStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinComplexQuerySelfTest.class));
         suite.addTest(new TestSuite(JdbcThinNoDefaultSchemaTest.class));
         suite.addTest(new TestSuite(JdbcThinEmptyCacheSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinMetadataSelfTest.class));
@@ -126,6 +130,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class));
+
 
         return suite;
     }
