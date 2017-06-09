@@ -42,6 +42,8 @@ public class OdbcQueryExecuteBatchContinueRequest extends OdbcRequest {
     public OdbcQueryExecuteBatchContinueRequest(long queryId, boolean last, Object[][] args) {
         super(QRY_EXEC_BATCH_CONTINUE);
 
+        assert args != null : "Parameters should not be null";
+
         this.queryId = queryId;
         this.last = last;
         this.args = args;

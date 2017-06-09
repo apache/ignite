@@ -47,8 +47,11 @@ public class OdbcQueryExecuteBatchStartRequest extends OdbcRequest {
      * @param last Last page flag.
      * @param args Arguments list.
      */
-    public OdbcQueryExecuteBatchStartRequest(String schema, String sqlQry, boolean last, Object[][] args) {
+    public OdbcQueryExecuteBatchStartRequest(@Nullable String schema, String sqlQry, boolean last, Object[][] args) {
         super(QRY_EXEC_BATCH_START);
+
+        assert sqlQry != null : "SQL query should not be null";
+        assert args != null : "Parameters should not be null";
 
         this.schema = schema;
         this.sqlQry = sqlQry;
