@@ -45,7 +45,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     public OdbcQueryExecuteRequest(String schema, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
-        this.schema = (schema != null && schema.isEmpty()) ? null : schema;
+        this.schema = schema;
         this.sqlQry = sqlQry;
         this.args = args;
     }
