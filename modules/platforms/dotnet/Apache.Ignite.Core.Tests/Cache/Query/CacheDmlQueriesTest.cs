@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Tests.Binary;
     using NUnit.Framework;
 
@@ -335,6 +336,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
             Assert.AreEqual(1, res[0][0]);
+
+            // Compare keys in binary form.
+            var binKey = cache.Ignite.GetBinary().ToBinary<BinaryObject>(key);
+            var binKeyRes = cache.WithKeepBinary<BinaryObject, string>().Single().Key;
+
+            Assert.AreEqual(binKey.Header, binKeyRes.Header);
+
+            // Get by key to verify identity.
+            Assert.AreEqual("VALUE", cache[key]);
         }
 
         /// <summary>
