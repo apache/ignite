@@ -146,7 +146,7 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testExecuteQuery() throws Exception {
-        final String sqlText = "select * from test";
+        final String sqlText = "select val from test";
 
         try (ResultSet rs = stmt.executeQuery(sqlText)) {
             assertNotNull(rs);
@@ -155,7 +155,7 @@ public class JdbcThinStatementFullApiSelfTest extends JdbcThinAbstractSelfTest {
 
             int val = rs.getInt(1);
 
-            assertTrue(1 >= val && val <= 10);
+            assertTrue("Invalid val: " + val, 1 >= val && val <= 10);
         }
 
         stmt.close();
