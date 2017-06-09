@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestPrimitiveKeyDotNetTypes()
         {
             var cfg = new CacheConfiguration("primitive_key_dotnet", new QueryEntity(typeof(uint), typeof(string)));
-            var cache = Ignition.GetIgnite().CreateCache<uint, Foo>(cfg);
+            var cache = Ignition.GetIgnite().CreateCache<uint, string>(cfg);
 
             var res = cache.QueryFields(new SqlFieldsQuery(
                 "insert into string(_key, _val) values (?, ?)", uint.MaxValue, "x")).GetAll();
@@ -116,6 +116,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
             Assert.AreEqual(1, res[0][0]);
+
+            Assert.AreEqual("x", cache[uint.MaxValue]);
         }
 
         /// <summary>
