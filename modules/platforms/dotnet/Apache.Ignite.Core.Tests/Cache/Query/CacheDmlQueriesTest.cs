@@ -321,34 +321,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Decimal = decimal.MaxValue,
                 Guid = Guid.NewGuid(),
                 String = BinarySelfTest.SpecialStrings.First(),
-                Key = new Key(255, 65555),
-
-                Bytes = new[] {byte.MinValue, byte.MaxValue},
-                SBytes = new[] {sbyte.MinValue, sbyte.MaxValue},
-                Shorts = new[] {short.MinValue, short.MaxValue},
-                UShorts = new[] {ushort.MinValue, ushort.MaxValue},
-                Ints = new[] {int.MinValue, int.MaxValue},
-                UInts = new[] {uint.MinValue, uint.MaxValue},
-                Longs = new[] {long.MinValue, long.MaxValue},
-                ULongs = new[] {ulong.MinValue, ulong.MaxValue},
-                Floats = new[] {float.MinValue, float.MaxValue},
-                Doubles = new[] {double.MinValue, double.MaxValue},
-                Decimals = new[] {decimal.MinValue, decimal.MaxValue},
-                Guids = new[] {Guid.NewGuid()},
-                Strings = BinarySelfTest.SpecialStrings,
-                Keys = new[] {new Key(255, 65555), new Key(-1, 1)}
+                Key = new Key(255, 65555)
             };
 
             // Test insert.
             var res = cache.QueryFields(new SqlFieldsQuery(
                     "insert into string(byte, sbyte, short, ushort, int, uint, long, ulong, float, double, decimal, " +
-                    "guid, string, key, bytes, sbytes, shorts, ushorts, ints, uints, longs, ulongs, floats, " +
-                    "doubles, decimals, guids, strings, keys, _val) " +
-                    "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    "guid, string, key, _val) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     key.Byte, key.SByte, key.Short, key.UShort, key.Int, key.UInt, key.Long, key.ULong, key.Float,
-                    key.Double, key.Decimal, key.Guid, key.String, key.Key, key.Bytes, key.SBytes, key.Shorts,
-                    key.UShorts, key.Ints, key.UInts, key.Longs, key.ULongs, key.Floats, key.Doubles, key.Decimals,
-                    key.Guids, key.Strings, key.Keys, "VALUE"))
+                    key.Double, key.Decimal, key.Guid, key.String, key.Key, "VALUE"))
                 .GetAll();
 
             Assert.AreEqual(1, res.Count);
@@ -416,21 +397,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField] public Guid Guid { get; set; }
             [QuerySqlField] public string String { get; set; }
             [QuerySqlField] public Key Key { get; set; }
-            
-            [QuerySqlField] public byte[] Bytes { get; set; }
-            [QuerySqlField] public sbyte[] SBytes { get; set; }
-            [QuerySqlField] public short[] Shorts { get; set; }
-            [QuerySqlField] public ushort[] UShorts { get; set; }
-            [QuerySqlField] public int[] Ints { get; set; }
-            [QuerySqlField] public uint[] UInts { get; set; }
-            [QuerySqlField] public long[] Longs { get; set; }
-            [QuerySqlField] public ulong[] ULongs { get; set; }
-            [QuerySqlField] public float[] Floats { get; set; }
-            [QuerySqlField] public double[] Doubles { get; set; }
-            [QuerySqlField] public decimal[] Decimals { get; set; }
-            [QuerySqlField] public Guid[] Guids { get; set; }
-            [QuerySqlField] public string[] Strings { get; set; }
-            [QuerySqlField] public Key[] Keys { get; set; }
         }
     }
 }
