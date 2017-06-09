@@ -81,6 +81,20 @@ public enum DataStructureType {
     }
 
     /**
+     * @return {@code True} if this data structure type is volatile.
+     */
+    public boolean isVolatile() {
+        return this == REENTRANT_LOCK || this == SEMAPHORE || this == COUNT_DOWN_LATCH;
+    }
+
+    /**
+     * @return {@code True} if this data structure type is collection.
+     */
+    public boolean isCollection() {
+        return this == SET || this == QUEUE;
+    }
+
+    /**
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
