@@ -36,6 +36,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -100,7 +102,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
-    implements GridCacheMvccFuture<GridNearTxPrepareResponse> {
+    implements GridCacheMvccFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1564,6 +1566,33 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         return lessPending;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext req) {
+        if (!isDone()) {
+            for (IgniteInternalFuture fut : futures()) {
+                if (!fut.isDone() && fut instanceof MiniFuture) {
+                    MiniFuture f = (MiniFuture)fut;
+
+                    if (!f.node().isLocal()) {
+                        GridCacheVersion dhtVer = tx.xidVersion();
+                        GridCacheVersion nearVer = tx.nearXidVersion();
+
+                        req.remoteTxInfo(f.nodeId, dhtVer, nearVer, "GridDhtTxPrepareFuture " +
+                            "waiting for response [node=" + f.nodeId +
+                            ", topVer=" + tx.topologyVersion() +
+                            ", dhtVer=" + dhtVer +
+                            ", nearVer=" + nearVer +
+                            ", futId=" + futId +
+                            ", miniId=" + f.futId +
+                            ", tx=" + tx + ']');
+
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

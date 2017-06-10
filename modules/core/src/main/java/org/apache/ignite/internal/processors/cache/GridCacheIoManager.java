@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -104,6 +106,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
+    /** */
+    private static final int MAX_STORED_PENDING_MESSAGES = 100;
+
     /** Delay in milliseconds between retries. */
     private long retryDelay;
 
@@ -125,6 +130,26 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Deployment enabled. */
     private boolean depEnabled;
+
+    /** */
+    private final List<GridCacheMessage> pendingMsgs = new ArrayList<>(MAX_STORED_PENDING_MESSAGES);
+
+    /**
+     *
+     */
+    public void dumpPendingMessages() {
+        synchronized (pendingMsgs) {
+            if (pendingMsgs.isEmpty())
+                return;
+
+            diagnosticLog.info("Pending cache messages waiting for exchange [" +
+                "readyVer=" + cctx.exchange().readyAffinityVersion() +
+                ", discoVer=" + cctx.discovery().topologyVersion() + ']');
+
+            for (GridCacheMessage msg : pendingMsgs)
+                diagnosticLog.info("Message [waitVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
+        }
+    }
 
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
@@ -214,6 +239,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             if (fut != null && !fut.isDone()) {
+                synchronized (pendingMsgs) {
+                    if (pendingMsgs.size() < MAX_STORED_PENDING_MESSAGES)
+                        pendingMsgs.add(cacheMsg);
+                }
+
                 Thread curThread = Thread.currentThread();
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
@@ -222,6 +252,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         Runnable c = new Runnable() {
                             @Override public void run() {
+                                synchronized (pendingMsgs) {
+                                    pendingMsgs.remove(cacheMsg);
+                                }
+
                                 IgniteLogger log = cacheMsg.messageLogger(cctx);
 
                                 if (log.isDebugEnabled()) {
