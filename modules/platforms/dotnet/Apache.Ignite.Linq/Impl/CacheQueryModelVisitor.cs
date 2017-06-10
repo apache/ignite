@@ -46,6 +46,12 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly AliasDictionary _aliases = new AliasDictionary();
 
+        /** */
+        private static readonly Type DefaultIfEmptyEnumeratorType = new object[0]
+            .DefaultIfEmpty()
+            .GetType()
+            .GetGenericTypeDefinition();
+
         /// <summary>
         /// Generates the query.
         /// </summary>
@@ -491,57 +497,7 @@ namespace Apache.Ignite.Linq.Impl
                 }
                 else
                 {
-                    var type = joinClause.InnerSequence.Type;
-                    Type itemType;
-                    
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    {
-                        itemType = type.GetGenericArguments()[0];
-                    }
-                    else 
-                    {
-                        var implementedIEnumerableType = type.GetInterfaces()
-                            .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
-                        if (implementedIEnumerableType == null)
-                        {
-                            throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
-                        }
-
-                        itemType = implementedIEnumerableType.GetGenericArguments()[0];
-                    }
-                   
-
-                    var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
-
-                    if (string.IsNullOrWhiteSpace(sqlTypeName))
-                    {
-                        throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
-                    }
-
-                    if (joinClause.InnerSequence.NodeType != ExpressionType.Constant)
-                    {
-                        throw new NotSupportedException("STRON WAS HERE");
-                    }
-                    var isOuter = false;
-
-                    var constantValueType = ((ConstantExpression) joinClause.InnerSequence).Value.GetType();
-                    if (constantValueType.IsGenericType)
-                    {
-                        var defaultEnumeratorType = new object[0].DefaultIfEmpty().GetType().GetGenericTypeDefinition();
-                        isOuter = defaultEnumeratorType == constantValueType.GetGenericTypeDefinition();
-                    }
-
-                    //  no table name required
-                    var tableAlias = _aliases.GetTableAlias(joinClause);
-                    var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
-
-                    _builder.AppendFormat("{0} join table({1} {2} = ?) {3} on(", isOuter ? "left outer" : "inner", fieldAlias, sqlTypeName, tableAlias);
-
-
-                    //TODO - rewrite?
-                    var inValues = CacheQueryExpressionVisitor.GetInValues(joinClause.InnerSequence);
-                    Parameters.Add(inValues);
+                    VisitJoinWithLocaclCollectionClause(joinClause);
                 }
             }
 
@@ -549,7 +505,62 @@ namespace Apache.Ignite.Linq.Impl
 
             _builder.Append(") ");
         }
-        
+
+        /// <summary>
+        /// Visists Join clause in case of join with local collection
+        /// </summary>
+        private void VisitJoinWithLocaclCollectionClause(JoinClause joinClause)
+        {
+            var type = joinClause.InnerSequence.Type;
+            Type itemType;
+
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                itemType = type.GetGenericArguments()[0];
+            }
+            else
+            {
+                var implementedIEnumerableType = type.GetInterfaces()
+                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+                if (implementedIEnumerableType == null)
+                {
+                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
+                }
+
+                itemType = implementedIEnumerableType.GetGenericArguments()[0];
+            }
+
+
+            var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
+
+            if (string.IsNullOrWhiteSpace(sqlTypeName))
+            {
+                throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
+            }
+
+            if (joinClause.InnerSequence.NodeType != ExpressionType.Constant)
+            {
+                throw new NotSupportedException("Expression not supported for Join with local collection: " + joinClause.InnerSequence);
+            }
+
+            var isOuter = false;
+            var constantValueType = ((ConstantExpression) joinClause.InnerSequence).Value.GetType();
+            if (constantValueType.IsGenericType)
+            {
+                isOuter = DefaultIfEmptyEnumeratorType == constantValueType.GetGenericTypeDefinition();
+            }
+
+            var tableAlias = _aliases.GetTableAlias(joinClause);
+            var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
+
+            _builder.AppendFormat("{0} join table({1} {2} = ?) {3} on(", isOuter ? "left outer" : "inner", fieldAlias, sqlTypeName, tableAlias);
+
+            var values = ExpressionWalker.EvaluateEnumerableValues(joinClause.InnerSequence);
+
+            Parameters.Add(values);
+        }
+
 
         /// <summary>
         /// Builds the join condition ('x=y AND foo=bar').

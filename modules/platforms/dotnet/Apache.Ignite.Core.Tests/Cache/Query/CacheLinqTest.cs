@@ -621,6 +621,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray();
 
             Assert.AreEqual(PersonCount, qry6.Length);
+
+            // Join with local list
+            var qry7 = persons.Join(new List<int> {1000, 1001, 1002, 1003},
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry7.Length);
+
+            // Join with local list variable
+            var list = new List<int> { 1000, 1001, 1002, 1003 };
+            var qry8 = persons.Join(list,
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry8.Length);
         }
 
         [Test]

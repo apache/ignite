@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -180,6 +182,45 @@ namespace Apache.Ignite.Linq.Impl
 
             throw new NotSupportedException("Expression not supported: " + expr);
         }
+
+        /// <summary>
+        /// Gets the values from IEnumerable expression
+        /// </summary>
+        public static IEnumerable<object> EvaluateEnumerableValues(Expression fromExpression)
+        {
+            IEnumerable result;
+            switch (fromExpression.NodeType)
+            {
+                case ExpressionType.MemberAccess:
+                    var memberExpression = (MemberExpression)fromExpression;
+                    result = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
+                    break;
+                case ExpressionType.ListInit:
+                    var listInitExpression = (ListInitExpression)fromExpression;
+                    result = listInitExpression.Initializers
+                        .SelectMany(init => init.Arguments)
+                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                    break;
+                case ExpressionType.NewArrayInit:
+                    var newArrayExpression = (NewArrayExpression)fromExpression;
+                    result = newArrayExpression.Expressions
+                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                    break;
+                case ExpressionType.Parameter:
+                    // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
+                    throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
+                default:
+                    result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
+                    break;
+            }
+
+            result = result ?? Enumerable.Empty<object>();
+
+            return result
+                .Cast<object>()
+                .ToArray();
+        }
+
 
         /// <summary>
         /// Compiles the member reader.
