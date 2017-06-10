@@ -585,7 +585,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount, qry2.Length);
 
             // Local collection subquery
-            var qry3 = persons.Join(localOrgs.Select(e => e.Id).DefaultIfEmpty(),
+            var qry3 = persons.Join(localOrgs.Select(e => e.Id),
                     pe => pe.Value.OrganizationId,
                     i => i,
                     (pe, o) => pe
@@ -602,6 +602,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             ));
 
             Assert.AreEqual(PersonCount, qry4().Count());
+
+            // Compiled query with outer join
+            var qry4_a = CompiledQuery.Compile(() => persons.Join(new int[] {}.DefaultIfEmpty(),
+                pe => pe.Value.OrganizationId,
+                i => i,
+                (pe, o) => pe
+            ));
+
+            Assert.AreEqual(PersonCount, qry4_a().Count());
 
             // Compiled query
             var qry5 = CompiledQuery.Compile(() => persons.Join(new[] { -1, -2 }.DefaultIfEmpty(),
