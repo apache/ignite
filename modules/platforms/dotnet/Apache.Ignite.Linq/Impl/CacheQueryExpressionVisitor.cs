@@ -276,28 +276,28 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            var isCache = ExpressionWalker.GetCacheQueryable(expression, false) != null;
-
-            if (isCache)
-            {
-                // Count, sum, max, min expect a single field or *
-                // In other cases we need both parts of cache entry
-            var format = _includeAllFields
-                ? "{0}.*, {0}._KEY, {0}._VAL"
-                : _useStar
-                    ? "{0}.*"
-                    : "{0}._KEY, {0}._VAL";
-
-                var tableName = Aliases.GetTableAlias(expression);
-
-                ResultBuilder.AppendFormat(format, tableName);
-            }
-            else
+            // In some cases of Join clause different handling should be introduced
+            var joinClause = expression.ReferencedQuerySource as JoinClause;
+            if (joinClause != null && ExpressionWalker.GetCacheQueryable(expression, false) == null)
             {
                 var tableName = Aliases.GetTableAlias(expression);
                 var fieldname = Aliases.GetFieldAlias(expression);
 
                 ResultBuilder.AppendFormat("{0}.{1}", tableName, fieldname);
+            }
+            else
+            {
+                // Count, sum, max, min expect a single field or *
+                // In other cases we need both parts of cache entry
+                var format = _includeAllFields
+                    ? "{0}.*, {0}._KEY, {0}._VAL"
+                    : _useStar
+                        ? "{0}.*"
+                        : "{0}._KEY, {0}._VAL";
+
+                var tableName = Aliases.GetTableAlias(expression);
+
+                ResultBuilder.AppendFormat(format, tableName);
             }
 
             return expression;
