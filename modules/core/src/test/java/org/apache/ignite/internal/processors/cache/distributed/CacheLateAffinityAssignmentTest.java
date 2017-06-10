@@ -335,7 +335,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         testAffinitySimpleSequentialStart();
 
-        assertNull(((IgniteKernal)ignite(0)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal) ignite(0)).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**
@@ -374,7 +374,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (primaryChanged)
             checkAffinity(3, topVer(5, 1), true);
 
-        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal) ignite(1)).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**
@@ -414,8 +414,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(6, 0), true);
 
-        assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
-        assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal) ignite(2)).context().cache().internalCache(CACHE_NAME1));
+        assertNotNull(((IgniteKernal) ignite(3)).context().cache().internalCache(CACHE_NAME1));
 
         assertNotNull(ignite(2).cache(CACHE_NAME1));
 
@@ -578,20 +578,40 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAffinitySimpleNodeLeave() throws Exception {
-        startServer(0, 1);
+    public void testAffinitySimpleNodeLeave2() throws Exception {
+        doTestAffinitySimpleNodeLeave(2);
+    }
 
-        startServer(1, 2);
+    /**
+     * Simple test, node leaves, more server nodes.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAffinitySimpleNodeLeave3() throws Exception {
+        doTestAffinitySimpleNodeLeave(3);
+    }
 
-        checkAffinity(2, topVer(2, 0), false);
+    /**
+     * @param cnt Count of server nodes.
+     */
+    private void doTestAffinitySimpleNodeLeave(int cnt) throws Exception {
+        int topVer = 1;
 
-        checkAffinity(2, topVer(2, 1), true);
+        startServer(topVer - 1, topVer++);
 
-        stopNode(1, 3);
+        for (int i = 0; i < cnt - 1; i++, topVer++) {
+            startServer(topVer - 1, topVer);
 
-        checkAffinity(1, topVer(3, 0), true);
+            checkAffinity(topVer, topVer(topVer, 0), false);
 
-        checkNoExchange(1, topVer(3, 1));
+            checkAffinity(topVer, topVer(topVer, 1), true);
+        }
+
+        stopNode(1, topVer);
+
+        checkAffinity(cnt - 1, topVer(topVer, 0), true);
+
+        checkNoExchange(cnt - 1, topVer(topVer, 1));
 
         awaitPartitionMapExchange();
     }
