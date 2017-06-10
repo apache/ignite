@@ -34,12 +34,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
@@ -100,11 +99,13 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      *
      */
     private void blockRebalance() {
+        final int grpId = groupIdForCache(ignite(0), TEST_CACHE);
+
         for (Ignite node : G.allGrids()) {
             testSpi(node).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     return (msg instanceof GridDhtPartitionSupplyMessage)
-                        && ((GridCacheMessage)msg).cacheId() == CU.cacheId(TEST_CACHE);
+                        && ((GridCacheGroupIdMessage)msg).groupId() == grpId;
                 }
             });
         }

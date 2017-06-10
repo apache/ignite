@@ -202,6 +202,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache name. */
     private String name;
 
+    /** Cache group name. */
+    private String grpName;
+
     /** Name of {@link MemoryPolicyConfiguration} for this cache */
     private String memPlcName;
 
@@ -408,6 +411,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
+        grpName = cc.getGroupName();
         indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
@@ -452,6 +456,47 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+    }
+
+    /**
+     * Gets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setMemoryPolicyName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
+     * @return Cache group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * Sets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setMemoryPolicyName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
+     * @param grpName Cache group name.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setGroupName(String grpName) {
+        this.grpName = grpName;
+
+        return this;
     }
 
     /**

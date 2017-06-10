@@ -1480,7 +1480,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             if (modified)
                 cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
 
-            GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+            GridCacheOperation op = modified ? (cacheVal == null ? DELETE : UPDATE) : NOOP;
 
             if (op == NOOP) {
                 ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);

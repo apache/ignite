@@ -68,6 +68,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -334,7 +335,7 @@ public abstract class GridAbstractTest extends TestCase {
             c.setName("CONSOLE_ERR");
             c.setTarget("System.err");
             c.setThreshold(Priority.WARN);
-            c.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
+            c.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
 
             c.activateOptions();
 
@@ -349,7 +350,7 @@ public abstract class GridAbstractTest extends TestCase {
             file.setAppend(false);
             file.setMaxFileSize("10MB");
             file.setMaxBackupIndex(10);
-            file.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
+            file.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
 
             file.activateOptions();
 
@@ -2126,6 +2127,22 @@ public abstract class GridAbstractTest extends TestCase {
         catch (Exception e) {
             throw new IgniteException();
         }
+    }
+
+    /**
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @return Cache group ID for given cache name.
+     */
+    protected final int groupIdForCache(Ignite node, String cacheName) {
+        for (CacheGroupContext grp : ((IgniteKernal)node).context().cache().cacheGroups()) {
+            if (grp.hasCache(cacheName))
+                return grp.groupId();
+        }
+
+        fail("Failed to find group for cache: " + cacheName);
+
+        return 0;
     }
 
     /**

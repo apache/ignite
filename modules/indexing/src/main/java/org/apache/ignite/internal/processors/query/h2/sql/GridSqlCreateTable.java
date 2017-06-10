@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
  * CREATE TABLE statement.
@@ -38,6 +37,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Cache name upon which new cache configuration for this table must be based. */
     private String templateName;
 
+    /** Group to put new cache into. */
+    private String cacheGrp;
+
     /** Atomicity mode for new cache. */
     private CacheAtomicityMode atomicityMode;
 
@@ -52,6 +54,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
 
     /** Primary key columns. */
     private LinkedHashSet<String> pkCols;
+
+    /** Name of the column that represents affinity key. */
+    private String affinityKey;
 
     /** Extra WITH-params. */
     private List<String> params;
@@ -68,6 +73,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void templateName(String templateName) {
         this.templateName = templateName;
+    }
+
+    /**
+     * @return Group to put new cache into.
+     */
+    public String cacheGroup() {
+        return cacheGrp;
+    }
+
+    /**
+     * @param cacheGrp Group to put new cache into.
+     */
+    public void cacheGroup(String cacheGrp) {
+        this.cacheGrp = cacheGrp;
     }
 
     /**
@@ -124,6 +143,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void primaryKeyColumns(LinkedHashSet<String> pkCols) {
         this.pkCols = pkCols;
+    }
+
+    /**
+     * @return Name of the column that represents affinity key.
+     */
+    public String affinityKey() {
+        return affinityKey;
+    }
+
+    /**
+     * @param affinityKey Name of the column that represents affinity key.
+     */
+    public void affinityKey(String affinityKey) {
+        this.affinityKey = affinityKey;
     }
 
     /**
