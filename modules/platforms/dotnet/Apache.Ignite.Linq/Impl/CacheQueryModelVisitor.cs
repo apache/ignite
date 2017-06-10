@@ -561,7 +561,6 @@ namespace Apache.Ignite.Linq.Impl
             Parameters.Add(values);
         }
 
-
         /// <summary>
         /// Builds the join condition ('x=y AND foo=bar').
         /// </summary>
