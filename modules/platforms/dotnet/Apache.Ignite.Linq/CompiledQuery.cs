@@ -233,8 +233,8 @@ namespace Apache.Ignite.Linq
                 .Select(x => x.IsValueType ? Activator.CreateInstance(x) : null)
                 .ToArray();
 
-            var myClass = new JoinInnerSequenceParameterTransformingExpressionVisitor();
-            var queryCaller = (LambdaExpression) myClass.Visit(expression);
+            var transformingxpressionVisitor = new JoinInnerSequenceParameterTransformingExpressionVisitor();
+            var queryCaller = (LambdaExpression) transformingxpressionVisitor.Visit(expression);
 
             // Invoke the delegate to obtain the cacheQueryable.
             //var queryable = queryCaller.DynamicInvoke(paramValues);
