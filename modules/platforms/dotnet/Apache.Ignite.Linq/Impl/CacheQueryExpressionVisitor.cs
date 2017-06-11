@@ -276,28 +276,28 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            var isCache = ExpressionWalker.GetCacheQueryable(expression, false) != null;
-
-            if (isCache)
-            {
-                // Count, sum, max, min expect a single field or *
-                // In other cases we need both parts of cache entry
-            var format = _includeAllFields
-                ? "{0}.*, {0}._KEY, {0}._VAL"
-                : _useStar
-                    ? "{0}.*"
-                    : "{0}._KEY, {0}._VAL";
-
-                var tableName = Aliases.GetTableAlias(expression);
-
-                ResultBuilder.AppendFormat(format, tableName);
-            }
-            else
+            // In some cases of Join clause different handling should be introduced
+            var joinClause = expression.ReferencedQuerySource as JoinClause;
+            if (joinClause != null && ExpressionWalker.GetCacheQueryable(expression, false) == null)
             {
                 var tableName = Aliases.GetTableAlias(expression);
                 var fieldname = Aliases.GetFieldAlias(expression);
 
                 ResultBuilder.AppendFormat("{0}.{1}", tableName, fieldname);
+            }
+            else
+            {
+                // Count, sum, max, min expect a single field or *
+                // In other cases we need both parts of cache entry
+                var format = _includeAllFields
+                    ? "{0}.*, {0}._KEY, {0}._VAL"
+                    : _useStar
+                        ? "{0}.*"
+                        : "{0}._KEY, {0}._VAL";
+
+                var tableName = Aliases.GetTableAlias(expression);
+
+                ResultBuilder.AppendFormat(format, tableName);
             }
 
             return expression;
@@ -575,7 +575,8 @@ namespace Apache.Ignite.Linq.Impl
             }
             else
             {
-                var inValues = GetInValues(fromExpression).ToArray();
+                var inValues = ExpressionWalker.EvaluateEnumerableValues(fromExpression)
+                    .ToArray();
 
                 var hasNulls = inValues.Any(o => o == null);
 
@@ -599,49 +600,6 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             ResultBuilder.Append(")");
-        }
-
-        /// <summary>
-        /// Gets values for IN expression.
-        /// </summary>
-        public static IEnumerable<object> GetInValues(Expression fromExpression, bool allowParameterExpression = false)
-        {
-            IEnumerable result;
-            switch (fromExpression.NodeType)
-            {
-                case ExpressionType.MemberAccess:
-                    var memberExpression = (MemberExpression) fromExpression;
-                    result = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
-                    break;
-                case ExpressionType.ListInit:
-                    var listInitExpression = (ListInitExpression) fromExpression;
-                    result = listInitExpression.Initializers
-                        .SelectMany(init => init.Arguments)
-                        .Select(ExpressionWalker.EvaluateExpression<object>);
-                    break;
-                case ExpressionType.NewArrayInit:
-                    var newArrayExpression = (NewArrayExpression) fromExpression;
-                    result = newArrayExpression.Expressions
-                        .Select(ExpressionWalker.EvaluateExpression<object>);
-                    break;
-                case ExpressionType.Parameter:
-                    if (!allowParameterExpression)
-                    {
-                        // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
-                        throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
-                    }
-                    result = ExpressionWalker.EvaluateExpression<IEnumerable<int>>(fromExpression);
-                    break;
-                default:
-                    result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
-                    break;
-            }
-
-            result = result ?? Enumerable.Empty<object>();
-
-            return result
-                .Cast<object>()
-                .ToArray();
         }
 
         /// <summary>

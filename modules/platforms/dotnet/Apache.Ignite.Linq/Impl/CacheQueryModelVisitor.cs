@@ -46,6 +46,12 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly AliasDictionary _aliases = new AliasDictionary();
 
+        /** */
+        private static readonly Type DefaultIfEmptyEnumeratorType = new object[0]
+            .DefaultIfEmpty()
+            .GetType()
+            .GetGenericTypeDefinition();
+
         /// <summary>
         /// Generates the query.
         /// </summary>
@@ -467,32 +473,31 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitJoinClause(joinClause, queryModel, index);
 
-            var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
+            var subQuery = joinClause.InnerSequence as SubQueryExpression;
 
-            if (queryable == null)
+            if (subQuery != null)
             {
-                VisitJoinWithLocalCollection(joinClause);
+                var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+
+                _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
+
+                VisitQueryModel(subQuery.QueryModel, true);
+
+                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                _builder.AppendFormat(") as {0} on (", alias);
             }
             else
             {
-                var subQuery = joinClause.InnerSequence as SubQueryExpression;
-
-                if (subQuery != null)
-                {
-                    var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
-
-                    _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
-
-                    VisitQueryModel(subQuery.QueryModel, true);
-
-                    var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
-                    _builder.AppendFormat(") as {0} on (", alias);
-                }
-                else
+                var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
+                if (queryable != null)
                 {
                     var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
                     var alias = _aliases.GetTableAlias(joinClause);
                     _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                }
+                else
+                {
+                    VisitJoinWithLocaclCollectionClause(joinClause);
                 }
             }
 
@@ -502,42 +507,44 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Visits Join clause with local collection
+        /// Visists Join clause in case of join with local collection
         /// </summary>
-        private void VisitJoinWithLocalCollection(JoinClause joinClause)
+        private void VisitJoinWithLocaclCollectionClause(JoinClause joinClause)
         {
-            var collectionType = joinClause.InnerSequence.Type;
+            var type = joinClause.InnerSequence.Type;
             Type itemType;
 
-            if (collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             {
-                itemType = collectionType.GetGenericArguments()[0];
+                itemType = type.GetGenericArguments()[0];
             }
             else
             {
-                var implementedIEnumerableType = collectionType.GetInterfaces()
+                var implementedIEnumerableType = type.GetInterfaces()
                     .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 
                 if (implementedIEnumerableType == null)
                 {
-                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + collectionType.FullName);
+                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
                 }
 
                 itemType = implementedIEnumerableType.GetGenericArguments()[0];
             }
 
+
             var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
+
             if (string.IsNullOrWhiteSpace(sqlTypeName))
             {
-                throw new NotSupportedException("Not supported item type for Join with local collection: " + collectionType.Name);
+                throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
             }
 
             var isOuter = false;
-            object inValues;
+            object values;
             switch (joinClause.InnerSequence.NodeType)
             {
                 case ExpressionType.Constant:
-                    inValues = CacheQueryExpressionVisitor.GetInValues(joinClause.InnerSequence, true);
+                    values = ExpressionWalker.EvaluateEnumerableValues(joinClause.InnerSequence);
                     break;
                 case ExpressionType.Parameter:
                     //var subQuery = joinClause.InnerSequence as SubQueryExpression;
@@ -545,7 +552,7 @@ namespace Apache.Ignite.Linq.Impl
                     //{
                     //    isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
                     //}
-                    inValues = ExpressionWalker.EvaluateExpression<object>(joinClause.InnerSequence);
+                    values = ExpressionWalker.EvaluateExpression<object>(joinClause.InnerSequence);
                     break;
                 default:
                     throw new NotSupportedException("InnerSequence not supported for joining with local collections: " + joinClause.InnerSequence);
@@ -553,11 +560,10 @@ namespace Apache.Ignite.Linq.Impl
 
             var tableAlias = _aliases.GetTableAlias(joinClause);
             var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
+
             _builder.AppendFormat("{0} join table({1} {2} = ?) {3} on(", isOuter ? "left outer" : "inner", fieldAlias, sqlTypeName, tableAlias);
 
-            //TODO - rewrite?
-
-            Parameters.Add(inValues);
+            Parameters.Add(values);
         }
 
         /// <summary>
