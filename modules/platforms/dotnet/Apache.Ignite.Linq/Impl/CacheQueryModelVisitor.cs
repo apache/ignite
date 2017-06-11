@@ -544,6 +544,11 @@ namespace Apache.Ignite.Linq.Impl
             switch (joinClause.InnerSequence.NodeType)
             {
                 case ExpressionType.Constant:
+                    var constantValueType = ((ConstantExpression)joinClause.InnerSequence).Value.GetType();
+                    if (constantValueType.IsGenericType)
+                    {
+                        isOuter = DefaultIfEmptyEnumeratorType == constantValueType.GetGenericTypeDefinition();
+                    }
                     values = ExpressionWalker.EvaluateEnumerableValues(joinClause.InnerSequence);
                     break;
                 case ExpressionType.Parameter:
@@ -555,7 +560,7 @@ namespace Apache.Ignite.Linq.Impl
                     values = ExpressionWalker.EvaluateExpression<object>(joinClause.InnerSequence);
                     break;
                 default:
-                    throw new NotSupportedException("InnerSequence not supported for joining with local collections: " + joinClause.InnerSequence);
+                    throw new NotSupportedException("Expression not supported for Join with local collection: " + joinClause.InnerSequence);
             }
 
             var tableAlias = _aliases.GetTableAlias(joinClause);
