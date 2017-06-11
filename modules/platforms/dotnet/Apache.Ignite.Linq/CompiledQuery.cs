@@ -236,8 +236,7 @@ namespace Apache.Ignite.Linq
             var transformingxpressionVisitor = new JoinInnerSequenceParameterTransformingExpressionVisitor();
             var queryCaller = (LambdaExpression) transformingxpressionVisitor.Visit(expression);
 
-            // Invoke the delegate to obtain the cacheQueryable.
-            //var queryable = queryCaller.DynamicInvoke(paramValues);
+            // Compile and invoke the delegate to obtain the cacheQueryable.
             var queryable = queryCaller.Compile().DynamicInvoke(paramValues);
 
             var cacheQueryable = queryable as ICacheQueryableInternal;
@@ -249,7 +248,7 @@ namespace Apache.Ignite.Linq
         }
 
         /// <summary>
-        /// Transforms JoinClause with parameterised inner sequence to .Join(parameterSequence ?? new T[0] ... 
+        /// Transforms JoinClause with parameterised inner sequence to .Join(innerSequence ?? new T[0] ... 
         /// </summary>
         class JoinInnerSequenceParameterTransformingExpressionVisitor : RelinqExpressionVisitor
         {
@@ -270,7 +269,10 @@ namespace Apache.Ignite.Linq
                         var args = node.Arguments
                             .ToArray();
 
+                        // Get inner sequence arg
                         var innerSequenceArg = args[1];
+
+                        // Coalesce only if innerSequence is parameter expression
                         if (innerSequenceArg.NodeType == ExpressionType.Parameter)
                         {
                             var itemType = EnumerableHelper.GetIEnumerableItemType(innerSequenceArg.Type);
