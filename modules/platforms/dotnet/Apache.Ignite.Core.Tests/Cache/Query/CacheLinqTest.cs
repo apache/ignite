@@ -668,6 +668,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Select(e => e.Id)
                 .ToArray();
 
+            //// Join with local collection 
+            //var qry0 = persons.Join((IEnumerable<int>)null,
+            //        pe => pe.Value.OrganizationId,
+            //        i => i,
+            //        (pe, o) => pe
+            //    )
+            //    .ToArray();
+
+            //Assert.AreEqual(PersonCount, qry0.Length);
+
             // Join with local collection passed as parameter
 
             var qry1 = CompiledQuery.Compile((IEnumerable<int> lc) => persons.Join(lc,

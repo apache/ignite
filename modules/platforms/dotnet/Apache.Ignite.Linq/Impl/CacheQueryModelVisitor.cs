@@ -512,25 +512,8 @@ namespace Apache.Ignite.Linq.Impl
         private void VisitJoinWithLocaclCollectionClause(JoinClause joinClause)
         {
             var type = joinClause.InnerSequence.Type;
-            Type itemType;
 
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-            {
-                itemType = type.GetGenericArguments()[0];
-            }
-            else
-            {
-                var implementedIEnumerableType = type.GetInterfaces()
-                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
-                if (implementedIEnumerableType == null)
-                {
-                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
-                }
-
-                itemType = implementedIEnumerableType.GetGenericArguments()[0];
-            }
-
+            var itemType = EnumerableHelper.GetIEnumerableItemType(type);
 
             var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
 

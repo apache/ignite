@@ -65,6 +65,7 @@
     <Compile Include="Impl\CacheQueryParser.cs" />
     <Compile Include="Impl\Dml\RemoveAllExpressionNode.cs" />
     <Compile Include="Impl\Dml\RemoveAllResultOperator.cs" />
+    <Compile Include="Impl\EnumerableHelper.cs" />
     <Compile Include="Impl\ICacheQueryableInternal.cs" />
     <Compile Include="Impl\MethodVisitor.cs" />
     <Compile Include="Impl\QueryData.cs" />

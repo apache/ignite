@@ -18,14 +18,15 @@
 namespace Apache.Ignite.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
+    using Remotion.Linq.Parsing;
 
     /// <summary>
     /// Delegate for compiled query with arbitrary number of arguments.
@@ -51,7 +52,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return () => compiledQuery(new object[0]);
         }
@@ -95,7 +96,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return x => compiledQuery(new object[] {x});
         }
@@ -112,7 +113,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y) => compiledQuery(new object[] {x, y});
         }
@@ -129,7 +130,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z) => compiledQuery(new object[] {x, y, z});
         }
@@ -146,7 +147,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a) => compiledQuery(new object[] {x, y, z, a});
         }
@@ -163,7 +164,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b) => compiledQuery(new object[] {x, y, z, a, b});
         }
@@ -180,7 +181,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b, c) => compiledQuery(new object[] {x, y, z, a, b, c});
         }
@@ -197,7 +198,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b, c, d) => compiledQuery(new object[] {x, y, z, a, b, c, d});
         }
@@ -214,7 +215,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b, c, d, e) => compiledQuery(new object[] {x, y, z, a, b, c, d, e});
         }
@@ -222,20 +223,22 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets the compiled query.
         /// </summary>
-        private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(LambdaExpression expression, 
-            Delegate queryCaller)
+        private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(LambdaExpression expression)
         {
             Debug.Assert(expression != null);
-            Debug.Assert(queryCaller != null);
 
             // Get default parameter values.
             var paramValues = expression.Parameters
                 .Select(x => x.Type)
-                .Select(x => x.IsValueType ? Activator.CreateInstance(x) : GetValue(x))
+                .Select(x => x.IsValueType ? Activator.CreateInstance(x) : null)
                 .ToArray();
 
+            var myClass = new JoinInnerSequenceParameterTransformingExpressionVisitor();
+            var queryCaller = (LambdaExpression) myClass.Visit(expression);
+
             // Invoke the delegate to obtain the cacheQueryable.
-            var queryable = queryCaller.DynamicInvoke(paramValues);
+            //var queryable = queryCaller.DynamicInvoke(paramValues);
+            var queryable = queryCaller.Compile().DynamicInvoke(paramValues);
 
             var cacheQueryable = queryable as ICacheQueryableInternal;
 
@@ -245,35 +248,42 @@ namespace Apache.Ignite.Linq
             return cacheQueryable.CompileQuery<T>(expression);
         }
 
-
-        private static object GetValue(Type type)
+        /// <summary>
+        /// Transforms JoinClause with parameterised inner sequence to .Join(parameterSequence ?? new T[0] ... 
+        /// </summary>
+        class JoinInnerSequenceParameterTransformingExpressionVisitor : RelinqExpressionVisitor
         {
-            if (type == typeof(string))
-                return null;
+            private static readonly MethodInfo[] JoinMethods = typeof(Queryable).GetMethods()
+                .Where(info => info.Name == "Join")
+                .ToArray();
 
-            Type itemType = null;
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            protected override Expression VisitMethodCall(MethodCallExpression node)
             {
-                itemType = type.GetGenericArguments()[0];
-            }
-            else
-            {
-                var implementedIEnumerableType = type.GetInterfaces()
-                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
-                if (implementedIEnumerableType == null)
+                if (node.Method.IsGenericMethod)
                 {
-                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
+                    var genericMethodDefinition = node.Method.GetGenericMethodDefinition();
+
+                    if (JoinMethods.Any(mi => mi == genericMethodDefinition))
+                    {
+                        var args = node.Arguments
+                            .ToArray();
+
+                        var innerSequenceArg = args[1];
+                        if (innerSequenceArg.NodeType == ExpressionType.Parameter)
+                        {
+                            var itemType = EnumerableHelper.GetIEnumerableItemType(innerSequenceArg.Type);
+
+                            args[1] = Expression.Coalesce(innerSequenceArg, Expression.NewArrayBounds(itemType, Expression.Constant(0)));
+
+                            var updatedNode = node.Update(node.Object, args);
+
+                            return base.VisitMethodCall(updatedNode);
+                        }
+                    }
                 }
 
-                itemType = implementedIEnumerableType.GetGenericArguments()[0];
+                return base.VisitMethodCall(node);
             }
-
-            if (itemType == null)
-                return null;
-
-            var emptyEnumerable = typeof(Enumerable).GetMethod("Empty").MakeGenericMethod(new[] {itemType}).Invoke(null, null);
-            return emptyEnumerable;
         }
 
         /// <summary>
