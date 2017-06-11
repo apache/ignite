@@ -169,34 +169,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     boolean onCustomEvent(CacheAffinityChangeMessage msg) {
         assert lateAffAssign : msg;
 
-        if (msg.exchangeId() != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("Need process affinity change message [lastAffVer=" + lastAffVer +
-                    ", msgExchId=" + msg.exchangeId() +
-                    ", msgVer=" + msg.topologyVersion() + ']');
-            }
-
-            return false;
-        }
-
         // Skip message if affinity was already recalculated.
         boolean exchangeNeeded = lastAffVer == null || lastAffVer.equals(msg.topologyVersion());
 
         msg.exchangeNeeded(exchangeNeeded);
 
-        if (exchangeNeeded) {
-            if (log.isDebugEnabled()) {
-                log.debug("Need process affinity change message [lastAffVer=" + lastAffVer +
-                    ", msgExchId=" + msg.exchangeId() +
+        if (log.isDebugEnabled()) {
+            log.debug("Ignore affinity change message [lastAffVer=" + lastAffVer +
+                    ", exchangeNeeded=" + exchangeNeeded +
                     ", msgVer=" + msg.topologyVersion() + ']');
-            }
-        }
-        else {
-            if (log.isDebugEnabled()) {
-                log.debug("Ignore affinity change message [lastAffVer=" + lastAffVer +
-                    ", msgExchId=" + msg.exchangeId() +
-                    ", msgVer=" + msg.topologyVersion() + ']');
-            }
         }
 
         return exchangeNeeded;
@@ -588,7 +569,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final CacheAffinityChangeMessage msg)
         throws IgniteCheckedException {
         assert affCalcVer != null || cctx.kernalContext().clientNode();
-        assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
+        assert msg.topologyVersion() != null : msg;
         assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion());
 
         exchLog.info("onChangeAffinityMessage start [topVer=" + exchFut.topologyVersion() + ", crd=" + crd + ']');

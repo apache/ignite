@@ -43,16 +43,10 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     private AffinityTopologyVersion topVer;
 
     /** */
-    private GridDhtPartitionExchangeId exchId;
-
-    /** */
     private Map<Integer, Map<Integer, List<UUID>>> assignmentChange;
 
     /** */
     private Map<Integer, IgniteUuid> cacheDeploymentIds;
-
-    /** */
-    private GridDhtPartitionsFullMessage partsMsg;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -72,21 +66,6 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
         this.topVer = topVer;
         this.assignmentChange = assignmentChange;
         this.cacheDeploymentIds = cacheDeploymentIds;
-    }
-
-    /**
-     * Constructor used when message is created to finish exchange.
-     *
-     * @param exchId Exchange ID.
-     * @param partsMsg Partitions messages.
-     * @param assignmentChange Assignment change.
-     */
-    public CacheAffinityChangeMessage(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsFullMessage partsMsg,
-        Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
-        this.exchId = exchId;
-        this.partsMsg = partsMsg;
-        this.assignmentChange = assignmentChange;
     }
 
     /**
@@ -111,24 +90,10 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Partitions message.
-     */
-    public GridDhtPartitionsFullMessage partitionsMessage() {
-        return partsMsg;
-    }
-
-    /**
      * @return Affinity assignments.
      */
     @Nullable public Map<Integer, Map<Integer, List<UUID>>> assignmentChange() {
         return assignmentChange;
-    }
-
-    /**
-     * @return Exchange version.
-     */
-    @Nullable public GridDhtPartitionExchangeId exchangeId() {
-        return exchId;
     }
 
     /**

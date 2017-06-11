@@ -181,12 +181,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             discoSpi.setJoinTimeout(30_000);
         }
 
-        MemoryConfiguration cfg1 = new MemoryConfiguration();
-        cfg1.setPageCacheSize(50*1024*1024L);
-        cfg.setMemoryConfiguration(cfg1);
-
-
-
         cfg.setClientMode(client);
 
         return cfg;
@@ -578,17 +572,17 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAffinitySimpleNodeLeave2() throws Exception {
+    public void testAffinitySimpleNodeLeave1() throws Exception {
         doTestAffinitySimpleNodeLeave(2);
     }
 
     /**
-     * Simple test, node leaves, more server nodes.
+     * Simple test, node leaves.
      *
      * @throws Exception If failed.
      */
-    public void testAffinitySimpleNodeLeave3() throws Exception {
-        doTestAffinitySimpleNodeLeave(3);
+    public void testAffinitySimpleNodeLeave2() throws Exception {
+        doTestAffinitySimpleNodeLeave(4);
     }
 
     /**

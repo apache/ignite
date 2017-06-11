@@ -1578,11 +1578,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
 
-            GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage();
-
-            msg.exchangeId(exchId);
-            msg.assignmentChange(assignmentChange);
-            msg.partitionFullMessage(m);
+            GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
 
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
