@@ -253,10 +253,12 @@ namespace Apache.Ignite.Linq
         /// </summary>
         class JoinInnerSequenceParameterTransformingExpressionVisitor : RelinqExpressionVisitor
         {
+            /** */
             private static readonly MethodInfo[] JoinMethods = typeof(Queryable).GetMethods()
                 .Where(info => info.Name == "Join")
                 .ToArray();
 
+            /** <inheritdoc /> */
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
                 if (node.Method.IsGenericMethod)
