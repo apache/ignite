@@ -344,8 +344,8 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         memCfg.setConcurrencyLevel(64);
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-        memPlcCfg.setInitialSize(5 * 1024 * 1024);
-        memPlcCfg.setMaxSize(5 * 1024 * 1024);
+        memPlcCfg.setInitialSize(20 * 1024 * 1024);
+        memPlcCfg.setMaxSize(20 * 1024 * 1024);
         memPlcCfg.setName("dfltMemPlc");
 
         memCfg.setMemoryPolicies(memPlcCfg);

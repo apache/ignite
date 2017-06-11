@@ -202,31 +202,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
-        super.start(activeOnStart);
-
-        if (!activeOnStart)
-            return;
-
+    @Override public void start() throws IgniteCheckedException {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         if (ctx.config().isDaemon() || !ctx.state().active())
             return;
 
-        onKernalStart0(activeOnStart);
+        onKernalStart0();
     }
 
     /**
      *
      */
-    private void onKernalStart0(boolean activeOnStart){
-        if (!activeOnStart && ctx.state().active())
-            ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
+    private void onKernalStart0(){
         utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
         utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
@@ -315,7 +307,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        onKernalStart0(true);
+        onKernalStart0();
 
         restoreStructuresState(ctx);
     }
@@ -324,7 +316,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param ctx Context.
      */
     public void restoreStructuresState(GridKernalContext ctx) {
-        onKernalStart0(true);
+        onKernalStart0();
 
         try {
             for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {

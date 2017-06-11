@@ -204,15 +204,18 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             assert old == null : "Non-null old store holder for cache: " + cacheData.config().getName();
         }
-
-        storeCacheData(grpDesc, cacheData);
     }
 
     /** {@inheritDoc} */
-    @Override public void storeCacheData(CacheGroupDescriptor grpDesc, StoredCacheData cacheData)
-        throws IgniteCheckedException {
+    @Override public void storeCacheData(
+        CacheGroupDescriptor grpDesc,
+        StoredCacheData cacheData
+    ) throws IgniteCheckedException {
+
         File cacheWorkDir = cacheWorkDirectory(grpDesc, cacheData.config());
         File file;
+
+        checkAndInitCacheWorkDir(cacheWorkDir);
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
@@ -356,6 +359,34 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         File cacheWorkDir = cacheWorkDirectory(grpDesc, ccfg);
 
+        boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
+
+        File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
+
+        if (dirExisted && !idxFile.exists())
+            grpsWithoutIdx.add(grpDesc.groupId());
+
+        FilePageStore idxStore = new FilePageStore(
+            PageMemory.FLAG_IDX,
+            idxFile,
+            cctx.kernalContext().config().getMemoryConfiguration());
+
+        FilePageStore[] partStores = new FilePageStore[grpDesc.config().getAffinity().partitions()];
+
+        for (int partId = 0; partId < partStores.length; partId++) {
+            FilePageStore partStore = new FilePageStore(
+                PageMemory.FLAG_DATA,
+                new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)),
+                cctx.kernalContext().config().getMemoryConfiguration()
+            );
+
+            partStores[partId] = partStore;
+        }
+
+        return new CacheStoreHolder(idxStore, partStores);
+    }
+
+    private boolean checkAndInitCacheWorkDir(File cacheWorkDir) throws IgniteCheckedException {
         boolean dirExisted = false;
 
         if (!cacheWorkDir.exists()) {
@@ -389,7 +420,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);
                     }
-                } else {
+                }
+                else {
                     U.warn(log, "Ignite node crashed during the snapshot restore process " +
                         "(there is a snapshot restore lock file left for cache). Will remove both the lock file and " +
                         "incomplete cache directory [cacheDir=" + cacheWorkDir.getAbsolutePath() + ']');
@@ -411,29 +443,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 dirExisted = true;
         }
 
-        File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
-
-        if (dirExisted && !idxFile.exists())
-            grpsWithoutIdx.add(grpDesc.groupId());
-
-        FilePageStore idxStore = new FilePageStore(
-            PageMemory.FLAG_IDX,
-            idxFile,
-            cctx.kernalContext().config().getMemoryConfiguration());
-
-        FilePageStore[] partStores = new FilePageStore[grpDesc.config().getAffinity().partitions()];
-
-        for (int partId = 0; partId < partStores.length; partId++) {
-            FilePageStore partStore = new FilePageStore(
-                PageMemory.FLAG_DATA,
-                new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)),
-                cctx.kernalContext().config().getMemoryConfiguration()
-            );
-
-            partStores[partId] = partStore;
-        }
-
-        return new CacheStoreHolder(idxStore, partStores);
+        return dirExisted;
     }
 
     /** {@inheritDoc} */

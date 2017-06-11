@@ -3729,32 +3729,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                boolean locActiveOnStart = booleanAttribute(locNode, ATTR_ACTIVE_ON_START, true);
-                boolean rmtActiveOnStart = booleanAttribute(node, ATTR_ACTIVE_ON_START, true);
-
-                if (locActiveOnStart != rmtActiveOnStart) {
-                    String errMsg = "Local node's active on start flag differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same " +
-                        "active on start flag) [locActiveOnStart=" + locActiveOnStart +
-                        ", rmtActiveOnStart=" + rmtActiveOnStart +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                    String sndMsg = "Local node's active on start flag differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same " +
-                        "active on start flag) [locActiveOnStart=" + rmtActiveOnStart +
-                        ", rmtActiveOnStart=" + locActiveOnStart +
-                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                        ", rmtNodeId=" + locNode.id() + ']';
-
-                    nodeCheckError(node, errMsg, sndMsg);
-
-                    // Ignore join request.
-                    return;
-                }
-
                 final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
                 final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);

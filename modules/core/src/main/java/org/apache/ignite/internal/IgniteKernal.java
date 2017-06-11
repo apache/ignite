@@ -926,7 +926,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new  GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
-                startProcessor(new GridCacheProcessor(ctx));startProcessor(new GridClusterStateProcessor(ctx));
+                startProcessor(new GridClusterStateProcessor(ctx));
+                startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new SqlListenerProcessor(ctx));
                 startProcessor(new GridServiceProcessor(ctx));
@@ -991,10 +992,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions());
 
             // Notify discovery manager the first to make sure that topology is discovered.
-            ctx.discovery().onKernalStart(activeOnStart);
+            ctx.discovery().onKernalStart();
 
             // Notify IO manager the second so further components can send and receive messages.
-            ctx.io().onKernalStart(activeOnStart);
+            ctx.io().onKernalStart();
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders())
@@ -1017,7 +1018,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (!skipDaemon(comp)) {
                     try {
-                        comp.onKernalStart(activeOnStart);
+                        comp.onKernalStart();
                     }
                     catch (IgniteNeedReconnectException e) {
                         assert ctx.discovery().reconnectSupported();
@@ -1749,7 +1750,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             if (!skipDaemon(mgr))
-                mgr.start(cfg.isActiveOnStart());
+                mgr.start();
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to start manager: " + mgr, e);
@@ -1767,7 +1768,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             if (!skipDaemon(proc))
-                proc.start(cfg.isActiveOnStart());
+                proc.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);

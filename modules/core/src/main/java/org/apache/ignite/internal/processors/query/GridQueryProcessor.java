@@ -223,8 +223,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
-        super.start(activeOnStart);
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
 
         if (idx != null) {
             ctx.resource().injectGeneric(idx);

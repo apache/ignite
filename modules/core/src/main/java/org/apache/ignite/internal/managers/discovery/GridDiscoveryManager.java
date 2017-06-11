@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -463,7 +464,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         long totSysMemory = -1;
 
         try {
@@ -741,19 +742,36 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             @Override public void onExchange(DiscoveryDataBag dataBag) {
+                assert dataBag != null;
+                assert dataBag.joiningNodeId() != null;
+
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
-                    //NodeAdded msg reached joining node after round-trip over the ring
+                    // NodeAdded msg reached joining node after round-trip over the ring.
+                    GridClusterStateProcessor stateProc = ctx.state();
+
+                    stateProc.onGridDataReceived(dataBag.gridDiscoveryData(
+                        stateProc.discoveryDataType().ordinal()));
+
                     for (GridComponent c : ctx.components()) {
-                        if (c.discoveryDataType() != null)
+                        if (c.discoveryDataType() != null && c != stateProc)
                             c.onGridDataReceived(dataBag.gridDiscoveryData(c.discoveryDataType().ordinal()));
                     }
                 }
                 else {
-                    //discovery data from newly joined node has to be applied to the current old node
+                    // Discovery data from newly joined node has to be applied to the current old node.
+                    GridClusterStateProcessor stateProc = ctx.state();
+
+                    JoiningNodeDiscoveryData data0 = dataBag.newJoinerDiscoveryData(
+                        stateProc.discoveryDataType().ordinal());
+
+                    assert data0 != null;
+
+                    stateProc.onJoiningNodeDataReceived(data0);
+
                     for (GridComponent c : ctx.components()) {
-                        if (c.discoveryDataType() != null) {
-                            JoiningNodeDiscoveryData data =
-                                    dataBag.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
+                        if (c.discoveryDataType() != null && c != stateProc) {
+                            JoiningNodeDiscoveryData data = dataBag.newJoinerDiscoveryData(
+                                c.discoveryDataType().ordinal());
 
                             if (data != null)
                                 c.onJoiningNodeDataReceived(data);
@@ -1219,17 +1237,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locDelayAssign=" + locDelayAssign +
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtLateAssign=" + rmtLateAssign +
-                    ", rmtAddrs=" + U.addressesAsString(n) + ']');
-            }
-
-            boolean rmtActiveOnStart = n.attribute(ATTR_ACTIVE_ON_START);
-
-            if (locActiveOnStart != rmtActiveOnStart) {
-                throw new IgniteCheckedException("Remote node has active on start flag different from local " +
-                    "[locId8=" + U.id8(locNode.id()) +
-                    ", locActiveOnStart=" + locActiveOnStart +
-                    ", rmtId8=" + U.id8(n.id()) +
-                    ", rmtActiveOnStart=" + rmtActiveOnStart +
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
 

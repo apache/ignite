@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Cache information sent in discovery data to joining node.
  */
-class CacheNodeCommonDiscoveryData implements Serializable {
+public class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,7 +55,7 @@ class CacheNodeCommonDiscoveryData implements Serializable {
      * @param cacheGrps Started cache groups.
      * @param clientNodesMap Information about cache client nodes.
      */
-    CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
+    public CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
         Map<Integer, CacheGroupData> cacheGrps,
         Map<String, Map<UUID, Boolean>> clientNodesMap,
@@ -83,21 +83,21 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     /**
      * @return Started caches.
      */
-    Map<String, CacheData> caches() {
+    public Map<String, CacheData> caches() {
         return caches;
     }
 
     /**
      * @return Configured templates.
      */
-    Map<String, CacheData> templates() {
+    public Map<String, CacheData> templates() {
         return templates;
     }
 
     /**
      * @return Information about cache client nodes.
      */
-    Map<String, Map<UUID, Boolean>> clientNodesMap() {
+    public Map<String, Map<UUID, Boolean>> clientNodesMap() {
         return clientNodesMap;
     }
 

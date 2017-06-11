@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.database.file.FilePageStoreManager;
@@ -347,7 +348,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void start0() throws IgniteCheckedException {
         snapshotMgr = cctx.snapshot();
 
-        initDataBase();
+        assert !cctx.kernalContext().state().active() : "Cluster with persistent must starting as inactive.";
 
         if (!cctx.kernalContext().clientNode()) {
             IgnitePageStoreManager store = cctx.pageStore();
@@ -447,56 +448,102 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
-        if (!reconnect && !cctx.kernalContext().clientNode() && cctx.kernalContext().state().active()) {
-            Collection<String> cacheNames = new HashSet<>();
+        if (reconnect || cctx.kernalContext().clientNode() || !cctx.kernalContext().state().active())
+            return;
 
-            // TODO IGNITE-5075 group descriptors.
-            for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration()) {
-                if (CU.isSystemCache(ccfg.getName())) {
-                    storeMgr.initializeForCache(cctx.cache().cacheDescriptors().get(ccfg.getName()).groupDescriptor(), new StoredCacheData(ccfg));
+        if (persistenceEnabled() && cctx.kernalContext().state().active())
+            initDataBase();
 
-                    cacheNames.add(ccfg.getName());
-                }
+        GridCacheProcessor cachePrc = cctx.kernalContext().cache();
+
+        // Todo before join local node.
+
+        Collection<String> cacheNames = new HashSet<>();
+
+        // TODO IGNITE-5075 group descriptors.
+        for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration()) {
+            if (CU.isSystemCache(ccfg.getName())) {
+                storeMgr.initializeForCache(
+                    cctx.cache().cacheDescriptors().get(ccfg.getName()).groupDescriptor(), new StoredCacheData(ccfg));
+
+                cacheNames.add(ccfg.getName());
             }
-
-            for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration())
-                if (!CU.isSystemCache(ccfg.getName())) {
-                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptors().get(ccfg.getName());
-
-                    if (cacheDesc != null)
-                        storeMgr.initializeForCache(cacheDesc.groupDescriptor(), new StoredCacheData(ccfg));
-
-                    cacheNames.add(ccfg.getName());
-                }
-
-            for (StoredCacheData cacheData : cctx.pageStore().readCacheConfigurations().values()) {
-                if (!cacheNames.contains(cacheData.config().getName()))
-                    storeMgr.initializeForCache(cctx.cache().cacheDescriptors().get(cacheData.config().getName()).groupDescriptor(), cacheData);
-            }
-
-            readCheckpointAndRestoreMemory();
         }
+
+        for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration())
+            if (!CU.isSystemCache(ccfg.getName())) {
+                DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptors().get(ccfg.getName());
+
+                if (cacheDesc != null)
+                    storeMgr.initializeForCache(cacheDesc.groupDescriptor(), new StoredCacheData(ccfg));
+
+                cacheNames.add(ccfg.getName());
+            }
+
+        for (StoredCacheData cacheData : cctx.pageStore().readCacheConfigurations().values()) {
+            if (!cacheNames.contains(cacheData.config().getName()))
+                storeMgr.initializeForCache(
+                    cctx.cache().cacheDescriptors().get(cacheData.config().getName()).groupDescriptor(), cacheData);
+        }
+
+        readCheckpointAndRestoreMemory();
     }
+
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        super.onActivate(kctx);
+        snapshotMgr = cctx.snapshot();
+
+        if (cctx.localNode().isClient())
+            return;
+
+        initDataBase();
 
         if (log.isDebugEnabled())
             log.debug("Activate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        if (!cctx.kernalContext().clientNode()) {
-            readCheckpointAndRestoreMemory();
+        GridCacheProcessor cachePrc = cctx.kernalContext().cache();
 
-            if (log.isDebugEnabled())
-                log.debug("Restore state after activation [nodeId=" + cctx.localNodeId() + " ]");
+        // Todo join local info.
+
+        Collection<String> cacheNames = new HashSet<>();
+
+        // TODO IGNITE-5075 group descriptors.
+        for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration()) {
+            if (CU.isSystemCache(ccfg.getName())) {
+                storeMgr.initializeForCache(
+                    cctx.cache().cacheDescriptors().get(ccfg.getName()).groupDescriptor(), new StoredCacheData(ccfg));
+
+                cacheNames.add(ccfg.getName());
+            }
         }
+
+        for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration())
+            if (!CU.isSystemCache(ccfg.getName())) {
+                DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptors().get(ccfg.getName());
+
+                if (cacheDesc != null)
+                    storeMgr.initializeForCache(cacheDesc.groupDescriptor(), new StoredCacheData(ccfg));
+
+                cacheNames.add(ccfg.getName());
+            }
+
+        for (StoredCacheData cacheData : cctx.pageStore().readCacheConfigurations().values()) {
+            if (!cacheNames.contains(cacheData.config().getName()))
+                storeMgr.initializeForCache(
+                    cctx.cache().cacheDescriptors().get(cacheData.config().getName()).groupDescriptor(), cacheData);
+        }
+
+        readCheckpointAndRestoreMemory();
+
+        if (log.isDebugEnabled())
+            log.debug("Restore state after activation [nodeId=" + cctx.localNodeId() + " ]");
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        super.onDeActivate(kctx);
+        stop0(true);
 
         if (log.isDebugEnabled())
             log.debug("DeActivate database manager [id=" + cctx.localNodeId() +
@@ -1926,6 +1973,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Checkpoint chp = markCheckpointBegin(tracker);
 
+                if (chp.cpPages == null)
+                    return;
+
                 snapshotMgr.onCheckPointBegin();
 
                 boolean interrupted = true;
@@ -2967,8 +3017,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (content == null)
                             content = readContent();
 
-                        log.warning("Failed to acquire file lock (already locked by " + content
-                            + "), will try again in 1s: " + file.getAbsolutePath());
+                        log.warning("Failed to acquire file lock (local nodeId:" + ctx.localNodeId()
+                            + ", already locked by " + content + "), will try again in 1s: "
+                            + file.getAbsolutePath());
                     }
 
                     U.sleep(1000);
