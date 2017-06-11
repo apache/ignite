@@ -387,7 +387,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     nearCfg = req.nearCacheConfiguration();
                 }
                 else // Only static cache configured on client must be started.
-                    startCache = cctx.kernalContext().state().isLocalConfigure(req.cacheName());
+                    startCache = cctx.kernalContext().state().isLocallyConfigured(req.cacheName());
             }
             else if (cctx.localNodeId().equals(req.initiatingNodeId())) {
                 startCache = true;

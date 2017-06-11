@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.database;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.lang.Thread.sleep;
