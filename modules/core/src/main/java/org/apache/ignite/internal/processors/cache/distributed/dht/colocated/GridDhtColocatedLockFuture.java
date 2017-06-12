@@ -963,29 +963,32 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                     first = false;
                                 }
 
-                                    assert !implicitTx() && !implicitSingleTx() : tx;req = new GridNearLockRequest(
-                                        cctx.cacheId(),
-                                        topVer,
-                                        cctx.nodeId(),
-                                        threadId,
-                                        futId,
-                                        lockVer,
-                                        inTx(),
-                                        read,
-                                        retval,
-                                        isolation(),
-                                        isInvalidate(),
-                                        timeout,
-                                        mappedKeys.size(),
-                                        inTx() ? tx.size() : mappedKeys.size(),
-                                        inTx() && tx.syncMode() == FULL_SYNC,
-                                        inTx() ? tx.subjectId() : null,
-                                        inTx() ? tx.taskNameHash() : 0,
-                                        read ? createTtl : -1L,
-                                        read ? accessTtl : -1L,
+                                assert !implicitTx() && !implicitSingleTx() : tx;
+
+                                req = new GridNearLockRequest(
+                                    cctx.cacheId(),
+                                    topVer,
+                                    cctx.nodeId(),
+                                    threadId,
+                                    futId,
+                                    lockVer,
+                                    inTx(),
+                                    read,
+                                    retval,
+                                    isolation(),
+                                    isInvalidate(),
+                                    timeout,
+                                    mappedKeys.size(),
+                                    inTx() ? tx.size() : mappedKeys.size(),
+                                    inTx() && tx.syncMode() == FULL_SYNC,
+                                    inTx() ? tx.subjectId() : null,
+                                    inTx() ? tx.taskNameHash() : 0,
+                                    read ? createTtl : -1L,
+                                    read ? accessTtl : -1L,
                                     skipStore,
                                     keepBinary,
                                     clientFirst,
+                                    false,
                                     cctx.deploymentEnabled());
 
                                 mapping.request(req);

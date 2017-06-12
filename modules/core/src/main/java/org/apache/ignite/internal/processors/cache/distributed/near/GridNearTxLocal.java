@@ -1217,7 +1217,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     drExpireTime,
                                     drVer,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    CU.isNearEnabled(cacheCtx));
                             }
                             else {
                                 txEntry = addEntry(READ,
@@ -1232,7 +1233,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     -1L,
                                     null,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    CU.isNearEnabled(cacheCtx));
                             }
 
                             txEntry.markValid();
@@ -1262,7 +1264,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         drExpireTime,
                         drVer,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        CU.isNearEnabled(cacheCtx));
 
                     if (enlisted != null)
                         enlisted.add(cacheKey);
@@ -1365,7 +1368,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                     drExpireTime,
                     drVer,
                     skipStore,
-                    keepBinary);
+                    keepBinary,
+                    CU.isNearEnabled(cacheCtx));
 
                 if (enlisted != null)
                     enlisted.add(cacheKey);
@@ -2201,7 +2205,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 -1L,
                                 null,
                                 skipStore,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                CU.isNearEnabled(cacheCtx));
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
