@@ -498,7 +498,7 @@ namespace Apache.Ignite.Linq.Impl
             }
             else
             {
-                VisitJoinWithLocaclCollectionClause(joinClause);
+                VisitJoinWithLocalCollectionClause(joinClause);
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
@@ -509,7 +509,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visists Join clause in case of join with local collection
         /// </summary>
-        private void VisitJoinWithLocaclCollectionClause(JoinClause joinClause)
+        private void VisitJoinWithLocalCollectionClause(JoinClause joinClause)
         {
             var type = joinClause.InnerSequence.Type;
 
