@@ -2141,10 +2141,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             if (F.contains(exclNodes, node))
                 continue;
 
-            IgniteInternalFuture<?>
-                fut = ((IgniteKernal)node).context().cache().context().exchange().affinityReadyFuture(topVer);
-
-            futs.add(fut);
+            futs.add(affFuture(topVer, node));
         }
 
         return futs;
