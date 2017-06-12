@@ -272,26 +272,7 @@ namespace Apache.Ignite.Linq
                 {
                     var genericMethodDefinition = node.Method.GetGenericMethodDefinition();
 
-                    if (JoinMethods.Any(mi => mi == genericMethodDefinition))
-                    {
-                        _inJoin = true;
-                        //var args = node.Arguments
-                        //    .ToArray();
-
-                        //// Get inner sequence arg
-                        //var innerSequenceArg = args[1];
-
-                        //// Coalesce only if innerSequence is parameter expression
-                        //if (innerSequenceArg.NodeType == ExpressionType.Parameter)
-                        //{
-                        //    var itemType = EnumerableHelper.GetIEnumerableItemType(innerSequenceArg.Type);
-
-                        //    args[1] = Expression.Coalesce(innerSequenceArg, Expression.NewArrayBounds(itemType, Expression.Constant(0)));
-
-                        //    var updatedNode = node.Update(node.Object, args);
-
-                        //}
-                    }
+                    _inJoin = JoinMethods.Any(mi => mi == genericMethodDefinition);
                 }
 
                 var result = base.VisitMethodCall(node);
@@ -311,41 +292,6 @@ namespace Apache.Ignite.Linq
 
                 return node;
             }
-        }
-
-
-        private static object GetValue(Type type)
-        {
-            if (type == typeof(string))
-            {
-                return null;
-            }
-
-            Type itemType = null;
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-            {
-                itemType = type.GetGenericArguments()[0];
-            }
-            else
-            {
-                var implementedIEnumerableType = type.GetInterfaces()
-                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
-                if (implementedIEnumerableType == null)
-                {
-                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
-                }
-
-                itemType = implementedIEnumerableType.GetGenericArguments()[0];
-            }
-
-            if (itemType == null)
-            {
-                return null;
-            }
-
-            var emptyEnumerable = typeof(Enumerable).GetMethod("Empty").MakeGenericMethod(itemType).Invoke(null, null);
-            return emptyEnumerable;
         }
 
         /// <summary>
