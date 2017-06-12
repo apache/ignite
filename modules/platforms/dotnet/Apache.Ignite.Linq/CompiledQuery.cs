@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -226,7 +228,7 @@ namespace Apache.Ignite.Linq
         private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(LambdaExpression expression)
         {
             Debug.Assert(expression != null);
-
+            
             // Get default parameter values.
             var paramValues = expression.Parameters
                 .Select(x => x.Type)
@@ -234,7 +236,7 @@ namespace Apache.Ignite.Linq
                 .ToArray();
 
             var transformingxpressionVisitor = new JoinInnerSequenceParameterTransformingExpressionVisitor();
-            var queryCaller = (LambdaExpression) transformingxpressionVisitor.Visit(expression);
+            var queryCaller = (LambdaExpression)transformingxpressionVisitor.Visit(expression);
 
             // Compile and invoke the delegate to obtain the cacheQueryable.
             var queryable = queryCaller.Compile().DynamicInvoke(paramValues);
@@ -257,6 +259,12 @@ namespace Apache.Ignite.Linq
                 .Where(info => info.Name == "Join")
                 .ToArray();
 
+            /** */
+            private static readonly Type EnumerableType = typeof(IEnumerable);
+
+            /** */
+            private bool _inJoin;
+
             /** <inheritdoc /> */
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
@@ -266,28 +274,78 @@ namespace Apache.Ignite.Linq
 
                     if (JoinMethods.Any(mi => mi == genericMethodDefinition))
                     {
-                        var args = node.Arguments
-                            .ToArray();
+                        _inJoin = true;
+                        //var args = node.Arguments
+                        //    .ToArray();
 
-                        // Get inner sequence arg
-                        var innerSequenceArg = args[1];
+                        //// Get inner sequence arg
+                        //var innerSequenceArg = args[1];
 
-                        // Coalesce only if innerSequence is parameter expression
-                        if (innerSequenceArg.NodeType == ExpressionType.Parameter)
-                        {
-                            var itemType = EnumerableHelper.GetIEnumerableItemType(innerSequenceArg.Type);
+                        //// Coalesce only if innerSequence is parameter expression
+                        //if (innerSequenceArg.NodeType == ExpressionType.Parameter)
+                        //{
+                        //    var itemType = EnumerableHelper.GetIEnumerableItemType(innerSequenceArg.Type);
 
-                            args[1] = Expression.Coalesce(innerSequenceArg, Expression.NewArrayBounds(itemType, Expression.Constant(0)));
+                        //    args[1] = Expression.Coalesce(innerSequenceArg, Expression.NewArrayBounds(itemType, Expression.Constant(0)));
 
-                            var updatedNode = node.Update(node.Object, args);
+                        //    var updatedNode = node.Update(node.Object, args);
 
-                            return base.VisitMethodCall(updatedNode);
-                        }
+                        //}
                     }
                 }
 
-                return base.VisitMethodCall(node);
+                var result = base.VisitMethodCall(node);
+
+                _inJoin = false;
+
+                return result;
             }
+
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                if (_inJoin && EnumerableType.IsAssignableFrom(node.Type))
+                {
+                    var itemType = EnumerableHelper.GetIEnumerableItemType(node.Type);
+                    return Expression.Coalesce(node, Expression.NewArrayBounds(itemType, Expression.Constant(0)));
+                }
+
+                return node;
+            }
+        }
+
+
+        private static object GetValue(Type type)
+        {
+            if (type == typeof(string))
+            {
+                return null;
+            }
+
+            Type itemType = null;
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                itemType = type.GetGenericArguments()[0];
+            }
+            else
+            {
+                var implementedIEnumerableType = type.GetInterfaces()
+                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+                if (implementedIEnumerableType == null)
+                {
+                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
+                }
+
+                itemType = implementedIEnumerableType.GetGenericArguments()[0];
+            }
+
+            if (itemType == null)
+            {
+                return null;
+            }
+
+            var emptyEnumerable = typeof(Enumerable).GetMethod("Empty").MakeGenericMethod(itemType).Invoke(null, null);
+            return emptyEnumerable;
         }
 
         /// <summary>

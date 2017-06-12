@@ -654,7 +654,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
-        [Ignore]
+        [Ignore("IGNITE-5404")]
         public void TestLocalJoinCompiledQueryParameter()
         {
             var persons = GetPersonCache().AsCacheQueryable();
@@ -668,18 +668,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Select(e => e.Id)
                 .ToArray();
 
-            //// Join with local collection 
-            //var qry0 = persons.Join((IEnumerable<int>)null,
-            //        pe => pe.Value.OrganizationId,
-            //        i => i,
-            //        (pe, o) => pe
-            //    )
-            //    .ToArray();
-
-            //Assert.AreEqual(PersonCount, qry0.Length);
-
             // Join with local collection passed as parameter
-
             var qry1 = CompiledQuery.Compile((IEnumerable<int> lc) => persons.Join(lc,
                 pe => pe.Value.OrganizationId,
                 i => i,
@@ -688,16 +677,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(PersonCount, qry1(allOrganizationIds).Count());
 
-
-            // Compiled query with outer join
-
+            //Compiled query with outer join
             var qry2 = CompiledQuery.Compile((IEnumerable<int> lc) => persons.Join(lc.DefaultIfEmpty(),
                 pe => pe.Value.OrganizationId,
                 i => i,
                 (pe, o) => pe
             ));
 
-            Assert.AreEqual(PersonCount, qry2(new[] {-11}).Count());
+            Assert.AreEqual(PersonCount, qry2(new[] { -11 }).Count());
         }
 
         /// <summary>

@@ -221,7 +221,6 @@ namespace Apache.Ignite.Linq.Impl
                 .ToArray();
         }
 
-
         /// <summary>
         /// Compiles the member reader.
         /// </summary>

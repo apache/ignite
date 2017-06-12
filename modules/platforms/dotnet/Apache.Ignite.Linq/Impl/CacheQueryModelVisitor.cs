@@ -472,33 +472,33 @@ namespace Apache.Ignite.Linq.Impl
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
+            var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
 
-            var subQuery = joinClause.InnerSequence as SubQueryExpression;
-
-            if (subQuery != null)
+            if (queryable != null)
             {
-                var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                var subQuery = joinClause.InnerSequence as SubQueryExpression;
 
-                _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
+                if (subQuery != null)
+                {
+                    var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
 
-                VisitQueryModel(subQuery.QueryModel, true);
+                    _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
 
-                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
-                _builder.AppendFormat(") as {0} on (", alias);
-            }
-            else
-            {
-                var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
-                if (queryable != null)
+                    VisitQueryModel(subQuery.QueryModel, true);
+
+                    var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                    _builder.AppendFormat(") as {0} on (", alias);
+                }
+                else
                 {
                     var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
                     var alias = _aliases.GetTableAlias(joinClause);
                     _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
                 }
-                else
-                {
-                    VisitJoinWithLocaclCollectionClause(joinClause);
-                }
+            }
+            else
+            {
+                VisitJoinWithLocaclCollectionClause(joinClause);
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
@@ -523,27 +523,31 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             var isOuter = false;
+            var sequenceExpression = joinClause.InnerSequence;
             object values;
-            switch (joinClause.InnerSequence.NodeType)
+
+            var subQuery = sequenceExpression as SubQueryExpression;
+            if (subQuery != null)
+            {
+                isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                sequenceExpression = subQuery.QueryModel.MainFromClause.FromExpression;
+            }
+
+            switch (sequenceExpression.NodeType)
             {
                 case ExpressionType.Constant:
-                    var constantValueType = ((ConstantExpression)joinClause.InnerSequence).Value.GetType();
+                    var constantValueType = ((ConstantExpression)sequenceExpression).Value.GetType();
                     if (constantValueType.IsGenericType)
                     {
                         isOuter = DefaultIfEmptyEnumeratorType == constantValueType.GetGenericTypeDefinition();
                     }
-                    values = ExpressionWalker.EvaluateEnumerableValues(joinClause.InnerSequence);
+                    values = ExpressionWalker.EvaluateEnumerableValues(sequenceExpression);
                     break;
                 case ExpressionType.Parameter:
-                    //var subQuery = joinClause.InnerSequence as SubQueryExpression;
-                    //if (subQuery != null)
-                    //{
-                    //    isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
-                    //}
-                    values = ExpressionWalker.EvaluateExpression<object>(joinClause.InnerSequence);
+                    values = ExpressionWalker.EvaluateExpression<object>(sequenceExpression);
                     break;
                 default:
-                    throw new NotSupportedException("Expression not supported for Join with local collection: " + joinClause.InnerSequence);
+                    throw new NotSupportedException("Expression not supported for Join with local collection: " + sequenceExpression);
             }
 
             var tableAlias = _aliases.GetTableAlias(joinClause);
