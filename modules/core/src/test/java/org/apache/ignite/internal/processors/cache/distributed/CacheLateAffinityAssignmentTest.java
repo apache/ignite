@@ -1449,7 +1449,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void xtestRandomOperations() throws Exception {
+    public void testRandomOperations() throws Exception {
         forceSrvMode = true;
 
         final int MAX_SRVS = 10;
