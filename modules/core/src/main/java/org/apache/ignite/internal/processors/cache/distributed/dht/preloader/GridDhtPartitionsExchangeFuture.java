@@ -1583,7 +1583,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
 
-            cctx.io().safeSend(F.view(srvNodes, F.remoteNodes(cctx.localNodeId())), msg, GridIoPolicy.SYSTEM_POOL, null);
+            // todo exclude dead nodes.
+            cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg, GridIoPolicy.SYSTEM_POOL, null);
 
             onAffinityChangeMessage(cctx.localNode(), msg);
         }

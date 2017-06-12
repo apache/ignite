@@ -1407,7 +1407,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param part Partition.
      * @param curPrimary Current primary.
      * @param newNodes New ideal assignment.
-     * @param rebalance Rabalance information holder.
+     * @param rebalance Rebalance information holder.
      * @return Assignment.
      */
     private List<ClusterNode> latePrimaryAssignment(

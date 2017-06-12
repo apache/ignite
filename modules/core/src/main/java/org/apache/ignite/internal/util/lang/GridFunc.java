@@ -4285,6 +4285,24 @@ public class GridFunc {
      * @param val Value to find.
      * @return {@code True} if array contains given value.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static <T> boolean contains(T[] arr, T val) {
+        if (arr == null)
+            return false;
+
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param arr Array.
+     * @param val Value to find.
+     * @return {@code True} if array contains given value.
+     */
     @Deprecated
     public static boolean contains(Integer[] arr, int val) {
         for (Integer el : arr) {
