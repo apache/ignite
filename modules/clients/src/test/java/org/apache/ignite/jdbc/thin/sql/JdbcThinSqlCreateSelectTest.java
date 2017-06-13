@@ -17,7 +17,12 @@
 
 package org.apache.ignite.jdbc.thin.sql;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -48,7 +53,7 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
     public void testCreateSelect() throws Exception {
         GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                sql(new ResultChecker(new Object[][]{}), "SELECT * from Person");
+                sql(new ResultChecker(new Object[][] {}), "SELECT * from Person");
 
                 return null;
             }
@@ -56,10 +61,10 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
 
         sql(new UpdateChecker(0),
             "CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name()
+                "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name()
                 + ",affinitykey=city\"");
 
-        sql(new UpdateChecker(0),"CREATE INDEX idx on person (city asc, name asc)");
+        sql(new UpdateChecker(0), "CREATE INDEX idx on person (city asc, name asc)");
 
         sql(new UpdateChecker(0), "CREATE TABLE city (name varchar, population int, primary key (name)) WITH " +
             "\"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ",affinitykey=name\"");
@@ -84,7 +89,7 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
                 CITIES.get(i % CITIES.size()));
         }
 
-        final int [] cnt = {0};
+        final int[] cnt = {0};
 
         sql(new ResultPredicateChecker(new IgnitePredicate<Object[]>() {
             @Override public boolean apply(Object[] objs) {
@@ -107,9 +112,8 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
 
         assert cnt[0] == 50 : "Invalid rows count";
 
-
         // Berkeley is not present in City table, although 25 people have it specified as their city.
-        sql(new ResultChecker(new Object[][]{{75L}}),
+        sql(new ResultChecker(new Object[][] {{75L}}),
             "SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
 
         sql(new UpdateChecker(34),
@@ -121,7 +125,7 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
         sql(new ResultPredicateChecker(new IgnitePredicate<Object[]>() {
             @Override public boolean apply(Object[] objs) {
                 int id = ((Integer)objs[0]);
-                int age =  ((Integer)objs[2]);
+                int age = ((Integer)objs[2]);
 
                 if (id % 2 == 0) {
                     if (age != 20 + (id % 10) + 1)
@@ -141,5 +145,24 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
         assert cnt[0] == 34 : "Invalid rows count";
 
         sql(new UpdateChecker(0), "DROP INDEX idx");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateSelectChar() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5361");
+
+        sql(new UpdateChecker(0),
+            "CREATE TABLE str_table (id int, str char, primary key (id)) WITH \"template="
+                + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ", affinitykey=id\"");
+
+        String str = "a   ";
+        sql(new UpdateChecker(1),
+            "INSERT INTO str_table(id, str) values (?, ?)",
+            1,
+            str);
+
+        sql(new ResultChecker(new Object[][] {{str.trim()}}), "SELECT str FROM str_table");
     }
 }
