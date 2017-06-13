@@ -324,6 +324,15 @@ const DFLT_CLUSTER = {
     serviceConfigurations: {
         maxPerNodeCount: 0,
         totalCount: 0
+    },
+    longQueryWarningTimeout: 3000,
+    sqlConnectorConfiguration: {
+        port: 10800,
+        portRange: 100,
+        socketSendBufferSize: 0,
+        socketReceiveBufferSize: 0,
+        tcpNoDelay: true,
+        maxOpenCursorsPerConnection: 128
     }
 };
 

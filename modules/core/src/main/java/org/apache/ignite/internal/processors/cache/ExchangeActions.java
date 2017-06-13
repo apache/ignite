@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -131,6 +132,20 @@ public class ExchangeActions {
         completeRequestFutures(cachesToClose, ctx);
         completeRequestFutures(clientCachesToStart, ctx);
         completeRequestFutures(cachesToResetLostParts, ctx);
+    }
+
+    /**
+     * @return {@code True} if starting system caches.
+     */
+    public boolean systemCachesStarting() {
+        if (cachesToStart != null) {
+            for (ActionData data : cachesToStart.values()) {
+                if (CU.isSystemCache(data.request().cacheName()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

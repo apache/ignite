@@ -349,11 +349,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if client-only exchange is needed.
      */
-    public boolean onCacheChangeRequest(final GridDhtPartitionsExchangeFuture fut,
+    public boolean onCacheChangeRequest(
+        final GridDhtPartitionsExchangeFuture fut,
         boolean crd,
-        final ExchangeActions exchActions)
-        throws IgniteCheckedException
-    {
+        final ExchangeActions exchActions
+    ) throws IgniteCheckedException {
         assert exchActions != null && !exchActions.empty() : exchActions;
 
         updateCachesInfo(exchActions);
@@ -377,7 +377,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             NearCacheConfiguration nearCfg = null;
 
-            if (cctx.localNodeId().equals(req.initiatingNodeId())) {
+            if (exchActions.newClusterState() == ClusterState.ACTIVE) {
+                if (CU.isSystemCache(req.cacheName()))
+                    startCache = true;
+                else if (!cctx.localNode().isClient()) {
+                    startCache = cctx.cacheContext(action.descriptor().cacheId()) == null &&
+                        CU.affinityNode(cctx.localNode(), req.startCacheConfiguration().getNodeFilter());
+
+                    nearCfg = req.nearCacheConfiguration();
+                }
+                else // Only static cache configured on client must be started.
+                    startCache = cctx.kernalContext().state().isLocallyConfigured(req.cacheName());
+            }
+            else if (cctx.localNodeId().equals(req.initiatingNodeId())) {
                 startCache = true;
 
                 nearCfg = req.nearCacheConfiguration();
@@ -388,8 +400,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             try {
+                // Save configuration before cache started.
+                if (cctx.pageStore() != null && !cctx.localNode().isClient())
+                    cctx.pageStore().storeCacheData(
+                        cacheDesc.groupDescriptor(),
+                        new StoredCacheData(req.startCacheConfiguration())
+                    );
+
                 if (startCache) {
                     cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
+
+                    if (exchActions.newClusterState() == null)
+                        cctx.kernalContext().state().onCacheStart(req);
 
                     if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                         if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
@@ -845,9 +867,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param descs Cache descriptors.
      * @throws IgniteCheckedException If failed.
      */
-    public void initStartedCaches(boolean crd,
+    public void initStartedCaches(
+        boolean crd,
         final GridDhtPartitionsExchangeFuture fut,
-        Collection<DynamicCacheDescriptor> descs) throws IgniteCheckedException {
+        Collection<DynamicCacheDescriptor> descs
+    ) throws IgniteCheckedException {
         for (DynamicCacheDescriptor desc : descs) {
             CacheGroupDescriptor grpDesc = desc.groupDescriptor();
 

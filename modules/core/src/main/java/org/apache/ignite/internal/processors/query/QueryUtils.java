@@ -427,16 +427,19 @@ public class QueryUtils {
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null) {
-                // Need to setup affinity key for distributed joins.
-                String affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
+            String affField = null;
 
-                if (affField != null) {
-                    if (!escape)
-                        affField = normalizeObjectName(affField, false);
+            // Need to setup affinity key for distributed joins.
+            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null)
+                affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
+            else if (cctx.config().getAffinityMapper() instanceof DynamicTableAffinityKeyMapper)
+                affField = ((DynamicTableAffinityKeyMapper)cctx.config().getAffinityMapper()).fieldName();
 
-                    desc.affinityKey(affField);
-                }
+            if (affField != null) {
+                if (!escape)
+                    affField = normalizeObjectName(affField, false);
+
+                desc.affinityKey(affField);
             }
         }
         else {
@@ -1109,6 +1112,38 @@ public class QueryUtils {
                         ", queryIdx=" + idx + ']');
             }
         }
+    }
+
+    /**
+     * Construct cache name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Cache name.
+     */
+    public static String createTableCacheName(String schemaName, String tblName) {
+        return "SQL_" + schemaName + "_" + tblName;
+    }
+
+    /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    public static String createTableValueTypeName(String schemaName, String tblName) {
+        return createTableCacheName(schemaName, tblName) + "_" + UUID.randomUUID().toString().replace("-", "_");
+    }
+
+    /**
+     * Construct key type name for table.
+     *
+     * @param valTypeName Value type name.
+     * @return Key type name.
+     */
+    public static String createTableKeyTypeName(String valTypeName) {
+        return valTypeName + "_KEY";
     }
 
     /**

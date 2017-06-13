@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -70,6 +71,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     private volatile ReaderId[] rdrs = ReaderId.EMPTY_ARRAY;
 
     /** Local partition. */
+    @GridToStringExclude
     private final GridDhtLocalPartition locPart;
 
     /**
@@ -723,7 +725,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        return S.toString(GridDhtCacheEntry.class, this, "super", super.toString());
+        return S.toString(GridDhtCacheEntry.class, this,
+            "part", locPart.id(),
+            "super", super.toString());
     }
 
     /** {@inheritDoc} */

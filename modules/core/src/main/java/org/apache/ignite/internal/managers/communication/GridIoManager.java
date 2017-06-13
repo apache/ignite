@@ -261,7 +261,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
@@ -2296,7 +2296,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         CommunicationSpi spi = getSpi();
 
         if (spi instanceof TcpCommunicationSpi)
-            ((TcpCommunicationSpi)spi).dumpStats();
+            ((TcpCommunicationSpi)spi).dumpDiagnosticInfo();
     }
 
     /** {@inheritDoc} */

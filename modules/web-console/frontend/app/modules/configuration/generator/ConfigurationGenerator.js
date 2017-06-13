@@ -95,7 +95,8 @@ export default class IgniteConfigurationGenerator {
 
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
-        this.clusterODBC(cluster.odbc, cfg);
+        this.clusterODBC(cluster.odbc, available, cfg);
+        this.clusterQuery(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
 
@@ -1410,8 +1411,9 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate ODBC group.
-    static clusterODBC(odbc, cfg = this.igniteConfigurationBean()) {
-        if (_.get(odbc, 'odbcEnabled') !== true)
+    static clusterODBC(odbc, available, cfg = this.igniteConfigurationBean()) {
+        //  Deprecated in ignite 2.1
+        if (available('2.1.0') || _.get(odbc, 'odbcEnabled') !== true)
             return cfg;
 
         const bean = new Bean('org.apache.ignite.configuration.OdbcConfiguration', 'odbcConfiguration',
@@ -1421,6 +1423,33 @@ export default class IgniteConfigurationGenerator {
             .intProperty('maxOpenCursors');
 
         cfg.beanProperty('odbcConfiguration', bean);
+
+        return cfg;
+    }
+
+    // Generate cluster query group.
+    static clusterQuery(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (available(['1.0.0', '2.1.0']))
+            return cfg;
+
+        cfg.intProperty('longQueryWarningTimeout');
+
+        if (_.get(cluster, 'sqlConnectorConfiguration.enabled') !== true)
+            return cfg;
+
+        const bean = new Bean('org.apache.ignite.configuration.SqlConnectorConfiguration', 'sqlConnCfg',
+            cluster.sqlConnectorConfiguration, clusterDflts.sqlConnectorConfiguration);
+
+        bean.stringProperty('host')
+            .intProperty('port')
+            .intProperty('portRange')
+            .intProperty('socketSendBufferSize')
+            .intProperty('socketReceiveBufferSize')
+            .intProperty('maxOpenCursorsPerConnection')
+            .intProperty('threadPoolSize')
+            .boolProperty('tcpNoDelay');
+
+        cfg.beanProperty('sqlConnectorConfiguration', bean);
 
         return cfg;
     }

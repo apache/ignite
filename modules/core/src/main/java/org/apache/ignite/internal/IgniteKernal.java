@@ -75,6 +75,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -112,7 +113,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -921,26 +922,28 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            try {startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
-            startProcessor(new  GridAffinityProcessor(ctx));
-            startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
-            startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
-            startProcessor(new GridCacheProcessor(ctx));startProcessor(new GridClusterStateProcessor(ctx));
-            startProcessor(new GridQueryProcessor(ctx));
-            startProcessor(new SqlListenerProcessor(ctx));
-            startProcessor(new GridServiceProcessor(ctx));
-            startProcessor(new GridTaskSessionProcessor(ctx));
-            startProcessor(new GridJobProcessor(ctx));
-            startProcessor(new GridTaskProcessor(ctx));
-            startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
-            startProcessor(new GridRestProcessor(ctx));
-            startProcessor(new DataStreamProcessor(ctx));
-            startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
-            startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor(createHadoopComponent());
-            startProcessor(new DataStructuresProcessor(ctx));
-            startProcessor(createComponent(PlatformProcessor.class, ctx));
-            startProcessor(new GridMarshallerMappingProcessor(ctx));
+            try {
+                startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
+                startProcessor(new  GridAffinityProcessor(ctx));
+                startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+                startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
+                startProcessor(new GridClusterStateProcessor(ctx));
+                startProcessor(new GridCacheProcessor(ctx));
+                startProcessor(new GridQueryProcessor(ctx));
+                startProcessor(new SqlListenerProcessor(ctx));
+                startProcessor(new GridServiceProcessor(ctx));
+                startProcessor(new GridTaskSessionProcessor(ctx));
+                startProcessor(new GridJobProcessor(ctx));
+                startProcessor(new GridTaskProcessor(ctx));
+                startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+                startProcessor(new GridRestProcessor(ctx));
+                startProcessor(new DataStreamProcessor(ctx));
+                startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+                startProcessor(new GridContinuousProcessor(ctx));
+                startProcessor(createHadoopComponent());
+                startProcessor(new DataStructuresProcessor(ctx));
+                startProcessor(createComponent(PlatformProcessor.class, ctx));
+                startProcessor(new GridMarshallerMappingProcessor(ctx));
 
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -949,9 +952,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
                 }
 
+                ctx.cluster().initListeners();
+
                 // Start platform plugins.
                 if (ctx.config().getPlatformConfiguration() != null)
-                    startProcessor(new PlatformPluginProcessor(ctx));fillNodeAttributes(clusterProc.updateNotifierEnabled());}
+                    startProcessor(new PlatformPluginProcessor(ctx));fillNodeAttributes(clusterProc.updateNotifierEnabled());
+            }
             catch (Throwable e) {
                 U.error(
                     log, "Exception during start processors, node will be stopped and close connections", e);
@@ -987,10 +993,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions());
 
             // Notify discovery manager the first to make sure that topology is discovered.
-            ctx.discovery().onKernalStart(activeOnStart);
+            ctx.discovery().onKernalStart();
 
             // Notify IO manager the second so further components can send and receive messages.
-            ctx.io().onKernalStart(activeOnStart);
+            ctx.io().onKernalStart();
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders())
@@ -1013,7 +1019,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (!skipDaemon(comp)) {
                     try {
-                        comp.onKernalStart(activeOnStart);
+                        comp.onKernalStart();
                     }
                     catch (IgniteNeedReconnectException e) {
                         assert ctx.discovery().reconnectSupported();
@@ -1745,7 +1751,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             if (!skipDaemon(mgr))
-                mgr.start(cfg.isActiveOnStart());
+                mgr.start();
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to start manager: " + mgr, e);
@@ -1763,7 +1769,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             if (!skipDaemon(proc))
-                proc.start(cfg.isActiveOnStart());
+                proc.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
@@ -2750,6 +2756,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 true,
                 true).get();
@@ -3435,6 +3443,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.cache().context().database().memoryMetrics(memPlcName);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
+        guard();
+
+        try {
+            return ctx.cache().context().database().persistentStoreMetrics();
         }
         finally {
             unguard();

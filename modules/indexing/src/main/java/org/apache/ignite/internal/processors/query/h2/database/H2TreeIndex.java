@@ -24,9 +24,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -324,12 +324,14 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy() {
         try {
             if (cctx.affinityNode()) {
-                for (int i = 0; i < segments.length; i++) {
-                    H2Tree tree = segments[i];
+                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()) {
+                    for (int i = 0; i < segments.length; i++) {
+                        H2Tree tree = segments[i];
 
-                    tree.destroy();
+                        tree.destroy();
 
-                    dropMetaPage(tree.getName(), i);
+                        dropMetaPage(tree.getName(), i);
+                    }
                 }
             }
         }

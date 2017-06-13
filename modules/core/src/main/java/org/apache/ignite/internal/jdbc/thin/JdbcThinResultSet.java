@@ -94,6 +94,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** Is query flag. */
     private boolean isQuery;
 
+    /** Auto close server cursors flag. */
+    private boolean autoClose;
+
     /** Update count. */
     private long updCnt;
 
@@ -105,11 +108,13 @@ public class JdbcThinResultSet implements ResultSet {
      * @param fetchSize Fetch size.
      * @param finished Finished flag.
      * @param rows Rows.
-     * @param isQuery Is Result ser for Select query
+     * @param isQuery Is Result ser for Select query.
+     * @param autoClose Is automatic close of server cursors enabled.
+     * @param updCnt Update count.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
     JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
-        List<List<Object>> rows, boolean isQuery, long updCnt) {
+        List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt) {
         assert stmt != null;
         assert fetchSize > 0;
 
@@ -118,6 +123,7 @@ public class JdbcThinResultSet implements ResultSet {
         this.fetchSize = fetchSize;
         this.finished = finished;
         this.isQuery = isQuery;
+        this.autoClose = autoClose;
 
         if (isQuery) {
             this.fetchSize = fetchSize;
@@ -134,7 +140,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (rowsIter == null && !finished) {
+        if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
             try {
                 JdbcQueryFetchResult res = stmt.connection().io().queryFetch(qryId, fetchSize);
 
@@ -178,7 +184,8 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            stmt.connection().io().queryClose(qryId);
+            if (!finished || (isQuery && !autoClose))
+                stmt.connection().io().queryClose(qryId);
 
             closed = true;
         }
@@ -1616,6 +1623,9 @@ public class JdbcThinResultSet implements ResultSet {
      * @throws SQLException On error.
      */
     private List<JdbcColumnMeta> meta() throws SQLException {
+        if (finished && (!isQuery || autoClose))
+            throw new SQLException("Server cursor is already closed.");
+
         if (!metaInit) {
             try {
                 JdbcQueryMetadataResult res = stmt.connection().io().queryMeta(qryId);

@@ -93,7 +93,6 @@
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
-        <module>modules/pds</module>
     </modules>
 
     <profiles>

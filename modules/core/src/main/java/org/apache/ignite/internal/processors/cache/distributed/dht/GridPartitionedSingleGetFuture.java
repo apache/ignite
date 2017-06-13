@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -41,7 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
@@ -63,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  *
  */
 public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements GridCacheFuture<Object>,
-    CacheGetFuture {
+    CacheGetFuture, IgniteDiagnosticAware {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -764,6 +765,27 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dumpDiagnosticInfo() {
+        if (!isDone()) {
+            UUID nodeId;
+            AffinityTopologyVersion topVer;
+
+            synchronized (this) {
+                nodeId = node != null ? node.id() : null;
+                topVer = this.topVer;
+            }
+
+            if (nodeId != null)
+                cctx.kernalContext().cluster().dumpBasicInfo(nodeId, "GridPartitionedSingleGetFuture waiting for " +
+                    "response [node=" + nodeId +
+                    ", key=" + key +
+                    ", futId=" + futId +
+                    ", topVer=" + topVer + ']',
+                    null);
+        }
     }
 
     /** {@inheritDoc} */

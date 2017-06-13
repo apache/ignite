@@ -60,6 +60,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 @GridToStringExclude
 public class GridClientPartitionTopology implements GridDhtPartitionTopology {
+    /** */
+    private static final GridDhtPartitionState[] MOVING_STATES = new GridDhtPartitionState[] {MOVING};
+
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -504,7 +507,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> owners(int p, AffinityTopologyVersion topVer) {
-        return nodes(p, topVer, OWNING);
+        return nodes(p, topVer, OWNING, null);
     }
 
     /** {@inheritDoc} */
@@ -514,7 +517,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> moving(int p) {
-        return nodes(p, AffinityTopologyVersion.NONE, MOVING);
+        return nodes(p, AffinityTopologyVersion.NONE, MOVING, null);
     }
 
     /**
@@ -523,7 +526,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return List of nodes in state OWNING or MOVING.
      */
     private List<ClusterNode> ownersAndMoving(int p, AffinityTopologyVersion topVer) {
-        return nodes(p, topVer, OWNING, MOVING);
+        return nodes(p, topVer, OWNING, MOVING_STATES);
     }
 
     /** {@inheritDoc} */
@@ -784,6 +787,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onExchangeDone(AffinityAssignment assignment) {
+        // no-op
     }
 
     /** {@inheritDoc} */

@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -737,7 +737,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @param updateSeq Update sequence.
      */
-    void tryEvictAsync(boolean updateSeq) {
+     public void tryEvictAsync(boolean updateSeq) {
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);

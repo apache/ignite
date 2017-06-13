@@ -287,6 +287,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
+        checkIgnite();
+
+        return g.persistentStoreMetrics();
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         checkIgnite();
 

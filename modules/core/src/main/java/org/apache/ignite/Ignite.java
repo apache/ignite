@@ -695,4 +695,10 @@ public interface Ignite extends AutoCloseable {
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      */
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
+
+    /**
+     *
+     * @return {@link PersistenceMetrics} snapshot.
+     */
+    public PersistenceMetrics persistentStoreMetrics();
 }

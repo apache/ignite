@@ -433,6 +433,62 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
             };
         }
 
+        function isValidJavaIdentifier(s) {
+            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
+                SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
+        }
+
+        function toJavaIdentifier(name) {
+            if (_.isEmpty(name))
+                return 'DB';
+
+            const len = name.length;
+
+            let ident = '';
+
+            let capitalizeNext = true;
+
+            for (let i = 0; i < len; i++) {
+                const ch = name.charAt(i);
+
+                if (ch === ' ' || ch === '_')
+                    capitalizeNext = true;
+                else if (ch === '-') {
+                    ident += '_';
+                    capitalizeNext = true;
+                }
+                else if (capitalizeNext) {
+                    ident += ch.toLocaleUpperCase();
+
+                    capitalizeNext = false;
+                }
+                else
+                    ident += ch.toLocaleLowerCase();
+            }
+
+            return ident;
+        }
+
+        function toJavaClassName(name) {
+            const clazzName = toJavaIdentifier(name);
+
+            if (isValidJavaIdentifier(clazzName))
+                return clazzName;
+
+            return 'Class' + clazzName;
+        }
+
+        function toJavaFieldName(dbName) {
+            const javaName = toJavaIdentifier(dbName);
+
+            const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
+
+            if (isValidJavaIdentifier(fieldName))
+                return fieldName;
+
+            return 'field' + javaName;
+        }
+
         /**
          * Show import domain models modal.
          */
@@ -544,17 +600,14 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                     return agentMgr.schemas(preset);
                 })
-                .then(function(schemas) {
-                    $scope.importDomain.schemas = _.map(schemas, function(schema) {
-                        return {use: true, name: schema};
-                    });
-
+                .then((schemaInfo) => {
                     $scope.importDomain.action = 'schemas';
+                    $scope.importDomain.info = INFO_SELECT_SCHEMAS;
+                    $scope.importDomain.catalog = toJavaIdentifier(schemaInfo.catalog);
+                    $scope.importDomain.schemas = _.map(schemaInfo.schemas, (schema) => ({use: true, name: schema}));
 
                     if ($scope.importDomain.schemas.length === 0)
                         $scope.importDomainNext();
-
-                    $scope.importDomain.info = INFO_SELECT_SCHEMAS;
                 })
                 .catch(Messages.showError)
                 .then(() => Loading.finish('importDomainFromDb'));
@@ -594,55 +647,6 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
             return 'Associate with ' + cacheName;
         };
-
-        function isValidJavaIdentifier(s) {
-            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
-                SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
-        }
-
-        function toJavaIdentifier(name) {
-            const len = name.length;
-
-            let ident = '';
-
-            let capitalizeNext = true;
-
-            for (let i = 0; i < len; i++) {
-                const ch = name.charAt(i);
-
-                if (ch === ' ' || ch === '_')
-                    capitalizeNext = true;
-                else if (capitalizeNext) {
-                    ident += ch.toLocaleUpperCase();
-
-                    capitalizeNext = false;
-                }
-                else
-                    ident += ch.toLocaleLowerCase();
-            }
-
-            return ident;
-        }
-
-        function toJavaClassName(name) {
-            const clazzName = toJavaIdentifier(name);
-
-            if (isValidJavaIdentifier(clazzName))
-                return clazzName;
-
-            return 'Class' + clazzName;
-        }
-
-        function toJavaFieldName(dbName) {
-            const javaName = toJavaIdentifier(dbName);
-
-            const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
-
-            if (isValidJavaIdentifier(fieldName))
-                return fieldName;
-
-            return 'field' + javaName;
-        }
 
         function _fillCommonCachesOrTemplates(item) {
             return function(action) {
@@ -697,16 +701,14 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                     _fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
 
-                    _.forEach(tables, function(tbl, idx) {
+                    _.forEach(tables, (tbl, idx) => {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;
-                        tbl.generatedCacheName = toJavaClassName(tbl.tbl) + 'Cache';
+                        tbl.generatedCacheName = toJavaClassName(tbl.table) + 'Cache';
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
-                        tbl.label = tbl.schema + '.' + tbl.tbl;
+                        tbl.label = tbl.schema + '.' + tbl.table;
                         tbl.edit = false;
-                        tbl.use = LegacyUtils.isDefined(_.find(tbl.cols, function(col) {
-                            return col.key;
-                        }));
+                        tbl.use = LegacyUtils.isDefined(_.find(tbl.columns, (col) => col.key));
                     });
 
                     $scope.importDomain.action = 'tables';
@@ -718,7 +720,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
         }
 
         $scope.applyDefaults = function() {
-            _.forEach($scope.importDomain.displayedTables, function(table) {
+            _.forEach($scope.importDomain.displayedTables, (table) => {
                 table.edit = false;
                 table.action = $scope.importCommon.action;
                 table.cacheOrTemplate = $scope.importCommon.cacheOrTemplate;
@@ -770,9 +772,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                         let lastItem;
                         const newItems = [];
 
-                        _.forEach(_mapCaches(data.generatedCaches), function(cache) {
-                            $scope.caches.push(cache);
-                        });
+                        _.forEach(_mapCaches(data.generatedCaches), (cache) => $scope.caches.push(cache));
 
                         _.forEach(data.savedDomains, function(savedItem) {
                             const idx = _.findIndex($scope.domains, function(domain) {
@@ -847,11 +847,11 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     const valFields = [];
                     const aliases = [];
 
-                    const tableName = table.tbl;
+                    const tableName = table.table;
                     let typeName = toJavaClassName(tableName);
 
                     if (_.find($scope.importDomain.tables,
-                            (tbl, ix) => tbl.use && ix !== curIx && tableName === tbl.tbl)) {
+                            (tbl, ix) => tbl.use && ix !== curIx && tableName === tbl.table)) {
                         typeName = typeName + '_' + toJavaClassName(table.schema);
 
                         containDup = true;
@@ -869,7 +869,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                     let _containKey = false;
 
-                    _.forEach(table.cols, function(col) {
+                    _.forEach(table.columns, function(col) {
                         const fld = dbField(col.name, SqlTypes.findJdbcType(col.type), col.nullable, col.unsigned);
 
                         qryFields.push({name: fld.javaFieldName, className: fld.javaType});
@@ -892,18 +892,17 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     });
 
                     containKey &= _containKey;
-
-                    if (table.idxs) {
-                        _.forEach(table.idxs, function(idx) {
-                            const fields = Object.keys(idx.fields);
+                    if (table.indexes) {
+                        _.forEach(table.indexes, (idx) => {
+                            const idxFields = _.map(idx.fields, (idxFld) => ({
+                                name: toJavaFieldName(idxFld.name),
+                                direction: idxFld.sortOrder
+                            }));
 
                             indexes.push({
-                                name: idx.name, indexType: 'SORTED', fields: _.map(fields, function(fieldName) {
-                                    return {
-                                        name: toJavaFieldName(fieldName),
-                                        direction: idx.fields[fieldName]
-                                    };
-                                })
+                                name: idx.name,
+                                indexType: 'SORTED',
+                                fields: idxFields
                             });
                         });
                     }
@@ -946,10 +945,11 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                         newDomain.keyType = keyField.javaType;
 
-                        // Exclude key column from query fields and indexes.
+                        // Exclude key column from query fields.
                         newDomain.fields = _.filter(newDomain.fields, (field) => field.name !== keyField.javaFieldName);
 
-                        _.forEach(newDomain.indexes, function(index) {
+                        // Exclude key column from indexes.
+                        _.forEach(newDomain.indexes, (index) => {
                             index.fields = _.filter(index.fields, (field) => field.name !== keyField.javaFieldName);
                         });
 
@@ -972,9 +972,14 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                         if (!newCache.cacheStoreFactory || newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
                             const dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
 
+                            const catalog = $scope.importDomain.catalog;
+
                             newCache.cacheStoreFactory = {
                                 kind: 'CacheJdbcPojoStoreFactory',
-                                CacheJdbcPojoStoreFactory: {dataSourceBean: 'ds' + dialect, dialect},
+                                CacheJdbcPojoStoreFactory: {
+                                    dataSourceBean: 'ds' + dialect + '_' + catalog,
+                                    dialect
+                                },
                                 CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
                             };
                         }

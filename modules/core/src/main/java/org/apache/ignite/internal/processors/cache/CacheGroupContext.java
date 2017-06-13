@@ -37,9 +37,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -855,10 +856,7 @@ public class CacheGroupContext {
             ClassLoader clsLdr = U.gridClassLoader();
 
             try {
-                offheapMgr = (IgniteCacheOffheapManager) clsLdr
-                    .loadClass("org.apache.ignite.internal.processors.cache.database.GridCacheOffheapManager")
-                    .getConstructor()
-                    .newInstance();
+                offheapMgr = new GridCacheOffheapManager();
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to initialize offheap manager", e);

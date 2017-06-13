@@ -107,6 +107,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.6</zookeeper.version>
+        <javassist.version>3.20.0-GA</javassist.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>

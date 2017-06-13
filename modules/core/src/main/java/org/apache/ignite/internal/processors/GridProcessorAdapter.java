@@ -55,7 +55,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -100,7 +100,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         // No-op.
     }
 

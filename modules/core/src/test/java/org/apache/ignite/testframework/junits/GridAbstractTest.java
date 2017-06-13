@@ -335,7 +335,7 @@ public abstract class GridAbstractTest extends TestCase {
             c.setName("CONSOLE_ERR");
             c.setTarget("System.err");
             c.setThreshold(Priority.WARN);
-            c.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
+            c.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
 
             c.activateOptions();
 
@@ -350,7 +350,7 @@ public abstract class GridAbstractTest extends TestCase {
             file.setAppend(false);
             file.setMaxFileSize("10MB");
             file.setMaxBackupIndex(10);
-            file.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
+            file.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
 
             file.activateOptions();
 
@@ -776,6 +776,17 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected IgniteEx startGrid(int idx) throws Exception {
         return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
+    }
+
+    /**
+     * Starts new grid with given configuration.
+     *
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(IgniteConfiguration cfg) throws Exception {
+        return (IgniteEx)startGrid(cfg.getIgniteInstanceName(), cfg, null);
     }
 
     /**

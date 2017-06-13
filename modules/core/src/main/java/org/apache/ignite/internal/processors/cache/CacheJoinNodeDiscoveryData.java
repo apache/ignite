@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Information about configured caches sent from joining node.
  */
-class CacheJoinNodeDiscoveryData implements Serializable {
+public class CacheJoinNodeDiscoveryData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +51,7 @@ class CacheJoinNodeDiscoveryData implements Serializable {
      * @param templates Templates.
      * @param startCaches {@code True} if required to start all caches on joining node.
      */
-    CacheJoinNodeDiscoveryData(
+   public CacheJoinNodeDiscoveryData(
         IgniteUuid cacheDeploymentId,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
@@ -72,28 +72,28 @@ class CacheJoinNodeDiscoveryData implements Serializable {
     /**
      * @return Deployment ID assigned on joining node.
      */
-    IgniteUuid cacheDeploymentId() {
+    public IgniteUuid cacheDeploymentId() {
         return cacheDeploymentId;
     }
 
     /**
      * @return Templates configured on joining node.
      */
-    Map<String, CacheInfo> templates() {
+    public Map<String, CacheInfo> templates() {
         return templates;
     }
 
     /**
      * @return Caches configured on joining node.
      */
-    Map<String, CacheInfo> caches() {
+    public Map<String, CacheInfo> caches() {
         return caches;
     }
 
     /**
      *
      */
-    static class CacheInfo implements Serializable {
+   public static class CacheInfo implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -118,7 +118,7 @@ class CacheJoinNodeDiscoveryData implements Serializable {
          * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
          * @param flags Flags (for future usage).
          */
-        CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags) {
+        public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags) {
             this.cacheData = cacheData;
             this.cacheType = cacheType;
             this.sql = sql;
@@ -128,21 +128,21 @@ class CacheJoinNodeDiscoveryData implements Serializable {
         /**
          * @return Cache data.
          */
-        StoredCacheData cacheData() {
+        public StoredCacheData cacheData() {
             return cacheData;
         }
 
         /**
          * @return Cache type.
          */
-        CacheType cacheType() {
+        public CacheType cacheType() {
             return cacheType;
         }
 
         /**
          * @return SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
          */
-        boolean sql() {
+        public boolean sql() {
             return sql;
         }
 

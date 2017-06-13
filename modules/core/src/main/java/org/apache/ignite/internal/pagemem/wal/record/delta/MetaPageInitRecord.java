@@ -19,8 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 
 /**
  *
@@ -66,10 +66,8 @@ public class MetaPageInitRecord extends InitNewPageRecord {
         return reuseListRoot;
     }
 
-    /**
-     * @return IO type.
-     */
-    public int ioType() {
+    /** {@inheritDoc} */
+    @Override public int ioType() {
         return ioType;
     }
 

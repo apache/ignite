@@ -8568,6 +8568,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * A primitive override of {@link #hash(Object)} to avoid unnecessary boxing.
+     *
+     * @param key Value to hash.
+     * @return Hash value.
+     */
+    public static int hash(long key) {
+        int val = (int)(key ^ (key >>> 32));
+
+        return hash(val);
+    }
+
+    /**
      * @return PID of the current JVM or {@code -1} if it can't be determined.
      */
     public static int jvmPid() {
