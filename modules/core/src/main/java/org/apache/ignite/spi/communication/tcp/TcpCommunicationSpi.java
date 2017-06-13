@@ -2931,22 +2931,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         // Try to connect first on bound addresses.
         if (isRmtAddrsExist) {
+            List<InetSocketAddress> addrs0 = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
+
             boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
-
-            List<InetSocketAddress> addrs0;
-
-            Collection<InetSocketAddress> socketAddrs = U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort);
-
-            if (sameHost)
-                addrs0 = new ArrayList<>(socketAddrs);
-            else {
-                addrs0 = new ArrayList<>(socketAddrs.size());
-
-                for (InetSocketAddress addr0 : socketAddrs) {
-                    if (!addr0.getAddress().isLoopbackAddress())
-                        addrs0.add(addr0);
-                }
-            }
 
             Collections.sort(addrs0, U.inetAddressesComparator(sameHost));
 
