@@ -898,11 +898,10 @@ namespace ignite
 
         if (paramCnt)
         {
-            uint16_t num = 0;
+            uint16_t paramNum = 0;
+            statement->GetParametersNumber(paramNum);
 
-            statement->GetParametersNumber(num);
-
-            *paramCnt = static_cast<SQLSMALLINT>(num);
+            *paramCnt = static_cast<SQLSMALLINT>(paramNum);
         }
 
         return statement->GetDiagnosticRecords().GetReturnCode();

@@ -129,9 +129,9 @@ namespace ignite
             void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
 
             /**
-             * Get number of binded parameters.
+             * Get number parameters required by the prepared statement.
              *
-             * @param paramNum Number of binded parameters.
+             * @param paramNum Number of parameters.
              */
             void GetParametersNumber(uint16_t& paramNum);
 
