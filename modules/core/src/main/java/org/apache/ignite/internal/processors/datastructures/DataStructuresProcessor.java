@@ -128,15 +128,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** Internal storage of all dataStructures items (sequence, atomic long etc.). */
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
 
-    /** Cache context for atomic data structures. */
-    private GridCacheContext defaultDsCacheCtx;
-
     /** Atomic data structures configuration. */
     private final AtomicConfiguration defaultAtomicCfg;
 
     /** Map of continuous query IDs. */
     // TODO: looks like only one qry is needed.
-    private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
+    private volatile T2<Integer, UUID> qryId;
 
     /** */
     // TODO: use GridDiscoveryManager.gridStartTime instead.
@@ -197,14 +194,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     private void onKernalStart0(){
-        if (defaultAtomicCfg != null) {
-            IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
-
-            assert atomicsCache != null;
-
-            defaultDsCacheCtx = atomicsCache.context();
-        }
-
         if (gridId == null)
             gridId = UUID.randomUUID();
 
@@ -215,19 +204,26 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private void startQuery(GridCacheContext cctx) throws IgniteCheckedException {
-        if (!qryIdMap.containsKey(cctx.cacheId())) {
+        if (qryId == null) {
             synchronized (this) {
-                if (!qryIdMap.containsKey(cctx.cacheId())) {
-                    qryIdMap.put(cctx.cacheId(),
+                if (qryId == null) {
+                    qryId = new T2<>(cctx.cacheId(),
                         cctx.continuousQueries().executeInternalQuery(
                             new DataStructuresEntryListener(),
                             new DataStructuresEntryFilter(),
                             cctx.isReplicated() && cctx.affinityNode(),
                             false,
                             false
-                        ));
+                    ));
                 }
             }
+        }
+
+        if (U.assertionsEnabled()) {
+            T2<Integer, UUID> qryId0 = qryId;
+
+            assert qryId0 == null || cctx.cacheId() == qryId0.get1();
+
         }
     }
 
@@ -249,14 +245,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             initLatch.countDown();
         }
 
-        Iterator<Map.Entry<Integer, UUID>> iterator = qryIdMap.entrySet().iterator();
+        T2<Integer, UUID> qryId0 = qryId;
 
-        while (iterator.hasNext()) {
-            Map.Entry<Integer, UUID> e = iterator.next();
+        if (qryId0 != null) {
+            GridCacheContext cctx = ctx.cache().context().cacheContext(qryId0.get1());
 
-            iterator.remove();
-
-            defaultDsCacheCtx.continuousQueries().cancelInternalQuery(e.getValue());
+            if (cctx != null)
+                cctx.continuousQueries().cancelInternalQuery(qryId0.get2());
         }
     }
 
@@ -270,7 +265,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         initLatch = new CountDownLatch(1);
 
-        qryIdMap.clear();
+        qryId = null;
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
@@ -541,7 +536,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = cache0;
 
-        startQuery(cache.context());
+        if (type.isVolatile())
+            startQuery(cache.context());
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, groupName);
 
@@ -1250,7 +1246,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return null;
 
-                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, defaultDsCacheCtx.nodeId(), 0, failoverSafe, fair, gridId) : null);
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, ctx.localNodeId(), 0, failoverSafe, fair, gridId) : null);
 
                 GridCacheLockEx reentrantLock0 = new GridCacheLockImpl(name, key, cache);
 
@@ -1443,6 +1439,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
+        if ("Set2".equals(name) && Thread.currentThread().getName().endsWith("1%"))
+            System.out.println("???");
+
         final boolean create = cfg != null;
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
@@ -1514,8 +1513,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Data structure processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() +
-            ", cache=" + (defaultDsCacheCtx != null ? defaultDsCacheCtx.name() : null) + ']');
+        X.println(">>> Data structure processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   dsMapSize: " + dsMap.size());
     }
 

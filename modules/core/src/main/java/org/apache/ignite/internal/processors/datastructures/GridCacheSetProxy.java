@@ -27,10 +27,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -45,10 +47,10 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
-        new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
-            @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return new IgniteBiTuple<>();
+    private static final ThreadLocal<T3<GridKernalContext, String, CollectionConfiguration>> stash =
+        new ThreadLocal<T3<GridKernalContext, String, CollectionConfiguration>>() {
+            @Override protected T3<GridKernalContext, String, CollectionConfiguration> initialValue() {
+                return new T3<>();
             }
         };
 
@@ -441,14 +443,16 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(cctx.kernalContext());
         U.writeString(out, name());
+        out.writeObject(null); // TODO : find a way to obtain or create collection configuration.
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<GridKernalContext, String> t = stash.get();
+        T3<GridKernalContext, String, CollectionConfiguration> t = stash.get();
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(U.readString(in));
+        t.set3((CollectionConfiguration)in.readObject());
     }
 
     /**
@@ -459,9 +463,9 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteBiTuple<GridKernalContext, String> t = stash.get();
+            T3<GridKernalContext, String, CollectionConfiguration> t = stash.get();
 
-            return t.get1().dataStructures().set(t.get2(), null);
+            return t.get1().dataStructures().set(t.get2(), t.get3());
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
