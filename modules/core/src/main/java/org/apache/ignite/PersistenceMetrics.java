@@ -17,9 +17,12 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 
 /**
+ * Persistence metrics used to obtain statistics on persistence.
  *
+ * Use {@link IgniteCacheDatabaseSharedManager#persistentStoreMetrics()} to obtain persistent metrics.
  */
 public interface PersistenceMetrics {
     /**
