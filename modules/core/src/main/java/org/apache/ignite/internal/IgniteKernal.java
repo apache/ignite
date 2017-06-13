@@ -3489,7 +3489,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    public void dumpDebugInfo() {
+    @Override public void dumpDebugInfo() {
         try {
             GridKernalContextImpl ctx = this.ctx;
 
@@ -3517,6 +3517,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         catch (Exception e) {
             U.error(log, "Failed to dump debug info for node: " + e, e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void runIoTest(
+        long warmup,
+        long duration,
+        int threads,
+        long maxLatency,
+        int rangesCnt,
+        int payLoadSize,
+        boolean procFromNioThread
+    ) {
+        ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize, procFromNioThread,
+            new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
     }
 
     /** {@inheritDoc} */

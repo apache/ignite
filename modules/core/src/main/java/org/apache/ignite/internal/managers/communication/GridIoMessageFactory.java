@@ -165,6 +165,11 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -43:
+                msg = new IgniteIoTestMessage();
+
+                break;
+
             case -27:
                 msg = new GridDhtTxOnePhaseCommitAckRequest();
 
