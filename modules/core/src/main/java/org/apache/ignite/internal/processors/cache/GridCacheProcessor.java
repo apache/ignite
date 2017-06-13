@@ -692,15 +692,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheData Cache data.
+     * @param cfg Cache configuration.
+     * @param sql SQL flag.
      * @param caches Caches map.
      * @param templates Templates map.
      * @throws IgniteCheckedException If failed.
      */
-    private void addCacheOnJoin(StoredCacheData cacheData,
+    private void addCacheOnJoin(CacheConfiguration<?, ?> cfg, boolean sql,
         Map<String, CacheInfo> caches,
         Map<String, CacheInfo> templates) throws IgniteCheckedException {
-        CacheConfiguration<?, ?> cfg = cacheData.config();
         String cacheName = cfg.getName();
 
         CU.validateCacheName(cacheName);
@@ -711,6 +711,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Initialize defaults.
         initialize(cfg, cacheObjCtx);
+
+        StoredCacheData cacheData = new StoredCacheData(cfg);
+
+        cacheData.sql(sql);
 
         boolean template = cacheName.endsWith("*");
 
@@ -754,10 +758,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             // Replace original configuration value.
             cfgs[i] = cfg;
-            StoredCacheData cacheData = new StoredCacheData(cfg);
-            cacheData.sql(false);
 
-            addCacheOnJoin(cacheData, caches, templates);
+            addCacheOnJoin(cfg, false, caches, templates);
         }
     }
 
