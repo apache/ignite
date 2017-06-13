@@ -66,6 +66,7 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1783,6 +1784,37 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             if (!dup)
                 qryEntities.add(converted);
+
+            // Set key configuration if needed.
+            String affFieldName = desc.affinityFieldName();
+
+            if (affFieldName != null) {
+                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(converted.getKeyType(), affFieldName);
+
+                if (F.isEmpty(keyCfg))
+                    keyCfg = new CacheKeyConfiguration[] { newKeyCfg };
+                else {
+                    boolean keyCfgDup = false;
+
+                    for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
+                        if (F.eq(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                            keyCfgDup = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!keyCfgDup) {
+                        CacheKeyConfiguration[] keyCfg0 = new CacheKeyConfiguration[keyCfg.length + 1];
+
+                        System.arraycopy(keyCfg, 0, keyCfg0, 0, keyCfg.length);
+
+                        keyCfg0[keyCfg0.length - 1] = newKeyCfg;
+
+                        keyCfg = keyCfg0;
+                    }
+                }
+            }
         }
 
         return this;
@@ -2110,6 +2142,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         d.keyClass(keyCls);
         d.valueClass(valCls);
 
+        d.affinityFieldName(BinaryContext.affinityFieldName(keyCls));
+
         processAnnotationsInClass(true, d.keyCls, d, null);
         processAnnotationsInClass(false, d.valCls, d, null);
 
@@ -2374,6 +2408,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         private boolean valTextIdx;
 
+        /** Affinity field name. */
+        private String affFieldName;
+
         /**
          * @return Indexes.
          */
@@ -2472,6 +2509,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         void keyClass(Class<?> keyCls) {
             this.keyCls = keyCls;
+        }
+
+        /**
+         * @return Affinity field name.
+         */
+        @Nullable public String affinityFieldName() {
+            return affFieldName;
+        }
+
+        /**
+         * @param affFieldName Affinity field name.
+         */
+        private void affinityFieldName(@Nullable String affFieldName) {
+            this.affFieldName = affFieldName;
         }
 
         /**

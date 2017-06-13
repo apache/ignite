@@ -1026,7 +1026,7 @@ public class BinaryContext {
      * @param cls Class to get affinity field for.
      * @return Affinity field name or {@code null} if field name was not found.
      */
-    private String affinityFieldName(Class cls) {
+    public static String affinityFieldName(Class cls) {
         for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
             for (Field f : cls.getDeclaredFields()) {
                 if (f.getAnnotation(AffinityKeyMapped.class) != null)
