@@ -1247,7 +1247,7 @@ public class BinaryContext {
         String res = affKeyFieldNames.get(typeId);
 
         if (res == null) {
-            BinaryType meta = metaHnd.metadata(typeId);
+            BinaryMetadata meta = metaHnd.metadata0(typeId);
 
             if (meta != null)
                 res = meta.affinityKeyFieldName();
