@@ -118,25 +118,25 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Tries to find QuerySourceReferenceExpression
         /// </summary>
-        public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression, bool throwWhenNotFound = true)
+        public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression,
+            bool throwWhenNotFound = true)
         {
-            var referenceExpression = expression as QuerySourceReferenceExpression;
-            if (referenceExpression != null)
+            var reference = expression as QuerySourceReferenceExpression;
+            if (reference != null)
             {
-                return referenceExpression;
+                return reference;
             }
 
-            var unaryExpression = expression as UnaryExpression;
-            if (unaryExpression != null)
+            var unary = expression as UnaryExpression;
+            if (unary != null)
             {
-                var unary = unaryExpression;
                 return GetQuerySourceReference(unary.Operand, false);
             }
 
-            var binaryExpression = expression as BinaryExpression;
-            if (binaryExpression != null)
+            var binary = expression as BinaryExpression;
+            if (binary != null)
             {
-                return GetQuerySourceReference(binaryExpression.Left, false) ?? GetQuerySourceReference(binaryExpression.Right, false);
+                return GetQuerySourceReference(binary.Left, false) ?? GetQuerySourceReference(binary.Right, false);
             }
 
             if (throwWhenNotFound)
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Linq.Impl
                     break;
                 case ExpressionType.Parameter:
                     // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
-                    throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
+                    throw new NotSupportedException("'Contains' clause on compiled query parameter is not supported.");
                 default:
                     result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
                     break;

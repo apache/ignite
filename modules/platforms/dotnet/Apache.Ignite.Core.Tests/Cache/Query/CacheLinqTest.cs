@@ -1012,7 +1012,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var ex = Assert.Throws<NotSupportedException>(() =>
                 CompiledQuery.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
-            Assert.AreEqual("'Contains' clause coming from compiled query parameter is not supported.", ex.Message);
+            Assert.AreEqual("'Contains' clause on compiled query parameter is not supported.", ex.Message);
 
             // check subquery from another cache put in separate variable
             var orgIds = orgCache

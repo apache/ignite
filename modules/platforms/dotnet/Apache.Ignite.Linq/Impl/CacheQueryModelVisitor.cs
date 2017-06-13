@@ -547,13 +547,18 @@ namespace Apache.Ignite.Linq.Impl
                     values = ExpressionWalker.EvaluateExpression<object>(sequenceExpression);
                     break;
                 default:
-                    throw new NotSupportedException("Expression not supported for Join with local collection: " + sequenceExpression);
+                    throw new NotSupportedException("Expression not supported for Join with local collection: "
+                                                    + sequenceExpression);
             }
 
             var tableAlias = _aliases.GetTableAlias(joinClause);
             var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
 
-            _builder.AppendFormat("{0} join table({1} {2} = ?) {3} on(", isOuter ? "left outer" : "inner", fieldAlias, sqlTypeName, tableAlias);
+            _builder.AppendFormat("{0} join table({1} {2} = ?) {3} on(", 
+                isOuter ? "left outer" : "inner",
+                fieldAlias,
+                sqlTypeName, 
+                tableAlias);
 
             Parameters.Add(values);
         }
