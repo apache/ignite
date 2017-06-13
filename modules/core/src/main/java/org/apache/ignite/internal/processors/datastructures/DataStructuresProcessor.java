@@ -548,15 +548,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         // Check type of structure received by key from local cache.
         T dataStructure = cast(dsMap.get(key), cls);
 
-        if (dataStructure != null) {
-            // TODO: do not need cache.get + exception if type does not match.
-            AtomicDataStructureValue val = cache.get(key);
+        if (dataStructure != null)
+            return dataStructure;
 
-            if (val != null && val.type() == type)
-                return dataStructure;
+        AtomicDataStructureValue val = cache.get(key);
+
+        if (val != null) {
+            if (val.type() != type)
+                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name=" + name +
+                    ", newType=" + type +
+                    ", existingType=" + val.type() + ']');
+
+            T2<T, AtomicDataStructureValue> ret = c.get(key, val, cache);
+
+            if (ret.get2() == null)
+                return ret.get1();
         }
-
-        // TODO: do cache.get here.
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
