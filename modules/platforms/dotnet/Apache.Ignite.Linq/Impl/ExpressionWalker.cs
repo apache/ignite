@@ -120,30 +120,31 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression, bool throwWhenNotFound = true)
         {
-            QuerySourceReferenceExpression result;
-
-            if (expression is QuerySourceReferenceExpression)
+            var referenceExpression = expression as QuerySourceReferenceExpression;
+            if (referenceExpression != null)
             {
-                result = (QuerySourceReferenceExpression) expression;
-            }
-            else if (expression is UnaryExpression)
-            {
-                var unary = (UnaryExpression) expression;
-                result = GetQuerySourceReference(unary.Operand, false);
-            }
-            else if(expression is BinaryExpression)
-            {
-                var binaryExpression = (BinaryExpression) expression;
-                result = GetQuerySourceReference(binaryExpression.Left, false) ?? GetQuerySourceReference(binaryExpression.Right, false);
-            }
-            else
-            {
-                if(throwWhenNotFound)
-                    throw new NotSupportedException("Unexpected query source: " + expression);
-                result = null;
+                return referenceExpression;
             }
 
-            return result;
+            var unaryExpression = expression as UnaryExpression;
+            if (unaryExpression != null)
+            {
+                var unary = unaryExpression;
+                return GetQuerySourceReference(unary.Operand, false);
+            }
+
+            var binaryExpression = expression as BinaryExpression;
+            if (binaryExpression != null)
+            {
+                return GetQuerySourceReference(binaryExpression.Left, false) ?? GetQuerySourceReference(binaryExpression.Right, false);
+            }
+
+            if (throwWhenNotFound)
+            {
+                throw new NotSupportedException("Unexpected query source: " + expression);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -193,18 +194,18 @@ namespace Apache.Ignite.Linq.Impl
             {
                 case ExpressionType.MemberAccess:
                     var memberExpression = (MemberExpression)fromExpression;
-                    result = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
+                    result = EvaluateExpression<IEnumerable>(memberExpression);
                     break;
                 case ExpressionType.ListInit:
                     var listInitExpression = (ListInitExpression)fromExpression;
                     result = listInitExpression.Initializers
                         .SelectMany(init => init.Arguments)
-                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                        .Select(EvaluateExpression<object>);
                     break;
                 case ExpressionType.NewArrayInit:
                     var newArrayExpression = (NewArrayExpression)fromExpression;
                     result = newArrayExpression.Expressions
-                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                        .Select(EvaluateExpression<object>);
                     break;
                 case ExpressionType.Parameter:
                     // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query

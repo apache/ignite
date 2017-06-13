@@ -40,7 +40,7 @@ namespace Apache.Ignite.Linq.Impl
         private int _fieldAliasIndex;
 
         /** */
-        private Dictionary<Expression, string> _fieldAliases = new Dictionary<Expression, string>();
+        private readonly Dictionary<Expression, string> _fieldAliases = new Dictionary<Expression, string>();
 
         /** */
         private readonly Stack<Dictionary<IQuerySource, string>> _stack = new Stack<Dictionary<IQuerySource, string>>();
