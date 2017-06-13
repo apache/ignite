@@ -18,16 +18,13 @@
 namespace Apache.Ignite.Linq
 {
     using System;
-    using System.Collections;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Reflection;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
-    using Remotion.Linq.Parsing;
 
     /// <summary>
     /// Delegate for compiled query with arbitrary number of arguments.
@@ -40,7 +37,7 @@ namespace Apache.Ignite.Linq
     /// <summary>
     /// Represents a compiled cache query.
     /// </summary>
-    public static class CompiledQuery
+    public static partial class CompiledQuery
     {
         /// <summary>
         /// Creates a new delegate that represents the compiled cache query.
@@ -234,7 +231,7 @@ namespace Apache.Ignite.Linq
                 .Select(x => x.IsValueType ? Activator.CreateInstance(x) : null)
                 .ToArray();
 
-            var transformingxpressionVisitor = new JoinInnerSequenceParameterTransformingExpressionVisitor();
+            var transformingxpressionVisitor = new JoinInnerSequenceParameterNotNullExpressionVisitor();
             var queryCaller = (LambdaExpression)transformingxpressionVisitor.Visit(expression);
 
             // Compile and invoke the delegate to obtain the cacheQueryable.
@@ -246,51 +243,6 @@ namespace Apache.Ignite.Linq
                 throw GetInvalidQueryException(queryable);
 
             return cacheQueryable.CompileQuery<T>(expression);
-        }
-
-        /// <summary>
-        /// Transforms JoinClause with parameterised inner sequence to .Join(innerSequence ?? new T[0] ... 
-        /// </summary>
-        class JoinInnerSequenceParameterTransformingExpressionVisitor : RelinqExpressionVisitor
-        {
-            /** */
-            private static readonly MethodInfo[] JoinMethods = typeof(Queryable).GetMethods()
-                .Where(info => info.Name == "Join")
-                .ToArray();
-
-            /** */
-            private static readonly Type EnumerableType = typeof(IEnumerable);
-
-            /** */
-            private bool _inJoin;
-
-            /** <inheritdoc /> */
-            protected override Expression VisitMethodCall(MethodCallExpression node)
-            {
-                if (node.Method.IsGenericMethod)
-                {
-                    var genericMethodDefinition = node.Method.GetGenericMethodDefinition();
-
-                    _inJoin = JoinMethods.Any(mi => mi == genericMethodDefinition);
-                }
-
-                var result = base.VisitMethodCall(node);
-
-                _inJoin = false;
-
-                return result;
-            }
-
-            protected override Expression VisitParameter(ParameterExpression node)
-            {
-                if (_inJoin && EnumerableType.IsAssignableFrom(node.Type))
-                {
-                    var itemType = EnumerableHelper.GetIEnumerableItemType(node.Type);
-                    return Expression.Coalesce(node, Expression.NewArrayBounds(itemType, Expression.Constant(0)));
-                }
-
-                return node;
-            }
         }
 
         /// <summary>

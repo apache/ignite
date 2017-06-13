@@ -99,22 +99,29 @@ namespace Apache.Ignite.Linq.Impl
             return alias;
         }
 
-        public string GetFieldAlias(Expression e)
+        /// <summary>
+        /// Gets the fields alias.
+        /// </summary>
+        public string GetFieldAlias(Expression expression)
         {
-            var referenceExpression = ExpressionWalker.GetQuerySourceReference(e);
+            Debug.Assert(expression != null);
+
+            var referenceExpression = ExpressionWalker.GetQuerySourceReference(expression);
 
             return GetFieldAlias(referenceExpression);
         }
 
-        private string GetFieldAlias(QuerySourceReferenceExpression e)
+        private string GetFieldAlias(QuerySourceReferenceExpression querySource)
         {
+            Debug.Assert(querySource != null);
+
             string alias;
 
-            if (!_fieldAliases.TryGetValue(e, out alias))
+            if (!_fieldAliases.TryGetValue(querySource, out alias))
             {
                 alias = "F" + _fieldAliasIndex++;
 
-                _fieldAliases[e] = alias;
+                _fieldAliases[querySource] = alias;
             }
 
             return alias;

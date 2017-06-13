@@ -653,6 +653,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount, qry8.Length);
         }
 
+        /// <summary>
+        /// Tests the compiled query containing join with local collection passed as parameter.
+        /// </summary>
         [Test]
         [Ignore("IGNITE-5404")]
         public void TestLocalJoinCompiledQueryParameter()
