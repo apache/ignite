@@ -238,8 +238,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
+        if (ctx.isDaemon())
+            return;
+
+        List<ClusterNode> nodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        assert localCacheData != null;
+
         // First node started (coordinator).
-        if (ctx.discovery().serverNodes(AffinityTopologyVersion.NONE).get(0).isLocal())
+        if (nodes.isEmpty() || nodes.get(0).isLocal())
             cacheData.putAll(localCacheData.caches());
     }
 
