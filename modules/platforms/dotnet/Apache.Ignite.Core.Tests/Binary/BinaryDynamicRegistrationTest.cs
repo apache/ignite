@@ -316,18 +316,19 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var cache = ignite.CreateCache<int, object>(cacheCfg);
 
                 // Force dynamic registration for .NET
-                cache.Put(1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(-1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(ComputeApiTest.EchoTypeBinarizable, 255);
 
                 // Run Java code that will also perform dynamic registration
                 var fromJava = ignite.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
                     ComputeApiTest.EchoTypeBinarizable);
 
                 // Check that objects are compatible
-                Assert.AreEqual(1, fromJava.Field);
+                Assert.AreEqual(255, fromJava.Field);
 
                 // Check that Java can read what .NET has put
                 var qryRes = ignite.GetCompute().ExecuteJavaTask<IList>(
-                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field < 10");
+                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field = 7");
 
                 Assert.AreEqual(7, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
             }
