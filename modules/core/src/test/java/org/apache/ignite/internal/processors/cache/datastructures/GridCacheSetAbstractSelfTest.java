@@ -859,6 +859,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         colCfg.setCollocated(false);
         colCfg.setCacheMode(CacheMode.PARTITIONED);
+        colCfg.setGroupName("testGroup");
 
         try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
             GridTestUtils.assertThrows(
@@ -884,12 +885,14 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         try (final IgniteSet<Integer> set2 = grid(0).set("Set2", colCfg)) {
             set2.add(100);
 
+            final String cacheName = cctx(set2).name();
+
             set2.affinityRun(new IgniteRunnable() {
                 @IgniteInstanceResource
                 private IgniteEx ignite;
 
                 @Override public void run() {
-                    assertTrue(ignite.cachex(cctx(set2).name()).affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cacheName).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Set2"));
 
                     assertEquals(100, set2.iterator().next().intValue());
@@ -906,6 +909,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         colCfg.setCollocated(false);
         colCfg.setCacheMode(CacheMode.PARTITIONED);
+        colCfg.setGroupName("testGroup");
 
         try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
             GridTestUtils.assertThrows(
@@ -931,12 +935,14 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         try (final IgniteSet<Integer> set2 = grid(0).set("Set2", colCfg)) {
             set2.add(100);
 
+            final String cacheName = cctx(set2).name();
+
             Integer res = set2.affinityCall(new IgniteCallable<Integer>() {
                 @IgniteInstanceResource
                 private IgniteEx ignite;
 
                 @Override public Integer call() {
-                    assertTrue(ignite.cachex(cctx(set2).name()).affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cacheName).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Set2"));
 
                     return set2.iterator().next();

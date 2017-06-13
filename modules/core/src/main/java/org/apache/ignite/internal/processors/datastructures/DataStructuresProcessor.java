@@ -48,6 +48,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -871,21 +873,36 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Cache name.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteInternalCache compatibleCache(
-        IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache,
-        CollectionConfiguration cfg, String groupName) throws IgniteCheckedException
+    @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String groupName)
+        throws IgniteCheckedException
     {
-        // TODO: check cacheDescriptors instead.
-        Iterator<Cache.Entry<GridCacheInternalKey, AtomicDataStructureValue>> iterator = metaCache.scanIterator(false, new IgniteBiPredicate<Object, Object>() {
-            @Override public boolean apply(Object key, Object value) {
-                return key instanceof GridCacheInternalKey && value instanceof DistributedCollectionMetadata;
-            }
-        });
+        String cacheName = null;
 
-        String cacheName = findCompatibleConfiguration(cfg, iterator);
+        for (Map.Entry<String, DynamicCacheDescriptor> e : ctx.cache().cacheDescriptors().entrySet()) {
+            CacheConfiguration ccfg = e.getValue().cacheConfiguration();
 
-        if (cacheName == null)
+            if ((groupName == null && e.getValue().groupDescriptor().groupName() != null) ||
+                (groupName != null && !groupName.equals(e.getValue().groupDescriptor().groupName())))
+                continue;
+
+            if (ccfg.getAtomicityMode() != cfg.getAtomicityMode() ||
+                ccfg.getCacheMode() != cfg.getCacheMode() ||
+                ccfg.getBackups() != cfg.getBackups() ||
+                (ccfg.getNodeFilter() == null && cfg.getNodeFilter() != null) ||
+                (ccfg.getNodeFilter() != null && !ccfg.getNodeFilter().equals(cfg.getNodeFilter())))
+                continue;
+
+            cacheName = e.getValue().cacheName();
+
+            break;
+        }
+
+        if (cacheName == null) {
+            if (cfg == null)
+                return null;
+
             cacheName = DATA_STRUCTURES_CACHE_NAME_PREFIX + UUID.randomUUID();
+        }
 
         CacheConfiguration cacheCfg = cacheConfiguration(cfg, cacheName, groupName);
 
@@ -902,7 +919,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 true).get();
         }
 
-        cache = ctx.cache().cache(cacheName);
+        cache = ctx.cache().getOrStartCache(cacheName);
 
         assert cache != null;
 
@@ -999,7 +1016,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final IgniteInternalCache cache;
 
         if (create) {
-            cache = compatibleCache(metaCache, cfg, groupName);
+            cache = compatibleCache(cfg, groupName);
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
@@ -1422,7 +1439,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
-                return cctx.dataStructures().set(name, create ? cfg.isCollocated() : false, create);
+                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create);
             }
         }, cfg, name, SET, create);
     }
