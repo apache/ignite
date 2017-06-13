@@ -52,6 +52,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Tx onePhaseCommit flag on primary node. */
+    private static final int NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK = 0x01;
+
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
@@ -123,6 +126,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         GridCacheReturn retVal,
         Throwable err,
         AffinityTopologyVersion clientRemapVer,
+        boolean onePhaseCommit,
         boolean addDepInfo
     ) {
         super(part, xid, err, addDepInfo);
@@ -136,6 +140,16 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.writeVer = writeVer;
         this.retVal = retVal;
         this.clientRemapVer = clientRemapVer;
+
+        if (onePhaseCommit)
+            flags |= NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK;
+    }
+
+    /**
+     * @return One-phase commit state on primary node.
+     */
+    public boolean onePhaseCommit() {
+        return isFlag(NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK);
     }
 
     /**

@@ -15,30 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.internal;
 
 /**
  *
  */
-public interface IgniteTxLocalState extends IgniteTxState {
+public interface IgniteDiagnosticAware {
     /**
-     * @param entry Entry.
+     * @param ctx Context.
      */
-    public void addEntry(IgniteTxEntry entry);
-
-    /**
-     * @param txSize Transaction size.
-     * @return {@code True} if transaction was successfully  started.
-     */
-    public boolean init(int txSize);
-
-    /**
-     * @return {@code True} if init method was called.
-     */
-    public boolean initialized();
-
-    /**
-     *
-     */
-    public void seal();
+    public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx);
 }

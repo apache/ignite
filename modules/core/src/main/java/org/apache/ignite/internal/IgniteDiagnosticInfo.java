@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.internal;
+
+import java.io.Serializable;
 
 /**
  *
  */
-public interface IgniteTxLocalState extends IgniteTxState {
-    /**
-     * @param entry Entry.
-     */
-    public void addEntry(IgniteTxEntry entry);
+public class IgniteDiagnosticInfo implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private String msg;
 
     /**
-     * @param txSize Transaction size.
-     * @return {@code True} if transaction was successfully  started.
+     * @param msg Message.
      */
-    public boolean init(int txSize);
+    public IgniteDiagnosticInfo(String msg) {
+        this.msg = msg;
+    }
 
     /**
-     * @return {@code True} if init method was called.
+     * @return Message.
      */
-    public boolean initialized();
-
-    /**
-     *
-     */
-    public void seal();
+    public String message() {
+        return msg;
+    }
 }

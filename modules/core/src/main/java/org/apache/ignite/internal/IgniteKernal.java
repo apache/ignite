@@ -950,7 +950,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 // Start platform plugins.
                 if (ctx.config().getPlatformConfiguration() != null)
-                    startProcessor(new PlatformPluginProcessor(ctx));fillNodeAttributes(clusterProc.updateNotifierEnabled());}
+                    startProcessor(new PlatformPluginProcessor(ctx));
+
+                ctx.cluster().initDiagnosticListeners();
+
+                fillNodeAttributes(clusterProc.updateNotifierEnabled());
+            }
             catch (Throwable e) {
                 U.error(
                     log, "Exception during start processors, node will be stopped and close connections", e);
