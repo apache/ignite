@@ -2023,7 +2023,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (exchActions != null && exchActions.systemCachesStarting())
+        if (exchActions != null && exchActions.systemCachesStarting() && exchActions.newClusterState() == null)
             ctx.dataStructures().restoreStructuresState(ctx);
 
         if (exchActions != null && (err == null || forceClose)) {
