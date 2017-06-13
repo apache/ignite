@@ -60,7 +60,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -94,6 +93,7 @@ import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -239,7 +239,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message>, IgniteDiagnosticAware {
+public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -934,6 +934,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
+
+    /** Logger. */
+    @LoggerResource(categoryName = "org.apache.ignite.internal.diagnostic")
+    private IgniteLogger diagnosticLog;
 
     /** Local IP address. */
     private String locAddr;
@@ -1786,7 +1790,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             };
 
-            return nioSrvr.dumpNodeStats(sb.toString(), p);
+            return nioSrvr.dumpStats(sb.toString(), p);
         }
         else {
             sb.append(U.nl()).append("GridNioServer is null.");
@@ -1798,8 +1802,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /**
      * Dumps SPI per-connection stats to logs.
      */
-    @Override public void dumpDiagnosticInfo() {
-        IgniteLogger log = this.log;
+    public void dumpStats() {
+        final IgniteLogger log = this.diagnosticLog;
 
         if (log != null) {
             StringBuilder sb = new StringBuilder();
@@ -1807,12 +1811,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             dumpInfo(sb, null);
 
             U.warn(log, sb.toString());
+
+            GridNioServer<Message> nioSrvr = this.nioSrvr;
+
+            if (nioSrvr != null) {
+                nioSrvr.dumpStats().listen(new CI1<IgniteInternalFuture<String>>() {
+                    @Override public void apply(IgniteInternalFuture<String> fut) {
+                        try {
+                            U.warn(log, fut.get());
+                        }
+                        catch (Exception e) {
+                            U.error(log, "Failed to dump NIO server statistics: " + e, e);
+                        }
+                    }
+                });
+            }
         }
-
-        GridNioServer<Message> nioSrvr = this.nioSrvr;
-
-        if (nioSrvr != null)
-            nioSrvr.dumpStats();
     }
 
     /**
@@ -1829,13 +1843,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 continue;
 
             sb.append("    [key=").append(entry.getKey())
-                    .append(", msgsSent=").append(desc.sent())
-                    .append(", msgsAckedByRmt=").append(desc.acked())
-                    .append(", msgsRcvd=").append(desc.received())
-                    .append(", lastAcked=").append(desc.lastAcknowledged())
-                    .append(", reserveCnt=").append(desc.reserveCount())
-                    .append(", descIdHash=").append(System.identityHashCode(desc))
-                    .append(']').append(U.nl());
+                .append(", msgsSent=").append(desc.sent())
+                .append(", msgsAckedByRmt=").append(desc.acked())
+                .append(", msgsRcvd=").append(desc.received())
+                .append(", lastAcked=").append(desc.lastAcknowledged())
+                .append(", reserveCnt=").append(desc.reserveCount())
+                .append(", descIdHash=").append(System.identityHashCode(desc))
+                .append(']').append(U.nl());
         }
 
         for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : outRecDescs.entrySet()) {
@@ -1845,13 +1859,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 continue;
 
             sb.append("    [key=").append(entry.getKey())
-                    .append(", msgsSent=").append(desc.sent())
-                    .append(", msgsAckedByRmt=").append(desc.acked())
-                    .append(", reserveCnt=").append(desc.reserveCount())
-                    .append(", connected=").append(desc.connected())
-                    .append(", reserved=").append(desc.reserved())
-                    .append(", descIdHash=").append(System.identityHashCode(desc))
-                    .append(']').append(U.nl());
+                .append(", msgsSent=").append(desc.sent())
+                .append(", msgsAckedByRmt=").append(desc.acked())
+                .append(", reserveCnt=").append(desc.reserveCount())
+                .append(", connected=").append(desc.connected())
+                .append(", reserved=").append(desc.reserved())
+                .append(", descIdHash=").append(System.identityHashCode(desc))
+                .append(']').append(U.nl());
         }
 
         for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> entry : inRecDescs.entrySet()) {
@@ -1861,14 +1875,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 continue;
 
             sb.append("    [key=").append(entry.getKey())
-                    .append(", msgsRcvd=").append(desc.received())
-                    .append(", lastAcked=").append(desc.lastAcknowledged())
-                    .append(", reserveCnt=").append(desc.reserveCount())
-                    .append(", connected=").append(desc.connected())
-                    .append(", reserved=").append(desc.reserved())
-                    .append(", handshakeIdx=").append(desc.handshakeIndex())
-                    .append(", descIdHash=").append(System.identityHashCode(desc))
-                    .append(']').append(U.nl());
+                .append(", msgsRcvd=").append(desc.received())
+                .append(", lastAcked=").append(desc.lastAcknowledged())
+                .append(", reserveCnt=").append(desc.reserveCount())
+                .append(", connected=").append(desc.connected())
+                .append(", reserved=").append(desc.reserved())
+                .append(", handshakeIdx=").append(desc.handshakeIndex())
+                .append(", descIdHash=").append(System.identityHashCode(desc))
+                .append(']').append(U.nl());
         }
 
         sb.append("Communication SPI clients: ").append(U.nl());
@@ -1884,8 +1898,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             for (GridCommunicationClient client : clients0) {
                 if (client != null) {
                     sb.append("    [node=").append(clientNodeId)
-                            .append(", client=").append(client)
-                            .append(']').append(U.nl());
+                        .append(", client=").append(client)
+                        .append(']').append(U.nl());
                 }
             }
         }
@@ -2917,22 +2931,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         // Try to connect first on bound addresses.
         if (isRmtAddrsExist) {
+            List<InetSocketAddress> addrs0 = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
+
             boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
-
-            List<InetSocketAddress> addrs0;
-
-            Collection<InetSocketAddress> socketAddrs = U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort);
-
-            if (sameHost)
-                addrs0 = new ArrayList<>(socketAddrs);
-            else {
-                addrs0 = new ArrayList<>(socketAddrs.size());
-
-                for (InetSocketAddress addr0 : socketAddrs) {
-                    if (!addr0.getAddress().isLoopbackAddress())
-                        addrs0.add(addr0);
-                }
-            }
 
             Collections.sort(addrs0, U.inetAddressesComparator(sameHost));
 
@@ -4910,7 +4911,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override public void dumpStats() {
-            TcpCommunicationSpi.this.dumpDiagnosticInfo();
+            TcpCommunicationSpi.this.dumpStats();
         }
 
         /** {@inheritDoc} */

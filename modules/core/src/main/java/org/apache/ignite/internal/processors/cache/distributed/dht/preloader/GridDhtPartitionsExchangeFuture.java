@@ -43,6 +43,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -193,6 +194,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Cache change requests. */
     private ExchangeActions exchActions;
+
     /** */
     private final IgniteLogger exchLog;
 
@@ -1077,14 +1079,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
         try {
-            cctx.exchange().dumpDebugInfo(topologyVersion());
+            cctx.exchange().dumpDebugInfo(this);
         }
         catch (Exception e) {
             U.error(log, "Failed to dump debug information: " + e, e);
         }
-
-        if (getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
-            U.dumpThreads(log);
     }
 
     /**
@@ -2347,7 +2346,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** {@inheritDoc} */
-    @Override public void dumpDiagnosticInfo() {
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext diagCtx) {
         if (!isDone()) {
             ClusterNode crd;
             Set<UUID> remaining;
@@ -2359,14 +2358,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (crd != null) {
                 if (!crd.isLocal()) {
-                    cctx.kernalContext().cluster().dumpExchangeInfo(crd.id(), topologyVersion(), "Exchange future waiting for coordinator " +
+                    diagCtx.exchangeInfo(crd.id(), topologyVersion(), "Exchange future waiting for coordinator " +
                         "response [crd=" + crd.id() + ", topVer=" + topologyVersion() + ']');
                 }
                 else if (!remaining.isEmpty()){
                     UUID nodeId = remaining.iterator().next();
 
-                    cctx.kernalContext().cluster().dumpExchangeInfo(crd.id(), topologyVersion(), "Exchange future waiting for server " +
-                        "response [node=" + nodeId + ", topVer=" + topologyVersion() + ']');
+                    diagCtx.exchangeInfo(crd.id(), topologyVersion(), "Exchange future on coordinator waiting for " +
+                        "server response [node=" + nodeId + ", topVer=" + topologyVersion() + ']');
                 }
             }
         }
@@ -2385,17 +2384,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public String toString() {
         Set<UUID> remaining;
-        int srvNodes;
 
         synchronized (this) {
             remaining = new HashSet<>(this.remaining);
-            srvNodes = this.srvNodes != null ? this.srvNodes.size() : 0;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
-            "srvNodes", srvNodes,
             "super", super.toString());
     }
 

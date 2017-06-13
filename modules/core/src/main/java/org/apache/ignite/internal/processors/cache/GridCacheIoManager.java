@@ -107,6 +107,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
+    /** */
+    private static final int MAX_STORED_PENDING_MESSAGES = 100;
+
     /** Delay in milliseconds between retries. */
     private long retryDelay;
 
@@ -130,7 +133,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private boolean depEnabled;
 
     /** */
-    private final List<GridCacheMessage> pendingMsgs = new ArrayList<>();
+    private final List<GridCacheMessage> pendingMsgs = new ArrayList<>(MAX_STORED_PENDING_MESSAGES);
 
     /**
      *
@@ -140,12 +143,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (pendingMsgs.isEmpty())
                 return;
 
-            log.info("Pending cache messages waiting for exchange [" +
+            diagnosticLog.info("Pending cache messages waiting for exchange [" +
                 "readyVer=" + cctx.exchange().readyAffinityVersion() +
                 ", discoVer=" + cctx.discovery().topologyVersion() + ']');
 
             for (GridCacheMessage msg : pendingMsgs)
-                log.info("Message [waitVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
+                diagnosticLog.info("Message [waitVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
         }
     }
 
@@ -237,6 +240,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             if (fut != null && !fut.isDone()) {
+                synchronized (pendingMsgs) {
+                    if (pendingMsgs.size() < MAX_STORED_PENDING_MESSAGES)
+                        pendingMsgs.add(cacheMsg);
+                }
+
                 Thread curThread = Thread.currentThread();
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
@@ -747,6 +755,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     null,
                     null,
                     null,
+                    false,
                     req.deployInfo() != null);
 
                 res.error(req.classError());

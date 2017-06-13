@@ -73,7 +73,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private KeyCacheObject key;
 
     /** */
-    private boolean addRdr;
+    private final boolean addRdr;
 
     /** Reserved partitions. */
     private int part = -1;
@@ -123,7 +123,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         long msgId,
         UUID reader,
         KeyCacheObject key,
-        Boolean addRdr,
+        boolean addRdr,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
@@ -308,11 +308,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         IgniteInternalFuture<Boolean> rdrFut = null;
 
-        ClusterNode readerNode = cctx.discovery().node(reader);
-
         ReaderArguments readerArgs = null;
 
-        if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
+        if (addRdr && !skipVals && !cctx.localNodeId().equals(reader)) {
             while (true) {
                 GridDhtCacheEntry e = cache().entryExx(key, topVer);
 
@@ -320,7 +318,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                     if (e.obsolete())
                         continue;
 
-                    boolean addReader = (!e.deleted() && this.addRdr && !skipVals);
+                    boolean addReader = !e.deleted();
 
                     if (addReader) {
                         e.unswap(false);

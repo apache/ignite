@@ -27,3 +27,4 @@ import './ui-grid/index.scss';
 import './ui-grid-header/index.scss';
 import './ui-grid-settings/index.scss';
 import './page/index.scss';
+import './switch/index.scss';

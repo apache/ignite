@@ -181,6 +181,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
 
         ig = startGrid(0);
 
+        ig.active(true);
+
         shared = ig.context().cache().context();
 
         dbMgr = (GridCacheDatabaseSharedManager)shared.database();
@@ -252,6 +254,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
         }
 
         ig = startGrid(0);
+
+        ig.active(true);
 
         shared = ig.context().cache().context();
 
@@ -340,6 +344,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         ig = startGrid(0);
+
+        ig.active(true);
 
         sharedCtx = ig.context().cache().context();
         cctx = sharedCtx.cache().cache(cacheName).context();
@@ -464,6 +470,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         ig = startGrid(0);
+
+        ig.active(true);
 
         sharedCtx = ig.context().cache().context();
 

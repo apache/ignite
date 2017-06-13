@@ -141,6 +141,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     const CacheSchema = new Schema({
         space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: {type: String},
+        groupName: {type: String},
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},

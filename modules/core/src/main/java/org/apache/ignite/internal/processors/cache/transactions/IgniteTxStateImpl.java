@@ -203,20 +203,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNearCache(GridCacheSharedContext cctx) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-            if (cacheCtx.isNear())
-                return true;
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
         throws IgniteCheckedException {
         GridCacheSharedContext cctx = cacheCtx.shared();
@@ -473,22 +459,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasNearCacheConfigured(GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
-        DiscoCache discoCache = ctx.discovery().discoCache(topVer);
-
-        assert discoCache != null : topVer;
-
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            if (discoCache.hasNearCache(cacheId))
-                return true;
-        }
-
-        return false;
     }
 
     /** {@inheritDoc} */

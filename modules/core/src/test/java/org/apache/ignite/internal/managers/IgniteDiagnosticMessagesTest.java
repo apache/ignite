@@ -17,24 +17,34 @@
 
 package org.apache.ignite.internal.managers;
 
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -47,32 +57,128 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** */
+    private Integer connectionsPerNode;
+
+    /** */
+    private boolean testSpi;
+
+    /** */
+    private GridStringLogger strLog;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
+        if (testSpi)
+            cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        if (connectionsPerNode != null)
+            ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(connectionsPerNode);
+
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        if (strLog != null) {
+            cfg.setGridLogger(strLog);
 
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setName("c1");
-
-        cfg.setCacheConfiguration(ccfg);
+            strLog = null;
+        }
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED, "true");
+        super.afterTestsStopped();
+    }
 
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDiagnosticMessages1() throws Exception {
+        checkBasicDiagnosticInfo();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDiagnosticMessages2() throws Exception {
+        connectionsPerNode = 5;
+
+        checkBasicDiagnosticInfo();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLongRunning() throws Exception {
+        System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, "3500");
+
+        try {
+            testSpi = true;
+
+            startGrid(0);
+
+            GridStringLogger strLog = this.strLog = new GridStringLogger();
+
+            startGrid(1);
+
+            awaitPartitionMapExchange();
+
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setAtomicityMode(TRANSACTIONAL);
+
+            final Ignite node0 = ignite(0);
+
+            node0.createCache(ccfg);
+
+            final Ignite node1 = ignite(1);
+
+            UUID id0 = node0.cluster().localNode().id();
+            UUID id1 = node1.cluster().localNode().id();
+
+            TestRecordingCommunicationSpi.spi(node0).blockMessages(GridNearSingleGetResponse.class, node1.name());
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    Integer key = primaryKey(node0.cache(DEFAULT_CACHE_NAME));
+
+                    node1.cache(DEFAULT_CACHE_NAME).get(key);
+
+                    return null;
+                }
+            }, "get");
+
+            U.sleep(10_000);
+
+            assertFalse(fut.isDone());
+
+            TestRecordingCommunicationSpi.spi(node0).stopBlock();
+
+            fut.get();
+
+            String log = strLog.toString();
+
+            assertTrue(log.contains("GridPartitionedSingleGetFuture waiting for response [node=" + id0));
+            assertTrue(log.contains("General node info [id=" + id0));
+        }
+        finally {
+            System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkBasicDiagnosticInfo() throws Exception {
         startGrids(3);
 
         client = true;
@@ -80,28 +186,23 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         startGrid(3);
 
         startGrid(4);
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED, "false");
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        stopAllGrids();
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        super.afterTestsStopped();
-    }
+        ignite(0).createCache(ccfg);
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDiagnosticMessages() throws Exception {
         awaitPartitionMapExchange();
 
         sendDiagnostic();
 
         for (int i = 0; i < 5; i++) {
-            final IgniteCache cache = ignite(i).cache("c1");
+            final IgniteCache<Object, Object> cache = ignite(i).cache(DEFAULT_CACHE_NAME);
 
+            // Put from multiple threads to create multiple connections.
             GridTestUtils.runMultiThreaded(new Runnable() {
                 @Override public void run() {
                     for (int j = 0; j < 10; j++)
@@ -126,25 +227,27 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
                     final GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
-                    node.context().cluster().dumpBasicInfo(dstNode.id(), "Test diagnostic",
-                        new IgniteInClosure<IgniteInternalFuture<String>>() {
-                            @Override public void apply(IgniteInternalFuture<String> diagFut) {
-                                try {
-                                    fut.onDone(diagFut.get());
-                                }
-                                catch (Exception e) {
-                                    fut.onDone(e);
-                                }
+                    IgniteDiagnosticPrepareContext ctx = new IgniteDiagnosticPrepareContext(node.getLocalNodeId());
+
+                    ctx.basicInfo(dstNode.id(), "Test diagnostic");
+
+                    ctx.send(node.context(), new IgniteInClosure<IgniteInternalFuture<String>>() {
+                        @Override public void apply(IgniteInternalFuture<String> diagFut) {
+                            try {
+                                fut.onDone(diagFut.get());
+                            }
+                            catch (Exception e) {
+                                fut.onDone(e);
                             }
                         }
-                    );
+                    });
 
                     String msg = fut.get();
 
                     assertTrue("Unexpected message: " + msg,
                         msg.contains("Test diagnostic") &&
-                        msg.contains("General node info [id=" + dstNode.id() + ", client=" + dstNode.isClient() + ", discoTopVer=AffinityTopologyVersion [topVer=5, minorTopVer=0]") &&
-                        msg.contains("Partitions exchange info [readyVer=AffinityTopologyVersion [topVer=5, minorTopVer="));
+                            msg.contains("General node info [id=" + dstNode.id() + ", client=" + dstNode.isClient() + ", discoTopVer=AffinityTopologyVersion [topVer=5, minorTopVer=") &&
+                            msg.contains("Partitions exchange info [readyVer=AffinityTopologyVersion [topVer=5, minorTopVer="));
                 }
             }
         }

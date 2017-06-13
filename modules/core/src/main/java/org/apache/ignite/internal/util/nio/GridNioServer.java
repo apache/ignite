@@ -707,15 +707,58 @@ public class GridNioServer<T> {
     }
 
     /**
-     *
+     * @return Future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void dumpStats() {
-        U.warn(log, "NIO server statistics [readerSesBalanceCnt=" + readerMoveCnt.get() +
-            ", writerSesBalanceCnt=" + writerMoveCnt.get() + ']');
+    public IgniteInternalFuture<String> dumpStats() {
+        String msg = "NIO server statistics [readerSesBalanceCnt=" + readerMoveCnt.get() +
+            ", writerSesBalanceCnt=" + writerMoveCnt.get() + ']';
 
-        for (int i = 0; i < clientWorkers.size(); i++)
-            clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS));
+        return dumpStats(msg, null);
+    }
+
+    /**
+     * @param msg Message to add.
+     * @param p Session predicate.
+     * @return Future.
+     */
+    public IgniteInternalFuture<String> dumpStats(final String msg, IgnitePredicate<GridNioSession> p) {
+        GridCompoundFuture<String, String> fut = new GridCompoundFuture<>(new IgniteReducer<String, String>() {
+            private final StringBuilder sb = new StringBuilder(msg);
+
+            @Override public boolean collect(@Nullable String msg) {
+                if (!F.isEmpty(msg)) {
+                    synchronized (sb) {
+                        if (sb.length() > 0)
+                            sb.append(U.nl());
+
+                        sb.append(msg);
+                    }
+                }
+
+                return true;
+            }
+
+            @Override public String reduce() {
+                synchronized (sb) {
+                    return sb.toString();
+                }
+            }
+        });
+
+        for (int i = 0; i < clientWorkers.size(); i++) {
+            NioOperationFuture<String> opFut = new NioOperationFuture<>(null, NioOperation.DUMP_STATS);
+
+            opFut.msg = p;
+
+            clientWorkers.get(i).offer(opFut);
+
+            fut.add(opFut);
+        }
+
+        fut.markInitialized();
+
+        return fut;
     }
 
     /**
@@ -1865,28 +1908,16 @@ public class GridNioServer<T> {
                             case DUMP_STATS: {
                                 NioOperationFuture req = (NioOperationFuture)req0;
 
-                                if (req.msg instanceof IgnitePredicate) {
-                                    StringBuilder sb = new StringBuilder();
+                                IgnitePredicate<GridNioSession> p =
+                                    req.msg instanceof IgnitePredicate ? (IgnitePredicate<GridNioSession>)req.msg : null;
 
-                                    try {
-                                        dumpStats(sb, (IgnitePredicate<GridNioSession>)req.msg, true);
-                                    }
-                                    finally {
-                                        req.onDone(sb.toString());
-                                    }
+                                StringBuilder sb = new StringBuilder();
+
+                                try {
+                                    dumpStats(sb, p, p!= null);
                                 }
-                                else {
-                                    try {
-                                        StringBuilder sb = new StringBuilder();
-
-                                        dumpStats(sb, null, false);
-
-                                        U.warn(log, sb.toString());
-                                    }
-                                    finally {
-                                        // Complete the request just in case (none should wait on this future).
-                                        req.onDone(true);
-                                    }
+                                finally {
+                                    req.onDone(sb.toString());
                                 }
                             }
                         }
@@ -2098,16 +2129,14 @@ public class GridNioServer<T> {
 
                     int cnt = 0;
 
-                    for (SessionWriteRequest req : ses.writeQueue()) {
-                        Object msg = req.message();
+                for (SessionWriteRequest req : ses.writeQueue()) {
+                    Object msg = req.message();
 
                         if (shortInfo && msg instanceof GridIoMessage)
-                            msg = ((GridIoMessage)msg).message().getClass().getSimpleName();
-
-                        if (cnt == 0)
-                            sb.append(",\n opQueue=[").append(msg);
-                        else
-                            sb.append(',').append(msg);
+                            msg = ((GridIoMessage)msg).message().getClass().getSimpleName();if (cnt == 0)
+                        sb.append(",\n opQueue=[").append(msg);
+                    else
+                        sb.append(',').append(msg);
 
                         if (++cnt == 5) {
                             sb.append(']');

@@ -636,7 +636,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         throws IgniteCheckedException {
         assert affCalcVer != null || cctx.kernalContext().clientNode();
         assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
-        assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion());
+        assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion()) :
+            "Invalid version [affCalcVer=" + affCalcVer + ", msg=" + msg + ']';
 
         final AffinityTopologyVersion topVer = exchFut.topologyVersion();
 

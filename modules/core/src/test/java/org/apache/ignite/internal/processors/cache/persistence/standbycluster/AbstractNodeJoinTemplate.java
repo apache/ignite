@@ -72,7 +72,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
      * @param ig Ig.
      */
     protected static Map<String, DynamicCacheDescriptor> cacheDescriptors(IgniteEx ig) {
-        return field(field(ig.context().cache(), CACHES_INFO), REGISTERED_CACHES);
+        return field((Object)field(ig.context().cache(), CACHES_INFO), REGISTERED_CACHES);
     }
 
     /**

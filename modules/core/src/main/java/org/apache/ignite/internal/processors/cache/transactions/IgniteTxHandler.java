@@ -249,6 +249,7 @@ public class IgniteTxHandler {
                         null,
                         e,
                         null,
+                        req.onePhaseCommit(),
                         req.deployInfo() != null);
                 }
             }
@@ -365,6 +366,7 @@ public class IgniteTxHandler {
                         null,
                         null,
                         top.topologyVersion(),
+                        req.onePhaseCommit(),
                         req.deployInfo() != null);
 
                     try {

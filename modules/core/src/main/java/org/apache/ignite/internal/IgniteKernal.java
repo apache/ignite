@@ -951,11 +951,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
                 }
 
-                ctx.cluster().initListeners();
-
                 // Start platform plugins.
                 if (ctx.config().getPlatformConfiguration() != null)
-                    startProcessor(new PlatformPluginProcessor(ctx));fillNodeAttributes(clusterProc.updateNotifierEnabled());
+                    startProcessor(new PlatformPluginProcessor(ctx));
+
+                ctx.cluster().initDiagnosticListeners();
+
+                fillNodeAttributes(clusterProc.updateNotifierEnabled());
             }
             catch (Throwable e) {
                 U.error(

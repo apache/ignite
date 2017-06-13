@@ -270,8 +270,7 @@ public class ClusterListener {
                 }
             }
             catch (Exception e) {
-                if (log.isDebugEnabled())
-                    log.debug("WatchTask failed", e);
+                log.error("WatchTask failed", e);
 
                 clusterDisconnect();
             }
@@ -313,8 +312,7 @@ public class ClusterListener {
                 }
             }
             catch (Exception e) {
-                if (log.isDebugEnabled())
-                    log.debug("BroadcastTask failed", e);
+                log.error("BroadcastTask failed", e);
 
                 clusterDisconnect();
 

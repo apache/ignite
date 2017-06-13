@@ -35,6 +35,7 @@ import org.apache.ignite.internal.GridStopWithCancelSelfTest;
 import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
+import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
@@ -52,8 +53,8 @@ import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.FreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.MemoryMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
-import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
+import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
@@ -173,6 +174,9 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
+
+        suite.addTestSuite(IgniteDiagnosticMessagesTest.class);
+
         return suite;
     }
 }
