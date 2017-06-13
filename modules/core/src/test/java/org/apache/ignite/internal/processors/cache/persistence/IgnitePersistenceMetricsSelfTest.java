@@ -56,9 +56,6 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String GROUP1 = "grp1";
 
-    /** */
-    private boolean activeOnStart = true;
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         GridTestUtils.deleteDbFiles();
@@ -76,8 +73,6 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
-
-        cfg.setActiveOnStart(activeOnStart);
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
         memCfg.setPageSize(1024);
@@ -146,6 +141,8 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testPersistenceMetrics() throws Exception {
         final IgniteEx ig = startGrid(0);
+
+        ig.active(true);
 
         try {
             IgniteCache<Object, Object> cache = ig.cache("cache");

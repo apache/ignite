@@ -174,6 +174,8 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         try {
             final Ignite g = startGrids(2);
 
+            g.active(true);
+
             g.getOrCreateCache(getCacheConfiguration());
 
             ExecutorService threadPool = Executors.newFixedThreadPool(THREADS_CNT);

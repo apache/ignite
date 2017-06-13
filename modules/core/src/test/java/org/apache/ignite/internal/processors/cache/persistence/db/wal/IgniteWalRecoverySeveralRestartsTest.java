@@ -130,6 +130,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         try {
             IgniteEx ignite = startGrid(1);
 
+            ignite.active(true);
+
             Random locRandom = ThreadLocalRandom.current();
 
             try (IgniteDataStreamer<Integer, IndexedObject> dataLdr = ignite.dataStreamer(cacheName)) {
@@ -150,6 +152,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
                 U.sleep(500);
 
                 ignite = startGrid(1);
+
+                ignite.active(true);
 
                 IgniteCache<Integer, IndexedObject> cache = ignite.cache(cacheName);
 
@@ -181,6 +185,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         try {
             IgniteEx ignite = startGrid(1);
 
+            ignite.active(true);
+
             CacheConfiguration<Integer, IndexedObject> dynCacheCfg = new CacheConfiguration<>();
 
             dynCacheCfg.setName("dyncache");
@@ -210,6 +216,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
                 ignite = startGrid(1);
 
+                ignite.active(true);
+
                 ThreadLocalRandom locRandom = ThreadLocalRandom.current();
 
                 IgniteCache<Integer, IndexedObject> cache = ignite.getOrCreateCache(dynCacheCfg);
@@ -229,6 +237,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     public void testWalRecoveryWithDynamicCacheLargeObjects() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
+
+            ignite.active(true);
 
             CacheConfiguration<Integer, IndexedObject> dynCacheCfg = new CacheConfiguration<>();
 
@@ -262,6 +272,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
                 U.sleep(500);
 
                 ignite = startGrid(1);
+
+                ignite.active(true);
 
                 ThreadLocalRandom locRandom = ThreadLocalRandom.current();
 

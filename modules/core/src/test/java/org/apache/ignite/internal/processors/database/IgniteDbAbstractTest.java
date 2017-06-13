@@ -181,6 +181,10 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
             client = false;
         }
 
+        assert gridCount() > 0;
+
+        grid(0).active(true);
+
         awaitPartitionMapExchange();
     }
 

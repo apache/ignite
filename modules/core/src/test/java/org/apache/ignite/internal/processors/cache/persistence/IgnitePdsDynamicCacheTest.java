@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -97,6 +96,8 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
         Ignite ignite = ignite(0);
 
+        ignite.active(true);
+
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
         ccfg1.setName("cache1");
@@ -128,6 +129,8 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
             startGrids(3);
 
             ignite = ignite(0);
+
+            ignite.active(true);
 
             ignite.getOrCreateCache(ccfg1);
 

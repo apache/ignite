@@ -44,6 +44,8 @@ public class IgniteWalDirectoriesConfigurationTest extends GridCommonAbstractTes
     public void testPartialWalConfigurationNotAllowed() {
         try {
             startGrid();
+
+            grid(0).active(true);
         }
         catch (Exception ignore) {
             return;

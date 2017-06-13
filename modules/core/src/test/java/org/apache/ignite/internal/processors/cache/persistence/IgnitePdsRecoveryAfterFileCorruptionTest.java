@@ -128,6 +128,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     public void testPageRecoveryAfterFileCorruption() throws Exception {
         IgniteEx ig = startGrid(0);
 
+        ig.active(true);
+
         IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
 
         // Put for create data store and init meta page.

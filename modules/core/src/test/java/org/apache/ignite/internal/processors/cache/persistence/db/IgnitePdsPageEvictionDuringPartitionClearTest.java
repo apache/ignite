@@ -109,6 +109,8 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
             try {
                 Ignite ig = ignite(0);
 
+                ig.active(true);
+
                 IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(CACHE_NAME);
 
                 for (int i = 0; i < 300_000; i++) {

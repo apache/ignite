@@ -128,6 +128,8 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
+        ignite.active(true);
+
         try {
             final IgniteCache<Object, Object> cache = ignite.cache(cacheName);
             final long endTime = System.currentTimeMillis() + 60_000;

@@ -131,6 +131,8 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
         try {
             IgniteEx ig = grid(0);
 
+            ig.active(true);
+
             checkPutGetSql(ig, true);
         }
         finally {
@@ -161,6 +163,8 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
 
         try {
             final IgniteEx grid = grid(0);
+
+            grid.active(true);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {

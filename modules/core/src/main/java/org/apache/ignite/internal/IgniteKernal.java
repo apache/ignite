@@ -2755,6 +2755,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 true,
                 true).get();

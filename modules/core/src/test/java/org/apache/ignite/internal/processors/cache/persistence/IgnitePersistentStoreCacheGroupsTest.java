@@ -67,9 +67,6 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /** */
     private CacheConfiguration[] ccfgs;
 
-    /** */
-    private boolean activeOnStart = true;
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         GridTestUtils.deleteDbFiles();
@@ -87,8 +84,6 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
-
-        cfg.setActiveOnStart(activeOnStart);
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
         memCfg.setPageSize(1024);
@@ -173,6 +168,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite node = ignite(0);
 
+        node.active(true);
+
         node.createCaches(Arrays.asList(ccfgs1));
 
         putPersons(caches, node);
@@ -213,8 +210,6 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
      */
     public void _testExpiryPolicy() throws Exception {
         long ttl = 10000;
-
-        activeOnStart = false;
 
         CacheConfiguration[] ccfgs1 = new CacheConfiguration[5];
 
@@ -281,6 +276,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite ignite = startGrid();
 
+        ignite.active(true);
+
         ignite.cache("c1").destroy();
 
         stopGrid();
@@ -296,8 +293,9 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite ignite = startGrid();
 
-        ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
+        ignite.active(true);
 
+        ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
 
         ignite.cache("c1").destroy();
 
@@ -320,6 +318,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
             .setIndexedTypes(Integer.class, Person.class);
 
         Ignite ignite = startGrid();
+
+        ignite.active(true);
 
         ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
 
@@ -403,6 +403,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite node = ignite(0);
 
+        node.active(true);
+
         if (!staticCaches)
             node.createCaches(Arrays.asList(ccfgs));
 
@@ -421,6 +423,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         stopAllGrids();
 
         node = startGrids(nodes);
+
+        node.active(true);
 
         awaitPartitionMapExchange();
 

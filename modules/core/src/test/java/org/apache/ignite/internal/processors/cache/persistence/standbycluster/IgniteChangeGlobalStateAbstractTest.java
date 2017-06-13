@@ -152,6 +152,8 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     protected void startPrimaryNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startPrimary(i);
+
+        grid("node0" + primarySuffix).active(true);
     }
 
     /**
@@ -164,7 +166,6 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         IgniteConfiguration cfg = getConfiguration(name);
         cfg.setConsistentId(node);
-        cfg.setActiveOnStart(true);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(primaryIpFinder);
 
         Ignite ig = startGrid(name, cfg);
@@ -190,7 +191,6 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         IgniteConfiguration cfg = getConfiguration(name);
         cfg.setConsistentId(node);
-        cfg.setActiveOnStart(false);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(backUpIpFinder);
 
         Ignite ig = startGrid(name, cfg);
@@ -242,7 +242,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     /**
      *
      */
-    protected Iterable<Ignite> allBackUpNodes(){
+    protected Iterable<Ignite> allBackUpNodes() {
         List<Ignite> r = new ArrayList<>();
 
         for (String name : this.nodes.keySet())
@@ -261,9 +261,9 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         List<Ignite> igs = new ArrayList<>();
 
         for (String name : this.nodes.keySet())
-            if (name.contains(backUpSuffix)){
+            if (name.contains(backUpSuffix)) {
                 if (includeClient)
-                   igs.add(this.nodes.get(name));
+                    igs.add(this.nodes.get(name));
                 else {
                     if (name.contains(clientSuffix))
                         continue;
@@ -276,7 +276,6 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         return igs.get(idx);
     }
-
 
     /**
      * @param i Idx.

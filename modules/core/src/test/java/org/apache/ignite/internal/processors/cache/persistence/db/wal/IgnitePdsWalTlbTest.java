@@ -109,6 +109,8 @@ public class IgnitePdsWalTlbTest extends GridCommonAbstractTest {
     public void testWalDirectOutOfMemory() throws Exception {
         IgniteEx ig = grid(1);
 
+        ig.active(true);
+
         boolean locked = true;
 
         try {

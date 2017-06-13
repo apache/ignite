@@ -143,6 +143,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
     public void testCheckpointSimulationMultiThreaded() throws Exception {
         IgniteEx ig = startGrid(0);
 
+        ig.active(true);
+
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)shared.database();
@@ -195,6 +197,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
      */
     public void testGetForInitialWrite() throws Exception {
         IgniteEx ig = startGrid(0);
+
+        ig.active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
@@ -288,6 +292,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
      */
     public void testDataWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
+
+        ig.active(true);
 
         GridCacheSharedContext<Object, Object> sharedCtx = ig.context().cache().context();
         GridCacheContext<Object, Object> cctx = sharedCtx.cache().cache(cacheName).context();
@@ -408,6 +414,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
     public void testPageWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
 
+        ig.active(true);
+
         GridCacheSharedContext<Object, Object> sharedCtx = ig.context().cache().context();
         int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
@@ -519,6 +527,8 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
      */
     public void testDirtyFlag() throws Exception {
         IgniteEx ig = startGrid(0);
+
+        ig.active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 

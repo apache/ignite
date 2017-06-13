@@ -116,6 +116,8 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
     public void testPageEvictionSql() throws Exception {
         IgniteEx ig = grid(0);
 
+        ig.active(true);
+
         try (IgniteDataStreamer<DbKey, DbValue> streamer = ig.dataStreamer(CACHE_NAME)) {
             for (int i = 0; i < ENTRY_CNT; i++) {
                 streamer.addData(new DbKey(i), new DbValue(i, "value-" + i, Long.MAX_VALUE - i));

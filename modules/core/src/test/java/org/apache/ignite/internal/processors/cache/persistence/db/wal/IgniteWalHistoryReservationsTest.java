@@ -107,6 +107,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt);
 
+        ig0.active(true);
+
         IgniteCache<Object, Object> cache = ig0.cache("cache1");
 
         for (int k = 0; k < entryCnt; k++)
@@ -201,6 +203,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         Ignite ig0 = startGrids(2);
 
+        ig0.active(true);
+
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
         for (int k = 0; k < entryCnt; k++)
@@ -241,6 +245,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         int entryCnt = 10_000;
 
         Ignite ig0 = startGrids(2);
+
+        ig0.active(true);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -292,6 +298,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         final int initGridCnt = 4;
 
         final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt);
+
+        ig0.active(true);
 
         IgniteCache<Object, Object> cache = ig0.cache("cache1");
 

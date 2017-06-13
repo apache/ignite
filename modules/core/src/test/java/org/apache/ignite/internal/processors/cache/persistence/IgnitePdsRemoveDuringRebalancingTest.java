@@ -113,6 +113,8 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     public void testRemovesDuringRebalancing() throws Exception {
         IgniteEx ig = startGrid(0);
 
+        ig.active(true);
+
         try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(null)) {
             streamer.allowOverwrite(true);
 

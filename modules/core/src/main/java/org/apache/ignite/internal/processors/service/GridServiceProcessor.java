@@ -364,8 +364,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         cancelFutures(undepFuts, new IgniteCheckedException("Failed to undeploy service, cluster in active."));
 
         onKernalStop(true);
-
-        busyLock.unblock();
     }
 
     /** {@inheritDoc} */

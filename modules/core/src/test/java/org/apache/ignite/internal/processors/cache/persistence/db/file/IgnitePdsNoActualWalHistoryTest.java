@@ -103,6 +103,8 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
         try {
             IgniteEx ignite = startGrid(1);
 
+            ignite.active(true);
+
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
             Random rnd = new Random();

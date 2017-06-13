@@ -147,6 +147,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     public void testWalTxSimple() throws Exception {
         Ignite ignite = startGrid();
 
+        ignite.active(true);
+
         try {
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
                 .cache().context().database();

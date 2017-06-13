@@ -58,6 +58,8 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     public void test() throws Exception {
         Ignite ex = startGrid(0);
 
+        ex.active(true);
+
         startGrid(1);
 
         final CountDownLatch startLatch = new CountDownLatch(1);

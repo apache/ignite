@@ -117,6 +117,8 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     public void testPageEviction() throws Exception {
         final IgniteEx ig = startGrid(0);
 
+        ig.active(true);
+
         final PageMemory memory = getMemory(ig);
 
         writeData(ig, memory, CU.cacheId(cacheName));

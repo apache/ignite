@@ -157,6 +157,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     public void testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
+        ignite0.active(true);
+
         startGrid(1);
 
         IgniteEx ignite2 = startGrid(2);
@@ -210,6 +212,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         IgniteEx ignite2 = startGrid(2);
         IgniteEx ignite3 = startGrid(3);
+
+        ignite0.active(true);
 
         ignite0.cache(cacheName).rebalance().get();
         ignite1.cache(cacheName).rebalance().get();
@@ -278,6 +282,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
         awaitPartitionMapExchange();
+
+        ignite1.active(true);
 
         IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
 
@@ -374,6 +380,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         final ConcurrentMap<Integer, TestValue> map = new ConcurrentHashMap<>();
 
         Ignite ignite = startGrid(0);
+
+        ignite.active(true);
 
         IgniteCache<Integer, TestValue> cache = ignite.cache(cacheName);
 

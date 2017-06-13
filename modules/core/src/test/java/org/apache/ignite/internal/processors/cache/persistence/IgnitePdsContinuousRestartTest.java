@@ -208,6 +208,8 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         final Ignite load = ignite(0);
 
+        load.active(true);
+
         try (IgniteDataStreamer<Object, Object> s = load.dataStreamer(CACHE_NAME)) {
             s.allowOverwrite(true);
 
