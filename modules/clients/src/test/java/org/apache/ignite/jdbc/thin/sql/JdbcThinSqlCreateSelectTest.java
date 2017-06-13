@@ -100,6 +100,7 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
                     return false;
 
                 ++cnt[0];
+
                 return true;
             }
         }), "SELECT id, name, age FROM person where id < 50");
@@ -112,8 +113,32 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
             "SELECT COUNT(*) from Person p inner join City c on p.city = c.name");
 
         sql(new UpdateChecker(34),
-            "UPDATE Person SET company = 'GNU', age = CASE WHEN MOD(id, 2) <> 0 THEN age + 5 ELSE "
+            "UPDATE Person SET company = 'New Company', age = CASE WHEN MOD(id, 2) <> 0 THEN age + 5 ELSE "
                 + "age + 1 END WHERE company = 'ASF'");
+
+        cnt[0] = 0;
+
+        sql(new ResultPredicateChecker(new IgnitePredicate<Object[]>() {
+            @Override public boolean apply(Object[] objs) {
+                int id = ((Integer)objs[0]);
+                int age =  ((Integer)objs[2]);
+
+                if (id % 2 == 0) {
+                    if (age != 20 + (id % 10) + 1)
+                        return false;
+                }
+                else {
+                    if (age != 20 + (id % 10) + 5)
+                        return false;
+                }
+
+                ++cnt[0];
+
+                return true;
+            }
+        }), "SELECT * FROM person where company = 'New Company'");
+
+        assert cnt[0] == 34 : "Invalid rows count";
 
         sql(new UpdateChecker(0), "DROP INDEX idx");
     }
