@@ -15,21 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.functions;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
 
-/**
- * Test suite for local and distributed math tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplLocalTestSuite.class,
-    MathImplDistributedTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+/** BiFunction (int, int) -> int. */
+@FunctionalInterface
+public interface IgniteIntIntToIntBiFunction extends Serializable {
+    public int apply(int x, int y);
 }
