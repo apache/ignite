@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,6 +37,14 @@ public interface GridCacheVersionedEntry<K, V> {
      * @return Entry's value.
      */
     @Nullable public V value();
+
+    /**
+     * Gets entry's value.
+     *
+     * @param ctx Object value context.
+     * @return Entry's value.
+     */
+    @Nullable public V value(CacheObjectValueContext ctx);
 
     /**
      * Gets entry's TTL.
