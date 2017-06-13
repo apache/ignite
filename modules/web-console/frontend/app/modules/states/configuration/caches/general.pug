@@ -32,6 +32,10 @@ include /app/helpers/jade/mixins
             .col-sm-6
                 .settings-row
                     +text('Name:', `${model}.name`, '"cacheName"', 'true', 'Input name', 'Cache name')
+                .settings-row(ng-if='$ctrl.available("2.1.0")')
+                    +text('Group:', `${model}.groupName`, '"groupName"', 'false', 'Input group name',
+                        'Cache group name.<br/>\
+                        Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.')
                 .settings-row
                     +clusters(model, 'Associate clusters with the current cache')
                 .settings-row
