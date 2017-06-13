@@ -22,7 +22,7 @@ import java.io.Serializable;
 /**
  * Key used to store in utility cache information about created data structures.
  */
-public class DataStructureDefinitionKey implements Serializable {
+public class DataStructureInfoKey implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,7 +32,7 @@ public class DataStructureDefinitionKey implements Serializable {
     /**
      * @param name Data structure name.
      */
-    public DataStructureDefinitionKey(String name) {
+    public DataStructureInfoKey(String name) {
         this.name = name;
     }
 
@@ -44,7 +44,7 @@ public class DataStructureDefinitionKey implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DataStructureDefinitionKey key2 = (DataStructureDefinitionKey)o;
+        DataStructureInfoKey key2 = (DataStructureInfoKey)o;
 
         return name != null ? name.equals(key2.name) : key2.name == null;
     }

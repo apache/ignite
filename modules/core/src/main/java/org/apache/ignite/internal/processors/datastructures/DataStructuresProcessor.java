@@ -150,7 +150,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration atomicCfg;
 
     /** */
-    private IgniteInternalCache<DataStructureDefinitionKey, DataStructureInfo> utilityCache;
+    private IgniteInternalCache<DataStructureInfoKey, DataStructureInfo> utilityCache;
 
     /** */
     private volatile UUID qryId;
@@ -572,7 +572,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         Class<? extends T> cls)
         throws IgniteCheckedException
     {
-        final DataStructureDefinitionKey dsKey = new DataStructureDefinitionKey(dsInfo.name);
+        final DataStructureInfoKey dsKey = new DataStructureInfoKey(dsInfo.name);
 
         DataStructureInfo cached = utilityCache.get(dsKey);
 
@@ -660,16 +660,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable final IgniteInClosureX<T> afterRmv)
         throws IgniteCheckedException
     {
-        final DataStructureDefinitionKey dsKey = new DataStructureDefinitionKey(name);
+        final DataStructureInfoKey dsKey = new DataStructureInfoKey(name);
 
-        DataStructureInfo rmvDs = utilityCache.get(dsKey);
+        DataStructureInfo cached = utilityCache.get(dsKey);
 
-        if (rmvDs == null)
+        if (cached == null)
             return;
 
         final DataStructureInfo dsInfo = new DataStructureInfo(name, type, null);
 
-        IgniteCheckedException err = rmvDs.validate(dsInfo, false);
+        IgniteCheckedException err = cached.validate(dsInfo, false);
 
         if (err != null)
             throw err;
@@ -1055,7 +1055,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     {
         awaitInitialization();
 
-        final DataStructureDefinitionKey dsKey = new DataStructureDefinitionKey(dsInfo.name);
+        final DataStructureInfoKey dsKey = new DataStructureInfoKey(dsInfo.name);
 
         DataStructureInfo cached = utilityCache.get(dsKey);
 
@@ -1090,8 +1090,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                         if (err != null)
                             throw err;
-
-
                     }
 
                     CollectionInfo colInfo = (CollectionInfo)dsInfo.info;
