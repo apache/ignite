@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 /**
  * Base class for complex SQL tests based on JDBC driver.
  */
-public class JdbcThinSqlCreateSelect0Test extends JdbcThinAbstractSqlTest {
+public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
     /** Cache mode to test with. */
     private final CacheMode cacheMode = CacheMode.PARTITIONED;
 
@@ -45,7 +45,7 @@ public class JdbcThinSqlCreateSelect0Test extends JdbcThinAbstractSqlTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCreateSelect0() throws Exception {
+    public void testCreateSelect() throws Exception {
         GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
                 sql(new ResultChecker(new Object[][]{}), "SELECT * from Person");
