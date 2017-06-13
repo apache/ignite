@@ -216,33 +216,4 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         assert lock == null;
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicSequence() throws Exception {
-        Ignite ignite = startGrids(4);
-
-        ignite.active(true);
-
-        IgniteAtomicSequence seq = ignite.atomicSequence("test", 0, true);
-
-        assert seq != null;
-
-        long val = seq.addAndGet(100);
-
-        assert val == 100;
-
-        stopAllGrids();
-
-        ignite = startGrids(4);
-
-        ignite.active(true);
-
-        seq = ignite.atomicSequence("test", 0, false);
-
-        assert seq != null;
-
-        assert seq.get() == Math.max(val, seq.batchSize()) : seq.get();
-    }
 }
