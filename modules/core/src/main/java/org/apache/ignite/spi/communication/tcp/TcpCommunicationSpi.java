@@ -60,7 +60,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -240,7 +239,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message>, IgniteDiagnosticAware {
+public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -4925,7 +4924,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override public void dumpStats() {
-            TcpCommunicationSpi.this.dumpDiagnosticInfo();
+            TcpCommunicationSpi.this.dumpStats();
         }
 
         /** {@inheritDoc} */

@@ -112,6 +112,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture>, GridDhtTopologyFuture, CachePartitionExchangeWorkerTask, IgniteDiagnosticAware {
+    /** */
+    public static final String EXCHANGE_LOG = "org.apache.ignite.internal.exchange.time";
+
     /** Dummy flag. */
     private final boolean dummy;
 
@@ -191,6 +194,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Cache change requests. */
     private ExchangeActions exchActions;
+
     /** */
     private final IgniteLogger exchLog;
 

@@ -1541,7 +1541,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     U.warn(diagnosticLog, "Found long running cache operations, dump IO statistics.");
 
                 // Dump IO manager statistics.
-                if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))cctx.gridIO().dumpStats();}
+                if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
+                    cctx.gridIO().dumpStats();}
             }
             else {
                 nextLongRunningOpsDumpTime = 0;
@@ -1603,21 +1604,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             U.warn(diagnosticLog, "Pending cache futures:");
 
-            for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
+            for (GridCacheFuture<?> fut : mvcc.activeFutures())
                 dumpDiagnosticInfo(fut, diagCtx);
-
-                if (fut instanceof IgniteDiagnosticAware)
-                    ((IgniteDiagnosticAware)fut).dumpDiagnosticInfo();
-            }
 
             U.warn(diagnosticLog, "Pending atomic cache futures:");
 
-            for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
+            for (GridCacheFuture<?> fut : mvcc.atomicFutures())
                 dumpDiagnosticInfo(fut, diagCtx);
-
-                if (fut instanceof IgniteDiagnosticAware)
-                    ((IgniteDiagnosticAware)fut).dumpDiagnosticInfo();
-            }
 
             U.warn(diagnosticLog, "Pending data streamer futures:");
 
@@ -1889,8 +1882,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         }
 
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, futTimeout);
-
-                                        exchFut.dumpDiagnosticInfo();
                                     }
                                 }
                                 catch (Exception e) {

@@ -2296,7 +2296,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         CommunicationSpi spi = getSpi();
 
         if (spi instanceof TcpCommunicationSpi)
-            ((TcpCommunicationSpi)spi).dumpDiagnosticInfo();
+            ((TcpCommunicationSpi)spi).dumpStats();
     }
 
     /** {@inheritDoc} */

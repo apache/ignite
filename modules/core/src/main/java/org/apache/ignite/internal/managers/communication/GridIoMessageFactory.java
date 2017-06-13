@@ -177,11 +177,6 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -55:
-                msg = new IgniteDiagnosticMessage();
-
-                break;
-
             // -54 is reserved for SQL.
             // -46 ... -51 - snapshot messages.
             case -61:

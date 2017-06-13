@@ -33,27 +33,17 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteDiagnosticMessage;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -64,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -72,8 +61,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
@@ -84,13 +71,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
  *
  */
 public class ClusterProcessor extends GridProcessorAdapter {
-    /** */
-    private final boolean DIAGNOSTIC_ENABLED =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED, false);
-
-    /** */
-    private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
-
     /** */
     private static final String ATTR_UPDATE_NOTIFIER_STATUS = "UPDATE_NOTIFIER_STATUS";
 
@@ -128,102 +108,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
         super(ctx);
 
         cluster = new IgniteClusterImpl(ctx);
-
-        diagnosticLog = ctx.log(DIAGNOSTIC_LOG_CATEGORY);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void initListeners() throws IgniteCheckedException {
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-                @Override public void onEvent(Event evt) {
-                    assert evt instanceof DiscoveryEvent;
-                    assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
-
-                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                    UUID nodeId = discoEvt.eventNode().id();
-
-                    ConcurrentHashMap<Long, InternalDiagnosticFuture> futs = diagnosticFutMap.get();
-
-                    if (futs != null) {
-                        for (InternalDiagnosticFuture fut : futs.values()) {
-                            if (fut.nodeId.equals(nodeId))
-                                fut.onDone("Target node failed: " + nodeId);
-                        }
-                    }
-                }
-            },
-            EVT_NODE_FAILED, EVT_NODE_LEFT);
-
-        ctx.io().addMessageListener(GridTopic.TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
-                if (msg instanceof IgniteDiagnosticMessage) {
-                    IgniteDiagnosticMessage msg0 = (IgniteDiagnosticMessage)msg;
-
-                    if (msg0.request()) {
-                        ClusterNode node = ctx.discovery().node(nodeId);
-
-                        if (node == null) {
-                            if (diagnosticLog.isDebugEnabled()) {
-                                diagnosticLog.debug("Skip diagnostic request, sender node left " +
-                                    "[node=" + nodeId + ", msg=" + msg + ']');
-                            }
-
-                            return;
-                        }
-
-                        String resMsg;
-
-                        IgniteClosure<GridKernalContext, String> c;
-
-                        try {
-                            c = msg0.unmarshalClosure(ctx);
-
-                            resMsg = c.apply(ctx);
-                        }
-                        catch (Exception e) {
-                            U.error(diagnosticLog, "Failed to run diagnostic closure: " + e, e);
-
-                            resMsg = "Failed to run diagnostic closure: " + e;
-                        }
-
-                        IgniteDiagnosticMessage res = IgniteDiagnosticMessage.createResponse(resMsg, msg0.futureId());
-
-                        try {
-                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
-                        }
-                        catch (ClusterTopologyCheckedException ignore) {
-                            if (diagnosticLog.isDebugEnabled()) {
-                                diagnosticLog.debug("Failed to send diagnostic response, node left " +
-                                    "[node=" + nodeId + ", msg=" + msg + ']');
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(diagnosticLog, "Failed to send diagnostic response [msg=" + msg0 + "]", e);
-                        }
-                    }
-                    else {
-                        InternalDiagnosticFuture fut = diagnosticFuturesMap().get(msg0.futureId());
-
-                        if (fut != null)
-                            fut.onResponse(msg0);
-                        else
-                            U.warn(diagnosticLog, "Failed to find diagnostic message future [msg=" + msg0 + ']');
-                    }
-                }
-                else
-                    U.warn(diagnosticLog, "Received unexpected message: " + msg);
-            }
-        });
-    }
-
-    /**
-     * @return Logger for diagnostic category.
-     */
-    public IgniteLogger diagnosticLog() {
-        return diagnosticLog;
     }
 
     /**
