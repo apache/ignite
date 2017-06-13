@@ -701,8 +701,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Map<String, CacheInfo> caches,
         Map<String, CacheInfo> templates) throws IgniteCheckedException {
         CacheConfiguration<?, ?> cfg = cacheData.config();
+        String cacheName = cfg.getName();
 
-        CU.validateCacheName(cfg.getName());
+        CU.validateCacheName(cacheName);
 
         cloneCheckSerializable(cfg);
 
@@ -711,28 +712,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Initialize defaults.
         initialize(cfg, cacheObjCtx);
 
-        boolean template = cfg.getName().endsWith("*");
+        boolean template = cacheName.endsWith("*");
 
         if (!template) {
-            if (caches.containsKey(cfg.getName())) {
+            if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
-                    "assign unique name to each cache): " + cfg.getName());
+                    "assign unique name to each cache): " + cacheName);
             }
 
-            CacheType cacheType = cacheType(cfg.getName());
+            CacheType cacheType = cacheType(cacheName);
 
             if (cacheType != CacheType.USER && cfg.getMemoryPolicyName() == null)
                 cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
 
             if (!cacheType.userCache())
-                stopSeq.addLast(cfg.getName());
+                stopSeq.addLast(cacheName);
             else
-                stopSeq.addFirst(cfg.getName());
+                stopSeq.addFirst(cacheName);
 
-            caches.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
+            caches.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
         }
         else
-            templates.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0));
+            templates.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0));
     }
 
     /**
