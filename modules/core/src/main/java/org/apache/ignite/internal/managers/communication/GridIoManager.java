@@ -2290,7 +2290,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * Dumps SPI stats to logs in case TcpCommunicationSpi is used, no-op otherwise.
+     * Dumps SPI stats to diagnostic logs in case TcpCommunicationSpi is used, no-op otherwise.
      */
     public void dumpStats() {
         CommunicationSpi spi = getSpi();

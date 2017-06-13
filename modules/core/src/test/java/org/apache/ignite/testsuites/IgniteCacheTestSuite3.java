@@ -92,6 +92,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 3");
 
+        suite.addTestSuite(IgniteCacheGroupsTest.class);
+
         // Value consistency tests.
         suite.addTestSuite(GridCacheValueConsistencyAtomicSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyAtomicNearEnabledSelfTest.class);
@@ -196,8 +198,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteTxGetAfterStopTest.class);
 
         suite.addTestSuite(CacheAsyncOperationsTest.class);
-
-        suite.addTestSuite(IgniteCacheGroupsTest.class);
 
         return suite;
     }

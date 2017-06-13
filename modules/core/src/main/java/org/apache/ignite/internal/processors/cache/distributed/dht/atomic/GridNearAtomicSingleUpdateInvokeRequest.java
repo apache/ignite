@@ -73,20 +73,17 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
     /**
      * Constructor.
-     *  @param cacheId Cache ID.
+     *
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
      * @param invokeArgs Optional arguments for entry processor.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param needPrimaryRes {@code True} if client expects primary node response.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateInvokeRequest(
@@ -94,17 +91,12 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
         @Nullable Object[] invokeArgs,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean needPrimaryRes,
-        boolean skipStore,
-        boolean keepBinary,
-        boolean recovery,
+        byte flags,
         boolean addDepInfo
     ) {
         super(
@@ -112,16 +104,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             nodeId,
             futId,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
             subjId,
             taskNameHash,
-            needPrimaryRes,
-            skipStore,
-            keepBinary,
-            recovery,
+            flags,
             addDepInfo
         );
 

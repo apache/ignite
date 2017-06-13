@@ -627,6 +627,15 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /**
+     * @return Readers.
+     */
+    @Nullable public ReaderId[] readersLocked() {
+        assert Thread.holdsLock(this);
+
+        return this.rdrs;
+    }
+
+    /**
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
@@ -743,7 +752,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * Reader ID.
      */
-    private static class ReaderId {
+    public static class ReaderId {
         /** */
         private static final ReaderId[] EMPTY_ARRAY = new ReaderId[0];
 
@@ -769,9 +778,26 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         }
 
         /**
+         * @param readers Readers array.
+         * @param nodeId Node ID to check.
+         * @return {@code True} if node ID found in readers array.
+         */
+        public static boolean contains(@Nullable ReaderId[] readers, UUID nodeId) {
+            if (readers == null)
+                return false;
+
+            for (int i = 0; i < readers.length; i++) {
+                if (nodeId.equals(readers[i].nodeId))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
          * @return Node ID.
          */
-        UUID nodeId() {
+        public UUID nodeId() {
             return nodeId;
         }
 

@@ -24,7 +24,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -42,7 +42,7 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "deprecation"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -50,7 +50,7 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        c.setMarshaller(new BinaryMarshaller());
+        c.setMarshaller(new JdkMarshaller());
 
         cc.setName("cache");
 

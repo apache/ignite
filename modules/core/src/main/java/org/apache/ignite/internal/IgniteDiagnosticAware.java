@@ -22,7 +22,7 @@ package org.apache.ignite.internal;
  */
 public interface IgniteDiagnosticAware {
     /**
-     *
+     * @param ctx Context.
      */
-    public void dumpDiagnosticInfo();
+    public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx);
 }

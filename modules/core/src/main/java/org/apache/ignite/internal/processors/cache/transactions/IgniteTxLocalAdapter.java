@@ -1279,7 +1279,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean addReader
     ) {
         assert invokeArgs == null || op == TRANSFORM;
 
@@ -1355,7 +1356,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 filter,
                 drVer,
                 skipStore,
-                keepBinary);
+                keepBinary,
+                addReader);
 
             txEntry.conflictExpireTime(drExpireTime);
 

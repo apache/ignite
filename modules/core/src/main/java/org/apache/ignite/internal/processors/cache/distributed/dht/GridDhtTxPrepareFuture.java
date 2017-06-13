@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -854,6 +855,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             ret,
             prepErr,
             null,
+            tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
         if (prepErr == null) {
@@ -1230,6 +1232,16 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
+                if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
+                    for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
+                        if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
+                            tx.onePhaseCommit(false);
+
+                            break;
+                        }
+                    }
+                }
+
                 int miniId = 0;
 
                 assert tx.transactionNodes() != null;
@@ -1568,7 +1580,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void dumpDiagnosticInfo() {
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext req) {
         if (!isDone()) {
             for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone() && fut instanceof MiniFuture) {
@@ -1578,7 +1590,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         GridCacheVersion dhtVer = tx.xidVersion();
                         GridCacheVersion nearVer = tx.nearXidVersion();
 
-                        cctx.kernalContext().cluster().dumpRemoteTxInfo(f.nodeId, dhtVer, nearVer, "GridDhtTxPrepareFuture " +
+                        req.remoteTxInfo(f.nodeId, dhtVer, nearVer, "GridDhtTxPrepareFuture " +
                             "waiting for response [node=" + f.nodeId +
                             ", topVer=" + tx.topologyVersion() +
                             ", dhtVer=" + dhtVer +

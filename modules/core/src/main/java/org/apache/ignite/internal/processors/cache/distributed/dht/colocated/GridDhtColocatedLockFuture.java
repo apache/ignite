@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -598,7 +599,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /** {@inheritDoc} */
-    @Override public void dumpDiagnosticInfo() {
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
             for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone() && isMini(fut)) {
@@ -616,7 +617,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
 
                     if (rmtNodeId != null) {
-                        cctx.kernalContext().cluster().dumpTxKeyInfo(rmtNodeId, cctx.cacheId(), m.keys,
+                        ctx.txKeyInfo(rmtNodeId, cctx.cacheId(), m.keys,
                             "GridDhtColocatedLockFuture waiting for response [node=" + rmtNodeId +
                             ", cache=" + cctx.name() +
                             ", miniId=" + m.futId +
@@ -962,29 +963,32 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                     first = false;
                                 }
 
-                                    assert !implicitTx() && !implicitSingleTx() : tx;req = new GridNearLockRequest(
-                                        cctx.cacheId(),
-                                        topVer,
-                                        cctx.nodeId(),
-                                        threadId,
-                                        futId,
-                                        lockVer,
-                                        inTx(),
-                                        read,
-                                        retval,
-                                        isolation(),
-                                        isInvalidate(),
-                                        timeout,
-                                        mappedKeys.size(),
-                                        inTx() ? tx.size() : mappedKeys.size(),
-                                        inTx() && tx.syncMode() == FULL_SYNC,
-                                        inTx() ? tx.subjectId() : null,
-                                        inTx() ? tx.taskNameHash() : 0,
-                                        read ? createTtl : -1L,
-                                        read ? accessTtl : -1L,
+                                assert !implicitTx() && !implicitSingleTx() : tx;
+
+                                req = new GridNearLockRequest(
+                                    cctx.cacheId(),
+                                    topVer,
+                                    cctx.nodeId(),
+                                    threadId,
+                                    futId,
+                                    lockVer,
+                                    inTx(),
+                                    read,
+                                    retval,
+                                    isolation(),
+                                    isInvalidate(),
+                                    timeout,
+                                    mappedKeys.size(),
+                                    inTx() ? tx.size() : mappedKeys.size(),
+                                    inTx() && tx.syncMode() == FULL_SYNC,
+                                    inTx() ? tx.subjectId() : null,
+                                    inTx() ? tx.taskNameHash() : 0,
+                                    read ? createTtl : -1L,
+                                    read ? accessTtl : -1L,
                                     skipStore,
                                     keepBinary,
                                     clientFirst,
+                                    false,
                                     cctx.deploymentEnabled());
 
                                 mapping.request(req);

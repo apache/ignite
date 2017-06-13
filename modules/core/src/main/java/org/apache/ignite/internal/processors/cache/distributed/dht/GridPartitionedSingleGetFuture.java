@@ -27,6 +27,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -222,11 +224,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return;
 
         if (node.isLocal()) {
-            Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
-
-            final GridDhtFuture<Collection<GridCacheEntryInfo>> fut = cctx.dht().getDhtAsync(node.id(),
+            final GridDhtFuture<GridCacheEntryInfo> fut = cctx.dht().getDhtSingleAsync(node.id(),
                 -1,
-                map,
+                key,
+                false,
                 readThrough,
                 topVer,
                 subjId,
@@ -248,14 +249,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 map(updTopVer);
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
-                    @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut) {
+                fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
+                    @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> fut) {
                         try {
-                            Collection<GridCacheEntryInfo> infos = fut.get();
+                            GridCacheEntryInfo info = fut.get();
 
-                            assert F.isEmpty(infos) || infos.size() == 1 : infos;
-
-                            setResult(F.first(infos));
+                            setResult(info);
                         }
                         catch (Exception e) {
                             U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -768,7 +767,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void dumpDiagnosticInfo() {
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
             UUID nodeId;
             AffinityTopologyVersion topVer;
@@ -779,12 +778,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
 
             if (nodeId != null)
-                cctx.kernalContext().cluster().dumpBasicInfo(nodeId, "GridPartitionedSingleGetFuture waiting for " +
+                ctx.basicInfo(nodeId, "GridPartitionedSingleGetFuture waiting for " +
                     "response [node=" + nodeId +
                     ", key=" + key +
                     ", futId=" + futId +
-                    ", topVer=" + topVer + ']',
-                    null);
+                    ", topVer=" + topVer + ']');
         }
     }
 
