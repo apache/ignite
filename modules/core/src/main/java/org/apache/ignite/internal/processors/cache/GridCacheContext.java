@@ -1676,7 +1676,11 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     public boolean keepBinary(CacheOperationContext opCtx) {
-        return opCtx != null ? opCtx.isKeepBinary() : binaryMarshaller();
+        return keepBinary(opCtx, binaryMarshaller());
+    }
+
+    public boolean keepBinary(CacheOperationContext opCtx, boolean defaultValue) {
+        return opCtx != null ? opCtx.isKeepBinary() : defaultValue;
     }
 
     /**

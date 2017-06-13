@@ -1312,7 +1312,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        boolean keepBinary = ctx.keepBinary();
+        boolean keepBinary = ctx.keepBinary(ctx.operationContextPerCall(), false);
 
         if (keepBinary)
             key = (K)ctx.toCacheKeyObject(key);
@@ -1375,7 +1375,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        final boolean keepBinary = ctx.keepBinary();
+        final boolean keepBinary = ctx.keepBinary(ctx.operationContextPerCall(), false);
 
         final K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
 
@@ -1451,7 +1451,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        Map<K, V> map = getAll0(keys, !ctx.keepBinary(), false);
+        Map<K, V> map = getAll0(keys, !ctx.keepBinary(ctx.operationContextPerCall(), false), false);
 
         if (ctx.config().getInterceptor() != null)
             map = interceptGet(keys, map);
@@ -1505,7 +1505,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip tx*/false,
             opCtx != null ? opCtx.subjectId() : null,
             taskName,
-            !(opCtx != null && opCtx.isKeepBinary()),
+            !ctx.keepBinary(opCtx, false),
             opCtx != null && opCtx.recovery(),
             /*skip vals*/false,
             /*can remap*/true,
