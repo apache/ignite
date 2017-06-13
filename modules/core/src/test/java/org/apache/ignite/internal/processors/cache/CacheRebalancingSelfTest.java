@@ -95,9 +95,9 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         cacheCfg.setBackups(1);
         cacheCfg.setName("disableRebalanceTestCache");
 
-        IgniteCache<Integer, Integer> cache0 = ig0.getOrCreateCache(cacheCfg);
+        final IgniteCache<Integer, Integer> cache0 = ig0.getOrCreateCache(cacheCfg);
 
-        IgniteCache<Integer, Integer> cache1 = ig1.getOrCreateCache(cacheCfg);
+        final IgniteCache<Integer, Integer> cache1 = ig1.getOrCreateCache(cacheCfg);
 
         awaitPartitionMapExchange();
 
@@ -117,8 +117,8 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         }
 
 
-        int before0 = cache0.localSize(CachePeekMode.ALL);
-        int before1 = cache1.localSize(CachePeekMode.ALL);
+        final int before0 = cache0.localSize(CachePeekMode.ALL);
+        final int before1 = cache1.localSize(CachePeekMode.ALL);
 
         stopGrid(2);
 
@@ -136,8 +136,8 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
 
         Thread.sleep(1500);
 
-        int afterDisable0 = cache0.localSize(CachePeekMode.ALL);
-        int afterDisable1 = cache1.localSize(CachePeekMode.ALL);
+        final int afterDisable0 = cache0.localSize(CachePeekMode.ALL);
+        final int afterDisable1 = cache1.localSize(CachePeekMode.ALL);
 
         assert before1 == afterDisable1: "ig1 local size  before= " + before1 + ", afterDisable = " + afterDisable1 +
             "(should be the same)";
