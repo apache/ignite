@@ -150,7 +150,7 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCreateSelectChar() throws Exception {
+    public void testCharTrailingSpaces() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5361");
 
         sql(new UpdateChecker(0),
@@ -164,5 +164,27 @@ public class JdbcThinSqlCreateSelectTest extends JdbcThinAbstractSqlTest {
             str);
 
         sql(new ResultChecker(new Object[][] {{str.trim()}}), "SELECT str FROM str_table");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCharSizeLimit() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5361");
+
+        sql(new UpdateChecker(0),
+            "CREATE TABLE str_table (id int, str char(2), primary key (id)) WITH \"template="
+                + cacheMode.name() + ",atomicity=" + atomicityMode.name() + ", affinitykey=id\"");
+
+        GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                sql(new UpdateChecker(1),
+                    "INSERT INTO str_table(id, str) values (?, ?)",
+                    1,
+                    "aaa");
+
+                return null;
+            }
+        }, SQLException.class, "Value too long for column");
     }
 }
