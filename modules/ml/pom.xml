@@ -106,6 +106,20 @@
 
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>lgpl</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.fommil.netlib</groupId>
+                    <artifactId>all</artifactId>
+                    <version>1.1.2</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
