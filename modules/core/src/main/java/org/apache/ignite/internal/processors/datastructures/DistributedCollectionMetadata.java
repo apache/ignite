@@ -27,9 +27,6 @@ public class DistributedCollectionMetadata extends AtomicDataStructureValue {
      * @param cacheName
      */
     public DistributedCollectionMetadata(DataStructureType type, CollectionConfiguration cfg, String cacheName) {
-        if (cfg == null)
-            System.out.println("???");
-
         this.type = type;
         this.cfg = cfg;
         this.cacheName = cacheName;

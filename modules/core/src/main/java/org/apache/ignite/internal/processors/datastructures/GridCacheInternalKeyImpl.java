@@ -38,7 +38,8 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     @AffinityKeyMapped
     private String name;
 
-    @Nullable private String groupName;
+    /** */
+    private String groupName;
 
     /**
      * Default constructor.

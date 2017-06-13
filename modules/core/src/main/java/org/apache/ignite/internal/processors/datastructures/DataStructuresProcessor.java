@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -76,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
@@ -88,7 +88,15 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.processors.datastructures.DataStructureType.*;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_STAMPED;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.COUNT_DOWN_LATCH;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.QUEUE;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.REENTRANT_LOCK;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SEMAPHORE;
+import static org.apache.ignite.internal.processors.datastructures.DataStructureType.SET;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -97,6 +105,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
+    // TODO: do not allow user group with these names.
     private static final String DEFAULT_DATASTRUCTURES_GROUP_NAME = "default-ds-group";
 
     /** */
@@ -124,9 +133,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration defaultAtomicCfg;
 
     /** Map of continuous query IDs. */
+    // TODO: looks like only one qry is needed.
     private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
 
     /** */
+    // TODO: use GridDiscoveryManager.gridStartTime instead.
     private volatile UUID gridId = UUID.randomUUID();
 
     /** Listener. */
@@ -272,11 +283,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public void restoreStructuresState(GridKernalContext ctx) {
         onKernalStart0();
 
-        try {for (
-            GridCacheRemovable v : dsMap.values()) {
-
-            if (v instanceof IgniteChangeGlobalStateSupport)
-                ((IgniteChangeGlobalStateSupport)v).onActivate(ctx);}
+        try {
+            for (GridCacheRemovable v : dsMap.values()) {
+                if (v instanceof IgniteChangeGlobalStateSupport)
+                    ((IgniteChangeGlobalStateSupport)v).onActivate(ctx);
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed restore data structures state", e);
@@ -495,13 +506,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
 
         final String groupName;
-        if (cfg.getGroupName() != null)
-            groupName = cfg.getGroupName();
-        else if (type.isVolatile())
+
+        if (type.isVolatile())
             groupName = DEFAULT_VOLATILE_DATASTRUCTURES_GROUP_NAME;
+        else if (cfg.getGroupName() != null)
+            groupName = cfg.getGroupName();
         else
             groupName = DEFAULT_DATASTRUCTURES_GROUP_NAME;
 
+        // TODO: user cache names can't start with 'CU.ATOMICS_CACHE_NAME'
         String cacheName = CU.ATOMICS_CACHE_NAME + "@" + groupName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache0 = ctx.cache().cache(cacheName);
@@ -513,7 +526,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, groupName),
                 cacheName,
                 null,
-                CacheType.INTERNAL,
+                CacheType.INTERNAL, // TODO: add special data structures type.
                 false,
                 false,
                 true,
@@ -534,62 +547,65 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         T dataStructure = cast(dsMap.get(key), cls);
 
         if (dataStructure != null) {
+            // TODO: do not need cache.get + exception if type does not match.
             AtomicDataStructureValue val = cache.get(key);
 
             if (val != null && val.type() == type)
                 return dataStructure;
         }
 
+        // TODO: do cache.get here.
+
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-            cache.context().gate().enter();
+                cache.context().gate().enter();
 
-            try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                AtomicDataStructureValue val = cache.get(key);
+                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    AtomicDataStructureValue val = cache.get(key);
 
-                if (val != null && val.type().isVolatile()) {
-                    assert val instanceof VolatileAtomicDataStructureValue;
+                    if (val != null && val.type().isVolatile()) {
+                        assert val instanceof VolatileAtomicDataStructureValue : val;
 
-                    if (!((VolatileAtomicDataStructureValue)val).gridId().equals(gridId))
-                        val = null;
+                        if (!((VolatileAtomicDataStructureValue)val).gridId().equals(gridId))
+                            val = null;
+                    }
+
+                    if (val == null && !create)
+                        return null;
+
+                    if (val != null) {
+                        if (val.type() != type)
+                            throw new IgniteCheckedException("Another data structure with the same name already created " +
+                                "[name=" + name +
+                                ", newType=" + type +
+                                ", existingType=" + val.type() + ']');
+                    }
+
+                    T2<T, ? extends AtomicDataStructureValue> ret;
+
+                    try {
+                        ret = c.get(key, val, cache);
+
+                        dsMap.put(key, ret.get1());
+
+                        if (ret.get2() != null)
+                            cache.put(key, ret.get2());
+                    }
+                    catch (Error | Exception e) {
+                        dsMap.remove(new T2<>(key, groupName));
+
+                        U.error(log, "Failed to make datastructure: " + name, e);
+
+                        throw e;
+                    }
+
+                    tx.commit();
+
+                    return ret.get1();
                 }
-
-                if (val == null && !create)
-                    return null;
-
-                if (val != null) {
-                    if (val.type() != type)
-                        throw new IgniteCheckedException("Another data structure with the same name already created " +
-                            "[name=" + name +
-                            ", newType=" + type +
-                            ", existingType=" + val.type() + ']');
+                finally {
+                    cache.context().gate().leave();
                 }
-
-                T2<T, ? extends AtomicDataStructureValue> ret;
-
-                try {
-                    ret = c.get(key, val, cache);
-
-                    dsMap.put(key, ret.get1());
-
-                    if (ret.get2() != null)
-                        cache.put(key, ret.get2());
-                }
-                catch (Error | Exception e) {
-                    dsMap.remove(new T2<>(key, groupName));
-
-                    U.error(log, "Failed to make datastructure: " + name, e);
-
-                    throw e;
-                }
-
-                tx.commit();
-
-                return ret.get1();
-            }
-            finally {
-                cache.context().gate().leave();
-            }
             }
         });
     }
@@ -859,6 +875,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache,
         CollectionConfiguration cfg, String groupName) throws IgniteCheckedException
     {
+        // TODO: check cacheDescriptors instead.
         Iterator<Cache.Entry<GridCacheInternalKey, AtomicDataStructureValue>> iterator = metaCache.scanIterator(false, new IgniteBiPredicate<Object, Object>() {
             @Override public boolean apply(Object key, Object value) {
                 return key instanceof GridCacheInternalKey && value instanceof DistributedCollectionMetadata;
@@ -937,9 +954,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         awaitInitialization();
 
         assert name != null;
-        assert type.isCollection();
+        assert type.isCollection() : type;
 
         final String groupName;
+
         if (cfg != null && cfg.getGroupName() != null)
             groupName = cfg.getGroupName();
         else
@@ -1482,7 +1500,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private void checkAtomicsConfiguration() throws IgniteException {
         if (defaultAtomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
-                "need to provide IgniteAtomicConfiguration.");
+                "need to provide AtomicConfiguration.");
     }
 
     /**
