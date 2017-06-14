@@ -132,8 +132,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration defaultAtomicCfg;
 
     /** Map of continuous query IDs. */
-    // TODO: looks like only one qry is needed.
-    private volatile T2<Integer, UUID> qryId;
+    private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
 
     /** */
     // TODO: use GridDiscoveryManager.gridStartTime instead.
@@ -204,26 +203,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private void startQuery(GridCacheContext cctx) throws IgniteCheckedException {
-        if (qryId == null) {
+        if (!qryIdMap.containsKey(cctx.cacheId())) {
             synchronized (this) {
-                if (qryId == null) {
-                    qryId = new T2<>(cctx.cacheId(),
+                if (!qryIdMap.containsKey(cctx.cacheId())) {
+                    qryIdMap.put(cctx.cacheId(),
                         cctx.continuousQueries().executeInternalQuery(
                             new DataStructuresEntryListener(),
                             new DataStructuresEntryFilter(),
                             cctx.isReplicated() && cctx.affinityNode(),
                             false,
                             false
-                    ));
+                        ));
                 }
             }
-        }
-
-        if (U.assertionsEnabled()) {
-            T2<Integer, UUID> qryId0 = qryId;
-
-            assert qryId0 == null || cctx.cacheId() == qryId0.get1();
-
         }
     }
 
@@ -245,13 +237,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             initLatch.countDown();
         }
 
-        T2<Integer, UUID> qryId0 = qryId;
+        Iterator<Map.Entry<Integer, UUID>> iterator = qryIdMap.entrySet().iterator();
 
-        if (qryId0 != null) {
-            GridCacheContext cctx = ctx.cache().context().cacheContext(qryId0.get1());
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, UUID> e = iterator.next();
 
-            if (cctx != null)
-                cctx.continuousQueries().cancelInternalQuery(qryId0.get2());
+            iterator.remove();
+
+            GridCacheContext cctx = ctx.cache().context().cacheContext(e.getKey());
+
+            cctx.continuousQueries().cancelInternalQuery(e.getValue());
         }
     }
 
@@ -265,7 +260,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         initLatch = new CountDownLatch(1);
 
-        qryId = null;
+        qryIdMap.clear();
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
@@ -536,16 +531,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = cache0;
 
-        if (type.isVolatile())
-            startQuery(cache.context());
+        startQuery(cache.context());
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, groupName);
-
-        // Check type of structure received by key from local cache.
-        T dataStructure = cast(dsMap.get(key), cls);
-
-        if (dataStructure != null)
-            return dataStructure;
 
         AtomicDataStructureValue val = cache.get(key);
 
@@ -556,10 +544,21 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     ", newType=" + type +
                     ", existingType=" + val.type() + ']');
 
+            // Check type of structure received by key from local cache.
+            T dataStructure = cast(dsMap.get(key), cls);
+
+            // Local map is not cleared when DS is removed from remote node, so it's necessary to verify that entry
+            // is still present in cache before returning it from local map.
+            if (dataStructure != null)
+                return dataStructure;
+
             T2<T, AtomicDataStructureValue> ret = c.get(key, val, cache);
 
-            if (ret.get2() == null)
+            if (ret.get2() == null) {
+                dsMap.put(key, ret.get1());
+
                 return ret.get1();
+            }
         }
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
@@ -789,13 +788,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Gets a queue from cache or creates one if it's not cached.
      *
      * @param name Name of queue.
+     * @param groupName Group name. If present, will override groupName from configuration.
      * @param cap Max size of queue.
      * @param cfg Non-null queue configuration if new queue should be created.
      * @return Instance of queue.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public final <T> IgniteQueue<T> queue(final String name, int cap, @Nullable final CollectionConfiguration cfg)
+    public final <T> IgniteQueue<T> queue(final String name, @Nullable final String groupName, int cap,
+        @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -812,7 +813,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public IgniteQueue<T> applyx(GridCacheContext ctx) throws IgniteCheckedException {
                 return ctx.dataStructures().queue(name, cap0, create && cfg.isCollocated(), create);
             }
-        }, cfg, name, QUEUE, create);
+        }, cfg, name, groupName, QUEUE, create);
     }
 
     /**
@@ -968,6 +969,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     @Nullable private <T> T getCollection(final IgniteClosureX<GridCacheContext, T> c,
         @Nullable CollectionConfiguration cfg,
         String name,
+        @Nullable String groupName,
         final DataStructureType type,
         boolean create)
         throws IgniteCheckedException
@@ -977,12 +979,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         assert name != null;
         assert type.isCollection() : type;
 
-        final String groupName;
-
-        if (cfg != null && cfg.getGroupName() != null)
-            groupName = cfg.getGroupName();
-        else
-            groupName = DEFAULT_DATASTRUCTURES_GROUP_NAME;
+        if (groupName == null) {
+            if (cfg != null && cfg.getGroupName() != null)
+                groupName = cfg.getGroupName();
+            else
+                groupName = DEFAULT_DATASTRUCTURES_GROUP_NAME;
+        }
 
         assert !create || cfg != null;
 
@@ -1009,11 +1011,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = metaCache0;
-
-        if (!create && metaCache == null)
-            return null;
-
-        assert metaCache != null;
 
         AtomicDataStructureValue oldVal;
 
@@ -1244,7 +1241,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 }
 
                 if (val == null && !create)
-                    return null;
+                    return new T2<>(null, null);
 
                 AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, ctx.localNodeId(), 0, failoverSafe, fair, gridId) : null);
 
@@ -1430,17 +1427,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Gets a set from cache or creates one if it's not cached.
      *
      * @param name Set name.
+     * @param groupName Group name. If present, will override groupName from configuration.
      * @param cfg Set configuration if new set should be created.
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final CollectionConfiguration cfg)
+    @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final String groupName, @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
-
-        if ("Set2".equals(name) && Thread.currentThread().getName().endsWith("1%"))
-            System.out.println("???");
 
         final boolean create = cfg != null;
 
@@ -1448,7 +1443,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
                 return cctx.dataStructures().set(name, create && cfg.isCollocated(), create);
             }
-        }, cfg, name, SET, create);
+        }, cfg, name, groupName, SET, create);
     }
 
     /**

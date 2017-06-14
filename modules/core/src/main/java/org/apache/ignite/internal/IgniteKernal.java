@@ -3633,7 +3633,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().queue(name, cap, cfg);
+            return ctx.dataStructures().queue(name, null, cap, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3651,7 +3651,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().set(name, cfg);
+            return ctx.dataStructures().set(name, null, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -47,9 +47,9 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<T3<GridKernalContext, String, CollectionConfiguration>> stash =
-        new ThreadLocal<T3<GridKernalContext, String, CollectionConfiguration>>() {
-            @Override protected T3<GridKernalContext, String, CollectionConfiguration> initialValue() {
+    private static final ThreadLocal<T3<GridKernalContext, String, String>> stash =
+        new ThreadLocal<T3<GridKernalContext, String, String>>() {
+            @Override protected T3<GridKernalContext, String, String> initialValue() {
                 return new T3<>();
             }
         };
@@ -443,16 +443,16 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(cctx.kernalContext());
         U.writeString(out, name());
-        out.writeObject(null); // TODO : find a way to obtain or create collection configuration.
+        U.writeString(out, cctx.group().name());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        T3<GridKernalContext, String, CollectionConfiguration> t = stash.get();
+        T3<GridKernalContext, String, String> t = stash.get();
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(U.readString(in));
-        t.set3((CollectionConfiguration)in.readObject());
+        t.set3(U.readString(in));
     }
 
     /**
@@ -463,9 +463,9 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            T3<GridKernalContext, String, CollectionConfiguration> t = stash.get();
+            T3<GridKernalContext, String, String> t = stash.get();
 
-            return t.get1().dataStructures().set(t.get2(), t.get3());
+            return t.get1().dataStructures().set(t.get2(), t.get3(), null);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
