@@ -211,7 +211,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
      * @return Off heap entries count.
      */
     private long getOffHeapEntriesCount(VisorCacheMetrics metric) {
-        return metric.offHeapEntriesCount();
+        return metric.getOffHeapEntriesCount();
     }
 
     /**
