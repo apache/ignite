@@ -620,8 +620,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointLock.writeLock().unlock();
         }
 
-        snapshotMgr.onKernalStop(cancel);
-
         shutdownCheckpointer(cancel);
 
         lsnrs.clear();
@@ -650,8 +648,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         super.stop0(cancel);
-
-        snapshotMgr.stop(cancel);
     }
 
     /** */
@@ -1979,8 +1975,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (chp.cpPages == null)
                     return;
-
-                snapshotMgr.onCheckPointBegin();
 
                 boolean interrupted = true;
 

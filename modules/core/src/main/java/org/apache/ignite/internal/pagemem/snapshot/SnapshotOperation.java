@@ -176,12 +176,6 @@ public class SnapshotOperation implements Serializable {
         if (type != operation.type)
             return false;
 
-        if (cacheGrpIds != null ? !cacheGrpIds.equals(operation.cacheGrpIds) : operation.cacheGrpIds != null)
-            return false;
-
-        if (cacheNames != null ? !cacheNames.equals(operation.cacheNames) : operation.cacheNames != null)
-            return false;
-
         return extraParam != null ? extraParam.equals(operation.extraParam) : operation.extraParam == null;
     }
 
@@ -189,8 +183,6 @@ public class SnapshotOperation implements Serializable {
     @Override public int hashCode() {
         int res = type.hashCode();
         res = 31 * res + (int)(snapshotId ^ (snapshotId >>> 32));
-        res = 31 * res + (cacheGrpIds != null ? cacheGrpIds.hashCode() : 0);
-        res = 31 * res + (cacheNames != null ? cacheNames.hashCode() : 0);
         res = 31 * res + (extraParam != null ? extraParam.hashCode() : 0);
         return res;
     }
