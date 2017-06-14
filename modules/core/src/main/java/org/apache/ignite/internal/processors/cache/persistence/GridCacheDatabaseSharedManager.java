@@ -267,7 +267,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private final ConcurrentMap<Integer, IgniteInternalFuture> idxRebuildFuts = new ConcurrentHashMap<>();
 
-    /** Lock holder. <code>null</code> for client node */
+    /** Lock holder. */
     private FileLockHolder fileLockHolder;
 
     /** Lock wait time. */
@@ -448,6 +448,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
+        // Before join local node.
         if (reconnect || cctx.kernalContext().clientNode() || !cctx.kernalContext().state().active())
             return;
 
@@ -456,15 +457,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         GridCacheProcessor cachePrc = cctx.kernalContext().cache();
 
-        // Todo before join local node.
-
         Collection<String> cacheNames = new HashSet<>();
 
         // TODO IGNITE-5075 group descriptors.
         for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration()) {
             if (CU.isSystemCache(ccfg.getName())) {
                 storeMgr.initializeForCache(
-                    cctx.cache().cacheDescriptors().get(ccfg.getName()).groupDescriptor(), new StoredCacheData(ccfg));
+                    cctx.cache().cacheDescriptors().get(ccfg.getName()).groupDescriptor(),
+                    new StoredCacheData(ccfg)
+                );
 
                 cacheNames.add(ccfg.getName());
             }
@@ -475,7 +476,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptors().get(ccfg.getName());
 
                 if (cacheDesc != null)
-                    storeMgr.initializeForCache(cacheDesc.groupDescriptor(), new StoredCacheData(ccfg));
+                    storeMgr.initializeForCache(
+                        cacheDesc.groupDescriptor(),
+                        new StoredCacheData(ccfg)
+                    );
 
                 cacheNames.add(ccfg.getName());
             }
@@ -554,8 +558,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
 
-        if (!cctx.kernalContext().clientNode())
-            fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
+        fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
     }
 
     /**

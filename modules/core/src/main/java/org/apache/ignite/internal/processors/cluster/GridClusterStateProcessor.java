@@ -270,21 +270,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         // TODO warning, processing in discovery thread!!!
         if (globalState == INACTIVE) {
-            // Clean up.
-            try {
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onDeActivate(ctx);
+            // Revert start action if get .
+            if (sharedCtx.pageStore() != null)
+                sharedCtx.pageStore().stop(false);
 
-                if (sharedCtx.wal() != null)
-                    sharedCtx.wal().onDeActivate(ctx);
+            if (sharedCtx.wal() != null)
+                sharedCtx.wal().stop(false);
 
-                // Todo check after join
-                sharedCtx.database().onDeActivate(ctx);
-            }
-            catch (IgniteCheckedException e) {
-                // Todo Need handler correct .
-                e.printStackTrace();
-            }
+            sharedCtx.database().stop(false);
         }
     }
 
@@ -676,7 +669,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            //todo revert change if deactivate request fail
+            //todo https://issues.apache.org/jira/browse/IGNITE-5480
         }
 
         globalState = actx.activate ? INACTIVE : ACTIVE;
@@ -684,7 +677,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         GridChangeGlobalStateFuture af = cgsLocFut.get();
 
         if (af != null && af.requestId.equals(actx.requestId)) {
-            IgniteCheckedException e = new IgniteCheckedException("Fail " + prettyStr(actx.activate), null, false);
+            IgniteCheckedException e = new IgniteCheckedException(
+                "Fail " + prettyStr(actx.activate),
+                null,
+                false
+            );
 
             for (Map.Entry<UUID, Exception> entry : exs.entrySet())
                 e.addSuppressed(entry.getValue());
@@ -955,7 +952,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         /** Responses. */
         @GridToStringInclude
-        private final Map<UUID, GridChangeGlobalStateMessageResponse> resps = new HashMap<>();
+        private final Map<UUID, GridChangeGlobalStateMessageResponse> responses = new HashMap<>();
 
         /** Context. */
         @GridToStringExclude
@@ -976,7 +973,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         /**
          *
          */
-        public GridChangeGlobalStateFuture(UUID requestId, boolean activate, GridKernalContext ctx) {
+        GridChangeGlobalStateFuture(UUID requestId, boolean activate, GridKernalContext ctx) {
             this.requestId = requestId;
             this.activate = activate;
             this.ctx = ctx;
@@ -1042,7 +1039,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 if (remaining.remove(nodeId))
                     allReceived = remaining.isEmpty();
 
-                resps.put(nodeId, msg);
+                responses.put(nodeId, msg);
             }
 
             if (allReceived)
@@ -1057,7 +1054,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
             boolean fail = false;
 
-            for (Map.Entry<UUID, GridChangeGlobalStateMessageResponse> entry : resps.entrySet()) {
+            for (Map.Entry<UUID, GridChangeGlobalStateMessageResponse> entry : responses.entrySet()) {
                 GridChangeGlobalStateMessageResponse r = entry.getValue();
 
                 if (r.getError() != null) {
@@ -1115,7 +1112,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         /**
          *
          */
-        public ChangeGlobalStateContext(
+        ChangeGlobalStateContext(
             UUID requestId,
             UUID initiatingNodeId,
             DynamicCacheChangeBatch batch,
