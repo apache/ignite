@@ -56,7 +56,7 @@ namespace ignite
                 }
 
                 int32_t maxPageSize = connection.GetConfiguration().GetPageSize();
-                int32_t rowNum = params.GetRowNumber();
+                int32_t rowNum = params.GetParamSetSize();
                 SqlResult::Type res;
 
                 int32_t processed = 0;

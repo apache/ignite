@@ -312,6 +312,9 @@ namespace ignite
 
                     *val = static_cast<SQLPOINTER>(this);
 
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
                     break;
                 }
 
@@ -321,14 +324,20 @@ namespace ignite
 
                     *val = static_cast<SQLINTEGER>(1);
 
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
                     break;
                 }
 
                 case SQL_ATTR_ROWS_FETCHED_PTR:
                 {
-                    SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
+                    SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
 
-                    *val = reinterpret_cast<SQLULEN*>(GetRowsFetchedPtr());
+                    *val = reinterpret_cast<SqlUlen*>(GetRowsFetchedPtr());
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
 
                     break;
                 }
@@ -339,6 +348,9 @@ namespace ignite
 
                     *val = reinterpret_cast<SQLUSMALLINT*>(GetRowStatusesPtr());
 
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
                     break;
                 }
 
@@ -348,28 +360,44 @@ namespace ignite
 
                     *val = reinterpret_cast<SQLULEN*>(parameters.GetParamBindOffsetPtr());
 
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
                     break;
                 }
 
                 case SQL_ATTR_ROW_BIND_OFFSET_PTR:
                 {
-                    SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
+                    SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
 
-                    *val = reinterpret_cast<SQLULEN*>(GetColumnBindOffsetPtr());
+                    *val = reinterpret_cast<SqlUlen*>(GetColumnBindOffsetPtr());
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
 
                     break;
                 }
 
                 case SQL_ATTR_PARAMSET_SIZE:
                 {
-                    // TODO: Implement me.
+                    SqlUlen* val = reinterpret_cast<SqlUlen*>(buf);
+
+                    *val = static_cast<SqlUlen>(parameters.GetParamSetSize());
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_UINTEGER;
 
                     break;
                 }
 
                 case SQL_ATTR_PARAMS_PROCESSED_PTR:
                 {
-                    // TODO: Implement me.
+                    SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
+
+                    *val = parameters.GetParamsProcessedPtr();
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
 
                     break;
                 }
@@ -495,13 +523,13 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            if (parameters.GetRowNumber() > 1 && currentQuery->GetType() == query::QueryType::DATA)
+            if (parameters.GetParamSetSize() > 1 && currentQuery->GetType() == query::QueryType::DATA)
             {
                 query::DataQuery& qry = static_cast<query::DataQuery&>(*currentQuery);
 
                 currentQuery.reset(new query::BatchQuery(*this, connection, qry.GetSql(), parameters));
             }
-            else if (parameters.GetRowNumber() == 1 && currentQuery->GetType() == query::QueryType::BATCH)
+            else if (parameters.GetParamSetSize() == 1 && currentQuery->GetType() == query::QueryType::BATCH)
             {
                 query::BatchQuery& qry = static_cast<query::BatchQuery&>(*currentQuery);
 

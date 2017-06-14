@@ -200,11 +200,18 @@ namespace ignite
                 int32_t CalculateRowLen() const;
 
                 /**
-                 * Get row number.
+                 * Get parameter set size.
                  *
                  * @return Number of rows in set.
                  */
-                int32_t GetRowNumber() const;
+                int32_t GetParamSetSize() const;
+
+                /**
+                 * Set number of parameters processed in batch.
+                 *
+                 * @param processed Processed.
+                 */
+                void SetParamsProcessed(SqlUlen processed) const;
 
                 /**
                  * Number of processed params should be written using provided address.
@@ -214,11 +221,11 @@ namespace ignite
                 void SetParamsProcessedPtr(SqlUlen* ptr);
 
                 /**
-                 * Set number of parameters processed in batch.
+                 * Get pointer to write number of parameters processed in batch.
                  *
-                 * @param processed Processed.
+                 * @return Pointer to write number of parameters processed in batch.
                  */
-                void SetParamsProcessed(SqlUlen processed) const;
+                SqlUlen* GetParamsProcessedPtr();
 
             private:
                 /**

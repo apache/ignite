@@ -99,6 +99,11 @@ namespace ignite
                 processedParamRows = ptr;
             }
 
+            SqlUlen* ParameterSet::GetParamsProcessedPtr()
+            {
+                return processedParamRows;
+            }
+
             void ParameterSet::SetParamsProcessed(SqlUlen processed) const
             {
                 if (processedParamRows)
@@ -228,7 +233,7 @@ namespace ignite
                 return  0;
             }
 
-            int32_t ParameterSet::GetRowNumber() const
+            int32_t ParameterSet::GetParamSetSize() const
             {
                 return static_cast<int32_t>(paramSetSize);
             }
