@@ -2678,11 +2678,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
 
-    public CacheType cacheType (String cacheName ) {
+    public CacheType cacheType(String cacheName ) {
         if (CU.isUtilityCache(cacheName))
             return CacheType.UTILITY;
         else if (internalCaches.contains(cacheName))
             return CacheType.INTERNAL;
+        else if (ctx.dataStructures().isDataStructureCache(cacheName))
+            return CacheType.DATASTRUCTURES;
         else
             return CacheType.USER;
     }

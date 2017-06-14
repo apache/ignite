@@ -48,7 +48,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -79,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -357,6 +355,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} if cache with such name is used to store data structures.
+     */
+    public boolean isDataStructureCache(String cacheName) {
+        assert cacheName != null;
+
+        return cacheName.startsWith(CU.ATOMICS_CACHE_NAME) || cacheName.startsWith(DATA_STRUCTURES_CACHE_NAME_PREFIX);
+    }
+
+    /**
      * Gets a sequence from cache or creates one if it's not cached.
      *
      * @param name Sequence name.
@@ -518,7 +526,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, groupName),
                 cacheName,
                 null,
-                CacheType.INTERNAL, // TODO: add special data structures type.
+                CacheType.DATASTRUCTURES,
                 false,
                 false,
                 true,
@@ -535,6 +543,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, groupName);
 
+        // Check type of structure received by key from local cache.
+        T dataStructure = cast(dsMap.get(key), cls);
+
+        if (dataStructure != null)
+            return dataStructure;
+
         AtomicDataStructureValue val = cache.get(key);
 
         if (val != null) {
@@ -543,14 +557,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     "[name=" + name +
                     ", newType=" + type +
                     ", existingType=" + val.type() + ']');
-
-            // Check type of structure received by key from local cache.
-            T dataStructure = cast(dsMap.get(key), cls);
-
-            // Local map is not cleared when DS is removed from remote node, so it's necessary to verify that entry
-            // is still present in cache before returning it from local map.
-            if (dataStructure != null)
-                return dataStructure;
 
             T2<T, AtomicDataStructureValue> ret = c.get(key, val, cache);
 
@@ -917,7 +923,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             ctx.cache().dynamicStartCache(cacheCfg,
                 cacheName,
                 null,
-                CacheType.INTERNAL,
+                CacheType.DATASTRUCTURES,
                 false,
                 false,
                 true,
@@ -999,7 +1005,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             ctx.cache().dynamicStartCache(metaCacheConfiguration(cfg, metaCacheName, groupName),
                 metaCacheName,
                 null,
-                CacheType.INTERNAL,
+                CacheType.DATASTRUCTURES,
                 false,
                 false,
                 true,
