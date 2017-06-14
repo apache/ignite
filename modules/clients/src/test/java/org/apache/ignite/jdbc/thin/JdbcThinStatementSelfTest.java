@@ -301,16 +301,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         assert rs.isClosed() : "ResultSet must be implicitly closed after close connection";
     }
 
-   /**
-     * Runnable that can throw an exception.
-     */
-    interface RunnableX {
-        /**
-         * @throws Exception On error.
-         */
-        void run() throws Exception;
-    }
-
     /**
      * Person.
      */
