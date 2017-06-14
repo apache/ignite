@@ -216,7 +216,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             break;
                         }
-                        catch (IgniteFutureTimeoutCheckedException e) {
+                        catch (IgniteFutureTimeoutCheckedException ignore) {
                             if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
                                 U.warn(log, "Failed to wait for partition eviction [" +
                                     "topVer=" + topVer +
