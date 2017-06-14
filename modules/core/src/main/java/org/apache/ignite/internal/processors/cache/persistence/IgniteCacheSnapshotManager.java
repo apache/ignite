@@ -76,6 +76,10 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
         // No-op.
     }
 
+    public boolean snapshotOperationInProgress(){
+        return false;
+    }
+
     /**
      *
      */

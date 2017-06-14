@@ -309,6 +309,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                     "in progress: " + prettyStr(locF.activate)));
         }
 
+        if (globalState == ACTIVE && !activate && ctx.cache().context().snapshot().snapshotOperationInProgress()){
+            return new GridFinishedFuture<>(new IgniteException(
+                "Failed to " + prettyStr(activate) + ", because snapshot operation in progress."));
+        }
+
         if (ctx.clientNode()) {
             AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
