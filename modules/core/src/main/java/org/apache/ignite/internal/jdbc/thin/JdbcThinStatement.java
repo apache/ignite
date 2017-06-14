@@ -62,6 +62,9 @@ public class JdbcThinStatement implements Statement {
     /** */
     private boolean alreadyRead;
 
+    /** */
+    private boolean closeOnCompletion;
+
     /**
      * Creates new statement.
      *
@@ -95,7 +98,7 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         if (rs != null) {
-            rs.close();
+            rs.close0();
 
             rs = null;
         }
@@ -112,7 +115,7 @@ public class JdbcThinStatement implements Statement {
             assert res != null;
 
             rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
-                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount());
+                res.isQuery(), conn.io().autoCloseServerCursor(), res.updateCount(), closeOnCompletion);
         }
         catch (IOException e) {
             conn.close();
@@ -142,7 +145,7 @@ public class JdbcThinStatement implements Statement {
             return;
 
         if (rs != null)
-            rs.close();
+            rs.close0();
 
         closed = true;
     }
@@ -457,14 +460,16 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void closeOnCompletion() throws SQLException {
-        throw new SQLFeatureNotSupportedException("closeOnCompletion is not supported.");
+        ensureNotClosed();
+
+        closeOnCompletion = true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isCloseOnCompletion() throws SQLException {
         ensureNotClosed();
 
-        return false;
+        return closeOnCompletion;
     }
 
     /**

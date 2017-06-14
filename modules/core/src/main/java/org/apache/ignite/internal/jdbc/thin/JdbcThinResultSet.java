@@ -100,6 +100,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** Update count. */
     private long updCnt;
 
+    /** Close statement after close result set count. */
+    private boolean closeStmt;
+
     /**
      * Creates new result set.
      *
@@ -114,7 +117,7 @@ public class JdbcThinResultSet implements ResultSet {
      */
     @SuppressWarnings("OverlyStrongTypeCast")
     JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
-        List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt) {
+        List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt) {
         assert stmt != null;
         assert fetchSize > 0;
 
@@ -124,6 +127,7 @@ public class JdbcThinResultSet implements ResultSet {
         this.finished = finished;
         this.isQuery = isQuery;
         this.autoClose = autoClose;
+        this.closeStmt = closeStmt;
 
         if (isQuery) {
             this.fetchSize = fetchSize;
@@ -180,7 +184,17 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closed || stmt.connection().isClosed())
+        if (closeStmt)
+            stmt.close();
+
+        close0();
+    }
+
+    /**
+     * @throws SQLException On error.
+     */
+    void close0() throws SQLException {
+        if (isClosed())
             return;
 
         try {
@@ -198,6 +212,7 @@ public class JdbcThinResultSet implements ResultSet {
             throw new SQLException("Failed to close Ignite query.", e);
         }
     }
+
 
     /** {@inheritDoc} */
     @Override public boolean wasNull() throws SQLException {
