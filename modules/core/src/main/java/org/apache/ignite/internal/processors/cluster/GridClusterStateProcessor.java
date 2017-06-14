@@ -248,6 +248,21 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         // First node started (coordinator).
         if (nodes.isEmpty() || nodes.get(0).isLocal())
             cacheData.putAll(localCacheData.caches());
+        else if (globalState == INACTIVE) { // Accept inactivate state after join.
+            if (log != null && log.isInfoEnabled())
+                log.info("Got inactivate state from cluster during node join.");
+
+            // Revert start action if get INACTIVE state on join.
+            sharedCtx.snapshot().onDeActivate(ctx);
+
+            if (sharedCtx.pageStore() != null)
+                sharedCtx.pageStore().onDeActivate(ctx);
+
+            if (sharedCtx.wal() != null)
+                sharedCtx.wal().onDeActivate(ctx);
+
+            sharedCtx.database().onDeActivate(ctx);
+        }
     }
 
     /** {@inheritDoc} */
@@ -267,27 +282,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         if (state != null)
             globalState = state;
-
-        // TODO warning, processing in discovery thread!!!
-        if (globalState == INACTIVE) {
-            if (log != null && log.isInfoEnabled())
-                log.info("Got inactivate state from cluster during node join.");
-
-            try {
-                // Revert start action if get INACTIVE state on join.
-                sharedCtx.snapshot().onDeActivate(ctx);
-
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onDeActivate(ctx);
-
-                if (sharedCtx.wal() != null)
-                    sharedCtx.wal().onDeActivate(ctx);
-
-                sharedCtx.database().onDeActivate(ctx);
-            }catch (Exception e){
-                U.error(log, "Fail change state to INACTIVE on local node join.", e);
-            }
-        }
     }
 
     /**
