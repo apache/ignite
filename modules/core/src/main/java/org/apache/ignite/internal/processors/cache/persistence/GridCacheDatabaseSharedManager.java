@@ -237,7 +237,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private long checkpointPageBufSize;
 
-    /** */
+    /** <code>null</code> for client node */
     private FilePageStoreManager storeMgr;
 
     /** */
@@ -267,7 +267,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private final ConcurrentMap<Integer, IgniteInternalFuture> idxRebuildFuts = new ConcurrentHashMap<>();
 
-    /** Lock holder. */
+    /** Lock holder. <code>null</code> for client node */
     private FileLockHolder fileLockHolder;
 
     /** Lock wait time. */
@@ -554,7 +554,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
 
-        fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
+        if (!cctx.kernalContext().clientNode())
+            fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
     }
 
     /**
