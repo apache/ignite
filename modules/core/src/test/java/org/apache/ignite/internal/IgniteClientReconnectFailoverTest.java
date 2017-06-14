@@ -72,6 +72,11 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
         return cfg;
     }
 
+    @Override
+    protected void beforeTest() throws Exception {
+        fail("IGNITE-GG-12294");
+    }
+
     /**
      * @throws Exception If failed.
      */
