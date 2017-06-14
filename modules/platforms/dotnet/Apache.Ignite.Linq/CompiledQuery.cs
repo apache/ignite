@@ -37,7 +37,7 @@ namespace Apache.Ignite.Linq
     /// <summary>
     /// Represents a compiled cache query.
     /// </summary>
-    public static partial class CompiledQuery
+    public static class CompiledQuery
     {
         /// <summary>
         /// Creates a new delegate that represents the compiled cache query.

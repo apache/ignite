@@ -19,7 +19,6 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections;
-    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
