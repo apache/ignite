@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -341,5 +342,12 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
             return null;
 
         return futVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicAbstractUpdateFuture.class, this,
+            "topLocked", topLocked, "remapCnt", remapCnt, "resCnt", resCnt, "err", err,
+            "parent", super.toString());
     }
 }
