@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -30,7 +32,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -57,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -70,6 +75,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -79,6 +85,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -133,6 +140,10 @@ public class GridMapQueryExecutor {
     /** */
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, GridReservable> reservations =
         new ConcurrentHashMap8<>();
+
+    /** Futures for query results reuse. */
+    private final AtomicReference<ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSet>>> futs =
+        new AtomicReference<>();
 
     /**
      * @param busyLock Busy lock.
@@ -217,6 +228,13 @@ public class GridMapQueryExecutor {
         catch(Throwable th) {
             U.error(log, "Failed to process message: " + msg, th);
         }
+    }
+
+    /**
+     *
+     */
+    public void clearRunningQueriesState() {
+        futs.set(null);
     }
 
     /**
@@ -607,28 +625,10 @@ public class GridMapQueryExecutor {
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                            F.asList(qry.parameters(params)), true,
-                            timeout,
-                            qr.cancels[qryIdx]);
+                        QueryKey key = new QueryKey(qry.query(), qry.parameters(params), distributedJoinMode,
+                            enforceJoinOrder, parts, pageSize);
 
-                        if (evt) {
-                            ctx.event().record(new CacheQueryExecutedEvent<>(
-                                node,
-                                "SQL query executed.",
-                                EVT_CACHE_QUERY_EXECUTED,
-                                CacheQueryType.SQL.name(),
-                                mainCctx.namex(),
-                                null,
-                                qry.query(),
-                                null,
-                                null,
-                                params,
-                                node.id(),
-                                null));
-                        }
-
-                        assert rs instanceof JdbcResultSet : rs.getClass();
+                        rs = runQuery(key, node, evt ? mainCctx.name() : null, conn, timeout, qr.cancels[qryIdx], evt);
                     }
 
                     qr.addResult(qryIdx, qry, node.id(), rs, params);
@@ -1102,6 +1102,8 @@ public class GridMapQueryExecutor {
                     throw new IllegalStateException(e); // Must not happen.
                 }
 
+                assert res != null;
+
                 rowCnt = res.getRowCount();
                 cols = res.getVisibleColumnCount();
             }
@@ -1125,6 +1127,13 @@ public class GridMapQueryExecutor {
                 return true;
 
             boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+
+            try {
+                rs.absolute(pageSize * page);
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException(e);
+            }
 
             page++;
 
@@ -1209,7 +1218,141 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            U.close(rs, log);
+            //U.close(rs, log);
+        }
+    }
+
+    /**
+     * Execute query specified by {@code key}.
+     * @param key Query key.
+     * @param node Cluster node.
+     * @param mainCctxName Main cache context name, may be {@code null}.
+     * @param conn H2 connection.
+     * @param timeout Query timeout.
+     * @param cancel Query cancel state holder.
+     * @param evt {@code true} if this query event is recordable, {@code false} otherwise.
+     * @return Query result.
+     * @throws IgniteCheckedException if failed.
+     */
+    private ResultSet runQuery(QueryKey key, ClusterNode node, @Nullable String mainCctxName, Connection conn,
+        int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
+
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSet>> futs = this.futs.get();
+
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSet>> newFuts = null;
+
+        while (futs == null) {
+            if (newFuts == null)
+                newFuts = new ConcurrentHashMap<>();
+
+            if (this.futs.compareAndSet(null, newFuts))
+                futs = newFuts;
+            else
+                futs = this.futs.get();
+        }
+
+        GridFutureAdapter<ResultSet> fut = futs.get(key);
+
+        if (fut == null) {
+            GridFutureAdapter<ResultSet> newFut = new GridFutureAdapter<>();
+
+            fut = futs.putIfAbsent(key, newFut);
+
+            if (fut == null) {
+                fut = newFut;
+
+                ResultSet rs = h2.executeSqlQueryWithTimer(mainCctxName, conn, key.qry, F.asList(key.params), true,
+                    timeout, cancel);
+
+                if (evt) {
+                    ctx.event().record(new CacheQueryExecutedEvent<>(
+                        node,
+                        "SQL query executed.",
+                        EVT_CACHE_QUERY_EXECUTED,
+                        CacheQueryType.SQL.name(),
+                        mainCctxName,
+                        null,
+                        key.qry,
+                        null,
+                        null,
+                        key.params,
+                        node.id(),
+                        null));
+                }
+
+                assert rs instanceof JdbcResultSet : rs.getClass();
+
+                fut.onDone(rs);
+
+                if (this.futs.get() == futs)
+                    futs.remove(key);
+            }
+        }
+
+        return fut.get();
+    }
+
+    /**
+     * Query key.
+     */
+    private final static class QueryKey {
+        /** Query string. */
+        private final String qry;
+
+        /** Query parameters. */
+        private final Object[] params;
+
+        /** Distributed join mode. */
+        private final DistributedJoinMode joinMode;
+
+        /** Enforce join order flag. */
+        private final boolean enforceJoinOrder;
+
+        /** Partitions to run query on. */
+        private final int[] parts;
+
+        /** Page size. */
+        private final int pageSize;
+
+        /**
+         * Constructor.
+         * @param qry Query string.
+         * @param params Query parameters.
+         * @param joinMode Distributed join mode.
+         * @param enforceJoinOrder Enforce join order flag.
+         * @param parts Partitions to run query on.
+         * @param pageSize Page size.
+         */
+        private QueryKey(String qry, Object[] params, DistributedJoinMode joinMode, boolean enforceJoinOrder,
+            int[] parts, int pageSize) {
+            this.qry = qry;
+            this.params = params;
+            this.joinMode = joinMode;
+            this.enforceJoinOrder = enforceJoinOrder;
+            this.parts = parts;
+            this.pageSize = pageSize;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            QueryKey qryKey = (QueryKey) o;
+
+            return enforceJoinOrder == qryKey.enforceJoinOrder && qry.equals(qryKey.qry) &&
+                Arrays.equals(params, qryKey.params) && joinMode == qryKey.joinMode &&
+                Arrays.equals(parts, qryKey.parts) && pageSize == qryKey.pageSize;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = qry.hashCode();
+            res = 31 * res + Arrays.hashCode(params);
+            res = 31 * res + joinMode.hashCode();
+            res = 31 * res + (enforceJoinOrder ? 1 : 0);
+            res = 31 * res + Arrays.hashCode(parts);
+            return 31 * res + pageSize;
         }
     }
 
