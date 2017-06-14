@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
@@ -1520,7 +1519,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorComputeCancelSessionsTask.class)
             .argument(VisorComputeCancelSessionsTaskArg.class)
-            .set(UUID.class, new HashSet<>()));
+            .set(IgniteUuid.class, IgniteUuid.randomUuid()));
 
         info("VisorComputeCancelSessionsTask result: " + ret);
 
@@ -1571,7 +1570,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorNodeDataCollectorTask.class)
             .argument(VisorNodeDataCollectorTaskArg.class, false,
-                "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), 10, false));
+                "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), false));
 
         info("VisorNodeDataCollectorTask result: " + ret);
 
