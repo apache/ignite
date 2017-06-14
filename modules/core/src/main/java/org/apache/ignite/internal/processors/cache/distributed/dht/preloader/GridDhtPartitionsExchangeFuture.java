@@ -1832,9 +1832,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (Thread.currentThread().isInterrupted())
                 return;
 
+            boolean detected = false;
+
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (!grp.isLocal())
-                    grp.topology().detectLostPartitions(discoEvt);
+                if (!grp.isLocal()) {
+                    boolean detectedOnGroup = grp.topology().detectLostPartitions(discoEvt);
+
+                    detected |= detectedOnGroup;
+                }
+            }
+
+            if (detected) {
+                cctx.exchange().scheduleResendPartitions();
             }
         }
     }

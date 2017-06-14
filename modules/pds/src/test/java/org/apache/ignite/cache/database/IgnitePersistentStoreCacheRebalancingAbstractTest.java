@@ -122,6 +122,11 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         return 20 * 60 * 1000;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return 60 * 1000;
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
@@ -448,8 +453,8 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
                 add = true;
             else if (nodesCnt.get() > maxNodesCount)
                 add = false;
-            else
-                add = ThreadLocalRandom.current().nextBoolean();
+            else // More chance that node will be added
+                add = ThreadLocalRandom.current().nextInt(3 ) <= 1;
 
             if (add)
                 startGrid(nodesCnt.incrementAndGet());

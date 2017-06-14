@@ -1012,6 +1012,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
+    /**
+     * Checks should current partition map overwritten by new partition map
+     * Method returns true if topology version or update sequence of new map are greater than of current map
+     * @param currentMap Current partition map
+     * @param newMap New partition map
+     * @return True if current partition map should be overwritten by new partition map, false in other case
+     */
+    private boolean shouldOverridePartitionMap(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
+        return newMap != null &&
+                (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) > 0 ||
+                 newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() > currentMap.updateSequence());
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public GridDhtPartitionMap update(
@@ -1065,10 +1078,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 return null;
             }
 
-            if (node2part != null && node2part.compareTo(partMap) >= 0) {
+            if (node2part != null && node2part.compareTo(partMap) > 0) {
                 if (log.isDebugEnabled())
                     log.debug("Stale partition map for full partition map update (will ignore) [lastExchId=" +
-                        lastExchangeId + ", exchId=" + exchId + ", curMap=" + node2part + ", newMap=" + partMap + ']');
+                        lastExchangeId + ", exchId=" + exchId + ", curMap=" + node2part.toFullString() + ", newMap=" + partMap.toFullString() + ']');
 
                 return null;
             }
@@ -1080,16 +1093,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (GridDhtPartitionMap part : node2part.values()) {
                     GridDhtPartitionMap newPart = partMap.get(part.nodeId());
 
-                    // If for some nodes current partition has a newer map,
-                    // then we keep the newer value.
-                    if (newPart != null &&
-                        (newPart.updateSequence() < part.updateSequence() ||
-                        (grp.localStartVersion().compareTo(newPart.topologyVersion()) > 0))
-                        ) {
+                    if (shouldOverridePartitionMap(part, newPart)) {
                         if (log.isDebugEnabled())
                             log.debug("Overriding partition map in full update map [exchId=" + exchId + ", curPart=" +
                                 mapString(part) + ", newPart=" + mapString(newPart) + ']');
-
+                    } else {
+                        // If for some nodes current partition has a newer map,
+                        // then we keep the newer value.
                         partMap.put(part.nodeId(), part);
                     }
                 }
@@ -1110,25 +1120,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             node2part = partMap;
 
-            part2node.clear();
-
-            for (Map.Entry<UUID, GridDhtPartitionMap> e : partMap.entrySet()) {
-                for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
-                    if (e0.getValue() != MOVING && e0.getValue() != OWNING)
-                        continue;
-
-                    int p = e0.getKey();
-
-                    Set<UUID> ids = part2node.get(p);
-
-                    if (ids == null)
-                        // Initialize HashSet to size 3 in anticipation that there won't be
-                        // more than 3 nodes per partitions.
-                        part2node.put(p, ids = U.newHashSet(3));
-
-                    ids.add(e.getKey());
-                }
-            }
+            rebuildPartitionToNodeMap();
 
             boolean changed = false;
 
@@ -1223,6 +1215,32 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
         finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Rebuilds Partition -> Node map from Node -> Partition map
+     * Only MOVING and OWNING partitions are included to
+     */
+    private void rebuildPartitionToNodeMap() {
+        part2node.clear();
+
+        for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+            for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
+                if (e0.getValue() != MOVING && e0.getValue() != OWNING)
+                    continue;
+
+                int p = e0.getKey();
+
+                Set<UUID> ids = part2node.get(p);
+
+                if (ids == null)
+                    // Initialize HashSet to size 3 in anticipation that there won't be
+                    // more than 3 nodes per partitions.
+                    part2node.put(p, ids = U.newHashSet(3));
+
+                ids.add(e.getKey());
+            }
         }
     }
 
