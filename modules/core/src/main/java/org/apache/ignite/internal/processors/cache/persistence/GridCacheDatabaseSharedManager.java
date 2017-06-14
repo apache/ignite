@@ -237,7 +237,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private long checkpointPageBufSize;
 
-    /** <code>null</code> for client node */
+    /** */
     private FilePageStoreManager storeMgr;
 
     /** */

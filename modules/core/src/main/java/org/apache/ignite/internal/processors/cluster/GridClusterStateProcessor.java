@@ -270,12 +270,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         // TODO warning, processing in discovery thread!!!
         if (globalState == INACTIVE) {
-            // Revert start action if get .
+            // Revert start action if get INACTIVE state on join.
             if (sharedCtx.pageStore() != null)
                 sharedCtx.pageStore().stop(false);
 
             if (sharedCtx.wal() != null)
                 sharedCtx.wal().stop(false);
+
+            sharedCtx.snapshot().stop(false);
 
             sharedCtx.database().stop(false);
         }
@@ -721,6 +723,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
             sharedCtx.database().onActivate(ctx);
 
+            sharedCtx.snapshot().onActivate(ctx);
+
             if (log.isInfoEnabled())
                 log.info("Successfully activated persistence managers [nodeId="
                     + ctx.localNodeId() + ", client=" + client + ", topVer=" + cgsCtx.topVer + "]");
@@ -823,6 +827,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         Exception ex = null;
 
         try {
+            sharedCtx.snapshot().onDeActivate(ctx);
+
             sharedCtx.database().onDeActivate(ctx);
 
             if (sharedCtx.pageStore() != null)
