@@ -1252,7 +1252,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testExe() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5487");
         String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.EXE.key()));
 
         info("Exe command result: " + ret);
