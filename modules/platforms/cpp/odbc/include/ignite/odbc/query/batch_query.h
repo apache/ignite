@@ -127,18 +127,7 @@ namespace ignite
                  * @param last Last page flag.
                  * @return Result.
                  */
-                SqlResult::Type MakeRequestExecuteStart(SqlUlen begin, SqlUlen end, bool last);
-
-                /**
-                 * Make query execute request and use response to set internal
-                 * state.
-                 *
-                 * @param begin Paramset interval beginning.
-                 * @param end Paramset interval end.
-                 * @param last Last page flag.
-                 * @return Result.
-                 */
-                SqlResult::Type MakeRequestExecuteContinue(SqlUlen begin, SqlUlen end, bool last);
+                SqlResult::Type MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last);
 
                 /** Connection associated with the statement. */
                 Connection& connection;

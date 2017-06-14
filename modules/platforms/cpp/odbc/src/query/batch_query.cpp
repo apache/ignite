@@ -58,21 +58,18 @@ namespace ignite
 
                 int32_t maxPageSize = connection.GetConfiguration().GetPageSize();
                 int32_t rowNum = params.GetRowNumber();
+                SqlResult::Type res;
 
-                int32_t currentPageSize = std::min(maxPageSize, rowNum);
+                int32_t processed = 0;
 
-                SqlResult::Type res = MakeRequestExecuteStart(0, currentPageSize, currentPageSize == rowNum);
+                do {
+                    int32_t currentPageSize = std::min(maxPageSize, rowNum - processed);
+                    bool lastPage = currentPageSize == rowNum - processed;
 
-                int32_t processed = currentPageSize;
-
-                while (res == SqlResult::AI_SUCCESS && processed < rowNum)
-                {
-                    currentPageSize = std::min(maxPageSize, rowNum - processed);
-
-                    res = MakeRequestExecuteContinue(processed, processed + currentPageSize, currentPageSize == rowNum - processed);
+                    res = MakeRequestExecuteBatch(processed, processed + currentPageSize, lastPage);
 
                     processed += currentPageSize;
-                }
+                } while (res == SqlResult::AI_SUCCESS && processed < rowNum);
 
                 params.SetParamsProcessed(static_cast<SqlUlen>(setsProcessed));
 
@@ -148,12 +145,12 @@ namespace ignite
                 return rowsAffected;
             }
 
-            SqlResult::Type BatchQuery::MakeRequestExecuteStart(SqlUlen begin, SqlUlen end, bool last)
+            SqlResult::Type BatchQuery::MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last)
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteBatchStartRequest req(schema, sql, params, begin, end, last);
-                QueryExecuteBatchStartResponse rsp;
+                QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last);
+                QueryExecuteBatchResponse rsp;
 
                 try
                 {
@@ -188,58 +185,11 @@ namespace ignite
                 }
 
                 id = rsp.GetQueryId();
-                rowsAffected = rsp.GetAffectedRows();
+                rowsAffected += rsp.GetAffectedRows();
                 setsProcessed += end - begin;
 
                 LOG_MSG("Query id: " << id);
                 LOG_MSG("rowsAffected: " << rowsAffected);
-
-                return SqlResult::AI_SUCCESS;
-            }
-
-            SqlResult::Type BatchQuery::MakeRequestExecuteContinue(SqlUlen begin, SqlUlen end, bool last)
-            {
-                const std::string& schema = connection.GetSchema();
-
-                QueryExecuteBatchContinueRequest req(id, params, begin, end, last);
-                QueryExecuteBatchContinueResponse rsp;
-
-                try
-                {
-                    connection.SyncMessage(req, rsp);
-                }
-                catch (const IgniteError& err)
-                {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                {
-                    LOG_MSG("Error: " << rsp.GetError());
-
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                if (!rsp.GetErrorMessage().empty())
-                {
-                    LOG_MSG("Error: " << rsp.GetErrorMessage());
-
-                    setsProcessed += end - begin - rsp.GetErrorSetIdx();
-
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(),
-                        static_cast<int32_t>(setsProcessed), 0);
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                rowsAffected += rsp.GetAffectedRows();
-                setsProcessed += end - begin;
-
-                LOG_MSG("rowsAffected: " << rsp.GetAffectedRows());
 
                 return SqlResult::AI_SUCCESS;
             }

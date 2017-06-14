@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * ODBC query execute with batch of parameters result.
  */
-public class OdbcQueryExecuteBatchContinueResult {
+public class OdbcQueryExecuteBatchResult {
     /** Rows affected. */
     private final long rowsAffected;
 
@@ -35,8 +35,10 @@ public class OdbcQueryExecuteBatchContinueResult {
     /**
      * @param rowsAffected Number of rows affected by the query.
      */
-    public OdbcQueryExecuteBatchContinueResult(long rowsAffected) {
-        this(rowsAffected, -1, null);
+    public OdbcQueryExecuteBatchResult(long rowsAffected) {
+        this.rowsAffected = rowsAffected;
+        this.errorSetIdx = -1;
+        this.errorMessage = null;
     }
 
     /**
@@ -44,7 +46,7 @@ public class OdbcQueryExecuteBatchContinueResult {
      * @param errorSetIdx Sets processed.
      * @param errorMessage Error message.
      */
-    public OdbcQueryExecuteBatchContinueResult(long rowsAffected, long errorSetIdx, String errorMessage) {
+    public OdbcQueryExecuteBatchResult(long rowsAffected, long errorSetIdx, String errorMessage) {
         this.rowsAffected = rowsAffected;
         this.errorSetIdx = errorSetIdx;
         this.errorMessage = errorMessage;
@@ -67,8 +69,7 @@ public class OdbcQueryExecuteBatchContinueResult {
     /**
      * @return Error message.
      */
-    @Nullable
-    public String errorMessage() {
+    @Nullable public String errorMessage() {
         return errorMessage;
     }
 }

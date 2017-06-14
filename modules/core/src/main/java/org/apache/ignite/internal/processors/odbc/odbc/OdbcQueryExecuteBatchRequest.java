@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * ODBC query execute request with the batch of parameters.
  */
-public class OdbcQueryExecuteBatchStartRequest extends OdbcRequest {
+public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
     /** Schema. */
     @GridToStringInclude(sensitive = true)
     private final String schema;
@@ -47,8 +47,8 @@ public class OdbcQueryExecuteBatchStartRequest extends OdbcRequest {
      * @param last Last page flag.
      * @param args Arguments list.
      */
-    public OdbcQueryExecuteBatchStartRequest(@Nullable String schema, String sqlQry, boolean last, Object[][] args) {
-        super(QRY_EXEC_BATCH_START);
+    public OdbcQueryExecuteBatchRequest(@Nullable String schema, String sqlQry, boolean last, Object[][] args) {
+        super(QRY_EXEC_BATCH);
 
         assert sqlQry != null : "SQL query should not be null";
         assert args != null : "Parameters should not be null";
@@ -90,6 +90,6 @@ public class OdbcQueryExecuteBatchStartRequest extends OdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcQueryExecuteBatchStartRequest.class, this, "args", args, true);
+        return S.toString(OdbcQueryExecuteBatchRequest.class, this, "args", args, true);
     }
 }

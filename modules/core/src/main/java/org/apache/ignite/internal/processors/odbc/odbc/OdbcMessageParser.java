@@ -95,7 +95,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 break;
             }
 
-            case OdbcRequest.QRY_EXEC_BATCH_START: {
+            case OdbcRequest.QRY_EXEC_BATCH: {
                 String schema = reader.readString();
                 String sql = reader.readString();
                 int paramRowLen = reader.readInt();
@@ -107,23 +107,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 for (int i = 0; i < rowNum; ++i)
                     params[i] = readParameterRow(reader, paramRowLen);
 
-                res = new OdbcQueryExecuteBatchStartRequest(schema, sql, last, params);
-
-                break;
-            }
-
-            case OdbcRequest.QRY_EXEC_BATCH_CONTINUE: {
-                long id = reader.readLong();
-                int paramRowLen = reader.readInt();
-                int rowNum = reader.readInt();
-                boolean last = reader.readBoolean();
-
-                Object[][] params = new Object[rowNum][];
-
-                for (int i = 0; i < rowNum; ++i)
-                    params[i] = readParameterRow(reader, paramRowLen);
-
-                res = new OdbcQueryExecuteBatchContinueRequest(id, last, params);
+                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params);
 
                 break;
             }
@@ -239,24 +223,8 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
         }
-        else if (res0 instanceof OdbcQueryExecuteBatchStartResult) {
-            OdbcQueryExecuteBatchStartResult res = (OdbcQueryExecuteBatchStartResult) res0;
-
-            if (log.isDebugEnabled())
-                log.debug("Resulting batch query ID: " + res.queryId());
-
-            writer.writeBoolean(res.errorMessage() == null);
-            writer.writeLong(res.rowsAffected());
-
-            if (res.errorMessage() == null)
-                writer.writeLong(res.queryId());
-            else {
-                writer.writeLong(res.errorSetIdx());
-                writer.writeString(res.errorMessage());
-            }
-        }
-        else if (res0 instanceof OdbcQueryExecuteBatchContinueResult) {
-            OdbcQueryExecuteBatchContinueResult res = (OdbcQueryExecuteBatchContinueResult) res0;
+        else if (res0 instanceof OdbcQueryExecuteBatchResult) {
+            OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
 
             writer.writeBoolean(res.errorMessage() == null);
             writer.writeLong(res.rowsAffected());

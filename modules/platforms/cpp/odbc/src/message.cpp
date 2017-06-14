@@ -76,7 +76,7 @@ namespace ignite
             params.Write(writer);
         }
 
-        QueryExecuteBatchStartRequest::QueryExecuteBatchStartRequest(const std::string& schema, const std::string& sql,
+        QueryExecuteBatchtRequest::QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
             const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last):
             schema(schema),
             sql(sql),
@@ -88,14 +88,14 @@ namespace ignite
             // No-op.
         }
 
-        QueryExecuteBatchStartRequest::~QueryExecuteBatchStartRequest()
+        QueryExecuteBatchtRequest::~QueryExecuteBatchtRequest()
         {
             // No-op.
         }
 
-        void QueryExecuteBatchStartRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryExecuteBatchtRequest::Write(impl::binary::BinaryWriterImpl& writer) const
         {
-            writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH_START);
+            writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH);
 
             if (schema.empty())
                 writer.WriteNull();
@@ -103,29 +103,6 @@ namespace ignite
                 writer.WriteObject<std::string>(schema);
 
             writer.WriteObject<std::string>(sql);
-
-            params.Write(writer, begin, end, last);
-        }
-
-        QueryExecuteBatchContinueRequest::QueryExecuteBatchContinueRequest(int64_t id, const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last):
-            id(id),
-            params(params),
-            begin(begin),
-            end(end),
-            last(last)
-        {
-            // No-op.
-        }
-
-        QueryExecuteBatchContinueRequest::~QueryExecuteBatchContinueRequest()
-        {
-            // No-op.
-        }
-
-        void QueryExecuteBatchContinueRequest::Write(impl::binary::BinaryWriterImpl& writer) const
-        {
-            writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH_CONTINUE);
-            writer.WriteInt64(id);
 
             params.Write(writer, begin, end, last);
         }
@@ -305,7 +282,7 @@ namespace ignite
             meta::ReadColumnMetaVector(reader, meta);
         }
 
-        QueryExecuteBatchStartResponse::QueryExecuteBatchStartResponse():
+        QueryExecuteBatchResponse::QueryExecuteBatchResponse():
             queryId(-1),
             affectedRows(0),
             errorSetIdx(-1),
@@ -314,12 +291,12 @@ namespace ignite
             // No-op.
         }
 
-        QueryExecuteBatchStartResponse::~QueryExecuteBatchStartResponse()
+        QueryExecuteBatchResponse::~QueryExecuteBatchResponse()
         {
             // No-op.
         }
 
-        void QueryExecuteBatchStartResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader)
+        void QueryExecuteBatchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader)
         {
             bool success = reader.ReadBool();
             affectedRows = reader.ReadInt64();
@@ -327,31 +304,6 @@ namespace ignite
             if (success)
                 queryId = reader.ReadInt64();
             else
-            {
-                errorSetIdx = reader.ReadInt64();
-                errorMessage = reader.ReadObject<std::string>();
-            }
-        }
-
-        QueryExecuteBatchContinueResponse::QueryExecuteBatchContinueResponse():
-            affectedRows(0),
-            errorSetIdx(-1),
-            errorMessage()
-        {
-            // No-op.
-        }
-
-        QueryExecuteBatchContinueResponse::~QueryExecuteBatchContinueResponse()
-        {
-            // No-op.
-        }
-
-        void QueryExecuteBatchContinueResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader)
-        {
-            bool success = reader.ReadBool();
-            affectedRows = reader.ReadInt64();
-
-            if (!success)
             {
                 errorSetIdx = reader.ReadInt64();
                 errorMessage = reader.ReadObject<std::string>();

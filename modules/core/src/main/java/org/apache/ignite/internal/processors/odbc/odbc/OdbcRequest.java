@@ -41,11 +41,8 @@ public class OdbcRequest extends SqlListenerRequest {
     /** Get parameters meta. */
     public static final int META_PARAMS = 7;
 
-    /** Beginning execution of the sql query with the batch of parameters. */
-    public static final int QRY_EXEC_BATCH_START = 8;
-
-    /** Continuation of execution of the sql query with the batch of parameters. */
-    public static final int QRY_EXEC_BATCH_CONTINUE = 9;
+    /** Execute sql query with the batch of parameters. */
+    public static final int QRY_EXEC_BATCH = 8;
 
     /** Command. */
     private final int cmd;

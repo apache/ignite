@@ -60,9 +60,7 @@ namespace ignite
 
                 GET_PARAMS_METADATA = 7,
 
-                EXECUTE_SQL_QUERY_BATCH_START = 8,
-
-                EXECUTE_SQL_QUERY_BATCH_CONTINUE = 9
+                EXECUTE_SQL_QUERY_BATCH = 8
             };
         };
 
@@ -153,7 +151,7 @@ namespace ignite
         /**
          * Query execute batch request.
          */
-        class QueryExecuteBatchStartRequest
+        class QueryExecuteBatchtRequest
         {
         public:
             /**
@@ -165,13 +163,13 @@ namespace ignite
              * @param begin Beginng of the interval.
              * @param end End of the interval.
              */
-            QueryExecuteBatchStartRequest(const std::string& schema, const std::string& sql,
+            QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
                                           const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last);
 
             /**
              * Destructor.
              */
-            ~QueryExecuteBatchStartRequest();
+            ~QueryExecuteBatchtRequest();
 
             /**
              * Write request using provided writer.
@@ -185,50 +183,6 @@ namespace ignite
 
             /** SQL query. */
             std::string sql;
-
-            /** Parameters bindings. */
-            const app::ParameterSet& params;
-
-            /** Beginng of the interval. */
-            SqlUlen begin;
-
-            /** End of the interval. */
-            SqlUlen end;
-
-            /** Last page flag. */
-            bool last;
-        };
-
-        /**
-         * Query execute batch request.
-         */
-        class QueryExecuteBatchContinueRequest
-        {
-        public:
-            /**
-             * Constructor.
-             *
-             * @param id Query ID.
-             * @param params Query arguments.
-             * @param begin Beginng of the interval.
-             * @param end End of the interval.
-             */
-            QueryExecuteBatchContinueRequest(int64_t id, const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last);
-
-            /**
-             * Destructor.
-             */
-            ~QueryExecuteBatchContinueRequest();
-
-            /**
-             * Write request using provided writer.
-             * @param writer Writer.
-             */
-            void Write(impl::binary::BinaryWriterImpl& writer) const;
-
-        private:
-            /** Query ID. */
-            int64_t id;
 
             /** Parameters bindings. */
             const app::ParameterSet& params;
@@ -626,18 +580,18 @@ namespace ignite
         /**
          * Query execute batch start response.
          */
-        class QueryExecuteBatchStartResponse : public Response
+        class QueryExecuteBatchResponse : public Response
         {
         public:
             /**
              * Constructor.
              */
-            QueryExecuteBatchStartResponse();
+            QueryExecuteBatchResponse();
 
             /**
              * Destructor.
              */
-            virtual ~QueryExecuteBatchStartResponse();
+            virtual ~QueryExecuteBatchResponse();
 
             /**
              * Get query ID.
@@ -684,66 +638,6 @@ namespace ignite
 
             /** Query ID. */
             int64_t queryId;
-
-            /** Affected rows. */
-            int64_t affectedRows;
-
-            /** Index of the set which caused an error. */
-            int64_t errorSetIdx;
-
-            /** Error message. */
-            std::string errorMessage;
-        };
-
-        /**
-         * Query execute batch continue response.
-         */
-        class QueryExecuteBatchContinueResponse : public Response
-        {
-        public:
-            /**
-             * Constructor.
-             */
-            QueryExecuteBatchContinueResponse();
-
-            /**
-             * Destructor.
-             */
-            virtual ~QueryExecuteBatchContinueResponse();
-
-            /**
-             * Affected rows.
-             * @return Affected rows.
-             */
-            int64_t GetAffectedRows() const
-            {
-                return affectedRows;
-            }
-
-            /**
-             * Get index of the set which caused an error.
-             * @return Index of the set which caused an error.
-             */
-            int64_t GetErrorSetIdx() const
-            {
-                return affectedRows;
-            }
-
-            /**
-             * Get error message.
-             * @return Error message.
-             */
-            const std::string& GetErrorMessage() const
-            {
-                return errorMessage;
-            }
-
-        private:
-            /**
-             * Read response using provided reader.
-             * @param reader Reader.
-             */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Affected rows. */
             int64_t affectedRows;
