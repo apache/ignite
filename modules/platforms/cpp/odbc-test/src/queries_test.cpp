@@ -259,6 +259,25 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK(ret == SQL_NO_DATA);
     }
 
+    void CheckParamsNum(const std::string& req, SQLSMALLINT expectedParamsNum)
+    {
+        std::vector<SQLCHAR> req0(req.begin(), req.end());
+
+        SQLRETURN ret = SQLPrepare(stmt, &req0[0], static_cast<SQLINTEGER>(req0.size()));
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        SQLSMALLINT paramsNum = -1;
+
+        ret = SQLNumParams(stmt, &paramsNum);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(paramsNum, expectedParamsNum);
+    }
+
     int CountRows(SQLHSTMT stmt)
     {
         int res = 0;
@@ -1503,5 +1522,17 @@ BOOST_AUTO_TEST_CASE(TestKeyVal)
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
+
+BOOST_AUTO_TEST_CASE(TestParamsNum)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    CheckParamsNum("SELECT * FROM TestType", 0);
+    CheckParamsNum("SELECT * FROM TestType WHERE _key=?", 1);
+    CheckParamsNum("SELECT * FROM TestType WHERE _key=? AND _val=?", 2);
+    CheckParamsNum("INSERT INTO TestType(_key, strField) VALUES(1, 'some')", 0);
+    CheckParamsNum("INSERT INTO TestType(_key, strField) VALUES(?, ?)", 2);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

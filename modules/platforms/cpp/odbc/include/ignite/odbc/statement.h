@@ -124,11 +124,11 @@ namespace ignite
             void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
 
             /**
-             * Get number of binded parameters.
+             * Get number parameters required by the prepared statement.
              *
-             * @return Number of binded parameters.
+             * @param paramNum Number of parameters.
              */
-            uint16_t GetParametersNumber();
+            void GetParametersNumber(uint16_t& paramNum);
 
             /**
              * Set parameter binding offset pointer.
@@ -454,6 +454,13 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
+
+            /**
+             * Get number parameters required by the prepared statement.
+             *
+             * @param paramNum Number of parameters.
+             */
+            SqlResult::Type InternalGetParametersNumber(uint16_t& paramNum);
 
             /**
              * Get value of the column in the result set.
