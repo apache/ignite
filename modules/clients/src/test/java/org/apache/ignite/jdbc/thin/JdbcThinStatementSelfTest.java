@@ -305,7 +305,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     public void testCloseOnCompletion() throws Exception {
         ResultSet rs0 = stmt.executeQuery(SQL);
 
-        ResultSet rs1 = stmt.executeQuery(SQL);
+        ResultSet rs1 = stmt.executeQuery(SQL); // rs0 is closed implicitly here.
 
         assert !stmt.isClosed() : "Statement must not be closed";
 
