@@ -184,7 +184,6 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         return res;
     }
 
-    /** {@inheritDoc} */
     public IntSet indexes() {
         return (IntSet)sto.keySet();
     }

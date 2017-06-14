@@ -114,6 +114,7 @@ public class Blas {
 
         if (y.isArrayBased()) {
             double[] yData = y.getStorage().data();
+
             if (x.isArrayBased())
                 System.arraycopy(x.getStorage().data(), 0, y.getStorage().data(), 0, n);
             else {

@@ -35,6 +35,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <netlibjava.version>1.1.2</netlibjava.version>
     </properties>
 
     <dependencies>
@@ -89,7 +90,7 @@
         <dependency>
             <groupId>com.github.fommil.netlib</groupId>
             <artifactId>core</artifactId>
-            <version>1.1.2</version>
+            <version>${netlibjava.version}</version>
         </dependency>
 
         <dependency>
@@ -114,7 +115,7 @@
                 <dependency>
                     <groupId>com.github.fommil.netlib</groupId>
                     <artifactId>all</artifactId>
-                    <version>1.1.2</version>
+                    <version>${netlibjava.version}</version>
                 </dependency>
             </dependencies>
         </profile>
