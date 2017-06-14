@@ -389,14 +389,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public String affinityField(String keyType) {
-        if (binaryCtx == null)
-            return null;
-
-        return binaryCtx.affinityKeyFieldName(typeId(keyType));
-    }
-
-    /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
         return new BinaryObjectBuilderImpl(binaryCtx, clsName);
     }
@@ -636,54 +628,33 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /**
-     * @param po Binary object.
+     * Get affinity key field.
+     *
+     * @param typeId Binary object type ID.
      * @return Affinity key.
      */
-    public Object affinityKey(BinaryObject po) {
+    public BinaryField affinityKeyField(int typeId) {
         // Fast path for already cached field.
-        if (po instanceof BinaryObjectEx) {
-            int typeId = ((BinaryObjectEx)po).typeId();
+        T1<BinaryField> fieldHolder = affKeyFields.get(typeId);
 
-            T1<BinaryField> fieldHolder = affKeyFields.get(typeId);
-
-            if (fieldHolder != null) {
-                BinaryField field = fieldHolder.get();
-
-                return field != null ? field.value(po) : po;
-            }
-        }
+        if (fieldHolder != null)
+            return fieldHolder.get();
 
         // Slow path if affinity field is not cached yet.
-        try {
-            BinaryType meta = po instanceof BinaryObjectEx ? ((BinaryObjectEx)po).rawType() : po.type();
+        String name = binaryCtx.affinityKeyFieldName(typeId);
 
-            if (meta != null) {
-                String name = meta.affinityKeyFieldName();
+        if (name != null) {
+            BinaryField field = binaryCtx.createField(typeId, name);
 
-                if (name != null) {
-                    BinaryField field = meta.field(name);
+            affKeyFields.putIfAbsent(typeId, new T1<>(field));
 
-                    affKeyFields.putIfAbsent(meta.typeId(), new T1<>(field));
-
-                    return field.value(po);
-                }
-                else
-                    affKeyFields.putIfAbsent(meta.typeId(), new T1<BinaryField>(null));
-            }
-            else if (po instanceof BinaryObjectEx) {
-                int typeId = ((BinaryObjectEx)po).typeId();
-
-                String name = binaryCtx.affinityKeyFieldName(typeId);
-
-                if (name != null)
-                    return po.field(name);
-            }
+            return field;
         }
-        catch (BinaryObjectException e) {
-            U.error(log, "Failed to get affinity field from binary object: " + po, e);
-        }
+        else {
+            affKeyFields.putIfAbsent(typeId, new T1<BinaryField>(null));
 
-        return po;
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -724,7 +695,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 
         CacheObjectContext res = new CacheObjectBinaryContext(ctx,
-            cfg.getName(),
+            cfg,
             ctx0.copyOnGet(),
             ctx0.storeValue(),
             binaryEnabled,

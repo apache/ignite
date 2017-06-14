@@ -70,7 +70,9 @@ public class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
 
     /** {@inheritDoc} */
     @Override public synchronized BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
-        return ((BinaryTypeImpl)metas.get(typeId)).metadata();
+        BinaryTypeImpl type = (BinaryTypeImpl)metas.get(typeId);
+
+        return type != null ? type.metadata() : null;
     }
 
     /** {@inheritDoc} */
