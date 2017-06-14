@@ -300,6 +300,29 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCloseOnCompletion() throws Exception {
+        ResultSet rs0 = stmt.executeQuery(SQL);
+
+        ResultSet rs1 = stmt.executeQuery(SQL);
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        rs1.close();
+
+        assert !stmt.isClosed() : "Statement must not be closed";
+
+        ResultSet rs2 = stmt.executeQuery(SQL);
+
+        stmt.closeOnCompletion();
+
+        rs2.close();
+
+        assert stmt.isClosed() : "Statement must be closed";
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")

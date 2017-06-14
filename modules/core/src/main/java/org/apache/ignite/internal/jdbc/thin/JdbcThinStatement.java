@@ -59,10 +59,10 @@ public class JdbcThinStatement implements Statement {
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
-    /** */
+    /** Result set or update count has been already read. */
     private boolean alreadyRead;
 
-    /** */
+    /** Close this statement on result set close. */
     private boolean closeOnCompletion;
 
     /**
@@ -463,6 +463,9 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         closeOnCompletion = true;
+
+        if (rs != null)
+            rs.closeStmt(true);
     }
 
     /** {@inheritDoc} */
