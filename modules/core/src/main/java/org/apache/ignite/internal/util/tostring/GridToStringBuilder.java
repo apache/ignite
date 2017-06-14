@@ -87,7 +87,7 @@ public class GridToStringBuilder {
     private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /** Maximum number of collection (map) entries to print. */
-    public static final int MAX_COL_SIZE = 100;
+    public static final int MAX_COL_SIZE = 200;
 
     /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
     public static final boolean INCLUDE_SENSITIVE =
