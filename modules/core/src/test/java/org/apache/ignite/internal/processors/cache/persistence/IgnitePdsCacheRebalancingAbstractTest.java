@@ -302,6 +302,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         awaitPartitionMapExchange();
 
+        ignite1.active(true);
+
         cache1 = ignite1.cache(cacheName);
         IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
         IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);

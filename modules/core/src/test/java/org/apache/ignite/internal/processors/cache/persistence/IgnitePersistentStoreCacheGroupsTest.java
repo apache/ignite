@@ -185,6 +185,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         node = ignite(0);
 
+        node.active(true);
+
         checkPersons(caches, node);
         checkPersonsQuery(caches, node);
 
