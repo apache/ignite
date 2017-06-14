@@ -3620,6 +3620,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean failIfNotStarted
     ) throws IgniteCheckedException {
+        if (cacheType != cacheType(cacheName))
+            throw new IgniteCheckedException("Failed to start cache (name is reserved for type " + cacheType(cacheName)
+                + " but requested type was " + cacheType + ": " + cacheName);
+
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
