@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -268,6 +269,9 @@ public class ClusterListener {
 
                         clusterDisconnect();
                 }
+            }
+            catch (ConnectException ignored) {
+                clusterDisconnect();
             }
             catch (Exception e) {
                 log.error("WatchTask failed", e);

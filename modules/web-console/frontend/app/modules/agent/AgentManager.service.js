@@ -559,7 +559,7 @@ export default class IgniteAgentManager {
      */
     queryClose(nid, queryId) {
         if (this.ignite2x) {
-            return this.visorTask('queryClose', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
+            return this.visorTask('queryCloseX2', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
                 nid + '=' + queryId);
         }
 
