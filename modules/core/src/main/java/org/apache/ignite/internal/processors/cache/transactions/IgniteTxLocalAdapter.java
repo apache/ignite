@@ -497,7 +497,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.tm().addCommittedTx(this);
 
         if (!empty) {
-            batchStoreCommit(writeEntries());
+            // on GridNearTxLocal batch would be committed only if it was prepared lately.
+            // on other transactions it would be commited in any case
+            if(!(near() && local()) || entriesPreparedToStore)
+                batchStoreCommit(writeEntries());
 
             WALPointer ptr = null;
 

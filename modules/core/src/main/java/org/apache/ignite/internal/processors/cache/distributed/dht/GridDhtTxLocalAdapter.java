@@ -835,7 +835,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /**
      * @param prepFut Prepare future.
-     * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
+     * @return If transaction is finished on prepare step returns future which is completed after transaction finish.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(

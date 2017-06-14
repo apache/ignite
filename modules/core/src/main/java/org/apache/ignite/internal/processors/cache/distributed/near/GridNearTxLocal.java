@@ -3074,7 +3074,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * @return Tx prepare future.
      */
-    public IgniteInternalFuture<?> prepareNearTxLocal() {
+    public GridNearTxPrepareFutureAdapter prepareNearTxLocal() {
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut;
 
         if (fut == null) {
@@ -3090,7 +3090,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 fut = new GridNearPessimisticTxPrepareFuture(cctx, this);
 
             if (!PREP_FUT_UPD.compareAndSet(this, null, fut))
-                return prepFut;
+                return fut;
 
             if (timeout == -1) {
                 fut.onDone(this, timeoutException());
@@ -3156,7 +3156,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             return new GridFinishedFuture<>((IgniteInternalTx)this);
         }
 
-        final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
+        final GridNearTxPrepareFutureAdapter prepareFut = prepareNearTxLocal();
 
         GridNearTxFinishFuture fut = commitFut;
 
@@ -3165,6 +3165,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             return commitFut;
 
         cctx.mvcc().addFuture(fut, fut.futureId());
+
+        try {
+            prepareEntries(prepareFut);
+        } catch (IgniteCheckedException e) {
+            prepareFut.onDone(e);
+        }
 
         prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
