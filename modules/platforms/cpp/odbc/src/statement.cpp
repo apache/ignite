@@ -360,6 +360,20 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_PARAMSET_SIZE:
+                {
+                    // TODO: Implement me.
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAMS_PROCESSED_PTR:
+                {
+                    // TODO: Implement me.
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,

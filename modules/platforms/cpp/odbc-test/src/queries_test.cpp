@@ -377,8 +377,9 @@ struct QueriesTestSuiteFixture
      *
      * @param recordsNum Number of records to insert.
      * @param merge Set to true to use merge instead of insert.
+     * @return Records inserted.
      */
-    void InsertTestBatch(int recordsNum, bool merge = false)
+    int InsertTestBatch(int recordsNum, bool merge = false)
     {
         SQLCHAR insertReq[] = "INSERT "
             "INTO TestType(_key, i8Field, i16Field, i32Field, strField, floatField, doubleField, boolField, dateField, "
@@ -442,12 +443,20 @@ struct QueriesTestSuiteFixture
             timestampFields[i].hour = timeFields[i].hour;
             timestampFields[i].minute = timeFields[i].minute;
             timestampFields[i].second = timeFields[i].second;
-            timestampFields[i].fraction = std::abs((i * 914873)) % 1000000000;
+            timestampFields[i].fraction = std::abs(i * 914873) % 1000000000;
 
             for (int j = 0; j < 42; ++j)
                 i8ArrayFields[i * 42 + j] = i * 42 + j;
             i8ArrayFieldsLen[i] = 42;
         }
+
+        SQLULEN setsProcessed = 0;
+
+        BOOST_CHECKPOINT("Setting processed pointer");
+        ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMS_PROCESSED_PTR, &setsProcessed, SQL_IS_POINTER);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         BOOST_CHECKPOINT("Binding keys");
         ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, keys.GetData(), 0, 0);
@@ -558,6 +567,8 @@ struct QueriesTestSuiteFixture
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        return static_cast<int>(setsProcessed);
     }
 
     void InsertBatchSelect(int recordsNum)
@@ -565,7 +576,9 @@ struct QueriesTestSuiteFixture
         Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
         // Inserting values.
-        InsertTestBatch(recordsNum);
+        int inserted = InsertTestBatch(recordsNum);
+
+        BOOST_REQUIRE_EQUAL(inserted, recordsNum);
 
         int64_t key = 0;
         char strField[1024] = { 0 };
