@@ -81,11 +81,6 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
     @Override public V value(CacheObjectValueContext ctx) {
         return val;
     }

@@ -134,11 +134,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
-        return val != null ? val.<V>value(null, false) : null;
-    }
-
-    /** {@inheritDoc} */
     @Override public V value(CacheObjectValueContext ctx) {
         return val != null ? val.<V>value(ctx, false) : null;
     }

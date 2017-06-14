@@ -34,13 +34,6 @@ public interface GridCacheVersionedEntry<K, V> {
     /**
      * Gets entry's value.
      *
-     * @return Entry's value.
-     */
-    @Nullable public V value();
-
-    /**
-     * Gets entry's value.
-     *
      * @param ctx Object value context.
      * @return Entry's value.
      */

@@ -86,11 +86,6 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
         return key;
     }
 
-    /** {@inheritDoc} */
-    @Override public V value() {
-        return value(keepBinary);
-    }
-
     /**
      * Returns the value stored in the cache when this entry was created.
      *
@@ -108,6 +103,6 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLazyPlainVersionedEntry.class, this,
-            "super", super.toString(), "key", key(), "val", value());
+            "super", super.toString(), "key", key(), "val", value(keepBinary));
     }
 }
