@@ -100,23 +100,21 @@
     margin: 0;
 }
 
-.modal.center .modal-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translateX(-50%) translateY(-50%);
-    transform: translateX(-50%) translateY(-50%);
-}
-
 .modal--ignite {
+    font-family: Roboto;
+
+    &.center {
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center;
+    }
+
     .close {
         position: absolute;
         top: 20px;
         right: 20px;
 
         display: block;
-        width: 12px;
-        height: 12px;
 
         opacity: 1;
         background: none;
@@ -159,7 +157,7 @@
                 margin-top: 1px;
                 margin-bottom: -1px;
 
-                i {
+                svg, i {
                     margin-right: 8px;
 
                     color: #424242;
@@ -177,6 +175,10 @@
             padding: 10px 20px;
 
             border-top: 1px solid $table-border-color;
+            
+            button + button {
+                margin-left: 20px;
+            }
         }
     }
 }

@@ -34,7 +34,19 @@ angular
                 template
             },
             '@base.settings.admin': {
-                templateUrl
+                templateUrl,
+                controller: class {
+                    static $inject = ['UserNotifications'];
+
+                    constructor(UserNotifications) {
+                        this.UserNotifications = UserNotifications;
+                    }
+
+                    changeUserNotifications() {
+                        this.UserNotifications.editor();
+                    }
+                },
+                controllerAs: 'ctrl'
             }
         },
         // templateUrl,

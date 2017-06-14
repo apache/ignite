@@ -75,6 +75,7 @@ import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteRetainSelection from './directives/retain-selection.directive';
+import btnIgniteLink from './directives/btn-ignite-link';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
@@ -116,6 +117,7 @@ import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
+import userNotifications from './components/user-notifications';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -177,6 +179,7 @@ angular
     webConsoleFooter.name,
     igniteIcon.name,
     versionPicker.name,
+    userNotifications.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -204,6 +207,8 @@ angular
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
 .directive('igniteClusterSelect', clusterSelect)
+.directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
+.directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.
 .service('IgniteErrorPopover', ErrorPopover)
 .service('JavaTypes', JavaTypes)

@@ -28,9 +28,9 @@ const State = {
 };
 
 export default class IgniteAgentManager {
-    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal'];
+    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal', 'UserNotifications'];
 
-    constructor($root, $q, socketFactory, AgentModal) {
+    constructor($root, $q, socketFactory, AgentModal, UserNotifications) {
         this.$root = $root;
         this.$q = $q;
         this.socketFactory = socketFactory;
@@ -39,6 +39,11 @@ export default class IgniteAgentManager {
          * @type {AgentModal}
          */
         this.AgentModal = AgentModal;
+
+        /**
+         * @type {UserNotifications}
+         */
+        this.UserNotifications = UserNotifications;
 
         this.promises = new Set();
 
@@ -131,6 +136,8 @@ export default class IgniteAgentManager {
             else
                 self.connectionState.next(State.CLUSTER_DISCONNECTED);
         });
+
+        self.socket.on('user:notifications', (notification) => this.UserNotifications.notification = notification);
     }
 
     saveToStorage(cluster = this.cluster) {
