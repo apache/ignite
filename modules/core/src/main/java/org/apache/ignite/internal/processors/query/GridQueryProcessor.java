@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -1341,11 +1342,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
-        if (affinityKey != null) {
-            assert entity.getFields().containsKey(affinityKey) && entity.getKeyFields().contains(affinityKey);
-
-            ccfg.setAffinityMapper(new DynamicTableAffinityKeyMapper(entity.getKeyType(), affinityKey));
-        }
+        if (affinityKey != null)
+            ccfg.setKeyConfiguration(new CacheKeyConfiguration(entity.getKeyType(), affinityKey));
 
         boolean res;
 

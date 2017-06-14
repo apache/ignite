@@ -324,7 +324,9 @@ public class BinaryContext {
         registerPredefinedType(LinkedHashMap.class, 0);
 
         // Classes with overriden default serialization flag.
-        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), false);
+        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), true);
+        registerPredefinedType(CollocatedSetItemKey.class, 0, affinityFieldName(CollocatedSetItemKey.class), true);
+        registerPredefinedType(CollocatedQueueItemKey.class, 0, affinityFieldName(CollocatedQueueItemKey.class), true);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
@@ -458,13 +460,19 @@ public class BinaryContext {
                 if (clsName.endsWith(".*")) {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
-                    for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, mapper, serializer, identity, affFields.get(clsName0),
+                    for (String clsName0 : classesInPackage(pkgName)) {
+                        String affField = affFields.remove(clsName0);
+
+                        descs.add(clsName0, mapper, serializer, identity, affField,
                             typeCfg.isEnum(), typeCfg.getEnumValues(), true);
+                    }
                 }
-                else
-                    descs.add(clsName, mapper, serializer, identity, affFields.get(clsName),
+                else {
+                    String affField = affFields.remove(clsName);
+
+                    descs.add(clsName, mapper, serializer, identity, affField,
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
+                }
             }
         }
 
@@ -482,9 +490,6 @@ public class BinaryContext {
 
             affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
         }
-
-        addSystemClassAffinityKey(CollocatedSetItemKey.class);
-        addSystemClassAffinityKey(CollocatedQueueItemKey.class);
     }
 
     /**
@@ -531,17 +536,6 @@ public class BinaryContext {
      */
     public static BinaryNameMapper defaultNameMapper() {
         return DFLT_MAPPER.nameMapper();
-    }
-
-    /**
-     * @param cls Class.
-     */
-    private void addSystemClassAffinityKey(Class<?> cls) {
-        String fieldName = affinityFieldName(cls);
-
-        assert fieldName != null : cls;
-
-        affKeyFieldNames.putIfAbsent(cls.getName().hashCode(), affinityFieldName(cls));
     }
 
     /**
@@ -1032,7 +1026,7 @@ public class BinaryContext {
      * @param cls Class to get affinity field for.
      * @return Affinity field name or {@code null} if field name was not found.
      */
-    private String affinityFieldName(Class cls) {
+    public static String affinityFieldName(Class cls) {
         for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
             for (Field f : cls.getDeclaredFields()) {
                 if (f.getAnnotation(AffinityKeyMapped.class) != null)
@@ -1244,11 +1238,22 @@ public class BinaryContext {
     }
 
     /**
+     * Get affinity key field name for type. First consult to predefined configuration, then delegate to metadata.
+     *
      * @param typeId Type ID.
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName(int typeId) {
-        return affKeyFieldNames.get(typeId);
+        String res = affKeyFieldNames.get(typeId);
+
+        if (res == null) {
+            BinaryMetadata meta = metaHnd.metadata0(typeId);
+
+            if (meta != null)
+                res = meta.affinityKeyFieldName();
+        }
+
+        return res;
     }
 
     /**

@@ -346,7 +346,10 @@ public class ClusterProcessor extends GridProcessorAdapter {
         if (verChecker != null)
             verChecker.stop();
 
-        ctx.io().removeMessageListener(TOPIC_INTERNAL_DIAGNOSTIC);
+        // Io manager can be null, if invoke stop before create io manager, for example
+        // exception on start.
+        if (ctx.io() != null)
+            ctx.io().removeMessageListener(TOPIC_INTERNAL_DIAGNOSTIC);
     }
 
     /**
