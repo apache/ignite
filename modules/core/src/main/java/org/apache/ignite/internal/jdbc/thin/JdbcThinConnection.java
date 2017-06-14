@@ -99,7 +99,6 @@ public class JdbcThinConnection implements Connection {
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
-        schema = QueryUtils.DFLT_SCHEMA;
 
         String host = extractHost(props);
         int port = extractPort(props);
