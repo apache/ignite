@@ -270,16 +270,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         // TODO warning, processing in discovery thread!!!
         if (globalState == INACTIVE) {
-            // Revert start action if get INACTIVE state on join.
-            if (sharedCtx.pageStore() != null)
-                sharedCtx.pageStore().stop(false);
+            if (log != null && log.isInfoEnabled())
+                log.info("Got inactivate state from cluster during node join.");
 
-            if (sharedCtx.wal() != null)
-                sharedCtx.wal().stop(false);
+            try {
+                // Revert start action if get INACTIVE state on join.
+                sharedCtx.snapshot().onDeActivate(ctx);
 
-            sharedCtx.snapshot().stop(false);
+                if (sharedCtx.pageStore() != null)
+                    sharedCtx.pageStore().onDeActivate(ctx);
 
-            sharedCtx.database().stop(false);
+                if (sharedCtx.wal() != null)
+                    sharedCtx.wal().onDeActivate(ctx);
+
+                sharedCtx.database().onDeActivate(ctx);
+            }catch (Exception e){
+                U.error(log, "Fail change state to INACTIVE on local node join.", e);
+            }
         }
     }
 
@@ -560,7 +567,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             else if (data.joiningNodeData() instanceof CacheClientReconnectDiscoveryData) {
                 CacheClientReconnectDiscoveryData data0 = (CacheClientReconnectDiscoveryData)data.joiningNodeData();
 
-                //Todo think how handler?
+                // No-op.
             }
         }
     }
