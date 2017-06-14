@@ -242,7 +242,7 @@
         </profile>
 
         <profile>
-            <id>release</id>
+            <id>licenses</id>
             <build>
                 <plugins>
                     <plugin><!-- skipping generation of dependencies licenses
@@ -257,13 +257,20 @@
                                     <goal>process</goal>
                                 </goals>
                                 <configuration>
-                                   <skip>true</skip>
+                                    <skip>true</skip>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
+                </plugins>
+            </build>
+        </profile>
 
-                    <plugin>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
