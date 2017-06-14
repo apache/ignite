@@ -957,11 +957,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
 
                         cnts.put(n.id(), cnt);
+
+                        if (log.isInfoEnabled())
+                            log.info("Assigned service to primary node [svc=" + dep.configuration().getName() +
+                                ", topVer=" + topVer + ", node=" + n.id() + ']');
                     }
                 }
                 else {
                     if (!nodes.isEmpty()) {
                         int size = nodes.size();
+
+                        if (log.isInfoEnabled())
+                            log.info("Calculating assignments for service " +
+                                "[svc=" + dep.configuration().getName() +
+                                ", topVer=" + topVer +
+                                ", nodes=" + U.nodeIds(nodes) +
+                                ", oldAssignment=" + (oldAssigns == null ? "NA" : oldAssigns.assigns()) +
+                                ", totalCnt=" + totalCnt + ", maxPerNodeCnt=" + maxPerNodeCnt + ']');
 
                         int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
                         int remainder = totalCnt != 0 ? totalCnt % size : 0;
@@ -1038,6 +1050,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 assigns.assigns(cnts);
 
+                if (log.isInfoEnabled())
+                    log.info("Calculated new assignments for service [svc=" + dep.configuration().getName() +
+                        ", assignment=" + assigns + ']');
+
                 cache.put(key, assigns);
 
                 tx.commit();
@@ -1078,6 +1094,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
 
         synchronized (ctxs) {
+            if (log.isInfoEnabled())
+                log.info("Updating service deployment [locNodeId=" + ctx.localNodeId() +
+                    ", svc=" + assigns.name() + ", assigns=" + assigns + ']');
+
             if (ctxs.size() > assignCnt) {
                 int cancelCnt = ctxs.size() - assignCnt;
 
@@ -1466,6 +1486,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
         // Handle undeployment.
         else {
+            if (log.isInfoEnabled())
+                log.info("Received undeploy notification, will cancel all instances of the service " +
+                    "[svc=" + e.getKey().name() + "]");
+
             String name = e.getKey().name();
 
             svcName.set(name);
@@ -1520,8 +1544,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
                 // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer.equals(topVer))
+                if (newTopVer.equals(topVer)) {
+                    if (log.isInfoEnabled())
+                        log.info("Will calculate new service deployment assignment (new service has been deployed) [" +
+                            "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');
+
                     reassign(dep, topVer);
+                }
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyCheckedException))
@@ -1784,6 +1813,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             if (ctxs != null) {
                 synchronized (ctxs) {
+                    if (log.isInfoEnabled())
+                        log.info("Undeploying services [svc=" + e.getKey().name() + ", assigns=" + assigns +
+                            ", ctxs=" + ctxs + ']');
+
                     cancel(ctxs, ctxs.size());
                 }
             }
