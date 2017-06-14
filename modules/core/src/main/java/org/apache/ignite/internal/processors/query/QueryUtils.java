@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -39,6 +40,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -430,10 +432,19 @@ public class QueryUtils {
             String affField = null;
 
             // Need to setup affinity key for distributed joins.
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null)
-                affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
-            else if (cctx.config().getAffinityMapper() instanceof DynamicTableAffinityKeyMapper)
-                affField = ((DynamicTableAffinityKeyMapper)cctx.config().getAffinityMapper()).fieldName();
+            String keyType = qryEntity.getKeyType();
+
+            if (!cctx.customAffinityMapper() && keyType != null) {
+                if (coCtx != null) {
+                    CacheDefaultBinaryAffinityKeyMapper mapper =
+                        (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
+
+                    BinaryField field = mapper.affinityKeyField(keyType);
+
+                    if (field != null)
+                        affField = field.name();
+                }
+            }
 
             if (affField != null) {
                 if (!escape)
