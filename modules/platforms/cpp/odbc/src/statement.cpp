@@ -371,11 +371,38 @@ namespace ignite
             return SqlResult::AI_SUCCESS;
         }
 
-        uint16_t Statement::GetParametersNumber()
+        void Statement::GetParametersNumber(uint16_t& paramNum)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            IGNITE_ODBC_API_CALL(InternalGetParametersNumber(paramNum));
+        }
 
-            return static_cast<uint16_t>(paramBindings.size());
+        SqlResult::Type Statement::InternalGetParametersNumber(uint16_t& paramNum)
+        {
+            if (!currentQuery.get())
+            {
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not prepared.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            if (currentQuery->GetType() != query::QueryType::DATA)
+            {
+                paramNum = 0;
+
+                return SqlResult::AI_SUCCESS;
+            }
+
+            if (paramTypes.empty())
+            {
+                SqlResult::Type res = UpdateParamsMeta();
+
+                if (res != SqlResult::AI_SUCCESS)
+                    return res;
+            }
+
+            paramNum = static_cast<uint16_t>(paramTypes.size());
+
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::SetParamBindOffsetPtr(int* ptr)
