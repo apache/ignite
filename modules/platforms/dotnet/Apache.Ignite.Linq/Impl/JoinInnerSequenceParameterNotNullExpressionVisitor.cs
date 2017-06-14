@@ -69,24 +69,5 @@ namespace Apache.Ignite.Linq.Impl
 
             return node;
         }
-
-        public void T()
-        {
-            var files = Directory.GetFiles("", "*.cs", SearchOption.AllDirectories);
-
-            foreach (var file in files)
-            {
-                int i = 0;
-                foreach (var readLine in File.ReadLines(file))
-                {
-                    i++;
-                    if (readLine.Length > 120)
-                    {
-                        Console.WriteLine($"{file} - {i}");
-                        break;
-                    }
-                }
-            }
-        }
     }
 }
