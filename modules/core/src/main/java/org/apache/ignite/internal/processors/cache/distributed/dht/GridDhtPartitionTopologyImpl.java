@@ -1846,8 +1846,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     else
                         updateSeq = seq;
                 }
-
-                node2part.updateSequence(updateSeq);
+                else // Sequentially update counter in case of any changes in partitions
+                    node2part.updateSequence(this.updateSeq.incrementAndGet());
             }
         }
 
