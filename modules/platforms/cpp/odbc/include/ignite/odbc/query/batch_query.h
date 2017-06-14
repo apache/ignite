@@ -147,9 +147,6 @@ namespace ignite
                 /** Number of parameter sets successfully processed. */
                 int64_t setsProcessed;
 
-                /** ID. */
-                int64_t id;
-
                 /** Query executed. */
                 bool executed;
 

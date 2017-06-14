@@ -594,15 +594,6 @@ namespace ignite
             virtual ~QueryExecuteBatchResponse();
 
             /**
-             * Get query ID.
-             * @return Query ID.
-             */
-            int64_t GetQueryId() const
-            {
-                return queryId;
-            }
-
-            /**
              * Affected rows.
              * @return Affected rows.
              */
@@ -635,9 +626,6 @@ namespace ignite
              * @param reader Reader.
              */
             virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
-
-            /** Query ID. */
-            int64_t queryId;
 
             /** Affected rows. */
             int64_t affectedRows;

@@ -35,7 +35,6 @@ namespace ignite
                 resultMeta(),
                 rowsAffected(0),
                 setsProcessed(0),
-                id(0),
                 executed(false),
                 dataRetrieved(false)
             {
@@ -184,11 +183,9 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                id = rsp.GetQueryId();
                 rowsAffected += rsp.GetAffectedRows();
                 setsProcessed += end - begin;
 
-                LOG_MSG("Query id: " << id);
                 LOG_MSG("rowsAffected: " << rowsAffected);
 
                 return SqlResult::AI_SUCCESS;

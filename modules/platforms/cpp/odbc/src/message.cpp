@@ -283,7 +283,6 @@ namespace ignite
         }
 
         QueryExecuteBatchResponse::QueryExecuteBatchResponse():
-            queryId(-1),
             affectedRows(0),
             errorSetIdx(-1),
             errorMessage()
@@ -301,9 +300,7 @@ namespace ignite
             bool success = reader.ReadBool();
             affectedRows = reader.ReadInt64();
 
-            if (success)
-                queryId = reader.ReadInt64();
-            else
+            if (!success)
             {
                 errorSetIdx = reader.ReadInt64();
                 errorMessage = reader.ReadObject<std::string>();
