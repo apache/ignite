@@ -375,11 +375,13 @@ struct QueriesTestSuiteFixture
     /**
      * Insert requested number of TestType values in a batch.
      *
-     * @param recordsNum Number of records to insert.
+     * @param from Index to start from.
+     * @param to Index to stop.
+     * @param expectedToAffect Expected number of affected records.
      * @param merge Set to true to use merge instead of insert.
      * @return Records inserted.
      */
-    int InsertTestBatch(int recordsNum, bool merge = false)
+    int InsertTestBatch(int from, int to, int expectedToAffect, bool merge = false)
     {
         SQLCHAR insertReq[] = "INSERT "
             "INTO TestType(_key, i8Field, i16Field, i32Field, strField, floatField, doubleField, boolField, dateField, "
@@ -390,6 +392,8 @@ struct QueriesTestSuiteFixture
             "timeField, timestampField, i8ArrayField) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         SQLRETURN ret;
+
+        int recordsNum = to - from;
 
         ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
 
@@ -416,26 +420,28 @@ struct QueriesTestSuiteFixture
 
         for (int i = 0; i < recordsNum; ++i)
         {
-            keys[i] = i;
-            i8Fields[i] = i * 8;
-            i16Fields[i] = i * 16;
-            i32Fields[i] = i * 32;
+            int seed = from + i;
 
-            std::string val = getTestString(i);
+            keys[i] = seed;
+            i8Fields[i] = seed * 8;
+            i16Fields[i] = seed * 16;
+            i32Fields[i] = seed * 32;
+
+            std::string val = getTestString(seed);
             strncpy(strFields.GetData() + 1024 * i, val.c_str(), 1023);
             strFieldsLen[i] = val.size();
 
-            floatFields[i] = i * 0.5f;
-            doubleFields[i] = i * 0.25f;
-            boolFields[i] = i % 2 == 0;
+            floatFields[i] = seed * 0.5f;
+            doubleFields[i] = seed * 0.25f;
+            boolFields[i] = seed % 2 == 0;
 
-            dateFields[i].year = 2017 + i / 365;
-            dateFields[i].month = ((i / 28) % 12) + 1;
-            dateFields[i].day = (i % 28) + 1;
+            dateFields[i].year = 2017 + seed / 365;
+            dateFields[i].month = ((seed / 28) % 12) + 1;
+            dateFields[i].day = (seed % 28) + 1;
 
-            timeFields[i].hour = (i / 3600) % 24;
-            timeFields[i].minute = (i / 60) % 60;
-            timeFields[i].second = i % 60;
+            timeFields[i].hour = (seed / 3600) % 24;
+            timeFields[i].minute = (seed / 60) % 60;
+            timeFields[i].second = seed % 60;
 
             timestampFields[i].year = dateFields[i].year;
             timestampFields[i].month = dateFields[i].month;
@@ -443,10 +449,10 @@ struct QueriesTestSuiteFixture
             timestampFields[i].hour = timeFields[i].hour;
             timestampFields[i].minute = timeFields[i].minute;
             timestampFields[i].second = timeFields[i].second;
-            timestampFields[i].fraction = std::abs(i * 914873) % 1000000000;
+            timestampFields[i].fraction = std::abs(seed * 914873) % 1000000000;
 
             for (int j = 0; j < 42; ++j)
-                i8ArrayFields[i * 42 + j] = i * 42 + j;
+                i8ArrayFields[i * 42 + j] = seed * 42 + j;
             i8ArrayFieldsLen[i] = 42;
         }
 
@@ -542,13 +548,13 @@ struct QueriesTestSuiteFixture
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        SQLLEN inserted = 0;
-        ret = SQLRowCount(stmt, &inserted);
+        SQLLEN affected = 0;
+        ret = SQLRowCount(stmt, &affected);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        BOOST_CHECK_EQUAL(inserted, recordsNum);
+        BOOST_CHECK_EQUAL(affected, expectedToAffect);
 
         BOOST_CHECKPOINT("Getting next result set");
         ret = SQLMoreResults(stmt);
@@ -576,7 +582,7 @@ struct QueriesTestSuiteFixture
         Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
         // Inserting values.
-        int inserted = InsertTestBatch(recordsNum);
+        int inserted = InsertTestBatch(0, recordsNum, recordsNum);
 
         BOOST_REQUIRE_EQUAL(inserted, recordsNum);
 
@@ -1611,6 +1617,70 @@ BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2048)
 BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2049)
 {
     InsertBatchSelect(2049);
+}
+
+BOOST_AUTO_TEST_CASE(TestNotFullInsertBatchSelect)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    // Inserting values.
+    int inserted = InsertTestBatch(100, 1500, 1400);
+
+    BOOST_REQUIRE_EQUAL(inserted, 1400);
+
+    inserted = InsertTestBatch(0, 1500, 100);
+
+    BOOST_REQUIRE_EQUAL(inserted, 100);
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    // Binding columns.
+    SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int selectedRecordsNum = 0;
+
+    ret = SQL_SUCCESS;
+
+    while (ret == SQL_SUCCESS)
+    {
+        ret = SQLFetch(stmt);
+
+        if (ret == SQL_NO_DATA)
+            break;
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        std::string expectedStr = getTestString(selectedRecordsNum);
+        int64_t expectedKey = selectedRecordsNum;
+
+        BOOST_CHECK_EQUAL(key, expectedKey);
+
+        BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+        ++selectedRecordsNum;
+    }
+
+    BOOST_CHECK_EQUAL(1500, selectedRecordsNum);
 }
 
 template<size_t n, size_t k>

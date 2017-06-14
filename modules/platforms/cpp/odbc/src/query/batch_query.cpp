@@ -171,22 +171,24 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                rowsAffected += rsp.GetAffectedRows();
+                LOG_MSG("rowsAffected: " << rowsAffected);
+
                 if (!rsp.GetErrorMessage().empty())
                 {
                     LOG_MSG("Error: " << rsp.GetErrorMessage());
 
-                    setsProcessed += end - begin - rsp.GetErrorSetIdx();
+                    setsProcessed += rsp.GetErrorSetIdx();
+                    LOG_MSG("setsProcessed: " << setsProcessed);
 
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetErrorMessage(),
                         static_cast<int32_t>(setsProcessed), 0);
 
-                    return SqlResult::AI_ERROR;
+                    return SqlResult::AI_SUCCESS_WITH_INFO;
                 }
 
-                rowsAffected += rsp.GetAffectedRows();
                 setsProcessed += end - begin;
-
-                LOG_MSG("rowsAffected: " << rowsAffected);
+                LOG_MSG("setsProcessed: " << setsProcessed);
 
                 return SqlResult::AI_SUCCESS;
             }
