@@ -121,7 +121,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
             cache.put(r.nextInt(), 1);
 
 
-        int before_ig0 = testLocalCacheSize(ig0, 0, totalKeysCount);
+        testLocalCacheSize(ig0, 0, totalKeysCount);
         int before_ig1 = testLocalCacheSize(ig1, 0, totalKeysCount);
 
         stopGrid(2);
