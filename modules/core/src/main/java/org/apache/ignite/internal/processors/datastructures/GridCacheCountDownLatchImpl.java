@@ -84,7 +84,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     private IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheCountDownLatchValue> ctx;
 
     /** Initial count. */
     private int initCnt;
@@ -144,11 +144,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String groupName() {
-        return ctx.group().name();
     }
 
     /** {@inheritDoc} */
@@ -340,8 +335,8 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.latchView = kctx.cache().atomicsCache();
-        this.ctx = latchView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>context().cacheContext(ctx.cacheId());
+        this.latchView = ctx.cache();
     }
 
     /** {@inheritDoc} */

@@ -76,7 +76,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -339,8 +339,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.atomicView = kctx.cache().atomicsCache();
-        this.ctx = atomicView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>>context().cacheContext(ctx.cacheId());
+        this.atomicView = ctx.cache();
     }
 
     /** {@inheritDoc} */

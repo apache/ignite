@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -123,7 +123,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg);
 
         if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME))
-            namedCacheCfg.setName(CU.ATOMICS_CACHE_NAME + "@abc");
+            namedCacheCfg.setName(DataStructuresProcessor.ATOMICS_CACHE_NAME + "@abc");
         else
             namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
 

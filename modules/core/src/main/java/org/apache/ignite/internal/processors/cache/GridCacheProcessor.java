@@ -803,8 +803,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (IgniteComponentType.HADOOP.inClassPath())
             internalCaches.add(CU.SYS_CACHE_HADOOP_MR);
-
-        internalCaches.add(CU.ATOMICS_CACHE_NAME);
     }
 
     /**
@@ -3170,15 +3168,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> IgniteInternalCache<K, V> utilityCache() {
         return internalCacheEx(CU.UTILITY_CACHE_NAME);
-    }
-
-    /**
-     * Gets utility cache for atomic data structures.
-     *
-     * @return Utility cache for atomic data structures.
-     */
-    public <K, V> IgniteInternalCache<K, V> atomicsCache() {
-        return internalCacheEx(CU.ATOMICS_CACHE_NAME);
     }
 
     /**

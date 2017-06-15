@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -344,13 +344,15 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         seq.incrementAndGet();
 
-        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
+        final String cacheName = DataStructuresProcessor.ATOMICS_CACHE_NAME + "@default-ds-group";
+
+        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(cacheName);
 
         assertNotNull(cache);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid().cache(GridCacheUtils.ATOMICS_CACHE_NAME);
+                grid().cache(cacheName);
 
                 return null;
             }

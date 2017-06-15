@@ -40,13 +40,6 @@ public interface IgniteCountDownLatch extends Closeable {
     public String name();
 
     /**
-     * Group name.
-     *
-     * @return Group name.
-     */
-    public String groupName();
-
-    /**
      * Gets current count value of the latch.
      *
      * @return Current count.

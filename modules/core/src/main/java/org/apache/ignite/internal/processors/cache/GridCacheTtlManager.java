@@ -80,7 +80,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
-            CU.isAtomicsCache(cctx.name()) ||
             CU.isUtilityCache(cctx.name()) ||
             (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
 

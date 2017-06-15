@@ -79,7 +79,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context. */
-    private volatile GridCacheContext ctx;
+    private volatile GridCacheContext<GridCacheInternalKey, GridCacheAtomicSequenceValue> ctx;
 
     /** Local value of sequence. */
     @GridToStringInclude(sensitive = true)
@@ -417,8 +417,8 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.seqView = kctx.cache().atomicsCache();
-        this.ctx = seqView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>context().cacheContext(ctx.cacheId());
+        this.seqView = ctx.cache();
     }
 
     /** {@inheritDoc} */

@@ -88,7 +88,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
     private IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheSemaphoreState> ctx;
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -964,8 +964,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.semView = kctx.cache().atomicsCache();
-        this.ctx = semView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheSemaphoreState>context().cacheContext(ctx.cacheId());
+        this.semView = ctx.cache();
     }
 
     /** {@inheritDoc} */

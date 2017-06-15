@@ -29,8 +29,6 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -72,6 +70,7 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -112,6 +111,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** */
     private static final String DATA_STRUCTURES_CACHE_NAME_PREFIX = "datastructures_";
 
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
 
@@ -122,7 +124,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private boolean initFailed;
 
     /** Internal storage of all dataStructures items (sequence, atomic long etc.). */
-    private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
+    private final ConcurrentMap<GridCacheInternalKey, GridCacheRemovable> dsMap;
 
     /** Atomic data structures configuration. */
     private final AtomicConfiguration defaultAtomicCfg;
@@ -301,7 +303,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable obj = e.getValue();
 
             if (clusterRestarted) {
@@ -326,7 +328,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public static boolean isDataStructureCache(String cacheName) {
         assert cacheName != null;
 
-        return cacheName.startsWith(CU.ATOMICS_CACHE_NAME) ||
+        return cacheName.startsWith(ATOMICS_CACHE_NAME) ||
             cacheName.startsWith(DATA_STRUCTURES_CACHE_NAME_PREFIX) ||
             cacheName.equals(DEFAULT_DATASTRUCTURES_GROUP_NAME) ||
             cacheName.equals(DEFAULT_VOLATILE_DATASTRUCTURES_GROUP_NAME);
@@ -491,7 +493,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         else
             groupName = DEFAULT_DATASTRUCTURES_GROUP_NAME;
 
-        String cacheName = CU.ATOMICS_CACHE_NAME + "@" + groupName;
+        String cacheName = ATOMICS_CACHE_NAME + "@" + groupName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache0 = ctx.cache().cache(cacheName);
 
@@ -573,16 +575,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                         if (ret.get2() != null)
                             cache.put(key, ret.get2());
+
+                        tx.commit();
                     }
                     catch (Error | Exception e) {
-                        dsMap.remove(new T2<>(key, groupName));
+                        dsMap.remove(key);
 
                         U.error(log, "Failed to make datastructure: " + name, e);
 
                         throw e;
                     }
-
-                    tx.commit();
 
                     return ret.get1();
                 }
@@ -632,7 +634,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         awaitInitialization();
 
-        final String cacheName = CU.ATOMICS_CACHE_NAME + "@" + groupName;
+        final String cacheName = ATOMICS_CACHE_NAME + "@" + groupName;
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, groupName);
 
@@ -978,7 +980,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert !create || cfg != null;
 
-        final String metaCacheName = CU.ATOMICS_CACHE_NAME + "@" + groupName;
+        final String metaCacheName = ATOMICS_CACHE_NAME + "@" + groupName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
 
@@ -1308,7 +1310,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     GridCacheInternal val0 = evt.getValue();
 
                     if (val0 instanceof GridCacheCountDownLatchValue) {
-                        GridCacheInternalKey key = evt.getKey();
+                        final GridCacheInternalKey key = evt.getKey();
 
                         // Notify latch on changes.
                         final GridCacheRemovable latch = dsMap.get(key);
@@ -1326,7 +1328,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 IgniteInternalFuture<?> removeFut = ctx.closure().runLocalSafe(new GPR() {
                                     @Override public void run() {
                                         try {
-                                            removeCountDownLatch(latch0.name(), latch0.groupName());
+                                            removeCountDownLatch(latch0.name(), key.groupName());
                                         }
                                         catch (IgniteCheckedException e) {
                                             U.error(log, "Failed to remove count down latch: " + latch0.name(), e);

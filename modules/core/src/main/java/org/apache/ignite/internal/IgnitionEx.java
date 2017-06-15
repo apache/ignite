@@ -2215,10 +2215,6 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
 
-                    if (CU.isAtomicsCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
                     if (CU.isUtilityCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");

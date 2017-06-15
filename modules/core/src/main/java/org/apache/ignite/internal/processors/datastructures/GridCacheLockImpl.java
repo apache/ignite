@@ -90,7 +90,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
     private IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheLockState> ctx;
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -1472,8 +1472,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.lockView = kctx.cache().atomicsCache();
-        this.ctx = lockView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheLockState>context().cacheContext(ctx.cacheId());
+        this.lockView = ctx.cache();
     }
 
     /** {@inheritDoc} */

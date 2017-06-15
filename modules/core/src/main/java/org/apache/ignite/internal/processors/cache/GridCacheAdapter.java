@@ -491,7 +491,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public final GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         assert !CU.isUtilityCache(ctx.name());
-        assert !CU.isAtomicsCache(ctx.name());
 
         CacheOperationContext opCtx = new CacheOperationContext(false, null, false, plc, false, null, false);
 

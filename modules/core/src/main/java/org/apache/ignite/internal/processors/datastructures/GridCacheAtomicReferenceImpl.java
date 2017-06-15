@@ -77,7 +77,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -295,8 +295,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.atomicView = kctx.cache().atomicsCache();
-        this.ctx = atomicView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>>context().cacheContext(ctx.cacheId());
+        this.atomicView = ctx.cache();
     }
 
     /** {@inheritDoc} */
