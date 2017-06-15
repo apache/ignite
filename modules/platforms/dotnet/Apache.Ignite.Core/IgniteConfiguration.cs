@@ -440,6 +440,17 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
+            // Persistence.
+            if (PersistentStoreConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                PersistentStoreConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -595,6 +606,12 @@ namespace Apache.Ignite.Core
             if (r.ReadBoolean())
             {
                 SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
+            }
+
+            // Persistence.
+            if (r.ReadBoolean())
+            {
+                PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
             }
         }
 
@@ -1179,5 +1196,10 @@ namespace Apache.Ignite.Core
             get { return _longQueryWarningTimeout ?? DefaultLongQueryWarningTimeout; }
             set { _longQueryWarningTimeout = value; }
         }
+
+        /// <summary>
+        /// Gets or sets the persistent store configuration.
+        /// </summary>
+        public PersistentStoreConfiguration PersistentStoreConfiguration { get; set; }
     }
 }

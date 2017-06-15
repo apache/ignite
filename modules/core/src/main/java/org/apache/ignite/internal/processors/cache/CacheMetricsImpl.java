@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
@@ -36,6 +37,10 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Rebalance rate interval. */
     private static final int REBALANCE_RATE_INTERVAL = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, 60000);
+
+    /** Onheap peek modes. */
+    private static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {
+        CachePeekMode.ONHEAP, CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR};
 
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
@@ -213,6 +218,16 @@ public class CacheMetricsImpl implements CacheMetrics {
         GridCacheAdapter<?, ?> cache = cctx.cache();
 
         return cache != null ? cache.offHeapEntriesCount() : -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        try {
+            return cctx.cache().localSize(ONHEAP_PEEK_MODES);
+        }
+        catch (IgniteCheckedException ignored) {
+            return 0;
+        }
     }
 
     /** {@inheritDoc} */

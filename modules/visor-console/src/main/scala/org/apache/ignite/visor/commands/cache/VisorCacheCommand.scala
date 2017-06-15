@@ -838,6 +838,7 @@ object VisorCacheCommand {
         cacheT #= ("Name", "Value")
 
         cacheT += ("Group", cfg.getGroupName)
+        cacheT += ("Dynamic Deployment ID", cfg.getDynamicDeploymentId)
         cacheT += ("Mode", cfg.getMode)
         cacheT += ("Atomicity Mode", safe(cfg.getAtomicityMode))
         cacheT += ("Statistic Enabled", bool2Str(cfg.isStatisticsEnabled))

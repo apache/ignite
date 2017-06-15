@@ -46,16 +46,16 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @return Supplier UUID.
      */
-    @Nullable public synchronized UUID getSupplier(int cacheId, int partId) {
+    @Nullable public synchronized UUID getSupplier(int grpId, int partId) {
         if (map == null)
             return null;
 
         for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
-            if (e.getValue().containsKey(new T2<>(cacheId, partId)))
+            if (e.getValue().containsKey(new T2<>(grpId, partId)))
                 return e.getKey();
         }
 
@@ -75,11 +75,11 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
 
     /**
      * @param nodeId Node ID.
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @param cntr Partition counter.
      */
-    public synchronized void put(UUID nodeId, int cacheId, int partId, long cntr) {
+    public synchronized void put(UUID nodeId, int grpId, int partId, long cntr) {
         if (map == null)
             map = new HashMap<>();
 
@@ -91,7 +91,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
             map.put(nodeId, nodeMap);
         }
 
-        nodeMap.put(new T2<>(cacheId, partId), cntr);
+        nodeMap.put(new T2<>(grpId, partId), cntr);
     }
 
     /**

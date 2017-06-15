@@ -938,6 +938,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /**
      * @param c Closure creating collection.
+     * @param cfg Configuration.
+     * @param name Collection name.
+     * @param grpName Cache group name.
+     * @param type Data structure type.
      * @param create Create flag.
      * @return Collection instance.
      * @throws IgniteCheckedException If failed.
@@ -1114,6 +1118,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Removes count down latch from cache.
      *
      * @param name Name of the latch.
+     * @param grpName Cache group name.
      * @throws IgniteCheckedException If operation failed.
      */
     public void removeCountDownLatch(final String name, final String grpName) throws IgniteCheckedException {
@@ -1138,6 +1143,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * it is created using provided name and count parameter.
      *
      * @param name Name of the semaphore.
+     * @param cfg Configuration.
      * @param cnt Initial count.
      * @param failoverSafe {@code True} FailoverSafe parameter.
      * @param create If {@code true} semaphore will be created in case it is not in cache,

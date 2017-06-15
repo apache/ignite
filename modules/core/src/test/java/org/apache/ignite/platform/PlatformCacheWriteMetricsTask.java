@@ -428,6 +428,11 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long getRebalancingBytesRate() {
             return 58;
         }
+
+        /** {@inheritDoc} */
+        @Override public long getHeapEntriesCount() {
+            return 59;
+        }
     }
 }
 
