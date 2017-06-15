@@ -80,22 +80,32 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
+    /** Replicated only flag. */
+    private final boolean replicatedOnly;
+
+    /** Collocated flag. */
+    private final boolean collocated;
+
     /**
      * Constructor.
-     *
      * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param replicatedOnly Replicated only flag.
+     * @param collocated Collocated flag.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder) {
+                              boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
+                              boolean collocated) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.replicatedOnly = replicatedOnly;
+        this.collocated = collocated;
 
         log = ctx.log(getClass());
     }
@@ -175,6 +185,8 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
+            qry.setReplicatedOnly(replicatedOnly);
+            qry.setCollocated(collocated);
             qry.setSchema(req.schema());
 
             QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
