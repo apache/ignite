@@ -55,7 +55,7 @@ public class CacheVersionIO {
             throw new IllegalStateException("Cache version is null");
         }
 
-        return ver instanceof GridCacheVersionEx ? SIZE_V2 : SIZE_V1;
+        return SIZE_V2;
     }
 
     /**
@@ -70,7 +70,7 @@ public class CacheVersionIO {
             else
                 throw new IllegalStateException("Cache version is null");
         }
-        else if (ver instanceof GridCacheVersionEx) {
+        else {
             byte protoVer = 2; // Version of serialization protocol.
 
             buf.put(protoVer);
@@ -81,14 +81,6 @@ public class CacheVersionIO {
             buf.putInt(ver.conflictVersion().topologyVersion());
             buf.putInt(ver.conflictVersion().nodeOrderAndDrIdRaw());
             buf.putLong(ver.conflictVersion().order());
-        }
-        else {
-            byte protoVer = 1; // Version of serialization protocol.
-
-            buf.put(protoVer);
-            buf.putInt(ver.topologyVersion());
-            buf.putInt(ver.nodeOrderAndDrIdRaw());
-            buf.putLong(ver.order());
         }
     }
 
@@ -104,7 +96,7 @@ public class CacheVersionIO {
             else
                 throw new IllegalStateException("Cache version is null");
         }
-        else if (ver instanceof GridCacheVersionEx) {
+        else {
             byte protoVer = 2; // Version of serialization protocol.
 
             PageUtils.putByte(addr, 0, protoVer);
@@ -115,14 +107,6 @@ public class CacheVersionIO {
             PageUtils.putInt(addr, 17, ver.conflictVersion().topologyVersion());
             PageUtils.putInt(addr, 21, ver.conflictVersion().nodeOrderAndDrIdRaw());
             PageUtils.putLong(addr, 25, ver.conflictVersion().order());
-        }
-        else {
-            byte protoVer = 1; // Version of serialization protocol.
-
-            PageUtils.putByte(addr, 0, protoVer);
-            PageUtils.putInt(addr, 1, ver.topologyVersion());
-            PageUtils.putInt(addr, 5, ver.nodeOrderAndDrIdRaw());
-            PageUtils.putLong(addr, 9, ver.order());
         }
     }
 
