@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+export default class Clusters {
+    static $inject = ['$http'];
 
-export default ['igniteSidebar', function() {
-    const items = [
-        { text: 'Clusters', sref: 'base.configuration.clusters' },
-        { text: 'Model', sref: 'base.configuration.domains' },
-        { text: 'Caches', sref: 'base.configuration.caches' },
-        { text: 'IGFS', sref: 'base.configuration.igfs' }
+    discoveries = [
+        {value: 'Vm', label: 'Static IPs'},
+        {value: 'Multicast', label: 'Multicast'},
+        {value: 'S3', label: 'AWS S3'},
+        {value: 'Cloud', label: 'Apache jclouds'},
+        {value: 'GoogleStorage', label: 'Google cloud storage'},
+        {value: 'Jdbc', label: 'JDBC'},
+        {value: 'SharedFs', label: 'Shared filesystem'},
+        {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
+        {value: 'Kubernetes', label: 'Kubernetes'}
     ];
 
-    this.push = function(data) {
-        items.push(data);
-    };
+    // In bytes
+    minMemoryPolicySize = 10485760;
 
-    this.$get = [function() {
-        const r = angular.copy(items);
+    constructor($http) {
+        Object.assign(this, {$http});
+    }
 
-        r.push({ text: 'Summary', sref: 'base.configuration.summary' });
-
-        return r;
-    }];
-}];
+    saveCluster(cluster) {
+        return this.$http.post('/api/v1/configuration/clusters/save', cluster);
+    }
+}

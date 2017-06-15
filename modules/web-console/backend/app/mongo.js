@@ -552,7 +552,18 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         atomicConfiguration: {
             backups: Number,
             cacheMode: {type: String, enum: ['LOCAL', 'REPLICATED', 'PARTITIONED']},
-            atomicSequenceReserveSize: Number
+            atomicSequenceReserveSize: Number,
+            affinity: {
+                kind: {type: String, enum: ['Default', 'Rendezvous', 'Custom']},
+                Rendezvous: {
+                    affinityBackupFilter: String,
+                    partitions: Number,
+                    excludeNeighbors: Boolean
+                },
+                Custom: {
+                    className: String
+                }
+            }
         },
         binaryConfiguration: {
             idMapper: String,
@@ -690,7 +701,10 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         odbc: {
             odbcEnabled: Boolean,
             endpointAddress: String,
-            maxOpenCursors: Number
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            maxOpenCursors: Number,
+            threadPoolSize: Number
         },
         attributes: [{name: String, value: String}],
         collision: {
@@ -958,7 +972,9 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
                 evictionThreshold: Number,
                 emptyPagesPoolSize: Number,
-                metricsEnabled: Boolean
+                metricsEnabled: Boolean,
+                subIntervals: Number,
+                rateTimeInterval: Number
             }]
         },
         longQueryWarningTimeout: Number,

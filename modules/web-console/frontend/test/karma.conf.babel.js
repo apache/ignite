@@ -29,7 +29,9 @@ export default (config) => {
 
         // List of files / patterns to load in the browser.
         files: [
-            'test/**/*.test.js'
+            'node_modules/babel-polyfill/dist/polyfill.js',
+            'test/**/*.test.js',
+            'app/**/*.spec.js'
         ],
 
         plugins: [
@@ -43,7 +45,7 @@ export default (config) => {
         // Preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor.
         preprocessors: {
-            'test/**/*.js': ['webpack']
+            '{app,test}/**/*.js': ['webpack']
         },
 
         webpack: testCfg,
@@ -56,6 +58,10 @@ export default (config) => {
         // possible values: 'dots', 'progress'
         // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
         reporters: ['mocha'],
+
+        mochaReporter: {
+            showDiff: true
+        },
 
         // web server port
         port: 9876,

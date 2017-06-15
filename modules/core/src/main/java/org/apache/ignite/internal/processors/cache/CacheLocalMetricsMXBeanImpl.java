@@ -89,6 +89,11 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        return cache.metrics0().getHeapEntriesCount();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         return cache.metrics0().getOffHeapPrimaryEntriesCount();
     }

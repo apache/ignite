@@ -94,6 +94,8 @@ import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
+import Clusters from './services/Clusters';
+import Caches from './services/Caches';
 
 // Filters.
 import byName from './filters/byName.filter';
@@ -118,6 +120,9 @@ import webConsoleFooter from './components/web-console-footer';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
+import pageConfigure from './components/page-configure';
+import pageConfigureBasic from './components/page-configure-basic';
+import pageConfigureAdvanced from './components/page-configure-advanced';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -180,6 +185,9 @@ angular
     igniteIcon.name,
     versionPicker.name,
     userNotifications.name,
+    pageConfigure.name,
+    pageConfigureBasic.name,
+    pageConfigureAdvanced.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -227,6 +235,8 @@ angular
 .service(...LegacyUtils)
 .service(...UnsavedChangesGuard)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
+.service('Clusters', Clusters)
+.service('Caches', Caches)
 // Controllers.
 .controller(...auth)
 .controller(...resetPassword)

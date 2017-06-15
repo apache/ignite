@@ -20,6 +20,12 @@
 .modal {
     display: block;
     overflow: hidden;
+
+    &.center {
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center;
+    }
 }
 
 .modal .close {
@@ -102,12 +108,6 @@
 
 .modal--ignite {
     font-family: Roboto;
-
-    &.center {
-        display: flex !important;
-        flex-direction: column;
-        justify-content: center;
-    }
 
     .close {
         position: absolute;

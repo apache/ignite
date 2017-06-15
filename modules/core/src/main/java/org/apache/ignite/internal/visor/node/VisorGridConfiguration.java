@@ -92,8 +92,11 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /** Transactions configuration. */
     private VisorTransactionConfiguration txCfg;
 
-    /** Database configuration. */
+    /** Memory configuration. */
     private VisorMemoryConfiguration memCfg;
+
+    /** Persistence configuration. */
+    private VisorPersistentStoreConfiguration psCfg;
 
     /** Cache store session listeners. */
     private String storeSesLsnrs;
@@ -152,6 +155,9 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
 
         if (c.getMemoryConfiguration() != null)
             memCfg = new VisorMemoryConfiguration(c.getMemoryConfiguration());
+
+        if (c.getPersistentStoreConfiguration() != null)
+            psCfg = new VisorPersistentStoreConfiguration(c.getPersistentStoreConfiguration());
 
         storeSesLsnrs = compactArray(c.getCacheStoreSessionListenerFactories());
         warmupClos = compactClass(c.getWarmupClosure());
@@ -296,6 +302,13 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     }
 
     /**
+     * @return Persistent store configuration.
+     */
+    public VisorPersistentStoreConfiguration getPersistentStoreConfiguration() {
+        return psCfg;
+    }
+
+    /**
      * @return Cache store session listener factories.
      */
     public String getCacheStoreSessionListenerFactories() {
@@ -363,6 +376,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         out.writeObject(atomic);
         out.writeObject(txCfg);
         out.writeObject(memCfg);
+        out.writeObject(psCfg);
         U.writeString(out, storeSesLsnrs);
         U.writeString(out, warmupClos);
         out.writeObject(binaryCfg);
@@ -391,6 +405,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         atomic = (VisorAtomicConfiguration)in.readObject();
         txCfg = (VisorTransactionConfiguration)in.readObject();
         memCfg = (VisorMemoryConfiguration)in.readObject();
+        psCfg = (VisorPersistentStoreConfiguration)in.readObject();
         storeSesLsnrs = U.readString(in);
         warmupClos = U.readString(in);
         binaryCfg = (VisorBinaryConfiguration)in.readObject();
