@@ -352,7 +352,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If loading failed.
      */
     public final IgniteAtomicSequence sequence(final String name,
-        @Nullable AtomicConfiguration cfg,
+        @Nullable final AtomicConfiguration cfg,
         final long initVal,
         final boolean create)
         throws IgniteCheckedException
@@ -374,9 +374,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (seqVal == null && !create)
                     return null;
 
+                AtomicConfiguration cfg0 = cfg != null ? cfg : dfltAtomicCfg;
+
                 // We should use offset because we already reserved left side of range.
-                long off = dfltAtomicCfg.getAtomicSequenceReserveSize() > 1 ?
-                    dfltAtomicCfg.getAtomicSequenceReserveSize() - 1 : 1;
+                long off = cfg0.getAtomicSequenceReserveSize() > 1 ? cfg0.getAtomicSequenceReserveSize() - 1 : 1;
 
                 long upBound;
                 long locCntr;
@@ -402,7 +403,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 seq = new GridCacheAtomicSequenceImpl(name,
                     key,
                     cache,
-                    dfltAtomicCfg.getAtomicSequenceReserveSize(),
+                    cfg0.getAtomicSequenceReserveSize(),
                     locCntr,
                     upBound);
 

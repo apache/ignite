@@ -405,6 +405,20 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /**
+     * Tests that reserveSize value from explicit configuration takes preference.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSequenceReserveSizeFromExplicitConfiguration() throws Exception {
+        Ignite ignite = grid(0);
+
+        IgniteAtomicSequence seq = ignite.atomicSequence("seq",
+            new AtomicConfiguration().setAtomicSequenceReserveSize(BATCH_SIZE + 1), 0, true);
+
+        assertEquals(BATCH_SIZE + 1, seq.batchSize());
+    }
+
+    /**
      * Sequence get and increment.
      *
      * @param seq Sequence for test.
