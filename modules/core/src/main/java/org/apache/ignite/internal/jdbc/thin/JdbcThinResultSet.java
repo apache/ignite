@@ -114,6 +114,7 @@ public class JdbcThinResultSet implements ResultSet {
      * @param isQuery Is Result ser for Select query.
      * @param autoClose Is automatic close of server cursors enabled.
      * @param updCnt Update count.
+     * @param closeStmt Close statement on the result set close.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
     JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
