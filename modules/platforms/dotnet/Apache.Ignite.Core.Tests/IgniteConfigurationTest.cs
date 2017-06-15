@@ -661,6 +661,7 @@ namespace Apache.Ignite.Core.Tests
                         }
                     }
                 },
+                // Skip cache check because with persistence the grid is not active by default.
                 PluginConfigurations = new[] { new TestIgnitePluginConfiguration{ SkipCacheCheck = true } },
                 EventStorageSpi = new MemoryEventStorageSpi
                 {
