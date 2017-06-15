@@ -51,6 +51,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -999,6 +1000,42 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         finally {
             ignite.destroyCache(cfg.getName());
         }
+    }
+
+    /**
+     * Test that sets within the same group and compatible configuration are stored in the same group.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheReuse() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setAtomicityMode(ATOMIC);
+        colCfg.setGroupName("grp1");
+
+        IgniteSet set1 = ignite.set("set1", colCfg);
+        IgniteSet set2 = ignite.set("set2", colCfg);
+
+        assert cctx(set1).cacheId() == cctx(set2).cacheId();
+
+        colCfg.setAtomicityMode(TRANSACTIONAL);
+
+        IgniteSet set3 = ignite.set("set3", colCfg);
+        IgniteSet set4 = ignite.set("set4", colCfg);
+
+        assert cctx(set3).cacheId() == cctx(set4).cacheId();
+        assert cctx(set1).cacheId() != cctx(set3).cacheId();
+        assert cctx(set1).groupId() == cctx(set3).groupId();
+
+        colCfg.setGroupName("gtp2");
+
+        IgniteSet set5 = ignite.set("set5", colCfg);
+        IgniteSet set6 = ignite.set("set6", colCfg);
+
+        assert cctx(set5).cacheId() == cctx(set6).cacheId();
+        assert cctx(set1).groupId() != cctx(set5).groupId();
     }
 
     /**
