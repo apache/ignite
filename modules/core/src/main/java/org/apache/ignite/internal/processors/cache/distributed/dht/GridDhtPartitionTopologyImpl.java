@@ -1117,7 +1117,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     if (shouldOverridePartitionMap(part, newPart)) {
                         if (log.isDebugEnabled())
-                            log.debug("Overriding partition map in full update map [exchId=" + exchId + ", curPart=" +
+                            log.debug("Overriding partition map in full update map [exchId=" + exchangeVer + ", curPart=" +
                                 mapString(part) + ", newPart=" + mapString(newPart) + ']');
                     } else {
                         // If for some nodes current partition has a newer map,
