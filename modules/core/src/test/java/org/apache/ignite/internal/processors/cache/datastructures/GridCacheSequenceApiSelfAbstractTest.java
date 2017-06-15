@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -360,6 +361,47 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         for (String seqName : seqNames)
             assert null != cache.get(new GridCacheInternalKeyImpl(seqName, null));
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        AtomicConfiguration cfg = new AtomicConfiguration().setGroupName("grp1");
+
+        IgniteAtomicSequence seq1 = ignite.atomicSequence("seq1", 1, true);
+        IgniteAtomicSequence seq2 = ignite.atomicSequence("seq2", 2, true);
+        IgniteAtomicSequence seq3 = ignite.atomicSequence("seq3", cfg, 3, true);
+        IgniteAtomicSequence seq4 = ignite.atomicSequence("seq4", cfg, 4, true);
+
+        assertNull(ignite.atomicSequence("seq1", cfg, 1, false));
+        assertNull(ignite.atomicSequence("seq2", cfg, 1, false));
+        assertNull(ignite.atomicSequence("seq3", 1, false));
+        assertNull(ignite.atomicSequence("seq4", 1, false));
+
+        assertEquals(11, seq1.addAndGet(10));
+        assertEquals(12, seq2.addAndGet(10));
+        assertEquals(13, seq3.addAndGet(10));
+        assertEquals(14, seq4.addAndGet(10));
+
+        seq2.close();
+        seq4.close();
+
+        assertTrue(seq2.removed());
+        assertTrue(seq4.removed());
+
+        assertNull(ignite.atomicSequence("seq2", 2, false));
+        assertNull(ignite.atomicSequence("seq4", cfg, 4, false));
+
+        assertFalse(seq1.removed());
+        assertFalse(seq3.removed());
+
+        assertNotNull(ignite.atomicSequence("seq1", 1, false));
+        assertNotNull(ignite.atomicSequence("seq3", cfg, 3, false));
     }
 
     /**

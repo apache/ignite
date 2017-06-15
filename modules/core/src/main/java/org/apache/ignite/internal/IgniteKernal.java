@@ -3499,7 +3499,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().atomicLong(name, null, initVal, create);
+            return ctx.dataStructures().atomicLong(name, cfg, initVal, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
