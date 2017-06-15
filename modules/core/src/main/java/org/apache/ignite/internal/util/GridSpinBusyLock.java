@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 
 /**
@@ -75,15 +74,6 @@ public class GridSpinBusyLock {
      */
     public void block() {
         lock.writeLock();
-    }
-
-    /**
-     * Blocks current thread till all activities left "busy" state
-     * and prevents them from further entering to "busy" state.
-     */
-    public void block(long timeout) throws InterruptedException, TimeoutException {
-        if (!lock.tryWriteLock(timeout, TimeUnit.MILLISECONDS))
-            throw new TimeoutException("block was not entered within timeout!");
     }
 
     /**
