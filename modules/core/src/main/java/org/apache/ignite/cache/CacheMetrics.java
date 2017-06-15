@@ -201,6 +201,14 @@ public interface CacheMetrics {
     public float getOffHeapMissPercentage();
 
     /**
+     * Gets the number of cache entries in heap memory, including entries held by active transactions, entries in
+     * onheap cache and near entries.
+     *
+     * @return Number of entries in heap memory.
+     */
+    public long getHeapEntriesCount();
+
+    /**
      * Gets number of entries stored in off-heap memory.
      *
      * @return Number of entries stored in off-heap memory.

@@ -89,6 +89,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        return cache.clusterMetrics().getHeapEntriesCount();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         return cache.clusterMetrics().getOffHeapPrimaryEntriesCount();
     }

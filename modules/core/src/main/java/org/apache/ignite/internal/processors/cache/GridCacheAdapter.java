@@ -3918,7 +3918,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             IgniteCacheOffheapManager mgr = ctx.offheap();
 
             return mgr != null ? mgr.cacheEntriesCount(ctx.cacheId(),
-                false,
+                true,
                 true,
                 ctx.affinity().affinityTopologyVersion()) : -1;
         }
