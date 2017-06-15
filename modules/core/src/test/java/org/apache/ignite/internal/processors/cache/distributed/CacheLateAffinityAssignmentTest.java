@@ -514,6 +514,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void cacheDestroyAndCreate(boolean cacheOnCrd) throws Exception {
+        fail("IGNITE-5503");
+
         if (!cacheOnCrd)
             cacheNodeFilter = new CacheNodeFilter(Collections.singletonList(getTestIgniteInstanceName(0)));
 
@@ -918,7 +920,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleStopRandomNode() throws Exception {
-        fail("IGNITE-GG-12292");
+        //fail("IGNITE-GG-12292");
 
         final int ITERATIONS = 3;
 

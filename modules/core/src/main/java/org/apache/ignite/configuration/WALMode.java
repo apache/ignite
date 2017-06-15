@@ -54,8 +54,7 @@ public enum WALMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable
-    public static WALMode fromOrdinal(int ord) {
+    @Nullable public static WALMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }
