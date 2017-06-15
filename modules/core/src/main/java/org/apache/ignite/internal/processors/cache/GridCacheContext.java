@@ -543,6 +543,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if cache created to store data structures.
+     */
+    public boolean dataStructuresCache() {
+        return cacheType == CacheType.DATA_STRUCTURES;
+    }
+
+    /**
      * @return IO policy for the given cache.
      */
     public byte ioPolicy() {
