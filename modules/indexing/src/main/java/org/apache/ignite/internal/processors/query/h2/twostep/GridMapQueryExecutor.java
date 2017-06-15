@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -1086,24 +1084,31 @@ public class GridMapQueryExecutor {
          * @param qry Query.
          * @param params Query params.
          */
+        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         private QueryResult(ResultSetWrapper rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
-            Object[] params) {
+                            Object[] params) {
             this.cctx = cctx;
             this.qry = qry;
             this.params = params;
             this.qrySrcNodeId = qrySrcNodeId;
             this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
-            if (rs != null) {
-                this.rs = rs;
-                try {
-                    res = (ResultInterface)RESULT_FIELD.get(rs.resultSet());
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e); // Must not happen.
-                }
+            ResultInterface res = null;
 
-                assert res != null;
+            if (rs != null) {
+                synchronized (rs) {
+                    try {
+                        res = (ResultInterface)RESULT_FIELD.get(rs.resultSet());
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new IllegalStateException(e); // Must not happen.
+                    }
+                }
+            }
+
+            if (res != null) {
+                this.rs = rs;
+                this.res = res;
 
                 rowCnt = res.getRowCount();
                 cols = res.getVisibleColumnCount();
@@ -1130,12 +1135,7 @@ public class GridMapQueryExecutor {
             boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             synchronized (rs) {
-                try {
-                    rs.resultSet().absolute(pageSize * page);
-                }
-                catch (SQLException e) {
-                    throw new IgniteSQLException(e);
-                }
+                absolute(res, page * pageSize);
 
                 page++;
 
@@ -1256,62 +1256,78 @@ public class GridMapQueryExecutor {
 
         ResultSetWrapper res = null;
 
-        GridFutureAdapter<ResultSetWrapper> newFut = null;
+        GridFutureAdapter<ResultSetWrapper> fut = futs.get(key);
 
-        while (res == null) {
-            GridFutureAdapter<ResultSetWrapper> fut = futs.get(key);
+        if (fut != null)
+            res = fut.get();
+
+        if (res == null || !res.tryTake()) {
+            res = null;
+
+            GridFutureAdapter<ResultSetWrapper> newFut = new GridFutureAdapter<>();
+
+            fut = futs.putIfAbsent(key, newFut);
 
             if (fut != null)
                 res = fut.get();
 
             if (res == null || !res.tryTake()) {
-                res = null;
+                fut = newFut;
 
-                if (newFut == null)
-                    newFut = new GridFutureAdapter<>();
+                ResultSet rs = h2.executeSqlQueryWithTimer(mainCctxName, conn, key.qry, F.asList(key.params), true,
+                    timeout, cancel);
 
-                fut = futs.putIfAbsent(key, newFut);
-
-                if (fut != null)
-                    res = fut.get();
-
-                if (res == null || !res.tryTake()) {
-                    fut = newFut;
-
-                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCctxName, conn, key.qry, F.asList(key.params), true,
-                        timeout, cancel);
-
-                    if (evt) {
-                        ctx.event().record(new CacheQueryExecutedEvent<>(
-                            node,
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            mainCctxName,
-                            null,
-                            key.qry,
-                            null,
-                            null,
-                            key.params,
-                            node.id(),
-                            null));
-                    }
-
-                    assert rs instanceof JdbcResultSet : rs.getClass();
-
-                    futs.remove(key);
-
-                    res = new ResultSetWrapper(rs);
-
-                    if (!res.tryTake())
-                        throw new IllegalStateException();
-
-                    fut.onDone(res);
+                if (evt) {
+                    ctx.event().record(new CacheQueryExecutedEvent<>(
+                        node,
+                        "SQL query executed.",
+                        EVT_CACHE_QUERY_EXECUTED,
+                        CacheQueryType.SQL.name(),
+                        mainCctxName,
+                        null,
+                        key.qry,
+                        null,
+                        null,
+                        key.params,
+                        node.id(),
+                        null));
                 }
+
+                assert rs instanceof JdbcResultSet : rs.getClass();
+
+                futs.remove(key);
+
+                res = new ResultSetWrapper(rs);
+
+                if (!res.tryTake())
+                    throw new IllegalStateException();
+
+                fut.onDone(res);
             }
         }
 
         return res;
+    }
+
+    /**
+     * x
+     * @param res a
+     * @param pos b
+     * @return c
+     */
+    private static boolean absolute(ResultInterface res, int pos) {
+        if (pos < 0)
+            pos = res.getRowCount() + pos + 1;
+
+        if (--pos < res.getRowId())
+            res.reset();
+
+        while (res.getRowId() < pos) {
+            if (!res.next())
+                return false;
+        }
+
+        return res.getRowId() >= 0 && !res.isAfterLast();
     }
 
     /**
@@ -1378,40 +1394,58 @@ public class GridMapQueryExecutor {
         }
     }
 
+    /** */
     private final class ResultSetWrapper {
+        /** Usages counter. */
         private int cnt;
 
+        /** Wrapped result set. */
         private final ResultSet rs;
 
+        /** State flag. */
         private volatile boolean closed;
 
+        /**
+         * Constructor.
+         * @param rs Result set to wrap.
+         */
         private ResultSetWrapper(ResultSet rs) {
             A.notNull(rs, "rs");
 
             this.rs = rs;
         }
 
-        public ResultSet resultSet() {
+        /**
+         * @return Wrapped result set.
+         */
+        ResultSet resultSet() {
             checkState();
 
             return rs;
         }
 
+        /**
+         * @return State flag.
+         */
         public boolean isClosed() {
             return closed;
         }
 
-        public synchronized boolean tryTake() {
+        /**
+         * @return {@code true} if {@link ResultSet} wrapped by this object may be used.
+         */
+        synchronized boolean tryTake() {
             return ++cnt > 0 && !closed;
         }
 
+        /**
+         * Release the hold on this result set.
+         */
         public synchronized void release() {
             checkState();
 
             if (--cnt == 0) {
                 closed = true;
-
-                log.error("CLOOOOOOSIIIIIIIING");
 
                 U.close(rs, log);
             }
@@ -1419,6 +1453,9 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException();
         }
 
+        /**
+         * Check if {@link #closed} is set, throw an exception if so.
+         */
         private void checkState() {
             if (closed)
                 throw new IllegalStateException();

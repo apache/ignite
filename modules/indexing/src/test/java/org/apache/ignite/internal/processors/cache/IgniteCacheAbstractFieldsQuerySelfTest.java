@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -886,30 +888,42 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      * Test behavior when many similar concurrent queries are run.
      */
     public void testConcurrentSimilarQueries() throws Exception {
-        IgniteCache<Integer, Integer> largeIntCache = jcache("large", Integer.class, Integer.class);
+        jcache("large", Integer.class, Integer.class);
 
         try (IgniteDataStreamer<Integer, Integer> stream = grid(0).dataStreamer("large")) {
-            for (int i = 0; i < 1_000; i++)
+            for (int i = 0; i < 1_000_000; i++)
                 stream.addData(i, i);
         }
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * from \"large\".Integer WHERE _key > ? and _val < ?")
+        final SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * from \"large\".Integer WHERE _key > ? and _val < ? " +
+            "order by _key")
             .setArgs(3000, 950000).setTimeout(20, TimeUnit.SECONDS);
+
+        final AtomicInteger cnt = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     IgniteEx node = grid(gridCount() > 0 ? ThreadLocalRandom.current().nextInt(0, gridCount()) : 0);
 
-                    node.cache("large").query(qry).getAll();
+                    List<List<?>> res = node.cache("large").query(qry).getAll();
+
+                    assertEquals(946999, res.size());
+
+                    for (int i = 1; i <= res.size(); i++)
+                        assertEquals(Arrays.asList(3000 + i, 3000 + i), res.get(i - 1));
+
+                    cnt.incrementAndGet();
                 }
                 return null;
             }
         }, 8);
 
-        Thread.sleep(30000);
+        Thread.sleep(120000);
+
+        System.out.println("Iterations done: " + cnt);
 
         stop.set(true);
 
