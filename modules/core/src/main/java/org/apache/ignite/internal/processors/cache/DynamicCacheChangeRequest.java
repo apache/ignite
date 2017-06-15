@@ -426,7 +426,6 @@ public class DynamicCacheChangeRequest implements Serializable {
             ", hasCfg=" + (startCfg != null) +
             ", nodeId=" + initiatingNodeId +
             ", clientStartOnly=" + clientStartOnly +
-            ", close=" + close +
             ", stop=" + stop +
             ']';
     }

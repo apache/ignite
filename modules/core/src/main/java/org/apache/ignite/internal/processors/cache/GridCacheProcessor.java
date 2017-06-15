@@ -1928,15 +1928,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cacheName Cache name.
      * @param stop {@code True} for stop cache, {@code false} for close cache.
+     * @param restart Restart flag.
      */
-    void blockGateway(String cacheName, boolean stop) {
+    void blockGateway(String cacheName, boolean stop, boolean restart) {
         // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
 
             if (proxy != null) {
                 if (stop){
-                    if (req.restart())
-                        proxy.restart();proxy.gate().stopped();}
+                    if (restart)
+                        proxy.restart();
+
+                    proxy.gate().stopped();
+                }
                 else
                     proxy.closeProxy();
 
@@ -2019,7 +2023,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             for (String cacheName : cachesToClose) {
-                blockGateway(cacheName, false);
+                blockGateway(cacheName, false, false);
 
                 GridCacheContext ctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
 
@@ -2071,10 +2075,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cctx.gate().onStopped();
 
-            CacheGroupContext grp = prepareCacheStop(cctx.name(), destroy);
+            prepareCacheStop(cctx.name(), destroy);
 
-            if (grp != null && !grp.hasCaches())
-                stopCacheGroup(grp.groupId());
+            if (cctx.group().hasCaches())
+                stopCacheGroup(cctx.group().groupId());
         }
     }
 
@@ -2726,7 +2730,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         checkEmptyTransactions();
 
         if (proxy.context().isLocal())
-            return dynamicDestroyCache(cacheName, false, true);
+            return dynamicDestroyCache(cacheName, false, true, false);
 
         return startClientCacheChange(null, Collections.singleton(cacheName));
     }

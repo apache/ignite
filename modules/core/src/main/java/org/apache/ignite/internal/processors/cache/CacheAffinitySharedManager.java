@@ -431,7 +431,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             if (clientTop != null) {
                                 grp.topology().update(topVer,
                                     clientTop.partitionMap(true),
-                                    clientTop.updateCounters(false));
+                                    clientTop.updateCounters(false),
+                                    Collections.<Integer>emptySet());
                             }
 
                             grpHolder = new CacheGroupHolder1(grp, grpHolder.affinity());
@@ -493,7 +494,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
 
-                grp.topology().update(topVer, partMap, null);
+                grp.topology().update(topVer, partMap, null, Collections.<Integer>emptySet());
 
                 topFut.validate(grp, discoCache.allNodes());
             }
@@ -755,7 +756,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
-            cctx.cache().blockGateway(action.request().cacheName(), true);
+            cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
         Set<Integer> stoppedGrps = null;
 
