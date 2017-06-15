@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.Serializable;
 
 /**
@@ -529,5 +531,10 @@ public class PersistentStoreConfiguration implements Serializable {
         this.alwaysWriteFullPages = alwaysWriteFullPages;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PersistentStoreConfiguration.class, this);
     }
 }
