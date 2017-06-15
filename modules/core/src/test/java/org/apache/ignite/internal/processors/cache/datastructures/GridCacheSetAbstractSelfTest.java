@@ -1003,7 +1003,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /**
-     * Test that sets within the same group and compatible configuration are stored in the same group.
+     * Test that sets within the same group and compatible configurations are stored in the same cache.
      *
      * @throws Exception If failed.
      */
@@ -1036,6 +1036,70 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         assert cctx(set5).cacheId() == cctx(set6).cacheId();
         assert cctx(set1).groupId() != cctx(set5).groupId();
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration cfg1 = collectionConfiguration();
+        CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");
+
+        IgniteSet<String> set1 = ignite.set("set1", cfg1);
+        IgniteSet<String> set2 = ignite.set("set2", cfg1);
+        IgniteSet<String> set3 = ignite.set("set3", cfg2);
+        IgniteSet<String> set4 = ignite.set("set4", cfg2);
+
+        assertTrue(set1.add("a"));
+        assertTrue(set2.add("b"));
+        assertTrue(set3.add("c"));
+        assertTrue(set4.add("d"));
+
+        assertFalse(set1.add("a"));
+        assertFalse(set2.add("b"));
+        assertFalse(set3.add("c"));
+        assertFalse(set4.add("d"));
+
+        assertTrue(set1.contains("a"));
+        assertTrue(set2.contains("b"));
+        assertTrue(set3.contains("c"));
+        assertTrue(set4.contains("d"));
+
+        assertEquals(1, set1.size());
+        assertEquals(1, set2.size());
+        assertEquals(1, set3.size());
+        assertEquals(1, set4.size());
+
+        assertFalse(set1.remove("z"));
+        assertFalse(set2.remove("z"));
+        assertFalse(set3.remove("z"));
+        assertFalse(set4.remove("z"));
+
+        assertTrue(set1.remove("a"));
+        assertTrue(set2.remove("b"));
+        assertTrue(set3.remove("c"));
+        assertTrue(set4.remove("d"));
+
+        assertTrue(set1.isEmpty());
+        assertTrue(set2.isEmpty());
+        assertTrue(set3.isEmpty());
+        assertTrue(set4.isEmpty());
+
+        set2.close();
+        set4.close();
+
+        assertTrue(set2.removed());
+        assertTrue(set4.removed());
+
+        assertFalse(set1.removed());
+        assertFalse(set3.removed());
+
+        assertNotNull(ignite.set("set1", null));
+        assertNull(ignite.set("set2", null));
     }
 
     /**

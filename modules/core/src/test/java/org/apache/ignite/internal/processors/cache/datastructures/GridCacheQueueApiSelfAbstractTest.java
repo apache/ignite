@@ -832,6 +832,106 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     }
 
     /**
+     * Test that queues within the same group and compatible configurations are stored in the same cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheReuse() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setAtomicityMode(ATOMIC);
+        colCfg.setGroupName("grp1");
+
+        IgniteQueue queue1 = ignite.queue("queue1", 100, colCfg);
+        IgniteQueue queue2 = ignite.queue("queue2", 100, colCfg);
+
+        assert cctx(queue1).cacheId() == cctx(queue2).cacheId();
+
+        colCfg.setAtomicityMode(TRANSACTIONAL);
+
+        IgniteQueue queue3 = ignite.queue("queue3", 100, colCfg);
+        IgniteQueue queue4 = ignite.queue("queue4", 100, colCfg);
+
+        assert cctx(queue3).cacheId() == cctx(queue4).cacheId();
+        assert cctx(queue1).cacheId() != cctx(queue3).cacheId();
+        assert cctx(queue1).groupId() == cctx(queue3).groupId();
+
+        colCfg.setGroupName("gtp2");
+
+        IgniteQueue queue5 = ignite.queue("queue5", 100, colCfg);
+        IgniteQueue queue6 = ignite.queue("queue6", 100, colCfg);
+
+        assert cctx(queue5).cacheId() == cctx(queue6).cacheId();
+        assert cctx(queue1).groupId() != cctx(queue5).groupId();
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration cfg1 = collectionConfiguration();
+        CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");
+
+        IgniteQueue<String> queue1 = ignite.queue("queue1", 100, cfg1);
+        IgniteQueue<String> queue2 = ignite.queue("queue2", 100, cfg1);
+        IgniteQueue<String> queue3 = ignite.queue("queue3", 100, cfg2);
+        IgniteQueue<String> queue4 = ignite.queue("queue4", 100, cfg2);
+
+        assertTrue(queue1.offer("a"));
+        assertTrue(queue2.offer("b"));
+        assertTrue(queue3.offer("c"));
+        assertTrue(queue4.offer("d"));
+
+        assertEquals("a", queue1.peek());
+        assertEquals("b", queue2.peek());
+        assertEquals("c", queue3.peek());
+        assertEquals("d", queue4.peek());
+
+        assertTrue(queue1.add("A"));
+        assertTrue(queue2.add("B"));
+        assertTrue(queue3.add("C"));
+        assertTrue(queue4.add("D"));
+
+        assertEquals(2, queue1.size());
+        assertEquals(2, queue2.size());
+        assertEquals(2, queue3.size());
+        assertEquals(2, queue4.size());
+
+        assertEquals("a", queue1.poll());
+        assertEquals("b", queue2.poll());
+        assertEquals("c", queue3.poll());
+        assertEquals("d", queue4.poll());
+
+        assertEquals("A", queue1.peek());
+        assertEquals("B", queue2.peek());
+        assertEquals("C", queue3.peek());
+        assertEquals("D", queue4.peek());
+
+        assertEquals(1, queue1.size());
+        assertEquals(1, queue2.size());
+        assertEquals(1, queue3.size());
+        assertEquals(1, queue4.size());
+
+        queue2.close();
+        queue4.close();
+
+        assertTrue(queue2.removed());
+        assertTrue(queue4.removed());
+
+        assertFalse(queue1.removed());
+        assertFalse(queue3.removed());
+
+        assertNotNull(ignite.queue("queue1", 100, null));
+        assertNull(ignite.queue("queue2", 100, null));
+    }
+
+    /**
      *  Test class with the same hash code.
      */
     private static class SameHashItem implements Serializable {
