@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
-import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -1598,9 +1597,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComp) throws IgniteCheckedException {
         assert conflictRslvr != null : "Should not reach this place.";
 
-        CacheObjectValueContext octx = new CacheQueryObjectValueContext(ctx);
-
-        GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(octx, oldEntry, newEntry, atomicVerComp);
+        GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(cacheObjCtx, oldEntry, newEntry, atomicVerComp);
 
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
