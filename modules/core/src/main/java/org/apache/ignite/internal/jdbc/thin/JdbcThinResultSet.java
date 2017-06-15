@@ -214,7 +214,6 @@ public class JdbcThinResultSet implements ResultSet {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean wasNull() throws SQLException {
         return wasNull;
