@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -45,12 +47,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_TBLS;
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_CLOSE;
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC;
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_FETCH;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.*;
 
 /**
  * SQL query handler.
@@ -58,6 +55,9 @@ import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_FE
 public class OdbcRequestHandler implements SqlListenerRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
+
+    /** Batch query ID sequence. */
+    private static final AtomicLong BATCH_QRY_ID_GEN = new AtomicLong();
 
     /** Kernel context. */
     private final GridKernalContext ctx;
@@ -114,6 +114,9 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             switch (req.command()) {
                 case QRY_EXEC:
                     return executeQuery((OdbcQueryExecuteRequest)req);
+
+                case QRY_EXEC_BATCH:
+                    return executeBatchQuery((OdbcQueryExecuteBatchRequest)req);
 
                 case QRY_FETCH:
                     return fetchQuery((OdbcQueryFetchRequest)req);
@@ -191,6 +194,99 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
+    }
+
+    /**
+     * {@link OdbcQueryExecuteBatchRequest} command handler.
+     *
+     * @param req Execute query request.
+     * @return Response.
+     */
+    private SqlListenerResponse executeBatchQuery(OdbcQueryExecuteBatchRequest req) {
+        long rowsAffected = 0;
+        int currentSet = 0;
+
+        try {
+            String sql = OdbcEscapeUtils.parse(req.sqlQuery());
+
+            if (log.isDebugEnabled())
+                log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
+                        ", parsed=" + sql + ']');
+
+            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+
+            qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder);
+            qry.setSchema(req.schema());
+
+            Object[][] paramSet = req.arguments();
+
+            if (paramSet.length <= 0)
+                throw new IgniteException("Batch execute request with non-positive batch length. [len="
+                        + paramSet.length + ']');
+
+            // Getting meta and do the checks for the first execution.
+            qry.setArgs(paramSet[0]);
+
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
+
+            if (qryCur.isQuery())
+                throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
+                        req.sqlQuery() + ']');
+
+            rowsAffected += getRowsAffected(qryCur);
+
+            for (currentSet = 1; currentSet < paramSet.length; ++currentSet)
+                rowsAffected += executeQuery(qry, paramSet[currentSet]);
+
+            OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
+
+            return new OdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, currentSet,
+                    e.getMessage());
+
+            return new OdbcResponse(res);
+        }
+    }
+
+    /**
+     * Execute query.
+     * @param qry Query
+     * @param row Row
+     * @return Affected rows.
+     */
+    private long executeQuery(SqlFieldsQuery qry, Object[] row) {
+        qry.setArgs(row);
+
+        QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
+
+        return getRowsAffected(cur);
+    }
+
+    /**
+     * Get affected rows for DML statement.
+     * @param qryCur Cursor.
+     * @return Number of table rows affected.
+     */
+    private static long getRowsAffected(QueryCursor<List<?>> qryCur) {
+        Iterator<List<?>> iter = qryCur.iterator();
+
+        if (iter.hasNext()) {
+            List<?> res = iter.next();
+
+            if (res.size() > 0) {
+                Long affected = (Long) res.get(0);
+
+                if (affected != null)
+                    return affected;
+            }
+        }
+
+        return 0;
     }
 
     /**
