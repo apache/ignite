@@ -1135,6 +1135,7 @@ public class GridMapQueryExecutor {
             boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             synchronized (rs) {
+                // We can't use ResultSet#absolute here as it may expire inside H2, and those calls will all fail.
                 absolute(res, page * pageSize);
 
                 page++;
@@ -1310,10 +1311,10 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * x
-     * @param res a
-     * @param pos b
-     * @return c
+     * Rewind given {@link ResultInterface} to the desired position.
+     * @param res Result.
+     * @param pos Position (JDBC row numbering compatible - 0 means 'before first row').
+     * @return Resulting status.
      */
     private static boolean absolute(ResultInterface res, int pos) {
         if (pos < 0)
