@@ -73,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -500,7 +499,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         else
             grpName = DEFAULT_DS_GROUP_NAME;
 
-        String cacheName = CU.ATOMICS_CACHE_NAME + "@" + grpName;
+        String cacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache0 = ctx.cache().cache(cacheName);
 
@@ -642,7 +641,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         awaitInitialization();
 
-        final String cacheName = CU.ATOMICS_CACHE_NAME + "@" + grpName;
+        final String cacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, grpName);
 
