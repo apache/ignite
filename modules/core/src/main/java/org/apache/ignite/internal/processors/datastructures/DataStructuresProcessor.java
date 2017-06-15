@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -898,6 +900,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 false,
                 true,
                 true).get();
+        }
+        else {
+            IgnitePredicate<ClusterNode> cacheNodeFilter = cache.context().group().nodeFilter();
+
+            String clsName1 = cacheNodeFilter != null ? cacheNodeFilter.getClass().getName() :
+                CacheConfiguration.IgniteAllNodesPredicate.class.getName();
+            String clsName2 = cfg.getNodeFilter() != null ? cfg.getNodeFilter().getClass().getName() :
+                CacheConfiguration.IgniteAllNodesPredicate.class.getName();
+
+            if (!clsName1.equals(clsName2))
+                throw new IgniteCheckedException("Could not add collection to group " + grpName +
+                    " because of different node filters [existing=" + clsName1 + ", new=" + clsName2 + "]");
         }
 
         cache = ctx.cache().getOrStartCache(cacheName);

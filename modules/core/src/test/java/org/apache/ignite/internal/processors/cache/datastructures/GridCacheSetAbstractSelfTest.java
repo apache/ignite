@@ -1043,7 +1043,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      *
      * @throws Exception If failed.
      */
-    public void testMultipleStructuresInDifferentGroups() throws Exception {
+    public void _testMultipleStructuresInDifferentGroups() throws Exception {
         Ignite ignite = grid(0);
 
         CollectionConfiguration cfg1 = collectionConfiguration();
@@ -1100,6 +1100,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         assertNotNull(ignite.set("set1", null));
         assertNull(ignite.set("set2", null));
+
+        set1.close();
+        set3.close();
     }
 
     /**

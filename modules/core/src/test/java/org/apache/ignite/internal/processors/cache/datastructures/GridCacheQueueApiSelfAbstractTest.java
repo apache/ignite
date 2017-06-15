@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -644,19 +646,22 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         CollectionConfiguration colCfg2 = collectionConfiguration();
 
-        colCfg2.setNodeFilter(CacheConfiguration.ALL_NODES);
+        colCfg2.setNodeFilter(new IgnitePredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return true;
+            }
+        });
 
-        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg1);
+        grid(0).queue("Queue1", 0, colCfg1);
 
-        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg2);
+        try {
+            grid(0).queue("Queue2", 0, colCfg2);
 
-        assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
-
-        colCfg1.setNodeFilter(CacheConfiguration.ALL_NODES);
-
-        IgniteQueue queue3 = grid(0).queue("Queue3", 0, colCfg1);
-
-        assertEquals(getQueueCache(queue2), getQueueCache(queue3));
+            fail("Exception was expected.");
+        }
+        catch (Exception ex) {
+            // Expected
+        }
     }
 
     /**
@@ -929,6 +934,9 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         assertNotNull(ignite.queue("queue1", 100, null));
         assertNull(ignite.queue("queue2", 100, null));
+
+        queue1.close();
+        queue3.close();
     }
 
     /**
