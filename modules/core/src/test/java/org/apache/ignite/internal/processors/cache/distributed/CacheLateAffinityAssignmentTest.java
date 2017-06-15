@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -330,7 +331,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         testAffinitySimpleSequentialStart();
 
-        assertNull(((IgniteKernal) ignite(0)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal)ignite(0)).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**
@@ -681,9 +682,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     public void testCoordinatorLeaveExchangeWaitAffinityMessage() throws Exception {
         Ignite ignite0 = startServer(0, 1);
 
-        startServer(1, 2);
+        startServer(1, 2); // Node will be stopped to trigger first exchange.
 
-        Ignite ignite2 = startServer(2, 3);
+        Ignite ignite2 = startServer(2, 3); // New coordinator.
 
         checkAffinity(3, topVer(3, 1), true);
 
@@ -694,6 +695,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
 
+        // Block message for finishing exchange on new coordinator.
         spi.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
         stopNode(1, 5);
@@ -709,6 +711,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         assertTrue(fut0.isDone());
         assertFalse(fut2.isDone());
         assertTrue(fut3.isDone());
+
+        // Block single message request for (5,0).
+        spi.blockMessages(GridDhtPartitionsSingleRequest.class, ignite3.name());
 
         stopNode(0, 6);
 
