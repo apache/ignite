@@ -30,7 +30,7 @@ div
             "The namespace the Kubernetes service belongs to.<br/>\
             By default, it's supposed that the service is running under Kubernetes `default` namespace.")
     .details-row
-        +url('Kubernetes server:', `${model}.masterUrl`, `'${discoveryKind}MasterUrl'`, 'false', 'https://kubernetes.default.svc.cluster.local:443',
+        +url('Kubernetes server:', `${model}.masterUrl`, `'${discoveryKind}MasterUrl'`, 'true', 'false', 'https://kubernetes.default.svc.cluster.local:443',
             'The host name of the Kubernetes API server')
     .details-row
         +text('Service token file:', `${model}.accountToken`, `'${discoveryKind}AccountToken'`, 'false', '/var/run/secrets/kubernetes.io/serviceaccount/token',
