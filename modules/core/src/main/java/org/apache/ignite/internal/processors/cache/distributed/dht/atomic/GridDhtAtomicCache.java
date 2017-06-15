@@ -3240,9 +3240,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridDhtAtomicUpdateResponse dhtRes = null;
 
-        if (isNearEnabled(cacheCfg)) {
-            List<KeyCacheObject> nearEvicted =
-                ((GridNearAtomicCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, nearRes);
+        if (req.nearSize() > 0) {
+            List<KeyCacheObject> nearEvicted;
+
+            if (isNearEnabled(ctx))
+                nearEvicted = ((GridNearAtomicCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, nearRes);
+            else {
+                nearEvicted = new ArrayList<>(req.nearSize());
+
+                for (int i = 0; i < req.nearSize(); i++)
+                    nearEvicted.add(req.nearKey(i));
+            }
 
             if (nearEvicted != null) {
                 dhtRes = new GridDhtAtomicUpdateResponse(ctx.cacheId(),

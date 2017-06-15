@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -97,6 +99,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Preload keys. */
     private BitSet preloadKeys;
 
+    /** */
+    @GridDirectTransient
+    private List<IgniteTxKey> nearWritesCacheMissed;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -160,6 +166,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());
 
         nearNodeId = tx.nearNodeId();
+    }
+
+    /**
+     * @return Near cache writes for which cache was not found (possible if client near cache was closed).
+     */
+    @Nullable public List<IgniteTxKey> nearWritesCacheMissed() {
+        return nearWritesCacheMissed;
     }
 
     /**
@@ -319,13 +332,37 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
-                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
+                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(key.cacheId());
 
-                owned.put(key, valIter.next());
+                if (cacheCtx != null) {
+                    key.finishUnmarshal(cacheCtx, ldr);
+
+                    owned.put(key, valIter.next());
+                }
             }
         }
 
-        unmarshalTx(nearWrites, true, ctx, ldr);
+        if (nearWrites != null) {
+            for (Iterator<IgniteTxEntry> it = nearWrites.iterator(); it.hasNext();) {
+                IgniteTxEntry e = it.next();
+
+                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
+
+                if (cacheCtx == null) {
+                    it.remove();
+
+                    if (nearWritesCacheMissed == null)
+                        nearWritesCacheMissed = new ArrayList<>();
+
+                    nearWritesCacheMissed.add(e.txKey());
+                }
+                else {
+                    e.context(cacheCtx);
+
+                    e.unmarshal(ctx, true, ldr);
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

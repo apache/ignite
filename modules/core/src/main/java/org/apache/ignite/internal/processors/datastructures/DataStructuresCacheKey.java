@@ -17,25 +17,14 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+import java.io.Serializable;
 
 /**
- * Key used to store in utility cache information about all created data structures.
+ * Internal key for data structures processor.
  */
-public class CacheDataStructuresConfigurationKey implements GridCacheInternal, Externalizable {
+public class DataStructuresCacheKey implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /**
-     *
-     */
-    public CacheDataStructuresConfigurationKey() {
-        // No-op.
-    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
@@ -44,21 +33,10 @@ public class CacheDataStructuresConfigurationKey implements GridCacheInternal, E
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj == this || (obj instanceof CacheDataStructuresConfigurationKey);
+        return obj == this || (obj instanceof DataStructuresCacheKey);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return "CacheDataStructuresConfigurationKey []";
+        return "DataStructuresCacheKey []";
     }
 }

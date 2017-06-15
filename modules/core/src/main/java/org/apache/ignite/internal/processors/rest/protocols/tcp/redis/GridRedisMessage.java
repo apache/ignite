@@ -57,6 +57,12 @@ public class GridRedisMessage implements GridClientMessage {
     /** Cache name. */
     private String cacheName;
 
+    /** Cache name prefix. */
+    public static final String CACHE_NAME_PREFIX = "redis-ignite-internal-cache";
+
+    /** Default cache name. */
+    public static final String DFLT_CACHE_NAME = CACHE_NAME_PREFIX + "-0";
+
     /**
      * Constructor.
      *
@@ -64,6 +70,8 @@ public class GridRedisMessage implements GridClientMessage {
      */
     public GridRedisMessage(int msgLen) {
         msgParts = new ArrayList<>(msgLen);
+
+        cacheName = DFLT_CACHE_NAME;
     }
 
     /**

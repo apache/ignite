@@ -897,7 +897,12 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         if (paramCnt)
-            *paramCnt = static_cast<SQLSMALLINT>(statement->GetParametersNumber());
+        {
+            uint16_t paramNum = 0;
+            statement->GetParametersNumber(paramNum);
+
+            *paramCnt = static_cast<SQLSMALLINT>(paramNum);
+        }
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
