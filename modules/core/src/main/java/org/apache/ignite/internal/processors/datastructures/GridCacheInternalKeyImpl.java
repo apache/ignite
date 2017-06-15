@@ -39,18 +39,19 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     private String name;
 
     /** */
-    private String groupName;
+    private String grpName;
 
     /**
      * Default constructor.
      *
-     * @param name - Name of cache data structure.
+     * @param name Name of cache data structure.
+     * @param grpName Cache group name.
      */
-    public GridCacheInternalKeyImpl(String name, @Nullable String groupName) {
-        assert !F.isEmpty(name);
+    public GridCacheInternalKeyImpl(String name, @Nullable String grpName) {
+        assert !F.isEmpty(name) : name;
 
         this.name = name;
-        this.groupName = groupName;
+        this.grpName = grpName;
     }
 
     /**
@@ -67,7 +68,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
 
     /** {@inheritDoc} */
     @Override public String groupName() {
-        return groupName;
+        return grpName;
     }
 
     /** {@inheritDoc} */
@@ -91,13 +92,13 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        U.writeString(out, groupName);
+        U.writeString(out, grpName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         name = U.readString(in);
-        groupName = U.readString(in);
+        grpName = U.readString(in);
     }
 
     /** {@inheritDoc} */

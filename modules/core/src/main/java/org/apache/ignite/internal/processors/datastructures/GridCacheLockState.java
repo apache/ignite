@@ -80,6 +80,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
      * @param threadID ID of the current thread.
      * @param failoverSafe true if created in failoverSafe mode.
      * @param fair true if created in fair mode.
+     * @param gridStartTime Cluster start time.
      */
     public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair, long gridStartTime) {
         assert cnt >= 0;

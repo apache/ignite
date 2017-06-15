@@ -50,6 +50,7 @@ public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStruct
      *
      * @param cnt Initial count.
      * @param del {@code True} to auto delete on count down to 0.
+     * @param gridStartTime Cluster start time.
      */
     public GridCacheCountDownLatchValue(int cnt, boolean del, long gridStartTime) {
         assert cnt >= 0;

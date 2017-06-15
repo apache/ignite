@@ -37,7 +37,7 @@ public enum CacheType {
     /**
      * Cache for data structures, should not be visible via public API.
      */
-    DATASTRUCTURES(false, SYSTEM_POOL),
+    DATA_STRUCTURES(false, SYSTEM_POOL),
 
     /**
      * Internal replicated cache, should use separate thread pool.

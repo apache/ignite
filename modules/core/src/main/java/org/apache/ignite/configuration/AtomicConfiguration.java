@@ -50,7 +50,7 @@ public class AtomicConfiguration {
     private AffinityFunction aff;
 
     /** Group name. */
-    private String groupName;
+    private String grpName;
 
     /**
      * @return Number of backup nodes.
@@ -139,15 +139,15 @@ public class AtomicConfiguration {
      * @return Group name.
      */
     public String getGroupName() {
-        return groupName;
+        return grpName;
     }
 
     /**
-     * @param groupName Group name.
+     * @param grpName Group name.
      * @return {@code this} for chaining.
      */
-    public AtomicConfiguration setGroupName(String groupName) {
-        this.groupName = groupName;
+    public AtomicConfiguration setGroupName(String grpName) {
+        this.grpName = grpName;
 
         return this;
     }

@@ -233,18 +233,28 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     public void testUniqueNamePerGroup() throws Exception {
         Ignite ignite = ignite(0);
 
-        IgniteAtomicLong atomicLong = ignite.atomicLong(
-            "testName", new AtomicConfiguration().setGroupName("group1"), 0, true);
-        IgniteAtomicSequence atomicSeq = ignite.atomicSequence(
-            "testName", new AtomicConfiguration().setGroupName("group2"), 0, true);
+        IgniteAtomicLong atomicLong = ignite.atomicLong("testName",
+            new AtomicConfiguration().setGroupName("group1"),
+            0,
+            true);
+
+        IgniteAtomicSequence atomicSeq = ignite.atomicSequence("testName",
+            new AtomicConfiguration().setGroupName("group2"),
+            0,
+            true);
 
         assert atomicLong != null;
         assert atomicSeq != null;
 
-        atomicLong = ignite.atomicLong(
-                    "testName", new AtomicConfiguration().setGroupName("group1"), 0, false);
-        atomicSeq = ignite.atomicSequence(
-                    "testName", new AtomicConfiguration().setGroupName("group2"), 0, false);
+        atomicLong = ignite.atomicLong("testName",
+            new AtomicConfiguration().setGroupName("group1"),
+            0,
+            false);
+
+        atomicSeq = ignite.atomicSequence("testName",
+            new AtomicConfiguration().setGroupName("group2"),
+            0,
+            false);
 
         assert atomicLong != null;
         assert atomicSeq != null;

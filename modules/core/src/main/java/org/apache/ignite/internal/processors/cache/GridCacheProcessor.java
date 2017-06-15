@@ -543,13 +543,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Onheap cache must be enabled if eviction policy is configured [cacheName="
                 + U.maskName(cc.getName()) + "]");
 
-        if (cacheType != CacheType.DATASTRUCTURES && DataStructuresProcessor.isDataStructureCache(cc.getName()))
+        if (cacheType != CacheType.DATA_STRUCTURES && DataStructuresProcessor.isDataStructureCache(cc.getName()))
             throw new IgniteCheckedException("Using cache names reserved for datastructures is not allowed for " +
-                "other cache types [cacheName=" + U.maskName(cc.getName()) + ", cacheType=" + cacheType + "]");
+                "other cache types [cacheName=" + cc.getName() + ", cacheType=" + cacheType + "]");
 
-        if (cacheType != CacheType.DATASTRUCTURES && DataStructuresProcessor.isReservedGroup(cc.getGroupName()))
+        if (cacheType != CacheType.DATA_STRUCTURES && DataStructuresProcessor.isReservedGroup(cc.getGroupName()))
             throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
-                "other cache types [cacheName=" + U.maskName(cc.getName()) + ", groupName=" + cc.getGroupName() +
+                "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
     }
 
@@ -2788,7 +2788,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (internalCaches.contains(cacheName))
             return CacheType.INTERNAL;
         else if (DataStructuresProcessor.isDataStructureCache(cacheName))
-            return CacheType.DATASTRUCTURES;
+            return CacheType.DATA_STRUCTURES;
         else
             return CacheType.USER;
     }
