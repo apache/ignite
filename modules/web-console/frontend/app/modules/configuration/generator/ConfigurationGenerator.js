@@ -414,7 +414,7 @@ export default class IgniteConfigurationGenerator {
         if (acfg.valueOf('cacheMode') === 'PARTITIONED')
             acfg.intProperty('backups');
 
-        if (available('2.1.0'))
+        if (available('2.1.0') && _.nonNil(atomics))
             this.affinity(atomics.affinity, acfg);
 
         if (acfg.isEmpty())
