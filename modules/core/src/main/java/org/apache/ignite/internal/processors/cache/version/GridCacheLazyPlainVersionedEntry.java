@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -84,6 +85,10 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
             key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary);
 
         return key;
+    }
+
+    @Override public V value(CacheObjectValueContext ctx) {
+        return value(keepBinary);
     }
 
     /**
