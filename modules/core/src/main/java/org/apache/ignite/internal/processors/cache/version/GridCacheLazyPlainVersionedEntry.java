@@ -87,6 +87,7 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
         return key;
     }
 
+    /** {@inheritDoc} */
     @Override public V value(CacheObjectValueContext ctx) {
         return value(keepBinary);
     }
