@@ -189,8 +189,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -3010,10 +3008,9 @@ public abstract class IgniteUtils {
      * @param data An array of characters containing hexidecimal digits
      * @return A byte array containing binary data decoded from
      *         the supplied char array.
-     * @throws org.apache.ignite.IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
      */
     public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
-
         int len = data.length;
 
         if ((len & 0x01) != 0)
@@ -3104,21 +3101,6 @@ public abstract class IgniteUtils {
      */
     public static String format(long sysTime) {
         return LONG_DATE_FMT.format(new java.util.Date(sysTime));
-    }
-
-    /**
-     * Takes given collection, shuffles it and returns iterable instance.
-     *
-     * @param <T> Type of elements to create iterator for.
-     * @param col Collection to shuffle.
-     * @return Iterable instance over randomly shuffled collection.
-     */
-    public static <T> Iterable<T> randomIterable(Collection<T> col) {
-        List<T> list = new ArrayList<>(col);
-
-        Collections.shuffle(list);
-
-        return list;
     }
 
     /**
@@ -3846,26 +3828,6 @@ public abstract class IgniteUtils {
                 for (Object v : vals)
                     if (F.eq(o, v))
                         return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks for containment of the value in the array.
-     * Both array cells and value may be {@code null}. Two {@code null}s are considered equal.
-     *
-     * @param arr Array of objects.
-     * @param c Collection to check.
-     * @return {@code true} if contains object, {@code false} otherwise.
-     */
-    public static boolean containsObjectArray(@Nullable Object[] arr, @Nullable Collection<Object> c) {
-        if (arr == null || arr.length == 0 || c == null || c.isEmpty())
-            return false;
-
-        for (Object o : arr) {
-            if (c.contains(o))
-                return true;
         }
 
         return false;
@@ -9267,185 +9229,6 @@ public abstract class IgniteUtils {
         }
 
         return youngest;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param uid UUID.
-     * @return Offset.
-     */
-    public static long writeGridUuid(byte[] arr, long off, @Nullable IgniteUuid uid) {
-        GridUnsafe.putBoolean(arr, off++, uid != null);
-
-        if (uid != null) {
-            GridUnsafe.putLong(arr, off, uid.globalId().getMostSignificantBits());
-
-            off += 8;
-
-            GridUnsafe.putLong(arr, off, uid.globalId().getLeastSignificantBits());
-
-            off += 8;
-
-            GridUnsafe.putLong(arr, off, uid.localId());
-
-            off += 8;
-        }
-
-        return off;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @return UUID.
-     */
-    @Nullable public static IgniteUuid readGridUuid(byte[] arr, long off) {
-        if (GridUnsafe.getBoolean(arr, off++)) {
-            long most = GridUnsafe.getLong(arr, off);
-
-            off += 8;
-
-            long least = GridUnsafe.getLong(arr, off);
-
-            off += 8;
-
-            UUID globalId = new UUID(most, least);
-
-            long locId = GridUnsafe.getLong(arr, off);
-
-            return new IgniteUuid(globalId, locId);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param ptr Offheap address.
-     * @return UUID.
-     */
-    @Nullable public static IgniteUuid readGridUuid(long ptr) {
-        if (GridUnsafe.getBoolean(null, ptr++)) {
-            long most = GridUnsafe.getLong(ptr);
-
-            ptr += 8;
-
-            long least = GridUnsafe.getLong(ptr);
-
-            ptr += 8;
-
-            UUID globalId = new UUID(most, least);
-
-            long locId = GridUnsafe.getLong(ptr);
-
-            return new IgniteUuid(globalId, locId);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param ver Version.
-     * @return Offset.
-     */
-    public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
-        boolean verEx = ver instanceof GridCacheVersionEx;
-
-        GridUnsafe.putBoolean(arr, off++, verEx);
-
-        if (verEx) {
-            GridCacheVersion drVer = ver.conflictVersion();
-
-            assert drVer != null;
-
-            GridUnsafe.putInt(arr, off, drVer.topologyVersion());
-
-            off += 4;
-
-            GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
-
-            off += 4;
-
-            GridUnsafe.putLong(arr, off, drVer.order());
-
-            off += 8;
-        }
-
-        GridUnsafe.putInt(arr, off, ver.topologyVersion());
-
-        off += 4;
-
-        GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
-
-        off += 4;
-
-        GridUnsafe.putLong(arr, off, ver.order());
-
-        off += 8;
-
-        return off;
-    }
-
-    /**
-     * @param ptr Offheap address.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    public static GridCacheVersion readVersion(long ptr, boolean verEx) {
-        GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
-            GridUnsafe.getInt(ptr + 4),
-            GridUnsafe.getLong(ptr + 8));
-
-        if (verEx) {
-            ptr += 16;
-
-            ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
-                GridUnsafe.getInt(ptr + 4),
-                GridUnsafe.getLong(ptr + 8),
-                ver);
-        }
-
-        return ver;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
-        int topVer = GridUnsafe.getInt(arr, off);
-
-        off += 4;
-
-        int nodeOrderDrId = GridUnsafe.getInt(arr, off);
-
-        off += 4;
-
-        long order = GridUnsafe.getLong(arr, off);
-
-        off += 8;
-
-        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, order);
-
-        if (verEx) {
-            topVer = GridUnsafe.getInt(arr, off);
-
-            off += 4;
-
-            nodeOrderDrId = GridUnsafe.getInt(arr, off);
-
-            off += 4;
-
-            order = GridUnsafe.getLong(arr, off);
-
-            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, order, ver);
-        }
-
-        return ver;
     }
 
     /**

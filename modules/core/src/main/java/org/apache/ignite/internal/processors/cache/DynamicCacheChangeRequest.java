@@ -71,9 +71,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Destroy. */
     private boolean destroy;
 
-    /** Close flag. */
-    private boolean close;
-
     /** Whether cache was created through SQL. */
     private boolean sql;
 
@@ -152,19 +149,6 @@ public class DynamicCacheChangeRequest implements Serializable {
         req.startCacheConfiguration(cfg);
         req.schema(new QuerySchema(cfg.getQueryEntities()));
         req.deploymentId(IgniteUuid.randomUuid());
-
-        return req;
-    }
-
-    /**
-     * @param ctx Context.
-     * @param cacheName Cache name.
-     * @return Request to close client cache.
-     */
-    static DynamicCacheChangeRequest closeRequest(GridKernalContext ctx, String cacheName) {
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
-
-        req.close(true);
 
         return req;
     }
@@ -392,20 +376,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void failIfExists(boolean failIfExists) {
         this.failIfExists = failIfExists;
-    }
-
-    /**
-     * @return Close flag.
-     */
-    public boolean close() {
-        return close;
-    }
-
-    /**
-     * @param close New close flag.
-     */
-    public void close(boolean close) {
-        this.close = close;
     }
 
     /**

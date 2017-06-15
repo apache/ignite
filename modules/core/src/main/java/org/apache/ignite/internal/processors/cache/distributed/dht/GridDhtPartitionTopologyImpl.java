@@ -106,7 +106,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private volatile AffinityTopologyVersion diffFromAffinityVer = AffinityTopologyVersion.NONE;
 
     /** */
-    private GridDhtPartitionExchangeId lastExchangeId;
+    private AffinityTopologyVersion lastExchangeVer;
 
     /** */
     private volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
@@ -170,7 +170,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             diffFromAffinity.clear();
 
-            lastExchangeId = null;
+            lastExchangeVer = null;
 
             updateSeq.set(1);
 
@@ -219,16 +219,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void updateTopologyVersion(
-        GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut,
+        GridDhtTopologyFuture exchFut,
+        DiscoCache discoCache,
         long updSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException {
         U.writeLock(lock);
 
         try {
-            assert exchId.topologyVersion().compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
-                ", exchId=" + exchId +
+            AffinityTopologyVersion exchTopVer = exchFut.topologyVersion();
+
+            assert exchTopVer.compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
+                ", exchTopVer=" + exchTopVer +
                 ", fut=" + exchFut + ']';
 
             this.stopping = stopping;
@@ -239,9 +241,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             rebalancedTopVer = AffinityTopologyVersion.NONE;
 
-            topVer = exchId.topologyVersion();
+            topVer = exchTopVer;
 
-            discoCache = exchFut.discoCache();
+            this.discoCache = discoCache;
         }
         finally {
             lock.writeLock().unlock();
@@ -1038,15 +1040,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public GridDhtPartitionMap update(
-        @Nullable GridDhtPartitionsExchangeFuture exchFut,
+        @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, T2<Long, Long>> cntrMap,
         Set<Integer> partsToReload
     ) {
-        GridDhtPartitionExchangeId exchId = exchFut != null ? exchFut.exchangeId() : null;
-
         if (log.isDebugEnabled())
-            log.debug("Updating full partition map [exchId=" + exchId + ", parts=" + fullMapString() + ']');
+            log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
 
         assert partMap != null;
 
@@ -1079,25 +1079,24 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            //if need skip
-            if (exchId != null && lastExchangeId != null && lastExchangeId.compareTo(exchId) >= 0) {
+            if (exchangeVer != null && lastExchangeVer != null && lastExchangeVer.compareTo(exchangeVer) >= 0) {
                 if (log.isDebugEnabled())
-                    log.debug("Stale exchange id for full partition map update (will ignore) [lastExchId=" +
-                        lastExchangeId + ", exchId=" + exchId + ']');
+                    log.debug("Stale exchange id for full partition map update (will ignore) [lastExch=" +
+                        lastExchangeVer + ", exch=" + exchangeVer + ']');
 
                 return null;
             }
 
             if (node2part != null && node2part.compareTo(partMap) >= 0) {
                 if (log.isDebugEnabled())
-                    log.debug("Stale partition map for full partition map update (will ignore) [lastExchId=" +
-                        lastExchangeId + ", exchId=" + exchId + ", curMap=" + node2part + ", newMap=" + partMap + ']');
+                    log.debug("Stale partition map for full partition map update (will ignore) [lastExch=" +
+                        lastExchangeVer + ", exch=" + exchangeVer + ", curMap=" + node2part + ", newMap=" + partMap + ']');
 
                 return null;
             }
 
-            if (exchId != null)
-                lastExchangeId = exchId;
+            if (exchangeVer != null)
+                lastExchangeVer = exchangeVer;
 
             if (node2part != null) {
                 for (GridDhtPartitionMap part : node2part.values()) {
@@ -1110,8 +1109,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         (grp.localStartVersion().compareTo(newPart.topologyVersion()) > 0))
                         ) {
                         if (log.isDebugEnabled())
-                            log.debug("Overriding partition map in full update map [exchId=" + exchId + ", curPart=" +
-                                mapString(part) + ", newPart=" + mapString(newPart) + ']');
+                            log.debug("Overriding partition map in full update map [exch=" + exchangeVer +
+                                ", curPart=" + mapString(part) + ", newPart=" + mapString(newPart) + ']');
 
                         partMap.put(part.nodeId(), part);
                     }
@@ -1326,16 +1325,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (stopping)
                 return null;
 
-            if (lastExchangeId != null && exchId != null && lastExchangeId.compareTo(exchId) > 0) {
+            if (lastExchangeVer != null && exchId != null && lastExchangeVer.compareTo(exchId.topologyVersion()) > 0) {
                 if (log.isDebugEnabled())
-                    log.debug("Stale exchange id for single partition map update (will ignore) [lastExchId=" +
-                        lastExchangeId + ", exchId=" + exchId + ']');
+                    log.debug("Stale exchange id for single partition map update (will ignore) [lastExch=" +
+                        lastExchangeVer + ", exch=" + exchId.topologyVersion() + ']');
 
                 return null;
             }
 
             if (exchId != null)
-                lastExchangeId = exchId;
+                lastExchangeVer = exchId.topologyVersion();
 
             if (node2part == null)
                 // Create invalid partition map.

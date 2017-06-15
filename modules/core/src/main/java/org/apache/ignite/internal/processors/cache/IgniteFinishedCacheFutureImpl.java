@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.handlers.redis;
+package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
-import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 
 /**
- * Command handler.
+ *
  */
-public interface GridRedisCommandHandler {
+public class IgniteFinishedCacheFutureImpl<V> extends IgniteCacheFutureImpl<V> {
     /**
-     * @return Collection of supported commands.
+     * @param err Error.
      */
-    public Collection<GridRedisCommand> supportedCommands();
-
-    /**
-     * @param ses Session.
-     * @param msg Request message.
-     * @return Future.
-     */
-    public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg);
+    public IgniteFinishedCacheFutureImpl(Throwable err) {
+        super(new GridFinishedFuture<V>(err));
+    }
 }

@@ -409,14 +409,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             return null;
         }
 
-        // If remote node has no near cache, don't add it.
-        if (!cctx.discovery().cacheNearNode(node, cacheName())) {
-            if (log.isDebugEnabled())
-                log.debug("Ignoring near reader because near cache is disabled: " + nodeId);
-
-            return null;
-        }
-
         // If remote node is (primary?) or back up, don't add it as a reader.
         if (cctx.affinity().partitionBelongs(node, partition(), topVer)) {
             if (log.isDebugEnabled())
@@ -655,7 +647,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         for (int i = 0; i < rdrs.length; i++) {
             ClusterNode node = cctx.discovery().getAlive(rdrs[i].nodeId());
 
-            if (node == null || !cctx.discovery().cacheNode(node, cacheName())) {
+            if (node == null) {
                 // Node has left and if new list has already been created, just skip.
                 // Otherwise, create new list and add alive nodes.
                 if (newRdrs == null) {

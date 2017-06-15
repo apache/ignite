@@ -190,6 +190,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         System.setProperty("h2.objectCache", "false");
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
+        System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
     }
 
     /** Default DB options. */
@@ -989,7 +990,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 // Add SQL explain result message into log.
                 String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
+                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
+                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
 
                 LT.warn(log, longMsg, msg);
             }

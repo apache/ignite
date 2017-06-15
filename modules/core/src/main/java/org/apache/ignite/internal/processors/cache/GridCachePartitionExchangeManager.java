@@ -339,6 +339,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @param task Task to run in exchange worker thread.
+     */
+    public void addCustomTask(CachePartitionExchangeWorkerTask task) {
+        assert task != null;
+
+        exchWorker.addCustomTask(task);
+    }
+
+    /**
      * @return Reconnect partition exchange future.
      */
     public IgniteInternalFuture<?> reconnectExchangeFuture() {
@@ -1379,13 +1388,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void dumpDebugInfo() throws Exception {
-        dumpDebugInfo(null);
-    }
-
-    /**
      * @param exchFut Optional current exchange future.
      * @throws Exception If failed.
      */
@@ -1750,7 +1752,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 cctx.cache().processCustomExchangeTask(task);
             }
             catch (Exception e) {
-                U.warn(log, "Failed to process custom exchange task: " + task, e);
+                U.error(log, "Failed to process custom exchange task: " + task, e);
             }
         }
 
@@ -1868,7 +1870,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                                    U.warn(log, "Failed to wait for partition map exchange [" +
+                                    U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                         "topVer=" + exchFut.topologyVersion() +
                                         ", node=" + cctx.localNodeId() + "]. " +
                                         "Dumping pending objects that might be the cause: ");
@@ -1878,7 +1880,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                             dumpDebugInfo(exchFut);
                                         }
                                         catch (Exception e) {
-                                            U.error(log, "Failed to dump debug information: " + e, e);
+                                            U.error(diagnosticLog, "Failed to dump debug information: " + e, e);
                                         }
 
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, futTimeout);

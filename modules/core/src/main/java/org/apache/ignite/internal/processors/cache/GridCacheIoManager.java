@@ -37,6 +37,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -307,47 +308,55 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, MessageHandlers msgHandlers) {
-        int msgIdx = cacheMsg.lookupIndex();
+        Lock lock = rw.readLock();
 
-        IgniteBiInClosure<UUID, GridCacheMessage> c = null;
+        lock.lock();
 
-        if (msgIdx >= 0) {
-            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
+        try {
+            int msgIdx = cacheMsg.lookupIndex();
 
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheMsg.handlerId());
+            IgniteBiInClosure<UUID, GridCacheMessage> c = null;
 
-            if (cacheClsHandlers != null)
-                c = cacheClsHandlers[msgIdx];
-        }
+            if (msgIdx >= 0) {
+                Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-        if (c == null)
-            c = msgHandlers.clsHandlers.get(new ListenerKey(cacheMsg.handlerId(), cacheMsg.getClass()));
+                IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheMsg.handlerId());
 
-        if (c == null) {
-            IgniteLogger log = cacheMsg.messageLogger(cctx);
-
-            StringBuilder msg0 = new StringBuilder("Received message without registered handler (will ignore) [");
-
-            appendMessageInfo(cacheMsg, nodeId, msg0);
-
-            msg0.append(", locTopVer=").append(cctx.exchange().readyAffinityVersion()).
-                append(", msgTopVer=").append(cacheMsg.topologyVersion()).
-                append(", desc=").append(descriptorForMessage(cacheMsg)).
-                append(']');
-
-            msg0.append(U.nl()).append("Registered listeners:");
-
-            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
-
-            for (Map.Entry<Integer, IgniteBiInClosure[]> e : idxClsHandlers0.entrySet())
-                msg0.append(U.nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue()));
-
-            if (cctx.kernalContext().isStopping()) {
-                if (log.isDebugEnabled())
-                    log.debug(msg0.toString());
+                if (cacheClsHandlers != null)
+                    c = cacheClsHandlers[msgIdx];
             }
-            else
-                U.error(log, msg0.toString());
+
+            if (c == null)
+                c = msgHandlers.clsHandlers.get(new ListenerKey(cacheMsg.handlerId(), cacheMsg.getClass()));
+
+            if (c == null) {
+                if (processMissedHandler(nodeId, cacheMsg))
+                    return;
+
+                IgniteLogger log = cacheMsg.messageLogger(cctx);
+
+                StringBuilder msg0 = new StringBuilder("Received message without registered handler (will ignore) [");
+
+                appendMessageInfo(cacheMsg, nodeId, msg0);
+
+                msg0.append(", locTopVer=").append(cctx.exchange().readyAffinityVersion()).
+                    append(", msgTopVer=").append(cacheMsg.topologyVersion()).
+                    append(", desc=").append(descriptorForMessage(cacheMsg)).
+                    append(']');
+
+                msg0.append(U.nl()).append("Registered listeners:");
+
+                Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
+
+                for (Map.Entry<Integer, IgniteBiInClosure[]> e : idxClsHandlers0.entrySet())
+                    msg0.append(U.nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue()));
+
+                if (cctx.kernalContext().isStopping()) {
+                    if (log.isDebugEnabled())
+                        log.debug(msg0.toString());
+                }
+                else
+                    U.error(log, msg0.toString());
 
             try {
                 cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
@@ -356,12 +365,101 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             catch (Exception e) {
                 U.error(log, "Failed to process failed message: " + e, e);
-            }
-
-            return;
+            }return;
         }
 
-        onMessage0(nodeId, cacheMsg, c);
+            onMessage0(nodeId, cacheMsg, c);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param cacheMsg Message.
+     * @return {@code True} if message processed.
+     */
+    private boolean processMissedHandler(UUID nodeId, GridCacheMessage cacheMsg) {
+        // It is possible to receive reader update after client near cache was closed.
+        if (cacheMsg instanceof GridDhtAtomicAbstractUpdateRequest) {
+            GridDhtAtomicAbstractUpdateRequest req = (GridDhtAtomicAbstractUpdateRequest)cacheMsg;
+
+            if (req.nearSize() > 0) {
+                List<KeyCacheObject> nearEvicted = new ArrayList<>(req.nearSize());
+
+                for (int i = 0; i < req.nearSize(); i++)
+                    nearEvicted.add(req.nearKey(i));
+
+                GridDhtAtomicUpdateResponse dhtRes = new GridDhtAtomicUpdateResponse(req.cacheId(),
+                    req.partition(),
+                    req.futureId(),
+                    false);
+
+                dhtRes.nearEvicted(nearEvicted);
+
+                sendMessageForMissedHandler(cacheMsg,
+                    nodeId,
+                    dhtRes,
+                    nodeId,
+                    GridIoPolicy.SYSTEM_POOL);
+
+                if (req.nearNodeId() != null) {
+                    GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
+                        req.partition(),
+                        req.nearFutureId(),
+                        nodeId,
+                        req.flags());
+
+                    sendMessageForMissedHandler(cacheMsg,
+                        nodeId,
+                        nearRes,
+                        req.nearNodeId(),
+                        GridIoPolicy.SYSTEM_POOL);
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param origMsg Message without handler.
+     * @param origMsgNode Node sent {@code origMsg}.
+     * @param nodeId Target node ID.
+     * @param msg Response.
+     * @param plc Policy.
+     */
+    private void sendMessageForMissedHandler(
+        GridCacheMessage origMsg,
+        UUID origMsgNode,
+        GridCacheMessage msg,
+        UUID nodeId,
+        byte plc) {
+        IgniteLogger log = msg.messageLogger(cctx);
+
+        try {
+            if (log.isDebugEnabled()) {
+                log.debug("Received message without registered handler, " +
+                    "send response [locTopVer=" + cctx.exchange().readyAffinityVersion() +
+                    ", msgTopVer=" + origMsg.topologyVersion() +
+                    ", node=" + origMsgNode +
+                    ", msg=" + origMsg +
+                    ", resNode=" + nodeId +
+                    ", res=" + msg + ']');
+            }
+
+            send(nodeId, msg, plc);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send response, node left [nodeId=" + nodeId + ", msg=" + msg + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send response [nodeId=" + nodeId + ", msg=" + msg + ", err=" + e + ']');
+        }
     }
 
     /** {@inheritDoc} */
@@ -374,17 +472,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_CACHE, lsnr);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
-    @Override protected void onKernalStop0(boolean cancel) {
-        cctx.gridIO().removeMessageListener(TOPIC_CACHE);
-
-        for (Object ordTopic : cacheHandlers.orderedHandlers.keySet())
-            cctx.gridIO().removeMessageListener(ordTopic);
-
-        for (Object ordTopic : grpHandlers.orderedHandlers.keySet())
-            cctx.gridIO().removeMessageListener(ordTopic);
-
+    /**
+     *
+     */
+    public void writeLock() {
         boolean interrupted = false;
 
         // Busy wait is intentional.
@@ -404,6 +495,27 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (interrupted)
             Thread.currentThread().interrupt();
+    }
+
+    /**
+     *
+     */
+    public void writeUnlock() {
+        rw.writeLock().unlock();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("BusyWait")
+    @Override protected void onKernalStop0(boolean cancel) {
+        cctx.gridIO().removeMessageListener(TOPIC_CACHE);
+
+        for (Object ordTopic : cacheHandlers.orderedHandlers.keySet())
+            cctx.gridIO().removeMessageListener(ordTopic);
+
+        for (Object ordTopic : grpHandlers.orderedHandlers.keySet())
+            cctx.gridIO().removeMessageListener(ordTopic);
+
+        writeLock();
 
         try {
             stopping = true;
@@ -421,10 +533,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage> c) {
-        Lock lock = rw.readLock();
-
-        lock.lock();
-
         try {
             if (stopping) {
                 if (log.isDebugEnabled())
@@ -453,8 +561,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         finally {
             if (depEnabled)
                 cctx.deploy().ignoreOwnership(false);
-
-            lock.unlock();
         }
     }
 
@@ -1542,9 +1648,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');
 
-            final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
+            Lock lock = rw.readLock();
 
-            onMessage0(nodeId, cacheMsg, c);
+            lock.lock();
+
+            try {
+                GridCacheMessage cacheMsg = (GridCacheMessage)msg;
+
+                onMessage0(nodeId, cacheMsg, c);
+            }
+            finally {
+                lock.unlock();
+            }
         }
     }
 

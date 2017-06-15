@@ -917,6 +917,9 @@ public class CacheGroupContext {
             res.idealAffinityAssignment(assignment.idealAssignment());
         }
 
+        if (req.sendPartitionsState())
+            res.partitionMap(top.partitionMap(true));
+
         try {
             ctx.io().send(nodeId, res, AFFINITY_POOL);
         }

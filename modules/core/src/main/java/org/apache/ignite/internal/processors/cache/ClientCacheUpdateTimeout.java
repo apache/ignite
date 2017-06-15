@@ -15,27 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.handlers.redis;
+package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
-import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
 /**
- * Command handler.
+ *
  */
-public interface GridRedisCommandHandler {
-    /**
-     * @return Collection of supported commands.
-     */
-    public Collection<GridRedisCommand> supportedCommands();
+class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements CachePartitionExchangeWorkerTask {
+    /** */
+    private final GridCacheSharedContext cctx;
 
     /**
-     * @param ses Session.
-     * @param msg Request message.
-     * @return Future.
+     * @param cctx Context.
+     * @param timeout Timeout.
      */
-    public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg);
+    ClientCacheUpdateTimeout(GridCacheSharedContext cctx, long timeout) {
+        super(timeout);
+
+        this.cctx = cctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTimeout() {
+        if (!cctx.kernalContext().isStopping())
+            cctx.exchange().addCustomTask(this);
+    }
 }
