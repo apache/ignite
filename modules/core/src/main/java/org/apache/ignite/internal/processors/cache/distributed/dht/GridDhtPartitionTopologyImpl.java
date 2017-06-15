@@ -1352,7 +1352,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             long updateSeq = this.updateSeq.incrementAndGet();
 
-            node2part.updateSequence(updateSeq);
+            node2part.newUpdateSequence(updateSeq);
 
             boolean changed = false;
 
