@@ -874,14 +874,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             CacheConfiguration ccfg = e.getValue().cacheConfiguration();
 
             if ((groupName == null && e.getValue().groupDescriptor().groupName() != null) ||
-                (groupName != null && !groupName.equals(e.getValue().groupDescriptor().groupName())))
+                (groupName != null && !groupName.equals(e.getValue().groupDescriptor().groupName())) ||
+                !ccfg.getName().startsWith(DATA_STRUCTURES_CACHE_NAME_PREFIX))
                 continue;
 
             if (ccfg.getAtomicityMode() != cfg.getAtomicityMode() ||
                 ccfg.getCacheMode() != cfg.getCacheMode() ||
                 ccfg.getBackups() != cfg.getBackups() ||
                 (ccfg.getNodeFilter() == null && cfg.getNodeFilter() != null) ||
-                (ccfg.getNodeFilter() != null && !ccfg.getNodeFilter().equals(cfg.getNodeFilter())))
+                (ccfg.getNodeFilter() != null && !(ccfg.getNodeFilter().equals(cfg.getNodeFilter()) ||
+                    (ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate && cfg.getNodeFilter() == null))))
                 continue;
 
             cacheName = e.getValue().cacheName();

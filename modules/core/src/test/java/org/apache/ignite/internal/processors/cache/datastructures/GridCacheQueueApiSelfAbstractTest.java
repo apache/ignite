@@ -686,6 +686,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         final CollectionConfiguration colCfg = collectionConfiguration();
 
         colCfg.setCollocated(false);
+        colCfg.setGroupName("testGroup");
         colCfg.setCacheMode(CacheMode.PARTITIONED);
 
         try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
@@ -733,6 +734,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         final CollectionConfiguration colCfg = collectionConfiguration();
 
         colCfg.setCollocated(false);
+        colCfg.setGroupName("testGroup");
         colCfg.setCacheMode(CacheMode.PARTITIONED);
 
         try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
