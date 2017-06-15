@@ -1252,6 +1252,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopWithClientJoin() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5512");
+
         Ignite ignite1 = ignite(1);
 
         final AtomicBoolean stop = new AtomicBoolean();
