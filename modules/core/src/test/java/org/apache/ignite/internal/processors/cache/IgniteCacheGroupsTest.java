@@ -3632,8 +3632,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRestartsAndCacheCreateDestroy() throws Exception {
-        fail("GG-12292");
-
         final int SRVS = 5;
 
         startGrids(SRVS);

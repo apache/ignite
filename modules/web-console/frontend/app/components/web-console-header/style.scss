@@ -72,10 +72,16 @@ web-console-header {
         height: 40px;
     }
 
-    .wch-nav-item {
+    .wch-nav-item,
+    a.wch-nav-item {
         cursor: pointer;
-        font-size: 16px;
         white-space: nowrap;
+
+        &, &.active {
+            font-size: 16px;
+            font-weight: normal;
+            text-decoration: none;
+        }
 
         $color-default: $text-color;
         $color-hover: $brand-primary;
@@ -96,7 +102,8 @@ web-console-header {
             color: $color-hover;
         }
         
-        :focus, .active {
+        &:focus, :focus,
+        &.active, .active {
             color: $color-active;
         }
 

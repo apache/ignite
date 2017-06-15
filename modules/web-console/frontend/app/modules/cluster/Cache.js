@@ -31,7 +31,7 @@ export default class Cache {
         // Heap.
         this.size = cache.size;
         this.primarySize = cache.primarySize;
-        this.backupSize = cache.dhtSize - cache.primarySize;
+        this.backupSize = _.isNil(cache.backupSize) ? cache.dhtSize - cache.primarySize : cache.backupSize;
         this.nearSize = cache.nearSize;
 
         // Off-heap.

@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-export default ['igniteSidebar', ['igniteSidebar', (igniteSidebar) => {
-    function controller() {
-        const ctrl = this;
+import angular from 'angular';
+import component from './component';
+import ConfigureState from './services/ConfigureState';
+import PageConfigure from './services/PageConfigure';
+import ConfigurationDownload from './services/ConfigurationDownload';
 
-        ctrl.items = igniteSidebar;
-    }
-
-    return {
-        restrict: 'A',
-        controller,
-        controllerAs: 'sidebar'
-    };
-}]];
+export default angular
+    .module('ignite-console.page-configure', [])
+    .component('pageConfigure', component)
+    .service('PageConfigure', PageConfigure)
+    .service('ConfigureState', ConfigureState)
+    .service('ConfigurationDownload', ConfigurationDownload);

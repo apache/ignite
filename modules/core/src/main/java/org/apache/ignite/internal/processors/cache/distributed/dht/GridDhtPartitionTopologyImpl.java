@@ -1352,7 +1352,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             long updateSeq = this.updateSeq.incrementAndGet();
 
-            node2part.updateSequence(updateSeq);
+            node2part.newUpdateSequence(updateSeq);
 
             boolean changed = false;
 
@@ -2030,7 +2030,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            assert node2part != null && node2part.valid() : "Invalid node2part [node2part: " + node2part +
+            if (node2part == null)
+                return false;
+
+            assert node2part.valid() : "Invalid node2part [node2part: " + node2part +
                 ", grp=" + grp.cacheOrGroupName() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + ctx.localNodeId() +

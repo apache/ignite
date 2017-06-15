@@ -1834,7 +1834,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
 
-        //org.h2.Driver.load();
+        org.h2.Driver.load();
 
         try {
             if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {

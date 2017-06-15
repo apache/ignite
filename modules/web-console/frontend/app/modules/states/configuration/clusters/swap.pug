@@ -21,7 +21,7 @@ include /app/helpers/jade/mixins
 -var swapModel = model + '.swapSpaceSpi'
 -var fileSwapModel = swapModel + '.FileSwapSpaceSpi'
 
-.panel.panel-default(ng-if='$ctrl.available(["1.0.0", "2.0.0"])' ng-form=form novalidate)
+.panel.panel-default(ng-show='$ctrl.available(["1.0.0", "2.0.0"])' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label Swap
@@ -30,7 +30,7 @@ include /app/helpers/jade/mixins
             | #[a(href="https://apacheignite.readme.io/docs/off-heap-memory#swap-space" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
+        .panel-body(ng-if=`$ctrl.available(["1.0.0", "2.0.0"]) && ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
                     +dropdown('Swap space SPI:', `${swapModel}.kind`, '"swapSpaceSpi"', 'true', 'Choose swap SPI',

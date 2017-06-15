@@ -25,14 +25,14 @@ import org.jetbrains.annotations.Nullable;
  * Logger which logs to string buffer.
  */
 public class GridStringLogger implements IgniteLogger {
-    /** */
-    private static final int MAX = 1024 * 11;
+    /** Initial string builder capacity in bytes */
+    private static final int INITIAL = 1024 * 33;
 
-    /** */
-    private static final int CHAR_CNT = 1024 * 10;
+    /** Maximum characters to be kept in string builder */
+    private static final int CHAR_CNT = 1024 * 32;
 
-    /** */
-    private StringBuilder buf = new StringBuilder(MAX);
+    /** Builder to accumulate log messages */
+    private StringBuilder buf = new StringBuilder(INITIAL);
 
     /** */
     private final boolean dbg;

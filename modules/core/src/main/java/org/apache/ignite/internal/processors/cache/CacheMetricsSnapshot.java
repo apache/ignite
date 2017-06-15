@@ -95,6 +95,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Number of entries stored in off-heap memory. */
     private long offHeapEntriesCnt;
 
+    /** Number of entries stored in heap. */
+    private long heapEntriesCnt;
+
     /** Number of primary entries stored in off-heap memory. */
     private long offHeapPrimaryEntriesCnt;
 
@@ -258,6 +261,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
         offHeapEntriesCnt = m.getOffHeapEntriesCount();
+        heapEntriesCnt = m.getHeapEntriesCount();
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
@@ -354,6 +358,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             offHeapHits += e.getOffHeapHits();
             offHeapMisses += e.getOffHeapMisses();
             offHeapEntriesCnt += e.getOffHeapEntriesCount();
+            heapEntriesCnt += e.getHeapEntriesCount();
             offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
             offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
             offHeapAllocatedSize += e.getOffHeapAllocatedSize();
@@ -573,6 +578,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
         return offHeapEntriesCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        return heapEntriesCnt;
     }
 
     /** {@inheritDoc} */
@@ -814,6 +824,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(offHeapHits);
         out.writeLong(offHeapMisses);
         out.writeLong(offHeapEntriesCnt);
+        out.writeLong(heapEntriesCnt);
         out.writeLong(offHeapPrimaryEntriesCnt);
         out.writeLong(offHeapBackupEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
@@ -868,6 +879,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapHits = in.readLong();
         offHeapMisses = in.readLong();
         offHeapEntriesCnt = in.readLong();
+        heapEntriesCnt = in.readLong();
         offHeapPrimaryEntriesCnt = in.readLong();
         offHeapBackupEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
