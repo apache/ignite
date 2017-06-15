@@ -33,7 +33,6 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (sbyte), "tinyint"},
             {typeof (short), "smallint"},
             {typeof (ushort), "int"},
-            {typeof (char), "nvarchar(1)"},
             {typeof (int), "int"},
             {typeof (uint), "bigint"},
             {typeof (long), "bigint"},
@@ -44,7 +43,6 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (decimal), "decimal"},
             {typeof (Guid), "uuid"},
             {typeof (DateTime), "timestamp"},
-            {typeof (DateTime?), "timestamp"},
         };
 
         /// <summary>
@@ -57,7 +55,19 @@ namespace Apache.Ignite.Linq.Impl
 
             string res;
 
-            return !NetToSql.TryGetValue(type, out res) ? null : res;
+            if (NetToSql.TryGetValue(type, out res))
+            {
+                return res;
+            }
+
+            type = Nullable.GetUnderlyingType(type);
+
+            if (type != null && NetToSql.TryGetValue(type, out res))
+            {
+                return res;
+            }
+
+            return null;
         }
     }
 }

@@ -381,11 +381,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestConditions()
         {
-            var persons = GetPersonCache().AsCacheQueryable();
+            TestConditions("even", "odd");
+            TestConditions(new Address { Zip = 1 }, new Address { Zip = 2 }, (a1, a2) => a1.Zip == a2.Zip);
 
-            var res = persons.Select(x => new {Foo = x.Key%2 == 0 ? "even" : "odd", x.Value}).ToArray();
-            Assert.AreEqual("even", res[0].Foo);
-            Assert.AreEqual("odd", res[1].Foo);
+            TestConditionsWithNullableStructs<int>();
+            TestConditionsWithNullableStructs<uint>();
+            TestConditionsWithNullableStructs<Guid>();
+            TestConditionsWithNullableStructs<byte>();
+            TestConditionsWithNullableStructs<sbyte>();
+            TestConditionsWithNullableStructs<short>();
+            TestConditionsWithNullableStructs<ushort>();
+            TestConditionsWithNullableStructs<bool>();
+            TestConditionsWithNullableStructs<long>();
+            TestConditionsWithNullableStructs<ulong>();
+            TestConditionsWithNullableStructs<double>();
+            TestConditionsWithNullableStructs<float>();
+            TestConditionsWithNullableStructs<decimal>();
+            TestConditionsWithNullableStructs<DateTime>(DateTime.UtcNow);
 
             var roles = GetRoleCache().AsCacheQueryable();
             CheckFunc(x => x.Value.Name ?? "def_name", roles);
@@ -651,6 +663,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray();
 
             Assert.AreEqual(PersonCount, qry8.Length);
+
+            // Join with local list variable
+            var allOrganizationIdsWithNull = allOrganizationIds
+                .Cast<int?>()
+                .Concat(new int?[] {null});
+
+            var qry9 = persons.Join(allOrganizationIdsWithNull,
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry9.Length);
         }
 
         /// <summary>
@@ -1824,6 +1850,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
+        }
+
+        /// <summary>
+        /// Test conditinal statement
+        /// </summary>
+        private void TestConditions<T>(T even , T odd, Func<T,T,bool> comparer = null)
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            var res = persons
+                .Select(x => new {Foo = x.Key % 2 == 0 ? even : odd, x.Value})
+                .ToArray();
+
+            if (comparer != null)
+            {
+                Assert.IsTrue(comparer(even, res[0].Foo));
+                Assert.IsTrue(comparer(odd, res[1].Foo));
+            }
+            else
+            {
+                Assert.AreEqual(even, res[0].Foo);
+                Assert.AreEqual(odd, res[1].Foo);
+            }
+        }
+
+        /// <summary>
+        /// Test conditinal statement
+        /// </summary>
+        private void TestConditionsWithNullableStructs<T>(T? defaultFalue = null) where T : struct
+        {
+            var def = defaultFalue ?? default(T);
+            TestConditions(def, (T?) null);
         }
 
         public interface IPerson
