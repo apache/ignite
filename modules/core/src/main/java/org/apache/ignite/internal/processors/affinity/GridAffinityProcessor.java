@@ -372,6 +372,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             cctx.awaitStarted();
 
+            AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
+
             try {
                 cctx.gate().enter();
             }
@@ -380,8 +382,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
 
             try {
-                AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
-
                 GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
                     (GridAffinityAssignment)assign0 :
                     new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());

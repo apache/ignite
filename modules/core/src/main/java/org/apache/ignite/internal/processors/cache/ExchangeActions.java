@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -327,5 +327,26 @@ public class ExchangeActions {
         public DynamicCacheDescriptor descriptor() {
             return desc;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        Object startGrps = F.viewReadOnly(cacheGrpsToStart, new C1<CacheGroupDescriptor, String>() {
+            @Override public String apply(CacheGroupDescriptor desc) {
+                return desc.cacheOrGroupName();
+            }
+        });
+        Object stopGrps = F.viewReadOnly(cacheGrpsToStop, new C1<CacheGroupDescriptor, String>() {
+            @Override public String apply(CacheGroupDescriptor desc) {
+                return desc.cacheOrGroupName();
+            }
+        });
+
+        return "ExchangeActions [startCaches=" + (cachesToStart != null ? cachesToStart.keySet() : null) +
+            ", stopCaches=" + (cachesToStop != null ? cachesToStop.keySet() : null) +
+            ", startGrps=" + startGrps +
+            ", stopGrps=" + stopGrps +
+            ", resetParts=" + (cachesToResetLostParts != null ? cachesToResetLostParts.keySet() : null) +
+            ", newState=" + newState + ']';
     }
 }
