@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+
 import java.io.Serializable;
 
 /**
  * Key used to store in utility cache information about created data structures.
  */
-public class DataStructureInfoKey implements Serializable {
+public class DataStructureInfoKey implements GridCacheInternal, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
