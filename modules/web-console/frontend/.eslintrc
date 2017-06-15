@@ -1,5 +1,8 @@
 parser: "babel-eslint"
 
+plugins:
+    - babel
+
 env:
     es6: true
     browser: true
@@ -194,6 +197,7 @@ rules:
     wrap-iife: 0
     wrap-regex: 0
     yoda: [2, "never"]
+    babel/semi: 2
 
 parserOptions:
     sourceType: module

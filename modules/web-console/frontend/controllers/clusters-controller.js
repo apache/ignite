@@ -478,7 +478,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 filterModel();
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.clusters');
+                    $state.go('base.configuration.tabs.advanced.clusters');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);

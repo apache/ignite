@@ -1308,6 +1308,8 @@ export default class IgniteConfigurationGenerator {
                 .intProperty('emptyPagesPoolSize')
                 .boolProperty('metricsEnabled');
 
+            if (plcBean.isEmpty()) return;
+
             policies.push(plcBean);
         });
 

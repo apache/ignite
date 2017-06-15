@@ -1304,7 +1304,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     $scope.selectedItem.queryMetadata = 'Configuration';
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.domains');
+                    $state.go('base.configuration.tabs.advanced.domains');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);

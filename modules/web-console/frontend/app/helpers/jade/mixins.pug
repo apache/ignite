@@ -514,12 +514,12 @@ mixin evictionPolicy(model, name, enabled, required, tip)
 
 //- Mixin for clusters dropdown.
 mixin clusters(model, tip)
-    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({linkId: linkId()})"> (add)</a>',
+    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.tabs.advanced.clusters({linkId: linkId()})"> (add)</a>',
         model + '.clusters', '"clusters"', true, 'Choose clusters', 'No clusters configured', 'clusters', tip)
 
 //- Mixin for caches dropdown.
 mixin caches(model, tip)
-    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({linkId: linkId()})"> (add)</a>',
+    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.tabs.advanced.caches({linkId: linkId()})"> (add)</a>',
         model + '.caches', '"caches"', true, 'Choose caches', 'No caches configured', 'caches', tip)
 
 //- Mixin for XML, Java, .Net preview.
