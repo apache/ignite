@@ -21,12 +21,19 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -39,7 +46,9 @@ public class BinaryMarshallerLocalMetadataCache extends GridCommonAbstractTest {
         IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
-        cfg.setMarshaller(new BinaryMarshaller());
+        cfg.setMarshaller(new BinaryMarshallerWrapper());
+
+        cfg.setCacheConfiguration(new CacheConfiguration().setName("part").setBackups(1));
 
         return cfg;
     }
@@ -66,26 +75,20 @@ public class BinaryMarshallerLocalMetadataCache extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalMetadata() throws Exception {
-        final BinaryObject obj = grid(0).binary().toBinary(new OptimizedContainer(new Optimized()));
+        final CyclicBarrier bar = new CyclicBarrier(64);
 
-        ClusterGroup remotes = grid(0).cluster().forRemotes();
+        awaitPartitionMapExchange();
 
-        OptimizedContainer res = grid(0).compute(remotes).call(new IgniteCallable<OptimizedContainer>() {
-            @Override public OptimizedContainer call() throws Exception {
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                bar.await();
 
-                return obj.deserialize();
+                return grid(0).binary().toBinary(new OptimizedContainer(new Optimized()));
             }
-        });
+        }, 64, "async-runner");
 
-        OptimizedContainer res2 = grid(0).compute(remotes).call(new IgniteCallable<OptimizedContainer>() {
-            @Override public OptimizedContainer call() throws Exception {
-
-                return obj.deserialize();
-            }
-        });
-
-        System.out.println(res);
-        System.out.println(res2);
+        // We expect 3 here because Externalizable classes are registered twice with different type IDs.
+        assertEquals(3, ((BinaryMarshallerWrapper)grid(0).configuration().getMarshaller()).registerClassCalled.get());
     }
 
     /**
@@ -121,6 +124,28 @@ public class BinaryMarshallerLocalMetadataCache extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             fld = U.readUTFStringNullable(in);
+        }
+    }
+
+    private static class BinaryMarshallerWrapper extends BinaryMarshaller {
+        private MarshallerContext ctx0 = new MarshallerContextAdapter(Collections.<PluginProvider>emptyList()) {
+            @Override protected boolean registerClassName(int id, String clsName) {
+                U.dumpStack(id + " " + clsName);
+                registerClassCalled.incrementAndGet();
+
+                return true;
+            }
+
+            @Override protected String className(int id) throws IgniteCheckedException {
+                return null;
+            }
+        };
+
+        private AtomicInteger registerClassCalled = new AtomicInteger();
+
+        /** {@inheritDoc} */
+        @Override public MarshallerContext getContext() {
+            return ctx0;
         }
     }
 }
