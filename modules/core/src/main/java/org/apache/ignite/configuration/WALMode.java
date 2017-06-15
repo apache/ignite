@@ -17,27 +17,45 @@
 
 package org.apache.ignite.configuration;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * WAL Mode. This enum defines crash recovery guarantees when Ignite persistence is enabled.
  */
 public enum WALMode {
     /**
-     *
+     * Default mode: full-sync disk writes. These writes survive power loss scenarios.
      */
     DEFAULT,
 
     /**
-     *
+     * Log only mode: flushes application buffers. These writes survive process crash.
      */
     LOG_ONLY,
 
     /**
-     *
+     * Background mode. Does not force application buffer flush. Data may be lost in case of process crash.
      */
     BACKGROUND,
 
     /**
-     *
+     * WAL disabled.
      */
-    NONE
+    NONE;
+
+    /**
+     * Enumerated values.
+     */
+    private static final WALMode[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable
+    public static WALMode fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

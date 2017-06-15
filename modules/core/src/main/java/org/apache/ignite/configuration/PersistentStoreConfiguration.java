@@ -462,7 +462,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     *  Property define how often will be fsync.
+     *  Property define how often will be fsync, in milliseconds.
      *  In background mode, exist thread which do fsync by timeout.
      *
      * @return Flush frequency.
@@ -472,7 +472,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * @param walFlushFreq Wal flush frequency.
+     * @param walFlushFreq Wal flush frequency, in milliseconds.
      */
     public PersistentStoreConfiguration setWalFlushFrequency(int walFlushFreq) {
         this.walFlushFreq = walFlushFreq;
@@ -481,14 +481,14 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     *
+     * Gets the fsync delay, in nanoseconds.
      */
     public int getWalFsyncDelay() {
         return walFsyncDelay <= 0 ? DFLT_WAL_FSYNC_DELAY : walFsyncDelay;
     }
 
     /**
-     * @param walFsyncDelay Wal fsync delay.
+     * @param walFsyncDelay Wal fsync delay, in nanoseconds.
      */
     public PersistentStoreConfiguration setWalFsyncDelay(int walFsyncDelay) {
         this.walFsyncDelay = walFsyncDelay;
