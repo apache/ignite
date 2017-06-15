@@ -212,6 +212,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     @Override
     protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        fail("https://issues.apache.org/jira/browse/IGNITE-5510 + https://issues.apache.org/jira/browse/IGNITE-5511");
     }
 
     /** {@inheritDoc} */
