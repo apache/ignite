@@ -107,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactio
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -526,6 +527,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getEvictionPolicy() != null && !cc.isOnheapCacheEnabled())
             throw new IgniteCheckedException("Onheap cache must be enabled if eviction policy is configured [cacheName="
                 + U.maskName(cc.getName()) + "]");
+
+        if (cacheType != CacheType.DATASTRUCTURES && DataStructuresProcessor.isDataStructureCache(cc.getName()))
+            throw new IgniteCheckedException("Using cache names reserved for datastructures is not allowed for " +
+                "other cache types [cacheName=" + U.maskName(cc.getName()) + ", cacheType=" + cacheType + "]");
+
+        if (cacheType != CacheType.DATASTRUCTURES && DataStructuresProcessor.isReservedGroup(cc.getGroupName()))
+            throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
+                "other cache types [cacheName=" + U.maskName(cc.getName()) + ", groupName=" + cc.getGroupName() +
+                ", cacheType=" + cacheType + "]");
     }
 
     /**
@@ -2683,7 +2693,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return CacheType.UTILITY;
         else if (internalCaches.contains(cacheName))
             return CacheType.INTERNAL;
-        else if (ctx.dataStructures().isDataStructureCache(cacheName))
+        else if (DataStructuresProcessor.isDataStructureCache(cacheName))
             return CacheType.DATASTRUCTURES;
         else
             return CacheType.USER;
@@ -3620,10 +3630,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean failIfNotStarted
     ) throws IgniteCheckedException {
-        if (cacheType != cacheType(cacheName))
-            throw new IgniteCheckedException("Failed to start cache (name is reserved for type " + cacheType(cacheName)
-                + " but requested type was " + cacheType + ": " + cacheName);
-
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());

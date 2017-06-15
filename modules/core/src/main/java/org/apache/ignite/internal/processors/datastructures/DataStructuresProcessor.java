@@ -105,7 +105,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
-    // TODO: do not allow user group with these names.
     private static final String DEFAULT_DATASTRUCTURES_GROUP_NAME = "default-ds-group";
 
     /** */
@@ -358,10 +357,22 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param cacheName Cache name.
      * @return {@code True} if cache with such name is used to store data structures.
      */
-    public boolean isDataStructureCache(String cacheName) {
+    public static boolean isDataStructureCache(String cacheName) {
         assert cacheName != null;
 
-        return cacheName.startsWith(CU.ATOMICS_CACHE_NAME) || cacheName.startsWith(DATA_STRUCTURES_CACHE_NAME_PREFIX);
+        return cacheName.startsWith(CU.ATOMICS_CACHE_NAME) ||
+            cacheName.startsWith(DATA_STRUCTURES_CACHE_NAME_PREFIX) ||
+            cacheName.equals(DEFAULT_DATASTRUCTURES_GROUP_NAME) ||
+            cacheName.equals(DEFAULT_VOLATILE_DATASTRUCTURES_GROUP_NAME);
+    }
+
+    /**
+     * @param groupName Group name.
+     * @return {@code True} if group name is reserved to store data structures.
+     */
+    public static boolean isReservedGroup(@Nullable String groupName) {
+        return DEFAULT_DATASTRUCTURES_GROUP_NAME.equals(groupName) ||
+            DEFAULT_VOLATILE_DATASTRUCTURES_GROUP_NAME.equals(groupName);
     }
 
     /**
@@ -514,7 +525,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         else
             groupName = DEFAULT_DATASTRUCTURES_GROUP_NAME;
 
-        // TODO: user cache names can't start with 'CU.ATOMICS_CACHE_NAME'
         String cacheName = CU.ATOMICS_CACHE_NAME + "@" + groupName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache0 = ctx.cache().cache(cacheName);
