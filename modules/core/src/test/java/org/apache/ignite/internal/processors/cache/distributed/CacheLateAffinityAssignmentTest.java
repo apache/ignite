@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -692,11 +693,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(4, topVer(4, 1), true);
 
-        TestRecordingCommunicationSpi spi =
-                (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
-
         // Block message for finishing exchange on new coordinator.
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
         spi.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
+
+        // Prevent node 4 to finish balancing.
+        TestRecordingCommunicationSpi spi3 = (TestRecordingCommunicationSpi)ignite3.configuration().getCommunicationSpi();
+        spi3.blockMessages(GridDhtPartitionDemandMessage.class, ignite0.name());
 
         stopNode(1, 5);
 
@@ -713,14 +716,20 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         assertTrue(fut3.isDone());
 
         // Block single message request for (5,0).
-        spi.blockMessages(GridDhtPartitionsSingleRequest.class, ignite3.name());
+//        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+//
+//        spi2.blockMessages(GridDhtPartitionsSingleRequest.class, ignite3.name());
 
         stopNode(0, 6);
+
+//        U.sleep(1000);
+//        spi2.stopBlock(true);
 
         fut2.get();
         fut3.get();
 
-        checkAffinity(2, topVer(5, 0), true);
+        checkAffinity(topVer(5, 0), ignite3, true);
+        checkAffinity(topVer(5, 0), ignite2, true);
 
         checkAffinity(2, topVer(6, 0), true);
     }
@@ -2349,6 +2358,73 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (!skipCheckOrder)
             checkOrderCounters(expNodes, topVer);
+
+        return aff;
+    }
+
+    private Map<String, List<List<ClusterNode>>> checkAffinity(AffinityTopologyVersion topVer, Ignite node,
+        boolean expIdeal) throws Exception {
+
+        Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
+
+        log.info("Check node: " + node.name());
+
+        IgniteKernal node0 = (IgniteKernal)node;
+
+        IgniteInternalFuture<?> fut = node0.context().cache().context().exchange().affinityReadyFuture(topVer);
+
+        if (fut != null)
+            fut.get();
+
+        for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
+            if (cctx.startTopologyVersion() != null && cctx.startTopologyVersion().compareTo(topVer) > 0)
+                continue;
+
+            List<List<ClusterNode>> aff1 = aff.get(cctx.name());
+            List<List<ClusterNode>> aff2 = cctx.affinity().assignments(topVer);
+
+            if (aff1 == null)
+                aff.put(cctx.name(), aff2);
+            else
+                assertAffinity(aff1, aff2, node, cctx.name(), topVer);
+
+            if (expIdeal) {
+                List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
+
+                assertAffinity(ideal, aff2, node, cctx.name(), topVer);
+
+                Affinity<Object> cacheAff = node.affinity(cctx.name());
+
+                for (int i = 0; i < 10; i++) {
+                    int part = cacheAff.partition(i);
+
+                    List<ClusterNode> partNodes = ideal.get(part);
+
+                    if (partNodes.isEmpty()) {
+                        try {
+                            ClusterNode primary = cacheAff.mapKeyToNode(i);
+
+                            fail();
+                        }
+                        catch (IgniteException ignore) {
+                            // No-op.
+                        }
+                    }
+                    else {
+                        ClusterNode primary = cacheAff.mapKeyToNode(i);
+
+                        assertEquals(primary, partNodes.get(0));
+                    }
+                }
+
+                for (int p = 0; p < ideal.size(); p++) {
+                    List<ClusterNode> exp = ideal.get(p);
+                    Collection<ClusterNode> partNodes = cacheAff.mapPartitionToPrimaryAndBackups(p);
+
+                    assertEqualsCollections(exp, partNodes);
+                }
+            }
+        }
 
         return aff;
     }

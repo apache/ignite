@@ -1537,6 +1537,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                             if (state != GridDhtPartitionState.OWNING) {
+                                // Prefer backup nodes to minimize rebalance traffic in case of leaving nodes.
                                 for (int i = 1; i < curNodes.size(); i++) {
                                     ClusterNode curNode = curNodes.get(i);
 
