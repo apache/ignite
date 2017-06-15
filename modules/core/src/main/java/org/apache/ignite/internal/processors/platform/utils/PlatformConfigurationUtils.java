@@ -163,6 +163,7 @@ public class PlatformConfigurationUtils {
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
         ccfg.setWriteBehindBatchSize(in.readInt());
+        ccfg.setWriteBehindCoalescing(in.readBoolean());
         ccfg.setWriteBehindEnabled(in.readBoolean());
         ccfg.setWriteBehindFlushFrequency(in.readLong());
         ccfg.setWriteBehindFlushSize(in.readInt());
@@ -823,6 +824,7 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
+        writer.writeBoolean(ccfg.getWriteBehindCoalescing());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
         writer.writeInt(ccfg.getWriteBehindFlushSize());
