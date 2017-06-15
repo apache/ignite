@@ -276,6 +276,33 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
     }
 
+    /**
+     * @param cacheId Cache ID.
+     */
+    public void rollbackTransactionsForCache(int cacheId) {
+        rollbackTransactionsForCache(cacheId, nearIdMap);
+
+        rollbackTransactionsForCache(cacheId, threadMap);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param txMap Transactions map.
+     */
+    private void rollbackTransactionsForCache(int cacheId, ConcurrentMap<?, IgniteInternalTx> txMap) {
+        for (Map.Entry<?, IgniteInternalTx> e : txMap.entrySet()) {
+            IgniteInternalTx tx = e.getValue();
+
+            for (IgniteTxEntry entry : tx.allEntries()) {
+                if (entry.cacheId() == cacheId) {
+                    rollbackTx(tx);
+
+                    break;
+                }
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
         txFinishSync.onDisconnected(reconnectFut);

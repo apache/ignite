@@ -20,9 +20,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -60,9 +58,8 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
                 .setCopyOnRead(true)
         );
 
-        BinaryConfiguration bcfg = new BinaryConfiguration();
-
-        bcfg.setNameMapper(new BinaryBasicNameMapper(false));
+        BinaryConfiguration bcfg = new BinaryConfiguration()
+                .setNameMapper(new BinaryBasicNameMapper(false));
 
         cfg.setBinaryConfiguration(bcfg);
 
@@ -112,10 +109,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
             a[i] = -1;
 
             try {
-                Iterator<Cache.Entry<String, Value>> it = cache.iterator();
-
-                while (it.hasNext())
-                    it.next();
+                b.deserialize();
             }
             catch (Exception ex) {
                 Throwable root = ex;

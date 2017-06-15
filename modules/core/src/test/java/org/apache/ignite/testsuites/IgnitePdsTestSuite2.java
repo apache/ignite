@@ -54,13 +54,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         // Metrics test.
         suite.addTestSuite(IgnitePersistenceMetricsSelfTest.class);
 
-        // WAL recovery test.
-        suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
-        suite.addTestSuite(IgniteWalRecoveryTest.class);
-
         suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
-
-        suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
 
         suite.addTestSuite(IgnitePdsRebalancingOnNotStableTopologyTest.class);
 
@@ -69,8 +63,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
 
         // Rebalancing test
-        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
 
         suite.addTestSuite(IgnitePdsContinuousRestartTest.class);

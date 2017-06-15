@@ -249,6 +249,7 @@ public class IgniteTxHandler {
                         null,
                         e,
                         null,
+                        req.onePhaseCommit(),
                         req.deployInfo() != null);
                 }
             }
@@ -365,6 +366,7 @@ public class IgniteTxHandler {
                         null,
                         null,
                         top.topologyVersion(),
+                        req.onePhaseCommit(),
                         req.deployInfo() != null);
 
                     try {
@@ -946,6 +948,17 @@ public class IgniteTxHandler {
             // Set evicted keys from near transaction.
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
+
+            List<IgniteTxKey> writesCacheMissed = req.nearWritesCacheMissed();
+
+            if (writesCacheMissed != null) {
+                Collection<IgniteTxKey> evicted0 = res.nearEvicted();
+
+                if (evicted0 != null)
+                    writesCacheMissed.addAll(evicted0);
+
+                res.nearEvicted(writesCacheMissed);
+            }
 
             if (dhtTx != null)
                 req.txState(dhtTx.txState());
@@ -1593,7 +1606,7 @@ public class IgniteTxHandler {
      * @return Remote transaction.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public GridNearTxRemote startNearRemoteTx(ClassLoader ldr, UUID nodeId,
+    @Nullable private GridNearTxRemote startNearRemoteTx(ClassLoader ldr, UUID nodeId,
         GridDhtTxPrepareRequest req) throws IgniteCheckedException {
 
         if (!F.isEmpty(req.nearWrites())) {

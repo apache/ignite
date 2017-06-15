@@ -17,6 +17,8 @@
  */
 package org.apache.ignite.internal.pagemem.snapshot;
 
+import org.jetbrains.annotations.Nullable;
+
 /** */
 public enum SnapshotOperationType {
     /** Create. */
@@ -30,5 +32,18 @@ public enum SnapshotOperationType {
     /** Delete. */
     DELETE,
     /** Check. */
-    CHECK
+    CHECK;
+
+    /** Enumerated values. */
+    private static final SnapshotOperationType[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static SnapshotOperationType fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

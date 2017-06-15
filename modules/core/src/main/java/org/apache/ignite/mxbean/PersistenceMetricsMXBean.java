@@ -21,7 +21,7 @@ import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 
 /**
- *
+ * An MX bean allowing to monitor and tune persistence metrics.
  */
 public interface PersistenceMetricsMXBean extends PersistenceMetrics {
     /** {@inheritDoc} */

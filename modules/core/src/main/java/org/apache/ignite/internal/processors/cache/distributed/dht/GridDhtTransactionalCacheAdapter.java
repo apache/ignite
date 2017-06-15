@@ -1026,7 +1026,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.createTtl(),
                     req.accessTtl(),
                     req.skipStore(),
-                    req.keepBinary());
+                    req.keepBinary(),
+                    req.nearCache());
 
                 final GridDhtTxLocal t = tx;
 

@@ -28,14 +28,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Data transfer object for {@link IgniteCache}.
@@ -47,9 +43,6 @@ public class VisorCache extends VisorDataTransferObject {
     /** */
     private static final CachePeekMode[] PEEK_NO_NEAR =
         new CachePeekMode[] {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
-
-    /** Default cache size sampling. */
-    private static final int DFLT_CACHE_SIZE_SAMPLING = 10;
 
     /** Cache name. */
     private String name;
@@ -90,9 +83,6 @@ public class VisorCache extends VisorDataTransferObject {
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
 
-    /** Cache partitions states. */
-    private VisorPartitionMap parts;
-
     /**
      * Create data transfer object for given cache.
      */
@@ -104,86 +94,27 @@ public class VisorCache extends VisorDataTransferObject {
      * Create data transfer object for given cache.
      *
      * @param ca Internal cache.
-     * @param sample Sample size.
      * @throws IgniteCheckedException If failed to create data transfer object.
      */
-    public VisorCache(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
+    public VisorCache(IgniteEx ignite, GridCacheAdapter ca) throws IgniteCheckedException {
         assert ca != null;
 
-        name = ca.name();
-
         GridCacheContext cctx = ca.context();
-
         CacheConfiguration cfg = ca.configuration();
 
-        mode = cfg.getCacheMode();
-
-        boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
-            && cctx.affinityNode();
-
-        if (partitioned) {
-            GridDhtCacheAdapter dca = null;
-
-            if (ca instanceof GridNearCacheAdapter)
-                dca = ((GridNearCacheAdapter)ca).dht();
-            else if (ca instanceof GridDhtCacheAdapter)
-                dca = (GridDhtCacheAdapter)ca;
-
-            if (dca != null) {
-                GridDhtPartitionTopology top = dca.topology();
-
-                if (cfg.getCacheMode() != CacheMode.LOCAL && cfg.getBackups() > 0)
-                    parts = new VisorPartitionMap(top.localPartitionMap());
-            }
-        }
-
+        name = ca.name();
         dynamicDeploymentId = cctx.dynamicDeploymentId();
+        mode = cfg.getCacheMode();
         size = ca.localSizeLong(PEEK_NO_NEAR);
         primarySize = ca.primarySizeLong();
-        backupSize = size - primarySize; // This is backup size.
+        backupSize = size - primarySize;
         nearSize = ca.nearSize();
-        onHeapEntriesCnt = 0; // TODO GG-11148 Need to rename on ON-heap entries count, see
         partitions = ca.affinity().partitions();
-        metrics = new VisorCacheMetrics(ignite, name);  // TODO: GG-11683 Move to separate thing
         near = cctx.isNear();
 
-        estimateMemorySize(ignite, ca, sample);
-    }
+        onHeapEntriesCnt = 0; // TODO GG-11148 How to get this metric?
 
-    /**
-     * Estimate memory size used by cache.
-     *
-     * @param ca Cache adapter.
-     * @param sample Sample size.
-     */
-    protected void estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) {
-        /* TODO Fix after GG-11739 implemented.
-        int size = ca.size();
-
-        Iterable<GridCacheEntryEx> set = ca.context().isNear()
-            ? ((GridNearCacheAdapter)ca).dht().entries()
-            : ca.entries();
-
-        long memSz = 0;
-
-        Iterator<GridCacheEntryEx> it = set.iterator();
-
-        int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
-
-        int cnt = 0;
-
-        while (it.hasNext() && cnt < sz) {
-            memSz += it.next().memorySize();
-
-            cnt++;
-        }
-
-        if (cnt > 0)
-            memSz = (long)((double)memSz / cnt * size);
-
-        memorySize = memSz;
-        */
-        memorySize = 0;
+        metrics = new VisorCacheMetrics(ignite, name);
     }
 
     /**
@@ -302,13 +233,6 @@ public class VisorCache extends VisorDataTransferObject {
     }
 
     /**
-     * @return Cache partitions states.
-     */
-    @Nullable public VisorPartitionMap getPartitionMap() {
-        return parts;
-    }
-
-    /**
      * @return {@code true} if cache has near cache.
      */
     public boolean isNear() {
@@ -330,7 +254,6 @@ public class VisorCache extends VisorDataTransferObject {
         out.writeInt(partitions);
         out.writeBoolean(near);
         out.writeObject(metrics);
-        out.writeObject(parts);
     }
 
     /** {@inheritDoc} */
@@ -348,7 +271,6 @@ public class VisorCache extends VisorDataTransferObject {
         partitions = in.readInt();
         near = in.readBoolean();
         metrics = (VisorCacheMetrics)in.readObject();
-        parts = (VisorPartitionMap)in.readObject();
     }
 
     /** {@inheritDoc} */

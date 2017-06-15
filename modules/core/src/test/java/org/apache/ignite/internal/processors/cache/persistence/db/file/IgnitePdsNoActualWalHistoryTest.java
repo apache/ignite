@@ -148,6 +148,8 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
 
             ignite = startGrid(1);
 
+            ignite.active(true);
+
             cache = ignite.cache(CACHE_NAME);
 
             // Check.

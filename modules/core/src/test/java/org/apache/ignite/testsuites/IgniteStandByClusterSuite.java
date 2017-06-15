@@ -23,6 +23,17 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.Ig
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStructureTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateFailOverTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToInActiveCluster;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinInActiveNodeToActiveCluster;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinInActiveNodeToInActiveCluster;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinActiveNodeToActiveClusterWithPersistence;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinActiveNodeToInActiveClusterWithPersistence;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinInActiveNodeToActiveClusterWithPersistence;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence.JoinInActiveNodeToInActiveClusterWithPersistence;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect.IgniteStandByClientReconnectTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect.IgniteStandByClientReconnectToNewClusterTest;
 
 /**
  *
@@ -33,6 +44,20 @@ public class IgniteStandByClusterSuite extends TestSuite {
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suit");
+
+        suite.addTestSuite(IgniteStandByClusterTest.class);
+        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
+        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
+
+        suite.addTestSuite(JoinActiveNodeToActiveCluster.class);
+        suite.addTestSuite(JoinActiveNodeToInActiveCluster.class);
+        suite.addTestSuite(JoinInActiveNodeToActiveCluster.class);
+        suite.addTestSuite(JoinInActiveNodeToInActiveCluster.class);
+
+        suite.addTestSuite(JoinActiveNodeToActiveClusterWithPersistence.class);
+        suite.addTestSuite(JoinActiveNodeToInActiveClusterWithPersistence.class);
+        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
+        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
 
         suite.addTestSuite(IgniteChangeGlobalStateTest.class);
         suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -655,6 +656,17 @@ public final class IgniteSystemProperties {
      * Defaults to utility cache deployment ID..
      */
     public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
+
+    /**
+     * When client cache is started or closed special discovery message is sent to notify cluster (for example this is
+     * needed for {@link ClusterGroup#forCacheNodes(String)} API. This timeout specifies how long to wait
+     * after client cache start/close before sending this message. If during this timeout another client
+     * cache changed, these events are combined into single message.
+     * <p>
+     * Default is 10 seconds.
+     */
+    public static final String IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT =
+        "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
 
     /**
      * Enforces singleton.

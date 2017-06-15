@@ -316,6 +316,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     dht().getDhtAsync(n.id(),
                         -1,
                         mappedKeys,
+                        false,
                         readThrough,
                         topVer,
                         subjId,
@@ -381,6 +382,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                    true,
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery);
@@ -447,7 +449,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         EntryGetResult res = entry.innerGetVersioned(
                             null,
                             null,
-                            /**update-metrics*/true,
+                            /*update-metrics*/true,
                             /*event*/!skipVals,
                             subjId,
                             null,

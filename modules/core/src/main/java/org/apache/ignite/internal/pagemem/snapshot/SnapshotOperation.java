@@ -32,9 +32,7 @@ public class SnapshotOperation implements Serializable {
     /** */
     private final SnapshotOperationType type;
 
-    /**
-     * Snapshot ID (the timestamp of snapshot creation).
-     */
+    /** Snapshot ID (the timestamp of snapshot creation). */
     private final long snapshotId;
 
     /** Cache group ids. */
@@ -49,6 +47,9 @@ public class SnapshotOperation implements Serializable {
     /** Additional parameter. */
     private final Object extraParam;
 
+    /** Optional list of dependent snapshot IDs. */
+    private final Set<Long> dependentSnapshotIds;
+
     /**
      * @param type Type.
      * @param snapshotId Snapshot id.
@@ -56,6 +57,7 @@ public class SnapshotOperation implements Serializable {
      * @param cacheNames Cache names.
      * @param msg Extra user message.
      * @param extraParam Additional parameter.
+     * @param dependentSnapshotIds Optional list of dependent snapshot IDs.
      */
     public SnapshotOperation(
         SnapshotOperationType type,
@@ -63,7 +65,8 @@ public class SnapshotOperation implements Serializable {
         Set<Integer> cacheGrpIds,
         Set<String> cacheNames,
         String msg,
-        Object extraParam
+        Object extraParam,
+        Set<Long> dependentSnapshotIds
     ) {
         this.type = type;
         this.snapshotId = snapshotId;
@@ -71,6 +74,7 @@ public class SnapshotOperation implements Serializable {
         this.cacheNames = cacheNames;
         this.msg = msg;
         this.extraParam = extraParam;
+        this.dependentSnapshotIds = dependentSnapshotIds;
     }
 
     /**
@@ -119,6 +123,12 @@ public class SnapshotOperation implements Serializable {
         return extraParam;
     }
 
+    /**
+     * @return Optional dependent snapshot IDs.
+     */
+    public Set<Long> dependentSnapshotIds() {
+        return dependentSnapshotIds;
+    }
 
     /**
      * @param op Op.
@@ -154,6 +164,7 @@ public class SnapshotOperation implements Serializable {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
@@ -161,20 +172,17 @@ public class SnapshotOperation implements Serializable {
 
         if (snapshotId != operation.snapshotId)
             return false;
+
         if (type != operation.type)
-            return false;
-        if (msg != null ? !msg.equals(operation.msg) : operation.msg != null)
             return false;
 
         return extraParam != null ? extraParam.equals(operation.extraParam) : operation.extraParam == null;
-
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = type.hashCode();
         res = 31 * res + (int)(snapshotId ^ (snapshotId >>> 32));
-        res = 31 * res + (msg != null ? msg.hashCode() : 0);
         res = 31 * res + (extraParam != null ? extraParam.hashCode() : 0);
         return res;
     }
@@ -188,6 +196,7 @@ public class SnapshotOperation implements Serializable {
             ", cacheGroupIds=" + cacheGrpIds +
             ", msg='" + msg + '\'' +
             ", extraParam=" + extraParam +
+            ", dependentSnapshotIds=" + dependentSnapshotIds +
             '}';
     }
 }

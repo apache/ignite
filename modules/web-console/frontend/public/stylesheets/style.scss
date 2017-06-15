@@ -545,14 +545,6 @@ button.form-control {
     .sql-editor {
         padding: 5px 0;
 
-        .ace_cursor {
-            opacity: 1;
-        }
-
-        .ace_hidden-cursors {
-            opacity: 1;
-        }
-
         .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
             padding-right: 5px;
         }
@@ -1526,14 +1518,6 @@ th[st-sort] {
     padding-left: 5px;
 }
 
-.ace_hidden-cursors {
-    opacity: 0;
-}
-
-.ace_cursor {
-    opacity: 0;
-}
-
 .ace_editor {
     margin: 10px 5px 10px 0;
 
@@ -1545,6 +1529,16 @@ th[st-sort] {
 
     .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
         padding-left: 0.65em;
+    }
+}
+
+.preview-panel {
+    .ace_hidden-cursors {
+        opacity: 0;
+    }
+
+    .ace_cursor {
+        opacity: 0;
     }
 }
 
@@ -2201,6 +2195,19 @@ html,body,.splash-screen {
 }
 
 .admin-page {
+    .docs-header {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
+
+        margin: 40px 0 20px 0;
+
+        h1 {
+            font-size: 24px;
+            margin: 0 10px 0 0;
+        }
+    }
+
     .panel-heading {
         height: 38px;
 

@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteFinishedCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -89,7 +90,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -579,7 +579,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             throw e;
         }
         catch (IgniteException e) {
-            return new IgniteFinishedFutureImpl<>(e);
+            return new IgniteFinishedCacheFutureImpl<>(e);
         }
         finally {
             leaveBusy();
@@ -636,7 +636,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (e instanceof Error || e instanceof IgniteDataStreamerTimeoutException)
                 throw e;
 
-            return new IgniteFinishedFutureImpl<>(e);
+            return new IgniteCacheFutureImpl<>(resFut);
         }
         finally {
             leaveBusy();
@@ -659,10 +659,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         else
             checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
-        CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
+        try {
+            KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
+            CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
 
-        return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
+            return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
+        }
+        catch (Exception e) {
+            return new IgniteFinishedCacheFutureImpl<>(e);
+        }
     }
 
     /** {@inheritDoc} */

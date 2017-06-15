@@ -185,6 +185,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             ignite = startGrid();
 
+            ignite.active(true);
+
             cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < txCnt; i++) {
@@ -219,6 +221,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      */
     public void testWalRecoveryRemoves() throws Exception {
         Ignite ignite = startGrid();
+
+        ignite.active(true);
 
         try {
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
@@ -306,6 +310,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         extraCcfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         Ignite ignite = startGrid();
+
+        ignite.active(true);
 
         try {
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
@@ -445,6 +451,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      */
     public void testCheckpointHistory() throws Exception {
         Ignite ignite = startGrid();
+
+        ignite.active(true);
 
         try {
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
@@ -727,6 +735,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             extraCcfg = new CacheConfiguration(CACHE2_NAME);
 
             Ignite ignite = startGrid(0);
+
+            ignite.active(true);
 
             IgniteCache<Integer, IndexedValue> cache1 = ignite.cache(CACHE_NAME);
             IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2_NAME);

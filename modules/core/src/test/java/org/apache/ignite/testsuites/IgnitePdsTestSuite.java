@@ -58,7 +58,6 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(PageMemoryImplTest.class);
 
         // Checkpointing smoke-test.
-        suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
         suite.addTestSuite(ignitePdsCheckpointSimulationTest.class);
 
         // BTree tests with store page memory.
@@ -73,14 +72,10 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDbClientNearCachePutGetTest.class);
 
         // Persistence-enabled.
-        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
-        suite.addTestSuite(IgnitePdsPageEvictionTest.class);
         suite.addTestSuite(IgnitePdsDynamicCacheTest.class);
         suite.addTestSuite(IgniteWalDirectoriesConfigurationTest.class);
         suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
-
-        suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
 
         return suite;
     }

@@ -21,19 +21,21 @@ import java.nio.ByteBuffer;
 import java.util.NavigableMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
+public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** Snapshot started lock filename. */
     public static final String SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME = "snapshot-started.loc";
 
@@ -67,11 +69,8 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
         // No-op.
     }
 
-    /**
-     *
-     */
-    public void onCheckPointBegin() {
-        // No-op.
+    public boolean snapshotOperationInProgress(){
+        return false;
     }
 
     /**
@@ -128,6 +127,14 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
         ByteBuffer pageBuf,
         Integer tag
     ) throws IgniteCheckedException {
+
+    }
+
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
+    }
+
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
 
     }
 }

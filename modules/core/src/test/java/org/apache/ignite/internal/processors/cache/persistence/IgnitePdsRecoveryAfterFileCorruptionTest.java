@@ -169,6 +169,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         ig = startGrid(0);
 
+        ig.active(true);
+
         checkRestore(ig, pages);
     }
 

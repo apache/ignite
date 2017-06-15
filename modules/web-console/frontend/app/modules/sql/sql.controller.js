@@ -1774,17 +1774,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 scope.title = 'Error details';
                 scope.content = [];
 
-                let cause = paragraph.error.root;
-
                 const tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
 
-                while (_.nonNil(cause)) {
-                    const clsName = _.isEmpty(cause.className) ? '' : '[' + JavaTypes.shortClassName(cause.className) + '] ';
+                const addToTrace = (item) => {
+                    if (_.nonNil(item)) {
+                        const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
-                    scope.content.push((scope.content.length > 0 ? tab : '') + clsName + cause.message);
+                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + item.message);
 
-                    cause = cause.cause;
-                }
+                        addToTrace(item.cause);
+
+                        _.forEach(item.suppressed, (sup) => addToTrace(sup));
+                    }
+                };
+
+                addToTrace(paragraph.error.root);
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});

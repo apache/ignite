@@ -22,7 +22,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
@@ -36,13 +38,18 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -52,6 +59,9 @@ public class IgniteDiagnosticMessage implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final int REQUEST_FLAG_MASK = 0x01;
+
+    /** */
     private static final ThreadLocal<DateFormat> dateFormat = new ThreadLocal<DateFormat>() {
         @Override protected DateFormat initialValue() {
             return new SimpleDateFormat("HH:mm:ss.SSS");
@@ -59,13 +69,13 @@ public class IgniteDiagnosticMessage implements Message {
     };
 
     /** */
+    private byte flags;
+
+    /** */
     private long futId;
 
     /** */
-    private String msg;
-
-    /** */
-    private byte[] cBytes;
+    private byte[] bytes;
 
     /**
      * Required by {@link GridIoMessageFactory}.
@@ -75,51 +85,53 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /**
-     * @param ctx Context.
+     * @param marsh Marshaller.
      * @param c Closure to run.
      * @param futId Future ID.
      * @return Request message.
      * @throws IgniteCheckedException If failed.
      */
-    public static IgniteDiagnosticMessage createRequest(GridKernalContext ctx,
-        IgniteClosure<GridKernalContext, String> c,
+    public static IgniteDiagnosticMessage createRequest(Marshaller marsh,
+        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c,
         long futId)
         throws IgniteCheckedException
     {
-        byte[] cBytes = U.marshal(ctx.config().getMarshaller(), c);
+        byte[] cBytes = U.marshal(marsh, c);
 
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
         msg.futId = futId;
-        msg.cBytes = cBytes;
+        msg.bytes = cBytes;
+        msg.flags |= REQUEST_FLAG_MASK;
 
         return msg;
     }
 
     /**
-     * @param msg0 Message.
+     * @param resBytes Marshalled result.
      * @param futId Future ID.
      * @return Response message.
      */
-    public static IgniteDiagnosticMessage createResponse(String msg0, long futId) {
+    public static IgniteDiagnosticMessage createResponse(byte[] resBytes, long futId) {
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
         msg.futId = futId;
-        msg.msg = msg0;
+        msg.bytes = resBytes;
 
         return msg;
     }
 
     /**
-     * @param ctx Context.
-     * @return Unmarshalled closure.
+     * @param marsh Marshaller.
+     * @return Unmarshalled payload.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteClosure<GridKernalContext, String> unmarshalClosure(GridKernalContext ctx)
+    @Nullable public <T> T unmarshal(Marshaller marsh)
         throws IgniteCheckedException {
-        assert cBytes != null;
+        if (bytes == null)
+            return null;
 
-        return U.unmarshal(ctx, cBytes, null);
+        return U.unmarshal(marsh, bytes, null);
     }
 
     /**
@@ -133,14 +145,7 @@ public class IgniteDiagnosticMessage implements Message {
      * @return {@code True} if this is request message.
      */
     public boolean request() {
-        return cBytes != null;
-    }
-
-    /**
-     * @return Message string.
-     */
-    public String message() {
-        return msg;
+        return (flags & REQUEST_FLAG_MASK) != 0;
     }
 
     /** {@inheritDoc} */
@@ -156,19 +161,19 @@ public class IgniteDiagnosticMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("cBytes", cBytes))
+                if (!writer.writeByteArray("bytes", bytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString("msg", msg))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
@@ -187,7 +192,7 @@ public class IgniteDiagnosticMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                cBytes = reader.readByteArray("cBytes");
+                bytes = reader.readByteArray("bytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -195,7 +200,7 @@ public class IgniteDiagnosticMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                futId = reader.readLong("futId");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -203,7 +208,7 @@ public class IgniteDiagnosticMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                msg = reader.readString("msg");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -233,60 +238,26 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public static class BaseClosure implements IgniteClosure<GridKernalContext, String> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        protected final UUID nodeId;
-
+    public static abstract class DiagnosticBaseClosure implements IgniteBiInClosure<StringBuilder, GridKernalContext> {
         /**
-         * @param ctx Local node context.
+         * @return Key to group similar messages.
          */
-        public BaseClosure(GridKernalContext ctx) {
-            this.nodeId = ctx.localNodeId();
-        }
-
-        /** {@inheritDoc} */
-        @Override public final String apply(GridKernalContext ctx) {
-            try {
-                StringBuilder sb = new StringBuilder();
-
-                IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx, nodeId);
-
-                sb.append(dumpNodeBasicInfo(ctx));
-
-                sb.append(U.nl()).append(dumpExchangeInfo(ctx));
-
-                String moreInfo = dumpInfo(ctx);
-
-                sb.append(U.nl()).append(commInfo.get());
-
-                if (moreInfo != null)
-                    sb.append(U.nl()).append(moreInfo);
-
-                return sb.toString();
-            }
-            catch (Exception e) {
-                ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
-
-                return "Failed to execute diagnostic message closure: " + e;
-            }
+        public Object mergeKey() {
+            return getClass();
         }
 
         /**
-         * @param ctx Context.
-         * @return Message.
+         * @param other Another closure of the same type.
          */
-        protected String dumpInfo(GridKernalContext ctx) {
-            return null;
+        public void merge(DiagnosticBaseClosure other) {
+            // No-op.
         }
     }
 
     /**
      *
      */
-    public static class TxEntriesInfoClosure extends BaseClosure {
+    public final static class TxEntriesInfoClosure extends DiagnosticBaseClosure {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -294,26 +265,28 @@ public class IgniteDiagnosticMessage implements Message {
         private final int cacheId;
 
         /** */
-        private final Collection<KeyCacheObject> keys;
+        private final Set<KeyCacheObject> keys;
 
         /**
-         * @param ctx Context.
          * @param cacheId Cache ID.
          * @param keys Keys.
          */
-        public TxEntriesInfoClosure(GridKernalContext ctx, int cacheId, Collection<KeyCacheObject> keys) {
-            super(ctx);
-
+        TxEntriesInfoClosure(int cacheId, Collection<KeyCacheObject> keys) {
             this.cacheId = cacheId;
-            this.keys = keys;
+            this.keys = new HashSet<>(keys);
         }
 
         /** {@inheritDoc} */
-        @Override protected String dumpInfo(GridKernalContext ctx) {
+        @Override public void apply(StringBuilder sb, GridKernalContext ctx) {
+            sb.append(U.nl());
+
             GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-            if (cctx == null)
-                return "Failed to find cache with id: " + cacheId;
+            if (cctx == null) {
+                sb.append("Failed to find cache with id: ").append(cacheId);
+
+                return;
+            }
 
             try {
                 for (KeyCacheObject key : keys)
@@ -322,27 +295,38 @@ public class IgniteDiagnosticMessage implements Message {
             catch (IgniteCheckedException e) {
                 ctx.cluster().diagnosticLog().error("Failed to unmarshal key: " + e, e);
 
-                return "Failed to unmarshal key: " + e;
+                sb.append("Failed to unmarshal key: ").append(e).append(U.nl());
             }
 
-            StringBuilder sb = new StringBuilder("Cache entries [cacheId=" + cacheId + ", cacheName=" + cctx.name() + "]: ");
+            sb.append("Cache entries [cacheId=").append(cacheId)
+                .append(", cacheName=").append(cctx.name()).append("]: ");
 
             for (KeyCacheObject key : keys) {
-                sb.append(U.nl());
-
                 GridCacheMapEntry e = (GridCacheMapEntry)cctx.cache().peekEx(key);
 
-                sb.append("Key [key=").append(key).append(", entry=").append(e).append("]");
+                sb.append(U.nl()).append("    Key [key=").append(key).append(", entry=").append(e).append("]");
             }
+        }
 
-            return sb.toString();
+        /** {@inheritDoc} */
+        @Override public Object mergeKey() {
+            return new T2<>(getClass(), cacheId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void merge(DiagnosticBaseClosure other) {
+            TxEntriesInfoClosure other0 = (TxEntriesInfoClosure)other;
+
+            assert other0 != null && cacheId == other0.cacheId : other;
+
+            this.keys.addAll(other0.keys);
         }
     }
 
     /**
      *
      */
-    public static class ExchangeInfoClosure extends BaseClosure {
+    public final static class ExchangeInfoClosure extends DiagnosticBaseClosure {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -350,32 +334,39 @@ public class IgniteDiagnosticMessage implements Message {
         private final AffinityTopologyVersion topVer;
 
         /**
-         * @param ctx Context.
          * @param topVer Exchange version.
          */
-        public ExchangeInfoClosure(GridKernalContext ctx, AffinityTopologyVersion topVer) {
-            super(ctx);
-
+        ExchangeInfoClosure(AffinityTopologyVersion topVer) {
             this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
-        @Override protected String dumpInfo(GridKernalContext ctx) {
+        @Override public void apply(StringBuilder sb, GridKernalContext ctx) {
+            sb.append(U.nl());
+
             List<GridDhtPartitionsExchangeFuture> futs = ctx.cache().context().exchange().exchangeFutures();
 
             for (GridDhtPartitionsExchangeFuture fut : futs) {
-                if (topVer.equals(fut.topologyVersion()))
-                    return "Exchange future: " + fut;
+                if (topVer.equals(fut.topologyVersion())) {
+                    sb.append("Exchange future: ").append(fut);
+
+                    return;
+                }
             }
 
-            return "Failed to find exchange future: " + topVer;
+            sb.append("Failed to find exchange future: ").append(topVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object mergeKey() {
+            return new T2<>(getClass(), topVer);
         }
     }
 
     /**
      *
      */
-    public static class TxInfoClosure extends BaseClosure {
+    public final static class TxInfoClosure extends DiagnosticBaseClosure {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -386,82 +377,67 @@ public class IgniteDiagnosticMessage implements Message {
         private final GridCacheVersion nearVer;
 
         /**
-         * @param ctx Context.
          * @param dhtVer Tx dht version.
          * @param nearVer Tx near version.
          */
-        public TxInfoClosure(GridKernalContext ctx,
-            GridCacheVersion dhtVer,
-            GridCacheVersion nearVer) {
-            super(ctx);
-
+        TxInfoClosure(GridCacheVersion dhtVer, GridCacheVersion nearVer) {
             this.dhtVer = dhtVer;
             this.nearVer = nearVer;
         }
 
         /** {@inheritDoc} */
-        @Override protected String dumpInfo(GridKernalContext ctx) {
-            StringBuilder b = new StringBuilder();
-
-            b.append("Related transactions [dhtVer=").append(dhtVer).
-                append(", nearVer=").append(nearVer).append("]: ");
+        @Override public void apply(StringBuilder sb, GridKernalContext ctx) {
+            sb.append(U.nl())
+                .append("Related transactions [dhtVer=").append(dhtVer)
+                .append(", nearVer=").append(nearVer).append("]: ");
 
             boolean found = false;
 
             for (IgniteInternalTx tx : ctx.cache().context().tm().activeTransactions()) {
                 if (dhtVer.equals(tx.xidVersion()) || nearVer.equals(tx.nearXidVersion())) {
-                    found = true;
+                    sb.append(U.nl())
+                        .append("    [ver=").append(tx.xidVersion())
+                        .append(", nearVer=").append(tx.nearXidVersion())
+                        .append(", topVer=").append(tx.topologyVersion())
+                        .append(", state=").append(tx.state())
+                        .append(", fullTx=").append(tx).append(']');
 
-                    b.append(U.nl());
-                    b.append("Found related ttx [ver=").append(tx.xidVersion()).
-                        append(", nearVer=").append(tx.nearXidVersion()).
-                        append(", topVer=").append(tx.topologyVersion()).
-                        append(", state=").append(tx.state()).
-                        append(", fullTx=").append(tx).
-                        append("]");
+                    found = true;
                 }
             }
 
-            if (!found) {
-                b.append(U.nl());
-                b.append("Failed to find related transactions.");
-            }
+            if (!found)
+                sb.append(U.nl()).append("Failed to find related transactions.");
+        }
 
-            return b.toString();
+        /** {@inheritDoc} */
+        @Override public Object mergeKey() {
+            return new T3<>(getClass(), nearVer, dhtVer);
         }
     }
 
     /**
+     *
+     * @param sb String builder.
      * @param ctx Context.
-     * @return Node information string.
      */
-    static String dumpNodeBasicInfo(GridKernalContext ctx) {
-        StringBuilder sb = new StringBuilder("General node info [id=").append(ctx.localNodeId());
-
-        sb.append(", client=").append(ctx.clientNode());
-        sb.append(", discoTopVer=").append(ctx.discovery().topologyVersionEx());
-        sb.append(", time=").append(formatTime(U.currentTimeMillis()));
-
-        sb.append(']');
-
-        return sb.toString();
+    static void dumpNodeBasicInfo(StringBuilder sb, GridKernalContext ctx) {
+        sb.append("General node info [id=").append(ctx.localNodeId())
+            .append(", client=").append(ctx.clientNode())
+            .append(", discoTopVer=").append(ctx.discovery().topologyVersionEx())
+            .append(", time=").append(formatTime(U.currentTimeMillis())).append(']');
     }
 
     /**
+     * @param sb String builder.
      * @param ctx Context.
-     * @return Exchange information string.
      */
-    static String dumpExchangeInfo(GridKernalContext ctx) {
+    static void dumpExchangeInfo(StringBuilder sb, GridKernalContext ctx) {
         GridCachePartitionExchangeManager exchMgr = ctx.cache().context().exchange();
-
-        StringBuilder sb = new StringBuilder("Partitions exchange info [readyVer=").append(exchMgr.readyAffinityVersion());
-        sb.append("]");
-
         GridDhtTopologyFuture fut = exchMgr.lastTopologyFuture();
 
-        sb.append(U.nl()).append("Last initialized exchange future: ").append(fut);
-        
-        return sb.toString();
+        sb.append("Partitions exchange info [readyVer=").append(exchMgr.readyAffinityVersion()).append(']').append(U.nl())
+            .append("Last initialized exchange future: ").append(fut);
     }
 
     /**
@@ -475,6 +451,7 @@ public class IgniteDiagnosticMessage implements Message {
         else
             return new GridFinishedFuture<>("Unexpected communication SPI: " + ctx.config().getCommunicationSpi());
     }
+
     /**
      * @param time Time.
      * @return Time string.

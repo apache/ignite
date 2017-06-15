@@ -48,6 +48,9 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** Cache name. */
     private String name;
 
+    /** Cache group name. */
+    private String grpName;
+
     /** Cache mode. */
     private CacheMode mode;
 
@@ -174,6 +177,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public VisorCacheConfiguration(IgniteEx ignite, CacheConfiguration ccfg) {
         name = ccfg.getName();
+        grpName = ccfg.getGroupName();
         mode = ccfg.getCacheMode();
         atomicityMode = ccfg.getAtomicityMode();
         eagerTtl = ccfg.isEagerTtl();
@@ -223,6 +227,13 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     @Nullable public String getName() {
         return name;
+    }
+
+    /**
+     * @return Cache group name.
+     */
+    @Nullable public String getGroupName() {
+        return grpName;
     }
 
     /**
@@ -503,6 +514,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
+        U.writeString(out, grpName);
         U.writeEnum(out, mode);
         U.writeEnum(out, atomicityMode);
         out.writeBoolean(eagerTtl);
@@ -545,6 +557,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
+        grpName = U.readString(in);
         mode = CacheMode.fromOrdinal(in.readByte());
         atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
         eagerTtl = in.readBoolean();

@@ -241,7 +241,7 @@ public class MemoryConfiguration implements Serializable {
     /**
      * Sets the number of concurrent segments in Ignite internal page mapping tables.
      *
-     * @param concLvl Mapping table oncurrency level.
+     * @param concLvl Mapping table concurrency level.
      */
     public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
@@ -252,7 +252,7 @@ public class MemoryConfiguration implements Serializable {
     /**
      * Gets a size for default memory policy overridden by user.
      *
-     * @return default memory policy size overridden by user or {@link #DFLT_MEMORY_POLICY_MAX_SIZE} if nothing was specified.
+     * @return Default memory policy size overridden by user or {@link #DFLT_MEMORY_POLICY_MAX_SIZE} if nothing was specified.
      */
     public long getDefaultMemoryPolicySize() {
         return dfltMemPlcSize;

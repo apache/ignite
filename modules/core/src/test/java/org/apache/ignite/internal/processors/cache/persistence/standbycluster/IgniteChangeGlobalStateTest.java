@@ -501,7 +501,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      *
      */
-    public void testFailGetLock() throws Exception {
+    public void _testFailGetLock() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
         Ignite ig3P = primary(2);
@@ -558,7 +558,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      *
      */
-    public void testActivateAfterFailGetLock() throws Exception {
+    public void _testActivateAfterFailGetLock() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
         Ignite ig3P = primary(2);

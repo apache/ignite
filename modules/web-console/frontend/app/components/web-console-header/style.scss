@@ -123,18 +123,18 @@ web-console-header {
         }
     }
 
-    .wch-revert-identity {
+    .wch-notification {
         font-size: $font-size-base;
         line-height: 16px;
         padding: 4px;
         background: $brand-warning;
         text-align: center;
         
-        .link-info {
+        a {
             color: $brand-info;
         }
 
-        &+.wch-revert-identity {
+        &+.wch-notification {
             border-top: 1px solid darken($brand-warning, 15%);
         }
     }
