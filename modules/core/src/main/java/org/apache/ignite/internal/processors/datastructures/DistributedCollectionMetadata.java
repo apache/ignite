@@ -22,9 +22,9 @@ public class DistributedCollectionMetadata extends AtomicDataStructureValue {
     private String cacheName;
 
     /**
-     * @param type
-     * @param cfg
-     * @param cacheName
+     * @param type Type.
+     * @param cfg Collection configuration.
+     * @param cacheName Cache name.
      */
     public DistributedCollectionMetadata(DataStructureType type, CollectionConfiguration cfg, String cacheName) {
         this.type = type;

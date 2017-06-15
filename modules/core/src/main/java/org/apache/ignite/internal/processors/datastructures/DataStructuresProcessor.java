@@ -426,6 +426,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Gets an atomic long from cache or creates one if it's not cached.
      *
      * @param name Name of atomic long.
+     * @param cfg Configuration.
      * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal}
      *        will be ignored.
      * @param create If {@code true} atomic long will be created in case it is not in cache.
@@ -724,6 +725,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Removes atomic reference from cache.
      *
      * @param name Atomic reference name.
+     * @param grpName Group name.
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicReference(final String name, @Nullable final String grpName) throws IgniteCheckedException {
@@ -734,6 +736,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Gets an atomic stamped from cache or creates one if it's not cached.
      *
      * @param name Name of atomic stamped.
+     * @param cfg Configuration.
      * @param initVal Initial value for atomic stamped. If atomic stamped already cached, {@code initVal}
      *        will be ignored.
      * @param initStamp Initial stamp for atomic stamped. If atomic stamped already cached, {@code initStamp}
@@ -773,6 +776,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Removes atomic stamped from cache.
      *
      * @param name Atomic stamped name.
+     * @param grpName Group name.
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicStamped(final String name, final String grpName) throws IgniteCheckedException {
@@ -1083,6 +1087,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * it is created using provided name and count parameter.
      *
      * @param name Name of the latch.
+     * @param cfg Configuration.
      * @param cnt Initial count.
      * @param autoDel {@code True} to automatically delete latch from cache when
      *      its count reaches zero.
@@ -1200,6 +1205,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Removes semaphore from cache.
      *
      * @param name Name of the semaphore.
+     * @param grpName Group name.
      * @throws IgniteCheckedException If operation failed.
      */
     public void removeSemaphore(final String name, final String grpName) throws IgniteCheckedException {
@@ -1222,6 +1228,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * it is created using provided name, failover mode, and fairness mode parameters.
      *
      * @param name Name of the reentrant lock.
+     * @param cfg Configuration.
      * @param failoverSafe Flag indicating behaviour in case of failure.
      * @param fair Flag indicating fairness policy of this lock.
      * @param create If {@code true} reentrant lock will be created in case it is not in cache.
@@ -1259,6 +1266,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Removes reentrant lock from cache.
      *
      * @param name Name of the reentrant lock.
+     * @param grpName Group name.
      * @param broken Flag indicating the reentrant lock is broken and should be removed unconditionally.
      * @throws IgniteCheckedException If operation failed.
      */
