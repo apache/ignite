@@ -121,7 +121,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private boolean initFailed;
 
     /** Internal storage of all dataStructures items (sequence, atomic long etc.). */
-    private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
+    private final ConcurrentMap<GridCacheInternalKey, GridCacheRemovable> dsMap;
 
     /** Atomic data structures configuration. */
     private final AtomicConfiguration dfltAtomicCfg;
@@ -295,13 +295,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param key Key.
      * @param obj Object.
      */
-    void onRemoved(GridCacheInternal key, GridCacheRemovable obj) {
+    void onRemoved(GridCacheInternalKey key, GridCacheRemovable obj) {
         dsMap.remove(key, obj);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable obj = e.getValue();
 
             if (clusterRestarted) {
@@ -415,6 +415,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Removes sequence from cache.
      *
      * @param name Sequence name.
+     * @param grpName Group name.
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeSequence(final String name, final String grpName) throws IgniteCheckedException {
@@ -611,6 +612,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Removes atomic long from cache.
      *
      * @param name Atomic long name.
+     * @param grpName Group name.
      * @throws IgniteCheckedException If removing failed.
      */
     final void removeAtomicLong(final String name, @Nullable final String grpName) throws IgniteCheckedException {
@@ -680,6 +682,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Gets an atomic reference from cache or creates one if it's not cached.
      *
      * @param name Name of atomic reference.
+     * @param cfg Configuration.
      * @param initVal Initial value for atomic reference. If atomic reference already cached, {@code initVal}
      *        will be ignored.
      * @param create If {@code true} atomic reference will be created in case it is not in cache.
@@ -1580,7 +1583,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         return null;
     }
 
+    /**
+     *
+     */
     private interface AtomicAccessor<T> {
-        T2<T, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException;
+        /**
+         * @param key Key.
+         * @param val Existing value.
+         * @param cache Data structure cache.
+         * @return Data structure instance and value to store in cache.
+         * @throws IgniteCheckedException If failed.
+         */
+        T2<T, AtomicDataStructureValue> get(GridCacheInternalKey key,
+            @Nullable AtomicDataStructureValue val,
+            IgniteInternalCache cache) throws IgniteCheckedException;
     }
 }
