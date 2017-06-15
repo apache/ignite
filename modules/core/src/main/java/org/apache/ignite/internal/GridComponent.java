@@ -62,9 +62,6 @@ public interface GridComponent {
 
         /** Query processor. */
         QUERY_PROC,
-
-        /** */
-        DATASTRUCTURE_PROC,
     }
 
     /**

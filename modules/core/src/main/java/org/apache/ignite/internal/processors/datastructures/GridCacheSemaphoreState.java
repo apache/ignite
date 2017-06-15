@@ -23,7 +23,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,7 +49,7 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
     private boolean broken;
 
     /** */
-    private UUID gridId;
+    private long gridStartTime;
 
     /**
      * Constructor.
@@ -59,13 +58,11 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
      * @param waiters Waiters map.
      * @param failoverSafe Failover safe flag.
      */
-    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe, UUID gridId) {
-        assert gridId != null;
-
+    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe, long gridStartTime) {
         this.cnt = cnt;
         this.waiters = waiters;
         this.failoverSafe = failoverSafe;
-        this.gridId = gridId;
+        this.gridStartTime = gridStartTime;
     }
 
     /**
@@ -81,8 +78,8 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
     }
 
     /** {@inheritDoc} */
-    @Override public UUID gridId() {
-        return gridId;
+    @Override public long gridStartTime() {
+        return gridStartTime;
     }
 
     /**
@@ -144,7 +141,7 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(cnt);
         out.writeBoolean(failoverSafe);
-        U.writeUuid(out, gridId);
+        out.writeLong(gridStartTime);
         out.writeBoolean(waiters != null);
 
         if (waiters != null) {
@@ -163,7 +160,7 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
     @Override public void readExternal(ObjectInput in) throws IOException {
         cnt = in.readInt();
         failoverSafe = in.readBoolean();
-        gridId = U.readUuid(in);
+        gridStartTime = in.readLong();
 
         if (in.readBoolean()) {
             int size = in.readInt();

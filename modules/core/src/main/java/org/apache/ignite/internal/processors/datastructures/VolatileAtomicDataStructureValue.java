@@ -18,8 +18,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.UUID;
-
 /**
  *
  */
@@ -28,7 +26,7 @@ public abstract class VolatileAtomicDataStructureValue extends AtomicDataStructu
     private static final long serialVersionUID = 0L;
 
     /**
-     * @return Grid ID.
+     * @return Grid start time.
      */
-    public abstract UUID gridId();
+    public abstract long gridStartTime();
 }

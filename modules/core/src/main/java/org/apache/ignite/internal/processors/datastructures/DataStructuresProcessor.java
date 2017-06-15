@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -78,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -130,10 +128,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Map of continuous query IDs. */
     private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
-
-    /** */
-    // TODO: use GridDiscoveryManager.gridStartTime instead.
-    private volatile UUID gridId = UUID.randomUUID();
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
@@ -190,9 +184,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     private void onKernalStart0(){
-        if (gridId == null)
-            gridId = UUID.randomUUID();
-
         initLatch.countDown();
     }
 
@@ -297,32 +288,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             if (v instanceof IgniteChangeGlobalStateSupport)
                 ((IgniteChangeGlobalStateSupport)v).onDeActivate(ctx);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.DATASTRUCTURE_PROC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        Serializable commonData = dataBag.gridDiscoveryData(discoveryDataType().ordinal()).commonData();
-
-        if (commonData == null) {
-            dataBag.addGridCommonData(discoveryDataType().ordinal(), gridId);
-        }
-        else {
-            assert gridId.equals(commonData);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        Serializable commonData = data.commonData();
-
-        assert commonData != null && commonData instanceof UUID;
-
-        gridId = (UUID) commonData;
     }
 
     /**
@@ -561,7 +526,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         AtomicDataStructureValue val = cache.get(key);
 
-        if (val != null) {
+        if (val != null && !isOutdated(val)) {
             if (val.type() != type)
                 throw new IgniteCheckedException("Another data structure with the same name already created " +
                     "[name=" + name +
@@ -584,12 +549,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     AtomicDataStructureValue val = cache.get(key);
 
-                    if (val != null && val.type().isVolatile()) {
-                        assert val instanceof VolatileAtomicDataStructureValue : val;
-
-                        if (!((VolatileAtomicDataStructureValue)val).gridId().equals(gridId))
-                            val = null;
-                    }
+                    if (isOutdated(val))
+                        val = null;
 
                     if (val == null && !create)
                         return null;
@@ -629,6 +590,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 }
             }
         });
+    }
+
+    /**
+     * @param val Value.
+     * @return {@code True} if value is outdated.
+     */
+    private boolean isOutdated(AtomicDataStructureValue val) {
+        return !(val == null || !(val instanceof VolatileAtomicDataStructureValue)) &&
+            ((VolatileAtomicDataStructureValue)val).gridStartTime() != ctx.discovery().gridStartTime();
+
     }
 
     /**
@@ -1132,7 +1103,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return null;
 
-                GridCacheCountDownLatchValue retVal = (val == null ? new GridCacheCountDownLatchValue(cnt, autoDel, gridId) : null);
+                GridCacheCountDownLatchValue retVal = (val == null ? new GridCacheCountDownLatchValue(cnt, autoDel,
+                    ctx.discovery().gridStartTime()) : null);
 
                 GridCacheCountDownLatchValue latchVal = retVal != null ? retVal : (GridCacheCountDownLatchValue) val;
 
@@ -1201,7 +1173,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return null;
 
-                AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt, new HashMap<UUID, Integer>(), failoverSafe, gridId) : null);
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt,
+                    new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
 
@@ -1259,7 +1232,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return new T2<>(null, null);
 
-                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, ctx.localNodeId(), 0, failoverSafe, fair, gridId) : null);
+                AtomicDataStructureValue retVal = (val == null ? new GridCacheLockState(0, ctx.localNodeId(),
+                    0, failoverSafe, fair, ctx.discovery().gridStartTime()) : null);
 
                 GridCacheLockEx reentrantLock0 = new GridCacheLockImpl(name, key, cache);
 

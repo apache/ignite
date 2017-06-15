@@ -21,11 +21,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Count down latch value.
@@ -46,7 +43,7 @@ public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStruct
     private boolean autoDel;
 
     /** */
-    private UUID gridId;
+    private long gridStartTime;
 
     /**
      * Constructor.
@@ -54,9 +51,8 @@ public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStruct
      * @param cnt Initial count.
      * @param del {@code True} to auto delete on count down to 0.
      */
-    public GridCacheCountDownLatchValue(int cnt, boolean del, UUID gridId) {
+    public GridCacheCountDownLatchValue(int cnt, boolean del, long gridStartTime) {
         assert cnt >= 0;
-        assert gridId != null;
 
         this.cnt = cnt;
 
@@ -64,7 +60,7 @@ public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStruct
 
         autoDel = del;
 
-        this.gridId = gridId;
+        this.gridStartTime = gridStartTime;
     }
 
     /**
@@ -80,8 +76,8 @@ public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStruct
     }
 
     /** {@inheritDoc} */
-    @Override public UUID gridId() {
-        return gridId;
+    @Override public long gridStartTime() {
+        return gridStartTime;
     }
 
     /**
@@ -122,7 +118,7 @@ public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStruct
         out.writeInt(cnt);
         out.writeInt(initCnt);
         out.writeBoolean(autoDel);
-        U.writeUuid(out, gridId);
+        out.writeLong(gridStartTime);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +126,7 @@ public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStruct
         cnt = in.readInt();
         initCnt = in.readInt();
         autoDel = in.readBoolean();
-        gridId = U.readUuid(in);
+        gridStartTime = in.readLong();
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,7 +46,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
     private UUID id;
 
     /** */
-    private UUID gridId;
+    private long gridStartTime;
 
     /** FailoverSafe flag. */
     private boolean failoverSafe;
@@ -82,9 +81,8 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
      * @param failoverSafe true if created in failoverSafe mode.
      * @param fair true if created in fair mode.
      */
-    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair, UUID gridId) {
+    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair, long gridStartTime) {
         assert cnt >= 0;
-        assert gridId != null;
 
         this.id = id;
 
@@ -100,7 +98,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
 
         this.failoverSafe = failoverSafe;
 
-        this.gridId = gridId;
+        this.gridStartTime = gridStartTime;
     }
 
     /**
@@ -116,8 +114,8 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
     }
 
     /** {@inheritDoc} */
-    @Override public UUID gridId() {
-        return gridId;
+    @Override public long gridStartTime() {
+        return gridStartTime;
     }
 
     /**
@@ -249,7 +247,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
         out.writeInt(cnt);
         out.writeLong(threadId);
         U.writeUuid(out, id);
-        U.writeUuid(out, gridId);
+        out.writeLong(gridStartTime);
 
         out.writeBoolean(failoverSafe);
 
@@ -302,7 +300,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
         cnt = in.readInt();
         threadId = in.readLong();
         id = U.readUuid(in);
-        gridId = U.readUuid(in);
+        gridStartTime = in.readLong();
 
         failoverSafe = in.readBoolean();
 
