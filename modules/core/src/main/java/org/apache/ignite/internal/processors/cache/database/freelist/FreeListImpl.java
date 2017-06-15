@@ -580,7 +580,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @return Entry size on page.
      * @throws IgniteCheckedException If failed.
      */
-    private static int getRowSize(CacheDataRow row) throws IgniteCheckedException {
+    public static int getRowSize(CacheDataRow row) throws IgniteCheckedException {
         int keyLen = row.key().valueBytesLength(null);
         int valLen = row.value().valueBytesLength(null);
 
