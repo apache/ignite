@@ -697,10 +697,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
         spi.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
-        // Prevent node 4 to finish balancing.
-        TestRecordingCommunicationSpi spi3 = (TestRecordingCommunicationSpi)ignite3.configuration().getCommunicationSpi();
-        spi3.blockMessages(GridDhtPartitionDemandMessage.class, ignite0.name());
-
         stopNode(1, 5);
 
         AffinityTopologyVersion topVer = topVer(5, 0);
@@ -720,6 +716,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 //
 //        spi2.blockMessages(GridDhtPartitionsSingleRequest.class, ignite3.name());
 
+        checkAffinity(topVer(5, 0), ignite3, true);
+
         stopNode(0, 6);
 
 //        U.sleep(1000);
@@ -729,7 +727,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         fut3.get();
 
         checkAffinity(topVer(5, 0), ignite3, true);
-        checkAffinity(topVer(5, 0), ignite2, true);
 
         checkAffinity(2, topVer(6, 0), true);
     }
