@@ -1037,6 +1037,20 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
+    /**
+     * Checks should current partition map overwritten by new partition map
+     * Method returns true if topology version or update sequence of new map are greater than of current map
+     *
+     * @param currentMap Current partition map
+     * @param newMap New partition map
+     * @return True if current partition map should be overwritten by new partition map, false in other case
+     */
+    private boolean shouldOverridePartitionMap(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
+        return newMap != null &&
+                (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) > 0 ||
+                 newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() > currentMap.updateSequence());
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public GridDhtPartitionMap update(
@@ -1087,7 +1101,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 return null;
             }
 
-            if (node2part != null && node2part.compareTo(partMap) >= 0) {
+            if (node2part != null && node2part.compareTo(partMap) > 0) {
                 if (log.isDebugEnabled())
                     log.debug("Stale partition map for full partition map update (will ignore) [lastExch=" +
                         lastExchangeVer + ", exch=" + exchangeVer + ", curMap=" + node2part + ", newMap=" + partMap + ']');
@@ -1102,16 +1116,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (GridDhtPartitionMap part : node2part.values()) {
                     GridDhtPartitionMap newPart = partMap.get(part.nodeId());
 
-                    // If for some nodes current partition has a newer map,
-                    // then we keep the newer value.
-                    if (newPart != null &&
-                        (newPart.updateSequence() < part.updateSequence() ||
-                        (grp.localStartVersion().compareTo(newPart.topologyVersion()) > 0))
-                        ) {
+                    if (shouldOverridePartitionMap(part, newPart)) {
                         if (log.isDebugEnabled())
-                            log.debug("Overriding partition map in full update map [exch=" + exchangeVer +
-                                ", curPart=" + mapString(part) + ", newPart=" + mapString(newPart) + ']');
-
+                            log.debug("Overriding partition map in full update map [exchId=" + exchangeVer + ", curPart=" +
+                                mapString(part) + ", newPart=" + mapString(newPart) + ']');
+                    }
+                    else {
+                        // If for some nodes current partition has a newer map,
+                        // then we keep the newer value.
                         partMap.put(part.nodeId(), part);
                     }
                 }
