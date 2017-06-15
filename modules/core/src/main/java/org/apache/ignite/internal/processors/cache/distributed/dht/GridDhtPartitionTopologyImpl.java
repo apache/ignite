@@ -1040,6 +1040,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /**
      * Checks should current partition map overwritten by new partition map
      * Method returns true if topology version or update sequence of new map are greater than of current map
+     *
      * @param currentMap Current partition map
      * @param newMap New partition map
      * @return True if current partition map should be overwritten by new partition map, false in other case
@@ -1119,7 +1120,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (log.isDebugEnabled())
                             log.debug("Overriding partition map in full update map [exchId=" + exchangeVer + ", curPart=" +
                                 mapString(part) + ", newPart=" + mapString(newPart) + ']');
-                    } else {
+                    }
+                    else {
                         // If for some nodes current partition has a newer map,
                         // then we keep the newer value.
                         partMap.put(part.nodeId(), part);

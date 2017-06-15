@@ -1636,23 +1636,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Detect lost partitions.
      */
     private void detectLostPartitions() {
+        boolean detected = false;
+
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
                 return;
 
-            boolean detected = false;
-
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (!grp.isLocal()) {
-                    boolean detectedOnGroup = grp.topology().detectLostPartitions(discoEvt);
+                    boolean detectedOnGrp = grp.topology().detectLostPartitions(discoEvt);
 
-                    detected |= detectedOnGroup;
+                    detected |= detectedOnGrp;
                 }
             }
-
-            if (detected)
-                cctx.exchange().scheduleResendPartitions();
         }
+
+        if (detected)
+            cctx.exchange().scheduleResendPartitions();
     }
 
     /**
