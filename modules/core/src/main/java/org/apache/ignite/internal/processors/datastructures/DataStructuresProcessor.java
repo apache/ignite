@@ -526,7 +526,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         AtomicDataStructureValue val = cache.get(key);
 
-        if (val != null && !isOutdated(val)) {
+        if (val != null && !isObsolete(val)) {
             if (val.type() != type)
                 throw new IgniteCheckedException("Another data structure with the same name already created " +
                     "[name=" + name +
@@ -549,7 +549,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     AtomicDataStructureValue val = cache.get(key);
 
-                    if (isOutdated(val))
+                    if (isObsolete(val))
                         val = null;
 
                     if (val == null && !create)
@@ -594,9 +594,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /**
      * @param val Value.
-     * @return {@code True} if value is outdated.
+     * @return {@code True} if value is obsolete.
      */
-    private boolean isOutdated(AtomicDataStructureValue val) {
+    private boolean isObsolete(AtomicDataStructureValue val) {
         return !(val == null || !(val instanceof VolatileAtomicDataStructureValue)) &&
             ((VolatileAtomicDataStructureValue)val).gridStartTime() != ctx.discovery().gridStartTime();
 
