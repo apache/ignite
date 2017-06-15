@@ -205,10 +205,10 @@ mixin text(lbl, model, name, required, placeholder, tip)
             block
 
 //- Mixin for url field.
-mixin url(lbl, model, name, required, placeholder, tip)
+mixin url(lbl, model, name, enabled, required, placeholder, tip)
     -var errLbl = lbl.substring(0, lbl.length - 1)
 
-    +ignite-form-field-text(lbl, model, name, 'false', required, placeholder, tip)(type='url')
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(type='url')
         if  block
             block
 

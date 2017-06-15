@@ -64,8 +64,8 @@ export default class AbstractTransformer {
     }
 
     // Generate atomics group.
-    static clusterAtomics(atomics) {
-        return this.toSection(this.generator.clusterAtomics(atomics));
+    static clusterAtomics(atomics, available) {
+        return this.toSection(this.generator.clusterAtomics(atomics, available));
     }
 
     // Generate binary group.
@@ -159,8 +159,8 @@ export default class AbstractTransformer {
     }
 
     // Generate cluster query group.
-    static clusterQuery(odbc, available) {
-        return this.toSection(this.generator.clusterQuery(odbc, available));
+    static clusterQuery(cluster, available) {
+        return this.toSection(this.generator.clusterQuery(cluster, available));
     }
 
     // Generate cache node filter group.
