@@ -909,7 +909,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             }
         }, 8);
 
-        Thread.sleep(500);
+        Thread.sleep(30000);
 
         stop.set(true);
 

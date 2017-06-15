@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
@@ -142,7 +143,7 @@ public class GridMapQueryExecutor {
         new ConcurrentHashMap8<>();
 
     /** Futures for query results reuse. */
-    private final AtomicReference<ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSet>>> futs =
+    private final AtomicReference<ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>>> futs =
         new AtomicReference<>();
 
     /**
@@ -620,7 +621,7 @@ public class GridMapQueryExecutor {
                 boolean evt = ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
                 for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = null;
+                    ResultSetWrapper rs = null;
 
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
@@ -994,7 +995,7 @@ public class GridMapQueryExecutor {
          * @param qrySrcNodeId Query source node.
          * @param rs Result set.
          */
-        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
+        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSetWrapper rs, Object[] params) {
             if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q, params)))
                 throw new IllegalStateException();
         }
@@ -1049,7 +1050,7 @@ public class GridMapQueryExecutor {
         private final ResultInterface res;
 
         /** */
-        private final ResultSet rs;
+        private final ResultSetWrapper rs;
 
         /** */
         private final GridCacheContext<?,?> cctx;
@@ -1085,7 +1086,7 @@ public class GridMapQueryExecutor {
          * @param qry Query.
          * @param params Query params.
          */
-        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
+        private QueryResult(ResultSetWrapper rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
             Object[] params) {
             this.cctx = cctx;
             this.qry = qry;
@@ -1096,7 +1097,7 @@ public class GridMapQueryExecutor {
             if (rs != null) {
                 this.rs = rs;
                 try {
-                    res = (ResultInterface)RESULT_FIELD.get(rs);
+                    res = (ResultInterface)RESULT_FIELD.get(rs.resultSet());
                 }
                 catch (IllegalAccessException e) {
                     throw new IllegalStateException(e); // Must not happen.
@@ -1128,74 +1129,76 @@ public class GridMapQueryExecutor {
 
             boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
-            try {
-                rs.absolute(pageSize * page);
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException(e);
-            }
+            synchronized (rs) {
+                try {
+                    rs.resultSet().absolute(pageSize * page);
+                }
+                catch (SQLException e) {
+                    throw new IgniteSQLException(e);
+                }
 
-            page++;
+                page++;
 
-            for (int i = 0 ; i < pageSize; i++) {
-                if (!res.next())
-                    return true;
+                for (int i = 0; i < pageSize; i++) {
+                    if (!res.next())
+                        return true;
 
-                Value[] row = res.currentRow();
+                    Value[] row = res.currentRow();
 
-                if (cpNeeded) {
-                    boolean copied = false;
+                    if (cpNeeded) {
+                        boolean copied = false;
 
-                    for (int j = 0; j < row.length; j++) {
-                        Value val = row[j];
+                        for (int j = 0; j < row.length; j++) {
+                            Value val = row[j];
 
-                        if (val instanceof GridH2ValueCacheObject) {
-                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+                            if (val instanceof GridH2ValueCacheObject) {
+                                GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject) val;
 
-                            GridCacheContext cctx = valCacheObj.getCacheContext();
+                                GridCacheContext cctx = valCacheObj.getCacheContext();
 
-                            if (cctx != null && cctx.needValueCopy()) {
-                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
-                                    @Override public Object getObject() {
-                                        return getObject(true);
-                                    }
-                                };
+                                if (cctx != null && cctx.needValueCopy()) {
+                                    row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
+                                        @Override public Object getObject() {
+                                            return getObject(true);
+                                        }
+                                    };
 
-                                copied = true;
+                                    copied = true;
+                                }
                             }
                         }
+
+                        if (i == 0 && !copied)
+                            cpNeeded = false; // No copy on read caches, skip next checks.
                     }
 
-                    if (i == 0 && !copied)
-                        cpNeeded = false; // No copy on read caches, skip next checks.
+                    assert row != null;
+
+                    if (readEvt) {
+                        cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                            cctx.localNode(),
+                            "SQL fields query result set row read.",
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            CacheQueryType.SQL.name(),
+                            cctx.namex(),
+                            null,
+                            qry.query(),
+                            null,
+                            null,
+                            params,
+                            qrySrcNodeId,
+                            null,
+                            null,
+                            null,
+                            null,
+                            row(row)));
+                    }
+
+                    rows.add(res.currentRow());
                 }
 
-                assert row != null;
-
-                if (readEvt) {
-                    cctx.gridEvents().record(new CacheQueryReadEvent<>(
-                        cctx.localNode(),
-                        "SQL fields query result set row read.",
-                        EVT_CACHE_QUERY_OBJECT_READ,
-                        CacheQueryType.SQL.name(),
-                        cctx.namex(),
-                        null,
-                        qry.query(),
-                        null,
-                        null,
-                        params,
-                        qrySrcNodeId,
-                        null,
-                        null,
-                        null,
-                        null,
-                        row(row)));
-                }
-
-                rows.add(res.currentRow());
+                return false;
             }
-
-            return false;
         }
 
         /**
@@ -1218,7 +1221,7 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            //U.close(rs, log);
+            rs.release();
         }
     }
 
@@ -1234,12 +1237,12 @@ public class GridMapQueryExecutor {
      * @return Query result.
      * @throws IgniteCheckedException if failed.
      */
-    private ResultSet runQuery(QueryKey key, ClusterNode node, @Nullable String mainCctxName, Connection conn,
+    private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, @Nullable String mainCctxName, Connection conn,
         int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
 
-        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSet>> futs = this.futs.get();
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = this.futs.get();
 
-        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSet>> newFuts = null;
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> newFuts = null;
 
         while (futs == null) {
             if (newFuts == null)
@@ -1251,45 +1254,64 @@ public class GridMapQueryExecutor {
                 futs = this.futs.get();
         }
 
-        GridFutureAdapter<ResultSet> fut = futs.get(key);
+        ResultSetWrapper res = null;
 
-        if (fut == null) {
-            GridFutureAdapter<ResultSet> newFut = new GridFutureAdapter<>();
+        GridFutureAdapter<ResultSetWrapper> newFut = null;
 
-            fut = futs.putIfAbsent(key, newFut);
+        while (res == null) {
+            GridFutureAdapter<ResultSetWrapper> fut = futs.get(key);
 
-            if (fut == null) {
-                fut = newFut;
+            if (fut != null)
+                res = fut.get();
 
-                ResultSet rs = h2.executeSqlQueryWithTimer(mainCctxName, conn, key.qry, F.asList(key.params), true,
-                    timeout, cancel);
+            if (res == null || !res.tryTake()) {
+                res = null;
 
-                if (evt) {
-                    ctx.event().record(new CacheQueryExecutedEvent<>(
-                        node,
-                        "SQL query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SQL.name(),
-                        mainCctxName,
-                        null,
-                        key.qry,
-                        null,
-                        null,
-                        key.params,
-                        node.id(),
-                        null));
-                }
+                if (newFut == null)
+                    newFut = new GridFutureAdapter<>();
 
-                assert rs instanceof JdbcResultSet : rs.getClass();
+                fut = futs.putIfAbsent(key, newFut);
 
-                fut.onDone(rs);
+                if (fut != null)
+                    res = fut.get();
 
-                if (this.futs.get() == futs)
+                if (res == null || !res.tryTake()) {
+                    fut = newFut;
+
+                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCctxName, conn, key.qry, F.asList(key.params), true,
+                        timeout, cancel);
+
+                    if (evt) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            node,
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            mainCctxName,
+                            null,
+                            key.qry,
+                            null,
+                            null,
+                            key.params,
+                            node.id(),
+                            null));
+                    }
+
+                    assert rs instanceof JdbcResultSet : rs.getClass();
+
                     futs.remove(key);
+
+                    res = new ResultSetWrapper(rs);
+
+                    if (!res.tryTake())
+                        throw new IllegalStateException();
+
+                    fut.onDone(res);
+                }
             }
         }
 
-        return fut.get();
+        return res;
     }
 
     /**
@@ -1353,6 +1375,53 @@ public class GridMapQueryExecutor {
             res = 31 * res + (enforceJoinOrder ? 1 : 0);
             res = 31 * res + Arrays.hashCode(parts);
             return 31 * res + pageSize;
+        }
+    }
+
+    private final class ResultSetWrapper {
+        private int cnt;
+
+        private final ResultSet rs;
+
+        private volatile boolean closed;
+
+        private ResultSetWrapper(ResultSet rs) {
+            A.notNull(rs, "rs");
+
+            this.rs = rs;
+        }
+
+        public ResultSet resultSet() {
+            checkState();
+
+            return rs;
+        }
+
+        public boolean isClosed() {
+            return closed;
+        }
+
+        public synchronized boolean tryTake() {
+            return ++cnt > 0 && !closed;
+        }
+
+        public synchronized void release() {
+            checkState();
+
+            if (--cnt == 0) {
+                closed = true;
+
+                log.error("CLOOOOOOSIIIIIIIING");
+
+                U.close(rs, log);
+            }
+            else if (cnt < 0)
+                throw new IllegalStateException();
+        }
+
+        private void checkState() {
+            if (closed)
+                throw new IllegalStateException();
         }
     }
 
