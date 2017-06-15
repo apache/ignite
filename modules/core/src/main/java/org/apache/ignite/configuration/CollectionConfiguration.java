@@ -53,7 +53,7 @@ public class CollectionConfiguration implements Serializable {
     private boolean collocated;
 
     /** Group name. */
-    private String groupName;
+    private String grpName;
 
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
@@ -164,15 +164,15 @@ public class CollectionConfiguration implements Serializable {
      * @return Group name.
      */
     public String getGroupName() {
-        return groupName;
+        return grpName;
     }
 
     /**
-     * @param groupName Group name.
+     * @param grpName Group name.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setGroupName(String groupName) {
-        this.groupName = groupName;
+    public CollectionConfiguration setGroupName(String grpName) {
+        this.grpName = grpName;
 
         return this;
     }
