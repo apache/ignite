@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -885,42 +883,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String grpName)
         throws IgniteCheckedException
     {
-        String cacheName = null;
-
-        for (Map.Entry<String, DynamicCacheDescriptor> e : ctx.cache().cacheDescriptors().entrySet()) {
-            CacheConfiguration ccfg = e.getValue().cacheConfiguration();
-
-            if ((grpName == null && e.getValue().groupDescriptor().groupName() != null) ||
-                (grpName != null && !grpName.equals(e.getValue().groupDescriptor().groupName())) ||
-                !ccfg.getName().startsWith(DS_CACHE_NAME_PREFIX))
-                continue;
-
-            if (ccfg.getAtomicityMode() != cfg.getAtomicityMode() ||
-                ccfg.getCacheMode() != cfg.getCacheMode() ||
-                ccfg.getBackups() != cfg.getBackups() ||
-                (ccfg.getNodeFilter() == null && cfg.getNodeFilter() != null) ||
-                (ccfg.getNodeFilter() != null && !(ccfg.getNodeFilter().equals(cfg.getNodeFilter()) ||
-                    (ccfg.getNodeFilter() instanceof CacheConfiguration.IgniteAllNodesPredicate && cfg.getNodeFilter() == null))))
-                continue;
-
-            cacheName = e.getValue().cacheName();
-
-            break;
-        }
-
-        if (cacheName == null) {
-            if (cfg == null)
-                return null;
-
-            cacheName = DS_CACHE_NAME_PREFIX + UUID.randomUUID();
-        }
-
-        CacheConfiguration cacheCfg = cacheConfiguration(cfg, cacheName, grpName);
+        String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
+            cfg.getBackups() + "@" + grpName;
 
         IgniteInternalCache cache = ctx.cache().cache(cacheName);
 
         if (cache == null) {
-            ctx.cache().dynamicStartCache(cacheCfg,
+            ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName),
                 cacheName,
                 null,
                 CacheType.DATA_STRUCTURES,
@@ -1532,34 +1501,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (dfltAtomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide AtomicConfiguration.");
-    }
-
-    /**
-     * @param cfg Collection configuration.
-     * @param iter Data structure metadata iterator.
-     * @return Name of the cache with compatible configuration or null.
-     */
-    private static String findCompatibleConfiguration(CollectionConfiguration cfg, Iterator<Cache.Entry<GridCacheInternalKey, AtomicDataStructureValue>> iter) {
-        if (iter == null)
-            return null;
-
-        while (iter.hasNext()) {
-            Cache.Entry<GridCacheInternalKey, AtomicDataStructureValue> e = iter.next();
-
-            assert e.getValue() instanceof DistributedCollectionMetadata;
-
-            CollectionConfiguration cfg2 = ((DistributedCollectionMetadata)e.getValue()).configuration();
-
-            if (cfg2.getAtomicityMode() == cfg.getAtomicityMode() &&
-                cfg2.getCacheMode() == cfg.getCacheMode() &&
-                cfg2.getBackups() == cfg.getBackups() &&
-                cfg2.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory() &&
-                ((cfg2.getNodeFilter() == null && cfg.getNodeFilter() == null) ||
-                (cfg2.getNodeFilter() != null && cfg2.getNodeFilter().equals(cfg.getNodeFilter()))))
-                return ((DistributedCollectionMetadata)e.getValue()).cacheName();
-        }
-
-        return null;
     }
 
     /**
