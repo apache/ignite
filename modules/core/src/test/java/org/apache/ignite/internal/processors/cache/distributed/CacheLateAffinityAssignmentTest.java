@@ -1384,6 +1384,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomOperations() throws Exception {
+        fail("IGNITE-5509");
+
         forceSrvMode = true;
 
         final int MAX_SRVS = 10;
