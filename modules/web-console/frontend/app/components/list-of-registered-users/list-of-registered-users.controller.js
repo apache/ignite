@@ -186,33 +186,35 @@ export default class IgniteListOfRegisteredUsersCtrl {
          */
         const reloadUsers = (params) => {
             AdminData.loadUsers(params)
-                .then((data) => $ctrl.gridOptions.data = data)
                 .then((data) => {
-                    this.gridApi.grid.refresh();
+                    $ctrl.gridOptions.data = data;
 
-                    this.companies = _.values(_.groupBy(data, (b) => b.company.toLowerCase()));
-                    this.countries = _.values(_.groupBy(data, (b) => b.countryCode));
+                    $ctrl.companies = _.values(_.groupBy(data, 'company'));
+                    $ctrl.countries = _.values(_.groupBy(data, 'countryCode'));
 
-                    return data;
+                    $ctrl.adjustHeight(data.length);
                 });
         };
 
-        const filterDates = (sdt, edt) => {
+        const filterDates = _.debounce(() => {
+            const sdt = $ctrl.params.startDate;
+            const edt = $ctrl.params.endDate;
+
             $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(sdt, 'yyyy_MM')}.csv`;
 
             const startDate = Date.UTC(sdt.getFullYear(), sdt.getMonth(), 1);
             const endDate = Date.UTC(edt.getFullYear(), edt.getMonth() + 1, 1);
 
             reloadUsers({ startDate, endDate });
-        };
+        }, 250);
 
-        $scope.$watch(() => $ctrl.params.startDate, (sdt) => filterDates(sdt, $ctrl.params.endDate));
-        $scope.$watch(() => $ctrl.params.endDate, (edt) => filterDates($ctrl.params.startDate, edt));
+        $scope.$watch(() => $ctrl.params.startDate, filterDates);
+        $scope.$watch(() => $ctrl.params.endDate, filterDates);
     }
 
     adjustHeight(rows) {
         // Add header height.
-        const height = Math.min(rows, 20) * 48 + 78;
+        const height = Math.min(rows, 11) * 48 + 78;
 
         this.gridApi.grid.element.css('height', height + 'px');
 
