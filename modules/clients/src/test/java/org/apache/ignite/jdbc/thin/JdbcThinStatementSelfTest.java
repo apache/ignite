@@ -303,6 +303,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCloseOnCompletion() throws Exception {
+        assert !stmt.isCloseOnCompletion() : "Invalid default closeOnCompletion";
+
         ResultSet rs0 = stmt.executeQuery(SQL);
 
         ResultSet rs1 = stmt.executeQuery(SQL); // rs0 is closed implicitly here.
@@ -316,6 +318,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         ResultSet rs2 = stmt.executeQuery(SQL);
 
         stmt.closeOnCompletion();
+
+        assert stmt.isCloseOnCompletion() : "Invalid closeOnCompletion";
 
         rs2.close();
 
