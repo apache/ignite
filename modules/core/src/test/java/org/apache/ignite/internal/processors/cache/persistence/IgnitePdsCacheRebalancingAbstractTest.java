@@ -211,6 +211,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If fails.
      */
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5514");
+
         IgniteEx ignite0 = startGrid(0);
 
         IgniteEx ignite1 = startGrid(1);
@@ -377,6 +379,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5514");
+
         final int entriesCnt = 10_000;
         int maxNodesCount = 4;
         int topChanges = 20;
