@@ -1650,9 +1650,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            if (detected) {
+            if (detected)
                 cctx.exchange().scheduleResendPartitions();
-            }
         }
     }
 

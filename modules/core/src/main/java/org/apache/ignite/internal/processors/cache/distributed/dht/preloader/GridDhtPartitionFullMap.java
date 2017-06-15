@@ -169,6 +169,9 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
     public long updateSequence(long updateSeq) {
         long old = this.updateSeq;
 
+        assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq +
+                ", partMap=" + toFullString() + ']';
+
         this.updateSeq = updateSeq;
 
         return old;
