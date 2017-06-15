@@ -3091,6 +3091,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.discovery().localNode().isClient()) {
             IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
 
+            if (proxy == null) {
+                GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
+                if (cacheAdapter != null)
+                    proxy = new IgniteCacheProxy(cacheAdapter.context(), cacheAdapter, null, false);
+            }
+
             assert proxy != null;
 
             return proxy.internalProxy();
