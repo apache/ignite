@@ -826,6 +826,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (checkConsistency)
                 checkConsistency();
 
+            if (active && cachesInfo.onJoinCacheException() != null)
+                throw new IgniteCheckedException(cachesInfo.onJoinCacheException());
+
             cachesInfo.onKernalStart(checkConsistency);
 
             if (active && !ctx.clientNode() && !ctx.isDaemon())
