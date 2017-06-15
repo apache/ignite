@@ -23,6 +23,10 @@ import org.apache.ignite.Ignition;
  * @see PersistentStoreExampleNodeStartup
  */
 public class PersistentStoreExampleNodeStartup {
+    /**
+     * @param args Program arguments, ignored.
+     * @throws Exception If failed.
+     */
     public static void main(String[] args) throws Exception {
         Ignition.start("examples/config/persistentstore/example-persistent-store.xml");
     }
