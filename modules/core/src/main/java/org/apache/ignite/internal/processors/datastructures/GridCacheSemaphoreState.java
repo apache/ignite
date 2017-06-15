@@ -57,6 +57,7 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
      * @param cnt Number of permissions.
      * @param waiters Waiters map.
      * @param failoverSafe Failover safe flag.
+     * @param gridStartTime Cluster start time.
      */
     public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe, long gridStartTime) {
         this.cnt = cnt;
