@@ -188,6 +188,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
     private void startQuery(GridCacheContext cctx) throws IgniteCheckedException {
@@ -344,6 +345,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Gets a sequence from cache or creates one if it's not cached.
      *
      * @param name Sequence name.
+     * @param cfg Configuration.
      * @param initVal Initial value for sequence. If sequence already cached, {@code initVal} will be ignored.
      * @param create If {@code true} sequence will be created in case it is not in cache.
      * @return Sequence.
@@ -458,6 +460,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /**
      * @param c Closure creating data structure instance.
+     * @param cfg Optional custom configuration or {@code null} to use default one.
+     * @param name Data structure name.
+     * @param type Data structure type.
      * @param create Create flag.
      * @param cls Expected data structure class.
      * @return Data structure instance.
@@ -830,6 +835,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @param cfg Collection configuration.
      * @param name Cache name.
+     * @param grpName Group name.
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(CollectionConfiguration cfg, String name, String grpName) {
@@ -850,6 +856,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @param cfg Collection configuration.
      * @param name Cache name.
+     * @param grpName Group name.
      * @return Meta cache configuration.
      */
     private CacheConfiguration metaCacheConfiguration(CollectionConfiguration cfg, String name, String grpName) {
@@ -863,6 +870,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @param cfg Collection configuration.
      * @return Cache name.
+     * @param grpName Group name.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String grpName)
