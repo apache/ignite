@@ -1041,6 +1041,9 @@ public class QueryUtils {
         Set<String> tblNames = new HashSet<>();
 
         for (DynamicCacheDescriptor desc : descs) {
+            if (F.eq(ccfg.getName(), desc.cacheName()))
+                continue;
+
             String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
