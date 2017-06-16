@@ -191,23 +191,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Unmarshal object.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="data">Data array.</param>
-        /// <param name="keepBinary">Whether to keep binarizable as binary.</param>
-        /// <returns>
-        /// Object.
-        /// </returns>
-        public T Unmarshal<T>(byte[] data, bool keepBinary)
-        {
-            using (var stream = new BinaryHeapStream(data))
-            {
-                return Unmarshal<T>(stream, keepBinary);
-            }
-        }
-
-        /// <summary>
-        /// Unmarshal object.
-        /// </summary>
         /// <param name="data">Data array.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>
