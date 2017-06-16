@@ -236,6 +236,11 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     }
 
     /** {@inheritDoc} */
+    @Override public void addBatch(String sql) throws SQLException {
+        throw new SQLException("The method 'addBatch(String)' is called on PreparedStatement instance.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x, int length) throws SQLException {
         ensureNotClosed();
 
