@@ -659,15 +659,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         else
             checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-        try {
-            KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
-            CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
+        KeyCacheObject key0;
+        CacheObject val0;
 
-            return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
+        try {
+            key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
+            val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
         }
         catch (Exception e) {
             return new IgniteFinishedCacheFutureImpl<>(e);
         }
+
+        return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
     }
 
     /** {@inheritDoc} */
