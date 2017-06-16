@@ -2007,12 +2007,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     void initCacheProxies(
         AffinityTopologyVersion startTopVer, @Nullable
         Throwable err) {
-    for (GridCacheAdapter<?, ?> cache : caches.values()) {
-        GridCacheContext<?, ?> cacheCtx = cache.context();
+        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+            GridCacheContext<?, ?> cacheCtx = cache.context();
 
-            if (cacheCtx.startTopologyVersion().equals(startTopVer) && !jCacheProxies.containsKey(cacheCtx.name())) {
-                jCacheProxies.putIfAbsent(cacheCtx.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
+            if (cacheCtx.startTopologyVersion().equals(startTopVer)) {
+                // It could be already in place in case of reusing a proxy
+                if (!jCacheProxies.containsKey(cacheCtx.name()))
+                    jCacheProxies.putIfAbsent(cacheCtx.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
 
+                // We have to signal InitialExchangeComplete in any case
                 if (cacheCtx.preloader() != null)
                     cacheCtx.preloader().onInitialExchangeComplete(err);
             }
