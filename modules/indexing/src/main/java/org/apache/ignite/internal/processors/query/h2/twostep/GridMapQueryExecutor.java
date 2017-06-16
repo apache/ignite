@@ -84,7 +84,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -627,7 +626,7 @@ public class GridMapQueryExecutor {
                         QueryKey key = new QueryKey(qry.query(), qry.parameters(params), distributedJoinMode,
                             enforceJoinOrder, parts);
 
-                        rs = runQuery(key, node, evt ? mainCctx.name() : null, conn, timeout, qr.cancels[qryIdx], evt);
+                        rs = runQuery(key, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
                     }
 
                     qr.addResult(qryIdx, qry, node.id(), rs, params);
@@ -1230,7 +1229,7 @@ public class GridMapQueryExecutor {
      * Execute query specified by {@code key}.
      * @param key Query key.
      * @param node Cluster node.
-     * @param mainCctxName Main cache context name, may be {@code null}.
+     * @param mainCctx Cache context.
      * @param conn H2 connection.
      * @param timeout Query timeout.
      * @param cancel Query cancel state holder.
@@ -1238,7 +1237,7 @@ public class GridMapQueryExecutor {
      * @return Query result.
      * @throws IgniteCheckedException if failed.
      */
-    private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, @Nullable String mainCctxName, Connection conn,
+    private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, GridCacheContext mainCctx, Connection conn,
         int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
 
         ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = runningFutures();
@@ -1263,7 +1262,7 @@ public class GridMapQueryExecutor {
             if (res == null || !res.tryTake()) {
                 fut = newFut;
 
-                ResultSet rs = h2.executeSqlQueryWithTimer(mainCctxName, conn, key.qry, F.asList(key.params), true,
+                ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, key.qry, F.asList(key.params), true,
                     timeout, cancel);
 
                 if (evt) {
@@ -1272,7 +1271,7 @@ public class GridMapQueryExecutor {
                         "SQL query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
                         CacheQueryType.SQL.name(),
-                        mainCctxName,
+                        mainCctx.namex(),
                         null,
                         key.qry,
                         null,
