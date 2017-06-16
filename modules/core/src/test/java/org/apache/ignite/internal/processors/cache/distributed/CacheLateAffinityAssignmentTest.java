@@ -1071,12 +1071,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(2, 1), true);
 
-        TestRecordingCommunicationSpi spi0 =
-            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+//        TestRecordingCommunicationSpi spi0 =
+//            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
         TestRecordingCommunicationSpi spi1 =
             (TestRecordingCommunicationSpi)ignite1.configuration().getCommunicationSpi();
 
-        blockSupplySend(spi0, CACHE_NAME1);
+        //blockSupplySend(spi0, CACHE_NAME1);
         blockSupplySend(spi1, CACHE_NAME1);
 
         startServer(2, 3);
@@ -1097,24 +1097,31 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(2, 1), true);
 
-        TestRecordingCommunicationSpi spi0 =
-            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
         TestRecordingCommunicationSpi spi1 =
             (TestRecordingCommunicationSpi)ignite1.configuration().getCommunicationSpi();
 
-        blockSupplySend(spi0, CACHE_NAME1);
         blockSupplySend(spi1, CACHE_NAME1);
 
-        startServer(2, 3);
+        Ignite ignite2 = startServer(2, 3);
 
-        stopNode(2, 4);
+        //Ignite ignite3 = startServer(3, 4);
 
-        checkAffinity(2, topVer(4, 0), false);
+//        TestRecordingCommunicationSpi spi2 =
+//            (TestRecordingCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+//        blockSupplySend(spi2, CACHE_NAME1);
 
-        spi0.stopBlock();
-        spi1.stopBlock();
+        spi1.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
-        checkAffinity(2, topVer(4, 0), true); // ???
+        stopNode(0, 4);
+
+        checkAffinity(3, topVer(4, 0), true); // Exchange is not finished
+
+//        spi0.stopBlock(true); // Complete exchange with bad assignment.
+//
+//        spi0.stopBlock();
+//        //spi2.stopBlock();
+//
+//        checkAffinity(2, topVer(4, 1), true); // ???
     }
 
     /**
