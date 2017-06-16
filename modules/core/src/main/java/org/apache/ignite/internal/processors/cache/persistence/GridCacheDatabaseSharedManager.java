@@ -138,6 +138,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
@@ -1965,12 +1966,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Checkpoint chp = markCheckpointBegin(tracker);
 
-                if (chp.cpPages == null){
-                    markCheckpointEnd(chp);
-
-                    return;
-                }
-
                 boolean interrupted = true;
 
                 try {
@@ -2019,8 +2014,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             return;
                         }
 
-                        snapshotMgr.afterCheckpointPageWritten();
-
                         tracker.onFsyncStart();
 
                         if (!skipSync) {
@@ -2039,6 +2032,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         tracker.onPagesWriteStart();
                         tracker.onFsyncStart();
                     }
+
+                    snapshotMgr.afterCheckpointPageWritten();
 
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
                     interrupted = false;
@@ -2267,7 +2262,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             curr.reason));
                 }
 
-                return new Checkpoint(null, null, curr);
+                return new Checkpoint(null, new GridMultiCollectionWrapper<>(new Collection[0]), curr);
             }
         }
 
@@ -2473,7 +2468,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private Checkpoint(
             CheckpointEntry cpEntry,
-            GridMultiCollectionWrapper<FullPageId> cpPages,
+            @NotNull GridMultiCollectionWrapper<FullPageId> cpPages,
             CheckpointProgress progress
         ) {
             assert cpEntry == null || cpEntry.initGuard != 0;
@@ -2482,7 +2477,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this.cpPages = cpPages;
             this.progress = progress;
 
-            pagesSize = cpPages == null ? 0 : cpPages.size();
+            pagesSize = cpPages.size();
         }
 
         /**

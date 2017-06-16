@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -893,9 +894,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
 
      */
-    private void startLocalSnasphotOperation() {StartSnapshotOperationAckDiscoveryMessage snapOpMsg= getSnapshotOperationMessage();
+    private void startLocalSnasphotOperation() {
+        StartSnapshotOperationAckDiscoveryMessage snapOpMsg= getSnapshotOperationMessage();
+
         if (snapOpMsg != null) {
             SnapshotOperation op = snapOpMsg.snapshotOperation();
+
+            assert snapOpMsg.needExchange();
 
             try {
                 IgniteInternalFuture fut = cctx.snapshot()
@@ -1334,6 +1339,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage)
                 return  (StartSnapshotOperationAckDiscoveryMessage)customMsg;
         }
+
         return null;
     }
 
