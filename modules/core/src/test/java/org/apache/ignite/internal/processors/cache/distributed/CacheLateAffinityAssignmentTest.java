@@ -697,6 +697,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
         spi.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
+        blockSupplySend(spi, CACHE_NAME1);
+
         stopNode(1, 5);
 
         AffinityTopologyVersion topVer = topVer(5, 0);
@@ -707,28 +709,31 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         U.sleep(1000);
 
-        assertTrue(fut0.isDone());
         assertFalse(fut2.isDone());
-        assertTrue(fut3.isDone());
 
-        // Block single message request for (5,0).
-//        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+        checkAffinity(topVer(5, 0), ignite0, false);
+        checkAffinity(topVer(5, 0), ignite3, false);
+
+        U.sleep(1000);
+
+        checkAffinity(topVer(5, 0), ignite0, false);
+        checkAffinity(topVer(5, 0), ignite3, false);
+
+        spi.stopBlock();
+
+        checkAffinity(3, topVer(5, 0), true);
+
+//        stopNode(0, 6);
 //
-//        spi2.blockMessages(GridDhtPartitionsSingleRequest.class, ignite3.name());
-
-        checkAffinity(topVer(5, 0), ignite3, true);
-
-        stopNode(0, 6);
-
-//        U.sleep(1000);
-//        spi2.stopBlock(true);
-
-        fut2.get();
-        fut3.get();
-
-        checkAffinity(topVer(5, 0), ignite3, true);
-
-        checkAffinity(2, topVer(6, 0), true);
+////        U.sleep(1000);
+////        spi2.stopBlock(true);
+//
+//        fut2.get();
+//        fut3.get();
+//
+//        checkAffinity(topVer(5, 0), ignite3, true);
+//
+//        checkAffinity(2, topVer(6, 0), true);
     }
 
     /**
