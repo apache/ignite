@@ -2444,9 +2444,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Number of deleted WAL files. */
         private int walFilesDeleted;
 
-        /** Number of deleted WAL files. */
-        private int walHistorySize;
-
         /** */
         private final int pagesSize;
 
@@ -2713,7 +2710,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             chp.walFilesDeleted = deleted;
-            chp.walHistorySize = histMap.size();
         }
 
         /**
