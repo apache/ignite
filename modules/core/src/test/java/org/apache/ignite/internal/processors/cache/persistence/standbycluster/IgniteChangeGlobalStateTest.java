@@ -495,7 +495,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
                 IgniteAtomicSequence seq = ig.atomicSequence("seq", 0, true);
                 return null;
             }
-        }, IgniteException.class, "can not perform operation, because cluster inactive");
+        }, IgniteException.class, "Can not perform the operation because the cluster is inactive.");
     }
 
     /**
