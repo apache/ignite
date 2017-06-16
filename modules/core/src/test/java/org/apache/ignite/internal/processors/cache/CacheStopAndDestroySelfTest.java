@@ -469,8 +469,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientClose() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5511");
-
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getClientConfig());
@@ -522,8 +520,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientCloseWithTry() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5511");
-
         startGridsMultiThreaded(gridCount());
 
         String curVal = null;
@@ -563,8 +559,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearClose() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5511");
-
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
@@ -638,8 +632,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearCloseWithTry() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5511");
-
         startGridsMultiThreaded(gridCount());
 
         String curVal = null;

@@ -241,8 +241,6 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testCreateCloseClientCache1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5511");
-
         Ignite ignite0 = startGrid(0);
 
         client = true;
@@ -268,8 +266,6 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testCreateCloseClientCache2_1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5511");
-
         createCloseClientCache2(false);
     }
 
@@ -277,8 +273,6 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testCreateCloseClientCache2_2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5511");
-
         createCloseClientCache2(true);
     }
 

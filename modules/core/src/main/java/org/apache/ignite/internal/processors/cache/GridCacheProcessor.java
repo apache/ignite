@@ -2076,7 +2076,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             prepareCacheStop(cctx.name(), destroy);
 
-            if (cctx.group().hasCaches())
+            if (!cctx.group().hasCaches())
                 stopCacheGroup(cctx.group().groupId());
         }
     }
