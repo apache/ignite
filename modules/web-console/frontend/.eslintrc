@@ -120,7 +120,7 @@ rules:
     no-loop-func: 2
     no-mixed-requires: [0, false]
     no-mixed-spaces-and-tabs: [2, true]
-    no-multi-spaces: 2
+    no-multi-spaces: ["error", {"exceptions": { "VariableDeclarator": true }}]
     no-multi-str: 2
     no-multiple-empty-lines: [0, {"max": 2}]
     no-native-reassign: 2

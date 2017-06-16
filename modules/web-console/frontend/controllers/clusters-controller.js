@@ -16,8 +16,8 @@
  */
 
 // Controller for Clusters screen.
-export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteVersion',
-    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils, Version) {
+export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteVersion', 'Clusters',
+    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils, Version, Clusters) {
         let __original_value;
 
         this.available = Version.available.bind(Version);
@@ -75,46 +75,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
 
         const emptyCluster = {empty: true};
 
-        const blank = {
-            activeOnStart: true,
-            cacheSanityCheckEnabled: true,
-            atomicConfiguration: {},
-            binaryConfiguration: {},
-            cacheKeyConfiguration: [],
-            communication: {},
-            connector: {},
-            deploymentSpi: {
-                URI: {
-                    uriList: [],
-                    scanners: []
-                }
-            },
-            discovery: {
-                Cloud: {
-                    regions: [],
-                    zones: []
-                }
-            },
-            marshaller: {},
-            peerClassLoadingLocalClassPathExclude: [],
-            sslContextFactory: {
-                trustManagers: []
-            },
-            swapSpaceSpi: {},
-            transactionConfiguration: {},
-            collision: {},
-            memoryConfiguration: {
-                memoryPolicies: []
-            },
-            hadoopConfiguration: {
-                nativeLibraryNames: []
-            },
-            serviceConfigurations: [],
-            executorConfiguration: [],
-            sqlConnectorConfiguration: {
-                tcpNoDelay: true
-            }
-        };
+        const blank = Clusters.getBlankCluster();
 
         const pairFields = {
             attributes: {id: 'Attribute', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', dupObjName: 'name', group: 'attributes'},

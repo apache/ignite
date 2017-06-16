@@ -63,7 +63,7 @@ suite('page-configure-basic component reducer', () => {
             caches: []
         };
         assert.deepEqual(
-            reducer(void 0, {type: SET_CLUSTER, _id: -1}, root),
+            reducer(void 0, {type: SET_CLUSTER, _id: -1, cluster: defaultCluster}, root),
             {
                 clusterID: -1,
                 cluster: Object.assign({}, defaultCluster, {
