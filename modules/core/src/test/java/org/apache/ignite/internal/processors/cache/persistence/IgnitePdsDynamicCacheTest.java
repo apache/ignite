@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -48,6 +50,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         memPlcCfg.setInitialSize(200 * 1024 * 1024);
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
+        dbCfg.setPageSize(1024);
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 
@@ -113,6 +116,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg2.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg2.setIndexedTypes(Integer.class, Value.class);
 
         ignite.createCache(ccfg1);
         ignite.createCache(ccfg2);
@@ -149,5 +153,18 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /**
+     *
+     */
+    static class Value implements Serializable {
+        /** */
+        @QuerySqlField(index = true, groups = "full_name")
+        String fName;
+
+        /** */
+        @QuerySqlField(index = true, groups = "full_name")
+        String lName;
     }
 }
