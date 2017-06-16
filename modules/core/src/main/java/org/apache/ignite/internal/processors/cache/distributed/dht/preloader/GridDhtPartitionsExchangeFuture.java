@@ -1947,8 +1947,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        if (cctx.database().persistenceEnabled())
-            msgs.put(node.id(), msg);
+        msgs.put(node.id(), msg);
 
         for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
             Integer grpId = entry.getKey();
