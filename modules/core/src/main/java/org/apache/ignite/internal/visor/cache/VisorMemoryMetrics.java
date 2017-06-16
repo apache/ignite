@@ -102,7 +102,9 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         return allocationRate;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Eviction rate.
+     */
     public float getEvictionRate() {
         return evictionRate;
     }
