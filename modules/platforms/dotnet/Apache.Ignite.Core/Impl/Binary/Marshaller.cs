@@ -191,23 +191,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Unmarshal object.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="data">Data array.</param>
-        /// <param name="keepBinary">Whether to keep binarizable as binary.</param>
-        /// <returns>
-        /// Object.
-        /// </returns>
-        public T Unmarshal<T>(byte[] data, bool keepBinary)
-        {
-            using (var stream = new BinaryHeapStream(data))
-            {
-                return Unmarshal<T>(stream, keepBinary);
-            }
-        }
-
-        /// <summary>
-        /// Unmarshal object.
-        /// </summary>
         /// <param name="data">Data array.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>
@@ -452,8 +435,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     if (typeName != null)
                     {
-                        type = new TypeResolver().ResolveType(typeName,
-                            nameMapper: _cfg.NameMapper ?? GetDefaultNameMapper());
+                        type = ResolveType(typeName);
 
                         if (type == null)
                         {
@@ -790,9 +772,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the name of the type.
+        /// Resolves the type (opposite of <see cref="GetTypeName(Type, IBinaryNameMapper)"/>).
         /// </summary>
-        private string GetTypeName(Type type, IBinaryNameMapper mapper = null)
+        public Type ResolveType(string typeName)
+        {
+            return new TypeResolver().ResolveType(typeName, nameMapper: _cfg.NameMapper ?? GetDefaultNameMapper());
+        }
+
+        /// <summary>
+        /// Gets the name of the type according to current name mapper.
+        /// See also <see cref="ResolveType"/>.
+        /// </summary>
+        public string GetTypeName(Type type, IBinaryNameMapper mapper = null)
         {
             return GetTypeName(type.AssemblyQualifiedName, mapper);
         }
