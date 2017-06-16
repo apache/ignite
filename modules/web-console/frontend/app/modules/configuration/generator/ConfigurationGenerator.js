@@ -64,12 +64,12 @@ export default class IgniteConfigurationGenerator {
      * Function to generate ignite configuration.
      *
      * @param {Object} cluster Cluster to process.
-     * @param {String} version Target version of configuration.
+     * @param {Object} targetVer Target version of configuration.
      * @param {Boolean} client Is client configuration.
      * @return {Bean} Generated ignite configuration.
      */
-    static igniteConfiguration(cluster, version, client) {
-        const available = versionService.since.bind(versionService, version);
+    static igniteConfiguration(cluster, targetVer, client) {
+        const available = versionService.since.bind(versionService, targetVer.ignite);
 
         const cfg = this.igniteConfigurationBean(cluster);
 
