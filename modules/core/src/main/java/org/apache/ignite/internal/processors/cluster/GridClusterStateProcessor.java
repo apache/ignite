@@ -289,6 +289,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
      *
      */
     public IgniteInternalFuture<?> changeGlobalState(final boolean activate) {
+        if (ctx.isDaemon()) {
+            GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+
+            sendCompute(activate, fut);
+
+            return fut;
+        }
+
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
             throw new IgniteException("Failed to " + prettyStr(activate) + " cluster (must invoke the " +
                 "method outside of an active transaction).");
@@ -316,30 +324,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 "Failed to " + prettyStr(activate) + ", because snapshot operation in progress."));
         }
 
-        if (ctx.clientNode()) {
-            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
-
-            IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
-
-            if (log.isInfoEnabled())
-                log.info("Sending " + prettyStr(activate) + " request from client node [id=" +
-                    ctx.localNodeId() + " topVer=" + topVer + " ]");
-
-            IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate));
-
-            fut.listen(new CI1<IgniteFuture>() {
-                @Override public void apply(IgniteFuture fut) {
-                    try {
-                        fut.get();
-
-                        cgsFut.onDone();
-                    }
-                    catch (Exception e) {
-                        cgsFut.onDone(e);
-                    }
-                }
-            });
-        }
+        if (ctx.clientNode())
+            sendCompute(activate, cgsFut);
         else {
             try {
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
@@ -379,6 +365,34 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         return cgsFut;
     }
 
+    /**
+     *
+     */
+    private void sendCompute(boolean activate, final GridFutureAdapter<Void> res) {
+        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
+
+        if (log.isInfoEnabled())
+            log.info("Sending " + prettyStr(activate) + " request from node [id=" +
+                ctx.localNodeId() + " topVer=" + topVer + " isClient=" + ctx.isDaemon() +
+                " isDaemon" + ctx.isDaemon() + "]");
+
+        IgniteFuture<Void> fut = comp.runAsync(new ClientChangeGlobalStateComputeRequest(activate));
+
+        fut.listen(new CI1<IgniteFuture>() {
+            @Override public void apply(IgniteFuture fut) {
+                try {
+                    fut.get();
+
+                    res.onDone();
+                }
+                catch (Exception e) {
+                    res.onDone(e);
+                }
+            }
+        });
+    }
     /**
      * @param reqs Requests to print.
      * @param active Active flag.
