@@ -82,11 +82,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public String affinityField(String keyType) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
         return noOpBinary;
     }

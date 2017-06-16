@@ -781,6 +781,17 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Starts new grid with given configuration.
+     *
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(IgniteConfiguration cfg) throws Exception {
+        return (IgniteEx)startGrid(cfg.getIgniteInstanceName(), cfg, null);
+    }
+
+    /**
      * Starts new grid with given index and Spring application context.
      *
      * @param idx Index of the grid to start.
@@ -1710,7 +1721,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
      */
     protected boolean isFirstGrid(String igniteInstanceName) {
-        return "0".equals(igniteInstanceName.substring(getTestIgniteInstanceName().length()));
+        return igniteInstanceName != null && igniteInstanceName.startsWith(getTestIgniteInstanceName()) &&
+            "0".equals(igniteInstanceName.substring(getTestIgniteInstanceName().length()));
     }
 
     /**

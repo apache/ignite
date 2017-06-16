@@ -209,6 +209,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             parts == null ? RendezvousAffinityFunction.DFLT_PARTITION_COUNT : parts);
     }
 
+    @Override
+    protected void beforeTest() throws Exception {
+        super.beforeTest();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
@@ -913,6 +918,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleStopRandomNode() throws Exception {
+        fail("IGNITE-GG-12292");
+
         final int ITERATIONS = 3;
 
         for (int iter = 0; iter < 3; iter++) {

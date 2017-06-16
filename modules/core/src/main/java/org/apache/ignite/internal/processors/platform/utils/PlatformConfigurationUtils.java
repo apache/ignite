@@ -58,8 +58,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
@@ -678,6 +680,9 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
+        if (in.readBoolean())
+            cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
+
         readPluginConfiguration(cfg, in);
     }
 
@@ -1138,6 +1143,8 @@ public class PlatformConfigurationUtils {
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
+        writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
+
         w.writeString(cfg.getIgniteHome());
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
@@ -1466,6 +1473,66 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(false);
         }
     }
+
+    /**
+     * Reads the persistence store connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static PersistentStoreConfiguration readPersistentStoreConfiguration(BinaryRawReader in) {
+        return new PersistentStoreConfiguration()
+                .setPersistentStorePath(in.readString())
+                .setCheckpointingFrequency(in.readLong())
+                .setCheckpointingPageBufferSize(in.readLong())
+                .setCheckpointingThreads(in.readInt())
+                .setLockWaitTime((int) in.readLong())
+                .setWalHistorySize(in.readInt())
+                .setWalSegments(in.readInt())
+                .setWalSegmentSize(in.readInt())
+                .setWalStorePath(in.readString())
+                .setWalArchivePath(in.readString())
+                .setWalMode(WALMode.fromOrdinal(in.readInt()))
+                .setTlbSize(in.readInt())
+                .setWalFlushFrequency((int) in.readLong())
+                .setWalFsyncDelay(in.readInt())
+                .setWalRecordIteratorBufferSize(in.readInt())
+                .setAlwaysWriteFullPages(in.readBoolean());
+    }
+
+    /**
+     * Writes the persistent store configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writePersistentStoreConfiguration(BinaryRawWriter w, PersistentStoreConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getPersistentStorePath());
+            w.writeLong(cfg.getCheckpointingFrequency());
+            w.writeLong(cfg.getCheckpointingPageBufferSize());
+            w.writeInt(cfg.getCheckpointingThreads());
+            w.writeLong(cfg.getLockWaitTime());
+            w.writeInt(cfg.getWalHistorySize());
+            w.writeInt(cfg.getWalSegments());
+            w.writeInt(cfg.getWalSegmentSize());
+            w.writeString(cfg.getWalStorePath());
+            w.writeString(cfg.getWalArchivePath());
+            w.writeInt(cfg.getWalMode().ordinal());
+            w.writeInt(cfg.getTlbSize());
+            w.writeLong(cfg.getWalFlushFrequency());
+            w.writeInt(cfg.getWalFsyncDelay());
+            w.writeInt(cfg.getWalRecordIteratorBufferSize());
+            w.writeBoolean(cfg.isAlwaysWriteFullPages());
+
+        } else {
+            w.writeBoolean(false);
+        }
+    }
+
 
     /**
      * Private constructor.

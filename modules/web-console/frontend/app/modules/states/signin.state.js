@@ -33,7 +33,7 @@ angular
         resolve: {
             user: ['$state', 'User', ($state, User) => {
                 return User.read()
-                    .then(() => $state.go('base.configuration.clusters'))
+                    .then(() => $state.go('base.configuration.tabs'))
                     .catch(() => {});
             }]
         },

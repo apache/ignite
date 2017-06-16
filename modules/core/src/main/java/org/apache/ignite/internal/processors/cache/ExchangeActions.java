@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -83,6 +84,20 @@ public class ExchangeActions {
         completeRequestFutures(cachesToStart, ctx);
         completeRequestFutures(cachesToStop, ctx);
         completeRequestFutures(cachesToResetLostParts, ctx);
+    }
+
+    /**
+     * @return {@code True} if starting system caches.
+     */
+    public boolean systemCachesStarting() {
+        if (cachesToStart != null) {
+            for (ActionData data : cachesToStart.values()) {
+                if (CU.isSystemCache(data.request().cacheName()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -197,7 +212,7 @@ public class ExchangeActions {
      * @param req Request.
      * @param desc Cache descriptor.
      */
-    void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+    public void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.stop() : req;
 
         cachesToStop = add(cachesToStop, req, desc);
@@ -250,7 +265,7 @@ public class ExchangeActions {
     /**
      * @param grpDesc Group descriptor.
      */
-    void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
+    public void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
         assert grpDesc != null;
 
         if (cacheGrpsToStop == null)

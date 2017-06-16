@@ -35,7 +35,7 @@ public class CheckpointRecord extends WALRecord {
     private boolean end;
 
     /** */
-    private Map<Integer, CacheState> cacheStates;
+    private Map<Integer, CacheState> cacheGrpStates;
 
     /** Safe replay pointer. */
     private WALPointer cpMark;
@@ -65,28 +65,28 @@ public class CheckpointRecord extends WALRecord {
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param state Cache state.
      */
-    public void addCacheState(int cacheId, CacheState state) {
-        if (cacheStates == null)
-            cacheStates = new HashMap<>();
+    public void addCacheGroupState(int grpId, CacheState state) {
+        if (cacheGrpStates == null)
+            cacheGrpStates = new HashMap<>();
 
-        cacheStates.put(cacheId, state);
+        cacheGrpStates.put(grpId, state);
     }
 
     /**
-     * @param cacheStates Cache states.
+     * @param cacheGrpStates Cache states.
      */
-    public void cacheStates(Map<Integer, CacheState> cacheStates) {
-        this.cacheStates = cacheStates;
+    public void cacheGroupStates(Map<Integer, CacheState> cacheGrpStates) {
+        this.cacheGrpStates = cacheGrpStates;
     }
 
     /**
      * @return Cache states.
      */
-    public Map<Integer, CacheState> cacheStates() {
-        return cacheStates != null ? cacheStates : Collections.<Integer, CacheState>emptyMap();
+    public Map<Integer, CacheState> cacheGroupStates() {
+        return cacheGrpStates != null ? cacheGrpStates : Collections.<Integer, CacheState>emptyMap();
     }
 
     /**

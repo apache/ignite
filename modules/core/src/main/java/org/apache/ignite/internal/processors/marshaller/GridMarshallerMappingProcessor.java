@@ -100,7 +100,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         GridDiscoveryManager discoMgr = ctx.discovery();
         GridIoManager ioMgr = ctx.io();
 

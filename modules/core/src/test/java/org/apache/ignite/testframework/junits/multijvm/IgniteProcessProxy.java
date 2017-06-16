@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -261,6 +262,9 @@ public class IgniteProcessProxy implements IgniteEx {
         A.notNull(igniteInstanceName, "igniteInstanceName");
 
         IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+
+        if (proxy == null)
+            return;
 
         if (proxy == null)
             return;
@@ -663,6 +667,11 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

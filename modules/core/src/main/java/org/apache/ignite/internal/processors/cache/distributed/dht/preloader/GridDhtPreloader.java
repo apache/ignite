@@ -23,12 +23,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -50,11 +54,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -150,6 +156,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
     }
 
+    /**
+     * @return Node stop exception.
+     */
+    private IgniteCheckedException stopError() {
+        return new NodeStoppingException("Operation has been cancelled (cache or node is stopping).");
+    }
+
     /** {@inheritDoc} */
     @Override public void onInitialExchangeComplete(@Nullable Throwable err) {
         if (err == null)
@@ -178,8 +191,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
             exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +
-            ", grp=" + grp.name() +
-            ", topVer=" + top.topologyVersion() + ']';
+                ", grp=" + grp.name() +
+                ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 
@@ -200,25 +213,86 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
-                GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                GridDhtLocalPartition part = top.localPartition(p, topVer, true, true);
 
                 assert part != null;
                 assert part.id() == p;
 
-                if (part.state() != MOVING) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping partition assignment (state is not MOVING): " + part);
+                ClusterNode histSupplier = null;
 
-                    continue; // For.
+                if (ctx.database().persistenceEnabled()) {
+                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
+
+                    if (nodeId != null)
+                        histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                Collection<ClusterNode> picked = pickedOwners(p, topVer);
+                if (histSupplier != null) {
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
 
-                if (picked.isEmpty()) {
-                    top.own(part);
+                        continue; // For.
+                    }
 
-                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+                    assert ctx.database().persistenceEnabled();
+                    assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
+
+                    GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
+
+                    if (msg == null) {
+                        assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
+                            top.updateSequence(),
+                            exchFut.exchangeId().topologyVersion(),
+                            grp.groupId()));
+                    }
+
+                    msg.addPartition(p, true);
+                }
+                else {
+                    if (ctx.database().persistenceEnabled()) {
+                        if (part.state() == RENTING || part.state() == EVICTED) {
+                            IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                            while (true) {
+                                try {
+                                    rentFut.get(20, TimeUnit.SECONDS);
+
+                                    break;
+                                }
+                                catch (IgniteFutureTimeoutCheckedException ignore) {
+                                    // Continue.
+                                    U.warn(log, "Still waiting for partition eviction: " + part);
+
+                                    part.tryEvictAsync(false);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Error while clearing outdated local partition", e);
+
+                                    break;
+                                }
+                            }
+
+                            part = top.localPartition(p, topVer, true);
+
+                            assert part != null;
+                        }
+                    }
+
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
+
+                        continue; // For.
+                    }
+
+                    Collection<ClusterNode> picked = pickedOwners(p, topVer);
+
+                    if (picked.isEmpty()) {
+                        top.own(part);
+
+                        if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                            DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
                         grp.addRebalanceEvent(p,
                             EVT_CACHE_REBALANCE_PART_DATA_LOST,
@@ -227,13 +301,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             discoEvt.timestamp());
                     }
 
-                    if (log.isDebugEnabled())
-                        log.debug("Owning partition as there are no other owners: " + part);
-                }
-                else {
-                    ClusterNode n = F.rand(picked);
+                        if (log.isDebugEnabled())
+                            log.debug("Owning partition as there are no other owners: " + part);
+                    }
+                    else {
+                        ClusterNode n = F.rand(picked);
 
-                    GridDhtPartitionDemandMessage msg = assigns.get(n);
+                        GridDhtPartitionDemandMessage msg = assigns.get(n);
 
                     if (msg == null) {
                         assigns.put(n, msg = new GridDhtPartitionDemandMessage(
@@ -242,7 +316,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             grp.groupId()));
                     }
 
-                    msg.addPartition(p);
+                        msg.addPartition(p, false);
+                    }
                 }
             }
         }
@@ -291,7 +366,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
+    @Override public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
         if (!enterBusy())
             return;
 
@@ -311,7 +386,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
+    @Override public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
         if (!enterBusy())
             return;
 

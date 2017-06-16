@@ -3172,7 +3172,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
-                    errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
+                    errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
+                        "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
                     // Reconnect for the second time, if connection is not established.
                     if (!failureDetThrReached && connectAttempts < 2 &&
@@ -3202,11 +3203,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
                 X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
                     IgniteSpiOperationTimeoutException.class)) {
-                LT.warn(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+
+                U.error(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                     "cluster [" +
-                    "rmtNode=" + node +
-                    ", err=" + errs +
-                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+                    "rmtNode=" + node + "]", errs);
 
                 getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                     "rmtNode=" + node +

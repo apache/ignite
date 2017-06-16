@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.DynamicTableAffinityKeyMapper;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -131,9 +130,7 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cctx = cctx;
 
-        if (desc != null && desc.context() != null &&
-            (!desc.context().customAffinityMapper() ||
-                desc.context().config().getAffinityMapper() instanceof DynamicTableAffinityKeyMapper)) {
+        if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
 
             String affKey = desc.type().affinityKey();
