@@ -1095,13 +1095,11 @@ public class GridMapQueryExecutor {
             ResultInterface res = null;
 
             if (rs != null) {
-                synchronized (rs) {
-                    try {
-                        res = (ResultInterface)RESULT_FIELD.get(rs.resultSet());
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new IllegalStateException(e); // Must not happen.
-                    }
+                try {
+                    res = (ResultInterface)RESULT_FIELD.get(rs.resultSet());
+                }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException(e); // Must not happen.
                 }
             }
 
@@ -1422,30 +1420,31 @@ public class GridMapQueryExecutor {
         /**
          * @return Wrapped result set.
          */
-        ResultSet resultSet() {
+        synchronized ResultSet resultSet() {
             checkState();
 
             return rs;
         }
 
         /**
-         * @return State flag.
-         */
-        public boolean isClosed() {
-            return closed;
-        }
-
-        /**
          * @return {@code true} if {@link ResultSet} wrapped by this object may be used.
          */
         synchronized boolean tryTake() {
-            return ++cnt > 0 && !closed;
+            if (++cnt <= 0) {
+                assert closed;
+
+                // Should never happen - counter can be negative iff release has somehow negated it which at a glance
+                // does not seem possible.
+                throw new IllegalStateException();
+            }
+
+            return !closed;
         }
 
         /**
          * Release the hold on this result set.
          */
-        public synchronized void release() {
+        synchronized void release() {
             checkState();
 
             if (--cnt == 0) {
