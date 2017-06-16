@@ -767,7 +767,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var typeName = ReadString();  // Must read always.
 
-            return knownType ?? Type.GetType(typeName, true);
+            return knownType ?? Marshaller.ResolveType(typeName);
         }
 
         /// <summary>

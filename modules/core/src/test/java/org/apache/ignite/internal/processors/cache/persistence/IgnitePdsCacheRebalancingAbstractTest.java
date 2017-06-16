@@ -129,6 +129,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         return 20 * 60 * 1000;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return 60 * 1000;
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
@@ -206,6 +211,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If fails.
      */
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5514");
+
         IgniteEx ignite0 = startGrid(0);
 
         IgniteEx ignite1 = startGrid(1);
@@ -372,6 +379,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5514");
+
         final int entriesCnt = 10_000;
         int maxNodesCount = 4;
         int topChanges = 20;
@@ -459,8 +468,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 add = true;
             else if (nodesCnt.get() > maxNodesCount)
                 add = false;
-            else
-                add = ThreadLocalRandom.current().nextBoolean();
+            else // More chance that node will be added
+                add = ThreadLocalRandom.current().nextInt(3 ) <= 1;
 
             if (add)
                 startGrid(nodesCnt.incrementAndGet());

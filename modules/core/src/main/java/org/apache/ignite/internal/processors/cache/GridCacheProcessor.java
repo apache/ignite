@@ -834,6 +834,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (checkConsistency)
                 checkConsistency();
 
+            if (active && cachesInfo.onJoinCacheException() != null)
+                throw new IgniteCheckedException(cachesInfo.onJoinCacheException());
+
             cachesInfo.onKernalStart(checkConsistency);
 
             if (active && !ctx.clientNode() && !ctx.isDaemon())
@@ -2084,7 +2087,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             prepareCacheStop(cctx.name(), destroy);
 
-            if (cctx.group().hasCaches())
+            if (!cctx.group().hasCaches())
                 stopCacheGroup(cctx.group().groupId());
         }
     }

@@ -273,6 +273,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             ignite = startGrid();
 
+            ignite.active(true);
+
             cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < txCnt; i++) {
@@ -389,6 +391,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             // Check that iterator is valid after restart.
             ignite = startGrid();
 
+            ignite.active(true);
+
             cctx = ((IgniteEx)ignite).context().cache().cache(CACHE_NAME).context();
             offh = cctx.offheap();
             topVer = cctx.affinity().affinityTopologyVersion();
@@ -496,6 +500,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     public void testWalAfterPreloading() throws Exception {
         Ignite ignite = startGrid();
 
+        ignite.active(true);
+
         try {
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
                 .cache().context().database();
@@ -518,6 +524,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             ignite = startGrid();
 
+            ignite.active(true);
+
             cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < entries; i++)
@@ -539,6 +547,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             extraCcfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
             Ignite ignite = startGrid(0);
+
+            ignite.active(true);
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
                 .cache().context().database();
@@ -573,6 +583,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             ignite.close();
 
             ignite = startGrid(0);
+
+            ignite.active(true);
 
             ignite.cache(CACHE_NAME).put(1, new IndexedValue(0));
         }
@@ -611,6 +623,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 log.info("Start node: " + iter);
 
                 Ignite ignite = startGrid(0);
+
+                ignite.active(true);
 
                 if (pages != null) {
                     List<Integer> curPags = allocatedPages(ignite, CACHE2_NAME);
@@ -667,6 +681,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 log.info("Start node: " + iter);
 
                 Ignite ignite = startGrid(0);
+
+                ignite.active(true);
 
                 GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
                     .cache().context().database();
@@ -771,6 +787,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             ignite.close();
 
             ignite = startGrid(0);
+
+            ignite.active(true);
 
             cache1 = ignite.cache(CACHE_NAME);
             cache2 = ignite.cache(CACHE2_NAME);

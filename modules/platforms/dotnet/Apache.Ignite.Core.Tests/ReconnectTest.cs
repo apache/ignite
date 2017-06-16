@@ -100,7 +100,8 @@ namespace Apache.Ignite.Core.Tests
 
             // Check that old cache instance does not work.
             var cacheEx1 = Assert.Throws<InvalidOperationException>(() => cache.Get(1));
-            Assert.AreEqual("Cache has been closed or destroyed: " + CacheName, cacheEx1.Message);
+            Assert.IsTrue(cacheEx1.Message.EndsWith("Failed to perform cache operation (cache is stopped): cache"), 
+                cacheEx1.Message);
         }
 
         /// <summary>

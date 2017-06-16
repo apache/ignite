@@ -3688,7 +3688,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private void checkClusterState() throws IgniteException {
         if (!ctx.state().active())
-            throw new IgniteException("can not perform operation, because cluster inactive");
+            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                "join the cluster. To activate the cluster call Ignite.activate(true).");
     }
 
     /**
