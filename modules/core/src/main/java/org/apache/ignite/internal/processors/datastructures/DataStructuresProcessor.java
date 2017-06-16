@@ -534,14 +534,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (dataStructure != null)
             return dataStructure;
 
-        AtomicDataStructureValue val = cache.get(key);
-
-        if (val != null && !isObsolete(val) && (val.type() != type))
-            throw new IgniteCheckedException("Another data structure with the same name already created " +
-                "[name=" + name +
-                ", newType=" + type +
-                ", existingType=" + val.type() + ']');
-
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
                 cache.context().gate().enter();
