@@ -99,9 +99,10 @@
     <Compile Include="Cache\IMemoryMetrics.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
-    <Compile Include="Configuration\PersistentStoreConfiguration.cs" />
+    <Compile Include="PersistentStore\Package-Info.cs" />
+    <Compile Include="PersistentStore\PersistentStoreConfiguration.cs" />
     <Compile Include="Configuration\SqlConnectorConfiguration.cs" />
-    <Compile Include="Configuration\WalMode.cs" />
+    <Compile Include="PersistentStore\WalMode.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingMode.cs" />
     <Compile Include="Events\IEventStorageSpi.cs" />
     <Compile Include="Events\MemoryEventStorageSpi.cs" />

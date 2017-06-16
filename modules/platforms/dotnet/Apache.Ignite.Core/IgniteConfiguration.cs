@@ -45,6 +45,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Transactions;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
