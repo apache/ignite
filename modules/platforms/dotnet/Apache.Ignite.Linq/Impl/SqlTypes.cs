@@ -45,6 +45,12 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (DateTime), "timestamp"},
         };
 
+        /** */
+        private static readonly HashSet<Type> NotSupportedTypes = new HashSet<Type>(new []
+        {
+            typeof(char)
+        }); 
+
         /// <summary>
         /// Gets the corresponding Java type name.
         /// </summary>
@@ -53,21 +59,16 @@ namespace Apache.Ignite.Linq.Impl
             if (type == null)
                 return null;
 
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (NotSupportedTypes.Contains(type))
+            {
+                throw new NotSupportedException("Type is not supported for SQL mapping: " + type);
+            }
+
             string res;
 
-            if (NetToSql.TryGetValue(type, out res))
-            {
-                return res;
-            }
-
-            type = Nullable.GetUnderlyingType(type);
-
-            if (type != null && NetToSql.TryGetValue(type, out res))
-            {
-                return res;
-            }
-
-            return null;
+            return NetToSql.TryGetValue(type, out res) ? res : null;
         }
     }
 }

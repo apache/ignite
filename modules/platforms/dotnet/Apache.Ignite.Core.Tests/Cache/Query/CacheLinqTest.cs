@@ -399,6 +399,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             TestConditionsWithNullableStructs<decimal>();
             TestConditionsWithNullableStructs<DateTime>(DateTime.UtcNow);
 
+            var charException = Assert.Throws<NotSupportedException>(() => TestConditionsWithNullableStructs<char>());
+            Assert.AreEqual("Type is not supported for SQL mapping: System.Char", charException.Message);
+
             var roles = GetRoleCache().AsCacheQueryable();
             CheckFunc(x => x.Value.Name ?? "def_name", roles);
         }
