@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * File WAL pointer.
  */
 public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
-    /** */
+    /** Absolute WAL segment file index (incrementing counter) */
     private final long idx;
 
     /** */
@@ -37,7 +37,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     private boolean forceFlush;
 
     /**
-     * @param idx File timestamp index.
+     * @param idx Absolute WAL segment file index (incremental counter)
      * @param fileOffset Offset in file, from the beginning.
      * @param len Record length.
      */

@@ -103,7 +103,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -218,6 +217,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return res;
         }
     };
+
+    /** */
+    private static final String MBEAN_NAME = "PersistenceMetrics";
+
+    /** */
+    private static final String MBEAN_GROUP = "Persistent Store";
 
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
@@ -366,18 +371,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             persStoreMetrics.wal(cctx.wal());
 
-            try {
-                persistenceMetricsMbeanName = U.registerMBean(
-                    cctx.kernalContext().config().getMBeanServer(),
-                    cctx.kernalContext().igniteInstanceName(),
-                    "Persistent Store",
-                    "PersistenceMetrics",
-                    persStoreMetrics,
-                    PersistenceMetricsMXBean.class);
-            }
-            catch (JMException e) {
-                throw new IgniteCheckedException("Failed to register persistence metrics MBean", e);
-            }
+            registrateMetricsMBean();
         }
     }
 
@@ -453,8 +447,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         initDataBase();
 
-        GridCacheProcessor cachePrc = cctx.kernalContext().cache();
+        initCachesAndRestoreMemory();
+    }
 
+    /**
+     *
+     */
+    private void initCachesAndRestoreMemory() throws IgniteCheckedException {
         Collection<String> cacheNames = new HashSet<>();
 
         // TODO IGNITE-5075 group descriptors.
@@ -485,58 +484,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (StoredCacheData cacheData : cctx.pageStore().readCacheConfigurations().values()) {
             if (!cacheNames.contains(cacheData.config().getName()))
                 storeMgr.initializeForCache(
-                    cctx.cache().cacheDescriptors().get(cacheData.config().getName()).groupDescriptor(), cacheData);
+                    cctx.cache().cacheDescriptors().get(
+                        cacheData.config().getName()).groupDescriptor(), cacheData);
         }
 
         readCheckpointAndRestoreMemory();
     }
 
-
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        snapshotMgr = cctx.snapshot();
-
-        if (cctx.localNode().isClient())
-            return;
-
-        initDataBase();
-
         if (log.isDebugEnabled())
             log.debug("Activate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        GridCacheProcessor cachePrc = cctx.kernalContext().cache();
+        snapshotMgr = cctx.snapshot();
 
+        if (!cctx.localNode().isClient()) {
+            initDataBase();
 
-        Collection<String> cacheNames = new HashSet<>();
+            registrateMetricsMBean();
 
-        // TODO IGNITE-5075 group descriptors.
-        for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration()) {
-            if (CU.isSystemCache(ccfg.getName())) {
-                storeMgr.initializeForCache(
-                    cctx.cache().cacheDescriptors().get(ccfg.getName()).groupDescriptor(), new StoredCacheData(ccfg));
-
-                cacheNames.add(ccfg.getName());
-            }
+            initCachesAndRestoreMemory();
         }
-
-        for (CacheConfiguration ccfg : cctx.kernalContext().config().getCacheConfiguration())
-            if (!CU.isSystemCache(ccfg.getName())) {
-                DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptors().get(ccfg.getName());
-
-                if (cacheDesc != null)
-                    storeMgr.initializeForCache(cacheDesc.groupDescriptor(), new StoredCacheData(ccfg));
-
-                cacheNames.add(ccfg.getName());
-            }
-
-        for (StoredCacheData cacheData : cctx.pageStore().readCacheConfigurations().values()) {
-            if (!cacheNames.contains(cacheData.config().getName()))
-                storeMgr.initializeForCache(
-                    cctx.cache().cacheDescriptors().get(cacheData.config().getName()).groupDescriptor(), cacheData);
-        }
-
-        readCheckpointAndRestoreMemory();
 
         if (log.isDebugEnabled())
             log.debug("Restore state after activation [nodeId=" + cctx.localNodeId() + " ]");
@@ -544,18 +513,54 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        stop0(false);
-
         if (log.isDebugEnabled())
             log.debug("DeActivate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         onKernalStop0(false);
 
+        stop0(false);
+
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
 
-        fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
+        if (!cctx.localNode().isClient())
+            fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
+    }
+
+    /**
+     *
+     */
+    private void registrateMetricsMBean() throws IgniteCheckedException {
+        try {
+            persistenceMetricsMbeanName = U.registerMBean(
+                cctx.kernalContext().config().getMBeanServer(),
+                cctx.kernalContext().igniteInstanceName(),
+                MBEAN_GROUP,
+                MBEAN_NAME,
+                persStoreMetrics,
+                PersistenceMetricsMXBean.class);
+        }
+        catch (JMException e) {
+            throw new IgniteCheckedException("Failed to register " + MBEAN_NAME + " MBean.", e);
+        }
+    }
+
+    /**
+     *
+     */
+    private void unRegistrateMetricsMBean() {
+        if (persistenceMetricsMbeanName != null) {
+            try {
+                cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
+            }
+            catch (InstanceNotFoundException ignore) {
+                // No-op, nothing to unregister.
+            }
+            catch (MBeanRegistrationException e) {
+                U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
+            }
+        }
     }
 
     /**
@@ -602,11 +607,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void onCacheStop(GridCacheContext cctx) {
-        snapshotMgr.onCacheStop(cctx);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         checkpointLock.writeLock().lock();
 
@@ -629,17 +629,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             fileLockHolder.close();
         }
 
-        if (persistenceMetricsMbeanName != null) {
-            try {
-                cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
-            }
-            catch (InstanceNotFoundException ignore) {
-                // No-op, nothing to unregister.
-            }
-            catch (MBeanRegistrationException e) {
-                U.error(log, "Failed to unregister persistence metrics MBean (will continue stop routine)", e);
-            }
-        }
+        unRegistrateMetricsMBean();
     }
 
     /** */
@@ -823,14 +813,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void onCacheGroupsStopped(
-        Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {
-        try {
-            waitForCheckpoint("caches stop");
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-        }
-
+        Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps
+    ) {
         Map<PageMemoryEx, Collection<Integer>> destroyed = new HashMap<>();
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
@@ -1329,6 +1313,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Loads WAL pointer from CP file
      * @param cpMarkerFile Checkpoint mark file.
      * @return WAL pointer.
      * @throws IgniteCheckedException If failed to read mark file.
@@ -2460,9 +2445,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Number of deleted WAL files. */
         private int walFilesDeleted;
 
-        /** Number of deleted WAL files. */
-        private int walHistorySize;
-
         /** */
         private final int pagesSize;
 
@@ -2606,7 +2588,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @SuppressWarnings("PublicInnerClass")
     public class CheckpointHistory {
-        /** */
+        /**
+         * Maps checkpoint's timestamp (from CP file name) to CP entry.
+         * Using TS provides historical order of CP entries in map ( first is oldest )
+         */
         private final NavigableMap<Long, CheckpointEntry> histMap = new ConcurrentSkipListMap<>();
 
         /**
@@ -2729,7 +2714,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             chp.walFilesDeleted = deleted;
-            chp.walHistorySize = histMap.size();
         }
 
         /**
@@ -2788,7 +2772,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         @SuppressWarnings("unused")
         private volatile int initGuard;
 
-        /** Checkpoint ID. Initalized lazily. */
+        /** Checkpoint ID. Initialized lazily. */
         private UUID cpId;
 
         /** Cache states. Initialized lazily. */
@@ -2801,7 +2785,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Lazy entry constructor.
          *
          * @param cpTs Checkpoint timestamp.
-         * @param cpMark Checkpoint WAL mark.
+         * @param cpMark Checkpoint end mark (WAL pointer).
          */
         private CheckpointEntry(long cpTs, WALPointer cpMark) {
             assert cpMark != null;

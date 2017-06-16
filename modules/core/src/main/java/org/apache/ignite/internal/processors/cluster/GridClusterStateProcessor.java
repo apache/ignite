@@ -248,7 +248,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         // First node started (coordinator).
         if (nodes.isEmpty() || nodes.get(0).isLocal())
             cacheData.putAll(localCacheData.caches());
-        else if (globalState == INACTIVE) { // Accept inactivate state after join.
+
+        if (globalState == INACTIVE) { // Accept inactivate state after join.
             if (log != null && log.isInfoEnabled())
                 log.info("Got inactivate state from cluster during node join.");
 

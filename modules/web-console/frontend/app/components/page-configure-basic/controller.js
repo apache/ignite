@@ -34,21 +34,7 @@ export default class PageConfigureBasicController {
     }
 
     $onInit() {
-        this.subscription = this.ConfigureState.state$
-        .combineLatest(this.Version.currentSbj)
-        .do(([state, version]) => {
-            this.$scope.$applyAsync(() => {
-                this.clusters = state.list.clusters;
-                this.caches = state.list.caches;
-                this.state = state.configureBasic;
-                this.allClusterCaches = this.getAllClusterCaches();
-                this.cachesMenu = this.getCachesMenu();
-                this.clustersMenu = this.getClustersMenu();
-                this.defaultMemoryPolicy = this.getDefaultClusterMemoryPolicy(this.state.cluster);
-                this.memorySizeInputVisible = this.getMemorySizeInputVisibility(version);
-            });
-        }).subscribe();
-
+        this.subscription = this.getObservable(this.ConfigureState.state$, this.Version.currentSbj).subscribe();
         this.discoveries = this.Clusters.discoveries;
         this.minMemorySize = this.Clusters.minMemoryPolicySize;
 
@@ -61,6 +47,24 @@ export default class PageConfigureBasicController {
 
         this.memorySizeScale = this.sizesMenu[2];
         this.pageService.setCluster(-1);
+    }
+
+    getObservable(state$, version$) {
+        return state$.combineLatest(version$, (state, version) => ({
+            clusters: state.list.clusters,
+            caches: state.list.caches,
+            state: state.configureBasic,
+            allClusterCaches: this.getAllClusterCaches(state.configureBasic),
+            cachesMenu: this.getCachesMenu(state.list.caches),
+            clustersMenu: this.getClustersMenu(state.list.clusters),
+            defaultMemoryPolicy: this.getDefaultClusterMemoryPolicy(state.configureBasic.cluster),
+            memorySizeInputVisible: this.getMemorySizeInputVisibility(version)
+        }))
+        .do((value) => this.applyValue(value));
+    }
+
+    applyValue(value) {
+        this.$scope.$applyAsync(() => Object.assign(this, value));
     }
 
     $onDestroy() {
@@ -106,21 +110,19 @@ export default class PageConfigureBasicController {
         ));
     }
 
-    getClustersMenu() {
+    getClustersMenu(clusters = new Map()) {
         const newOne = {_id: -1, name: '+ Add new cluster'};
-        return get(this, 'clusters.size')
-            ? [newOne, {}, ...this.clusters.values()]
+        return clusters.size
+            ? [newOne, {}, ...clusters.values()]
             : [newOne];
     }
 
-    getCachesMenu() {
-        return [...(this.caches || []).values()].map((c) => ({_id: c._id, name: c.name}));
+    getCachesMenu(caches = []) {
+        return [...caches.values()].map((c) => ({_id: c._id, name: c.name}));
     }
 
-    getAllClusterCaches() {
-        return this.state
-            ? [...this.state.oldClusterCaches, ...this.state.newClusterCaches]
-            : [];
+    getAllClusterCaches(state = {oldClusterCaches: [], newClusterCaches: []}) {
+        return [...state.oldClusterCaches, ...state.newClusterCaches];
     }
 
     getDefaultClusterMemoryPolicy(cluster) {

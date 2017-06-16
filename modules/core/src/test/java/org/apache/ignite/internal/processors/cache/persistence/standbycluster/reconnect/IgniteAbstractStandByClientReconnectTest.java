@@ -141,7 +141,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     protected void checkDescriptors(IgniteEx ig, Set<String> cacheNames) {
         Collection<DynamicCacheDescriptor> descs = ig.context().cache().cacheDescriptors().values();
 
-        assertEquals("Node name: " + ig.name(), cacheNames.size() + 2, descs.size());
+        assertEquals("Node name: " + ig.name(), cacheNames.size() + 1, descs.size());
 
         int systemCnt = 0;
 
@@ -151,7 +151,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
             else
                 systemCnt++;
 
-        assertEquals(2, systemCnt);
+        assertEquals(1, systemCnt);
     }
 
     protected void startNodes(CountDownLatch activateLatch) throws Exception {

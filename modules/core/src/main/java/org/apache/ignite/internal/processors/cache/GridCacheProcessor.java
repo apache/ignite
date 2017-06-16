@@ -107,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactio
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -541,6 +542,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getEvictionPolicy() != null && !cc.isOnheapCacheEnabled())
             throw new IgniteCheckedException("Onheap cache must be enabled if eviction policy is configured [cacheName="
                 + U.maskName(cc.getName()) + "]");
+
+        if (cacheType != CacheType.DATA_STRUCTURES && DataStructuresProcessor.isDataStructureCache(cc.getName()))
+            throw new IgniteCheckedException("Using cache names reserved for datastructures is not allowed for " +
+                "other cache types [cacheName=" + cc.getName() + ", cacheType=" + cacheType + "]");
+
+        if (cacheType != CacheType.DATA_STRUCTURES && DataStructuresProcessor.isReservedGroup(cc.getGroupName()))
+            throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
+                "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
+                ", cacheType=" + cacheType + "]");
     }
 
     /**
@@ -793,8 +803,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (IgniteComponentType.HADOOP.inClassPath())
             internalCaches.add(CU.SYS_CACHE_HADOOP_MR);
-
-        internalCaches.add(CU.ATOMICS_CACHE_NAME);
     }
 
     /**
@@ -1259,8 +1267,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.kernalContext().continuous().onCacheStop(ctx);
-
-        ctx.kernalContext().cache().context().database().onCacheStop(ctx);
 
         ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx);
 
@@ -2105,9 +2111,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (exchActions != null && err == null) {
             Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps = null;
 
+            boolean forceCheckpoint = false;
+
             for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
                 GridCacheContext<?, ?> stopCtx;
                 boolean destroy;
+
+                if (!forceCheckpoint){
+                    try {
+                        sharedCtx.database().waitForCheckpoint("caches stop");
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
+                    }
+
+                    forceCheckpoint = true;
+                }
 
                 stopGateway(action.request());
 
@@ -2775,12 +2794,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return fut;
     }
 
-
-    public CacheType cacheType (String cacheName ) {
+    public CacheType cacheType(String cacheName ) {
         if (CU.isUtilityCache(cacheName))
             return CacheType.UTILITY;
         else if (internalCaches.contains(cacheName))
             return CacheType.INTERNAL;
+        else if (DataStructuresProcessor.isDataStructureCache(cacheName))
+            return CacheType.DATA_STRUCTURES;
         else
             return CacheType.USER;
     }
@@ -3108,6 +3128,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name) throws IgniteCheckedException {
+        return getOrStartCache(name, null);
+    }
+
+    /**
+     * @param name Cache name.
+     * @return Cache instance for given name.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert name != null;
 
         if (log.isDebugEnabled())
@@ -3116,7 +3146,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheProxy<?, ?> cache = jCacheProxies.get(name);
 
         if (cache == null) {
-            dynamicStartCache(null, name, null, false, true, true).get();
+            dynamicStartCache(ccfg, name, null, false, ccfg == null, true).get();
 
             cache = jCacheProxies.get(name);
         }
@@ -3150,15 +3180,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> IgniteInternalCache<K, V> utilityCache() {
         return internalCacheEx(CU.UTILITY_CACHE_NAME);
-    }
-
-    /**
-     * Gets utility cache for atomic data structures.
-     *
-     * @return Utility cache for atomic data structures.
-     */
-    public <K, V> IgniteInternalCache<K, V> atomicsCache() {
-        return internalCacheEx(CU.ATOMICS_CACHE_NAME);
     }
 
     /**

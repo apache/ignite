@@ -83,7 +83,7 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
         catch (Exception e) {
             fail = true;
 
-            assertTrue(e.getMessage().contains("can not perform operation, because cluster inactive"));
+            assertTrue(e.getMessage().contains("Can not perform the operation because the cluster is inactive."));
         }
 
         if (!fail)

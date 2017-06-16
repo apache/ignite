@@ -157,6 +157,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Number of cached rolled back DHT transaction IDs. */
     private int txDhtRolledbackVersionsSize;
 
+    /** Number of cache entries stored in heap memory. */
+    private long heapEntriesCnt;
+
     /** Memory size allocated in off-heap. */
     private long offHeapAllocatedSize;
 
@@ -259,6 +262,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
         txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
 
+        heapEntriesCnt = m.getHeapEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
         offHeapEntriesCnt = m.getOffHeapEntriesCount();
 
@@ -561,6 +565,13 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Number of entries in heap memory.
+     */
+    public long getHeapEntriesCount() {
+        return heapEntriesCnt;
+    }
+
+    /**
      * @return Memory size allocated in off-heap.
      */
     public long getOffHeapAllocatedSize() {
@@ -653,6 +664,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeInt(txDhtCommittedVersionsSize);
         out.writeInt(txDhtRolledbackVersionsSize);
 
+        out.writeLong(heapEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
         out.writeLong(offHeapEntriesCnt);
 
@@ -708,6 +720,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         txDhtCommittedVersionsSize = in.readInt();
         txDhtRolledbackVersionsSize = in.readInt();
 
+        heapEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
         offHeapEntriesCnt = in.readLong();
 

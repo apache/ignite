@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.Ab
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Assert;
 
 /**
@@ -165,14 +166,20 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
 
                         Map<String, DynamicCacheDescriptor> desc = cacheDescriptors(ig);
 
-                        Assert.assertEquals(3, desc.size());
+                        Assert.assertEquals(2, desc.size());
+
+                        Assert.assertTrue(desc.containsKey(CU.UTILITY_CACHE_NAME));
+                        Assert.assertTrue(desc.containsKey(cache1));
 
                         Assert.assertNotNull(ig.context().cache().cache(cache1));
                         Assert.assertNull(ig.context().cache().cache(cache2));
 
                         Map<String, GridCacheAdapter> caches = caches(ig);
 
-                        Assert.assertEquals(3, caches.size());
+                        Assert.assertEquals(2, caches.size());
+
+                        Assert.assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
+                        Assert.assertTrue(caches.containsKey(cache1));
                     }
                 }
             }

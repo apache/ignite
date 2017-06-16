@@ -68,7 +68,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheAtomicLongValue> ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -83,18 +83,15 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
      * @param name Atomic long name.
      * @param key Atomic long key.
      * @param atomicView Atomic projection.
-     * @param ctx CacheContext.
      */
     public GridCacheAtomicLongImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView) {
         assert key != null;
         assert atomicView != null;
-        assert ctx != null;
         assert name != null;
 
-        this.ctx = ctx;
+        this.ctx = atomicView.context();
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;
@@ -357,7 +354,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicLong(name);
+            ctx.kernalContext().dataStructures().removeAtomicLong(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -366,8 +363,8 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.atomicView = kctx.cache().atomicsCache();
-        this.ctx = atomicView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>context().cacheContext(ctx.cacheId());
+        this.atomicView = ctx.cache();
     }
 
     /** {@inheritDoc} */
@@ -399,7 +396,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().atomicLong(t.get2(), 0L, false);
+            return t.get1().dataStructures().atomicLong(t.get2(), null, 0L, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.PersistentStore;
     using NUnit.Framework;
 
     /// <summary>

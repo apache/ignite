@@ -143,6 +143,8 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
      *
      */
     public void testActivateDeActivateOnJoiningNode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5520");
+
         final Ignite igB1 = backUp(0);
         final Ignite igB2 = backUp(1);
         final Ignite igB3 = backUp(2);

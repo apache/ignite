@@ -40,4 +40,56 @@ export default class Clusters {
     saveCluster(cluster) {
         return this.$http.post('/api/v1/configuration/clusters/save', cluster);
     }
+
+    getBlankCluster() {
+        return {
+            activeOnStart: true,
+            cacheSanityCheckEnabled: true,
+            atomicConfiguration: {},
+            cacheKeyConfiguration: [],
+            deploymentSpi: {
+                URI: {
+                    uriList: [],
+                    scanners: []
+                }
+            },
+            marshaller: {},
+            peerClassLoadingLocalClassPathExclude: [],
+            sslContextFactory: {
+                trustManagers: []
+            },
+            swapSpaceSpi: {},
+            transactionConfiguration: {},
+            memoryConfiguration: {
+                memoryPolicies: [{
+                    name: 'default',
+                    maxSize: null
+                }]
+            },
+            hadoopConfiguration: {
+                nativeLibraryNames: []
+            },
+            serviceConfigurations: [],
+            executorConfiguration: [],
+            sqlConnectorConfiguration: {
+                tcpNoDelay: true
+            },
+            space: void 0,
+            discovery: {
+                kind: 'Multicast',
+                Vm: {addresses: ['127.0.0.1:47500..47510']},
+                Multicast: {addresses: ['127.0.0.1:47500..47510']},
+                Jdbc: {initSchema: true},
+                Cloud: {regions: [], zones: []}
+            },
+            binaryConfiguration: {typeConfigurations: [], compactFooter: true},
+            communication: {tcpNoDelay: true},
+            connector: {noDelay: true},
+            collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
+            failoverSpi: [],
+            logger: {Log4j: { mode: 'Default'}},
+            caches: [],
+            igfss: []
+        };
+    }
 }

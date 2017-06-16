@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -191,4 +194,74 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         assertEquals(100, set.size());
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockVolatility() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        ignite.active(true);
+
+        IgniteLock lock = ignite.reentrantLock("test", false, true, true);
+
+        assert lock != null;
+
+        stopAllGrids();
+
+        ignite = startGrids(4);
+
+        ignite.active(true);
+
+        lock = ignite.reentrantLock("test", false, true, false);
+
+        assert lock == null;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSemaphoreVolatility() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        ignite.active(true);
+
+        IgniteSemaphore sem = ignite.semaphore("test", 10, false, true);
+
+        assert sem != null;
+
+        stopAllGrids();
+
+        ignite = startGrids(4);
+
+        ignite.active(true);
+
+        sem = ignite.semaphore("test", 10, false, false);
+
+        assert sem == null;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLatchVolatility() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        ignite.active(true);
+
+        IgniteCountDownLatch latch = ignite.countDownLatch("test", 10, false, true);
+
+        assert latch != null;
+
+        stopAllGrids();
+
+        ignite = startGrids(4);
+
+        ignite.active(true);
+
+        latch = ignite.countDownLatch("test", 10, false, false);
+
+        assert latch == null;
+    }
+
 }

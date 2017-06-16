@@ -107,7 +107,8 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int walArchiveSegments();
 
     /**
-     * @param ptr Pointer.
+     * Checks if WAL segment is under lock or reserved
+     * @param ptr Pointer to check.
      * @return True if given pointer is located in reserved segment.
      */
     public boolean reserved(WALPointer ptr);

@@ -988,6 +988,28 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             tcpNoDelay: {type: Boolean, default: true},
             maxOpenCursorsPerConnection: Number,
             threadPoolSize: Number
+        },
+        persistenceStoreConfiguration: {
+            enabled: Boolean,
+            persistenceStorePath: String,
+            metricsEnabled: Boolean,
+            alwaysWriteFullPages: Boolean,
+            checkpointingFrequency: Number,
+            checkpointingPageBufferSize: Number,
+            checkpointingThreads: Number,
+            walStorePath: String,
+            walArchivePath: String,
+            walMode: {type: String, enum: ['DEFAULT', 'LOG_ONLY', 'BACKGROUND', 'NONE']},
+            walSegments: Number,
+            walSegmentSize: Number,
+            walHistorySize: Number,
+            walFlushFrequency: Number,
+            walFsyncDelay: Number,
+            walRecordIteratorBufferSize: Number,
+            lockWaitTime: Number,
+            rateTimeInterval: Number,
+            tlbSize: Number,
+            subIntervals: Number
         }
     });
 

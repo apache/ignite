@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -668,14 +669,18 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 @Override public void apply(IgniteEx ig) {
                     Map<String, DynamicCacheDescriptor> desc = cacheDescriptors(ig);
 
-                    Assert.assertEquals(2, desc.size());
+                    Assert.assertEquals(1, desc.size());
+
+                    Assert.assertTrue(desc.containsKey(CU.UTILITY_CACHE_NAME));
 
                     Assert.assertNull(ig.context().cache().cache(cache1));
                     Assert.assertNull(ig.context().cache().cache(cache2));
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
-                    Assert.assertEquals(2, caches.size());
+                    Assert.assertEquals(1, caches.size());
+
+                    Assert.assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
                 }
             });
         }
@@ -708,14 +713,22 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 @Override public void apply(IgniteEx ig) {
                     Map<String, DynamicCacheDescriptor> desc = cacheDescriptors(ig);
 
-                    Assert.assertEquals(4, desc.size());
+                    Assert.assertEquals(3, desc.size());
+
+                    Assert.assertTrue(desc.containsKey(CU.UTILITY_CACHE_NAME));
+                    Assert.assertTrue(desc.containsKey(cache1));
+                    Assert.assertTrue(desc.containsKey(cache2));
 
                     Assert.assertNotNull(ig.context().cache().cache(cache1));
                     Assert.assertNotNull(ig.context().cache().cache(cache2));
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
-                    Assert.assertEquals(4, caches.size());
+                    Assert.assertEquals(3, caches.size());
+
+                    Assert.assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
+                    Assert.assertTrue(caches.containsKey(cache1));
+                    Assert.assertTrue(caches.containsKey(cache2));
                 }
             });
         }

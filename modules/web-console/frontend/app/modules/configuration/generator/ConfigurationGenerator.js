@@ -96,6 +96,7 @@ export default class IgniteConfigurationGenerator {
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
         this.clusterODBC(cluster.odbc, available, cfg);
+        this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
         this.clusterQuery(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
@@ -1437,7 +1438,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate cluster query group.
     static clusterQuery(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        if (available(['1.0.0', '2.1.0']))
+        if (!available('2.1.0'))
             return cfg;
 
         cfg.intProperty('longQueryWarningTimeout');
@@ -1463,28 +1464,33 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate cluster query group.
-    static clusterQuery(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        if (available(['1.0.0', '2.1.0']))
+    static clusterPersistence(persistence, available, cfg = this.igniteConfigurationBean()) {
+        if (!available('2.1.0') || _.get(persistence, 'enabled') !== true)
             return cfg;
 
-        cfg.intProperty('longQueryWarningTimeout');
+        const bean = new Bean('org.apache.ignite.configuration.PersistentStoreConfiguration', 'PersistenceCfg',
+            persistence, clusterDflts.persistenceStoreConfiguration);
 
-        if (_.get(cluster, 'sqlConnectorConfiguration.enabled') !== true)
-            return cfg;
+        bean.stringProperty('persistenceStorePath')
+            .boolProperty('metricsEnabled')
+            .boolProperty('alwaysWriteFullPages')
+            .intProperty('checkpointingFrequency')
+            .intProperty('checkpointingPageBufferSize')
+            .intProperty('checkpointingThreads')
+            .stringProperty('walStorePath')
+            .stringProperty('walArchivePath')
+            .intProperty('walSegments')
+            .intProperty('walSegmentSize')
+            .intProperty('walHistorySize')
+            .intProperty('walFlushFrequency')
+            .intProperty('walFsyncDelay')
+            .intProperty('walRecordIteratorBufferSize')
+            .intProperty('lockWaitTime')
+            .intProperty('rateTimeInterval')
+            .intProperty('tlbSize')
+            .intProperty('subIntervals');
 
-        const bean = new Bean('org.apache.ignite.configuration.SqlConnectorConfiguration', 'sqlConnCfg',
-            cluster.sqlConnectorConfiguration, clusterDflts.sqlConnectorConfiguration);
-
-        bean.stringProperty('host')
-            .intProperty('port')
-            .intProperty('portRange')
-            .intProperty('socketSendBufferSize')
-            .intProperty('socketReceiveBufferSize')
-            .intProperty('maxOpenCursorsPerConnection')
-            .intProperty('threadPoolSize')
-            .boolProperty('tcpNoDelay');
-
-        cfg.beanProperty('sqlConnectorConfiguration', bean);
+        cfg.beanProperty('persistentStoreConfiguration', bean);
 
         return cfg;
     }

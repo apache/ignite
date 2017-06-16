@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.Ig
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStreamerTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStructureTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateFailOverTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateServiceTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
@@ -64,7 +65,7 @@ public class IgniteStandByClusterSuite extends TestSuite {
         suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
         suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
         suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
-//        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
 
         return suite;
     }

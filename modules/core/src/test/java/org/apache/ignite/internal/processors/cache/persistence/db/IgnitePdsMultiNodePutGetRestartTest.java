@@ -146,6 +146,8 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
         try {
             IgniteEx ig = grid(0);
 
+            ig.active(true);
+
             checkPutGetSql(ig, false);
         }
         finally {

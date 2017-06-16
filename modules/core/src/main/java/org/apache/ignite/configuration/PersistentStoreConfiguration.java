@@ -49,7 +49,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default number of checkpointing threads. */
     public static final int DFLT_CHECKPOINTING_THREADS = 1;
 
-    /** */
+    /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
     /** */
@@ -97,7 +97,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /** */
     private int checkpointingThreads = DFLT_CHECKPOINTING_THREADS;
 
-    /** */
+    /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
 
     /** Number of work WAL segments. */
@@ -256,7 +256,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Gets a total number of checkpoints to keep in the WAL history.
      *
-     * @return Number of WAL segments to keep after a checkpoint is finished.
+     * @return Number of checkpoints to keep in WAL after a checkpoint is finished.
      */
     public int getWalHistorySize() {
         return walHistSize <= 0 ? DFLT_WAL_HISTORY_SIZE : walHistSize;
@@ -265,7 +265,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Sets a total number of checkpoints to keep in the WAL history.
      *
-     * @param walHistSize Number of WAL segments to keep after a checkpoint is finished.
+     * @param walHistSize Number of checkpoints to keep after a checkpoint is finished.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalHistorySize(int walHistSize) {

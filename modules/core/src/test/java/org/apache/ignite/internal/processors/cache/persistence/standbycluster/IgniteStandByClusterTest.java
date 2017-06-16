@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -103,8 +105,10 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         Map<String, GridCacheAdapter<?, ?>> caches = U.field(ig3.context().cache(), "caches");
 
-        // Only system caches and cache0
-        assertTrue(caches.size() == 3);
+        // Only system cache and cache0
+        assertTrue(caches.size() == 2);
+        assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
+        assertTrue(caches.containsKey(cacheName0));
 
         assertNull(caches.get(cacheName));
 
@@ -157,11 +161,11 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
             Map<String, DynamicCacheDescriptor> desc = U.field(
                 U.field(ig.context().cache(), "cachesInfo"), "registeredCaches");
 
-            assertEquals(5, desc.size());
+            assertEquals(4, desc.size());
 
             Map<String, GridCacheAdapter<?, ?>> caches = U.field(ig.context().cache(), "caches");
 
-            assertEquals(4, caches.keySet().size());
+            assertEquals(3, caches.keySet().size());
         }
 
         Map<String, GridCacheAdapter<?, ?>> caches1 = U.field(ig1.context().cache(), "caches");
@@ -181,6 +185,28 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         Assert.assertNotNull(caches3.get(cache1));
         Assert.assertNull(caches3.get(cache2));
         Assert.assertNotNull(caches3.get(cache3));
+    }
+
+    public void testSimple() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.active(true);
+
+        IgniteCache<Integer, String> cache0 = ig.getOrCreateCache("cache");
+
+        cache0.put(1, "1");
+
+        assertEquals("1", cache0.get(1));
+
+        ig.active(false);
+
+        assertTrue(!ig.active());
+
+        ig.active(true);
+
+        IgniteCache<Integer, String> cache = ig.cache("cache");
+
+        assertEquals("1", cache.get(1));
     }
 
     private static class NodeFilterIgnoreByName implements IgnitePredicate<ClusterNode>{

@@ -53,25 +53,11 @@ export const reducer = (state = defaults, action, root) => {
         case SET_CLUSTER: {
             const cluster = !isNewItem(action)
                 ? cloneDeep(root.list.clusters.get(action._id))
-                : {
+                : Object.assign({}, action.cluster, {
                     _id: -1,
-                    discovery: {
-                        kind: 'Multicast',
-                        Vm: {addresses: ['127.0.0.1:47500..47510']},
-                        Multicast: {addresses: ['127.0.0.1:47500..47510']},
-                        Jdbc: {initSchema: true},
-                        Cloud: {regions: [], zones: []}
-                    },
                     space: defaultSpace(root),
-                    name: uniqueName('New cluster', [...root.list.clusters.values()]),
-                    memoryConfiguration: {
-                        memoryPolicies: [{
-                            name: 'default',
-                            maxSize: null
-                        }]
-                    },
-                    caches: []
-                };
+                    name: uniqueName('New cluster', [...root.list.clusters.values()])
+                });
             const value = Object.assign({}, state, {
                 clusterID: cluster._id,
                 cluster,

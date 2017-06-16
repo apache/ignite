@@ -38,7 +38,8 @@ const mocks = () => new Map([
         saveCluster: spy(function(c) {
             if (this._nextID === 2) return Promise.reject(`Cluster with name ${c.name} already exists`);
             return Promise.resolve({data: this._nextID++});
-        })
+        }),
+        getBlankCluster: spy(() => ({name: 'Cluster'}))
     }],
     ['caches', {
         _nextID: 1,
@@ -295,6 +296,27 @@ suite('page-configure-basic service', () => {
                     [{type: SET_SELECTED_CACHES, cacheIDs: []}]
                 ],
                 'dispatches no actions'
+            );
+        });
+    });
+    suite('setCluster', () => {
+        test('new cluster', () => {
+            const service = new Provider(...mocks().values());
+            service.setCluster(-1);
+            assert.isOk(service.clusters.getBlankCluster.calledOnce, 'calls clusters.getBlankCluster');
+            assert.deepEqual(
+                service.ConfigureState.dispatchAction.lastCall.args[0],
+                {type: SET_CLUSTER, _id: -1, cluster: service.clusters.getBlankCluster.returnValues[0]},
+                'dispatches correct action'
+            );
+        });
+        test('existing cluster', () => {
+            const service = new Provider(...mocks().values());
+            service.setCluster(1);
+            assert.deepEqual(
+                service.ConfigureState.dispatchAction.lastCall.args[0],
+                {type: SET_CLUSTER, _id: 1},
+                'dispatches correct action'
             );
         });
     });

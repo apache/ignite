@@ -110,7 +110,7 @@ public class SnapshotOperation implements Serializable {
     }
 
     /**
-     * Additional info which was provided by client
+     * Additional info which was provided by client.
      */
     public String message() {
         return msg;

@@ -137,8 +137,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testAtomicCacheInitialization() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5516");
-
         checkCacheInitialization(ATOMIC_CACHE_NAME);
     }
 
@@ -160,8 +158,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testTransactionalNearCacheInitialization() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5516");
-
         checkCacheInitialization(NEAR_TX_CACHE_NAME);
     }
 

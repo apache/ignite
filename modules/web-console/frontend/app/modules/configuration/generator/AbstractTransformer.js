@@ -158,6 +158,11 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterODBC(odbc, available));
     }
 
+    // Generate cluster persistence store group.
+    static clusterPersistence(persistence, available) {
+        return this.toSection(this.generator.clusterPersistence(persistence, available));
+    }
+
     // Generate cluster query group.
     static clusterQuery(cluster, available) {
         return this.toSection(this.generator.clusterQuery(cluster, available));
