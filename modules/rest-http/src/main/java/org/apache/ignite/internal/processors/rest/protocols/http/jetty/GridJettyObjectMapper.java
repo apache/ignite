@@ -34,6 +34,7 @@ import java.text.DateFormat;
 import java.util.Locale;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -118,10 +119,12 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
     /** Custom serializer for {@link Throwable} */
     private static final JsonSerializer<Throwable> THROWABLE_SERIALIZER = new JsonSerializer<Throwable>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(Throwable e, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeStartObject();
-
+        /**
+         * @param e Exception to write.
+         * @param gen JSON generator.
+         * @throws IOException If failed to write.
+         */
+        private void writeException(Throwable e, JsonGenerator gen) throws IOException {
             if (e instanceof VisorExceptionWrapper) {
                 VisorExceptionWrapper wrapper = (VisorExceptionWrapper)e;
 
@@ -133,14 +136,30 @@ public class GridJettyObjectMapper extends ObjectMapper {
             if (e.getMessage() != null)
                 gen.writeStringField("message", e.getMessage());
 
-            if (e.getCause() != null)
-                gen.writeObjectField("cause", e.getCause());
-
             if (e instanceof SQLException) {
                 SQLException sqlE = (SQLException)e;
 
                 gen.writeNumberField("errorCode", sqlE.getErrorCode());
                 gen.writeStringField("SQLState", sqlE.getSQLState());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void serialize(Throwable e, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            gen.writeStartObject();
+
+            writeException(e, gen);
+
+            if (e.getCause() != null)
+                gen.writeObjectField("cause", e.getCause());
+
+            if (!F.isEmpty(e.getSuppressed())) {
+                gen.writeArrayFieldStart("suppressed");
+
+                for (Throwable sup : e.getSuppressed())
+                    gen.writeObject(sup);
+
+                gen.writeEndArray();
             }
 
             gen.writeEndObject();

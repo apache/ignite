@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.query.VisorQueryEntity;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -162,6 +163,9 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** Cache topology validator. */
     private String topValidator;
 
+    /** Dynamic deployment ID. */
+    private IgniteUuid dynamicDeploymentId;
+
     /**
      * Default constructor.
      */
@@ -174,10 +178,12 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      *
      * @param ignite Grid.
      * @param ccfg Cache configuration.
+     * @param dynamicDeploymentId Dynamic deployment ID.
      */
-    public VisorCacheConfiguration(IgniteEx ignite, CacheConfiguration ccfg) {
+    public VisorCacheConfiguration(IgniteEx ignite, CacheConfiguration ccfg, IgniteUuid dynamicDeploymentId) {
         name = ccfg.getName();
         grpName = ccfg.getGroupName();
+        this.dynamicDeploymentId = dynamicDeploymentId;
         mode = ccfg.getCacheMode();
         atomicityMode = ccfg.getAtomicityMode();
         eagerTtl = ccfg.isEagerTtl();
@@ -505,10 +511,17 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return validator.
+     * @return Topology validator.
      */
     public String getTopologyValidator() {
         return topValidator;
+    }
+
+    /**
+     * @return Cache dynamic deployment ID.
+     */
+    public IgniteUuid getDynamicDeploymentId() {
+        return dynamicDeploymentId;
     }
 
     /** {@inheritDoc} */
@@ -552,6 +565,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeBoolean(readFromBackup);
         U.writeString(out, tmLookupClsName);
         U.writeString(out, topValidator);
+        U.writeGridUuid(out, dynamicDeploymentId);
     }
 
     /** {@inheritDoc} */
@@ -595,6 +609,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         readFromBackup = in.readBoolean();
         tmLookupClsName = U.readString(in);
         topValidator = U.readString(in);
+        dynamicDeploymentId = U.readGridUuid(in);
     }
 
     /** {@inheritDoc} */

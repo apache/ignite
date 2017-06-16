@@ -67,12 +67,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
-import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -139,9 +139,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
-import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcStatement;
@@ -1364,7 +1362,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     List<Integer> cacheIds = new ArrayList<>(caches0);
 
                     checkCacheIndexSegmentation(cacheIds);
-    
+
                     twoStepQry.cacheIds(cacheIds);
                     twoStepQry.local(qry.isLocal());
                 }
@@ -1686,8 +1684,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return null;
 
         return schema.tableByTypeName(type);
-    };
-
+    }
 
     /** {@inheritDoc} */
     @Override  public String schema(String cacheName) {
@@ -1697,6 +1694,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res = "";
 
         return res;
+    }
+
+    /**
+     * Gets collection of table for given schema name.
+     *
+     * @param cacheName Schema name.
+     * @return Collection of table descriptors.
+     */
+    private Collection<H2TableDescriptor> tables(String cacheName) {
+        H2Schema s = schemas.get(schema(cacheName));
+
+        if (s == null)
+            return Collections.emptySet();
+
+        return s.tables();
     }
 
     /** {@inheritDoc} */
@@ -1723,72 +1735,62 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override public void rebuildIndexesFromHash(GridCacheContext cctx, String schemaName, String typeName)
-        throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
+    /**
+     * Rebuild indexes from hash index.
+     *
+     * @param cacheName Cache name.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
+        int cacheId = CU.cacheId(cacheName);
 
-        if (tbl == null)
-            return;
+        GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-        assert tbl.table() != null;
+        IgniteCacheOffheapManager offheapMgr = cctx.isNear() ? cctx.near().dht().context().offheap() : cctx.offheap();
 
-        assert tbl.table().rebuildFromHashInProgress();
+        for (int p = 0; p < cctx.affinity().partitions(); p++) {
+            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.cacheKeysIterator(cctx.cacheId(), p)) {
+                while (keyIter.hasNext()) {
+                    cctx.shared().database().checkpointReadLock();
 
-        H2PkHashIndex hashIdx = tbl.primaryKeyHashIndex();
+                    try {
+                        KeyCacheObject key = keyIter.next();
 
-        Cursor cursor = hashIdx.find((Session)null, null, null);
+                        while (true) {
+                            try {
+                                GridCacheEntryEx entry = cctx.isNear() ?
+                                    cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
 
-        while (cursor.next()) {
-            CacheDataRow dataRow = (CacheDataRow)cursor.get();
+                                entry.ensureIndexed();
 
-            boolean done = false;
-
-            while (!done) {
-                GridCacheEntryEx entry = cctx.cache().entryEx(dataRow.key());
-
-                try {
-                    synchronized (entry) {
-                        // TODO : How to correctly get current value and link here?
-
-                        GridH2Row row = tbl.table().rowDescriptor().createRow(entry.key(), entry.partition(),
-                            dataRow.value(), entry.version(), entry.expireTime());
-
-                        row.link(dataRow.link());
-
-                        List<Index> indexes = tbl.table().getAllIndexes();
-
-                        for (int i = 2; i < indexes.size(); i++) {
-                            Index idx = indexes.get(i);
-
-                            if (idx instanceof H2TreeIndex)
-                                ((H2TreeIndex)idx).put(row);
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                // Retry.
+                            }
+                            catch (GridDhtInvalidPartitionException ignore) {
+                                break;
+                            }
                         }
-
-                        done = true;
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
-                catch (GridCacheEntryRemovedException e) {
-                    // No-op
-                }
             }
-
         }
 
-        tbl.table().markRebuildFromHashInProgress(false);
+        for (H2TableDescriptor tblDesc : tables(cacheName))
+            tblDesc.table().markRebuildFromHashInProgress(false);
     }
 
     /** {@inheritDoc} */
-    @Override public void markForRebuildFromHash(String schemaName, String typeName) {
-        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
+    @Override public void markForRebuildFromHash(String cacheName) {
+        for (H2TableDescriptor tblDesc : tables(cacheName)) {
+            assert tblDesc.table() != null;
 
-        if (tbl == null)
-            return;
-
-        assert tbl.table() != null;
-
-        tbl.table().markRebuildFromHashInProgress(true);
+            tblDesc.table().markRebuildFromHashInProgress(true);
+        }
     }
 
     /**
@@ -1832,7 +1834,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
 
-        //org.h2.Driver.load();
+        org.h2.Driver.load();
 
         try {
             if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
@@ -2332,5 +2334,4 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
     }
-
 }

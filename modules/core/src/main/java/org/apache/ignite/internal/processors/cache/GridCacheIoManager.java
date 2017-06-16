@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -249,6 +250,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
 
+                synchronized (pendingMsgs) {
+                    if (pendingMsgs.size() < 100)
+                        pendingMsgs.add(cacheMsg);
+                }
+
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         Runnable c = new Runnable() {
@@ -352,8 +358,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 else
                     U.error(log, msg0.toString());
 
-                return;
+            try {
+                cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
+
+                processFailedMessage(nodeId, cacheMsg, c);
             }
+            catch (Exception e) {
+                U.error(log, "Failed to process failed message: " + e, e);
+            }return;
+        }
 
             onMessage0(nodeId, cacheMsg, c);
         }

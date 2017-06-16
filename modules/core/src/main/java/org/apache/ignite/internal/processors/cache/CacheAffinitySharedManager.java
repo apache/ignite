@@ -126,7 +126,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        lateAffAssign = cctx.kernalContext().config().isLateAffinityAssignment();
+        if (cctx.database().persistenceEnabled() && !cctx.kernalContext().config().isLateAffinityAssignment())
+            U.quietAndWarn(log,
+                "Persistence is enabled, but late affinity assignment is disabled. " +
+                    "Since it is required for persistence mode, it will be implicitly enabled.");
+
+        lateAffAssign = cctx.kernalContext().config().isLateAffinityAssignment() || cctx.database().persistenceEnabled();
 
         cctx.kernalContext().event().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -426,7 +431,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             if (clientTop != null) {
                                 grp.topology().update(topVer,
                                     clientTop.partitionMap(true),
-                                    clientTop.updateCounters(false));
+                                    clientTop.updateCounters(false),
+                                    Collections.<Integer>emptySet());
                             }
 
                             grpHolder = new CacheGroupHolder1(grp, grpHolder.affinity());
@@ -488,7 +494,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
 
-                grp.topology().update(topVer, partMap, null);
+                grp.topology().update(topVer, partMap, null, Collections.<Integer>emptySet());
 
                 topFut.validate(grp, discoCache.allNodes());
             }
@@ -649,11 +655,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param exchActions Cache change requests.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheChangeRequest(final GridDhtPartitionsExchangeFuture fut,
+    public void onCacheChangeRequest(
+        final GridDhtPartitionsExchangeFuture fut,
         boolean crd,
-        final ExchangeActions exchActions)
-        throws IgniteCheckedException
-    {
+        final ExchangeActions exchActions
+    ) throws IgniteCheckedException {
         assert exchActions != null && !exchActions.empty() : exchActions;
 
         caches.updateCachesInfo(exchActions);
@@ -677,7 +683,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             NearCacheConfiguration nearCfg = null;
 
-            if (cctx.localNodeId().equals(req.initiatingNodeId())) {
+            if (exchActions.newClusterState() == ClusterState.ACTIVE) {
+                if (CU.isSystemCache(req.cacheName()))
+                    startCache = true;
+                else if (!cctx.localNode().isClient()) {
+                    startCache = cctx.cacheContext(action.descriptor().cacheId()) == null &&
+                        CU.affinityNode(cctx.localNode(), req.startCacheConfiguration().getNodeFilter());
+
+                    nearCfg = req.nearCacheConfiguration();
+                }
+                else // Only static cache configured on client must be started.
+                    startCache = cctx.kernalContext().state().isLocallyConfigured(req.cacheName());
+            }
+            else if (cctx.localNodeId().equals(req.initiatingNodeId())) {
                 startCache = true;
 
                 nearCfg = req.nearCacheConfiguration();
@@ -688,8 +706,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             try {
+                // Save configuration before cache started.
+                if (cctx.pageStore() != null && !cctx.localNode().isClient())
+                    cctx.pageStore().storeCacheData(
+                        cacheDesc.groupDescriptor(),
+                        new StoredCacheData(req.startCacheConfiguration())
+                    );
+
                 if (startCache) {
                     cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
+
+                    if (exchActions.newClusterState() == null)
+                        cctx.kernalContext().state().onCacheStart(req);
 
                     if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                         if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
@@ -715,7 +743,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (gprs.add(grpId)) {
                 if (crd && lateAffAssign)
                     initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());
-                else  {
+                else {
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.topologyVersion())) {
@@ -728,7 +756,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
-            cctx.cache().blockGateway(action.request().cacheName(), true);
+            cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
         Set<Integer> stoppedGrps = null;
 
@@ -790,7 +818,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      *
      */
-    public void removeAllCacheInfo(){
+    public void removeAllCacheInfo() {
         grpHolders.clear();
 
         caches.clear();
@@ -1091,9 +1119,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param descs Cache descriptors.
      * @throws IgniteCheckedException If failed.
      */
-    public void initStartedCaches(boolean crd,
+    public void initStartedCaches(
+        boolean crd,
         final GridDhtPartitionsExchangeFuture fut,
-        Collection<DynamicCacheDescriptor> descs) throws IgniteCheckedException {
+        Collection<DynamicCacheDescriptor> descs
+    ) throws IgniteCheckedException {
         caches.initStartedCaches(descs);
 
         if (crd && lateAffAssign) {

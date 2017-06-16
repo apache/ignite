@@ -266,25 +266,30 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key) {
-        int keyPart = cctx.affinity().partition(key);
+        try {
+            int keyPart = cctx.affinity().partition(key);
 
-        GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
-            cache().topology().localPartition(keyPart, topVer, true) :
-            cache().topology().localPartition(keyPart);
+            GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
+                cache().topology().localPartition(keyPart, topVer, true) :
+                cache().topology().localPartition(keyPart);
 
-        if (part == null)
-            return false;
+            if (part == null)
+                return false;
 
-        assert this.part == -1;
+            assert this.part == -1;
 
-        // By reserving, we make sure that partition won't be unloaded while processed.
-        if (part.reserve()) {
-            this.part = part.id();
+            // By reserving, we make sure that partition won't be unloaded while processed.
+            if (part.reserve()) {
+                this.part = part.id();
 
-            return true;
+                return true;
+            }
+            else
+                return false;
         }
-        else
+        catch (GridDhtInvalidPartitionException ex) {
             return false;
+        }
     }
 
     /**
