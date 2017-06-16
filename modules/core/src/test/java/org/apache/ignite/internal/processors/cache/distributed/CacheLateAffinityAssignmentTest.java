@@ -212,19 +212,16 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     @Override
     protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        fail("https://issues.apache.org/jira/browse/IGNITE-5510");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // TODO: Uncomment when fixed fail("https://issues.apache.org/jira/browse/IGNITE-5510;
-//        try {
-//            checkCaches();
-//        }
-//        finally {
-//            stopAllGrids();
-//        }
+        try {
+            checkCaches();
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1387,8 +1384,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomOperations() throws Exception {
-        fail("IGNITE-5509");
-
         forceSrvMode = true;
 
         final int MAX_SRVS = 10;
@@ -1712,6 +1707,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoForceKeysRequests() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5510");
+
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
                 return null;
