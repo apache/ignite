@@ -381,25 +381,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestConditions()
         {
-            TestConditions("even", "odd");
-            TestConditions(new Address { Zip = 1 }, new Address { Zip = 2 }, (a1, a2) => a1.Zip == a2.Zip);
+            TestConditional("even", "odd");
+            TestConditional(new Address { Zip = 99999 }, new Address { Zip = 7777777 }, (a1, a2) => a1.Zip == a2.Zip);
+            TestConditional(new RoleKey(int.MaxValue, long.MinValue), new RoleKey(int.MinValue, long.MaxValue));
+            TestConditionalWithNullableStructs<int>();
+            TestConditionalWithNullableStructs<uint>();
+            TestConditionalWithNullableStructs<Guid>();
+            TestConditionalWithNullableStructs<byte>();
+            TestConditionalWithNullableStructs<sbyte>();
+            TestConditionalWithNullableStructs<short>();
+            TestConditionalWithNullableStructs<ushort>();
+            TestConditionalWithNullableStructs<bool>();
+            TestConditionalWithNullableStructs<long>();
+            TestConditionalWithNullableStructs<ulong>();
+            TestConditionalWithNullableStructs<double>();
+            TestConditionalWithNullableStructs<float>();
+            TestConditionalWithNullableStructs<decimal>();
+            TestConditionalWithNullableStructs<DateTime>(DateTime.UtcNow);
 
-            TestConditionsWithNullableStructs<int>();
-            TestConditionsWithNullableStructs<uint>();
-            TestConditionsWithNullableStructs<Guid>();
-            TestConditionsWithNullableStructs<byte>();
-            TestConditionsWithNullableStructs<sbyte>();
-            TestConditionsWithNullableStructs<short>();
-            TestConditionsWithNullableStructs<ushort>();
-            TestConditionsWithNullableStructs<bool>();
-            TestConditionsWithNullableStructs<long>();
-            TestConditionsWithNullableStructs<ulong>();
-            TestConditionsWithNullableStructs<double>();
-            TestConditionsWithNullableStructs<float>();
-            TestConditionsWithNullableStructs<decimal>();
-            TestConditionsWithNullableStructs<DateTime>(DateTime.UtcNow);
-
-            var charException = Assert.Throws<NotSupportedException>(() => TestConditionsWithNullableStructs<char>());
+            var charException = Assert.Throws<NotSupportedException>(() => TestConditionalWithNullableStructs<char>());
             Assert.AreEqual("Type is not supported for SQL mapping: System.Char", charException.Message);
 
             var roles = GetRoleCache().AsCacheQueryable();
@@ -1843,9 +1843,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Test conditinal statement
+        /// Tests conditinal statement
         /// </summary>
-        private void TestConditions<T>(T even , T odd, Func<T,T,bool> comparer = null)
+        private void TestConditional<T>(T even , T odd, Func<T,T,bool> comparer = null)
         {
             var persons = GetPersonCache().AsCacheQueryable();
 
@@ -1866,12 +1866,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Test conditinal statement
+        /// Tests conditinal statement for structs with default and null values
         /// </summary>
-        private void TestConditionsWithNullableStructs<T>(T? defaultFalue = null) where T : struct
+        private void TestConditionalWithNullableStructs<T>(T? defaultFalue = null) where T : struct
         {
             var def = defaultFalue ?? default(T);
-            TestConditions(def, (T?) null);
+            TestConditional(def, (T?) null);
         }
 
         public interface IPerson
