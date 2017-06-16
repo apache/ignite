@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -1766,6 +1767,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
                     cctx.kernalContext().state().onFullResponseMessage(changeGlobalStateExceptions);
+
+                if (exchActions != null) {
+                    for (CacheGroupDescriptor desc : exchActions.cacheGroupsToStop())
+                        cctx.exchange().clearClientTopology(desc.groupId());
+                }
 
                 onDone(exchangeId().topologyVersion());
             }
