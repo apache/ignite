@@ -71,9 +71,6 @@ public class VisorCache extends VisorDataTransferObject {
     /** Number of backup entries in cache. */
     private long backupSize;
 
-    /** Number of cache entries stored in heap memory. */
-    private long onHeapEntriesCnt;
-
     /** Number of partitions. */
     private int partitions;
 
@@ -112,8 +109,6 @@ public class VisorCache extends VisorDataTransferObject {
         partitions = ca.affinity().partitions();
         near = cctx.isNear();
 
-        onHeapEntriesCnt = 0; // TODO GG-11148 How to get this metric?
-
         metrics = new VisorCacheMetrics(ignite, name);
     }
 
@@ -131,7 +126,6 @@ public class VisorCache extends VisorDataTransferObject {
         c.nearSize = nearSize;
         c.backupSize = backupSize;
         c.primarySize = primarySize;
-        c.onHeapEntriesCnt = onHeapEntriesCnt;
         c.partitions = partitions;
         c.metrics = metrics;
         c.near = near;
@@ -212,13 +206,6 @@ public class VisorCache extends VisorDataTransferObject {
     }
 
     /**
-     * @return Number of cache entries stored in heap memory.
-     */
-    public long getOnHeapEntriesCount() {
-        return onHeapEntriesCnt;
-    }
-
-    /**
      * @return Number of partitions.
      */
     public int getPartitions() {
@@ -250,7 +237,6 @@ public class VisorCache extends VisorDataTransferObject {
         out.writeInt(nearSize);
         out.writeLong(primarySize);
         out.writeLong(backupSize);
-        out.writeLong(onHeapEntriesCnt);
         out.writeInt(partitions);
         out.writeBoolean(near);
         out.writeObject(metrics);
@@ -267,7 +253,6 @@ public class VisorCache extends VisorDataTransferObject {
         nearSize = in.readInt();
         primarySize = in.readLong();
         backupSize = in.readLong();
-        onHeapEntriesCnt = in.readLong();
         partitions = in.readInt();
         near = in.readBoolean();
         metrics = (VisorCacheMetrics)in.readObject();

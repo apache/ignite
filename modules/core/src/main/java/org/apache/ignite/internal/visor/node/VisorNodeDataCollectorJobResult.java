@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.internal.visor.cache.VisorMemoryMetrics;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
@@ -51,6 +52,12 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
 
     /** Exception while collecting node events. */
     private Throwable evtsEx;
+
+    /** Node memory metrics. */
+    private List<VisorMemoryMetrics> memoryMetrics = new ArrayList<>();
+
+    /** Exception while collecting memory metrics. */
+    private Throwable memoryMetricsEx;
 
     /** Node caches. */
     private List<VisorCache> caches = new ArrayList<>();
@@ -144,6 +151,27 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
      */
     public void setEventsEx(Throwable evtsEx) {
         this.evtsEx = evtsEx;
+    }
+
+    /**
+     * @return Collected memory metrics.
+     */
+    public List<VisorMemoryMetrics> getMemoryMetrics() {
+        return memoryMetrics;
+    }
+
+    /**
+     * @return Exception caught during collecting memory metrics.
+     */
+    public Throwable getMemoryMetricsEx() {
+        return memoryMetricsEx;
+    }
+
+    /**
+     * @param memoryMetricsEx Exception caught during collecting memory metrics.
+     */
+    public void setMemoryMetricsEx(Throwable memoryMetricsEx) {
+        this.memoryMetricsEx = memoryMetricsEx;
     }
 
     /**
@@ -244,6 +272,8 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         out.writeBoolean(taskMonitoringEnabled);
         U.writeCollection(out, evts);
         out.writeObject(evtsEx);
+        U.writeCollection(out, memoryMetrics);
+        out.writeObject(memoryMetricsEx);
         U.writeCollection(out, caches);
         out.writeObject(cachesEx);
         U.writeCollection(out, igfss);
@@ -261,6 +291,8 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         taskMonitoringEnabled = in.readBoolean();
         evts = U.readList(in);
         evtsEx = (Throwable)in.readObject();
+        memoryMetrics = U.readList(in);
+        memoryMetricsEx = (Throwable)in.readObject();
         caches = U.readList(in);
         cachesEx = (Throwable)in.readObject();
         igfss = U.readList(in);
