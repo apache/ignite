@@ -471,7 +471,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return stmt;
             }
 
-            stmt = c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            stmt = c.prepareStatement(sql);
 
             cache.put(sql, stmt);
 

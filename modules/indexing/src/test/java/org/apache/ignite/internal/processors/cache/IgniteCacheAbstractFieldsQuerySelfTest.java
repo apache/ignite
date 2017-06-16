@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
@@ -897,16 +896,16 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * from \"large\".Integer WHERE _key > ? and _val < ? " +
-            "order by _key")
-            .setArgs(3000, 950000).setTimeout(20, TimeUnit.SECONDS);
-
         final AtomicInteger cnt = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     IgniteEx node = grid(gridCount() > 0 ? ThreadLocalRandom.current().nextInt(0, gridCount()) : 0);
+
+                    SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * from \"large\".Integer WHERE _key > ? and " +
+                        "_val < ? order by _key").setArgs(3000, 950000)
+                        .setPageSize(ThreadLocalRandom.current().nextInt(100, 5000));
 
                     List<List<?>> res = node.cache("large").query(qry).getAll();
 
@@ -921,11 +920,29 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             }
         }, 8);
 
+        // Let's also make some threads do occasional puts.
+        IgniteInternalFuture<?> putFut = multithreadedAsync(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                while (!stop.get()) {
+                    IgniteEx node = grid(gridCount() > 0 ? ThreadLocalRandom.current().nextInt(0, gridCount()) : 0);
+
+                    int x = ThreadLocalRandom.current().nextInt(0, 1_000_000);
+
+                    node.cache("large").put(x, x);
+
+                    Thread.sleep(ThreadLocalRandom.current().nextInt(500, 1000));
+                }
+                return null;
+            }
+        }, 4);
+
         Thread.sleep(120000);
 
         System.out.println("Iterations done: " + cnt);
 
         stop.set(true);
+
+        putFut.get();
 
         fut.get();
     }

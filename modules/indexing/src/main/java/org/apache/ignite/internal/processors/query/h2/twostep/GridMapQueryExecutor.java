@@ -625,7 +625,7 @@ public class GridMapQueryExecutor {
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         QueryKey key = new QueryKey(qry.query(), qry.parameters(params), distributedJoinMode,
-                            enforceJoinOrder, parts, pageSize);
+                            enforceJoinOrder, parts);
 
                         rs = runQuery(key, node, evt ? mainCctx.name() : null, conn, timeout, qr.cancels[qryIdx], evt);
                     }
@@ -1241,19 +1241,7 @@ public class GridMapQueryExecutor {
     private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, @Nullable String mainCctxName, Connection conn,
         int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
 
-        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = this.futs.get();
-
-        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> newFuts = null;
-
-        while (futs == null) {
-            if (newFuts == null)
-                newFuts = new ConcurrentHashMap<>();
-
-            if (this.futs.compareAndSet(null, newFuts))
-                futs = newFuts;
-            else
-                futs = this.futs.get();
-        }
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = runningFutures();
 
         ResultSetWrapper res = null;
 
@@ -1296,7 +1284,8 @@ public class GridMapQueryExecutor {
 
                 assert rs instanceof JdbcResultSet : rs.getClass();
 
-                futs.remove(key);
+                if (this.futs.get() == futs)
+                    futs.remove(key);
 
                 res = new ResultSetWrapper(rs);
 
@@ -1308,6 +1297,27 @@ public class GridMapQueryExecutor {
         }
 
         return res;
+    }
+
+    /**
+     * @return Map containing futures for currently running queries.
+     */
+    private ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> runningFutures() {
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = this.futs.get();
+
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> newFuts = null;
+
+        while (futs == null) {
+            if (newFuts == null)
+                newFuts = new ConcurrentHashMap<>();
+
+            if (this.futs.compareAndSet(null, newFuts))
+                futs = newFuts;
+            else
+                futs = this.futs.get();
+        }
+
+        return futs;
     }
 
     /**
@@ -1350,9 +1360,6 @@ public class GridMapQueryExecutor {
         /** Partitions to run query on. */
         private final int[] parts;
 
-        /** Page size. */
-        private final int pageSize;
-
         /**
          * Constructor.
          * @param qry Query string.
@@ -1360,16 +1367,14 @@ public class GridMapQueryExecutor {
          * @param joinMode Distributed join mode.
          * @param enforceJoinOrder Enforce join order flag.
          * @param parts Partitions to run query on.
-         * @param pageSize Page size.
          */
         private QueryKey(String qry, Object[] params, DistributedJoinMode joinMode, boolean enforceJoinOrder,
-            int[] parts, int pageSize) {
+            int[] parts) {
             this.qry = qry;
             this.params = params;
             this.joinMode = joinMode;
             this.enforceJoinOrder = enforceJoinOrder;
             this.parts = parts;
-            this.pageSize = pageSize;
         }
 
         /** {@inheritDoc} */
@@ -1381,7 +1386,7 @@ public class GridMapQueryExecutor {
 
             return enforceJoinOrder == qryKey.enforceJoinOrder && qry.equals(qryKey.qry) &&
                 Arrays.equals(params, qryKey.params) && joinMode == qryKey.joinMode &&
-                Arrays.equals(parts, qryKey.parts) && pageSize == qryKey.pageSize;
+                Arrays.equals(parts, qryKey.parts);
         }
 
         /** {@inheritDoc} */
@@ -1390,8 +1395,7 @@ public class GridMapQueryExecutor {
             res = 31 * res + Arrays.hashCode(params);
             res = 31 * res + joinMode.hashCode();
             res = 31 * res + (enforceJoinOrder ? 1 : 0);
-            res = 31 * res + Arrays.hashCode(parts);
-            return 31 * res + pageSize;
+            return  31 * res + Arrays.hashCode(parts);
         }
     }
 
