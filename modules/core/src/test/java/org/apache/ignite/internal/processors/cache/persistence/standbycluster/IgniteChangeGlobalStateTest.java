@@ -412,7 +412,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
                 IgniteCache cache = ig.cache("cache");
                 return null;
             }
-        }, IgniteException.class, "can not perform operation, because cluster inactive");
+        }, IgniteException.class, "Can not perform the operation because the cluster is inactive.");
     }
 
     /**

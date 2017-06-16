@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -179,7 +179,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private final CheckpointLockStateChecker stateChecker;
 
     /** */
-    private Executor asyncRunner = new ThreadPoolExecutor(
+    private ExecutorService asyncRunner = new ThreadPoolExecutor(
         0,
         Runtime.getRuntime().availableProcessors(),
         30L,
@@ -323,6 +323,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     @Override public void stop() throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
+
+        U.shutdownNow(getClass(), asyncRunner, log);
 
         directMemoryProvider.shutdown();
     }

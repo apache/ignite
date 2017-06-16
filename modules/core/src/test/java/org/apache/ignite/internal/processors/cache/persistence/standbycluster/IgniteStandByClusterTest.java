@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -184,6 +185,28 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         Assert.assertNotNull(caches3.get(cache1));
         Assert.assertNull(caches3.get(cache2));
         Assert.assertNotNull(caches3.get(cache3));
+    }
+
+    public void testSimple() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.active(true);
+
+        IgniteCache<Integer, String> cache0 = ig.getOrCreateCache("cache");
+
+        cache0.put(1, "1");
+
+        assertEquals("1", cache0.get(1));
+
+        ig.active(false);
+
+        assertTrue(!ig.active());
+
+        ig.active(true);
+
+        IgniteCache<Integer, String> cache = ig.cache("cache");
+
+        assertEquals("1", cache.get(1));
     }
 
     private static class NodeFilterIgnoreByName implements IgnitePredicate<ClusterNode>{
