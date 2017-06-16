@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -512,6 +513,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         assert ptr instanceof FileWALPointer : ptr;
 
+        // File pointer bound: older entries will be deleted from archive
         FileWALPointer fPtr = (FileWALPointer)ptr;
 
         FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
@@ -521,7 +523,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileArchiver archiver0 = archiver;
 
         for (FileDescriptor desc : descs) {
-            // Do not delete reserved segment and any segment after it.
+            // Do not delete reserved or locked segment and any segment after it.
             if (archiver0 != null && archiver0.reserved(desc.idx))
                 return deleted;
 
@@ -738,7 +740,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Calling this method signals we are done with the segment and it can be archived.
      * If we don't have prepared file yet and achiever is busy this method blocks
      *
-     * @param curIdx current segment released by WAL writer
+     * @param curIdx current absolute segment released by WAL writer
      * @return Initialized file handle.
      * @throws StorageException If IO exception occurred.
      * @throws IgniteCheckedException If failed.
@@ -1014,7 +1016,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         * @param absIdx Index for reservation.
+         * Check if WAL segment locked or reserved
+         * @param absIdx Index for check reservation.
          * @return {@code True} if index is reserved.
          */
         private synchronized boolean reserved(long absIdx) {
@@ -1328,10 +1331,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         * @param file File.
-         * @param idx Absolute WAL segment file index.
+         * @param file WAL segment file.
+         * @param idx Absolute WAL segment file index. For null value index is restored from file name
          */
-        private FileDescriptor(File file, Long idx) {
+        private FileDescriptor(@NotNull File file, @Nullable Long idx) {
             this.file = file;
 
             String fileName = file.getName();
@@ -1411,7 +1414,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         protected FileChannel ch;
 
-        /** */
+        /** Absolute WAL segment file index (incremental counter) */
         protected final long idx;
 
         /** */
@@ -1419,7 +1422,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param file File.
-         * @param idx Index.
+         * @param idx Absolute WAL segment file index (incremental counter).
          */
         private FileHandle(RandomAccessFile file, long idx, String gridName) {
             this.file = file;
@@ -1447,7 +1450,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param file File to read.
-         * @param idx File index.
+         * @param idx Absolute WAL segment file index (incremental counter).
          * @param ser Entry serializer.
          * @param in File input.
          */
