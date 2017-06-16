@@ -697,43 +697,36 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
         spi.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
-        blockSupplySend(spi, CACHE_NAME1);
+        //blockSupplySend(spi, CACHE_NAME1);
 
         stopNode(1, 5);
 
         AffinityTopologyVersion topVer = topVer(5, 0);
 
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
         IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-        IgniteInternalFuture<?> fut3 = affFuture(topVer, ignite3);
 
         U.sleep(1000);
 
         assertFalse(fut2.isDone());
 
-        checkAffinity(topVer(5, 0), ignite0, false);
-        checkAffinity(topVer(5, 0), ignite3, false);
+        checkAffinity(topVer(5, 0), ignite0, false, null);
+        checkAffinity(topVer(5, 0), ignite3, false, null);
 
         U.sleep(1000);
 
-        checkAffinity(topVer(5, 0), ignite0, false);
-        checkAffinity(topVer(5, 0), ignite3, false);
+        checkAffinity(topVer(5, 0), ignite0, false, null);
+        checkAffinity(topVer(5, 0), ignite3, false, null);
 
-        spi.stopBlock();
+        stopNode(0, 6);
 
-        checkAffinity(3, topVer(5, 0), true);
+        U.sleep(1000);
 
-//        stopNode(0, 6);
-//
-////        U.sleep(1000);
-////        spi2.stopBlock(true);
-//
-//        fut2.get();
-//        fut3.get();
-//
-//        checkAffinity(topVer(5, 0), ignite3, true);
-//
-//        checkAffinity(2, topVer(6, 0), true);
+        checkAffinity(topVer(5, 0), ignite2, false, null);
+        checkAffinity(topVer(5, 0), ignite3, false, null);
+
+        checkAffinity(topVer(6, 0), ignite2, true, null);
+        checkAffinity(topVer(6, 0), ignite3, true, null);
+
     }
 
     /**
@@ -1095,6 +1088,33 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         spi1.stopBlock();
 
         checkAffinity(2, topVer(4, 1), true);
+    }
+
+    public void testDelayAssignmentCoordinatorLeave3() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        Ignite ignite1 = startServer(1, 2);
+
+        checkAffinity(2, topVer(2, 1), true);
+
+        TestRecordingCommunicationSpi spi0 =
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi1 =
+            (TestRecordingCommunicationSpi)ignite1.configuration().getCommunicationSpi();
+
+        blockSupplySend(spi0, CACHE_NAME1);
+        blockSupplySend(spi1, CACHE_NAME1);
+
+        startServer(2, 3);
+
+        stopNode(2, 4);
+
+        checkAffinity(2, topVer(4, 0), false);
+
+        spi0.stopBlock();
+        spi1.stopBlock();
+
+        checkAffinity(2, topVer(4, 0), true); // ???
     }
 
     /**
@@ -2295,66 +2315,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
 
-        for (Ignite node : nodes) {
-            log.info("Check node: " + node.name());
-
-            IgniteKernal node0 = (IgniteKernal)node;
-
-            IgniteInternalFuture<?> fut = node0.context().cache().context().exchange().affinityReadyFuture(topVer);
-
-            if (fut != null)
-                fut.get();
-
-            for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
-                if (cctx.startTopologyVersion() != null && cctx.startTopologyVersion().compareTo(topVer) > 0)
-                    continue;
-
-                List<List<ClusterNode>> aff1 = aff.get(cctx.name());
-                List<List<ClusterNode>> aff2 = cctx.affinity().assignments(topVer);
-
-                if (aff1 == null)
-                    aff.put(cctx.name(), aff2);
-                else
-                    assertAffinity(aff1, aff2, node, cctx.name(), topVer);
-
-                if (expIdeal) {
-                    List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
-
-                    assertAffinity(ideal, aff2, node, cctx.name(), topVer);
-
-                    Affinity<Object> cacheAff = node.affinity(cctx.name());
-
-                    for (int i = 0; i < 10; i++) {
-                        int part = cacheAff.partition(i);
-
-                        List<ClusterNode> partNodes = ideal.get(part);
-
-                        if (partNodes.isEmpty()) {
-                            try {
-                                ClusterNode primary = cacheAff.mapKeyToNode(i);
-
-                                fail();
-                            }
-                            catch (IgniteException ignore) {
-                                // No-op.
-                            }
-                        }
-                        else {
-                            ClusterNode primary = cacheAff.mapKeyToNode(i);
-
-                            assertEquals(primary, partNodes.get(0));
-                        }
-                    }
-
-                    for (int p = 0; p < ideal.size(); p++) {
-                        List<ClusterNode> exp = ideal.get(p);
-                        Collection<ClusterNode> partNodes = cacheAff.mapPartitionToPrimaryAndBackups(p);
-
-                        assertEqualsCollections(exp, partNodes);
-                    }
-                }
-            }
-        }
+        for (Ignite node : nodes)
+            checkAffinity(topVer, node, expIdeal, aff);
 
         assertEquals(expNodes, nodes.size());
 
@@ -2364,10 +2326,19 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         return aff;
     }
 
+    /**
+     *
+     * @param topVer Topology version.
+     * @param node node.
+     * @param expIdeal If {@code true} expect ideal affinity assignment.
+     * @return Affinity assignments.
+     * @throws Exception If failed.
+     */
     private Map<String, List<List<ClusterNode>>> checkAffinity(AffinityTopologyVersion topVer, Ignite node,
-        boolean expIdeal) throws Exception {
+        boolean expIdeal, @Nullable Map<String, List<List<ClusterNode>>> aff) throws Exception {
 
-        Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
+        if (aff == null)
+            aff = new HashMap<>();
 
         log.info("Check node: " + node.name());
 
