@@ -1313,6 +1313,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Loads WAL pointer from CP file
      * @param cpMarkerFile Checkpoint mark file.
      * @return WAL pointer.
      * @throws IgniteCheckedException If failed to read mark file.
@@ -2587,7 +2588,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @SuppressWarnings("PublicInnerClass")
     public class CheckpointHistory {
-        /** */
+        /**
+         * Maps checkpoint's timestamp (from CP file name) to CP entry.
+         * Using TS provides historical order of CP entries in map ( first is oldest )
+         */
         private final NavigableMap<Long, CheckpointEntry> histMap = new ConcurrentSkipListMap<>();
 
         /**
@@ -2768,7 +2772,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         @SuppressWarnings("unused")
         private volatile int initGuard;
 
-        /** Checkpoint ID. Initalized lazily. */
+        /** Checkpoint ID. Initialized lazily. */
         private UUID cpId;
 
         /** Cache states. Initialized lazily. */
@@ -2781,7 +2785,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Lazy entry constructor.
          *
          * @param cpTs Checkpoint timestamp.
-         * @param cpMark Checkpoint WAL mark.
+         * @param cpMark Checkpoint end mark (WAL pointer).
          */
         private CheckpointEntry(long cpTs, WALPointer cpMark) {
             assert cpMark != null;
