@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 
@@ -87,6 +88,8 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                         ", msg=" + ioMsg.message() + ']');
 
                     blockedMsgs.add(new T2<>(node, ioMsg));
+
+                    notifyAll();
 
                     return;
                 }
@@ -198,5 +201,27 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
 
             blockedMsgs.clear();
         }
+    }
+
+    /**
+     * @param cls Class.
+     * @param node Node.
+     */
+    public synchronized void waitBlockedMessages(Class cls, @Nullable ClusterNode node) throws InterruptedException {
+        while(!findMessage(cls, node))
+            wait();
+    }
+
+    /**
+     * @param cls Class.
+     * @param node Node.
+     */
+    private boolean findMessage(Class cls, @Nullable ClusterNode node) {
+        for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+            if (cls.isInstance(msg.get2()) && (node == null || msg.get1().equals(node)))
+                return true;
+        }
+
+        return false;
     }
 }
