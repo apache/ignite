@@ -244,7 +244,7 @@ public abstract class PageHandler<X, R> {
     public static <X, R> R writePage(
         PageMemory pageMem,
         int cacheId,
-        long pageId,
+        final long pageId,
         PageLockListener lsnr,
         PageHandler<X, R> h,
         PageIO init,

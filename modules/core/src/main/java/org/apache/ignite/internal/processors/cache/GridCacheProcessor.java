@@ -1942,15 +1942,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
 
-            if (proxy != null) {
-                if (stop){
-                    if (restart)
-                        proxy.restart();
+        if (proxy != null) {
+            if (stop) {
+                if (restart)
+                    proxy.restart();
 
-                    proxy.gate().stopped();
-                }
-                else
-                    proxy.closeProxy();
+                proxy.gate().stopped();
+            }
+            else
+                proxy.closeProxy();
 
         }
     }
@@ -2007,11 +2007,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     void initCacheProxies(
         AffinityTopologyVersion startTopVer, @Nullable
         Throwable err) {
-    for (GridCacheAdapter<?, ?> cache : caches.values()) {
-        GridCacheContext<?, ?> cacheCtx = cache.context();
+        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+            GridCacheContext<?, ?> cacheCtx = cache.context();
 
-            if (cacheCtx.startTopologyVersion().equals(startTopVer) && !jCacheProxies.containsKey(cacheCtx.name())) {
-                jCacheProxies.putIfAbsent(cacheCtx.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
+            if (cacheCtx.startTopologyVersion().equals(startTopVer) ) {
+                if (!jCacheProxies.containsKey(cacheCtx.name()))
+                    jCacheProxies.putIfAbsent(cacheCtx.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
 
                 if (cacheCtx.preloader() != null)
                     cacheCtx.preloader().onInitialExchangeComplete(err);
