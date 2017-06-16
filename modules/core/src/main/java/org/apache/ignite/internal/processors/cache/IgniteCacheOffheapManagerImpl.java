@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -1081,14 +1082,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
-            CacheObjectContext coCtx = cctx.cacheObjectContext();
-
-            int oldLen = oldRow.key().valueBytesLength(coCtx) + oldRow.value().valueBytesLength(coCtx);
+            int oldLen = FreeListImpl.getRowSize(oldRow);
 
             if (oldLen > updateValSizeThreshold)
                 return false;
 
-            int newLen = dataRow.key().valueBytesLength(coCtx) + dataRow.value().valueBytesLength(coCtx);
+            int newLen = FreeListImpl.getRowSize(dataRow);
 
             return oldLen == newLen;
         }

@@ -28,6 +28,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmen
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
@@ -580,9 +582,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @return Entry size on page.
      * @throws IgniteCheckedException If failed.
      */
-    private static int getRowSize(CacheDataRow row) throws IgniteCheckedException {
-        int keyLen = row.key().valueBytesLength(null);
-        int valLen = row.value().valueBytesLength(null);
+    public static int getRowSize(CacheDataRow row) throws IgniteCheckedException {
+        KeyCacheObject key = row.key();
+        CacheObject val = row.value();
+
+        int keyLen = key.valueBytesLength(null);
+        int valLen = val.valueBytesLength(null);
 
         return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (row.cacheId() == 0 ? 0 : 4);
     }
