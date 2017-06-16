@@ -229,7 +229,7 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     *
+     * Clear map of currently running queries to avoid re-use of their results.
      */
     public void clearRunningQueriesState() {
         futs.set(null);
@@ -623,7 +623,7 @@ public class GridMapQueryExecutor {
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        QueryKey key = new QueryKey(qry.query(), qry.parameters(params), distributedJoinMode,
+                        QueryKey key = new QueryKey(qry.query(), segmentId, qry.parameters(params), distributedJoinMode,
                             enforceJoinOrder, parts);
 
                         rs = runQuery(key, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
@@ -1345,6 +1345,9 @@ public class GridMapQueryExecutor {
         /** Query string. */
         private final String qry;
 
+        /** Segment id. */
+        private final int segment;
+
         /** Query parameters. */
         private final Object[] params;
 
@@ -1360,14 +1363,16 @@ public class GridMapQueryExecutor {
         /**
          * Constructor.
          * @param qry Query string.
+         * @param segment Segment id.
          * @param params Query parameters.
          * @param joinMode Distributed join mode.
          * @param enforceJoinOrder Enforce join order flag.
          * @param parts Partitions to run query on.
          */
-        private QueryKey(String qry, Object[] params, DistributedJoinMode joinMode, boolean enforceJoinOrder,
-            int[] parts) {
+        private QueryKey(String qry, int segment, Object[] params, DistributedJoinMode joinMode, boolean enforceJoinOrder,
+                         int[] parts) {
             this.qry = qry;
+            this.segment = segment;
             this.params = params;
             this.joinMode = joinMode;
             this.enforceJoinOrder = enforceJoinOrder;
@@ -1381,18 +1386,20 @@ public class GridMapQueryExecutor {
 
             QueryKey qryKey = (QueryKey) o;
 
-            return enforceJoinOrder == qryKey.enforceJoinOrder && qry.equals(qryKey.qry) &&
-                Arrays.equals(params, qryKey.params) && joinMode == qryKey.joinMode &&
+            return (segment == qryKey.segment) && (enforceJoinOrder == qryKey.enforceJoinOrder) &&
+                F.eq(qry, qryKey.qry) && Arrays.equals(params, qryKey.params) && joinMode == qryKey.joinMode &&
                 Arrays.equals(parts, qryKey.parts);
+
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int res = qry.hashCode();
+            res = 31 * res + segment;
             res = 31 * res + Arrays.hashCode(params);
             res = 31 * res + joinMode.hashCode();
             res = 31 * res + (enforceJoinOrder ? 1 : 0);
-            return  31 * res + Arrays.hashCode(parts);
+            return 31 * res + Arrays.hashCode(parts);
         }
     }
 

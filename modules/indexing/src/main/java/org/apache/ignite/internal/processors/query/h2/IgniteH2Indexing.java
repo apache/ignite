@@ -654,12 +654,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
+        mapQryExec.clearRunningQueriesState();
+
         tbl.tbl.update(k, partId, v, ver, expirationTime, false, link);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
-
-        mapQryExec.clearRunningQueriesState();
     }
 
     /**
@@ -699,11 +699,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return;
 
+        mapQryExec.clearRunningQueriesState();
+
         if (tbl.tbl.update(key, partId, val, ver, 0, true, 0)) {
             if (tbl.luceneIdx != null)
                 tbl.luceneIdx.remove(key);
-
-            mapQryExec.clearRunningQueriesState();
         }
     }
 
