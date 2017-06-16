@@ -145,8 +145,8 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
      * @return actual local cache size
      * @throws IgniteInterruptedCheckedException
      */
-    private int testLocalCacheSize(IgniteEx ignite, Integer expFrom, Integer expTo) throws IgniteInterruptedCheckedException {
-        IgniteCache cache = ignite.cache(REBALANCE_TEST_CACHE_NAME);
+    private int testLocalCacheSize(IgniteEx ignite, final Integer expFrom, final Integer expTo) throws IgniteInterruptedCheckedException {
+        final IgniteCache cache = ignite.cache(REBALANCE_TEST_CACHE_NAME);
 
         boolean isOk = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
