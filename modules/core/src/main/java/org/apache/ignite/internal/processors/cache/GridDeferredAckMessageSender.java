@@ -173,7 +173,8 @@ public abstract class GridDeferredAckMessageSender<T> {
          * @return {@code True} if request was handled, {@code false} if this buffer is filled and cannot be used.
          */
         public boolean add(T ver) {
-            readLock().lock();
+            if(!readLock().tryLock())
+                return false; // Here, writeLock is help by another thread and guard is already true.
 
             boolean snd = false;
 
