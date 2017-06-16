@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
@@ -183,6 +184,8 @@ public class GridMapQueryExecutor {
                 if (!busyLock.enterBusy())
                     return;
 
+                log.error("ENTERED MAP BUSY");
+
                 try {
                     if (msg instanceof GridCacheQueryMarshallable)
                         ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
@@ -191,6 +194,8 @@ public class GridMapQueryExecutor {
                 }
                 finally {
                     busyLock.leaveBusy();
+
+                    log.error("EXITED MAP BUSY");
                 }
             }
         });
@@ -1223,6 +1228,9 @@ public class GridMapQueryExecutor {
         }
     }
 
+
+    public AtomicInteger roots = new AtomicInteger();
+
     /**
      * Execute query specified by {@code key}.
      * @param key Query key.
@@ -1285,6 +1293,7 @@ public class GridMapQueryExecutor {
                     futs.remove(key);
 
                 res = new ResultSetWrapper(rs);
+                roots.incrementAndGet();
 
                 if (!res.tryTake())
                     throw new IllegalStateException();
@@ -1455,6 +1464,8 @@ public class GridMapQueryExecutor {
             checkState();
 
             if (--cnt == 0) {
+                roots.getAndDecrement();
+
                 closed = true;
 
                 U.close(rs, log);

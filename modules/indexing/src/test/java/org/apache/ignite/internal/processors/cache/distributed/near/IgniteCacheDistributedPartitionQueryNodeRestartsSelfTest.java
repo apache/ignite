@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 
@@ -78,6 +78,8 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
                         restartStats.incrementAndGet(grid);
 
                         try {
+                            IgniteEx ggrid = grid(grid);
+
                             stopGrid(grid);
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
