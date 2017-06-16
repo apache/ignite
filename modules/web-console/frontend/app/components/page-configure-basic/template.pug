@@ -45,7 +45,7 @@ form(novalidate name=form)
                 | You can create a new one on this tab or #[a(ui-sref='^.advanced.clusters') edit existing ones].
 
     .settings-row
-        +ignite-form-field-dropdown('Cluster:', '$ctrl.clusterID', '"clusters"', false, true, false, 'Select a cluster', '', '$ctrl.clustersMenu')(
+        +ignite-form-field-dropdown('Cluster:', '$ctrl.clusterID', '"clusters"', false, true, false, 'Select a cluster', '', '$ctrl.clustersMenu', 'Add new cluster or select existing one.')(
             bs-options='cluster._id as cluster.name for cluster in $ctrl.clustersMenu'
         )
     .settings-row

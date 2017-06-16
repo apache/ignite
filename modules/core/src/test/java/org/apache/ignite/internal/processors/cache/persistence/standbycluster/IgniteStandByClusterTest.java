@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -103,8 +104,10 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         Map<String, GridCacheAdapter<?, ?>> caches = U.field(ig3.context().cache(), "caches");
 
-        // Only system caches and cache0
-        assertTrue(caches.size() == 3);
+        // Only system cache and cache0
+        assertTrue(caches.size() == 2);
+        assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
+        assertTrue(caches.containsKey(cacheName0));
 
         assertNull(caches.get(cacheName));
 
@@ -157,11 +160,11 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
             Map<String, DynamicCacheDescriptor> desc = U.field(
                 U.field(ig.context().cache(), "cachesInfo"), "registeredCaches");
 
-            assertEquals(5, desc.size());
+            assertEquals(4, desc.size());
 
             Map<String, GridCacheAdapter<?, ?>> caches = U.field(ig.context().cache(), "caches");
 
-            assertEquals(4, caches.keySet().size());
+            assertEquals(3, caches.keySet().size());
         }
 
         Map<String, GridCacheAdapter<?, ?>> caches1 = U.field(ig1.context().cache(), "caches");

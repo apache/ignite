@@ -113,7 +113,11 @@ export default class PageConfigureBasic {
     }
 
     setCluster(_id) {
-        this.ConfigureState.dispatchAction({type: SET_CLUSTER, _id});
+        this.ConfigureState.dispatchAction(
+            isNewItem({_id})
+            ? {type: SET_CLUSTER, _id, cluster: this.clusters.getBlankCluster()}
+            : {type: SET_CLUSTER, _id}
+        );
     }
 
     addCache() {
