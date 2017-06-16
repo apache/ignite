@@ -936,7 +936,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             }
         }, 4);
 
-        Thread.sleep(120000);
+        Thread.sleep(30000);
 
         System.out.println("Iterations done: " + cnt);
 
