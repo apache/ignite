@@ -39,11 +39,11 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
         suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
-        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
         suite.addTestSuite(IgnitePdsPageEvictionTest.class);
+        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
         suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
-
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
+
         suite.addTestSuite(IgniteWalRecoveryTest.class);
         suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
         suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);

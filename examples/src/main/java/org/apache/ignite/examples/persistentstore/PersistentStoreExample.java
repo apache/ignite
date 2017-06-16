@@ -55,6 +55,10 @@ public class PersistentStoreExample {
 
         try (Ignite ig = Ignition.start("examples/config/persistentstore/example-persistent-store.xml")) {
 
+            // Activate the cluster. Required to do if the persistent store is enabled because you might need
+            // to wait while all the nodes, that store a subset of data on disk, join the cluster.
+            ig.active(true);
+
             IgniteCache<Long, Organization> cache = ig.cache("organization");
 
             if (UPDATE) {

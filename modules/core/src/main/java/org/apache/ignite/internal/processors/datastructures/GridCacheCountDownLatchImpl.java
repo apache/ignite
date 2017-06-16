@@ -84,7 +84,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     private IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheCountDownLatchValue> ctx;
 
     /** Initial count. */
     private int initCnt;
@@ -119,27 +119,24 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
      * @param autoDel Auto delete flag.
      * @param key Latch key.
      * @param latchView Latch projection.
-     * @param ctx Cache context.
      */
     public GridCacheCountDownLatchImpl(String name,
         int initCnt,
         boolean autoDel,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView,
-        GridCacheContext ctx)
+        IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView)
     {
         assert name != null;
         assert initCnt >= 0;
         assert key != null;
         assert latchView != null;
-        assert ctx != null;
 
         this.name = name;
         this.initCnt = initCnt;
         this.autoDel = autoDel;
         this.key = key;
         this.latchView = latchView;
-        this.ctx = ctx;
+        this.ctx = latchView.context();
 
         log = ctx.logger(getClass());
     }
@@ -328,7 +325,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     @Override public void close() {
         if (!rmvd) {
             try {
-                ctx.kernalContext().dataStructures().removeCountDownLatch(name);
+                ctx.kernalContext().dataStructures().removeCountDownLatch(name, ctx.group().name());
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -338,8 +335,8 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.latchView = kctx.cache().atomicsCache();
-        this.ctx = latchView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>context().cacheContext(ctx.cacheId());
+        this.latchView = ctx.cache();
     }
 
     /** {@inheritDoc} */
@@ -372,7 +369,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().countDownLatch(t.get2(), 0, false, false);
+            return t.get1().dataStructures().countDownLatch(t.get2(), null, 0, false, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

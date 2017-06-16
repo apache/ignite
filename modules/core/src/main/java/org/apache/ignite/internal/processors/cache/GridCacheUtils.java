@@ -145,9 +145,6 @@ public class GridCacheUtils {
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
-    /** Atomics system cache name. */
-    public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
-
     /** */
     public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
 
@@ -1093,18 +1090,10 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is atomics system cache.
-     */
-    public static boolean isAtomicsCache(String cacheName) {
-        return ATOMICS_CACHE_NAME.equals(cacheName);
-    }
-
-    /**
-     * @param cacheName Cache name.
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) || isAtomicsCache(cacheName);
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
     }
 
     /**

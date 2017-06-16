@@ -330,6 +330,23 @@ const DFLT_CLUSTER = {
         totalCount: 0
     },
     longQueryWarningTimeout: 3000,
+    persistenceStoreConfiguration: {
+        metricsEnabled: false,
+        alwaysWriteFullPages: false,
+        checkpointingFrequency: 180000,
+        checkpointingPageBufferSize: 268435456,
+        checkpointingThreads: 1,
+        walSegments: 10,
+        walSegmentSize: 67108864,
+        walHistorySize: 20,
+        walFlushFrequency: 2000,
+        walFsyncDelay: 1,
+        walRecordIteratorBufferSize: 67108864,
+        lockWaitTime: 10000,
+        rateTimeInterval: 60000,
+        tlbSize: 131072,
+        subIntervals: 5
+    },
     sqlConnectorConfiguration: {
         port: 10800,
         portRange: 100,
@@ -337,18 +354,6 @@ const DFLT_CLUSTER = {
         socketReceiveBufferSize: 0,
         tcpNoDelay: true,
         maxOpenCursorsPerConnection: 128
-    },
-    persistenceStoreConfiguration: {
-        checkpointingFrequency: 180000,
-        lockWaitTime: 10000,
-        checkpointingPageBufferSize: 268435456,
-        checkpointingThreads: 1,
-        walHistorySize: 20,
-        walSegments: 10,
-        walSegmentSize: 67108864,
-        subIntervals: 5,
-        rateTimeInterval: 60000,
-        metricsEnabled: false
     }
 };
 

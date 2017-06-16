@@ -80,6 +80,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -3464,12 +3465,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        return atomicSequence(name, null, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().sequence(name, initVal, create);
+            return ctx.dataStructures().sequence(name, cfg, initVal, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3481,12 +3488,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        return atomicLong(name, null, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().atomicLong(name, initVal, create);
+            return ctx.dataStructures().atomicLong(name, cfg, initVal, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3502,12 +3515,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable T initVal,
         boolean create
     ) {
+        return atomicReference(name, null, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, boolean create) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().atomicReference(name, initVal, create);
+            return ctx.dataStructures().atomicReference(name, cfg, initVal, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3522,12 +3541,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create) {
+        return atomicStamped(name, null, initVal, initStamp, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().atomicStamped(name, initVal, initStamp, create);
+            return ctx.dataStructures().atomicStamped(name, cfg, initVal, initStamp, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3547,7 +3572,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().countDownLatch(name, cnt, autoDel, create);
+            return ctx.dataStructures().countDownLatch(name, null, cnt, autoDel, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3569,7 +3594,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().semaphore(name, cnt, failoverSafe, create);
+            return ctx.dataStructures().semaphore(name, null, cnt, failoverSafe, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3591,7 +3616,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().reentrantLock(name, failoverSafe, fair, create);
+            return ctx.dataStructures().reentrantLock(name, null, failoverSafe, fair, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3610,7 +3635,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().queue(name, cap, cfg);
+            return ctx.dataStructures().queue(name, null, cap, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3628,7 +3653,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.dataStructures().set(name, cfg);
+            return ctx.dataStructures().set(name, null, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3663,7 +3688,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private void checkClusterState() throws IgniteException {
         if (!ctx.state().active())
-            throw new IgniteException("can not perform operation, because cluster inactive");
+            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                "join the cluster. To activate the cluster call Ignite.activate(true).");
     }
 
     /**

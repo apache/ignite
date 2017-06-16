@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.lang.Thread.sleep;
@@ -40,6 +41,12 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private Thread watcherThread;
 
+    /** */
+    private static final int RATE_TIME_INTERVAL_1 = 5_000;
+
+    /** */
+    private static final int RATE_TIME_INTERVAL_2 = 10_000;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration();
@@ -55,12 +62,14 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateSingleThreaded() throws Exception {
         threadsCnt = 1;
-        memMetrics.rateTimeInterval(10_000);
+        memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_2);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
         startAllocationThreads(startLatch, 340, 50);
         AllocationRateWatcher watcher = startWatcherThread(startLatch, 20);
+
+        alignWithTimeInterval(RATE_TIME_INTERVAL_2, 5);
 
         startLatch.countDown();
 
@@ -77,7 +86,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateMultiThreaded() throws Exception {
         threadsCnt = 4;
-        memMetrics.rateTimeInterval(5_000);
+        memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -85,13 +94,13 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
 
         AllocationRateWatcher watcher = startWatcherThread(startLatch, 20);
 
+        alignWithTimeInterval(RATE_TIME_INTERVAL_1, 5);
+
         startLatch.countDown();
 
         joinAllocationThreads();
 
-        assertTrue(watcher.rateDropsCntr > 3);
-
-        assertTrue(watcher.rateDropsCntr < 6);
+        assertTrue("4 or 5 rate drops must be observed: " + watcher.rateDropsCntr, watcher.rateDropsCntr == 4 || watcher.rateDropsCntr == 5);
 
         sleep(3);
 
@@ -114,13 +123,15 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateTimeIntervalConcurrentChange() throws Exception {
         threadsCnt = 5;
-        memMetrics.rateTimeInterval(5_000);
+        memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
         startAllocationThreads(startLatch, 10_000, 1);
 
         AllocationRateWatcher watcher = startWatcherThread(startLatch, 20);
+
+        alignWithTimeInterval(RATE_TIME_INTERVAL_1, 5);
 
         startLatch.countDown();
 
@@ -141,13 +152,15 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateSubintervalsConcurrentChange() throws Exception {
         threadsCnt = 5;
-        memMetrics.rateTimeInterval(5_000);
+        memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
         startAllocationThreads(startLatch, 10_000, 1);
 
         AllocationRateWatcher watcher = startWatcherThread(startLatch, 20);
+
+        alignWithTimeInterval(RATE_TIME_INTERVAL_1, 5);
 
         startLatch.countDown();
 
@@ -160,6 +173,21 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
         joinAllThreads();
 
         assertTrue(watcher.rateDropsCntr > 4);
+    }
+
+    /**
+     * As rate metrics {@link HitRateMetrics implementation} is tied to absolute time ticks
+     * (not related to the first hit) all tests need to align start time with this sequence of ticks.
+     *
+     * @param rateTimeInterval Rate time interval.
+     * @param size Size.
+     */
+    private void alignWithTimeInterval(int rateTimeInterval, int size) throws InterruptedException {
+        int subIntervalLength = rateTimeInterval / size;
+
+        long subIntCurTime = System.currentTimeMillis() % subIntervalLength;
+
+        Thread.sleep(subIntervalLength - subIntCurTime);
     }
 
     /**

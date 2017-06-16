@@ -94,6 +94,9 @@ class ClusterCachesInfo {
     /** */
     private Map<UUID, CacheClientReconnectDiscoveryData> clientReconnectReqs;
 
+    /** */
+    private volatile Exception onJoinCacheException;
+
     /**
      * @param ctx Context.
      */
@@ -109,6 +112,14 @@ class ClusterCachesInfo {
      */
     void onStart(CacheJoinNodeDiscoveryData joinDiscoData) throws IgniteCheckedException {
         this.joinDiscoData = joinDiscoData;
+    }
+
+    /**
+     *
+     * @return Exception if cache has conflict.
+     */
+    Exception onJoinCacheException(){
+        return onJoinCacheException;
     }
 
     /**
@@ -698,24 +709,28 @@ class ClusterCachesInfo {
     }
 
     public void addJoinInfo() {
-        Map<String, CacheConfiguration> grpCfgs = new HashMap<>();
+        try {
+            Map<String, CacheConfiguration> grpCfgs = new HashMap<>();
 
-        for (CacheJoinNodeDiscoveryData.CacheInfo info : joinDiscoData.caches().values()) {
-            if (info.cacheData().config().getGroupName() == null)
-                continue;
+            for (CacheJoinNodeDiscoveryData.CacheInfo info : joinDiscoData.caches().values()) {
+                if (info.cacheData().config().getGroupName() == null)
+                    continue;
 
-            CacheConfiguration ccfg = grpCfgs.get(info.cacheData().config().getGroupName());
+                CacheConfiguration ccfg = grpCfgs.get(info.cacheData().config().getGroupName());
 
-            if (ccfg == null)
-                grpCfgs.put(info.cacheData().config().getGroupName(), info.cacheData().config());
-            /*else
-                validateCacheGroupConfiguration(ccfg, info.cacheData().config());*/
+                if (ccfg == null)
+                    grpCfgs.put(info.cacheData().config().getGroupName(), info.cacheData().config());
+                else
+                    validateCacheGroupConfiguration(ccfg, info.cacheData().config());
+            }
+
+            String conflictErr = processJoiningNode(joinDiscoData, ctx.localNodeId(), true);
+
+            if (conflictErr != null)
+                onJoinCacheException = new IgniteCheckedException("Failed to start configured cache. " + conflictErr);
+        }catch (IgniteCheckedException e){
+            onJoinCacheException = e;
         }
-
-        String conflictErr = processJoiningNode(joinDiscoData, ctx.localNodeId(), true);
-
-       /* if (conflictErr != null)
-            throw new IgniteCheckedException("Failed to start configured cache. " + conflictErr);*/
     }
 
     /**
@@ -1432,7 +1447,7 @@ class ClusterCachesInfo {
      * @return {@code True} if cache with given name if system cache which should always survive client node disconnect.
      */
     private boolean surviveReconnect(String cacheName) {
-        return CU.isUtilityCache(cacheName) || CU.isAtomicsCache(cacheName);
+        return CU.isUtilityCache(cacheName);
     }
 
     /**

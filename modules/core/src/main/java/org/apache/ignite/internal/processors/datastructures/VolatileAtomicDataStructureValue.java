@@ -13,32 +13,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
-
-import java.io.Serializable;
-
 /**
- * Internal key for data structures processor.
+ *
  */
-public class DataStructuresCacheKey implements GridCacheInternal, Serializable {
+public abstract class VolatileAtomicDataStructureValue extends AtomicDataStructureValue {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return getClass().getName().hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        return obj == this || (obj instanceof DataStructuresCacheKey);
-    }
-
-    @Override public String toString() {
-        return "DataStructuresCacheKey []";
-    }
+    /**
+     * @return Grid start time.
+     */
+    public abstract long gridStartTime();
 }
