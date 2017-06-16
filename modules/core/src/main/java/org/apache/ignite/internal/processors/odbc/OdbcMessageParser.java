@@ -29,6 +29,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 
 import java.util.Collection;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * ODBC message parser.
@@ -99,19 +100,33 @@ public class OdbcMessageParser {
         }
 
         OdbcRequest res;
-
+        
         switch (cmd) {
             case OdbcRequest.EXECUTE_SQL_QUERY: {
                 String cache = reader.readString();
                 String sql = reader.readString();
-                int argsNum = reader.readInt();
+                int paramNum = reader.readInt();
 
-                Object[] params = new Object[argsNum];
-
-                for (int i = 0; i < argsNum; ++i)
-                    params[i] = reader.readObjectDetached();
+                Object[] params = readParameterRow(reader, paramNum);
 
                 res = new OdbcQueryExecuteRequest(cache, sql, params);
+
+                break;
+            }
+
+            case OdbcRequest.QRY_EXEC_BATCH: {
+                String schema = reader.readString();
+                String sql = reader.readString();
+                int paramRowLen = reader.readInt();
+                int rowNum = reader.readInt();
+                boolean last = reader.readBoolean();
+
+                Object[][] params = new Object[rowNum][];
+
+                for (int i = 0; i < rowNum; ++i)
+                    params[i] = readParameterRow(reader, paramRowLen);
+
+                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params);
 
                 break;
             }
@@ -171,6 +186,21 @@ public class OdbcMessageParser {
     }
 
     /**
+     * Read row of parameters using reader.
+     * @param reader reader
+     * @param paramNum Number of parameters in a row
+     * @return Parameters array.
+     */
+    @NotNull private static Object[] readParameterRow(BinaryReaderExImpl reader, int paramNum) {
+        Object[] params = new Object[paramNum];
+
+        for (int i = 0; i < paramNum; ++i)
+            params[i] = reader.readObjectDetached();
+
+        return params;
+    }
+
+    /**
      * Encode OdbcResponse to byte array.
      *
      * @param msg Message.
@@ -218,9 +248,9 @@ public class OdbcMessageParser {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
 
             if (log.isDebugEnabled())
-                log.debug("Resulting query ID: " + res.getQueryId());
+                log.debug("Resulting query ID: " + res.queryId());
 
-            writer.writeLong(res.getQueryId());
+            writer.writeLong(res.queryId());
 
             Collection<OdbcColumnMeta> metas = res.getColumnsMetadata();
 
@@ -230,6 +260,17 @@ public class OdbcMessageParser {
 
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
+        }
+        else if (res0 instanceof OdbcQueryExecuteBatchResult) {
+            OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
+
+            writer.writeBoolean(res.errorMessage() == null);
+            writer.writeLong(res.rowsAffected());
+
+            if (res.errorMessage() != null) {
+                writer.writeLong(res.errorSetIdx());
+                writer.writeString(res.errorMessage());
+            }
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
