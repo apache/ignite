@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 
 /**
  * Utility to read and write {@link GridCacheVersion} instances.
@@ -30,13 +31,16 @@ public class CacheVersionIO {
     private static final byte NULL_PROTO_VER = 0;
 
     /** */
-    private static final byte MAX_PROTO_VER = 1;
+    private static final byte MAX_PROTO_VER = 2;
 
     /** */
     private static final int NULL_SIZE = 1;
 
     /** Serialized size in bytes. */
     private static final int SIZE_V1 = 17;
+
+    /** Serialized size in bytes. */
+    private static final int SIZE_V2 = 33;
 
     /**
      * @param ver Version.
@@ -51,7 +55,7 @@ public class CacheVersionIO {
             throw new IllegalStateException("Cache version is null");
         }
 
-        return SIZE_V1;
+        return ver instanceof GridCacheVersionEx ? SIZE_V2 : SIZE_V1;
     }
 
     /**
@@ -65,6 +69,18 @@ public class CacheVersionIO {
                 buf.put(NULL_PROTO_VER);
             else
                 throw new IllegalStateException("Cache version is null");
+        }
+        else if (ver instanceof GridCacheVersionEx) {
+            byte protoVer = 2; // Version of serialization protocol.
+
+            buf.put(protoVer);
+            buf.putInt(ver.topologyVersion());
+            buf.putInt(ver.nodeOrderAndDrIdRaw());
+            buf.putLong(ver.order());
+
+            buf.putInt(ver.conflictVersion().topologyVersion());
+            buf.putInt(ver.conflictVersion().nodeOrderAndDrIdRaw());
+            buf.putLong(ver.conflictVersion().order());
         }
         else {
             byte protoVer = 1; // Version of serialization protocol.
@@ -87,6 +103,18 @@ public class CacheVersionIO {
                 PageUtils.putByte(addr, 0, NULL_PROTO_VER);
             else
                 throw new IllegalStateException("Cache version is null");
+        }
+        else if (ver instanceof GridCacheVersionEx) {
+            byte protoVer = 2; // Version of serialization protocol.
+
+            PageUtils.putByte(addr, 0, protoVer);
+            PageUtils.putInt(addr, 1, ver.topologyVersion());
+            PageUtils.putInt(addr, 5, ver.nodeOrderAndDrIdRaw());
+            PageUtils.putLong(addr, 9, ver.order());
+
+            PageUtils.putInt(addr, 17, ver.conflictVersion().topologyVersion());
+            PageUtils.putInt(addr, 21, ver.conflictVersion().nodeOrderAndDrIdRaw());
+            PageUtils.putLong(addr, 25, ver.conflictVersion().order());
         }
         else {
             byte protoVer = 1; // Version of serialization protocol.
@@ -134,6 +162,9 @@ public class CacheVersionIO {
             case 1:
                 return SIZE_V1;
 
+            case 2:
+                return SIZE_V2;
+
             default:
                 throw new IllegalStateException();
         }
@@ -151,14 +182,34 @@ public class CacheVersionIO {
     public static GridCacheVersion read(ByteBuffer buf, boolean allowNull) throws IgniteCheckedException {
         byte protoVer = checkProtocolVersion(buf.get(), allowNull);
 
-        if (protoVer == NULL_PROTO_VER)
-            return null;
+        switch (protoVer) {
+            case NULL_PROTO_VER:
+                return null;
 
-        int topVer = buf.getInt();
-        int nodeOrderDrId = buf.getInt();
-        long order = buf.getLong();
+            case 1: {
+                int topVer = buf.getInt();
+                int nodeOrderDrId = buf.getInt();
+                long order = buf.getLong();
 
-        return new GridCacheVersion(topVer, nodeOrderDrId, order);
+                return new GridCacheVersion(topVer, nodeOrderDrId, order);
+            }
+
+            case 2: {
+                int topVer = buf.getInt();
+                int nodeOrderDrId = buf.getInt();
+                long order = buf.getLong();
+
+                int conflictTop = buf.getInt();
+                int conflictNodeOrderDrId = buf.getInt();
+                long conflictOrder = buf.getLong();
+
+                return new GridCacheVersionEx(topVer, nodeOrderDrId, order,
+                    new GridCacheVersion(conflictTop, conflictNodeOrderDrId, conflictOrder));
+            }
+
+            default:
+                throw new IllegalStateException();
+        }
     }
 
     /**
@@ -172,13 +223,33 @@ public class CacheVersionIO {
     public static GridCacheVersion read(long pageAddr, boolean allowNull) throws IgniteCheckedException {
         byte protoVer = checkProtocolVersion(PageUtils.getByte(pageAddr, 0), allowNull);
 
-        if (protoVer == NULL_PROTO_VER)
-            return null;
+        switch (protoVer) {
+            case NULL_PROTO_VER:
+                return null;
 
-        int topVer = PageUtils.getInt(pageAddr, 1);
-        int nodeOrderDrId = PageUtils.getInt(pageAddr, 5);
-        long order = PageUtils.getLong(pageAddr, 9);
+            case 1: {
+                int topVer = PageUtils.getInt(pageAddr, 1);
+                int nodeOrderDrId = PageUtils.getInt(pageAddr, 5);
+                long order = PageUtils.getLong(pageAddr, 9);
 
-        return new GridCacheVersion(topVer, nodeOrderDrId, order);
+                return new GridCacheVersion(topVer, nodeOrderDrId, order);
+            }
+
+            case 2: {
+                int topVer = PageUtils.getInt(pageAddr, 1);
+                int nodeOrderDrId = PageUtils.getInt(pageAddr, 5);
+                long order = PageUtils.getLong(pageAddr, 9);
+
+                int conflictTop = PageUtils.getInt(pageAddr, 17);
+                int conflictNodeOrderDrId = PageUtils.getInt(pageAddr, 21);
+                long conflictOrder = PageUtils.getLong(pageAddr, 25);
+
+                return new GridCacheVersionEx(topVer, nodeOrderDrId, order,
+                    new GridCacheVersion(conflictTop, conflictNodeOrderDrId, conflictOrder));
+            }
+
+            default:
+                throw new IllegalStateException();
+        }
     }
 }

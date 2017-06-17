@@ -894,9 +894,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
 
      */
-    private void startLocalSnasphotOperation() {StartSnapshotOperationAckDiscoveryMessage snapOpMsg= getSnapshotOperationMessage();
+    private void startLocalSnasphotOperation() {
+        StartSnapshotOperationAckDiscoveryMessage snapOpMsg= getSnapshotOperationMessage();
+
         if (snapOpMsg != null) {
             SnapshotOperation op = snapOpMsg.snapshotOperation();
+
+            assert snapOpMsg.needExchange();
 
             try {
                 IgniteInternalFuture fut = cctx.snapshot()
@@ -1335,6 +1339,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage)
                 return  (StartSnapshotOperationAckDiscoveryMessage)customMsg;
         }
+
         return null;
     }
 
