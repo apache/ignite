@@ -1281,7 +1281,9 @@ public class GridMapQueryExecutor {
 
                     assert rs instanceof JdbcResultSet : rs.getClass();
 
-                    if (this.futs.get() == futs)
+                    // No need to worry about removing this key from the map if we're not the one who put it there
+                    // or if our map is stale.
+                    if (res == null && this.futs.get() == futs)
                         futs.remove(key);
 
                     res = new ResultSetWrapper(rs);
