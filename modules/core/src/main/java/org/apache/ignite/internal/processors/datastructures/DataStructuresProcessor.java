@@ -505,7 +505,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache0 = ctx.cache().cache(cacheName);
 
         if (cache0 == null) {
-            if (!create)
+            if (!create && ctx.cache().cacheDescriptor(cacheName) == null)
                 return null;
 
             ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName),
