@@ -704,7 +704,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (!cctx.localNode().isClient()) {
                     startCache = cctx.cacheContext(cacheDesc.cacheId()) == null &&
                             CU.affinityNode(cctx.localNode(), cacheDesc.groupDescriptor().config().getNodeFilter());
-                } else {
+                }
+                else {
                     // If cache on client node has proxy then start it
                     startCache = cctx.cache().jcacheProxy(req.cacheName()) != null;
                 }
