@@ -758,6 +758,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
+        for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop())
+            cctx.exchange().clearClientTopology(grpDesc.groupId());
+
         Set<Integer> stoppedGrps = null;
 
         if (crd && lateAffAssign) {
