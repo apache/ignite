@@ -701,8 +701,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 nearCfg = req.nearCacheConfiguration();
             }
             else {
-                startCache = cctx.cacheContext(cacheDesc.cacheId()) == null &&
-                    CU.affinityNode(cctx.localNode(), cacheDesc.groupDescriptor().config().getNodeFilter());
+                if (!cctx.localNode().isClient()) {
+                    startCache = cctx.cacheContext(cacheDesc.cacheId()) == null &&
+                            CU.affinityNode(cctx.localNode(), cacheDesc.groupDescriptor().config().getNodeFilter());
+                } else {
+                    // If cache on client node has proxy then start it
+                    startCache = cctx.cache().jcacheProxy(req.cacheName()) != null;
+                }
             }
 
             try {
