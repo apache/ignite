@@ -270,9 +270,8 @@ public abstract class PageHandler<X, R> {
                     doInitPage(pageMem, cacheId, pageId, page, pageAddr, init, wal);
                     walPlc = FALSE;
                 }
-                else {
+                else
                     init = PageIO.getPageIO(pageAddr);
-                }
 
                 R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg);
 
@@ -336,9 +335,8 @@ public abstract class PageHandler<X, R> {
                 doInitPage(pageMem, cacheId, pageId, page, pageAddr, init, wal);
                 walPlc = FALSE;
             }
-            else {
+            else
                 init = PageIO.getPageIO(pageAddr);
-            }
 
             R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg);
 
@@ -456,12 +454,12 @@ public abstract class PageHandler<X, R> {
 
     /**
      * @param src Source.
-     * @param dst Destination.
      * @param srcOff Source offset in bytes.
+     * @param dst Destination.
      * @param dstOff Destination offset in bytes.
      * @param cnt Bytes count to copy.
      */
-    public static void copyMemory(ByteBuffer src, ByteBuffer dst, long srcOff, long dstOff, long cnt) {
+    public static void copyMemory(ByteBuffer src, long srcOff, ByteBuffer dst, long dstOff, long cnt) {
         byte[] srcArr = src.hasArray() ? src.array() : null;
         byte[] dstArr = dst.hasArray() ? dst.array() : null;
         long srcArrOff = src.hasArray() ? src.arrayOffset() + GridUnsafe.BYTE_ARR_OFF : 0;
@@ -491,12 +489,12 @@ public abstract class PageHandler<X, R> {
 
     /**
      * @param srcAddr Source.
-     * @param dstAddr Destination.
      * @param srcOff Source offset in bytes.
+     * @param dstAddr Destination.
      * @param dstOff Destination offset in bytes.
      * @param cnt Bytes count to copy.
      */
-    public static void copyMemory(long srcAddr, long dstAddr, long srcOff, long dstOff, long cnt) {
+    public static void copyMemory(long srcAddr, long srcOff, long dstAddr, long dstOff, long cnt) {
         GridUnsafe.copyMemory(null, srcAddr + srcOff, null, dstAddr + dstOff, cnt);
     }
 

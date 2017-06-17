@@ -1371,7 +1371,7 @@ public class DataPageIO extends PageIO {
         assert off + step + cnt <= pageSize : "[off=" + off + ", step=" + step + ", cnt=" + cnt +
             ", cap=" + pageSize + ']';
 
-        PageHandler.copyMemory(addr, addr, off, off + step, cnt);
+        PageHandler.copyMemory(addr, off, addr, off + step, cnt);
     }
 
     /**
