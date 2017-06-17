@@ -74,14 +74,24 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = name != null ? name.hashCode() : 0;
+
         result = 31 * result + (grpName != null ? grpName.hashCode() : 0);
+
         return result;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return this == obj || (obj instanceof GridCacheInternalKey && name.equals(((GridCacheInternalKey)obj).name())
-            && grpName.equals(((GridCacheInternalKey)obj).groupName()));
+        if (this == obj)
+            return true;
+
+        if (obj instanceof GridCacheInternalKeyImpl) {
+            GridCacheInternalKeyImpl other = (GridCacheInternalKeyImpl)obj;
+
+            return F.eq(name, other.name) && F.eq(grpName, other.grpName);
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
