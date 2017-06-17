@@ -1292,7 +1292,7 @@ public class GridMapQueryExecutor {
 
                     fut.onDone(res);
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     // All other folks waiting for the same query result must see the same exception.
                     fut.onDone(e);
 
