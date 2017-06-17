@@ -674,6 +674,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                         memPlc.memoryMetrics().getName(), e);
                 }
             }
+
+            memPlcMap.clear();
+
+            memPlcMap = null;
         }
     }
 

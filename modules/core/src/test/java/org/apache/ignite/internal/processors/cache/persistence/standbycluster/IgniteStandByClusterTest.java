@@ -145,7 +145,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         assertTrue(!ig2.active());
         assertTrue(!ig3.active());
 
-        for (IgniteEx ig: Arrays.asList(ig1,ig2,ig3)){
+        for (IgniteEx ig : Arrays.asList(ig1, ig2, ig3)) {
             Map<String, DynamicCacheDescriptor> desc = U.field(U.field(ig.context().cache(), "cachesInfo"), "registeredCaches");
 
             assertEquals(0, desc.size());
@@ -157,7 +157,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         assertTrue(ig2.active());
         assertTrue(ig3.active());
 
-        for (IgniteEx ig: Arrays.asList(ig1,ig2,ig3)){
+        for (IgniteEx ig : Arrays.asList(ig1, ig2, ig3)) {
             Map<String, DynamicCacheDescriptor> desc = U.field(
                 U.field(ig.context().cache(), "cachesInfo"), "registeredCaches");
 
@@ -209,7 +209,39 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         assertEquals("1", cache.get(1));
     }
 
-    private static class NodeFilterIgnoreByName implements IgnitePredicate<ClusterNode>{
+    public void testRestartCluster() throws Exception {
+        IgniteEx ig1 = startGrid(getConfiguration("node1"));
+        IgniteEx ig2 = startGrid(getConfiguration("node2"));
+        IgniteEx ig3 = startGrid(getConfiguration("node3"));
+
+        assertTrue(!ig1.active());
+        assertTrue(!ig2.active());
+        assertTrue(!ig3.active());
+
+        ig2.active(true);
+
+        IgniteCache<Integer, String> cache = ig2.getOrCreateCache("cache");
+
+        for (int i = 0; i < 2048; i++)
+            cache.put(i, String.valueOf(i));
+
+        ig3.active(false);
+
+        stopAllGrids();
+
+        ig1 = startGrid(getConfiguration("node1"));
+        ig2 = startGrid(getConfiguration("node2"));
+        ig3 = startGrid(getConfiguration("node3"));
+
+        ig1.active(true);
+
+        IgniteCache<Integer, String> cache2 = ig1.cache("cache");
+
+        for (int i = 0; i < 2048; i++)
+            assertEquals(String.valueOf(i), cache2.get(i));
+    }
+
+    private static class NodeFilterIgnoreByName implements IgnitePredicate<ClusterNode> {
         private final String name;
 
         private NodeFilterIgnoreByName(String name) {
