@@ -860,7 +860,7 @@ class ClusterCachesInfo {
         // Replace locally registered data with actual data received from cluster.
         registeredCaches.clear();
         registeredCacheGrps.clear();
-        ctx.discovery().onLocalNodeJoin();
+        ctx.discovery().cleanCachesAndGroups();
 
         for (CacheGroupData grpData : cachesData.cacheGroups().values()) {
             CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
