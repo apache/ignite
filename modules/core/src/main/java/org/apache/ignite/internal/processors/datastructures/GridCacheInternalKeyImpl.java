@@ -47,7 +47,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
      * @param name Name of cache data structure.
      * @param grpName Cache group name.
      */
-    public GridCacheInternalKeyImpl(String name, @Nullable String grpName) {
+    public GridCacheInternalKeyImpl(String name, String grpName) {
         assert !F.isEmpty(name) : name;
 
         this.name = name;
