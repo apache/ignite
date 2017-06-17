@@ -914,7 +914,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 HashSet<UUID> affIds = affAssignment.getIds(p);
 
                 for (UUID nodeId : diffIds) {
-                    assert !affIds.contains(nodeId);
+                    if (affIds.contains(nodeId)) {
+                        U.warn(log, "Node from diff " + nodeId + " is affinity node. Skipping it.");
+
+                        continue;
+                    }
 
                     if (hasState(p, nodeId, OWNING, MOVING, RENTING)) {
                         ClusterNode n = ctx.discovery().node(nodeId);
@@ -1836,6 +1840,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private long updateLocal(int p, GridDhtPartitionState state, long updateSeq) {
+        assert lock.isWriteLockedByCurrentThread();
+
         ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         assert oldest != null || ctx.kernalContext().clientNode();
@@ -1908,6 +1914,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     private void removeNode(UUID nodeId) {
         assert nodeId != null;
+        assert lock.isWriteLockedByCurrentThread();
 
         ClusterNode oldest = discoCache.oldestAliveServerNode();
 
