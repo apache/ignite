@@ -1167,6 +1167,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         List<List<ClusterNode>> assign2 = new ArrayList<>(ctx.affinity().assignments(topVer));
         assertEquals(idealAssignment, assign2);
 
+        // TODO stablize test fails.
+
         checkAffinity(3, topVer, true);
     }
 
