@@ -1773,11 +1773,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
                     cctx.kernalContext().state().onFullResponseMessage(changeGlobalStateExceptions);
 
-                if (exchActions != null) {
-                    for (CacheGroupDescriptor desc : exchActions.cacheGroupsToStop())
-                        cctx.exchange().clearClientTopology(desc.groupId());
-                }
-
                 onDone(exchangeId().topologyVersion());
             }
         }
