@@ -674,6 +674,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 sharedCtx.affinity().removeAllCacheInfo();
 
+                ctx.discovery().cleanCachesAndGroups();
+
                 if (!ctx.clientNode()) {
                     sharedCtx.database().onDeActivate(ctx);
 

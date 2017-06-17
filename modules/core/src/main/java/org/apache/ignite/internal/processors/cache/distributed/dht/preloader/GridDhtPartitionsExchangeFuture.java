@@ -717,8 +717,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (exchangeOnChangeGlobalState = stateProc.changeGlobalState(exchActions, topologyVersion())) {
             changeGlobalStateE = stateProc.onChangeGlobalState();
 
-            if (crd && changeGlobalStateE != null)
-                changeGlobalStateExceptions.put(cctx.localNodeId(), changeGlobalStateE);
+            if (changeGlobalStateE != null) {
+                if (crd)
+                    changeGlobalStateExceptions.put(cctx.localNodeId(), changeGlobalStateE);
+
+                return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+            }
         }
 
         assert !exchActions.clientOnlyExchange() : exchActions;
