@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
@@ -624,8 +623,8 @@ public class GridMapQueryExecutor {
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        QueryKey key = new QueryKey(qry.query(), topVer, segmentId, qry.parameters(params), distributedJoinMode,
-                            enforceJoinOrder, partsMap, parts);
+                        QueryKey key = new QueryKey(qry.query(), topVer, segmentId, qry.parameters(params),
+                            distributedJoinMode, enforceJoinOrder, partsMap, parts);
 
                         rs = runQuery(key, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
                     }
@@ -1224,9 +1223,6 @@ public class GridMapQueryExecutor {
         }
     }
 
-
-    public AtomicInteger roots = new AtomicInteger();
-
     /**
      * Execute query specified by {@code key}.
      * @param key Query key.
@@ -1264,37 +1260,44 @@ public class GridMapQueryExecutor {
             if (res == null || !res.tryTake()) {
                 fut = newFut;
 
-                ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, key.qry, F.asList(key.params), true,
-                    timeout, cancel);
+                try {
+                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, key.qry, F.asList(key.params),
+                        true, timeout, cancel);
 
-                if (evt) {
-                    ctx.event().record(new CacheQueryExecutedEvent<>(
-                        node,
-                        "SQL query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SQL.name(),
-                        mainCctx.namex(),
-                        null,
-                        key.qry,
-                        null,
-                        null,
-                        key.params,
-                        node.id(),
-                        null));
+                    if (evt) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            node,
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            mainCctx.namex(),
+                            null,
+                            key.qry,
+                            null,
+                            null,
+                            key.params,
+                            node.id(),
+                            null));
+                    }
+
+                    assert rs instanceof JdbcResultSet : rs.getClass();
+
+                    if (this.futs.get() == futs)
+                        futs.remove(key);
+
+                    res = new ResultSetWrapper(rs);
+
+                    if (!res.tryTake())
+                        throw new IllegalStateException();
+
+                    fut.onDone(res);
                 }
+                catch (Exception e) {
+                    // All other folks waiting for the same query result must see the same exception.
+                    fut.onDone(e);
 
-                assert rs instanceof JdbcResultSet : rs.getClass();
-
-                if (this.futs.get() == futs)
-                    futs.remove(key);
-
-                res = new ResultSetWrapper(rs);
-                roots.incrementAndGet();
-
-                if (!res.tryTake())
-                    throw new IllegalStateException();
-
-                fut.onDone(res);
+                    throw e;
+                }
             }
         }
 
@@ -1350,6 +1353,7 @@ public class GridMapQueryExecutor {
         /** Query string. */
         private final String qry;
 
+        /** Topology version. */
         private final AffinityTopologyVersion topVer;
 
         /** Segment id. */
@@ -1393,35 +1397,29 @@ public class GridMapQueryExecutor {
             this.parts = parts;
         }
 
-        @Override
-        public boolean equals(Object o) {
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            QueryKey queryKey = (QueryKey) o;
+            QueryKey qryKey = (QueryKey) o;
 
-            if (segment != queryKey.segment) return false;
-            if (enforceJoinOrder != queryKey.enforceJoinOrder) return false;
-            if (!qry.equals(queryKey.qry)) return false;
-            if (!topVer.equals(queryKey.topVer)) return false;
-            // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if (!Arrays.equals(params, queryKey.params)) return false;
-            if (joinMode != queryKey.joinMode) return false;
-            return (F.eq(partsMap, queryKey.partsMap)) && Arrays.equals(parts, queryKey.parts);
+            return (segment == qryKey.segment) && (enforceJoinOrder == qryKey.enforceJoinOrder) &&
+            F.eq(qry, qryKey.qry) && F.eq(topVer, qryKey.topVer) && Arrays.equals(params, qryKey.params) &&
+            (joinMode == qryKey.joinMode) && (F.eq(partsMap, qryKey.partsMap)) && Arrays.equals(parts, qryKey.parts);
 
         }
 
-        @Override
-        public int hashCode() {
-            int result = qry.hashCode();
-            result = 31 * result + topVer.hashCode();
-            result = 31 * result + segment;
-            result = 31 * result + Arrays.hashCode(params);
-            result = 31 * result + joinMode.hashCode();
-            result = 31 * result + (enforceJoinOrder ? 1 : 0);
-            result = 31 * result + (partsMap != null ? partsMap.hashCode() : 0);
-            result = 31 * result + Arrays.hashCode(parts);
-            return result;
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = qry.hashCode();
+            res = 31 * res + topVer.hashCode();
+            res = 31 * res + segment;
+            res = 31 * res + Arrays.hashCode(params);
+            res = 31 * res + joinMode.hashCode();
+            res = 31 * res + (enforceJoinOrder ? 1 : 0);
+            res = 31 * res + (partsMap != null ? partsMap.hashCode() : 0);
+            return 31 * res + Arrays.hashCode(parts);
         }
     }
 
@@ -1477,8 +1475,6 @@ public class GridMapQueryExecutor {
             checkState();
 
             if (--cnt == 0) {
-                roots.getAndDecrement();
-
                 closed = true;
 
                 U.close(rs, log);
