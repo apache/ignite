@@ -1237,7 +1237,6 @@ public class GridMapQueryExecutor {
      */
     private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, GridCacheContext mainCctx, Connection conn,
         int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
-
         ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = runningFutures();
 
         ResultSetWrapper res = null;
