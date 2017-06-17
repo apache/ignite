@@ -1653,8 +1653,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
-        log.error("ENTERED BUSY");
-
         try {
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx,
                 new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
@@ -1668,8 +1666,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         finally {
             busyLock.leaveBusy();
-
-            log.error("EXITED BUSY");
         }
     }
 

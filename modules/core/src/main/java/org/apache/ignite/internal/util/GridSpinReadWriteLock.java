@@ -201,15 +201,9 @@ public class GridSpinReadWriteLock {
 
         boolean interrupted = false;
 
-        long time  = 0;
-
-        System.out.println("****** " + writeLockOwner);
-
         while (!compareAndSet(STATE_OFFS, 0, -1)) {
             try {
                 Thread.sleep(10);
-
-                time += 10;
             }
             catch (InterruptedException ignored) {
                 interrupted = true;

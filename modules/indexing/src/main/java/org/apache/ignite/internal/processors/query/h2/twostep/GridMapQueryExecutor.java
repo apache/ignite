@@ -184,8 +184,6 @@ public class GridMapQueryExecutor {
                 if (!busyLock.enterBusy())
                     return;
 
-                log.error("ENTERED MAP BUSY");
-
                 try {
                     if (msg instanceof GridCacheQueryMarshallable)
                         ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
@@ -194,8 +192,6 @@ public class GridMapQueryExecutor {
                 }
                 finally {
                     busyLock.leaveBusy();
-
-                    log.error("EXITED MAP BUSY");
                 }
             }
         });
@@ -628,8 +624,8 @@ public class GridMapQueryExecutor {
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        QueryKey key = new QueryKey(qry.query(), segmentId, qry.parameters(params), distributedJoinMode,
-                            enforceJoinOrder, parts);
+                        QueryKey key = new QueryKey(qry.query(), topVer, segmentId, qry.parameters(params), distributedJoinMode,
+                            enforceJoinOrder, partsMap, parts);
 
                         rs = runQuery(key, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
                     }
@@ -1354,6 +1350,8 @@ public class GridMapQueryExecutor {
         /** Query string. */
         private final String qry;
 
+        private final AffinityTopologyVersion topVer;
+
         /** Segment id. */
         private final int segment;
 
@@ -1366,49 +1364,64 @@ public class GridMapQueryExecutor {
         /** Enforce join order flag. */
         private final boolean enforceJoinOrder;
 
+        /** Partitions map. */
+        private final Map<UUID, int[]> partsMap;
+
         /** Partitions to run query on. */
         private final int[] parts;
 
         /**
          * Constructor.
          * @param qry Query string.
+         * @param topVer Topology version.
          * @param segment Segment id.
          * @param params Query parameters.
          * @param joinMode Distributed join mode.
          * @param enforceJoinOrder Enforce join order flag.
+         * @param partsMap Partitions map.
          * @param parts Partitions to run query on.
          */
-        private QueryKey(String qry, int segment, Object[] params, DistributedJoinMode joinMode, boolean enforceJoinOrder,
-                         int[] parts) {
+        private QueryKey(String qry, AffinityTopologyVersion topVer, int segment, Object[] params,
+            DistributedJoinMode joinMode, boolean enforceJoinOrder, Map<UUID, int[]> partsMap, int[] parts) {
             this.qry = qry;
+            this.topVer = topVer;
             this.segment = segment;
             this.params = params;
             this.joinMode = joinMode;
             this.enforceJoinOrder = enforceJoinOrder;
+            this.partsMap = partsMap;
             this.parts = parts;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
+        @Override
+        public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            QueryKey qryKey = (QueryKey) o;
+            QueryKey queryKey = (QueryKey) o;
 
-            return (segment == qryKey.segment) && (enforceJoinOrder == qryKey.enforceJoinOrder) &&
-                F.eq(qry, qryKey.qry) && Arrays.equals(params, qryKey.params) && joinMode == qryKey.joinMode &&
-                Arrays.equals(parts, qryKey.parts);
+            if (segment != queryKey.segment) return false;
+            if (enforceJoinOrder != queryKey.enforceJoinOrder) return false;
+            if (!qry.equals(queryKey.qry)) return false;
+            if (!topVer.equals(queryKey.topVer)) return false;
+            // Probably incorrect - comparing Object[] arrays with Arrays.equals
+            if (!Arrays.equals(params, queryKey.params)) return false;
+            if (joinMode != queryKey.joinMode) return false;
+            return (F.eq(partsMap, queryKey.partsMap)) && Arrays.equals(parts, queryKey.parts);
 
         }
 
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = qry.hashCode();
-            res = 31 * res + segment;
-            res = 31 * res + Arrays.hashCode(params);
-            res = 31 * res + joinMode.hashCode();
-            res = 31 * res + (enforceJoinOrder ? 1 : 0);
-            return 31 * res + Arrays.hashCode(parts);
+        @Override
+        public int hashCode() {
+            int result = qry.hashCode();
+            result = 31 * result + topVer.hashCode();
+            result = 31 * result + segment;
+            result = 31 * result + Arrays.hashCode(params);
+            result = 31 * result + joinMode.hashCode();
+            result = 31 * result + (enforceJoinOrder ? 1 : 0);
+            result = 31 * result + (partsMap != null ? partsMap.hashCode() : 0);
+            result = 31 * result + Arrays.hashCode(parts);
+            return result;
         }
     }
 
