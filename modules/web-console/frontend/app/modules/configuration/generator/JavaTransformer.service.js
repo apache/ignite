@@ -1239,7 +1239,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     tempVar = true;
 
-                    fldHashCode = `${javaName} != +0.0f ? Float.floatToIntBits(${javaName}) : 0`;
+                    fldHashCode = '(int) (ig_hash_temp ^ (ig_hash_temp >>> 32))';
 
                     break;
                 default:
