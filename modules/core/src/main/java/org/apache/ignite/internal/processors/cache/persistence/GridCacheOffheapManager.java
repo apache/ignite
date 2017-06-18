@@ -242,7 +242,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             boolean init = cntrsPageId == 0;
 
-                            if (init) {
+                            if (init && items > 0) {
                                 cntrsPageId = pageMem.allocatePage(grpId, store.partId(), PageIdAllocator.FLAG_DATA);
 
                                 io.setCountersPageId(pageAddr, cntrsPageId);
