@@ -17,7 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -39,7 +48,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
@@ -59,12 +67,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -669,48 +675,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorLeaveExchangeWaitAffinityMessage() throws Exception {
-        Ignite ignite0 = startServer(0, 1);
-
-        startServer(1, 2); // Node will be stopped to trigger first exchange.
-
-        Ignite ignite2 = startServer(2, 3); // New coordinator.
-
-        checkAffinity(3, topVer(3, 1), true);
-
-        Ignite ignite3 = startServer(3, 4);
-
-        checkAffinity(4, topVer(4, 1), true);
-
-        // Block message for finishing exchange on new coordinator.
-        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
-        spi.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
-
-        //blockSupplySend(spi, CACHE_NAME1);
-
-        stopNode(1, 5);
-
-        AffinityTopologyVersion topVer = topVer(5, 0);
-
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(1000);
-
-        assertFalse(fut2.isDone());
-
-
-        U.sleep(1000);
-
-
-        stopNode(0, 6);
-
-        U.sleep(1000);
-
-    }
-
-    /**
      * Simple test, client node joins/leaves.
      *
      * @throws Exception If failed.
@@ -1052,12 +1016,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(2, 1), true);
 
-//        TestRecordingCommunicationSpi spi0 =
-//            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi0 =
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
         TestRecordingCommunicationSpi spi1 =
             (TestRecordingCommunicationSpi)ignite1.configuration().getCommunicationSpi();
 
-        //blockSupplySend(spi0, CACHE_NAME1);
+        blockSupplySend(spi0, CACHE_NAME1);
         blockSupplySend(spi1, CACHE_NAME1);
 
         startServer(2, 3);
@@ -1072,24 +1036,22 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Coordinator leaves, exchange completion is prevented.
+     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
      *
      * @throws Exception
      */
-    public void testBlockFinishCoordinatorLeaveExchangeCompletion() throws Exception {
+    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished() throws Exception {
         Ignite ignite0 = startServer(0, 1);
 
         Ignite ignite1 = startServer(1, 2);
 
         Ignite ignite2 = startServer(2, 3);
 
-        Ignite ignite3 = startServer(3, 4);
+        startServer(3, 4);
 
-        // Totally block rebalancing.
         TestRecordingCommunicationSpi spi0 =
                 (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
-        // Prevent exchange completion on ignite2.
         spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
         stopNode(3, 5); // Doesn't change primary assignment.
@@ -1108,15 +1070,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopNode(0, 6);
 
-        // TODO exchange is not completed from new coordinator.
+        checkAffinity(2, topVer(6, 0), true);
     }
 
     /**
-     * Coordinator leaves, exchange completion is prevented.
+     * Assignment is delayed, coordinator leaves, nodes must complete exchange with same assignments.
      *
      * @throws Exception
      */
-    public void testBlockFinishCoordinatorLeaveSameAssignment() throws Exception {
+    public void testCoordinatorLeaveAfterNodeLeavesDelayAssignment() throws Exception {
         Ignite ignite0 = startServer(0, 1);
 
         startServer(1, 2);
@@ -1146,8 +1108,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion topVer = topVer(5, 0);
 
-        // reply with finished state on exchange from node 1
-
         IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
         IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
         IgniteInternalFuture<?> fut3 = affFuture(topVer, ignite3);
@@ -1158,7 +1118,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         assertFalse(fut2.isDone());
         assertTrue(fut3.isDone());
 
-        // Finish rebal on ignite3.
+        // Finish rebalance on ignite3.
         spi2.stopBlock(true);
 
         stopNode(0, 6);
@@ -1937,8 +1897,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         }, NODES, "update-thread");
 
         IgniteInternalFuture<?> srvRestartFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 while (!fail.get() && System.currentTimeMillis() < stopTime) {
                     Ignite node = startGrid(NODES);
 
@@ -1967,32 +1926,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         updateFut.get();
 
         assertFalse("Unexpected messages.", fail.get());
-    }
-
-    /**
-     * Tests scenario when coordinator leaves after node leaving.
-     *
-     * @throws Exception If failed.
-     */
-    public void testAssignmentNodeLeftWithCoordinator() throws Exception {
-        Ignite ignite0 = startServer(0, 1);
-
-        CacheConfiguration ccfg = cacheConfiguration();
-
-        ccfg.setName(CACHE_NAME2);
-
-        ignite0.createCache(ccfg);
-
-        TestTcpDiscoverySpi discoSpi0 =
-            (TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi();
-        TestRecordingCommunicationSpi spi =
-            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
-
-        startServer(1, 2);
-
-        checkAffinity(2, new AffinityTopologyVersion(2, 0), false);
-
-        checkAffinity(2, new AffinityTopologyVersion(2, 1), true);
     }
 
     /**

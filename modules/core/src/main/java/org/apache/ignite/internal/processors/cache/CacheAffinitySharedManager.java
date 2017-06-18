@@ -533,7 +533,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
 
         forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+            @Override
+            public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 List<List<ClusterNode>> idealAssignment = aff.idealAssignment();
 
                 assert idealAssignment != null;
@@ -547,8 +548,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     for (Map.Entry<Integer, List<UUID>> e : cacheAssignment.entrySet())
                         newAssignment.set(e.getKey(), toNodes(topVer, e.getValue()));
-                }
-                else
+                } else
                     newAssignment = idealAssignment;
 
                 aff.initialize(topVer, cachedAssignment(aff, newAssignment, affCache));
@@ -666,7 +666,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 });
             }
             else
-                fetchAffinityOnJoin(fut);
+                fetchAffinityOnNodeJoin(fut);
         }
         else {
             if (!locJoin) {
@@ -814,13 +814,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         if (crd && lateAffAssign) {
             forAllRegisteredCaches(new IgniteInClosureX<DynamicCacheDescriptor>() {
-                @Override public void applyx(DynamicCacheDescriptor desc) throws IgniteCheckedException {
+                @Override
+                public void applyx(DynamicCacheDescriptor desc) throws IgniteCheckedException {
                     CacheHolder cache = cache(fut, desc);
 
                     if (cache.affinity().lastVersion().equals(AffinityTopologyVersion.NONE)) {
                         List<List<ClusterNode>> assignment =
-                            cache.affinity().calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache(),
-                                fut.attachmentHolder());
+                                cache.affinity().calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache(),
+                                        fut.attachmentHolder());
 
                         cache.affinity().initialize(fut.topologyVersion(), assignment);
                     }
@@ -931,7 +932,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     });
                 }
                 else
-                    fetchAffinityOnJoin(fut);
+                    fetchAffinityOnNodeJoin(fut);
             }
             else
                 waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
@@ -980,8 +981,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    private void fetchAffinityOnJoin(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
-        exchLog.info("fetchAffinityOnJoin start [topVer=" + fut.topologyVersion() + ']');
+    private void fetchAffinityOnNodeJoin(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        exchLog.info("fetchAffinityOnNodeJoin start [topVer=" + fut.topologyVersion() + ']');
 
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
@@ -1020,7 +1021,44 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             fetchAffinity(fut, cctx.cacheContext(cacheId).affinity().affinityCache(), fetchFut);
         }
 
-        exchLog.info("fetchAffinityOnJoin end [topVer=" + fut.topologyVersion() + ']');
+        exchLog.info("fetchAffinityOnNodeJoin end [topVer=" + fut.topologyVersion() + ']');
+    }
+
+    /**
+     * Called on a coordinator after node is left to ensure proper exchange completion.
+     *
+     * @param fut Future.
+     */
+    private void fetchAffinityOnNodeLeft(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        exchLog.info("fetchAffinityOnNodeLeft start [topVer=" + fut.topologyVersion() + ']');
+
+        AffinityTopologyVersion topVer = fut.topologyVersion();
+
+        List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
+
+            GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
+                    cacheCtx.name(),
+                    topVer,
+                    fut.discoCache());
+
+            fetchFut.init();
+
+            fetchFuts.add(fetchFut);
+        }
+
+        for (int i = 0; i < fetchFuts.size(); i++) {
+            GridDhtAssignmentFetchFuture fetchFut = fetchFuts.get(i);
+
+            Integer cacheId = fetchFut.key().get1();
+
+            fetchAffinity(fut, cctx.cacheContext(cacheId).affinity().affinityCache(), fetchFut);
+        }
+
+        exchLog.info("fetchAffinityOnNodeLeft end [topVer=" + fut.topologyVersion() + ']');
     }
 
     /**
