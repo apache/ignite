@@ -1055,7 +1055,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             Integer cacheId = fetchFut.key().get1();
 
-            fetchAffinity(fut, cctx.cacheContext(cacheId).affinity().affinityCache(), fetchFut);
+            GridDhtAffinityAssignmentResponse res = fetchFut.get();
         }
 
         exchLog.info("fetchAffinityOnNodeLeft end [topVer=" + fut.topologyVersion() + ']');
