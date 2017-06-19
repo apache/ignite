@@ -520,6 +520,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 "Client node disconnected: " + cctx.igniteInstanceName()) :
             new IgniteInterruptedCheckedException("Node is stopping: " + cctx.igniteInstanceName());
 
+        // Stop exchange worker
+        U.cancel(exchWorker);
+
+        if (log.isDebugEnabled())
+            log.debug("Before joining on exchange worker: " + exchWorker);
+
+        U.join(exchWorker, log);
+
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
 
@@ -535,13 +543,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++)
                 cctx.io().removeOrderedHandler(true, rebalanceTopic(cnt));
         }
-
-        U.cancel(exchWorker);
-
-        if (log.isDebugEnabled())
-            log.debug("Before joining on exchange worker: " + exchWorker);
-
-        U.join(exchWorker, log);
 
         ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
 
