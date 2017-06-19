@@ -43,13 +43,15 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /**
+     * @param schema Schema.
      * @param queries Queries.
      */
-    public JdbcBatchExecuteRequest(JdbcQuery[] queries) {
+    public JdbcBatchExecuteRequest(String schema, JdbcQuery[] queries) {
         super(BATCH_EXEC);
 
         assert !F.isEmpty(queries);
 
+        this.schema = schema;
         this.queries = queries;
     }
 
@@ -71,6 +73,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
+        writer.writeString(schema);
         writer.writeInt(queries.length);
 
         for (JdbcQuery q : queries)
@@ -80,6 +83,8 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
+
+        schema = reader.readString();
 
         int n = reader.readInt();
 

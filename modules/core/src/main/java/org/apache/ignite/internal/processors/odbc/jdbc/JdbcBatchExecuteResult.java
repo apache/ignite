@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class JdbcBatchExecuteResult extends JdbcResult {
     /** Update counts. */
-    private long [] updateCnts;
+    private int [] updateCnts;
 
     /** Batch update error code. */
     private int batchErrCode;
@@ -38,14 +38,16 @@ public class JdbcBatchExecuteResult extends JdbcResult {
      * Condtructor.
      */
     public JdbcBatchExecuteResult() {
-        super(QRY_EXEC);
+        super(BATCH_EXEC);
     }
 
     /**
      * @param updateCnts Update counts for batch.
+     * @param errCode Error code.
+     * @param errMsg Error message.
      */
-    public JdbcBatchExecuteResult(long [] updateCnts) {
-        super(QRY_EXEC);
+    public JdbcBatchExecuteResult(int [] updateCnts, int errCode, String errMsg) {
+        super(BATCH_EXEC);
 
         this.updateCnts = updateCnts;
     }
@@ -53,7 +55,7 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     /**
      * @return Update count for DML queries.
      */
-    public long[] updateCounts() {
+    public int[] updateCounts() {
         return updateCnts;
     }
 
@@ -75,7 +77,7 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLongArray(updateCnts);
+        writer.writeIntArray(updateCnts);
     }
 
 
@@ -83,6 +85,6 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        updateCnts = reader.readLongArray();
+        updateCnts = reader.readIntArray();
     }
 }

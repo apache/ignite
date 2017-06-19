@@ -48,6 +48,20 @@ public class JdbcQuery implements JdbcRawBinarylizable {
         this.args = args;
     }
 
+    /**
+     * @return Query SQL string.
+     */
+    public String sql() {
+        return sql;
+    }
+
+    /**
+     * @return Query arguments.
+     */
+    public Object[] args() {
+        return args;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) {
         writer.writeString(sql);

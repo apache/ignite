@@ -22,6 +22,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -32,6 +33,9 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -66,6 +70,9 @@ public class JdbcThinTcpIo {
 
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
+
+    /** Initial output for batch message. */
+    private static final int QUERY_BATCH_EXEC_MSG_INIT_CAP = 1024 * 64;
 
     /** Host. */
     private final String host;
@@ -286,6 +293,19 @@ public class JdbcThinTcpIo {
      */
     public void queryClose(long qryId) throws IOException, IgniteCheckedException {
         sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
+    }
+
+    /**
+     * @param schema Schema.
+     * @param batch Batch queries.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcBatchExecuteResult batchExecute(String schema, List<JdbcQuery> batch)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcBatchExecuteRequest(schema, batch.toArray(new JdbcQuery[batch.size()])),
+            QUERY_BATCH_EXEC_MSG_INIT_CAP);
     }
 
     /**

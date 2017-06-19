@@ -81,6 +81,22 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        if (stmt != null && !stmt.isClosed())
+            stmt.close();
+
+        if (prepStmt != null && !prepStmt.isClosed())
+            prepStmt.close();
+
+        assertTrue(prepStmt.isClosed());
+        assertTrue(stmt.isClosed());
+
+        super.afterTest();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    private void checkTableContent() throws SQLException {
         try (Statement selStmt = conn.createStatement()) {
             assertTrue(selStmt.execute(SQL_SELECT));
 
@@ -125,17 +141,6 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
                 }
             }
         }
-
-        if (stmt != null && !stmt.isClosed())
-            stmt.close();
-
-        if (prepStmt != null && !prepStmt.isClosed())
-            prepStmt.close();
-
-        assertTrue(prepStmt.isClosed());
-        assertTrue(stmt.isClosed());
-
-        super.afterTest();
     }
 
     /**
@@ -143,6 +148,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
      */
     public void testExecuteUpdate() throws SQLException {
         assertEquals(3, stmt.executeUpdate(SQL));
+
+        checkTableContent();
     }
 
     /**
@@ -150,6 +157,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
      */
     public void testPreparedExecuteUpdate() throws SQLException {
         assertEquals(3, prepStmt.executeUpdate());
+
+        checkTableContent();
     }
 
     /**
@@ -157,6 +166,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
      */
     public void testExecute() throws SQLException {
         assertFalse(stmt.execute(SQL));
+
+        checkTableContent();
     }
 
     /**
@@ -164,12 +175,14 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
      */
     public void testPreparedExecute() throws SQLException {
         assertFalse(prepStmt.execute());
+
+        checkTableContent();
     }
 
     /**
-     *
+     * @throws SQLException If failed.
      */
-    public void testDuplicateKeys() {
+    public void testDuplicateKeys() throws SQLException {
         jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
@@ -181,5 +194,52 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
             "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
+
+        checkTableContent();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testBatch() throws SQLException {
+        final int BATCH_SIZE = 10;
+
+        for (int idx = 0, i = 0; i < BATCH_SIZE; ++i, idx += i) {
+            stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values "
+                + generateValues(idx, i + 1));
+        }
+
+        int [] updCnts = stmt.executeBatch();
+
+        assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+        for (int i = 0; i < 10; ++i)
+            assertEquals("Invalid update count",i + 1, updCnts[i]);
+    }
+
+    /**
+     * @param beginIndex Begin row index.
+     * @param cnt Count of rows.
+     * @return String contains values for 'cnt' rows.
+     */
+    private String generateValues(int beginIndex, int cnt) {
+        StringBuilder sb = new StringBuilder();
+
+        int lastIdx = beginIndex + cnt - 1;
+
+        for (int i = beginIndex; i < lastIdx; ++i)
+            sb.append(valuesRow(i)).append(',');
+
+        sb.append(valuesRow(lastIdx));
+
+        return sb.toString();
+    }
+
+    /**
+     * @param idx Index of the row.
+     * @return String with row values.
+     */
+    private String valuesRow(int idx) {
+        return String.format("('p%d', %d, 'Name%d', 'Lastname%d', %d)", idx, idx, idx, idx, 20 + idx);
     }
 }
