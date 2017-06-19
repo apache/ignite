@@ -332,7 +332,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      *
      */
-    public void onLocalNodeJoin() {
+    public void cleanCachesAndGroups() {
         registeredCacheGrps.clear();
         registeredCaches.clear();
     }
