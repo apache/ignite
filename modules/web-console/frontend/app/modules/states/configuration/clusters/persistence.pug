@@ -34,7 +34,7 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +checkbox('Enabled', enabled, '"PersistenceEnabled"', 'Flag indicating whether to configure persistent configuration')
                 .settings-row
-                    +text-enabled('Store path:', `${model}.persistenceStorePath`, '"PersistenceStorePath"', enabled, 'false', 'Input store path',
+                    +text-enabled('Store path:', `${model}.persistentStorePath`, '"PersistenceStorePath"', enabled, 'false', 'Input store path',
                     'A path the root directory where the Persistent Store will persist data and indexes')
                 .settings-row
                     +checkbox-enabled('Metrics enabled', `${model}.metricsEnabled`, '"PersistenceMetricsEnabled"', enabled, 'Flag indicating whether persistence metrics collection is enabled')

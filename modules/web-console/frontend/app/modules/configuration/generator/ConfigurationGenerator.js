@@ -1473,7 +1473,7 @@ export default class IgniteConfigurationGenerator {
         const bean = new Bean('org.apache.ignite.configuration.PersistentStoreConfiguration', 'PersistenceCfg',
             persistence, clusterDflts.persistenceStoreConfiguration);
 
-        bean.stringProperty('persistenceStorePath')
+        bean.stringProperty('persistentStorePath')
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
             .intProperty('checkpointingFrequency')
