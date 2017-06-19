@@ -31,7 +31,7 @@ public class CheckpointRecord extends WALRecord {
     /** Checkpoint ID. */
     private UUID cpId;
 
-    /** */
+    /** todo ?, always false */
     private boolean end;
 
     /** */
@@ -42,7 +42,7 @@ public class CheckpointRecord extends WALRecord {
 
     /**
      * @param cpMark Checkpoint mark.
-     * @param end Checkpoint end flag.
+     * @param end Checkpoint end flag - deprecated todo ?, always false
      */
     public CheckpointRecord(WALPointer cpMark, boolean end) {
         this(UUID.randomUUID(), cpMark, end);
@@ -51,7 +51,7 @@ public class CheckpointRecord extends WALRecord {
     /**
      * @param cpId Checkpoint ID.
      * @param cpMark Checkpoint mark.
-     * @param end Checkpoint end flag.
+     * @param end Checkpoint end flag - deprecated todo ?, always false
      */
     public CheckpointRecord(UUID cpId, WALPointer cpMark, boolean end) {
         this.cpId = cpId;
