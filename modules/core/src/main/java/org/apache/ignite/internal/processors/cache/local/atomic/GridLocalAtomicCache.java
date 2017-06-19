@@ -301,8 +301,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final K key,
         String taskName,
         boolean deserializeBinary,
-        boolean needVer) throws IgniteCheckedException
-    {
+        boolean needVer) throws IgniteCheckedException {
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.readThrough(),
             taskName,
@@ -509,12 +508,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     success = false;
                             }
                         }
-                        else {
-                            if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
-                                metrics0().onRead(false);
-
-                            success = false;
-                        }
 
                         break; // While.
                     }
@@ -529,6 +522,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     if (!success && storeEnabled)
                         break;
                 }
+            }
+            if (!success) {
+                if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
+                    metrics0().onRead(false);
             }
         }
 

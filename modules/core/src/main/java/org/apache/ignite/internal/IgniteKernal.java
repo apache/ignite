@@ -950,7 +950,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 // Start platform plugins.
                 if (ctx.config().getPlatformConfiguration() != null)
-                    startProcessor(new PlatformPluginProcessor(ctx));fillNodeAttributes(clusterProc.updateNotifierEnabled());}
+                    startProcessor(new PlatformPluginProcessor(ctx));
+
+                ctx.cluster().initDiagnosticListeners();
+
+                fillNodeAttributes(clusterProc.updateNotifierEnabled());
+            }
             catch (Throwable e) {
                 U.error(
                     log, "Exception during start processors, node will be stopped and close connections", e);
@@ -3912,14 +3917,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
 
-                U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
+                U.warn(ctx.cluster().diagnosticLog(), "Dumping debug info for node [id=" + locNode.id() +
                     ", name=" + ctx.igniteInstanceName() +
                     ", order=" + locNode.order() +
                     ", topVer=" + discoMrg.topologyVersion() +
                     ", client=" + client +
                     (client && routerId != null ? ", routerId=" + routerId : "") + ']');
 
-                ctx.cache().context().exchange().dumpDebugInfo();
+                ctx.cache().context().exchange().dumpDebugInfo(null);
             }
             else
                 U.warn(log, "Dumping debug info for node, context is not initialized [name=" + igniteInstanceName +

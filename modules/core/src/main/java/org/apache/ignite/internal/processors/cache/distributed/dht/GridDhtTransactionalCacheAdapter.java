@@ -255,7 +255,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.timeout(),
                                     req.txSize(),
                                     req.subjectId(),
-                                    req.taskNameHash());
+                                    req.taskNameHash(),
+                                    !req.skipStore() && req.storeUsed());
 
                                 tx = ctx.tm().onCreated(null, tx);
 
@@ -1026,7 +1027,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.createTtl(),
                     req.accessTtl(),
                     req.skipStore(),
-                    req.keepBinary());
+                    req.keepBinary(),
+                    req.nearCache());
 
                 final GridDhtTxLocal t = tx;
 

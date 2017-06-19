@@ -42,13 +42,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Skip store flag bit mask. */
-    private static final int DHT_ATOMIC_SKIP_STORE_FLAG_MASK = 0x01;
+    protected static final int DHT_ATOMIC_SKIP_STORE_FLAG_MASK = 0x01;
 
     /** Keep binary flag. */
-    private static final int DHT_ATOMIC_KEEP_BINARY_FLAG_MASK = 0x02;
+    protected static final int DHT_ATOMIC_KEEP_BINARY_FLAG_MASK = 0x02;
 
     /** Near cache key flag. */
-    private static final int DHT_ATOMIC_NEAR_FLAG_MASK = 0x04;
+    protected static final int DHT_ATOMIC_NEAR_FLAG_MASK = 0x04;
 
     /** */
     static final int DHT_ATOMIC_HAS_RESULT_MASK = 0x08;
@@ -451,20 +451,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     @Nullable public abstract Object[] invokeArguments();
 
     /**
-     * @return {@code True} if near cache update request.
-     */
-    protected final boolean near() {
-        return isFlag(DHT_ATOMIC_NEAR_FLAG_MASK);
-    }
-
-    /**
-     * @param near Near cache update flag.
-     */
-    protected final void near(boolean near) {
-        setFlag(near, DHT_ATOMIC_NEAR_FLAG_MASK);
-    }
-
-    /**
      * Sets flag mask.
      *
      * @param flag Set or clear.
@@ -663,7 +649,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             appendFlag(flags, "skipStore");
         if (keepBinary())
             appendFlag(flags, "keepBinary");
-        if (near())
+        if (isFlag(DHT_ATOMIC_NEAR_FLAG_MASK))
             appendFlag(flags, "near");
         if (hasResult())
             appendFlag(flags, "hasRes");
