@@ -22,7 +22,11 @@ import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Collections;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.ignite.IgniteException;
