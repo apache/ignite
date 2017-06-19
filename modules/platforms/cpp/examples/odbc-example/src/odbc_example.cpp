@@ -632,6 +632,8 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;
