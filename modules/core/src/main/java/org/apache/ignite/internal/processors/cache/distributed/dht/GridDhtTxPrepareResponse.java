@@ -124,7 +124,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @return Evicted readers.
      */
-    Collection<IgniteTxKey> nearEvicted() {
+    public Collection<IgniteTxKey> nearEvicted() {
         return nearEvicted;
     }
 
@@ -194,7 +194,9 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
             for (IgniteTxKey key : nearEvicted) {
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-                key.prepareMarshal(cctx);
+                // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
+                if (cctx != null)
+                    key.prepareMarshal(cctx);
             }
         }
 

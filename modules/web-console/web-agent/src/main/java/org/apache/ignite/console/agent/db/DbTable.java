@@ -17,9 +17,9 @@
 
 package org.apache.ignite.console.agent.db;
 
-import org.apache.ignite.cache.QueryIndex;
-
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.query.VisorQueryIndex;
 
 /**
  * Database table.
@@ -35,7 +35,7 @@ public class DbTable {
     private final Collection<DbColumn> cols;
 
     /** Indexes. */
-    private final Collection<QueryIndex> idxs;
+    private final Collection<VisorQueryIndex> idxs;
 
     /**
      * Default columns.
@@ -45,7 +45,7 @@ public class DbTable {
      * @param cols Columns.
      * @param idxs Indexes;
      */
-    public DbTable(String schema, String tbl, Collection<DbColumn> cols, Collection<QueryIndex> idxs) {
+    public DbTable(String schema, String tbl, Collection<DbColumn> cols, Collection<VisorQueryIndex> idxs) {
         this.schema = schema;
         this.tbl = tbl;
         this.cols = cols;
@@ -55,28 +55,33 @@ public class DbTable {
     /**
      * @return Schema name.
      */
-    public String schema() {
+    public String getSchema() {
         return schema;
     }
 
     /**
      * @return Table name.
      */
-    public String table() {
+    public String getTable() {
         return tbl;
     }
 
     /**
      * @return Columns.
      */
-    public Collection<DbColumn> columns() {
+    public Collection<DbColumn> getColumns() {
         return cols;
     }
 
     /**
      * @return Indexes.
      */
-    public Collection<QueryIndex> indexes() {
+    public Collection<VisorQueryIndex> getIndexes() {
         return idxs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DbTable.class, this);
     }
 }

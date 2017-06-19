@@ -548,17 +548,167 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the join with local collection.
+        /// </summary>
+        [Test]
+        public void TestLocalJoin()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var orgs = GetOrgCache().AsCacheQueryable();
+
+            var localOrgs = orgs
+                .Select(e => e.Value)
+                .ToArray();
+
+            var allOrganizationIds = localOrgs
+                .Select(e => e.Id)
+                .ToArray();
+
+            // Join with local collection 
+            var qry1 = persons.Join(allOrganizationIds,
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry1.Length);
+
+            // Join using expression in innerKeySelector
+            var qry2 = persons.Join(allOrganizationIds,
+                    pe => pe.Value.OrganizationId,
+                    i => i + 1 - 1,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry2.Length);
+
+            // Local collection subquery
+            var qry3 = persons.Join(localOrgs.Select(e => e.Id),
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry3.Length);
+
+            // Compiled query
+            var qry4 = CompiledQuery.Compile(() => persons.Join(allOrganizationIds,
+                pe => pe.Value.OrganizationId,
+                i => i,
+                (pe, o) => pe
+            ));
+
+            Assert.AreEqual(PersonCount, qry4().Count());
+
+            // Compiled query with outer join
+            var qry4A = CompiledQuery.Compile(() => persons.Join(new int[] {}.DefaultIfEmpty(),
+                pe => pe.Value.OrganizationId,
+                i => i,
+                (pe, o) => pe
+            ));
+
+            Assert.AreEqual(PersonCount, qry4A().Count());
+
+            // Compiled query
+            var qry5 = CompiledQuery.Compile(() => persons.Join(new[] { -1, -2 }.DefaultIfEmpty(),
+                pe => pe.Value.OrganizationId,
+                i => i,
+                (pe, o) => pe
+            ));
+
+            Assert.AreEqual(PersonCount, qry5().Count());
+
+            // Outer join
+            var qry6 = persons.Join(new[] { -1, -2 }.DefaultIfEmpty(),
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry6.Length);
+
+            // Join with local list
+            var qry7 = persons.Join(new List<int> {1000, 1001, 1002, 1003},
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry7.Length);
+
+            // Join with local list variable
+            var list = new List<int> { 1000, 1001, 1002, 1003 };
+            var qry8 = persons.Join(list,
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry8.Length);
+        }
+
+        /// <summary>
+        /// Tests the compiled query containing join with local collection passed as parameter.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-5404")]
+        public void TestLocalJoinCompiledQueryParameter()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var orgs = GetOrgCache().AsCacheQueryable();
+
+            var localOrgs = orgs
+                .Select(e => e.Value)
+                .ToArray();
+
+            var allOrganizationIds = localOrgs
+                .Select(e => e.Id)
+                .ToArray();
+
+            // Join with local collection passed as parameter
+            var qry1 = CompiledQuery.Compile((IEnumerable<int> lc) => persons.Join(lc,
+                pe => pe.Value.OrganizationId,
+                i => i,
+                (pe, o) => pe
+            ));
+
+            Assert.AreEqual(PersonCount, qry1(allOrganizationIds).Count());
+
+            //Compiled query with outer join
+            var qry2 = CompiledQuery.Compile((IEnumerable<int> lc) => persons.Join(lc.DefaultIfEmpty(),
+                pe => pe.Value.OrganizationId,
+                i => i,
+                (pe, o) => pe
+            ));
+
+            Assert.AreEqual(PersonCount, qry2(new[] { -11 }).Count());
+        }
+
+        /// <summary>
         /// Tests the invalid join.
         /// </summary>
         [Test]
         public void TestInvalidJoin()
         {
-            // Join on non-IQueryable
+            var localComplexTypeCollection = GetOrgCache().AsCacheQueryable()
+                .Select(e => e.Value)
+                .ToArray();
+
+            // Join on non-IQueryable with complex(not supported) type
             var ex = Assert.Throws<NotSupportedException>(() =>
                 // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-                GetPersonCache().AsCacheQueryable().Join(GetOrgCache(), p => p.Key, o => o.Key, (p, o) => p).ToList());
+            {
+                GetPersonCache().AsCacheQueryable().Join(localComplexTypeCollection, p => p.Value.OrganizationId, 
+                    o => o.Id, (p, o) => p).ToList();
+            });
 
-            Assert.IsTrue(ex.Message.StartsWith("Unexpected query source"));
+            Assert.IsTrue(ex.Message.StartsWith("Not supported item type for Join with local collection"));
         }
 
         /// <summary>
@@ -810,6 +960,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys + 10 - PersonCount, bigNumberOfKeys + PersonCount)
                 .ToArray();
             var hashSetKeys = new HashSet<int>(keys);
+            var defferedCollection = Enumerable.Range(1, 10)
+                .Select(i => new {Id = i})
+                .Select(arg => arg.Id);
 
             CheckWhereFunc(cache, e => new[] { 1, 2, 3 }.Contains(e.Key));
             CheckWhereFunc(cache, e => emptyKeys.Contains(e.Key));
@@ -820,6 +973,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckWhereFunc(cache, e => aLotOfKeys.Contains(e.Key));
             CheckWhereFunc(cache, e => hashSetKeys.Contains(e.Key));
             CheckWhereFunc(cache, e => !keys.Contains(e.Key));
+            CheckWhereFunc(cache, e => defferedCollection.Contains(e.Key));
             CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
             CheckWhereFunc(orgCache, e => !new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
             CheckWhereFunc(orgCache, e => new[] { "Org_1", null, null }.Contains(e.Value.Name));
@@ -859,7 +1013,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var ex = Assert.Throws<NotSupportedException>(() =>
                 CompiledQuery.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
-            Assert.AreEqual("'Contains' clause coming from compiled query parameter is not supported.", ex.Message);
+            Assert.AreEqual("'Contains' clause on compiled query parameter is not supported.", ex.Message);
 
             // check subquery from another cache put in separate variable
             var orgIds = orgCache

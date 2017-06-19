@@ -530,26 +530,31 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         else
             ignite2.cache(CACHE_NAME1);
 
-        waitForTopologyUpdate(3, new AffinityTopologyVersion(3, ++minorVer));
-
         GridCacheAdapter cache = ((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1);
 
         assertNotNull(cache);
         assertEquals(nearCache, cache.context().isNear());
 
         assertEquals(0, spi0.partitionsSingleMessages());
-        assertEquals(1, spi0.partitionsFullMessages());
+        assertEquals(0, spi0.partitionsFullMessages());
         assertEquals(0, spi1.partitionsSingleMessages());
         assertEquals(0, spi1.partitionsFullMessages());
-        assertEquals(1, spi2.partitionsSingleMessages());
+        assertEquals(0, spi2.partitionsSingleMessages());
         assertEquals(0, spi2.partitionsFullMessages());
 
-        ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
+        final ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
 
         for (Ignite ignite : Ignition.allGrids()) {
-            GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+            final GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return disco.cacheNode(clientNode, CACHE_NAME1);
+                }
+            }, 5000);
 
             assertTrue(disco.cacheNode(clientNode, CACHE_NAME1));
+
             assertFalse(disco.cacheAffinityNode(clientNode, CACHE_NAME1));
             assertEquals(nearCache, disco.cacheNearNode(clientNode, CACHE_NAME1));
         }
@@ -565,8 +570,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
             assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1));
 
-            waitForTopologyUpdate(3, new AffinityTopologyVersion(3, ++minorVer));
-
             assertEquals(0, spi0.partitionsSingleMessages());
             assertEquals(0, spi0.partitionsFullMessages());
             assertEquals(0, spi1.partitionsSingleMessages());
@@ -577,9 +580,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         final String CACHE_NAME2 = "cache2";
 
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setName(CACHE_NAME2);
+        ccfg = new CacheConfiguration(CACHE_NAME2);
 
         log.info("Create new cache: " + CACHE_NAME2);
 

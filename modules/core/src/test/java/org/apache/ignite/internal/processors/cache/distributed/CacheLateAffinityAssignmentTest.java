@@ -476,7 +476,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             ignite0.cache(CACHE_NAME1);
 
-            checkAffinity(nodes, topVer(topVer, 2), true);
+            checkAffinity(nodes, topVer(topVer, 1), true);
 
             topVer++;
 
@@ -486,7 +486,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             ignite0.cache(CACHE_NAME1).close();
 
-            checkAffinity(nodes, topVer(topVer, 2), true);
+            checkAffinity(nodes, topVer(topVer, 1), true);
         }
     }
 
@@ -832,11 +832,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNotNull(client.cache(CACHE_NAME1));
 
-        checkAffinity(4, topVer(4, 1), false);
+        checkAffinity(4, topVer(4, 0), false);
 
         spi.stopBlock();
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 1), true);
     }
 
     /**
@@ -1240,11 +1240,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         IgniteCache cache = client.cache(CACHE_NAME1);
 
-        checkAffinity(2, topVer(2, 1), true);
+        checkAffinity(2, topVer(2, 0), true);
 
         cache.close();
 
-        checkAffinity(2, topVer(2, 2), true);
+        checkAffinity(2, topVer(2, 0), true);
     }
 
     /**
@@ -1274,11 +1274,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         client.cache(CACHE_NAME2);
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 1), true);
 
         client.destroyCache(CACHE_NAME2);
 
-        checkAffinity(4, topVer(4, 3), true);
+        checkAffinity(4, topVer(4, 2), true);
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheIteratorScanQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryDetailMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingSingleTypeTest;
@@ -282,6 +283,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheLocalQueryCancelOrTimeoutSelfTest.class);
 
         // Other.
+        suite.addTestSuite(CacheIteratorScanQueryTest.class);
         suite.addTestSuite(CacheQueryNewClientSelfTest.class);
         suite.addTestSuite(CacheOffheapBatchIndexingSingleTypeTest.class);
         suite.addTestSuite(CacheSqlQueryValueCopySelfTest.class);

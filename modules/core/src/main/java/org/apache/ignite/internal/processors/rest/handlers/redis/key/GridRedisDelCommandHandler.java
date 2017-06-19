@@ -73,7 +73,7 @@ public class GridRedisDelCommandHandler extends GridRedisRestCommandHandler {
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
         restReq.command(CACHE_REMOVE_ALL);
-        restReq.cacheName(CACHE_NAME);
+        restReq.cacheName(msg.cacheName());
 
         List<String> keys = msg.auxMKeys();
 
