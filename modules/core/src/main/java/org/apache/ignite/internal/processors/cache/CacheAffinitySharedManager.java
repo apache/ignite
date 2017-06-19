@@ -701,15 +701,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 nearCfg = req.nearCacheConfiguration();
             }
             else {
-                if (!cctx.localNode().isClient()) {
-                    startCache = cctx.cacheContext(cacheDesc.cacheId()) == null &&
-                            CU.affinityNode(cctx.localNode(), cacheDesc.groupDescriptor().config().getNodeFilter());
+                // Cache should not be started
+                assert cctx.cacheContext(cacheDesc.cacheId()) == null
+                        : "Starting cache has not null context " + cctx.cacheContext(cacheDesc.cacheId());
+
+                IgniteCacheProxy cacheProxy = cctx.cache().jcacheProxy(req.cacheName());
+
+                // If it has proxy then try to start it
+                if (cacheProxy != null) {
+                    // Cache should be in restarting mode
+                    assert cacheProxy.isRestarting()
+                            : "Cache has non restarting proxy " + cacheProxy;
+
+                    startCache = true;
                 }
-                else {
-                    // If cache on client node has proxy then start it
-                    startCache = cctx.cacheContext(cacheDesc.cacheId()) == null &&
-                            cctx.cache().jcacheProxy(req.cacheName()) != null;
-                }
+                else
+                    startCache = CU.affinityNode(cctx.localNode(), cacheDesc.groupDescriptor().config().getNodeFilter());
             }
 
             try {
