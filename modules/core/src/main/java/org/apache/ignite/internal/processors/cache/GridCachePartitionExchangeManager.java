@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -766,7 +767,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchFut Exchange future.
      */
     public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionsExchangeFuture exchFut) {
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
         exchWorker.addExchangeFuture(
             new GridDhtPartitionsExchangeFuture(cctx, exchFut.discoveryEvent(), exchFut.exchangeId(), fut));
@@ -1916,6 +1917,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     r = cur;
                                 }
                             }
+                        }
+
+                        if (exchFut.forcedRebalanceFuture() != null) {
+                            exchFut.forcedRebalanceFuture().markInitialized();
                         }
 
                         if (assignsCancelled) { // Pending exchange.

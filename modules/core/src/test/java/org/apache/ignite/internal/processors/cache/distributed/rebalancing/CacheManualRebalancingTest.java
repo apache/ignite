@@ -1,0 +1,176 @@
+package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+/** */
+public class CacheManualRebalancingTest extends GridCommonAbstractTest {
+    /** */
+    private static final String MYCACHE = "mycache";
+
+    /** */
+    public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    public static final int NODES_CNT = 2;
+
+    private AtomicInteger nodeOrder = new AtomicInteger();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
+        return new IgniteConfiguration()
+            .setGridName(gridName)
+            .setLateAffinityAssignment(false)
+            .setPeerClassLoadingEnabled(false)
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+            .setCacheConfiguration(cacheCfg());
+    }
+
+    /** */
+    private static CacheConfiguration cacheCfg() {
+        final CacheConfiguration ccfg = new CacheConfiguration(MYCACHE)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setRebalanceDelay(-1)
+            .setBackups(1)
+            .setCopyOnRead(true)
+            .setReadFromBackup(true);
+        return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(NODES_CNT);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        grid(0).cache(MYCACHE).destroy();
+
+        stopGrid(NODES_CNT);
+
+        nodeOrder.set(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 400_000;
+    }
+
+    /** */
+    public void testPut() throws Exception {
+        // Fill cache with large dataset to make rebalancing slow.
+        try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(MYCACHE)) {
+            for (int i = 0; i < 100_000; i++)
+                streamer.addData(i, i);
+            streamer.flush();
+        }
+
+        // Start new node.
+        final IgniteEx newNode = startGrid(NODES_CNT);
+
+        int newNodeCacheSize = 0;
+
+        // Start manual rebalancing.
+        IgniteCompute compute = newNode.compute().withAsync();
+
+        compute.broadcast(new MyCallable());
+
+        final ComputeTaskFuture<Object> rebalanceTaskFuture = compute.future();
+
+        boolean rebalanceFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return rebalanceTaskFuture.isDone();
+            }
+        }, 10_000);
+
+        System.out.println("Rebalance task " + (rebalanceFinished ? "finished." : "failed"));
+
+        assertTrue(rebalanceFinished);
+
+        newNodeCacheSize = newNode.cache(MYCACHE).localSize();
+
+        System.out.println("New node cache local size: " + newNodeCacheSize);
+
+        assertTrue(newNodeCacheSize > 0);
+
+    }
+
+    /** */
+    public static class MyCallable implements IgniteRunnable {
+        /** */
+        @IgniteInstanceResource
+        Ignite localNode;
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteLogger log = localNode.log();
+
+            log.info("Start local rebalancing caches");
+
+            for (String cacheName : localNode.cacheNames()) {
+                IgniteCache<?, ?> cache = localNode.cache(cacheName);
+
+                assertNotNull(cache);
+
+                if (cache == null) {
+                    log.error("Cache not found:" + cacheName);
+                    continue;
+                }
+
+                boolean finished = false;
+                
+                log.info("Start rebalancing cache: " + cacheName + ", size: " + cache.localSize());
+
+                do {
+                    IgniteFuture<?> rebalance = cache.rebalance();
+
+                    log.info("Wait rebalancing cache: " + cacheName + " - " + rebalance);
+
+                    finished = (Boolean)rebalance.get();
+
+                    log.info("Rebalancing cache: " + cacheName + " - " + rebalance);
+
+                    if (finished) {
+                        log.info("Finished rebalancing cache: " + cacheName + ", size: " +
+                            cache.localSize(CachePeekMode.PRIMARY) + cache.localSize(CachePeekMode.BACKUP));
+                    } else
+                        log.info("Rescheduled rebalancing cache: " + cacheName + ", size: " + cache.localSize());
+                }
+                while (!finished);
+            }
+
+            log.info("Finished local rebalancing caches");
+        }
+    }
+}
