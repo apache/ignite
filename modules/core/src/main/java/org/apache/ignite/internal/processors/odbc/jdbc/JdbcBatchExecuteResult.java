@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
- * SQL listener query execute result.
+ * JDBC batch execute result.
  */
 public class JdbcBatchExecuteResult extends JdbcResult {
     /** Update counts. */

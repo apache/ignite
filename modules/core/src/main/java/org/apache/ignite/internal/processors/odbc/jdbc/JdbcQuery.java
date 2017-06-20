@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 
 /**
- * SQL listener column metadata.
+ * JDBC sql query with parameters.
  */
 public class JdbcQuery implements JdbcRawBinarylizable {
     /** Query SQL. */

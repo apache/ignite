@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * SQL listener query execute request.
+ * JDBC batch execute request.
  */
 public class JdbcBatchExecuteRequest extends JdbcRequest {
     /** Cache name. */
