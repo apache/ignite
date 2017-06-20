@@ -78,9 +78,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * Test simulated chekpoints,
+ * Disables integrated check pointer thread
  */
-public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
+public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -91,7 +92,12 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
     private static final boolean VERBOSE = false;
 
     /** Cache name. */
-    private final String cacheName = "cache";
+    private static final String cacheName = "cache";
+
+    /**
+     * toggle flag, inline if CP end record is not possible
+     */
+    private static final boolean cpEndRecord = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -307,7 +313,7 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
 
         assertTrue(wal.isAlwaysWriteFullPages());
 
-        db.enableCheckpoints(false);
+        db.enableCheckpoints(false).get();
 
         final int cnt = 10;
 
@@ -336,9 +342,12 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
         for (DataEntry entry : entries)
             wal.log(new DataRecord(entry));
 
-        WALPointer end = wal.log(new CheckpointRecord(cpId, start, true));
+        WALPointer end;
+        if (cpEndRecord) {
+            end = wal.log(new CheckpointRecord(cpId, start, true));
 
-        wal.fsync(end);
+            wal.fsync(end);
+        }
 
         // Data will not be written to the page store.
         stopAllGrids();
@@ -353,16 +362,16 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
         db = (GridCacheDatabaseSharedManager)sharedCtx.database();
         wal = sharedCtx.wal();
 
-        db.enableCheckpoints(false);
+        db.enableCheckpoints(false).get();
 
         try (WALIterator it = wal.replay(start)) {
-            IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
+            IgniteBiTuple<WALPointer, WALRecord> cpRecordTup = it.nextX();
 
-            assert tup.get2() instanceof CheckpointRecord;
+            assert cpRecordTup.get2() instanceof CheckpointRecord;
 
-            assertEquals(start, tup.get1());
+            assertEquals(start, cpRecordTup.get1());
 
-            CheckpointRecord cpRec = (CheckpointRecord)tup.get2();
+            CheckpointRecord cpRec = (CheckpointRecord)cpRecordTup.get2();
 
             assertEquals(cpId, cpRec.checkpointId());
             assertNull(cpRec.checkpointMark());
@@ -372,11 +381,11 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
             while (idx < entries.size()) {
-                tup = it.nextX();
+                IgniteBiTuple<WALPointer, WALRecord> dataRecTup = it.nextX();
 
-                assert tup.get2() instanceof DataRecord;
+                assert dataRecTup.get2() instanceof DataRecord;
 
-                DataRecord dataRec = (DataRecord)tup.get2();
+                DataRecord dataRec = (DataRecord)dataRecTup.get2();
 
                 DataEntry entry = entries.get(idx);
 
@@ -400,17 +409,22 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
                 idx++;
             }
 
-            tup = it.nextX();
 
-            assert tup.get2() instanceof CheckpointRecord;
 
-            assertEquals(end, tup.get1());
+            if(cpEndRecord) {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
+                WALRecord walRecord = tup.get2();
+                boolean exp = walRecord instanceof CheckpointRecord;
+                assert exp : walRecord;
 
-            cpRec = (CheckpointRecord)tup.get2();
+                assertEquals(end, tup.get1());
 
-            assertEquals(cpId, cpRec.checkpointId());
-            assertEquals(start, cpRec.checkpointMark());
-            assertTrue(cpRec.end());
+                cpRec = (CheckpointRecord)tup.get2();
+
+                assertEquals(cpId, cpRec.checkpointId());
+                assertEquals(start, cpRec.checkpointMark());
+                assertTrue(cpRec.end());
+            }
         }
     }
 
@@ -462,9 +476,12 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
             ig.context().cache().context().database().checkpointReadUnlock();
         }
 
-        WALPointer end = wal.log(new CheckpointRecord(cpId, start, true));
+        WALPointer end;
+        if(cpEndRecord) {
+            end = wal.log(new CheckpointRecord(cpId, start, true));
 
-        wal.fsync(end);
+            wal.fsync(end);
+        }
 
         // Data will not be written to the page store.
         stopAllGrids();
@@ -516,17 +533,19 @@ public class ignitePdsCheckpointSimulationTest extends GridCommonAbstractTest {
                 idx++;
             }
 
-            tup = it.nextX();
+            if(cpEndRecord) {
+                tup = it.nextX();
 
-            assert tup.get2() instanceof CheckpointRecord;
+                assert tup.get2() instanceof CheckpointRecord;
 
-            assertEquals(end, tup.get1());
+                assertEquals(end, tup.get1());
 
-            cpRec = (CheckpointRecord)tup.get2();
+                cpRec = (CheckpointRecord)tup.get2();
 
-            assertEquals(cpId, cpRec.checkpointId());
-            assertEquals(start, cpRec.checkpointMark());
-            assertTrue(cpRec.end());
+                assertEquals(cpId, cpRec.checkpointId());
+                assertEquals(start, cpRec.checkpointMark());
+                assertTrue(cpRec.end());
+            }
         }
     }
 
