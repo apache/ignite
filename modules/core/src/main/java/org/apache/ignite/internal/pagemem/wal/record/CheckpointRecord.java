@@ -23,15 +23,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Checkpoint (begin) record
  */
 public class CheckpointRecord extends WALRecord {
     /** Checkpoint ID. */
     private UUID cpId;
 
-    /** todo ?, always false */
+    /** always false */
     private boolean end;
 
     /** */
@@ -42,18 +43,27 @@ public class CheckpointRecord extends WALRecord {
 
     /**
      * @param cpMark Checkpoint mark.
-     * @param end Checkpoint end flag - deprecated todo ?, always false
      */
-    public CheckpointRecord(WALPointer cpMark, boolean end) {
-        this(UUID.randomUUID(), cpMark, end);
+    public CheckpointRecord(@Nullable WALPointer cpMark) {
+        this(UUID.randomUUID(), cpMark);
     }
 
     /**
      * @param cpId Checkpoint ID.
      * @param cpMark Checkpoint mark.
-     * @param end Checkpoint end flag - deprecated todo ?, always false
      */
-    public CheckpointRecord(UUID cpId, WALPointer cpMark, boolean end) {
+    public CheckpointRecord(UUID cpId, @Nullable WALPointer cpMark) {
+        this.cpId = cpId;
+        this.cpMark = cpMark;
+    }
+
+    /**
+     * Constructor kept for serializer
+     * @param cpId Checkpoint ID.
+     * @param cpMark Checkpoint mark.
+     * @param end Checkpoint end flag - deprecated expected to be always false
+     */
+    public CheckpointRecord(UUID cpId, @Nullable WALPointer cpMark, boolean end) {
         this.cpId = cpId;
         this.end = end;
         this.cpMark = cpMark;
@@ -97,7 +107,7 @@ public class CheckpointRecord extends WALRecord {
     }
 
     /**
-     * @return Checkpoint end flag.
+     * @return Checkpoint end flag, now always false
      */
     public boolean end() {
         return end;
