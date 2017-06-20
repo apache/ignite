@@ -539,8 +539,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var orgs = GetOrgCache().AsCacheQueryable().Where(x => x.Key > 10);
 
             var qry1 = persons.Join(orgs,
-                p => p.Value.OrganizationId,
-                o => o.Value.Id, (p, o) => p)
+                    p => p.Value.OrganizationId,
+                    o => o.Value.Id, 
+                    (p, o) => p)
                 .Where(x => x.Key >= 0)
                 .ToList();
 
@@ -548,8 +549,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // With selector inline
             var qry2 = persons
-                .Join(
-                    orgs.Select(orgEntry => orgEntry.Key),
+                .Join(orgs.Select(orgEntry => orgEntry.Key),
                     e => e.Value.OrganizationId,
                     i => i,
                     (e, i) => e)
@@ -562,10 +562,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Select(orgEntry => orgEntry.Key);
 
             var qry3 = persons
-                .Join(
-                    innerSequence,
-                    e => e.Value.OrganizationId, 
-                    i => i, 
+                .Join(innerSequence,
+                    e => e.Value.OrganizationId,
+                    i => i,
                     (e, i) => e)
                 .ToList();
 
