@@ -624,7 +624,7 @@ public class GridMapQueryExecutor {
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         QueryKey key = new QueryKey(qry.query(), topVer, segmentId, qry.parameters(params),
-                            distributedJoinMode, enforceJoinOrder, partsMap, parts);
+                                distributedJoinMode, enforceJoinOrder, partsMap, parts);
 
                         rs = runQuery(key, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
                     }
@@ -1224,8 +1224,8 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * Execute query specified by {@code key}.
-     * @param key Query key.
+     * Execute query specified by {@code key} or reuse result of the same concurrently running query.
+     * @param key Query key to throttle similar queries as needed.
      * @param node Cluster node.
      * @param mainCctx Cache context.
      * @param conn H2 connection.
@@ -1237,6 +1237,17 @@ public class GridMapQueryExecutor {
      */
     private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, GridCacheContext mainCctx, Connection conn,
         int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
+        if (!key.isThrottled()) {
+            ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
+
+            ResultSetWrapper res = new ResultSetWrapper(rs);
+
+            if (!res.tryTake())
+                throw new IllegalStateException();
+
+            return res;
+        }
+
         ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = runningFutures();
 
         ResultSetWrapper res = null;
@@ -1260,26 +1271,7 @@ public class GridMapQueryExecutor {
                 fut = newFut;
 
                 try {
-                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, key.qry, F.asList(key.params),
-                        true, timeout, cancel);
-
-                    if (evt) {
-                        ctx.event().record(new CacheQueryExecutedEvent<>(
-                            node,
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            mainCctx.namex(),
-                            null,
-                            key.qry,
-                            null,
-                            null,
-                            key.params,
-                            node.id(),
-                            null));
-                    }
-
-                    assert rs instanceof JdbcResultSet : rs.getClass();
+                    ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
 
                     // No need to worry about removing this key from the map if we're not the one who put it there
                     // or if our map is stale.
@@ -1303,6 +1295,45 @@ public class GridMapQueryExecutor {
         }
 
         return res;
+    }
+
+    /**
+     * Execute query on internal H2 instance and optionally record query event.
+     * @param node Cluster node.
+     * @param mainCctx Cache context.
+     * @param conn H2 connection.
+     * @param qry SQL query string.
+     * @param params Parameters.
+     * @param timeout Query timeout.
+     * @param cancel Query cancel state holder.
+     * @param evt {@code true} if this query event is recordable, {@code false} otherwise.
+     * @return Query result.
+     * @throws IgniteCheckedException if failed.
+     */
+    private ResultSet executeQuery(ClusterNode node, GridCacheContext mainCctx, Connection conn, String qry,
+        Object[] params, int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
+        ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry, F.asList(params),
+            true, timeout, cancel);
+
+        if (evt) {
+            ctx.event().record(new CacheQueryExecutedEvent<>(
+                node,
+                "SQL query executed.",
+                EVT_CACHE_QUERY_EXECUTED,
+                CacheQueryType.SQL.name(),
+                mainCctx.namex(),
+                null,
+                qry,
+                null,
+                null,
+                params,
+                node.id(),
+                null));
+        }
+
+        assert rs instanceof JdbcResultSet : rs.getClass();
+
+        return rs;
     }
 
     /**
@@ -1421,6 +1452,13 @@ public class GridMapQueryExecutor {
             res = 31 * res + (enforceJoinOrder ? 1 : 0);
             res = 31 * res + (partsMap != null ? partsMap.hashCode() : 0);
             return 31 * res + Arrays.hashCode(parts);
+        }
+
+        /**
+         * @return {@code true} if this key corresponds to a query whose result may be reused, {@code false} otherwise.
+         */
+        public boolean isThrottled() {
+            return parts != null;
         }
     }
 
