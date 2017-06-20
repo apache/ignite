@@ -1299,8 +1299,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         cctx.database().releaseHistoryForExchange();
 
         if (err == null && realExchange) {
-            for (CacheGroupContext grp : cctx.cache().cacheGroups())
-                grp.topology().onExchangeDone(grp.affinity().cachedAffinity(topologyVersion()));
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                if (!grp.isLocal())
+                    grp.topology().onExchangeDone(grp.affinity().cachedAffinity(topologyVersion()));
+            }
         }
 
         if (super.onDone(res, err) && realExchange) {
