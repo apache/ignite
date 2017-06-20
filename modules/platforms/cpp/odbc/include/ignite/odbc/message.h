@@ -86,8 +86,11 @@ namespace ignite
              * @param version Protocol version.
              * @param distributedJoins Distributed joins flag.
              * @param enforceJoinOrder Enforce join order flag.
+             * @param replicatedOnly Replicated only flag.
+             * @param collocated Collocated flag.
              */
-            HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder);
+            HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder,
+                bool replicatedOnly, bool collocated);
 
             /**
              * Destructor.
@@ -109,6 +112,12 @@ namespace ignite
 
             /** Enforce join order flag. */
             bool enforceJoinOrder;
+
+            /** Replicated only flag. */
+            bool replicatedOnly;
+
+            /** Collocated flag. */
+            bool collocated;
         };
 
         /**
