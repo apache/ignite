@@ -758,8 +758,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
-        for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop())
+        for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()){
             cctx.exchange().clearClientTopology(grpDesc.groupId());
+
+            CacheGroupContext gctx = cctx.cache().cacheGroup(grpDesc.groupId());
+
+            if (gctx != null){
+                gctx.affinity().cancelFutures(
+                    new IgniteCheckedException("Failed to wait for topology update, cache group is stopping."));
+            }
+        }
 
         Set<Integer> stoppedGrps = null;
 
