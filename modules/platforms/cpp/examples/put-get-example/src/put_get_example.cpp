@@ -85,9 +85,6 @@ int main()
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 512;
-
     cfg.springCfgPath = "platforms/cpp/examples/put-get-example/config/example-cache.xml";
 
     try

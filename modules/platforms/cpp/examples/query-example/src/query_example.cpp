@@ -393,9 +393,6 @@ int main()
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 512;
-
     cfg.springCfgPath = "platforms/cpp/examples/query-example/config/query-example.xml";
 
     try
