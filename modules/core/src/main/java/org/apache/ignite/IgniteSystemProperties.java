@@ -158,6 +158,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
 
+    /** Maximum size for exchange history. Default value is {@code 1000}.*/
+    public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
+
     /**
      * Name of the system property defining name of command line program.
      */
@@ -613,9 +616,6 @@ public final class IgniteSystemProperties {
      * Skip CRC calculation flag.
      */
     public static final String IGNITE_PDS_SKIP_CRC = "IGNITE_PDS_SKIP_CRC";
-
-    /** */
-    public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
 
     /**
      * WAL rebalance threshold.

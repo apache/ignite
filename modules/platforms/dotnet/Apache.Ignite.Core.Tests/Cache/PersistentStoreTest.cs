@@ -56,7 +56,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGridActivationNoPersistence()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            var cfg = TestUtils.GetTestConfiguration();
+            Assert.IsTrue(cfg.IsActiveOnStart);
+
+            using (var ignite = Ignition.Start(cfg))
             {
                 CheckIsActive(ignite, true);
 
@@ -65,6 +68,19 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 ignite.SetActive(true);
                 CheckIsActive(ignite, true);
+            }
+
+            cfg.IsActiveOnStart = false;
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                CheckIsActive(ignite, false);
+
+                ignite.SetActive(true);
+                CheckIsActive(ignite, true);
+
+                ignite.SetActive(false);
+                CheckIsActive(ignite, false);
             }
         }
 

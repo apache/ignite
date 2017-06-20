@@ -1633,6 +1633,11 @@
                     <xs:documentation>Size of the query thread pool.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="isActiveOnStart" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
