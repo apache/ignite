@@ -314,7 +314,6 @@ namespace ignite
                 default:
                 {
                     // This is a fail case.
-                    std::cout << (int)hdr << std::endl;
                     assert(false);
                     return;
                 }

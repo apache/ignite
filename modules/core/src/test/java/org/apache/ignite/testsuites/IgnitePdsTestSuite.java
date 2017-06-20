@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNe
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.file.ignitePdsCheckpointSimulationTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalDirectoriesConfigurationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
@@ -54,7 +54,7 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(PageMemoryImplTest.class);
 
         // Checkpointing smoke-test.
-        suite.addTestSuite(ignitePdsCheckpointSimulationTest.class);
+        suite.addTestSuite(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
 
         // BTree tests with store page memory.
         suite.addTestSuite(BPlusTreePageMemoryImplTest.class);

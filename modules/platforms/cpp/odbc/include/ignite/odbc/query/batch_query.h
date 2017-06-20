@@ -15,35 +15,43 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_QUERY_TYPE_INFO_QUERY
-#define _IGNITE_ODBC_QUERY_TYPE_INFO_QUERY
+#ifndef _IGNITE_ODBC_QUERY_BATCH_QUERY
+#define _IGNITE_ODBC_QUERY_BATCH_QUERY
 
 #include "ignite/odbc/query/query.h"
+#include "ignite/odbc/app/parameter_set.h"
+#include "ignite/odbc/cursor.h"
 
 namespace ignite
 {
     namespace odbc
     {
+        /** Connection forward-declaration. */
+        class Connection;
+
         namespace query
         {
             /**
-             * Type info query.
+             * Query.
              */
-            class TypeInfoQuery : public Query
+            class BatchQuery : public Query
             {
             public:
                 /**
                  * Constructor.
                  *
                  * @param diag Diagnostics collector.
-                 * @param sqlType SQL type.
+                 * @param connection Associated connection.
+                 * @param sql SQL query string.
+                 * @param params SQL params.
                  */
-                TypeInfoQuery(diagnostic::Diagnosable& diag, int16_t sqlType);
+                BatchQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                    const std::string& sql, const app::ParameterSet& params);
 
                 /**
                  * Destructor.
                  */
-                virtual ~TypeInfoQuery();
+                virtual ~BatchQuery();
 
                 /**
                  * Execute query.
@@ -62,10 +70,11 @@ namespace ignite
                 /**
                  * Fetch next result row to application buffers.
                  *
+                 * @param columnBindings Application buffers to put data to.
                  * @return Operation result.
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings);
-
+                
                 /**
                  * Get data of the specified column in the result set.
                  *
@@ -78,7 +87,7 @@ namespace ignite
                 /**
                  * Close query.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 virtual SqlResult::Type Close();
 
@@ -96,23 +105,56 @@ namespace ignite
                  */
                 virtual int64_t AffectedRows() const;
 
+                /**
+                 * Get SQL query string.
+                 *
+                 * @return SQL query string.
+                 */
+                const std::string& GetSql() const
+                {
+                    return sql;
+                }
+
             private:
-                IGNITE_NO_COPY_ASSIGNMENT(TypeInfoQuery);
+                IGNITE_NO_COPY_ASSIGNMENT(BatchQuery);
+
+                /**
+                 * Make query execute request and use response to set internal
+                 * state.
+                 *
+                 * @param begin Paramset interval beginning.
+                 * @param end Paramset interval end.
+                 * @param last Last page flag.
+                 * @return Result.
+                 */
+                SqlResult::Type MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last);
+
+                /** Connection associated with the statement. */
+                Connection& connection;
+
+                /** SQL Query. */
+                std::string sql;
+
+                /** Parameter bindings. */
+                const app::ParameterSet& params;
 
                 /** Columns metadata. */
-                meta::ColumnMetaVector columnsMeta;
+                meta::ColumnMetaVector resultMeta;
 
-                /** Executed flag. */
+                /** Number of rows affected. */
+                int64_t rowsAffected;
+
+                /** Number of parameter sets successfully processed. */
+                int64_t setsProcessed;
+
+                /** Query executed. */
                 bool executed;
 
-                /** Requested types. */
-                std::vector<int8_t> types;
-
-                /** Query cursor. */
-                std::vector<int8_t>::const_iterator cursor;
+                /** Data retrieved. */
+                bool dataRetrieved;
             };
         }
     }
 }
 
-#endif //_IGNITE_ODBC_QUERY_TYPE_INFO_QUERY
+#endif //_IGNITE_ODBC_QUERY_BATCH_QUERY
