@@ -1085,27 +1085,16 @@ public class GridMapQueryExecutor {
          */
         @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         private QueryResult(ResultSetWrapper rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
-                            Object[] params) {
+            Object[] params) {
             this.cctx = cctx;
             this.qry = qry;
             this.params = params;
             this.qrySrcNodeId = qrySrcNodeId;
             this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
-            ResultInterface res = null;
-
             if (rs != null) {
-                try {
-                    res = (ResultInterface)RESULT_FIELD.get(rs.resultSet());
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e); // Must not happen.
-                }
-            }
-
-            if (res != null) {
                 this.rs = rs;
-                this.res = res;
+                this.res = rs.rows();
 
                 rowCnt = res.getRowCount();
                 cols = res.getVisibleColumnCount();
@@ -1237,7 +1226,7 @@ public class GridMapQueryExecutor {
      */
     private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, GridCacheContext mainCctx, Connection conn,
         int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
-        if (!key.isThrottled()) {
+        if (!isThrottled(key)) {
             ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
 
             ResultSetWrapper res = new ResultSetWrapper(rs);
@@ -1295,6 +1284,14 @@ public class GridMapQueryExecutor {
         }
 
         return res;
+    }
+
+    /**
+     * @return {@code true} if this key corresponds to a query whose result may be reused, {@code false} otherwise.
+     */
+    private boolean isThrottled(QueryKey key) {
+        // Throttle the query if we don't have partitions list set, OR if it's what we've got from partitions map.
+        return key.parts == null || (key.partsMap != null && key.partsMap.get(ctx.localNodeId()) == key.parts);
     }
 
     /**
@@ -1453,13 +1450,6 @@ public class GridMapQueryExecutor {
             res = 31 * res + (partsMap != null ? partsMap.hashCode() : 0);
             return 31 * res + Arrays.hashCode(parts);
         }
-
-        /**
-         * @return {@code true} if this key corresponds to a query whose result may be reused, {@code false} otherwise.
-         */
-        public boolean isThrottled() {
-            return parts != null;
-        }
     }
 
     /** */
@@ -1469,6 +1459,9 @@ public class GridMapQueryExecutor {
 
         /** Wrapped result set. */
         private final ResultSet rs;
+
+        /** Rows of {@link #rs}. */
+        private final ResultInterface rows;
 
         /** State flag. */
         private volatile boolean closed;
@@ -1481,15 +1474,24 @@ public class GridMapQueryExecutor {
             A.notNull(rs, "rs");
 
             this.rs = rs;
+
+            try {
+                this.rows = (ResultInterface)RESULT_FIELD.get(rs);
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e); // Must not happen.
+            }
+
+            assert rows != null;
         }
 
         /**
          * @return Wrapped result set.
          */
-        synchronized ResultSet resultSet() {
+        synchronized ResultInterface rows() {
             checkState();
 
-            return rs;
+            return rows;
         }
 
         /**
