@@ -242,7 +242,7 @@ export default ['$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegac
                 __original_value = ModelNormalizer.normalize($scope.backupItem);
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.igfs');
+                    $state.go('base.configuration.tabs.advanced.igfs');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);

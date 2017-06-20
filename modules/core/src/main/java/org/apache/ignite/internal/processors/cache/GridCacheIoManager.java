@@ -249,6 +249,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
 
+                synchronized (pendingMsgs) {
+                    if (pendingMsgs.size() < 100)
+                        pendingMsgs.add(cacheMsg);
+                }
+
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         Runnable c = new Runnable() {
@@ -349,8 +354,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug(msg0.toString());
                 }
-                else
+                else {
                     U.error(log, msg0.toString());
+
+                    try {
+                        cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
+
+                        processFailedMessage(nodeId, cacheMsg, c);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to process failed message: " + e, e);
+                    }
+                }
 
                 return;
             }

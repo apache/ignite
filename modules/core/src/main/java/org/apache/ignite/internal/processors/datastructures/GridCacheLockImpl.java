@@ -90,7 +90,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
     private IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheLockState> ctx;
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -1046,22 +1046,19 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
      * @param name Reentrant lock name.
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
-     * @param ctx Cache context.
      */
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView) {
         assert name != null;
         assert key != null;
-        assert ctx != null;
         assert lockView != null;
 
         this.name = name;
         this.key = key;
         this.lockView = lockView;
-        this.ctx = ctx;
+        this.ctx = lockView.context();
 
         log = ctx.logger(getClass());
     }
@@ -1475,8 +1472,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.lockView = kctx.cache().atomicsCache();
-        this.ctx = lockView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheLockState>context().cacheContext(ctx.cacheId());
+        this.lockView = ctx.cache();
     }
 
     /** {@inheritDoc} */
@@ -1508,6 +1505,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         try {
             IgniteLock lock = IgnitionEx.localIgnite().context().dataStructures().reentrantLock(
                 name,
+                null,
                 false,
                 false,
                 false);
@@ -1531,7 +1529,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             try {
                 boolean force = sync != null && (sync.isBroken() && !sync.failoverSafe);
 
-                ctx.kernalContext().dataStructures().removeReentrantLock(name, force);
+                ctx.kernalContext().dataStructures().removeReentrantLock(name, ctx.group().name(), force);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

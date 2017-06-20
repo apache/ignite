@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
+import maskNull from 'app/core/utils/maskNull';
 
-const maskNull = (val) => _.isNil(val) ? 'null' : val;
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 const State = {
     INIT: 'INIT',
@@ -27,9 +28,9 @@ const State = {
 };
 
 export default class IgniteAgentManager {
-    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal'];
+    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal', 'UserNotifications'];
 
-    constructor($root, $q, socketFactory, AgentModal) {
+    constructor($root, $q, socketFactory, AgentModal, UserNotifications) {
         this.$root = $root;
         this.$q = $q;
         this.socketFactory = socketFactory;
@@ -39,12 +40,17 @@ export default class IgniteAgentManager {
          */
         this.AgentModal = AgentModal;
 
+        /**
+         * @type {UserNotifications}
+         */
+        this.UserNotifications = UserNotifications;
+
         this.promises = new Set();
 
         $root.$on('$stateChangeSuccess', () => this.stopWatch());
 
-        this.ignite2x = false;
-        this.ignite2_1 = false;
+        this.ignite2x = true;
+        this.ignite2_1 = true;
 
         if (!$root.IgniteDemoMode) {
             $root.$watch(() => _.get(this, 'cluster.clusterVersion'), (ver) => {
@@ -130,6 +136,8 @@ export default class IgniteAgentManager {
             else
                 self.connectionState.next(State.CLUSTER_DISCONNECTED);
         });
+
+        self.socket.on('user:notifications', (notification) => this.UserNotifications.notification = notification);
     }
 
     saveToStorage(cluster = this.cluster) {
@@ -558,7 +566,7 @@ export default class IgniteAgentManager {
      */
     queryClose(nid, queryId) {
         if (this.ignite2x) {
-            return this.visorTask('queryClose', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
+            return this.visorTask('queryCloseX2', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
                 nid + '=' + queryId);
         }
 

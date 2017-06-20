@@ -87,7 +87,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
     private IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheSemaphoreState> ctx;
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -451,23 +451,20 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
      * @param name Semaphore name.
      * @param key Semaphore key.
      * @param semView Semaphore projection.
-     * @param ctx Cache context.
      */
     public GridCacheSemaphoreImpl(
         String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView,
-        GridCacheContext ctx
+        IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView
     ) {
         assert name != null;
         assert key != null;
         assert semView != null;
-        assert ctx != null;
 
         this.name = name;
         this.key = key;
         this.semView = semView;
-        this.ctx = ctx;
+        this.ctx = semView.context();
 
         log = ctx.logger(getClass());
     }
@@ -966,8 +963,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.semView = kctx.cache().atomicsCache();
-        this.ctx = semView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheSemaphoreState>context().cacheContext(ctx.cacheId());
+        this.semView = ctx.cache();
     }
 
     /** {@inheritDoc} */
@@ -1001,6 +998,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
             IgniteSemaphore sem = IgnitionEx.localIgnite().context().dataStructures().semaphore(
                 t.get2(),
+                null,
                 0,
                 false,
                 false);
@@ -1022,7 +1020,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
     @Override public void close() {
         if (!rmvd) {
             try {
-                ctx.kernalContext().dataStructures().removeSemaphore(name);
+                ctx.kernalContext().dataStructures().removeSemaphore(name, ctx.group().name());
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

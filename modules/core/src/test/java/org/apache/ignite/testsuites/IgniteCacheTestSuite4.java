@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarl
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDiscoveryDataConcurrentJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheStartOnJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
@@ -305,6 +306,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(GridCacheDhtTxPreloadSelfTest.class);
         suite.addTestSuite(GridCacheNearTxPreloadSelfTest.class);
         suite.addTestSuite(GridReplicatedTxPreloadTest.class);
+        suite.addTestSuite(CacheGroupsPreloadTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheFilterTest.class);
 

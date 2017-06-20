@@ -79,7 +79,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context. */
-    private volatile GridCacheContext ctx;
+    private volatile GridCacheContext<GridCacheInternalKey, GridCacheAtomicSequenceValue> ctx;
 
     /** Local value of sequence. */
     @GridToStringInclude(sensitive = true)
@@ -113,7 +113,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param name Sequence name.
      * @param key Sequence key.
      * @param seqView Sequence projection.
-     * @param ctx CacheContext.
      * @param batchSize Sequence batch size.
      * @param locVal Local counter.
      * @param upBound Upper bound.
@@ -121,18 +120,16 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     public GridCacheAtomicSequenceImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
-        GridCacheContext ctx,
         int batchSize,
         long locVal,
         long upBound)
     {
         assert key != null;
         assert seqView != null;
-        assert ctx != null;
         assert locVal <= upBound;
 
         this.batchSize = batchSize;
-        this.ctx = ctx;
+        this.ctx = seqView.context();
         this.key = key;
         this.seqView = seqView;
         this.upBound = upBound;
@@ -330,7 +327,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
             if (rmvd)
                 return;
 
-            ctx.kernalContext().dataStructures().removeSequence(name);
+            ctx.kernalContext().dataStructures().removeSequence(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -420,8 +417,8 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.seqView = kctx.cache().atomicsCache();
-        this.ctx = seqView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>context().cacheContext(ctx.cacheId());
+        this.seqView = ctx.cache();
     }
 
     /** {@inheritDoc} */
@@ -453,7 +450,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().sequence(t.get2(), 0L, false);
+            return t.get1().dataStructures().sequence(t.get2(), null, 0L, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

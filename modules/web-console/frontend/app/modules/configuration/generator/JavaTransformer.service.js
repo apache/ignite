@@ -1042,7 +1042,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);
 
         const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
-            cache.mode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
+            cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
         return this.igniteConfiguration(cfg, pkg, clsName, clientNearCaches);
     }
@@ -1239,7 +1239,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     tempVar = true;
 
-                    fldHashCode = `${javaName} != +0.0f ? Float.floatToIntBits(${javaName}) : 0`;
+                    fldHashCode = '(int) (ig_hash_temp ^ (ig_hash_temp >>> 32))';
 
                     break;
                 default:

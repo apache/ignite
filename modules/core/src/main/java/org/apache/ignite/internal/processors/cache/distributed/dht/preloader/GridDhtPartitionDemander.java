@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -297,6 +298,20 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
+            for (GridCacheContext cctx : grp.caches()) {
+                if (cctx.config().isStatisticsEnabled()) {
+                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                    metrics.clearRebalanceCounters();
+
+                    rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                            metrics.clearRebalanceCounters();
+                        }
+                    });
+                }
+            }
+
             if (assigns.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to cancelled assignments.");
@@ -372,7 +387,6 @@ public class GridDhtPartitionDemander {
     /**
      * @param fut Rebalance future.
      * @param assigns Assignments.
-     * @throws IgniteCheckedException If failed.
      */
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assigns) {
         assert fut != null;
@@ -442,8 +456,7 @@ public class GridDhtPartitionDemander {
                         @Override public void run() {
                             try {
                                 if (!fut.isDone()) {
-                                    ctx.io().sendOrderedMessage(node,
-                                        rebalanceTopics.get(finalCnt), initD, grp.ioPolicy(), initD.timeout());
+                                    ctx.io().sendOrderedMessage(node, rebalanceTopics.get(finalCnt), initD, grp.ioPolicy(), initD.timeout());
 
                                     // Cleanup required in case partitions demanded in parallel with cancellation.
                                     synchronized (fut) {
@@ -596,8 +609,34 @@ public class GridDhtPartitionDemander {
 
         final GridDhtPartitionTopology top = grp.topology();
 
+        if (grp.sharedGroup()) {
+            for (GridCacheContext cctx : grp.caches()) {
+                if (cctx.config().isStatisticsEnabled()) {
+                    long keysCnt = supply.keysForCache(cctx.cacheId());
+
+                    if (keysCnt != -1)
+                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
+
+                    // Can not be calculated per cache.
+                    cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
+                }
+            }
+        }
+        else {
+            GridCacheContext cctx = grp.singleCacheContext();
+
+            if (cctx.config().isStatisticsEnabled()) {
+                if (supply.estimatedKeysCount() != -1)
+                    cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supply.estimatedKeysCount());
+
+                cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
+            }
+        }
+
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
+
+            GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
             // Preload.
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
@@ -637,6 +676,12 @@ public class GridDhtPartitionDemander {
 
                                     break;
                                 }
+
+                                if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
+                                    cctx = ctx.cacheContext(entry.cacheId());
+
+                                if(cctx != null && cctx.config().isStatisticsEnabled())
+                                    cctx.cache().metrics0().onRebalanceKeyReceived();
                             }
 
                             // If message was last for this partition,
@@ -734,34 +779,41 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
 
-                if (preloadPred == null || preloadPred.apply(entry)) {
-                    if (cached.initialValue(
-                        entry.value(),
-                        entry.version(),
-                        entry.ttl(),
-                        entry.expireTime(),
-                        true,
-                        topVer,
-                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
-                        false
-                    )) {
-                        cctx.evicts().touch(cached, topVer); // Start tracking.
+                cctx.shared().database().checkpointReadLock();
 
-                        if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
-                                false, null, null, null, true);
-                    }
-                    else {
-                        cctx.evicts().touch(cached, topVer); // Start tracking.
+                try {
+                    if (preloadPred == null || preloadPred.apply(entry)) {
+                        if (cached.initialValue(
+                            entry.value(),
+                            entry.version(),
+                            entry.ttl(),
+                            entry.expireTime(),
+                            true,
+                            topVer,
+                            cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                            false
+                        )) {
+                            cctx.evicts().touch(cached, topVer); // Start tracking.
 
-                        if (log.isDebugEnabled())
-                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                                ", part=" + p + ']');
+                            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
+                                cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
+                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
+                                    false, null, null, null, true);
+                        }
+                        else {
+                            cctx.evicts().touch(cached, topVer); // Start tracking.
+
+                            if (log.isDebugEnabled())
+                                log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                                    ", part=" + p + ']');
+                        }
                     }
+                    else if (log.isDebugEnabled())
+                        log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
+                }
             }
             catch (GridCacheEntryRemovedException ignored) {
                 if (log.isDebugEnabled())

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -55,6 +56,14 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
     /** */
     private static final String DUP_DFLT_CACHES_IGNITE_INSTANCE_NAME = "duplicateDefaultCachesCheckFails";
+
+    /** */
+    private static final String RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME =
+        "reservedForDsCacheNameCheckFails";
+
+    /** */
+    private static final String RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
+            "reservedForDsCacheGroupNameCheckFails";
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -93,7 +102,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setCacheMode(PARTITIONED);
         namedCacheCfg.setRebalanceMode(ASYNC);
         namedCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
         namedCacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
@@ -113,6 +121,14 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         else
             // Normal configuration.
             cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg);
+
+        if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME))
+            namedCacheCfg.setName(DataStructuresProcessor.ATOMICS_CACHE_NAME + "@abc");
+        else
+            namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
+
+        if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME))
+            namedCacheCfg.setGroupName("default-ds-group");
 
         return cfg;
     }
@@ -155,6 +171,12 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
             // This grid should not start.
             startInvalidGrid(WRONG_AFFINITY_MAPPER_IGNITE_INSTANCE_NAME);
+
+            // This grid should not start.
+            startInvalidGrid(RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME);
+
+            // This grid should not start.
+            startInvalidGrid(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME);
 
             // This grid will start normally.
             startGrid(1);

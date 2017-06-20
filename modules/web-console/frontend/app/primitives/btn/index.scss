@@ -182,11 +182,66 @@
         }
     }
 
-    @include active-focus-shadows($active: ());
-
     &[disabled] {
         color: change-color($accent-color, $saturation: 57%, $lightness: 68%);
     }
+
+}
+
+@mixin btn-ignite--link-dashed(
+    $color,
+    $activeHover,
+    $disabled
+) {
+    background: transparent;
+    color: $color;
+
+    span {
+        background:
+            linear-gradient(to right, $color, transparent),
+            linear-gradient(to right, $color 70%, transparent 0%) repeat-x left bottom;
+        background-size: 0, 8px 1px, 0, 0;
+    }
+
+    &:hover, &.hover,
+    &:active, &.active {
+        &:not([disabled]) {
+            color: $activeHover;
+
+            span {
+                background:
+                    linear-gradient(to right, $activeHover, transparent),
+                    linear-gradient(to right, $activeHover 70%, transparent 0%) repeat-x left bottom;
+                background-size: 0, 8px 1px, 0, 0;
+            }
+        }
+    }
+
+    &[disabled] {
+        color: $disabled;
+
+        span {
+            background:
+                linear-gradient(to right, $disabled, transparent),
+                linear-gradient(to right, $disabled 70%, transparent 0%) repeat-x left bottom;
+            background-size: 0, 8px 1px, 0, 0;
+        }
+    }
+
+    @include active-focus-shadows($active: ());
+}
+
+.btn-ignite--link-dashed-success {
+    $color: $ignite-brand-success;
+    $activeHover: change-color($color, $lightness: 26%);
+    $disabled: change-color($color, $saturation: 57%, $lightness: 68%);
+
+    @include btn-ignite--link-dashed($color, $activeHover, $disabled);
+}
+
+.btn-ignite--link-dashed-secondary {
+    $activeHover: change-color($ignite-brand-success, $lightness: 26%);
+    @include btn-ignite--link-dashed($text-color, $activeHover, $gray-light);
 }
 
 .btn-ignite--secondary {

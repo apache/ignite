@@ -23,7 +23,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,6 +43,18 @@ public abstract class VisorDataTransferObject implements Externalizable {
     @Nullable protected static <T> List<T> toList(Collection<T> col) {
         if (col != null)
             return new ArrayList<>(col);
+
+        return null;
+    }
+
+    /**
+     * @param col Source collection.
+     * @param <T> Collection type.
+     * @return List based on passed collection.
+     */
+    @Nullable protected static <T> Set<T> toSet(Collection<T> col) {
+        if (col != null)
+            return new LinkedHashSet<>(col);
 
         return null;
     }

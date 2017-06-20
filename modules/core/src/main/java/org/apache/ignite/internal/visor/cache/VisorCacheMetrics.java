@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -113,9 +112,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Rollbacks per second. */
     private int rollbacksPerSec;
 
-    /** Gets query metrics for cache. */
-    private VisorQueryMetrics qryMetrics;
-
     /** Current size of evict queue used to batch up evictions. */
     private int dhtEvictQueueCurrSize;
 
@@ -161,11 +157,32 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Number of cached rolled back DHT transaction IDs. */
     private int txDhtRolledbackVersionsSize;
 
+    /** Number of cache entries stored in heap memory. */
+    private long heapEntriesCnt;
+
     /** Memory size allocated in off-heap. */
     private long offHeapAllocatedSize;
 
     /** Number of cache entries stored in off-heap memory. */
     private long offHeapEntriesCnt;
+
+    /** Total number of partitions on current node. */
+    private int totalPartsCnt;
+
+    /** Number of currently rebalancing partitions on current node. */
+    private int rebalancingPartsCnt;
+
+    /** Estimated number of keys to be rebalanced on current node. */
+    private long keysToRebalanceLeft;
+
+    /** Estimated rebalancing speed in keys. */
+    private long rebalancingKeysRate;
+
+    /** Estimated rebalancing speed in bytes. */
+    private long rebalancingBytesRate;
+
+    /** Gets query metrics for cache. */
+    private VisorQueryMetrics qryMetrics;
 
     /**
      * Calculate rate of metric per second.
@@ -229,8 +246,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         commitsPerSec = perSecond(m.getAverageTxCommitTime());
         rollbacksPerSec = perSecond(m.getAverageTxRollbackTime());
 
-        qryMetrics = new VisorQueryMetrics(c.queryMetrics());
-
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();
         txXidMapSize = m.getTxXidMapSize();
@@ -247,10 +262,17 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
         txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
 
-        GridCacheAdapter<Object, Object> ca = cacheProcessor.internalCache(cacheName);
+        heapEntriesCnt = m.getHeapEntriesCount();
+        offHeapAllocatedSize = m.getOffHeapAllocatedSize();
+        offHeapEntriesCnt = m.getOffHeapEntriesCount();
 
-        offHeapAllocatedSize = ca.offHeapAllocatedSize();
-        offHeapEntriesCnt = ca.offHeapEntriesCount();
+        totalPartsCnt = m.getTotalPartitionsCount();
+        rebalancingPartsCnt = m.getRebalancingPartitionsCount();
+        keysToRebalanceLeft = m.getKeysToRebalanceLeft();
+        rebalancingKeysRate = m.getRebalancingKeysRate();
+        rebalancingBytesRate = m.getRebalancingBytesRate();
+
+        qryMetrics = new VisorQueryMetrics(c.queryMetrics());
     }
 
     /**
@@ -543,6 +565,13 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Number of entries in heap memory.
+     */
+    public long getHeapEntriesCount() {
+        return heapEntriesCnt;
+    }
+
+    /**
      * @return Memory size allocated in off-heap.
      */
     public long getOffHeapAllocatedSize() {
@@ -552,14 +581,50 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /**
      * @return Number of cache entries stored in off-heap memory.
      */
-    public long offHeapEntriesCount() {
+    public long getOffHeapEntriesCount() {
         return offHeapEntriesCnt;
+    }
+
+    /**
+     * @return Total number of partitions on current node.
+     */
+    public int getTotalPartitionsCount() {
+        return totalPartsCnt;
+    }
+
+    /**
+     * @return Number of currently rebalancing partitions on current node.
+     */
+    public int getRebalancingPartitionsCount() {
+        return rebalancingPartsCnt;
+    }
+
+    /**
+     * @return Estimated number of keys to be rebalanced on current node.
+     */
+    public long getKeysToRebalanceLeft() {
+        return keysToRebalanceLeft;
+    }
+
+    /**
+     * @return Estimated rebalancing speed in keys.
+     */
+    public long getRebalancingKeysRate() {
+        return rebalancingKeysRate;
+    }
+
+    /**
+     * @return Estimated rebalancing speed in bytes.
+     */
+    public long getRebalancingBytesRate() {
+        return rebalancingBytesRate;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeEnum(out, mode);
+
         out.writeBoolean(sys);
         out.writeInt(size);
         out.writeInt(keySize);
@@ -583,6 +648,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeInt(commitsPerSec);
         out.writeInt(rollbacksPerSec);
         out.writeInt(dhtEvictQueueCurrSize);
+
         out.writeInt(txThreadMapSize);
         out.writeInt(txXidMapSize);
         out.writeInt(txCommitQueueSize);
@@ -597,8 +663,17 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeInt(txDhtStartVerCountsSize);
         out.writeInt(txDhtCommittedVersionsSize);
         out.writeInt(txDhtRolledbackVersionsSize);
+
+        out.writeLong(heapEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
         out.writeLong(offHeapEntriesCnt);
+
+        out.writeInt(totalPartsCnt);
+        out.writeInt(rebalancingPartsCnt);
+        out.writeLong(keysToRebalanceLeft);
+        out.writeLong(rebalancingKeysRate);
+        out.writeLong(rebalancingBytesRate);
+
         out.writeObject(qryMetrics);
     }
 
@@ -629,6 +704,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         commitsPerSec = in.readInt();
         rollbacksPerSec = in.readInt();
         dhtEvictQueueCurrSize = in.readInt();
+
         txThreadMapSize = in.readInt();
         txXidMapSize = in.readInt();
         txCommitQueueSize = in.readInt();
@@ -643,8 +719,17 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         txDhtStartVerCountsSize = in.readInt();
         txDhtCommittedVersionsSize = in.readInt();
         txDhtRolledbackVersionsSize = in.readInt();
+
+        heapEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
         offHeapEntriesCnt = in.readLong();
+
+        totalPartsCnt = in.readInt();
+        rebalancingPartsCnt = in.readInt();
+        keysToRebalanceLeft = in.readLong();
+        rebalancingKeysRate = in.readLong();
+        rebalancingBytesRate = in.readLong();
+
         qryMetrics = (VisorQueryMetrics)in.readObject();
     }
 
