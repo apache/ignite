@@ -40,6 +40,13 @@ public interface GridQueryTypeDescriptor {
     public String tableName();
 
     /**
+     * SQL origin flag.
+     *
+     * @return {@code true} if this type was registered as result of {@code CREATE TABLE}, {@code false} otherwise.
+     */
+    public boolean sql();
+
+    /**
      * Gets mapping from field name to its type.
      *
      * @return Fields that can be indexed, participate in queries and can be queried using method.

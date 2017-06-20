@@ -41,7 +41,9 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.command.ddl.CreateTableData;
+import org.h2.engine.DbObject;
 import org.h2.engine.Session;
+import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.index.SpatialIndex;
@@ -49,6 +51,7 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.schema.SchemaObject;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
@@ -450,6 +453,37 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Override public void removeChildrenAndResources(Session ses) {
+        super.removeChildrenAndResources(ses);
+
+        // Clear metadata for all used indexes if this table was created with SQL.
+        if (desc.type().sql()) {
+            // Clear all beyond PK.
+            while (idxs.size() > pkIndexPos + 1) {
+                Index idx = idxs.get(pkIndexPos + 1);
+
+                if (idx.getName() != null)
+                    database.removeSchemaObject(ses, idx);
+
+                idxs.remove(idx);
+            }
+
+            if (SysProperties.CHECK) {
+                for (SchemaObject obj : database.getAllSchemaObjects(DbObject.INDEX)) {
+                    Index idx = (Index) obj;
+                    if (idx.getTable() == this)
+                        DbException.throwInternalError("index not dropped: " + idx.getName());
+                }
+            }
+        }
+
+        database.removeMeta(ses, getId());
+        idxs.clear();
+        invalidate();
     }
 
     /**

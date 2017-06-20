@@ -500,6 +500,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             return null;
         }
 
+        /** {@inheritDoc} */
+        @Override public boolean sql() {
+            return false;
+        }
+
         /**
          * @return Cache name.
          */
