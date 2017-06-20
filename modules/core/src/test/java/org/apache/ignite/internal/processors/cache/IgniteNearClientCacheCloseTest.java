@@ -137,6 +137,8 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
             keys.add(nearKey(srvCache));
         }
 
+        awaitPartitionMapExchange();
+
         for (Integer key : keys) {
             IgniteCache<Object, Object> clientCache =
                 ignite(srvs).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());

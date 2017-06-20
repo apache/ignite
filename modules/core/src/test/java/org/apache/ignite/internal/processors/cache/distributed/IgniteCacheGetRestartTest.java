@@ -112,7 +112,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIME + 60_000;
+        return TEST_TIME + 3 * 60_000;
     }
 
     /**
@@ -197,6 +197,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     int nodeIdx = restartNodeIdx.getAndIncrement();
+
+                    Thread.currentThread().setName("restart-thread-" + nodeIdx);
 
                     boolean clientMode = clientNode.compareAndSet(false, true);
 

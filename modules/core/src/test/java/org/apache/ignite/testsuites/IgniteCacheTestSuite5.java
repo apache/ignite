@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCacheAffinitySelfTest;
 import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
 import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
 import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
+import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTest;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
@@ -88,6 +89,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicProtocolTest.class);
 
         suite.addTestSuite(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
+
+        suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
 
         return suite;
     }
