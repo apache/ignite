@@ -2699,7 +2699,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void clearReserveForLoad(GridCacheVersion ver) throws IgniteCheckedException {
+    @Override public synchronized void clearReserveForLoad(GridCacheVersion ver) {
         if (obsoleteVersionExtras() != null)
             return;
 
