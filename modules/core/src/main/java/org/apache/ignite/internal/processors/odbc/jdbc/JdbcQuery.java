@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * SQL listener column metadata.
