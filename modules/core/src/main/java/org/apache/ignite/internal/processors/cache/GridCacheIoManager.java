@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -355,18 +354,21 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug(msg0.toString());
                 }
-                else
+                else {
                     U.error(log, msg0.toString());
 
-            try {
-                cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
+                    try {
+                        cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
 
-                processFailedMessage(nodeId, cacheMsg, c);
+                        processFailedMessage(nodeId, cacheMsg, c);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to process failed message: " + e, e);
+                    }
+                }
+
+                return;
             }
-            catch (Exception e) {
-                U.error(log, "Failed to process failed message: " + e, e);
-            }return;
-        }
 
             onMessage0(nodeId, cacheMsg, c);
         }

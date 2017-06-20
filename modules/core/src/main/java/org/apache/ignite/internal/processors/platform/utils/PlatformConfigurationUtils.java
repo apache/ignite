@@ -568,6 +568,8 @@ public class PlatformConfigurationUtils {
             cfg.setClientFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setLongQueryWarningTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setActiveOnStart(in.readBoolean());
 
         // Thread pools.
         if (in.readBoolean())
@@ -1014,6 +1016,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getClientFailureDetectionTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getLongQueryWarningTimeout());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isActiveOnStart());
 
         // Thread pools.
         w.writeBoolean(true);

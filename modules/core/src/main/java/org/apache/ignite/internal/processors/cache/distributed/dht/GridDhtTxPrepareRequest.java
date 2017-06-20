@@ -121,8 +121,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
-     * @param retVal Need return value flag.
      * @param addDepInfo Deployment info flag.
+     * @param storeWriteThrough Cache store write through flag.
+     * @param retVal Need return value flag.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -139,6 +140,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
+        boolean storeWriteThrough,
         boolean retVal) {
         super(tx,
             timeout,
@@ -161,6 +163,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
+        storeWriteThrough(storeWriteThrough);
         needReturnValue(retVal);
 
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());

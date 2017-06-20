@@ -244,7 +244,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         final int cacheId, FullPageId[] pages
     ) throws Exception {
         // Mark the start position.
-        CheckpointRecord cpRec = new CheckpointRecord(null, false);
+        CheckpointRecord cpRec = new CheckpointRecord(null);
 
         WALPointer start = wal.log(cpRec);
 
@@ -338,7 +338,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             info("Finished checkpoint");
         }
 
-        wal.fsync(wal.log(new CheckpointRecord(null, false)));
+        wal.fsync(wal.log(new CheckpointRecord(null)));
 
         for (FullPageId fullId : pages) {
             long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());

@@ -38,7 +38,7 @@ public abstract class WALRecord {
         /** */
         DATA_RECORD,
 
-        /** */
+        /** Checkpoint (begin) record */
         CHECKPOINT_RECORD,
 
         /** */
@@ -127,7 +127,7 @@ public abstract class WALRecord {
         /** */
         PARTITION_META_PAGE_UPDATE_COUNTERS,
 
-        /** */
+        /** Memory recovering start marker */
         MEMORY_RECOVERY,
 
         /** */

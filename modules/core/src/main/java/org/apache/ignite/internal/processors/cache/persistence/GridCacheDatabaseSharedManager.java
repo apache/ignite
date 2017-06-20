@@ -246,7 +246,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private FilePageStoreManager storeMgr;
 
-    /** */
+    /** Checkpoint metadata directory ("cp"), contains files with checkpoint start and end */
     private File cpDir;
 
     /** */
@@ -2109,7 +2109,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
-            CheckpointRecord cpRec = new CheckpointRecord(null, false);
+            CheckpointRecord cpRec = new CheckpointRecord(null);
 
             WALPointer cpPtr = null;
 
@@ -2581,7 +2581,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Checkpoint history.
+     * Checkpoint history. Holds chronological ordered map with {@link GridCacheDatabaseSharedManager.CheckpointEntry CheckpointEntries}.
+     * Data is loaded from corresponding checkpoint directory.
+     * This directory holds files for checkpoint start and end.
      */
     @SuppressWarnings("PublicInnerClass")
     public class CheckpointHistory {
