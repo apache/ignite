@@ -29,10 +29,10 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     private int [] updateCnts;
 
     /** Batch update error code. */
-    private int batchErrCode;
+    private int errCode;
 
     /** Batch update error message. */
-    private String batchErr;
+    private String errMsg;
 
     /**
      * Condtructor.
@@ -50,6 +50,8 @@ public class JdbcBatchExecuteResult extends JdbcResult {
         super(BATCH_EXEC);
 
         this.updateCnts = updateCnts;
+        this.errCode = errCode;
+        this.errMsg = errMsg;
     }
 
     /**
@@ -62,21 +64,23 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     /**
      * @return Batch error code.
      */
-    public int batchErrorCode() {
-        return batchErrCode;
+    public int errorCode() {
+        return errCode;
     }
 
     /**
      * @return Batch error message.
      */
-    public String batchErrorMessage() {
-        return batchErr;
+    public String errorMessage() {
+        return errMsg;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
+        writer.writeInt(errCode);
+        writer.writeString(errMsg);
         writer.writeIntArray(updateCnts);
     }
 
@@ -85,6 +89,8 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
+        errCode = reader.readInt();
+        errMsg = reader.readString();
         updateCnts = reader.readIntArray();
     }
 }

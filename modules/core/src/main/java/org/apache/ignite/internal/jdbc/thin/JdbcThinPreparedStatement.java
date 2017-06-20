@@ -40,6 +40,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 
 /**
  * JDBC prepared statement implementation.
@@ -232,7 +233,12 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (batch == null)
+            batch = new ArrayList<>();
+
+        batch.add(new JdbcQuery(sql, args.toArray(new Object[args.size()])));
+
+        args = null;
     }
 
     /** {@inheritDoc} */
