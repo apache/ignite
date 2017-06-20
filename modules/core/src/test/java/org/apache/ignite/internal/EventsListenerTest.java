@@ -77,7 +77,7 @@ public class EventsListenerTest extends GridCommonAbstractTest {
      */
     private static class LocalListener implements IgniteBiPredicate<UUID, DiscoveryEvent> {
         /** Latch. */
-        CountDownLatch latch;
+        private CountDownLatch latch;
 
         /**
          * @param latch Latch.
@@ -88,7 +88,6 @@ public class EventsListenerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         public boolean apply(UUID uuid, DiscoveryEvent event) {
-
             latch.countDown();
 
             return true;
@@ -100,7 +99,7 @@ public class EventsListenerTest extends GridCommonAbstractTest {
      */
     private static class RemoteDiscoveryEventFilter implements IgnitePredicate<DiscoveryEvent> {
         /** Latch. */
-        CountDownLatch latch;
+        private CountDownLatch latch;
 
         /**
          * @param latch Latch.
@@ -111,11 +110,9 @@ public class EventsListenerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(DiscoveryEvent event) {
-
             latch.countDown();
 
             return true;
         }
-
     }
 }
