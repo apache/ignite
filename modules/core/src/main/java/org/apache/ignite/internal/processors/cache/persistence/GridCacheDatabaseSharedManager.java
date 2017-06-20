@@ -2581,7 +2581,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Checkpoint history. Holds chronological ordered map with {@link CheckpointEntry}s.
+     * Checkpoint history. Holds chronological ordered map with {@link GridCacheDatabaseSharedManager.CheckpointEntry CheckpointEntries}.
      * Data is loaded from corresponding checkpoint directory.
      * This directory holds files for checkpoint start and end.
      */
