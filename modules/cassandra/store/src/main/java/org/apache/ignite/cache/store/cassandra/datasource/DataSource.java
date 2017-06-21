@@ -56,9 +56,6 @@ public class DataSource implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default expiration timeout for Cassandra driver session. */
-    public static final long DFLT_SESSION_EXPIRATION_TIMEOUT = 300000; // 5 minutes.
-
     /**
      * Null object, used as a replacement for those Cassandra connection options which
      * don't support serialization (RetryPolicy, LoadBalancingPolicy and etc).

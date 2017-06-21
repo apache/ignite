@@ -163,12 +163,19 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             DummyService.exeLatch(name, latch);
 
+            int clients = 2;
+
             startExtraNodes(servers, clients);
 
             try {
                 latch.await();
 
                 waitForDeployment(name, servers);
+
+                // Since we start extra nodes, there may be extra start and cancel events,
+                // so we check only the difference between start and cancel and
+                // not start and cancel events individually.
+                assertEquals(name, nodeCount() + servers,  DummyService.started(name) - DummyService.cancelled(name));
 
                 checkCount(name, g.services().serviceDescriptors(), nodeCount() + servers);
             }
