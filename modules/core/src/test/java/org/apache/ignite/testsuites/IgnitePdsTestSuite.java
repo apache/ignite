@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicC
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalDirectoriesConfigurationTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.MetadataStoragePageMemoryImplTest;
@@ -70,7 +69,6 @@ public class IgnitePdsTestSuite extends TestSuite {
         // Persistence-enabled.
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
         suite.addTestSuite(IgnitePdsDynamicCacheTest.class);
-        suite.addTestSuite(IgniteWalDirectoriesConfigurationTest.class);
         suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
 
         return suite;

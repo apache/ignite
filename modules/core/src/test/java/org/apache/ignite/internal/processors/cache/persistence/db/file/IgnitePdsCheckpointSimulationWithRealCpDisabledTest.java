@@ -94,11 +94,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /** Cache name. */
     private static final String cacheName = "cache";
 
-    /**
-     * toggle flag, inline if CP end record is not possible
-     */
-    private static final boolean cpEndRecord = false;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -221,7 +216,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         IgniteWriteAheadLogManager wal = shared.wal();
 
-        WALPointer start = wal.log(new CheckpointRecord(null, false));
+        WALPointer start = wal.log(new CheckpointRecord(null));
 
         final FullPageId[] initWrites = new FullPageId[10];
 
@@ -335,19 +330,12 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         UUID cpId = UUID.randomUUID();
 
-        WALPointer start = wal.log(new CheckpointRecord(cpId, null, false));
+        WALPointer start = wal.log(new CheckpointRecord(cpId, null));
 
         wal.fsync(start);
 
         for (DataEntry entry : entries)
             wal.log(new DataRecord(entry));
-
-        WALPointer end;
-        if (cpEndRecord) {
-            end = wal.log(new CheckpointRecord(cpId, start, true));
-
-            wal.fsync(end);
-        }
 
         // Data will not be written to the page store.
         stopAllGrids();
@@ -408,23 +396,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 idx++;
             }
-
-
-
-            if(cpEndRecord) {
-                IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
-                WALRecord walRecord = tup.get2();
-                boolean exp = walRecord instanceof CheckpointRecord;
-                assert exp : walRecord;
-
-                assertEquals(end, tup.get1());
-
-                cpRec = (CheckpointRecord)tup.get2();
-
-                assertEquals(cpId, cpRec.checkpointId());
-                assertEquals(start, cpRec.checkpointMark());
-                assertTrue(cpRec.end());
-            }
         }
     }
 
@@ -462,7 +433,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         UUID cpId = UUID.randomUUID();
 
-        WALPointer start = wal.log(new CheckpointRecord(cpId, null, false));
+        WALPointer start = wal.log(new CheckpointRecord(cpId, null));
 
         wal.fsync(start);
 
@@ -474,13 +445,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         }
         finally {
             ig.context().cache().context().database().checkpointReadUnlock();
-        }
-
-        WALPointer end;
-        if(cpEndRecord) {
-            end = wal.log(new CheckpointRecord(cpId, start, true));
-
-            wal.fsync(end);
         }
 
         // Data will not be written to the page store.
@@ -531,20 +495,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 assertEquals(pageIds.get(idx), snap.fullPageId());
 
                 idx++;
-            }
-
-            if(cpEndRecord) {
-                tup = it.nextX();
-
-                assert tup.get2() instanceof CheckpointRecord;
-
-                assertEquals(end, tup.get1());
-
-                cpRec = (CheckpointRecord)tup.get2();
-
-                assertEquals(cpId, cpRec.checkpointId());
-                assertEquals(start, cpRec.checkpointMark());
-                assertTrue(cpRec.end());
             }
         }
     }
@@ -802,7 +752,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         final ReadWriteLock updLock = new ReentrantReadWriteLock();
 
         // Mark the start position.
-        CheckpointRecord cpRec = new CheckpointRecord(null, false);
+        CheckpointRecord cpRec = new CheckpointRecord(null);
 
         WALPointer start = wal.log(cpRec);
 
@@ -1003,9 +953,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         info("checkpoints=" + checkpoints + ", done=" + updFut.isDone());
 
         updFut.get();
-
-        // Mark the end.
-        wal.fsync(wal.log(new CheckpointRecord(cpRec.checkpointId(), start, true)));
 
         assertEquals(0, mem.activePagesCount());
 
