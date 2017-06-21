@@ -177,11 +177,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         when(sctx.logger(any(Class.class))).thenReturn(Mockito.mock(IgniteLogger.class));
 
         mgr.start(sctx);
+
+        int count = 0;
         WALIterator it = mgr.replay(null);
         for (; it.hasNextX(); ) {
             IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
             System.out.println("Record: " + next.get2());
+            count++;
         }
+        System.out.println("Total records loaded " + count);
+        assert count > 0;
     }
 
     /**
