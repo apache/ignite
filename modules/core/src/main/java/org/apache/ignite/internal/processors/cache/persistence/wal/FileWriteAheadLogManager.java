@@ -2151,10 +2151,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private final GridCacheSharedContext cctx;
 
-        /** */
+        /** Optional start pointer. */
+        @Nullable
         private FileWALPointer start;
 
-        /** */
+        /** Optional end pointer. */
+        @Nullable
         private FileWALPointer end;
 
         /** */
@@ -2187,8 +2189,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             GridCacheSharedContext cctx,
             File walWorkDir,
             File walArchiveDir,
-            FileWALPointer start,
-            FileWALPointer end,
+            @Nullable FileWALPointer start,
+            @Nullable FileWALPointer end,
             PersistentStoreConfiguration psCfg,
             RecordSerializer serializer,
             FileArchiver archiver,
