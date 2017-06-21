@@ -34,6 +34,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -108,7 +109,22 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         for (boolean getAll0 : getAll) {
             for (boolean expiryPlc0 : cfgExpiryPlc)
                 for (boolean withExpiryPlc0 : withExpiryPlc)
-                    doGet(ATOMIC, OFFHEAP_TIERED, getAll0, expiryPlc0, withExpiryPlc0);
+                    doGet(ATOMIC, OFFHEAP_TIERED, false, getAll0, expiryPlc0, withExpiryPlc0);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicPeekOffheap() throws Exception {
+        boolean getAll[] = {true, false};
+        boolean cfgExpiryPlc[] = {true, false};
+        boolean withExpiryPlc[] = {true, false};
+
+        for (boolean getAll0 : getAll) {
+            for (boolean expiryPlc0 : cfgExpiryPlc)
+                for (boolean withExpiryPlc0 : withExpiryPlc)
+                    doGet(ATOMIC, OFFHEAP_TIERED, true, getAll0, expiryPlc0, withExpiryPlc0);
         }
     }
 
@@ -123,24 +139,40 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         for (boolean getAll0 : getAll) {
             for (boolean expiryPlc0 : cfgExpiryPlc)
                 for (boolean withExpiryPlc0 : withExpiryPlc)
-                    doGet(TRANSACTIONAL, OFFHEAP_TIERED, getAll0, expiryPlc0, withExpiryPlc0);
+                    doGet(TRANSACTIONAL, OFFHEAP_TIERED, false, getAll0, expiryPlc0, withExpiryPlc0);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxPeekOffheap() throws Exception {
+        boolean getAll[] = {true, false};
+        boolean cfgExpiryPlc[] = {true, false};
+        boolean withExpiryPlc[] = {true, false};
+
+        for (boolean getAll0 : getAll) {
+            for (boolean expiryPlc0 : cfgExpiryPlc)
+                for (boolean withExpiryPlc0 : withExpiryPlc)
+                    doGet(TRANSACTIONAL, OFFHEAP_TIERED, false, getAll0, expiryPlc0, withExpiryPlc0);
         }
     }
 
     /**
      * @param atomicityMode Cache atomicity mode.
      * @param memoryMode Cache memory mode.
-     * @param getAll Test getAll flag.
+     * @param all Test all flag.
      * @param cfgExpiryPlc Configured expiry policy flag.
      * @param withExpiryPlc Custom expiry policy flag.
      * @throws Exception If failed.
      */
     private void doGet(CacheAtomicityMode atomicityMode,
         CacheMemoryMode memoryMode,
-        final boolean getAll,
+        final boolean peek,
+        final boolean all,
         final boolean cfgExpiryPlc,
         final boolean withExpiryPlc) throws Exception {
-        log.info("Test get [getAll=" + getAll + ", cfgExpiryPlc=" + cfgExpiryPlc + ']');
+        log.info("Test get [all=" + all + ", cfgExpiryPlc=" + cfgExpiryPlc + ']');
 
         Ignite srv = ignite(0);
 
@@ -163,7 +195,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
 
                 IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        if (getAll)
+                        if (all)
                             cache.invokeAll(data.keySet(), new HangEntryProcessor());
                         else
                             cache.invoke(1, new HangEntryProcessor());
@@ -177,13 +209,19 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
 
                     assertTrue(wait);
 
-                    if (getAll) {
-                        assertEquals(data, client.compute().affinityCall(cache.getName(), 1,
-                            new GetAllClosure(data.keySet(), cache.getName(), withExpiryPlc)));
+                    if (all) {
+                        IgniteCallable<Object> clo = peek ?
+                            new PeekAllClosure(data.keySet(), cache.getName(), withExpiryPlc) :
+                            new GetAllClosure(data.keySet(), cache.getName(), withExpiryPlc);
+
+                        assertEquals(data, client.compute().affinityCall(cache.getName(), 1, clo));
                     }
                     else {
-                        assertEquals(1, client.compute().affinityCall(cache.getName(), 1,
-                            new GetClosure(1, cache.getName(), withExpiryPlc)));
+                        IgniteCallable<Object> clo = peek ?
+                            new PeekClosure(1, cache.getName(), withExpiryPlc) :
+                            new GetClosure(1, cache.getName(), withExpiryPlc);
+
+                        assertEquals(1, client.compute().affinityCall(cache.getName(), 1, clo));
                     }
 
                     hangLatch.countDown();
@@ -204,7 +242,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
 
                 IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        if (getAll)
+                        if (all)
                             cache.invokeAll(data.keySet(), new HangEntryProcessor());
                         else
                             cache.invoke(1, new HangEntryProcessor());
@@ -223,7 +261,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
                     if (withExpiryPlc)
                         srvCache = srvCache.withExpiryPolicy(ModifiedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES).create());
 
-                    if (getAll) {
+                    if (all) {
                         assertEquals(data, srvCache.getAll(data.keySet()));
                         assertEquals(data.size(), srvCache.getEntries(data.keySet()).size());
                     }
@@ -376,6 +414,105 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
                 cache = cache.withExpiryPolicy(ModifiedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES).create());
 
             Map vals = cache.getAll(keys);
+
+            Collection<CacheEntry> entries = cache.getEntries(keys);
+
+            assertEquals(vals.size(), entries.size());
+
+            for (CacheEntry entry : entries) {
+                Object val = vals.get(entry.getKey());
+
+                assertEquals(val, entry.getValue());
+            }
+
+            return vals;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class PeekClosure implements IgniteCallable<Object> {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final int key;
+
+        /** */
+        private final String cacheName;
+
+        /** */
+        private final boolean withExpiryPlc;
+
+        /**
+         * @param key Key.
+         * @param cacheName Cache name.
+         * @param withExpiryPlc Custom expiry policy flag.
+         */
+        PeekClosure(int key, String cacheName, boolean withExpiryPlc) {
+            this.key = key;
+            this.cacheName = cacheName;
+            this.withExpiryPlc = withExpiryPlc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            IgniteCache cache = ignite.cache(cacheName);
+
+            if (withExpiryPlc)
+                cache = cache.withExpiryPolicy(ModifiedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES).create());
+
+            Object val = cache.localPeek(key, CachePeekMode.ALL);
+
+            CacheEntry e = cache.getEntry(key);
+
+            assertEquals(val, e.getValue());
+
+            return val;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class PeekAllClosure implements IgniteCallable<Object> {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final Set<Object> keys;
+
+        /** */
+        private final String cacheName;
+
+        /** */
+        private final boolean withExpiryPlc;
+
+        /**
+         * @param keys Keys.
+         * @param cacheName Cache name.
+         * @param withExpiryPlc Custom expiry policy flag.
+         */
+        PeekAllClosure(Set<Object> keys, String cacheName, boolean withExpiryPlc) {
+            this.keys = keys;
+            this.cacheName = cacheName;
+            this.withExpiryPlc = withExpiryPlc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            IgniteCache cache = ignite.cache(cacheName);
+
+            if (withExpiryPlc)
+                cache = cache.withExpiryPolicy(ModifiedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES).create());
+
+            Map vals = new HashMap();
+
+            for (Object key : keys)
+                vals.put(key, cache.localPeek(key, CachePeekMode.ALL));
 
             Collection<CacheEntry> entries = cache.getEntries(keys);
 

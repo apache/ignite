@@ -820,7 +820,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (nearKey && !ctx.isNear())
                     return null;
 
-                if (modes.heap) {
+                if (modes.offheap || modes.swap) {
+                    GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+
+                    cacheVal = swapMgr.readValue(cacheKey, modes.offheap, modes.swap);
+                }
+
+                if (cacheVal == null && modes.heap) {
                     GridCacheEntryEx e = nearKey ? peekEx(cacheKey) :
                         (ctx.isNear() ? ctx.near().dht().peekEx(cacheKey) : peekEx(cacheKey));
 
@@ -830,12 +836,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         modes.offheap = false;
                         modes.swap = false;
                     }
-                }
-
-                if (modes.offheap || modes.swap) {
-                    GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
-
-                    cacheVal = swapMgr.readValue(cacheKey, modes.offheap, modes.swap);
                 }
             }
             else
