@@ -321,14 +321,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
 
     /**
-     * This property allows to specify user defined port which H2 indexing SPI will use
-     * to start H2 debug console on. If this property is not set or set to 0, H2 debug
-     * console will use system-provided dynamic port.
-     * This property is only relevant when {@link #IGNITE_H2_DEBUG_CONSOLE} property is set.
-     */
-    public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
-
-    /**
      * If this property is set to {@code true} then shared memory space native debug will be enabled.
      */
     public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
@@ -511,7 +503,7 @@ public final class IgniteSystemProperties {
     /**
      * Whether Ignite can access unaligned memory addresses.
      * <p>
-     * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
+     * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
      */
     public static final String IGNITE_UNALIGNED_MEMORY_ACCESS = "IGNITE_UNALIGNED_MEMORY_ACCESS";
 
