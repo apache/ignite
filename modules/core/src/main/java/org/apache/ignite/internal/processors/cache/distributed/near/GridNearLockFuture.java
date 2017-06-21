@@ -1456,7 +1456,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                             TxDeadlock deadlock = fut.get();
 
                             if (deadlock != null)
-                                err = new TransactionDeadlockException(deadlock.toString(cctx.shared()));
+                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
                         }
                         catch (IgniteCheckedException e) {
                             err = e;
