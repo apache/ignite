@@ -338,7 +338,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                sessionEnd0(tx, threwEx);
+                IgniteInternalTx tx0 = tx;
+
+                if (tx0 != null && (tx0.dht() && tx0.local()))
+                    tx0 = null;
+
+                sessionEnd0(tx0, threwEx);
             }
 
             if (log.isDebugEnabled())
