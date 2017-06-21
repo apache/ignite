@@ -167,7 +167,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private IgniteInternalCache<Object, Object> cache;
 
     /** Topology listener. */
-    private GridLocalEventListener topLsnr = new TopologyListener();
+    private final GridLocalEventListener topLsnr = new TopologyListener();
 
     static {
         Set<IgniteProductVersion> versions = new TreeSet<>(new Comparator<IgniteProductVersion>() {
@@ -1598,6 +1598,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Topology listener.
      */
     private class TopologyListener implements GridLocalEventListener {
+        /** */
+        private volatile AffinityTopologyVersion currTopVer = null;
+
         /** {@inheritDoc} */
         @Override public void onEvent(final Event evt) {
             if (!busyLock.enterBusy())
@@ -1619,6 +1622,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 else
                     topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);
 
+                currTopVer = topVer;
+
                 depExe.submit(new BusyRunnable() {
                     @Override public void run0() {
                         ClusterNode oldest = ctx.discovery().oldestAliveCacheServerNode(topVer);
@@ -1636,6 +1641,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 boolean firstTime = true;
 
                                 while (it.hasNext()) {
+                                    // If topology changed again, let next event handle it.
+                                    AffinityTopologyVersion currTopVer0 = currTopVer;
+
+                                    if (currTopVer0 != topVer) {
+                                        if (log.isInfoEnabled())
+                                            log.info("Service processor detected a topology change during " +
+                                                "assignments calculation (will abort current iteration and " +
+                                                "re-calculate on the newer version): " +
+                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer + ']');
+
+                                        return;
+                                    }
+
                                     Cache.Entry<Object, Object> e = it.next();
 
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
