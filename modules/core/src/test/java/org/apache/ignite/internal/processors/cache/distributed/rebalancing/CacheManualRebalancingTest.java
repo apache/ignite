@@ -135,6 +135,8 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
 
         assertTrue(rebalanceFinished);
 
+        assertTrue(newNode.context().cache().cache(MYCACHE).context().preloader().rebalanceFuture().isDone());
+
         newNodeCacheSize = newNode.cache(MYCACHE).localSize();
 
         System.out.println("New node cache local size: " + newNodeCacheSize);
