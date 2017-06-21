@@ -294,6 +294,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** */
     @GridToStringExclude
+    private ObjectName utilityExecSvcMBean;
+
+    /** */
+    @GridToStringExclude
+    private ObjectName marshallerExecSvcMBean;
+
+    /** */
+    @GridToStringExclude
     private ObjectName restExecSvcMBean;
 
     /** Kernal start timestamp. */
@@ -977,7 +985,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Register MBeans.
             registerKernalMBean();
             registerLocalNodeMBean();
-            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
+            registerExecutorMBeans(
+                execSvc,
+                sysExecSvc,
+                p2pExecSvc,
+                mgmtExecSvc,
+                restExecSvc,
+                utilityCachePool,
+                marshCachePool);
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -1560,15 +1575,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** @throws IgniteCheckedException If registration failed. */
-    private void registerExecutorMBeans(ExecutorService execSvc,
+    private void registerExecutorMBeans(
+        ExecutorService execSvc,
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService restExecSvc) throws IgniteCheckedException {
+        ExecutorService restExecSvc,
+        ExecutorService utilityExecSvc,
+        ExecutorService marshallerExecSvc
+    ) throws IgniteCheckedException {
         pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
+        utilityExecSvcMBean = registerExecutorMBean(utilityExecSvc ,"GridUtilityCacheExecutor");
+        marshallerExecSvcMBean = registerExecutorMBean(marshallerExecSvc, "GridMarshallerCacheExecutor");
 
         ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
@@ -2064,6 +2085,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
                     unregisterMBean(locNodeMBean) &
+                    unregisterMBean(utilityExecSvcMBean) &
+                    unregisterMBean(marshallerExecSvcMBean) &
                     unregisterMBean(restExecSvcMBean)
             ))
                 errOnStop = false;
@@ -3582,7 +3605,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    public void dumpDebugInfo() {
+    @Override public void dumpDebugInfo() {
         try {
             GridKernalContextImpl ctx = this.ctx;
 
@@ -3670,6 +3693,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void runIoTest(
+        long warmup,
+        long duration,
+        int threads,
+        long maxLatency,
+        int rangesCnt,
+        int payLoadSize,
+        boolean procFromNioThread
+    ) {
+        ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize, procFromNioThread,
+            new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
     }
 
     /** {@inheritDoc} */

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -558,5 +559,12 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 11;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicAbstractSingleUpdateRequest.class, this,
+            "nodeId", nodeId, "futVer", futVer, "topVer", topVer,
+            "parent", super.toString());
     }
 }

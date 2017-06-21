@@ -129,6 +129,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -513,9 +514,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override public boolean pingNode(UUID nodeId) {
         assert nodeId != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Pinging node: " + nodeId + "]");
-
         if (nodeId == getLocalNodeId())
             return true;
 
@@ -527,7 +525,17 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (!nodeAlive(nodeId))
             return false;
 
+        long start = U.currentTimeMillis();
+
+        if (log.isInfoEnabled())
+            log.info("Pinging node: " + nodeId);
+
         boolean res = pingNode(node);
+
+        long end = System.currentTimeMillis();
+
+        if (log.isInfoEnabled())
+            log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" + (end - start) + "ms]");
 
         if (!res && !node.isClient() && nodeAlive(nodeId)) {
             LT.warn(log, "Failed to ping node (status check will be initiated): " + nodeId);
@@ -1586,6 +1594,16 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public void checkRingLatency(int maxHops) {
+        TcpDiscoveryRingLatencyCheckMessage msg = new TcpDiscoveryRingLatencyCheckMessage(getLocalNodeId(), maxHops);
+
+        if (log.isInfoEnabled())
+            log.info("Latency check initiated: " + msg.id());
+
+        msgWorker.addMessage(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
@@ -1677,9 +1695,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         assert log.isInfoEnabled();
 
-        synchronized (mux) {
-            StringBuilder b = new StringBuilder(U.nl());
+        StringBuilder b = new StringBuilder(U.nl());
 
+        synchronized (mux) {
             b.append(">>>").append(U.nl());
             b.append(">>>").append("Dumping discovery SPI debug info.").append(U.nl());
             b.append(">>>").append(U.nl());
@@ -1726,9 +1744,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             b.append(U.nl());
 
             b.append("Stats: ").append(spi.stats).append(U.nl());
-
-            U.quietAndInfo(log, b.toString());
         }
+
+        U.quietAndInfo(log, b.toString());
     }
 
     /**
@@ -2647,6 +2665,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
 
+            else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage)
+                processRingLatencyCheckMessage((TcpDiscoveryRingLatencyCheckMessage)msg);
+
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
@@ -3055,11 +3076,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
                                 }
 
+                                boolean latencyCheck = msg instanceof TcpDiscoveryRingLatencyCheckMessage;
+
+                                if (latencyCheck && log.isInfoEnabled())
+                                    log.info("Latency check message has been written to socket: " + msg.id());
+
                                 spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 long tstamp0 = U.currentTimeMillis();
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                if (latencyCheck && log.isInfoEnabled())
+                                    log.info("Latency check message has been acked: " + msg.id());
 
                                 spi.stats.onMessageSent(msg, tstamp0 - tstamp, U.currentTimeMillis() - tstamp0);
 
@@ -3150,12 +3179,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // If node existed on connection initialization we should check
                             // whether it has not gone yet.
-                            if (nextNodeExists)
-                                U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
-                                    ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
-                            else if (log.isDebugEnabled())
-                                log.debug("Failed to send message to next node [msg=" + msg + ", next=" + next +
-                                    ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
+                            U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
+                                ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
                         }
                     }
 
@@ -3337,6 +3362,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (existingNode != null) {
                     if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
                         if (!pingNode(existingNode)) {
+                            U.warn(log, "Sending node failed message for existing node: " + node);
+
                             addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                 existingNode.id(), existingNode.internalOrder()));
 
@@ -4478,6 +4505,33 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * Processes latency check message.
+         *
+         * @param msg Latency check message.
+         */
+        private void processRingLatencyCheckMessage(TcpDiscoveryRingLatencyCheckMessage msg) {
+            assert msg != null;
+
+            if (msg.maxHopsReached()) {
+                if (log.isInfoEnabled())
+                    log.info("Latency check has been discarded (max hops reached) [id=" + msg.id() +
+                        ", maxHops=" + msg.maxHops() + ']');
+
+                return;
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Latency check processing: " + msg.id());
+
+            if (sendMessageToRemotes(msg))
+                sendMessageAcrossRing(msg);
+            else {
+                if (log.isInfoEnabled())
+                    log.info("Latency check has been discarded (no remote nodes): " + msg.id());
+            }
+        }
+
+        /**
          * Processes node left message.
          *
          * @param msg Node left message.
@@ -5372,8 +5426,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msgs != null) {
                 for (TcpDiscoveryNodeFailedMessage msg : msgs) {
-                    if (log.isDebugEnabled())
-                        log.debug("Add node failed message for node from failed nodes list: " + msg);
+                    U.warn(log, "Added node failed message for node from failed nodes list: " + msg);
 
                     addMessage(msg);
                 }
@@ -5592,14 +5645,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     long tstamp = U.currentTimeMillis();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Accepted incoming connection from addr: " + sock.getInetAddress());
+                    if (log.isInfoEnabled())
+                        log.info("TCP discovery accepted incoming connection " +
+                            "[rmtAddr=" + sock.getInetAddress() + ", rmtPort=" + sock.getPort() + ']');
 
                     SocketReader reader = new SocketReader(sock);
 
                     synchronized (mux) {
                         readers.add(reader);
                     }
+
+                    if (log.isInfoEnabled())
+                        log.info("TCP discovery spawning a new thread for connection " +
+                            "[rmtAddr=" + sock.getInetAddress() + ", rmtPort=" + sock.getPort() + ']');
 
                     reader.start();
 
@@ -5663,6 +5721,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ClientMessageWorker clientMsgWrk = null;
 
+            SocketAddress rmtAddr = sock.getRemoteSocketAddress();
+
+            if (log.isInfoEnabled())
+                log.info("Started serving remote node connection [rmtAddr=" + rmtAddr +
+                    ", rmtPort=" + sock.getPort() + ']');
+
             try {
                 InputStream in;
 
@@ -5693,11 +5757,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to read magic header (too few bytes received) " +
-                                    "[rmtAddr=" + sock.getRemoteSocketAddress() +
+                                    "[rmtAddr=" + rmtAddr +
                                     ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                             LT.warn(log, "Failed to read magic header (too few bytes received) [rmtAddr=" +
-                                sock.getRemoteSocketAddress() + ", locAddr=" + sock.getLocalSocketAddress() + ']');
+                                rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                             return;
                         }
@@ -5709,7 +5773,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 "this Ignite port?" +
                                 (!spi.isSslEnabled() ? " missed SSL configuration?" : "") +
                                 ") " +
-                                "[rmtAddr=" + sock.getRemoteSocketAddress() +
+                                "[rmtAddr=" + rmtAddr +
                                 ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         LT.warn(log, "Unknown connection detected (is some other software connecting to " +
@@ -5730,6 +5794,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!spi.isNodeStopping0()) {
                             TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
 
+                            if (log.isInfoEnabled())
+                                log.info("Received ping request from the remote node " +
+                                    "[rmtNodeId=" + msg.creatorNodeId() +
+                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
+
                             TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
 
                             IgniteSpiOperationTimeoutHelper timeoutHelper =
@@ -5743,6 +5812,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             spi.writeToSocket(sock, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                            sock.shutdownOutput();
+
+                            if (log.isInfoEnabled())
+                                log.info("Finished writing ping response " + "[rmtNodeId=" + msg.creatorNodeId() +
+                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Ignore ping request, node is stopping.");
@@ -5868,7 +5943,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     else if (e.hasCause(ClassNotFoundException.class))
                         LT.warn(log, "Failed to read message due to ClassNotFoundException " +
                             "(make sure same versions of all classes are available on all nodes) " +
-                            "[rmtAddr=" + sock.getRemoteSocketAddress() +
+                            "[rmtAddr=" + rmtAddr +
                             ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
 
                         // Always report marshalling problems.
@@ -6056,7 +6131,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             continue;
                         }
-                        if (msg instanceof TcpDiscoveryPingResponse) {
+                        else if (msg instanceof TcpDiscoveryPingResponse) {
                             assert msg.client() : msg;
 
                             ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
@@ -6065,6 +6140,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 clientWorker.pingResult(true);
 
                             continue;
+                        }
+                        else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
+                            if (log.isInfoEnabled())
+                                log.info("Latency check message has been read: " + msg.id());
+
+                            ((TcpDiscoveryRingLatencyCheckMessage)msg).onRead();
                         }
 
                         TcpDiscoveryClientHeartbeatMessage heartbeatMsg = null;
@@ -6153,6 +6234,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 U.closeQuiet(sock);
+
+                if (log.isInfoEnabled())
+                    log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
+                        ", rmtPort=" + sock.getPort());
             }
         }
 
