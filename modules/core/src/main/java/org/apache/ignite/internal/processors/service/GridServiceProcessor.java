@@ -169,7 +169,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private IgniteInternalCache<Object, Object> cache;
 
     /** Topology listener. */
-    private DiscoveryEventListener topLsnr = new TopologyListener();
+    private final DiscoveryEventListener topLsnr = new TopologyListener();
 
     static {
         Set<IgniteProductVersion> versions = new TreeSet<>(new Comparator<IgniteProductVersion>() {
@@ -1600,6 +1600,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Topology listener.
      */
     private class TopologyListener implements DiscoveryEventListener {
+        /** */
+        private volatile AffinityTopologyVersion currTopVer = null;
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
             if (!busyLock.enterBusy())
@@ -1627,6 +1629,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 else
                     topVer = new AffinityTopologyVersion((evt).topologyVersion(), 0);
 
+                currTopVer = topVer;
+
                 depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         // In case the cache instance isn't tracked by DiscoveryManager anymore.
@@ -1647,6 +1651,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 boolean firstTime = true;
 
                                 while (it.hasNext()) {
+                                    // If topology changed again, let next event handle it.
+                                    AffinityTopologyVersion currTopVer0 = currTopVer;
+
+                                    if (currTopVer0 != topVer) {
+                                        if (log.isInfoEnabled())
+                                            log.info("Service processor detected a topology change during " +
+                                                "assignments calculation (will abort current iteration and " +
+                                                "re-calculate on the newer version): " +
+                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer0 + ']');
+
+                                        return;
+                                    }
+
                                     Cache.Entry<Object, Object> e = it.next();
 
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
@@ -1831,7 +1848,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctxs != null) {
                 synchronized (ctxs) {
                     if (log.isInfoEnabled())
-                        log.info("Undeploying services [svc=" + e.getKey().name() + ", assigns=" + assigns +
+                        log.info("Undeploying services [svc=" + name +
                             ", ctxs=" + ctxs + ']');cancel(ctxs, ctxs.size());
 
             }
