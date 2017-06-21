@@ -90,7 +90,6 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
                 return null;
             }
         }, IgniteException.class, "Test exception");
-
     }
 
     /**
@@ -435,17 +434,17 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     protected class ErrorServiceImpl implements ErrorService {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
-            // No-op
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
-            // No-op
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void execute(ServiceContext ctx) throws Exception {
-            // No-op
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -453,6 +452,4 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             throw new Exception("Test exception");
         }
     }
-
-
 }
