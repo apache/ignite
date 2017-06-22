@@ -1232,7 +1232,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
-                if (timeoutHelper.checkFailureTimeoutReached(e)) // || X.hasCause(e, SocketException.class))
+                if (timeoutHelper.checkFailureTimeoutReached(e))
                     break;
 
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
