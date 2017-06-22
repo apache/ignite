@@ -1444,7 +1444,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (updateSingleMap) {
             try {
-                updatePartitionSingleMap(node, msg);
+                // Do not update partition map, in case cluster transitioning to inactive state.
+                if (!exchangeOnChangeGlobalState || exchActions.newClusterState() != ClusterState.INACTIVE)
+                    updatePartitionSingleMap(node, msg);
             }
             finally {
                 synchronized (this) {
