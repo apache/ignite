@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -80,6 +82,12 @@ public class DynamicCacheDescriptor {
 
     /** */
     private AffinityTopologyVersion rcvdFromVer;
+
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Cached object context for marshalling issues when cache isn't started. */
+    private volatile CacheObjectContext objCtx;
 
     /**
      * @param ctx Context.
@@ -207,6 +215,22 @@ public class DynamicCacheDescriptor {
      */
     public CacheConfiguration cacheConfiguration() {
         return cacheCfg;
+    }
+
+    /**
+     * Creates and caches cache object context if needed.
+     *
+     * @param proc Object processor.
+     */
+    public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
+        if (objCtx == null) {
+            synchronized (mux) {
+                if (objCtx == null)
+                    objCtx = proc.contextForCache(cacheCfg);
+            }
+        }
+
+        return objCtx;
     }
 
     /**

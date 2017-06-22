@@ -25,7 +25,6 @@ module.exports = {
 };
 
 /**
- *
  * @param express
  * @param passport
  * @param mongo

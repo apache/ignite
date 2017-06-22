@@ -132,7 +132,13 @@ namespace ignite
              * The connection timeout period expired before the data source
              * responded to the request.
              */
-            SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT
+            SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT,
+
+            /** Invalid buffer type. */
+            SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE,
+
+            /** Invalid parameter type. */
+            SQL_STATE_HY105_INVALID_PARAMETER_TYPE
         };
 
         /**

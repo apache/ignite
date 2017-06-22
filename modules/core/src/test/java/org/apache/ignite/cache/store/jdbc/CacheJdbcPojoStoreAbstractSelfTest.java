@@ -30,6 +30,7 @@ import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Person;
+import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -112,7 +113,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             " id INTEGER PRIMARY KEY," +
             " org_id INTEGER," +
             " birthday DATE," +
-            " name VARCHAR(50))");
+            " name VARCHAR(50)," +
+            " gender VARCHAR(50))");
 
         conn.commit();
 
@@ -201,7 +203,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"),
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
             new JdbcTypeField(Types.DATE, "BIRTHDAY", Date.class, "birthday"),
-            new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"));
+            new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"),
+            new JdbcTypeField(Types.VARCHAR, "GENDER", Gender.class, "gender"));
 
         return storeTypes;
     }
@@ -260,7 +263,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         conn.commit();
 
         PreparedStatement prnStmt = conn.prepareStatement(
-            "INSERT INTO Person(id, org_id, birthday, name) VALUES (?, ?, ?, ?)");
+            "INSERT INTO Person(id, org_id, birthday, name, gender) VALUES (?, ?, ?, ?, ?)");
 
         Random rnd = new Random();
 
@@ -269,6 +272,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             prnStmt.setInt(2, i % 100);
             prnStmt.setDate(3, Date.valueOf(String.format("%d-%d-%d", 1970 + rnd.nextInt(50), 1 + rnd.nextInt(11), 1 + rnd.nextInt(27))));
             prnStmt.setString(4, "name" + i);
+            prnStmt.setString(5, Gender.random().toString());
 
             prnStmt.addBatch();
         }
@@ -319,9 +323,58 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     protected void checkCacheLoadWithSql() {
         IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
 
-        c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", "select id, org_id, name, birthday from Person");
+        c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", "select id, org_id, name, birthday, gender from Person");
 
         assertEquals(PERSON_CNT, c1.size());
+    }
+
+    /**
+     * Checks that data was loaded correctly with prepared statement.
+     */
+    protected void checkCacheLoadWithStatement() throws SQLException {
+        Connection conn = null;
+
+        PreparedStatement stmt = null;
+
+        try {
+            conn = getConnection();
+
+            conn.setAutoCommit(true);
+
+            String qry = "select id, org_id, name, birthday, gender from Person";
+
+            stmt = conn.prepareStatement(qry);
+
+            IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
+
+            c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", stmt);
+
+            assertEquals(PERSON_CNT, c1.size());
+        }
+        finally {
+            U.closeQuiet(stmt);
+
+            U.closeQuiet(conn);
+        }
+
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheWithStatement() throws Exception {
+        startTestGrid(false, false, false, false, 512);
+
+        checkCacheLoadWithStatement();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheWithStatementTx() throws Exception {
+        startTestGrid(false, false, false, true, 512);
+
+        checkCacheLoadWithStatement();
     }
 
     /**
@@ -397,7 +450,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         Connection conn = getConnection();
         try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, BIRTHDAY, NAME FROM PERSON WHERE ID = ?");
+            Random rnd = new Random();
+
+            PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, BIRTHDAY, NAME, GENDER FROM PERSON WHERE ID = ?");
 
             stmt.setInt(1, -1);
 
@@ -408,8 +463,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             U.closeQuiet(rs);
 
             Date testDate = Date.valueOf("2001-05-05");
+            Gender testGender = Gender.random();
 
-            Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999);
+            Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999, testGender);
 
             Object key = builtinKeys ? Integer.valueOf(-1) : new PersonKey(-1);
 
@@ -424,6 +480,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-2, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-insert", rs.getString(4));
+            assertEquals(testGender.toString(), rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
@@ -432,7 +489,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             // Test put-update.
             testDate = Date.valueOf("2016-04-04");
 
-            c1.put(key, new Person(-1, -3, testDate, "Person-to-test-put-update", 999));
+            c1.put(key, new Person(-1, -3, testDate, "Person-to-test-put-update", 999, testGender));
 
             rs = stmt.executeQuery();
 
@@ -442,6 +499,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-3, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-update", rs.getString(4));
+            assertEquals(testGender.toString(), rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
