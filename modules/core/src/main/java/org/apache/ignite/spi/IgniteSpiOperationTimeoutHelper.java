@@ -96,9 +96,9 @@ public class IgniteSpiOperationTimeoutHelper {
         if (!failureDetectionTimeoutEnabled)
             return false;
 
-        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class))
+        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
             return true;
 
-        return X.hasCause(e, SocketException.class) && (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);
+        return (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);
     }
 }
