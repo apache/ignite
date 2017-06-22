@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -91,8 +90,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private static final Pattern WAL_TEMP_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal\\.tmp");
 
-    /** */
-    private static final FileFilter WAL_SEGMENT_FILE_FILTER = new FileFilter() {
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    static final FileFilter WAL_SEGMENT_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
             return !file.isDirectory() && WAL_NAME_PATTERN.matcher(file.getName()).matches();
         }
@@ -135,10 +134,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private File walWorkDir;
 
-    /** */
+    /** WAL archive directory (including consistent ID as subfolder) */
     private File walArchiveDir;
 
-    /** */
+    /** Serializer of current version, used to read header record and for write records */
     private RecordSerializer serializer;
 
     /** */
@@ -888,7 +887,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param ver Serializer version.
      * @return Entry serializer.
      */
-    private static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
+     static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
         if (ver <= 0)
             throw new IgniteCheckedException("Failed to create a serializer (corrupted WAL file).");
 
@@ -905,7 +904,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * @return Sorted WAL files descriptors.
      */
-    private static FileDescriptor[] scan(File[] allFiles) {
+    static FileDescriptor[] scan(File[] allFiles) {
         if (allFiles == null)
             return EMPTY_DESCRIPTORS;
 
@@ -1316,7 +1315,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * WAL file descriptor.
      */
-    private static class FileDescriptor implements Comparable<FileDescriptor> {
+    public static class FileDescriptor implements Comparable<FileDescriptor> {
         /** */
         protected final File file;
 
@@ -1326,7 +1325,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param file File.
          */
-        private FileDescriptor(File file) {
+        public FileDescriptor(File file) {
             this(file, null);
         }
 
@@ -1350,7 +1349,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param segment Segment index.
          * @return Segment file name.
          */
-        private static String fileName(long segment) {
+        public static String fileName(long segment) {
             SB b = new SB();
 
             String segmentStr = Long.toString(segment);
@@ -1402,6 +1401,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override public int hashCode() {
             return (int)(idx ^ (idx >>> 32));
         }
+
+        public long getIdx() {
+            return idx;
+        }
+
+        public String getAbsolutePath() {
+            return file.getAbsolutePath();
+        }
     }
 
     /**
@@ -1438,14 +1445,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      *
      */
-    private static class ReadFileHandle extends FileHandle {
+    public static class ReadFileHandle extends FileHandle {
         /** Entry serializer. */
-        private RecordSerializer ser;
+        RecordSerializer ser;
 
         /** */
-        private FileInput in;
+        FileInput in;
 
-        /** */
+        /**
+         * <code>true</code> if this file handle came from work directory.
+         * <code>false</code> if this file handle came from archive directory.
+         */
         private boolean workDir;
 
         /**
@@ -1454,7 +1464,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param ser Entry serializer.
          * @param in File input.
          */
-        private ReadFileHandle(
+        ReadFileHandle(
             RandomAccessFile file,
             long idx,
             String gridName,
@@ -2129,8 +2139,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Iterator over WAL-log.
      */
-    private static class RecordsIterator extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>>
-        implements WALIterator {
+    private static class RecordsIterator extends AbstractWalRecordsIterator {
         /** */
         private static final long serialVersionUID = 0L;
         /** */
@@ -2145,12 +2154,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private final PersistentStoreConfiguration psCfg;
 
-        /** */
-        private final RecordSerializer serializer;
-
-        /** */
-        private final GridCacheSharedContext cctx;
-
         /** Optional start pointer. */
         @Nullable
         private FileWALPointer start;
@@ -2159,20 +2162,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Nullable
         private FileWALPointer end;
 
-        /** */
-        private IgniteBiTuple<WALPointer, WALRecord> curRec;
-
-        /** */
-        private long curIdx = -1;
-
-        /** */
-        private ReadFileHandle curHandle;
-
-        /** */
-        private ByteBuffer buf;
-
-        /** */
-        private IgniteLogger log;
 
         /**
          * @param cctx Shared context.
@@ -2181,8 +2170,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param start Optional start pointer.
          * @param end Optional end pointer.
          * @param psCfg Database configuration.
-         * @param serializer Serializer.
+         * @param serializer Serializer of current version to read headers.
          * @param archiver Archiver.
+         * @param log Logger
          * @throws IgniteCheckedException If failed to initialize WAL segment.
          */
         private RecordsIterator(
@@ -2192,45 +2182,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             @Nullable FileWALPointer start,
             @Nullable FileWALPointer end,
             PersistentStoreConfiguration psCfg,
-            RecordSerializer serializer,
+            @NotNull RecordSerializer serializer,
             FileArchiver archiver,
             IgniteLogger log,
             int tlbSize
         ) throws IgniteCheckedException {
-            this.cctx = cctx;
+            super(log, cctx, serializer, Math.min(16 * tlbSize, psCfg.getWalRecordIteratorBufferSize()));
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;
-            this.serializer = serializer;
             this.archiver = archiver;
             this.start = start;
             this.end = end;
-            this.log = log;
-
-            int buffSize = Math.min(16 * tlbSize, psCfg.getWalRecordIteratorBufferSize());
-
-            // Do not allocate direct buffer for iterator.
-            buf = ByteBuffer.allocate(buffSize);
-            buf.order(ByteOrder.nativeOrder());
 
             init();
 
             advance();
         }
 
-        /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<WALPointer, WALRecord> onNext() throws IgniteCheckedException {
-            IgniteBiTuple<WALPointer, WALRecord> ret = curRec;
-
-            advance();
-
-            return ret;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            return curRec != null;
-        }
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
@@ -2252,7 +2221,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws IgniteCheckedException If failed to initialize first file handle.
          */
         private void init() throws IgniteCheckedException {
-            FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
+            FileDescriptor[] descs = loadFileDescriptors(walArchiveDir);
 
             if (start != null) {
                 if (!F.isEmpty(descs)) {
@@ -2297,56 +2266,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @throws IgniteCheckedException If failed.
          */
-        private void advance() throws IgniteCheckedException {
-            while (true) {
-                advanceRecord();
-
-                if (curRec != null)
-                    return;
-                else {
-                    advanceSegment();
-
-                    if (curHandle == null)
-                        return;
-                }
-            }
-        }
-
-        /**
-         *
-         */
-        private void advanceRecord() {
-            try {
-                ReadFileHandle hnd = curHandle;
-
-                if (hnd != null) {
-                    RecordSerializer ser = hnd.ser;
-
-                    int pos = (int)hnd.in.position();
-
-                    FileWALPointer ptr = new FileWALPointer(hnd.idx, pos, 0);
-
-                    WALRecord rec = ser.readRecord(hnd.in, ptr);
-
-                    ptr.length(rec.size());
-
-                    curRec = new IgniteBiTuple<WALPointer, WALRecord>(ptr, rec);
-                }
-            }
-            catch (IOException | IgniteCheckedException e) {
-                if (!(e instanceof SegmentEofException)) {
-                    if (log.isInfoEnabled())
-                        log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
-                }
-
-                curRec = null;
-            }
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
-        private void advanceSegment() throws IgniteCheckedException {
+        protected void advanceSegment() throws IgniteCheckedException {
             ReadFileHandle cur0 = curHandle;
 
             if (cur0 != null) {
@@ -2403,70 +2323,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             curRec = null;
         }
 
-        /**
-         * @param desc File descriptor.
-         * @param start Optional start pointer.
-         * @return Initialized file handle.
-         * @throws FileNotFoundException If segment file is missing.
-         * @throws IgniteCheckedException If initialized failed due to another unexpected error.
-         */
-        private ReadFileHandle initReadHandle(FileDescriptor desc, FileWALPointer start)
-            throws IgniteCheckedException, FileNotFoundException {
-            try {
-                RandomAccessFile rf = new RandomAccessFile(desc.file, "r");
-
-                try {
-                    FileChannel channel = rf.getChannel();
-                    FileInput in = new FileInput(channel, buf);
-
-                    // Header record must be agnostic to the serializer version.
-                    WALRecord rec = serializer.readRecord(in,
-                        new FileWALPointer(desc.idx, (int)channel.position(), 0));
-
-                    if (rec == null)
-                        return null;
-
-                    if (rec.type() != WALRecord.RecordType.HEADER_RECORD)
-                        throw new IOException("Missing file header record: " + desc.file.getAbsoluteFile());
-
-                    int ver = ((HeaderRecord)rec).version();
-
-                    RecordSerializer ser = forVersion(cctx, ver);
-
-                    if (start != null && desc.idx == start.index())
-                        in.seek(start.fileOffset());
-
-                    return new ReadFileHandle(rf, desc.idx, cctx.igniteInstanceName(), ser, in);
-                }
-                catch (SegmentEofException | EOFException ignore) {
-                    try {
-                        rf.close();
-                    }
-                    catch (IOException ce) {
-                        throw new IgniteCheckedException(ce);
-                    }
-
-                    return null;
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    try {
-                        rf.close();
-                    }
-                    catch (IOException ce) {
-                        e.addSuppressed(ce);
-                    }
-
-                    throw e;
-                }
-            }
-            catch (FileNotFoundException e) {
-                throw e;
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException(
-                    "Failed to initialize WAL segment: " + desc.file.getAbsolutePath(), e);
-            }
-        }
 
         /**
          * @param absIdx Absolute index to check.

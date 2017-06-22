@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,7 +58,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     private static String cacheName = "cache0";
 
-    private static boolean fillWalBeforeTest = true;
+    private static boolean fillWalBeforeTest = false;
+    private static boolean deleteAfter = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -111,7 +113,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        if(deleteAfter) deleteWorkFiles();
     }
 
     /**
@@ -152,10 +154,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         when(persistentCfg1.getTlbSize()).thenReturn(PersistentStoreConfiguration.DFLT_TLB_SIZE);
         when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(PersistentStoreConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
 
-        PersistentStoreConfiguration persistentCfg2 = new PersistentStoreConfiguration();
-        persistentCfg2.setWalArchivePath("C:\\projects\\incubator-ignite\\work\\db\\wal");
-        persistentCfg2.setWalArchivePath("C:\\projects\\incubator-ignite\\work\\db\\wal\\archive");
-
         IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);
         when(cfg.getPersistentStoreConfiguration()).thenReturn(persistentCfg1);
 
@@ -187,6 +185,28 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
         System.out.println("Total records loaded " + count);
         assert count > 0;
+
+        final File walDirWithConsistentId = new File(wal, consistentId);
+        final MemoryConfiguration memCfg = new MemoryConfiguration();
+        memCfg.setPageSize(pageSize); //Parameter for WAL iterator Factory
+        final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log);
+        final StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
+        dbMgr.setPageSize(pageSize);
+        final GridCacheSharedContext sharedCtx = new GridCacheSharedContext(
+            kernalCtx, null, null, null,
+            null, null, dbMgr, null,
+            null, null, null, null,
+            null, null, null);
+
+        StandaloneWalRecordsIterator stIt = new StandaloneWalRecordsIterator(walDirWithConsistentId, log, sharedCtx);
+        int count2 = 0;
+        for (; stIt.hasNextX(); ) {
+            IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
+            System.out.println("Record: " + next.get2());
+            count2++;
+        }
+        System.out.println("Total records loaded2: " + count2);
+        assert count == count2;
     }
 
     /**

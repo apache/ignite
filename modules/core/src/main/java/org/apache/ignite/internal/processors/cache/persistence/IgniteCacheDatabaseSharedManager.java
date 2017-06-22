@@ -93,7 +93,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** */
     private FreeListImpl dfltFreeList;
 
-    /** */
+    /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
 
     /** {@inheritDoc} */
@@ -961,5 +961,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public String systemMemoryPolicyName() {
         return SYSTEM_MEMORY_POLICY_NAME;
+    }
+
+    protected void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 }
