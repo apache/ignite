@@ -183,6 +183,7 @@ public class IgniteJdbcThinDriver implements Driver {
         List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(JdbcThinUtils.PROP_PORT), ""),
+            new JdbcDriverPropertyInfo("Schema", info.getProperty(JdbcThinUtils.PROP_SCHEMA), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
@@ -217,6 +218,7 @@ public class IgniteJdbcThinDriver implements Driver {
      *
      * @param props Properties.
      * @param url URL.
+     * @throws SQLException On error.
      */
     private void parseUrl(String url, Properties props) throws SQLException {
         if (F.isEmpty(url))
@@ -232,10 +234,9 @@ public class IgniteJdbcThinDriver implements Driver {
         if (nakedUrlParts.length > 2)
             throw new SQLException("Invalid URL format (only one ? character is allowed): " + url);
 
-        String endpoint = nakedUrlParts[0];
+        String[] pathParts = nakedUrlParts[0].split("/");
 
-        if (endpoint.endsWith("/"))
-            endpoint = endpoint.substring(0, endpoint.length() - 1);
+        String endpoint = pathParts[0];
 
         String[] endpointParts = endpoint.split(":");
 
@@ -249,6 +250,14 @@ public class IgniteJdbcThinDriver implements Driver {
 
         if (nakedUrlParts.length == 2)
             parseParameters(nakedUrlParts[1], props);
+
+        if (pathParts.length > 2) {
+            throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
+                "'host:port[/schemaName]'): " + url);
+        }
+
+        if (pathParts.length == 2)
+            props.setProperty(JdbcThinUtils.PROP_SCHEMA, pathParts[1]);
     }
 
     /**

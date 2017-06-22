@@ -54,6 +54,9 @@ public class JdbcThinUtils {
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
+    /** Schema property name. */
+    public static final String PROP_SCHEMA = PROP_PREFIX + "schema";
+
     /** Parameter: distributed joins flag. */
     public static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 

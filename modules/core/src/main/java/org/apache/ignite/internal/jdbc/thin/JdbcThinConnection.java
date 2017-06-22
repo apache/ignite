@@ -51,6 +51,7 @@ import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTE
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED_ONLY;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SCHEMA;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
@@ -65,7 +66,7 @@ public class JdbcThinConnection implements Connection {
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
     /** Schema name. */
-    private String schemaName;
+    private String schema;
 
     /** Closed flag. */
     private boolean closed;
@@ -100,6 +101,7 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
+        schema = extractSchema(props);
         String host = extractHost(props);
         int port = extractPort(props);
 
@@ -504,12 +506,12 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setSchema(String schema) throws SQLException {
-        schemaName = schema;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
-        return schemaName;
+        return schema;
     }
 
     /** {@inheritDoc} */
@@ -564,6 +566,19 @@ public class JdbcThinConnection implements Connection {
             throw new SQLException("Host name is empty.");
 
         return host;
+    }
+
+    /**
+     * Extract schema.
+     *
+     * @param props Properties.
+     * @return Host.
+     * @throws SQLException If failed.
+     */
+    private static String extractSchema(Properties props) throws SQLException {
+        String schema = props.getProperty(PROP_SCHEMA);
+
+        return F.isEmpty(schema) ? null : schema.trim();
     }
 
     /**

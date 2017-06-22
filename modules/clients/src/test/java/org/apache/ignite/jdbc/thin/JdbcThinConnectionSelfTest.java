@@ -273,6 +273,32 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Test schema property in URL.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSchema() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1/qwe/qwe",
+            "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')" );
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/public")) {
+            assertEquals("Invalid schema", "public", conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + DEFAULT_CACHE_NAME)) {
+            assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?schema=" + DEFAULT_CACHE_NAME)) {
+            assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
+            assertEquals("Invalid schema", "_not_exist_schema_", conn.getSchema());
+        }
+    }
+
+    /**
      * Get client socket for connection.
      *
      * @param conn Connection.
