@@ -121,6 +121,12 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
         }
     }
 
+    /**
+     * Switches records iterator to the next WAL segment
+     * as result of this method, new value of {@link #curHandle} should be set up.
+     * Null for current handle means stop of iteration
+     * @throws IgniteCheckedException if reading failed
+     */
     protected abstract void advanceSegment() throws IgniteCheckedException;
 
     /**
@@ -146,15 +152,20 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
             }
         }
         catch (IOException | IgniteCheckedException e) {
-            if (!(e instanceof SegmentEofException)) {
-                if (log.isInfoEnabled())
-                    log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
-            }
-
+            if (!(e instanceof SegmentEofException))
+                handleRecordException(e);
             curRec = null;
         }
     }
 
+    /**
+     * Handler for record deserialization exception
+     * @param e problem from records reading
+     */
+    protected void handleRecordException(Exception e) {
+        if (log.isInfoEnabled())
+            log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
+    }
 
     /**
      * @param desc File descriptor.

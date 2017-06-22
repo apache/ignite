@@ -91,7 +91,25 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             log.info("Missing WAL segment in the archive" + e.getMessage());
             curHandle = null;
         }
-
         curRec = null;
+    }
+
+    /** {@inheritDoc} */
+    protected void handleRecordException(Exception e) {
+        super.handleRecordException(e);
+        e.printStackTrace();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        super.onClose();
+        curRec = null;
+
+        if (curHandle != null) {
+            curHandle.close();
+            curHandle = null;
+        }
+
+        curIdx = Integer.MAX_VALUE;
     }
 }

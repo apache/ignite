@@ -2265,10 +2265,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 log.debug("Initialized WAL cursor [start=" + start + ", end=" + end + ", curIdx=" + curIdx + ']');
         }
 
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
-        protected void advanceSegment() throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override protected void advanceSegment() throws IgniteCheckedException {
             ReadFileHandle cur0 = curHandle;
 
             if (cur0 != null) {

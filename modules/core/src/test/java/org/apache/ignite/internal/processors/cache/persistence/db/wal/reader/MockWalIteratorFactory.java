@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import java.io.File;
@@ -12,6 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.jetbrains.annotations.Nullable;
 import org.mockito.Mockito;
 
 import static org.mockito.Matchers.any;
@@ -26,8 +44,8 @@ public class MockWalIteratorFactory {
     private final String consistentId;
     private int segments;
 
-    public MockWalIteratorFactory(IgniteLogger log, int pageSize, String consistentId, int segments) {
-        this.log = log;
+    public MockWalIteratorFactory(@Nullable IgniteLogger log, int pageSize, String consistentId, int segments) {
+        this.log = log == null ? Mockito.mock(IgniteLogger.class) : log;
         this.pageSize = pageSize;
         this.consistentId = consistentId;
         this.segments = segments;
@@ -60,7 +78,7 @@ public class MockWalIteratorFactory {
         final GridCacheDatabaseSharedManager database = Mockito.mock(GridCacheDatabaseSharedManager.class);
         when(database.pageSize()).thenReturn(pageSize);
         when(sctx.database()).thenReturn(database);
-        when(sctx.logger(any(Class.class))).thenReturn(Mockito.mock(IgniteLogger.class));
+        when(sctx.logger(any(Class.class))).thenReturn(log);
 
         mgr.start(sctx);
 
