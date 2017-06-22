@@ -2450,7 +2450,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         client = null;
                     }
 
-                    if (failureDetectionTimeoutEnabled() && (e instanceof HandshakeTimeoutException || X.hasCause(e, SocketException.class) ||
+                    if (failureDetectionTimeoutEnabled() && (e instanceof HandshakeTimeoutException ||
                         timeoutHelper.checkFailureTimeoutReached(e))) {
 
                         String msg = "Handshake timed out (failure detection timeout is reached) " +
