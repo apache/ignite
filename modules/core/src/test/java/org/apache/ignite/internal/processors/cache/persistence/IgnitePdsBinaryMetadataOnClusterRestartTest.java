@@ -17,16 +17,24 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -60,6 +68,24 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
                 .setWalMode(WALMode.LOG_ONLY)
         );
 
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        BinaryTypeConfiguration binaryEnumCfg = new BinaryTypeConfiguration(EnumType.class.getName());
+
+        binaryEnumCfg.setEnum(true);
+        binaryEnumCfg.setEnumValues(F.asMap(EnumType.ENUM_VAL_0.name(),
+            EnumType.ENUM_VAL_0.ordinal(),
+            EnumType.ENUM_VAL_1.name(),
+            EnumType.ENUM_VAL_1.ordinal()));
+
+        bCfg.setTypeConfigurations(Arrays.asList(binaryEnumCfg));
+
+        cfg.setBinaryConfiguration(bCfg);
+
+        CacheKeyConfiguration dynamicMetaKeyCfg = new CacheKeyConfiguration(DYNAMIC_TYPE_NAME, DYNAMIC_INT_FIELD_NAME);
+
+        cfg.setCacheKeyConfiguration(dynamicMetaKeyCfg);
+
         cfg.setCacheConfiguration(new CacheConfiguration()
             .setName(CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction())
@@ -72,7 +98,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * Test verifies that binary metadata from regular java classes is saved and restored correctly
      * on cluster restart.
      */
-    public void testStaticMetadataIsRestoredOnClusterRestart() throws Exception {
+    public void testStaticMetadataIsRestoredOnRestart() throws Exception {
         clientMode = false;
 
         startGrids(2);
@@ -126,6 +152,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
             assertEquals(TestValue1.class.getName(), o1.type().typeName());
             assertEquals(TestValue2.class.getName(), o2.type().typeName());
+
+            assertEquals("val", o1.type().affinityKeyFieldName());
         }
     }
 
@@ -145,7 +173,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * Test verifies that metadata for binary types built with BinaryObjectBuilder is saved and updated correctly
      * on cluster restart.
      */
-    public void testDynamicMetadataIsRestoredOnClusterRestart() throws Exception {
+    public void testDynamicMetadataIsRestoredOnRestart() throws Exception {
         clientMode = false;
         //1: start two nodes, add single BinaryObject
         startGrids(2);
@@ -174,7 +202,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0.active(true);
 
-        examineDynamicMetadata(2, examiner0);
+        examineDynamicMetadata(2, contentExaminer0, structureExaminer0);
 
         Ignite ignite1 = grid(1);
 
@@ -197,7 +225,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0.active(true);
 
-        examineDynamicMetadata(2, examiner0, examiner1);
+        examineDynamicMetadata(2, contentExaminer0, contentExaminer1, structureExaminer1);
 
         startGrid(2);
 
@@ -205,13 +233,54 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         awaitPartitionMapExchange();
 
-        examineDynamicMetadata(4, examiner0, examiner1);
+        examineDynamicMetadata(4, contentExaminer0, contentExaminer1, structureExaminer1);
+    }
+
+    /**
+     *
+     */
+    public void testBinaryEnumMetadataIsRestoredOnRestart() throws Exception {
+        clientMode = false;
+
+        Ignite ignite0 = startGrids(2);
+
+        ignite0.active(true);
+
+        BinaryObject enumBo0 = ignite0.binary().buildEnum(EnumType.class.getName(), 0);
+
+        ignite0.cache(CACHE_NAME).put(4, enumBo0);
+
+        stopAllGrids();
+
+        ignite0 = startGrids(2);
+
+        ignite0.active(true);
+
+        startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        examineDynamicMetadata(3, enumExaminer0);
+
+        stopAllGrids();
+
+        ignite0 = startGrids(3);
+
+        ignite0.active(true);
+
+        clientMode = true;
+
+        startGrid(3);
+
+        awaitPartitionMapExchange();
+
+        examineDynamicMetadata(4, enumExaminer0);
     }
 
     /**
      * Test verifies that metadata is saved, stored and delivered to client nodes correctly.
      */
-    public void testMixedMetadataIsRestoredOnClusterRestart() throws Exception {
+    public void testMixedMetadataIsRestoredOnRestart() throws Exception {
         clientMode = false;
 
         //1: starts 4 nodes one by one and adds java classes and classless BinaryObjects
@@ -260,7 +329,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         examineStaticMetadata(4);
 
-        examineDynamicMetadata(4, examiner0, examiner1);
+        examineDynamicMetadata(4, contentExaminer0, contentExaminer1, structureExaminer1);
 
         //2: starts up client node and performs the same set of checks from all nodes including client
         clientMode = true;
@@ -269,7 +338,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         examineStaticMetadata(5);
 
-        examineDynamicMetadata(5, examiner0, examiner1);
+        examineDynamicMetadata(5, contentExaminer0, contentExaminer1, structureExaminer1);
     }
 
     /** {@inheritDoc} */
@@ -296,6 +365,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     private static class TestValue1 {
         /** */
+        @AffinityKeyMapped
         private final int val;
 
         /**
@@ -335,6 +405,12 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         }
     }
 
+    /** */
+    private enum EnumType {
+        /** */ ENUM_VAL_0,
+        /** */ ENUM_VAL_1
+    }
+
     /**
      *
      */
@@ -346,25 +422,89 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     }
 
     /** */
-    private BinaryObjectExaminer examiner0 = new BinaryObjectExaminer() {
+    private BinaryObjectExaminer contentExaminer0 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
             BinaryObject bo = (BinaryObject) cache.get(2);
-
-            assertEquals(DYNAMIC_TYPE_NAME, bo.type().typeName());
 
             assertEquals(10, bo.field(DYNAMIC_INT_FIELD_NAME));
         }
     };
 
     /** */
-    private BinaryObjectExaminer examiner1 = new BinaryObjectExaminer() {
+    private BinaryObjectExaminer contentExaminer1 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
             BinaryObject bo = (BinaryObject) cache.get(3);
 
-            assertEquals(DYNAMIC_TYPE_NAME, bo.type().typeName());
-
             assertEquals(20, bo.field(DYNAMIC_INT_FIELD_NAME));
             assertEquals("str", bo.field(DYNAMIC_STR_FIELD_NAME));
+        }
+    };
+
+    /** */
+    private BinaryObjectExaminer structureExaminer0 = new BinaryObjectExaminer() {
+        @Override public void examine(IgniteCache cache) {
+            BinaryObject bo = (BinaryObject) cache.get(2);
+
+            BinaryType type = bo.type();
+
+            assertFalse(type.isEnum());
+
+            assertEquals(DYNAMIC_TYPE_NAME, type.typeName());
+
+            Collection<String> fieldNames = type.fieldNames();
+
+            assertEquals(1, fieldNames.size());
+
+            assertTrue(fieldNames.contains(DYNAMIC_INT_FIELD_NAME));
+
+            assertEquals(DYNAMIC_INT_FIELD_NAME, type.affinityKeyFieldName());
+        }
+    };
+
+    /** */
+    private BinaryObjectExaminer structureExaminer1 = new BinaryObjectExaminer() {
+        @Override public void examine(IgniteCache cache) {
+            BinaryObject bo = (BinaryObject) cache.get(2);
+
+            BinaryType type = bo.type();
+
+            assertFalse(bo.type().isEnum());
+
+            assertEquals(DYNAMIC_TYPE_NAME, type.typeName());
+
+            Collection<String> fieldNames = type.fieldNames();
+
+            assertEquals(2, fieldNames.size());
+
+            assertTrue(fieldNames.contains(DYNAMIC_INT_FIELD_NAME));
+            assertTrue(fieldNames.contains(DYNAMIC_STR_FIELD_NAME));
+        }
+    };
+
+    /** */
+    private BinaryObjectExaminer enumExaminer0 = new BinaryObjectExaminer() {
+        @Override public void examine(IgniteCache cache) {
+            BinaryObject enumBo = (BinaryObject) cache.get(4);
+
+            assertEquals(EnumType.ENUM_VAL_0.ordinal(), enumBo.enumOrdinal());
+
+            BinaryType type = enumBo.type();
+
+            assertTrue(type.isEnum());
+
+            assertEquals(EnumType.class.getName(), type.typeName());
+
+            Collection<BinaryObject> enumVals = type.enumValues();
+
+            assertEquals(2, enumVals.size());
+
+            int i = 0;
+
+            for (BinaryObject bo : enumVals) {
+                assertEquals(i, bo.enumOrdinal());
+
+                assertEquals("ENUM_VAL_" + (i++), bo.enumName());
+            }
         }
     };
 }
