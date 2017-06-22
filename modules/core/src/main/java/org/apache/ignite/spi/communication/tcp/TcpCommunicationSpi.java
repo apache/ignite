@@ -2332,6 +2332,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         unregisterMBean();
 
+        if (nioSrvr != null)
+            nioSrvr.stop();
+
         U.interrupt(commWorker);
         U.join(commWorker, log);
 
@@ -2372,17 +2375,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         if (connectGate != null)
             connectGate.stopped();
-
-        if (nioSrvr != null)
-            nioSrvr.stop();
-
-        // Force closing.
-        for (GridCommunicationClient[] clients0 : clients.values()) {
-            for (GridCommunicationClient client : clients0) {
-                if (client != null)
-                    client.forceClose();
-            }
-        }
 
         getSpiContext().deregisterPorts();
 
