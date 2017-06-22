@@ -1846,7 +1846,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctxs != null) {
                 synchronized (ctxs) {
                     if (log.isInfoEnabled())
-                        log.info("Undeploying services [svc=" + e.getKey().name() + ", assigns=" + assigns +
+                        log.info("Undeploying services [svc=" + name +
                             ", ctxs=" + ctxs + ']');cancel(ctxs, ctxs.size());
 
             }
