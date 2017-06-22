@@ -2814,8 +2814,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             // Ignoring whatever happened after timeout - reporting only timeout event.
             if (!cancelled)
-                throw new HandshakeTimeoutException("Failed to perform handshake due to timeout (consider increasing " +
-                    "'connectionTimeout' configuration property).");
+                throw new HandshakeTimeoutException(
+                    new IgniteSpiOperationTimeoutException("Failed to perform handshake due to timeout " +
+                        "(consider increasing 'connectionTimeout' configuration property)."));
         }
 
         return rcvCnt;
@@ -2965,10 +2966,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param msg Message.
+         * @param cause Exception cause
          */
-        HandshakeTimeoutException(String msg) {
-            super(msg);
+        HandshakeTimeoutException(IgniteSpiOperationTimeoutException cause) {
+            super(cause);
         }
     }
 
