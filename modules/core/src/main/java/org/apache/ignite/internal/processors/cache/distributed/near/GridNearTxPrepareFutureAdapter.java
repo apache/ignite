@@ -172,7 +172,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
             Collection<UUID> backups = entry.getValue();
 
-            if (backups.size() <= 1 && !tx.txState().hasNearCacheConfigured(cctx, tx.topologyVersion()))
+            if (backups.size() <= 1)
                 tx.onePhaseCommit(true);
         }
     }
@@ -190,6 +190,9 @@ public abstract class GridNearTxPrepareFutureAdapter extends
             return;
 
         assert res.error() == null : res;
+
+        if (tx.onePhaseCommit() && !res.onePhaseCommit())
+            tx.onePhaseCommit(false);
 
         UUID nodeId = m.primary().id();
 

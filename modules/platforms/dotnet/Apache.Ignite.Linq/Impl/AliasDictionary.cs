@@ -31,22 +31,29 @@ namespace Apache.Ignite.Linq.Impl
     internal class AliasDictionary
     {
         /** */
-        private int _aliasIndex;
+        private int _tableAliasIndex;
 
         /** */
-        private Dictionary<IQuerySource, string> _aliases = new Dictionary<IQuerySource, string>();
+        private Dictionary<IQuerySource, string> _tableAliases = new Dictionary<IQuerySource, string>();
 
         /** */
-        private readonly Stack<Dictionary<IQuerySource, string>> _stack = new Stack<Dictionary<IQuerySource, string>>();
+        private int _fieldAliasIndex;
+
+        /** */
+        private readonly Dictionary<Expression, string> _fieldAliases = new Dictionary<Expression, string>();
+
+        /** */
+        private readonly Stack<Dictionary<IQuerySource, string>> _stack 
+            = new Stack<Dictionary<IQuerySource, string>>();
 
         /// <summary>
         /// Pushes current aliases to stack.
         /// </summary>
         public void Push()
         {
-            _stack.Push(_aliases);
+            _stack.Push(_tableAliases);
 
-            _aliases = new Dictionary<IQuerySource, string>();
+            _tableAliases = new Dictionary<IQuerySource, string>();
         }
 
         /// <summary>
@@ -54,7 +61,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public void Pop()
         {
-            _aliases = _stack.Pop();
+            _tableAliases = _stack.Pop();
         }
 
         /// <summary>
@@ -67,27 +74,67 @@ namespace Apache.Ignite.Linq.Impl
             return GetTableAlias(GetQuerySource(expression));
         }
 
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
         public string GetTableAlias(IFromClause fromClause)
         {
             return GetTableAlias(GetQuerySource(fromClause.FromExpression) ?? fromClause);
         }
 
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
         public string GetTableAlias(JoinClause joinClause)
         {
             return GetTableAlias(GetQuerySource(joinClause.InnerSequence) ?? joinClause);
         }
 
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
         private string GetTableAlias(IQuerySource querySource)
         {
             Debug.Assert(querySource != null);
 
             string alias;
 
-            if (!_aliases.TryGetValue(querySource, out alias))
+            if (!_tableAliases.TryGetValue(querySource, out alias))
             {
-                alias = "_T" + _aliasIndex++;
+                alias = "_T" + _tableAliasIndex++;
 
-                _aliases[querySource] = alias;
+                _tableAliases[querySource] = alias;
+            }
+
+            return alias;
+        }
+
+        /// <summary>
+        /// Gets the fields alias.
+        /// </summary>
+        public string GetFieldAlias(Expression expression)
+        {
+            Debug.Assert(expression != null);
+
+            var referenceExpression = ExpressionWalker.GetQuerySourceReference(expression);
+
+            return GetFieldAlias(referenceExpression);
+        }
+
+        /// <summary>
+        /// Gets the fields alias.
+        /// </summary>
+        private string GetFieldAlias(QuerySourceReferenceExpression querySource)
+        {
+            Debug.Assert(querySource != null);
+
+            string alias;
+
+            if (!_fieldAliases.TryGetValue(querySource, out alias))
+            {
+                alias = "F" + _fieldAliasIndex++;
+
+                _fieldAliases[querySource] = alias;
             }
 
             return alias;

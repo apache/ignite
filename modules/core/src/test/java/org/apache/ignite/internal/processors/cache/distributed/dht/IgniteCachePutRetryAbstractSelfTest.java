@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -45,7 +46,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,7 +58,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -599,25 +598,33 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         }
     }
 
-    /**
-     *
-     */
     private static class TestStoreFactory implements Factory<CacheStore> {
         /** {@inheritDoc} */
         @Override public CacheStore create() {
-            return new CacheStoreAdapter() {
-                @Override public Object load(Object key) throws CacheLoaderException {
-                    return null;
-                }
+            return new TestCacheStore();
+        }
+    }
 
-                @Override public void write(Cache.Entry entry) throws CacheWriterException {
-                    // No-op.
-                }
+    /**
+     *
+     */
+    private static class TestCacheStore extends CacheStoreAdapter {
+        /** Store map. */
+        private static Map STORE_MAP = new ConcurrentHashMap();
 
-                @Override public void delete(Object key) throws CacheWriterException {
-                    // No-op.
-                }
-            };
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return STORE_MAP.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry entry) throws CacheWriterException {
+            STORE_MAP.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            STORE_MAP.remove(key);
         }
     }
 }

@@ -41,7 +41,16 @@ namespace Apache.Ignite.Core.Tests.Examples
         };
 
         /** */
-        private static readonly string[] NoDllExamples = { "BinaryModeExample", "NearCacheExample" };
+        private static readonly string[] RemoteOnlyExamples =
+        {
+            "PeerAssemblyLoadingExample", "MessagingExample", "NearCacheExample"
+        };
+
+        /** */
+        private static readonly string[] NoDllExamples =
+        {
+            "BinaryModeExample", "NearCacheExample", "PeerAssemblyLoadingExample"
+        };
 
         /** Config file path. */
         private string _configPath;
@@ -210,7 +219,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCasesLocal
         {
-            get { return AllExamples.Where(x => x.Name != "NearCacheExample"); }
+            get { return AllExamples.Where(x => !RemoteOnlyExamples.Contains(x.Name)); }
         }
 
         /// <summary>

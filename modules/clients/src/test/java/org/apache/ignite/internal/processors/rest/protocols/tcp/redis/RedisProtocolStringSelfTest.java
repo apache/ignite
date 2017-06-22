@@ -21,137 +21,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.exceptions.JedisDataException;
 
 /**
- * Tests for Redis protocol.
+ * Tests for String commands of Redis protocol.
  */
-public class RedisProtocolSelfTest extends GridCommonAbstractTest {
-    /** Grid count. */
-    private static final int GRID_CNT = 2;
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Local host. */
-    private static final String HOST = "127.0.0.1";
-
-    /** Port. */
-    private static final int PORT = 6379;
-
-    /** Pool. */
-    private static JedisPool pool;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(gridCount());
-
-        JedisPoolConfig jedisPoolCfg = new JedisPoolConfig();
-
-        jedisPoolCfg.setMaxWaitMillis(10000);
-        jedisPoolCfg.setMaxIdle(100);
-        jedisPoolCfg.setMinIdle(1);
-        jedisPoolCfg.setNumTestsPerEvictionRun(10);
-        jedisPoolCfg.setTestOnBorrow(true);
-        jedisPoolCfg.setTestOnReturn(true);
-        jedisPoolCfg.setTestWhileIdle(true);
-        jedisPoolCfg.setTimeBetweenEvictionRunsMillis(30000);
-
-        pool = new JedisPool(jedisPoolCfg, HOST, PORT, 10000);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        pool.destroy();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setLocalHost(HOST);
-
-        assert cfg.getConnectorConfiguration() == null;
-
-        ConnectorConfiguration redisCfg = new ConnectorConfiguration();
-
-        redisCfg.setHost(HOST);
-        redisCfg.setPort(PORT);
-
-        cfg.setConnectorConfiguration(redisCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        CacheConfiguration ccfg = defaultCacheConfiguration();
-
-        ccfg.setStatisticsEnabled(true);
-        ccfg.setIndexedTypes(String.class, String.class);
-
-        cfg.setCacheConfiguration(ccfg);
-
-        return cfg;
-    }
-
-    /**
-     * @return Cache.
-     */
-    @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).cache(DEFAULT_CACHE_NAME);
-    }
-
-    /** {@inheritDoc} */
-    protected int gridCount() {
-        return GRID_CNT;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        assert grid(0).cluster().nodes().size() == gridCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        jcache().clear();
-
-        assertTrue(jcache().localSize() == 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPing() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals("PONG", jedis.ping());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEcho() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals("Hello, grid!", jedis.echo("Hello, grid!"));
-        }
-    }
-
+public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
