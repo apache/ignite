@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -50,7 +51,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     /** Affinity assignment. */
     @GridDirectTransient
     @GridToStringInclude
-    private List<List<ClusterNode>> affAssignment;
+    private List<List<ClusterNode>> affAssignment; // todo store only diff with ideal
 
     /** Affinity assignment bytes. */
     private byte[] affAssignmentBytes;
@@ -173,13 +174,10 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
             List<List<UUID>> assignment = new ArrayList<>(assignments.size());
 
             for (int i = 0; i < assignments.size(); i++) {
-                List<ClusterNode> nodes = assignments.get(i);
-                List<UUID> ids = new ArrayList<>(nodes.size());
+                //List<ClusterNode> nodes = assignments.get(i);
 
-                for (int j = 0; j < nodes.size(); j++)
-                    ids.add(nodes.get(j).id());
 
-                assignment.add(ids);
+                assignment.add(F.nodeIdsCopy(assignments.get(i)));
             }
 
             return assignment;

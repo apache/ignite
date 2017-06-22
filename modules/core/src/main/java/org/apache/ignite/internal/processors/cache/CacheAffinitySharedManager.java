@@ -40,10 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -103,6 +100,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private final ConcurrentMap<T2<Integer, AffinityTopologyVersion>, GridDhtAssignmentFetchFuture>
         pendingAssignmentFetchFuts = new ConcurrentHashMap8<>();
 
+    /** Pending ready affinity assignments futures. Used only for exchange triggered by node left. */
+    private final ConcurrentMap<T2<Integer, AffinityTopologyVersion>, GridDhtReadyAssignmentsFetchFuture>
+            pendingReadyAssignmentsFetchFuts = new ConcurrentHashMap8<>();
+
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -113,6 +114,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             ClusterNode n = e.eventNode();
 
             for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
+                fut.onNodeLeft(n.id());
+
+            for (GridDhtReadyAssignmentsFetchFuture fut : pendingReadyAssignmentsFetchFuts.values())
                 fut.onNodeLeft(n.id());
         }
     };
@@ -533,8 +537,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
 
         forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override
-            public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+            @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 List<List<ClusterNode>> idealAssignment = aff.idealAssignment();
 
                 assert idealAssignment != null;
@@ -694,12 +697,31 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param fut Future to add.
+     */
+    public void addDhtReadyAssignmentsFetchFuture(GridDhtReadyAssignmentsFetchFuture fut) {
+        GridDhtReadyAssignmentsFetchFuture old = pendingReadyAssignmentsFetchFuts.putIfAbsent(fut.key(), fut);
+
+        assert old == null : "More than one thread is trying to fetch ready partition assignments [fut=" + fut +
+                ", allFuts=" + pendingReadyAssignmentsFetchFuts + ']';
+    }
+
+    /**
      * @param fut Future to remove.
      */
     public void removeDhtAssignmentFetchFuture(GridDhtAssignmentFetchFuture fut) {
         boolean rmv = pendingAssignmentFetchFuts.remove(fut.key(), fut);
 
         assert rmv : "Failed to remove assignment fetch future: " + fut.key();
+    }
+
+    /**
+     * @param fut Future to remove.
+     */
+    public void removeDhtReadyAssignmentsFetchFuture(GridDhtReadyAssignmentsFetchFuture fut) {
+        boolean rmv = pendingReadyAssignmentsFetchFuts.remove(fut.key(), fut);
+
+        assert rmv : "Failed to remove ready assignments fetch future: " + fut.key();
     }
 
     /**
@@ -713,6 +735,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             log.debug("Processing affinity assignment response [node=" + nodeId + ", res=" + res + ']');
 
         for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values()) {
+            if (fut.key().get1().equals(cacheId)) {
+                fut.onResponse(nodeId, res);
+
+                break;
+            }
+        }
+
+        for (GridDhtReadyAssignmentsFetchFuture fut : pendingReadyAssignmentsFetchFuts.values()) {
             if (fut.key().get1().equals(cacheId)) {
                 fut.onResponse(nodeId, res);
 
@@ -1650,6 +1680,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                 U.warn(log, ">>> " + fut);
         }
+
+        if (!pendingReadyAssignmentsFetchFuts.isEmpty()) {
+            U.warn(log, "Pending assignment fetch futures 2:");
+
+            for (GridDhtReadyAssignmentsFetchFuture fut : pendingReadyAssignmentsFetchFuts.values())
+                U.warn(log, ">>> " + fut);
+        }
     }
 
     /**
@@ -1688,7 +1725,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         return nodes;
     }
-
     /**
      *
      */

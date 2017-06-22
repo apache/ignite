@@ -217,10 +217,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         for (GridDhtPartitionsExchangeFuture f : exchFuts.values()) {
-                            if (f != initFut)
+                            if (f != initFut) {
+                                f.finishExchange();
+
                                 f.onNodeLeft(n);
+                            }
                         }
                     }
+
+//                    if (evt.type() == EVT_NODE_JOINED) {
+//                        for (GridDhtPartitionsExchangeFuture f : exchFuts.values()) {
+//                            f.finishExchange();
+//                        }
+//                    }
 
                     assert evt.type() != EVT_NODE_JOINED || n.order() > loc.order() :
                         "Node joined with smaller-than-local " +
@@ -272,15 +281,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else if (customMsg instanceof CacheAffinityChangeMessage) {
                         CacheAffinityChangeMessage msg = (CacheAffinityChangeMessage)customMsg;
 
-                        //if (msg.exchangeId() == null) {
                         if (msg.exchangeNeeded()) {
                             exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
 
                             exchFut = exchangeFuture(exchId, evt, cache, null, msg);
                         }
-//                        }
-//                        else
-//                            exchangeFuture(msg.exchangeId(), null, null, null, null).onAffinityChangeMessage(evt.eventNode(), msg);
                     }
                     else if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage
                         && ((StartSnapshotOperationAckDiscoveryMessage)customMsg).needExchange()) {
@@ -1389,7 +1394,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
 
         try {
-            exchangeFuture(msg.exchangeId(), null, null, null, null).onAffinityChangeMessage(node, msg);
+            exchangeFuture(msg.exchangeId(), null, null, null, null).onFinishExchangeMessage(node, msg);
         }
         finally {
             leaveBusy();

@@ -659,20 +659,39 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+        IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.affinity().affinityReadyFuture(req.topologyVersion());
+
+        if (req.ready() && fut.isDone()) {
+            AffinityAssignment assignment = cctx.affinity().assignment(topVer);
+
+            GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
+                    topVer,
+                    assignment.assignment(),
+                    true);
+
+            try {
+                cctx.io().send(node, res, AFFINITY_POOL);
+            } catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
+            }
+
+            return;
+        }
+
+        fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
-                        ", node=" + node + ']');
+                            ", node=" + node + ']');
 
                 AffinityAssignment assignment = cctx.affinity().assignment(topVer);
 
                 boolean newAffMode = node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0;
 
                 GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
-                    topVer,
-                    assignment.assignment(),
-                    newAffMode);
+                        topVer,
+                        assignment.assignment(),
+                        newAffMode);
 
                 if (newAffMode && cctx.affinity().affinityCache().centralizedAffinityFunction()) {
                     assert assignment.idealAssignment() != null;
@@ -682,8 +701,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 try {
                     cctx.io().send(node, res, AFFINITY_POOL);
-                }
-                catch (IgniteCheckedException e) {
+                } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
                 }
             }

@@ -17,15 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -52,9 +44,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.ClusterState;
@@ -64,11 +54,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
@@ -1586,7 +1572,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             // todo exclude dead nodes.
             cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg, GridIoPolicy.SYSTEM_POOL, null);
 
-            onAffinityChangeMessage(cctx.localNode(), msg);
+            onFinishExchangeMessage(cctx.localNode(), msg);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -2024,7 +2010,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param node Message sender node.
      * @param msg Message.
      */
-    public void onAffinityChangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg) {
+    public void onFinishExchangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
 
         onDiscoveryEvent(new IgniteRunnable() {
@@ -2111,7 +2097,93 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * Node left callback, processed from the same thread as {@link #onAffinityChangeMessage}.
+     * Finishes exchange on nodes no receiving {@link GridDhtFinishExchangeMessage}.
+     */
+    public void finishExchange() {
+        // Exchange can be finished on new coordinator, but some nodes still might wait for completion.
+        if (crd != null && crd.isLocal()) {
+            List<GridDhtReadyAssignmentsFetchFuture> futs = new LinkedList<>();
+
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                GridDhtReadyAssignmentsFetchFuture fut = new GridDhtReadyAssignmentsFetchFuture(cctx, cacheCtx.name(),
+                        topologyVersion(), discoCache());
+
+                futs.add(fut);
+
+                fut.init();
+            }
+
+            Map<Integer, Map<Integer, List<UUID>>> assignmentChange = new HashMap<>();
+
+            Set<ClusterNode> nodesToFix = new HashSet<>();
+
+            // Receive current assignment, if any.
+            // TODO how to handle race when no assignments were done yet?
+            for (GridDhtReadyAssignmentsFetchFuture fut : futs) {
+                assert topologyVersion() == fut.key().get2();
+
+                try {
+                    Map<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> data = fut.get();
+
+                    GridCacheContext<?, ?> ctx = cctx.cacheContext(fut.key().get1());
+
+                    List<List<ClusterNode>> ideal = ctx.affinity().assignment(fut.key().get2()).idealAssignment();
+
+                    // Expecting same assignment from all nodes.
+                    for (Map.Entry<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> entry : data.entrySet()) {
+                        GridDhtAffinityAssignmentResponse resp = entry.getValue().get();
+
+                        assert resp != null;
+
+                        List<List<ClusterNode>> tmp = resp.affinityAssignment(cctx.discovery());
+
+                        if (tmp == null)
+                            nodesToFix.add(ctx.discovery().node(entry.getKey())); // Affinity not ready, message was not delivered.
+                        else {
+                            if (!assignmentChange.containsKey(ctx.cacheId())) {
+                                for (int p = 0; p < ctx.affinity().partitions(); p++) {
+                                    List<ClusterNode> nodes = tmp.get(p);
+
+                                    if (!nodes.equals(ideal.get(p))) {
+                                        Map<Integer, List<UUID>> map = assignmentChange.get(ctx.cacheId());
+
+                                        if (map == null)
+                                            assignmentChange.put(ctx.cacheId(), map = U.newHashMap(nodes.size()));
+
+                                        map.put(p, F.nodeIdsCopy(nodes));
+                                    }
+                                }
+                            }
+                            // TODO validate same assignment from all nodes.
+
+                        }
+                    }
+                } catch (IgniteCheckedException e) {
+                    // No-op.
+                }
+            }
+
+            if (!nodesToFix.isEmpty() && !assignmentChange.isEmpty()) {
+                GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
+
+                GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
+
+                try {
+                    cctx.io().safeSend(nodesToFix, msg, SYSTEM_POOL, null);
+                } catch (IgniteCheckedException e) {
+                    // No-op.
+                }
+
+                if (!isDone()) {
+                    // Finish locally.
+                    onFinishExchangeMessage(cctx.localNode(), msg);
+                }
+            }
+        }
+    }
+
+    /**
+     * Node left callback, processed from the same thread as {@link #onFinishExchangeMessage}.
      *
      * @param node Left node.
      */
