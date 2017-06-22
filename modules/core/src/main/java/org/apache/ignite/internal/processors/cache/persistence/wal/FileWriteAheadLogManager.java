@@ -2162,7 +2162,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Nullable
         private FileWALPointer end;
 
-
         /**
          * @param cctx Shared context.
          * @param walWorkDir WAL work dir.
@@ -2187,7 +2186,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             IgniteLogger log,
             int tlbSize
         ) throws IgniteCheckedException {
-            super(log, cctx, serializer, Math.min(16 * tlbSize, psCfg.getWalRecordIteratorBufferSize()));
+            super(log,
+                cctx,
+                serializer,
+                Math.min(16 * tlbSize, psCfg.getWalRecordIteratorBufferSize()));
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;

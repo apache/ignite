@@ -56,10 +56,13 @@ import static org.mockito.Mockito.when;
  */
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
+    public static final int WAL_SEGMENTS = 2;
     private static String cacheName = "cache0";
 
     private static boolean fillWalBeforeTest = true;
+    private static boolean deleteBefore = true;
     private static boolean deleteAfter = true;
+    private static boolean dumpRecords = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -90,8 +93,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         cfg.setMemoryConfiguration(dbCfg);
 
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-        pCfg.setWalHistorySize(10);
-        pCfg.setWalSegments(2);
+        pCfg.setWalHistorySize(1);
+        pCfg.setWalSegments(WAL_SEGMENTS);
         cfg.setPersistentStoreConfiguration(pCfg);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -106,7 +109,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        if (deleteBefore)
+            deleteWorkFiles();
     }
 
     /** {@inheritDoc} */
@@ -135,7 +139,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache0 = ignite0.cache(cacheName);
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 10000; i++)
                 cache0.put(i, new IgniteWalReaderTest.IndexedObject(i));
 
             stopGrid("node0");
@@ -144,44 +148,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         File db = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
         File wal = new File(db, "wal");
         File walArchive = new File(wal, "archive");
-
         int pageSize = 1024 * 4;
-        PersistentStoreConfiguration persistentCfg1 = Mockito.mock(PersistentStoreConfiguration.class);
-        when(persistentCfg1.getWalStorePath()).thenReturn(wal.getAbsolutePath());
-        when(persistentCfg1.getWalArchivePath()).thenReturn(walArchive.getAbsolutePath());
-        int segments = DFLT_WAL_SEGMENTS;
+        int segments = WAL_SEGMENTS;
         String consistentId = "127_0_0_1_47500";
-        when(persistentCfg1.getWalSegments()).thenReturn(segments);
-        when(persistentCfg1.getTlbSize()).thenReturn(PersistentStoreConfiguration.DFLT_TLB_SIZE);
-        when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(PersistentStoreConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
-
-        IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);
-        when(cfg.getPersistentStoreConfiguration()).thenReturn(persistentCfg1);
-
-        GridKernalContext ctx = Mockito.mock(GridKernalContext.class);
-        when(ctx.config()).thenReturn(cfg);
-        when(ctx.clientNode()).thenReturn(false);
-
-        GridDiscoveryManager disco = Mockito.mock(GridDiscoveryManager.class);
-        when(disco.consistentId()).thenReturn(consistentId);
-        when(ctx.discovery()).thenReturn(disco);
-
-        FileWriteAheadLogManager mgr = new FileWriteAheadLogManager(ctx);
-        GridCacheSharedContext sctx = Mockito.mock(GridCacheSharedContext.class);
-        when(sctx.kernalContext()).thenReturn(ctx);
-        when(sctx.discovery()).thenReturn(disco);
-        GridCacheDatabaseSharedManager database = Mockito.mock(GridCacheDatabaseSharedManager.class);
-        when(database.pageSize()).thenReturn(pageSize);
-        when(sctx.database()).thenReturn(database);
-        when(sctx.logger(any(Class.class))).thenReturn(Mockito.mock(IgniteLogger.class));
-
-        mgr.start(sctx);
+        MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, pageSize, consistentId, segments);
+        WALIterator it =   mockItFactory.iterator(wal, walArchive);
 
         int count = 0;
-        WALIterator it = mgr.replay(null);
         while (it.hasNextX()) {
             IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
-            System.out.println("Record: " + next.get2());
+            if(dumpRecords) System.out.println("Record: " + next.get2());
             count++;
         }
         System.out.println("Total records loaded " + count);
@@ -190,14 +166,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final File walDirWithConsistentId = new File(wal, consistentId);
         final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
 
-        NullLogger logger = new NullLogger();
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(logger, pageSize);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, pageSize);
         int count2 = 0;
 
         try (WALIterator stIt = factory.iterator(walArchiveDirWithConsistentId)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-                System.out.println("Arch. Record: " + next.get2());
+                if(dumpRecords) System.out.println("Arch. Record: " + next.get2());
                 count2++;
             }
         }
@@ -205,7 +180,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         try (WALIterator stIt = factory.iterator(walDirWithConsistentId)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-                System.out.println("Work. Record: " + next.get2());
+                if(dumpRecords) System.out.println("Work. Record: " + next.get2());
                 count2++;
             }
         }

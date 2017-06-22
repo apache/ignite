@@ -52,6 +52,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     protected FileWriteAheadLogManager.ReadFileHandle curHandle;
 
     protected IgniteLogger log;
+
     @NotNull
     private GridCacheSharedContext sharedContext;
 
@@ -64,19 +65,20 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
 
     /**
      *  @param log
-     * @param sharedCtx
+     * @param sharedCtx Shared context
      * @param serializer Serializer of current version to read headers.
-     * @param bufferSize
+     * @param bufSize
      */
-    public AbstractWalRecordsIterator(IgniteLogger log,
+    protected AbstractWalRecordsIterator(IgniteLogger log,
         @NotNull GridCacheSharedContext sharedCtx,
-        RecordSerializer serializer, int bufferSize) {
+        @NotNull RecordSerializer serializer,
+        int bufSize) {
         this.log = log;
         this.sharedContext = sharedCtx;
         this.serializer = serializer;
 
         // Do not allocate direct buffer for iterator.
-        buf = ByteBuffer.allocate(bufferSize);
+        buf = ByteBuffer.allocate(bufSize);
         buf.order(ByteOrder.nativeOrder());
 
     }
