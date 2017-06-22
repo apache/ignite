@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
+package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.util.Iterator;
 import java.util.List;
@@ -84,334 +84,415 @@ import org.jetbrains.annotations.Nullable;
 public class StandaloneGridKernalContext implements GridKernalContext {
     private IgniteLogger log;
 
-    public StandaloneGridKernalContext(IgniteLogger log) {
+    /**
+     * @param log Logger.
+     */
+    StandaloneGridKernalContext(IgniteLogger log) {
         this.log = log;
     }
 
+    /** {@inheritDoc} */
     @Override public List<GridComponent> components() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public UUID localNodeId() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public String igniteInstanceName() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteLogger log(String ctgr) {
         return log;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteLogger log(Class<?> cls) {
         return log;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isStopping() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public GridKernalGateway gateway() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteConfiguration config() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridTaskProcessor task() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridAffinityProcessor affinity() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridJobProcessor job() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridTimeoutProcessor timeout() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridResourceProcessor resource() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridJobMetricsProcessor jobMetric() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridCacheProcessor cache() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridClusterStateProcessor state() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridTaskSessionProcessor session() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridClosureProcessor closure() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridServiceProcessor service() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteScheduleProcessorAdapter schedule() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridRestProcessor rest() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridSegmentationProcessor segmentation() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgfsProcessorAdapter igfs() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgfsHelper igfsHelper() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public HadoopProcessorAdapter hadoop() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public PoolProcessor pools() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridMarshallerMappingProcessor mapping() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public HadoopHelper hadoopHelper() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService utilityCachePool() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteStripedThreadPoolExecutor asyncCallbackPool() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCacheObjectProcessor cacheObjects() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridQueryProcessor query() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public SqlListenerProcessor sqlListener() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgnitePluginProcessor plugins() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridDeploymentManager deploy() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridIoManager io() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridCheckpointManager checkpoint() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridEventStorageManager event() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridFailoverManager failover() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridCollisionManager collision() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridSecurityProcessor security() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridLoadBalancerManager loadBalancing() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return null;
     }
 
-    @Override public void markSegmented() {
+    /** {@inheritDoc} */
+    @Override public void markSegmented() { }
 
-    }
-
+    /** {@inheritDoc} */
     @Override public boolean segmented() {
         return false;
     }
 
-    @Override public void printMemoryStats() {
+    /** {@inheritDoc} */
+    @Override public void printMemoryStats() { }
 
-    }
-
+    /** {@inheritDoc} */
     @Override public boolean isDaemon() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public String userVersion(ClassLoader ldr) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public PluginProvider pluginProvider(String name) throws PluginNotFoundException {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T createComponent(Class<T> cls) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getServiceExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getSystemExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public StripedExecutor getStripedExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getManagementExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getPeerClassLoadingExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getIgfsExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getDataStreamerExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getAffinityExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public ExecutorService getIndexingExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getQueryExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Map<String, ? extends ExecutorService> customExecutors() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService getSchemaExecutorService() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public Object nodeAttribute(String key) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean hasNodeAttribute(String key) {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public Object addNodeAttribute(String key, Object val) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public Map<String, Object> nodeAttributes() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public ClusterProcessor cluster() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean clientNode() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean clientDisconnected() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public PlatformProcessor platform() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @NotNull @Override public Iterator<GridComponent> iterator() {
         return null;
     }

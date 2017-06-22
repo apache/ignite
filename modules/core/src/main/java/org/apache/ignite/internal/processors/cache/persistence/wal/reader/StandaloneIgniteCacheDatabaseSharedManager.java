@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
+package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
  * Fake implementation for publishing setter and for creation in standalone WAL reader tool
  */
-public class StandaloneIgniteCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
-    public void setPageSize(int pageSize) {
+class StandaloneIgniteCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
+    /** {@inheritDoc} */
+    @Override public void setPageSize(int pageSize) {
         super.setPageSize(pageSize);
     }
 }

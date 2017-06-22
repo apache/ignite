@@ -41,6 +41,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>>
     implements WALIterator {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Current record preloaded, to be returned on next() */
     protected IgniteBiTuple<WALPointer, WALRecord> curRec;

@@ -963,6 +963,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return SYSTEM_MEMORY_POLICY_NAME;
     }
 
+    /**
+     * Method for fake (standalone) context initialization. Not to be called in production code
+     * @param pageSize configured page size
+     */
     protected void setPageSize(int pageSize) {
         this.pageSize = pageSize;
     }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
+package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -32,25 +32,29 @@ import org.jetbrains.annotations.NotNull;
  * WAL reader iterator, for creation in standalone WAL reader tool
  * Operates over one directory, does not provide start and end boundaries
  */
-public class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
+class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    private final File walArchiveDir;
+    /** Wal files directory. Already contains consistent ID */
+    private final File walFilesDir;
 
-    public StandaloneWalRecordsIterator(File walArchiveDir,
-        IgniteLogger log,
+    public StandaloneWalRecordsIterator(
+        @NotNull final File walFilesDir,
+        @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
             2 * 1024 * 1024);
-        this.walArchiveDir = walArchiveDir;
+        this.walFilesDir = walFilesDir;
         init();
 
         advance();
     }
 
     private void init() {
-        FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walArchiveDir);
+        FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walFilesDir);
         curIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
 
         curIdx--;
@@ -72,7 +76,7 @@ public class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         // curHandle.workDir is false
         FileWriteAheadLogManager.FileDescriptor fd = new FileWriteAheadLogManager.FileDescriptor(
-            new File(walArchiveDir,
+            new File(walFilesDir,
                 FileWriteAheadLogManager.FileDescriptor.fileName(curIdx)));
 
         if (log.isDebugEnabled())

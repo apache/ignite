@@ -21,7 +21,6 @@ import java.io.File;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -32,24 +31,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.mockito.Mockito;
 
-import static org.apache.ignite.configuration.PersistentStoreConfiguration.DFLT_WAL_SEGMENTS;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.when;
 
 /**
  *
@@ -60,8 +51,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static String cacheName = "cache0";
 
     private static boolean fillWalBeforeTest = true;
-    private static boolean deleteBefore = true;
-    private static boolean deleteAfter = true;
+    private static boolean deleteBefore = false;
+    private static boolean deleteAfter = false;
     private static boolean dumpRecords = false;
 
     /** {@inheritDoc} */
