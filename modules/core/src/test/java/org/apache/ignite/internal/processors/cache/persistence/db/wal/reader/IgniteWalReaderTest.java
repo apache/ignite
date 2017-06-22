@@ -58,8 +58,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     private static String cacheName = "cache0";
 
-    private static boolean fillWalBeforeTest = false;
-    private static boolean deleteAfter = false;
+    private static boolean fillWalBeforeTest = true;
+    private static boolean deleteAfter = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -70,7 +70,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-        // ccfg.setNodeFilter(new IgniteWalRecoveryTest.RemoteNodeFilter());
         ccfg.setIndexedTypes(Integer.class, IgniteWalReaderTest.IndexedObject.class);
 
         cfg.setCacheConfiguration(ccfg);
@@ -91,7 +90,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         cfg.setMemoryConfiguration(dbCfg);
 
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-
+        pCfg.setWalHistorySize(10);
         cfg.setPersistentStoreConfiguration(pCfg);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -134,7 +133,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache0 = ignite0.cache(cacheName);
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 10000; i++)
                 cache0.put(i, new IgniteWalReaderTest.IndexedObject(i));
 
             stopGrid("node0");
