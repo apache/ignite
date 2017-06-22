@@ -34,10 +34,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 class BinaryMetadataFileStore {
     /** */
-    private final File workDir;
+    private File workDir;
 
     /** */
-    private ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache;
+    private final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache;
 
     /** */
     private final GridKernalContext ctx;
@@ -54,6 +54,9 @@ class BinaryMetadataFileStore {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
         this.log = log;
+
+        if (!ctx.config().isPersistentStoreEnabled())
+            return;
 
         String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
 
