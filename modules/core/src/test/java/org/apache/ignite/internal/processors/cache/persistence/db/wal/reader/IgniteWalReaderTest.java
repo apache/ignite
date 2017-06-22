@@ -39,11 +39,11 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.mockito.Mockito;
 
@@ -91,6 +91,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
         pCfg.setWalHistorySize(10);
+        pCfg.setWalSegments(2);
         cfg.setPersistentStoreConfiguration(pCfg);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -112,7 +113,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        if(deleteAfter) deleteWorkFiles();
+        if (deleteAfter)
+            deleteWorkFiles();
     }
 
     /**
@@ -133,7 +135,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache0 = ignite0.cache(cacheName);
 
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 1000; i++)
                 cache0.put(i, new IgniteWalReaderTest.IndexedObject(i));
 
             stopGrid("node0");
@@ -177,7 +179,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         int count = 0;
         WALIterator it = mgr.replay(null);
-        for (; it.hasNextX(); ) {
+        while (it.hasNextX()) {
             IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
             System.out.println("Record: " + next.get2());
             count++;
@@ -186,26 +188,29 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         assert count > 0;
 
         final File walDirWithConsistentId = new File(wal, consistentId);
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(pageSize); //Parameter for WAL iterator Factory
-        final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log);
-        final StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
-        dbMgr.setPageSize(pageSize);
-        final GridCacheSharedContext sharedCtx = new GridCacheSharedContext(
-            kernalCtx, null, null, null,
-            null, null, dbMgr, null,
-            null, null, null, null,
-            null, null, null);
+        final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
 
-        StandaloneWalRecordsIterator stIt = new StandaloneWalRecordsIterator(walDirWithConsistentId, log, sharedCtx);
+        NullLogger logger = new NullLogger();
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(logger, pageSize);
         int count2 = 0;
-        for (; stIt.hasNextX(); ) {
-            IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-            System.out.println("Record: " + next.get2());
-            count2++;
+
+        try (WALIterator stIt = factory.iterator(walArchiveDirWithConsistentId)) {
+            while (stIt.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
+                System.out.println("Arch. Record: " + next.get2());
+                count2++;
+            }
+        }
+
+        try (WALIterator stIt = factory.iterator(walDirWithConsistentId)) {
+            while (stIt.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
+                System.out.println("Work. Record: " + next.get2());
+                count2++;
+            }
         }
         System.out.println("Total records loaded2: " + count2);
-        assert count == count2;
+        assert count == count2 : "Mock based reader loaded " + count + " records but standalone has loaded only " + count2;
     }
 
     /**
@@ -219,8 +224,17 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         /**
          * @param iVal Integer value.
          */
-        private IndexedObject(int iVal) {
+        byte[] data;
+
+        /**
+         * @param iVal Integer value.
+         */
+        private  IndexedObject(int iVal) {
             this.iVal = iVal;
+            int sz = 40000;
+            data = new byte[sz];
+            for (int i = 0; i < sz; i++)
+                data[i] = (byte)('A' + (i % 10));
         }
 
         /** {@inheritDoc} */

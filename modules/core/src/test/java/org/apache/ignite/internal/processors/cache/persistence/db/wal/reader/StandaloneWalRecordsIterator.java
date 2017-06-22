@@ -44,13 +44,12 @@ public class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             new RecordV1Serializer(sharedCtx),
             2 * 1024 * 1024);
         this.walArchiveDir = walArchiveDir;
-        init(walArchiveDir);
-
+        init();
 
         advance();
     }
 
-    private void init(File walArchiveDir) throws IgniteCheckedException {
+    private void init() {
         FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walArchiveDir);
         curIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
 
@@ -71,7 +70,6 @@ public class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         curIdx++;
 
-
         // curHandle.workDir is false
         FileWriteAheadLogManager.FileDescriptor fd = new FileWriteAheadLogManager.FileDescriptor(
             new File(walArchiveDir,
@@ -86,7 +84,8 @@ public class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             curHandle = initReadHandle(fd, null);
         }
         catch (FileNotFoundException e) {
-            throw new IgniteCheckedException("Missing WAL segment in the archive", e);
+            log.info("Missing WAL segment in the archive" + e.getMessage());
+            curHandle = null;
         }
 
         curRec = null;
