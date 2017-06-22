@@ -71,6 +71,9 @@ class BinaryMetadataFileStore {
      * @param binMeta Binary metadata to be written to disk.
      */
     void saveMetadata(BinaryMetadata binMeta) {
+        if (!ctx.config().isPersistentStoreEnabled())
+            return;
+
         try {
             File file = new File(workDir, Integer.toString(binMeta.typeId()) + ".bin");
 
@@ -90,6 +93,9 @@ class BinaryMetadataFileStore {
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
      */
     void restoreMetadata() {
+        if (!ctx.config().isPersistentStoreEnabled())
+            return;
+
         for (File file : workDir.listFiles()) {
             try (FileInputStream in = new FileInputStream(file)) {
                 BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
