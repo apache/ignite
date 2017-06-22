@@ -256,19 +256,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     desc.tableName(qryEntity.getTableName());
 
-                    if (binaryEnabled && !keyOrValMustDeserialize) {
-                        // Safe to check null.
-                        if (SQL_TYPES.contains(valCls))
-                            desc.valueClass(valCls);
-                        else
-                            desc.valueClass(Object.class);
-
-                        if (SQL_TYPES.contains(keyCls))
-                            desc.keyClass(keyCls);
-                        else
-                            desc.keyClass(Object.class);
-                    }
-                    else if (binaryEnabled) {
+                    if (binaryEnabled) {
                         if (!valMustDeserialize && !SQL_TYPES.contains(valCls))
                             desc.valueClass(Object.class);
                         else
@@ -384,19 +372,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     desc.name(simpleValType);
 
-                    if (binaryEnabled && !keyOrValMustDeserialize) {
-                        // Safe to check null.
-                        if (SQL_TYPES.contains(valCls))
-                            desc.valueClass(valCls);
-                        else
-                            desc.valueClass(Object.class);
-
-                        if (SQL_TYPES.contains(keyCls))
-                            desc.keyClass(keyCls);
-                        else
-                            desc.keyClass(Object.class);
-                    }
-                    else if (binaryEnabled) {
+                    if (binaryEnabled) {
                         if (!valMustDeserialize && !SQL_TYPES.contains(valCls))
                             desc.valueClass(Object.class);
                         else

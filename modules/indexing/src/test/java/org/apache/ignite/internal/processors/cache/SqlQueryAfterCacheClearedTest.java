@@ -27,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
 
 import java.util.LinkedHashMap;
 
@@ -35,13 +34,15 @@ import static java.util.Collections.singletonList;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
+/**
+ *
+ */
 public class SqlQueryAfterCacheClearedTest extends GridCommonAbstractTest {
-
-
     /** */
     public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    private final static String CACHE_NAME = "propertyCache";
+    /** */
+    private static final String CACHE_NAME = "propertyCache";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -64,22 +65,21 @@ public class SqlQueryAfterCacheClearedTest extends GridCommonAbstractTest {
 
     /** */
     private static CacheConfiguration cacheCfg() {
-        final CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
+        return new CacheConfiguration(CACHE_NAME)
         .setCacheMode(PARTITIONED)
         .setMemoryMode(OFFHEAP_TIERED)
         .setQueryEntities(singletonList(createQueryEntityConfig()));
-        return ccfg;
     }
 
-    @Test
+    /** */
     public void testQueryCacheWasCleared() throws InterruptedException {
         IgniteCache<PropertyAffinityKey, Property> cache = grid(0).cache(CACHE_NAME);
 
-        Property property1 = new Property(1, 2);
-        Property property2 = new Property(2, 2);
+        Property prop1 = new Property(1, 2);
+        Property prop2 = new Property(2, 2);
 
-        cache.put(property1.getKey(), property1);
-        cache.put(property2.getKey(), property2);
+        cache.put(prop1.getKey(), prop1);
+        cache.put(prop2.getKey(), prop2);
 
         assertEquals(cache.size(),2);
         assertEquals(cache.query(selectAllQuery()).getAll().size(), 2);
@@ -90,15 +90,15 @@ public class SqlQueryAfterCacheClearedTest extends GridCommonAbstractTest {
         assertEquals(0, cache.query(selectAllQuery()).getAll().size());
     }
 
-    @Test
+    /** */
     public void testQueryEntriesWereRemoved() {
         IgniteCache<PropertyAffinityKey, Property> cache = grid(0).cache(CACHE_NAME);
 
-        Property property1 = new Property(1, 2);
-        Property property2 = new Property(2, 2);
+        Property prop1 = new Property(1, 2);
+        Property prop2 = new Property(2, 2);
 
-        cache.put(property1.getKey(), property1);
-        cache.put(property2.getKey(), property2);
+        cache.put(prop1.getKey(), prop1);
+        cache.put(prop2.getKey(), prop2);
 
         assertEquals(cache.size(),2);
         assertEquals(cache.query(selectAllQuery()).getAll().size(), 2);
@@ -110,21 +110,22 @@ public class SqlQueryAfterCacheClearedTest extends GridCommonAbstractTest {
         assertEquals(0, cache.query(selectAllQuery()).getAll().size());
     }
 
-    @NotNull
-    private SqlQuery<PropertyAffinityKey, Property> selectAllQuery() {
+    /** */
+    @NotNull private SqlQuery<PropertyAffinityKey, Property> selectAllQuery() {
         return new SqlQuery<>(Property.class, "from Property");
     }
 
+    /** */
     private static QueryEntity createQueryEntityConfig() {
-        QueryEntity queryEntity = new QueryEntity();
-        queryEntity.setKeyType(PropertyAffinityKey.class.getName());
-        queryEntity.setValueType(Property.class.getName());
-        queryEntity.setFields(getMapOfFields());
-        return queryEntity;
+        QueryEntity qryEntity = new QueryEntity();
+        qryEntity.setKeyType(PropertyAffinityKey.class.getName());
+        qryEntity.setValueType(Property.class.getName());
+        qryEntity.setFields(getMapOfFields());
+        return qryEntity;
     }
 
-    @NotNull
-    private static LinkedHashMap<String, String> getMapOfFields() {
+    /** */
+    @NotNull private static LinkedHashMap<String, String> getMapOfFields() {
         LinkedHashMap<String, String> mapOfFields = new LinkedHashMap<>();
         mapOfFields.put("id", Integer.class.getName());
         mapOfFields.put("region", Integer.class.getName());
@@ -132,32 +133,44 @@ public class SqlQueryAfterCacheClearedTest extends GridCommonAbstractTest {
         return mapOfFields;
     }
 
-    static class Property {
+    /**
+     *
+     */
+    private static class Property {
+        /** Id. */
         private final int id;
-        private final int region;
-        private final String someData = "Some attributes";
 
+        /** Region. */
+        private final int region;
+
+        /** */
         Property(int id, int region) {
             this.id = id;
             this.region = region;
         }
 
+        /** */
         public PropertyAffinityKey getKey() {
             return new PropertyAffinityKey(id, region);
         }
 
+        /** */
         public int getId() {
             return id;
         }
     }
 
-    static class PropertyAffinityKey extends AffinityKey<Integer> {
-        public PropertyAffinityKey(final int thirdPartyPropertyId, final int region) {
-            super(thirdPartyPropertyId, region);
+    /**
+     *
+     */
+    private static class PropertyAffinityKey extends AffinityKey<Integer> {
+        /** */
+        PropertyAffinityKey(final int thirdPartyPropId, final int region) {
+            super(thirdPartyPropId, region);
         }
 
+        /** */
         public PropertyAffinityKey() {
-            // Required by Ignite
         }
     }
 }
