@@ -172,8 +172,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override protected void stop0(final boolean cancel, final boolean destroy) {
         super.stop0(cancel, destroy);
 
-        if (cctx.affinityNode())
-            destroyCacheDataStructures();
+        destroyCacheDataStructures();
     }
 
     /** {@inheritDoc} */
@@ -187,8 +186,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      *
      */
     protected void destroyCacheDataStructures() {
-        assert cctx.affinityNode();
-
         try {
             if (locCacheDataStore != null)
                 locCacheDataStore.destroy();
