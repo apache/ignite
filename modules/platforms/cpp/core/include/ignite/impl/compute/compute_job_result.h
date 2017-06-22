@@ -225,6 +225,8 @@ namespace ignite
                     {
                         // Success
                         writer.WriteBool(true);
+
+                        writer.WriteNull();
                     }
                 }
 
