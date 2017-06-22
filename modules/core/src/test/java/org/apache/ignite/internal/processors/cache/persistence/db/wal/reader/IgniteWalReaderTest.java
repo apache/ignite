@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,8 +52,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static String cacheName = "cache0";
 
     private static boolean fillWalBeforeTest = true;
-    private static boolean deleteBefore = false;
-    private static boolean deleteAfter = false;
+    private static boolean deleteBefore = true;
+    private static boolean deleteAfter = true;
     private static boolean dumpRecords = false;
 
     /** {@inheritDoc} */
@@ -124,13 +125,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalAndReadRecords() throws Exception {
+        int recordsToWrite = 10000;
         if (fillWalBeforeTest) {
             Ignite ignite0 = startGrid("node0");
             ignite0.active(true);
 
             IgniteCache<Object, Object> cache0 = ignite0.cache(cacheName);
 
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < recordsToWrite; i++)
                 cache0.put(i, new IgniteWalReaderTest.IndexedObject(i));
 
             stopGrid("node0");
@@ -160,23 +162,42 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, pageSize);
         int count2 = 0;
 
-        try (WALIterator stIt = factory.iterator(walArchiveDirWithConsistentId)) {
+        try (WALIterator stIt = factory.iteratorDirectory(walArchiveDirWithConsistentId)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-                if(dumpRecords) System.out.println("Arch. Record: " + next.get2());
+                if (dumpRecords)
+                    System.out.println("Arch. Record: " + next.get2());
                 count2++;
             }
         }
 
-        try (WALIterator stIt = factory.iterator(walDirWithConsistentId)) {
+        try (WALIterator stIt = factory.iteratorDirectory(walDirWithConsistentId)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-                if(dumpRecords) System.out.println("Work. Record: " + next.get2());
+                if (dumpRecords)
+                    System.out.println("Work. Record: " + next.get2());
                 count2++;
             }
         }
         System.out.println("Total records loaded2: " + count2);
-        assert count == count2 : "Mock based reader loaded " + count + " records but standalone has loaded only " + count2;
+
+        int count3 = 0;
+        File[] files = walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+        try (WALIterator stIt = factory.iteratorFiles(files)) {
+            while (stIt.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
+                if (dumpRecords)
+                    System.out.println("Arch. Record: " + next.get2());
+                count3++;
+            }
+        }
+        System.out.println("Total records loaded3: " + count3);
+
+        assert count3 > recordsToWrite;
+        assert count2 > recordsToWrite;
+        assert count2 == count3;
+        //really count2 may be less because work dir correct loading is not supported yet
+        assert count >= count2  : "Mock based reader loaded " + count + " records but standalone has loaded only " + count2;
     }
 
     /**

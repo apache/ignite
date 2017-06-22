@@ -36,21 +36,28 @@ public class IgniteWalIteratorFactory {
     public IgniteWalIteratorFactory(IgniteLogger log, int pageSize) {
         this.log = log;
         this.pageSize = pageSize;
+        new MemoryConfiguration().setPageSize(pageSize); // just for validate
     }
 
-    public WALIterator iterator(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
-        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+    public WALIterator iteratorDirectory(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
+        return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx());
+    }
 
+    public WALIterator iteratorFiles(@NotNull final File ...files) throws IgniteCheckedException {
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), files);
+    }
+
+    /**
+     * @return fake shared context required for create minimal services for record reading
+     */
+    @NotNull private GridCacheSharedContext prepareSharedCtx() {
         final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log);
         final StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
         dbMgr.setPageSize(pageSize);
-        final GridCacheSharedContext sharedCtx = new GridCacheSharedContext(
+        return new GridCacheSharedContext<>(
             kernalCtx, null, null, null,
             null, null, dbMgr, null,
             null, null, null, null,
             null, null, null);
-
-        StandaloneWalRecordsIterator stIt = new StandaloneWalRecordsIterator(walDirWithConsistentId, log, sharedCtx);
-        return stIt;
     }
 }

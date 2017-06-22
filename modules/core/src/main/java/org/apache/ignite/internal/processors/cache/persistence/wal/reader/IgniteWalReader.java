@@ -57,7 +57,7 @@ public class IgniteWalReader {
             final File dumpFile = new File("wal.dump.txt");
             int cnt = 0;
             final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, pageSize);
-            try (WALIterator iter = factory.iterator(walFilesFolder)) {
+            try (WALIterator iter = factory.iteratorDirectory(walFilesFolder)) {
                 try (FileWriter writer = new FileWriter(dumpFile)) {
                     final String endl = String.format("%n");
                     while (iter.hasNextX()) {

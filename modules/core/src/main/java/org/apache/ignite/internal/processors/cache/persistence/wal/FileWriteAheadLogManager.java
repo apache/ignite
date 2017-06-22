@@ -84,14 +84,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
 
-    /** */
+    /** Pattern for segment file names */
     private static final Pattern WAL_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal");
 
     /** */
     private static final Pattern WAL_TEMP_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal\\.tmp");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
-    static final FileFilter WAL_SEGMENT_FILE_FILTER = new FileFilter() {
+    public static final FileFilter WAL_SEGMENT_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
             return !file.isDirectory() && WAL_NAME_PATTERN.matcher(file.getName()).matches();
         }
@@ -247,8 +247,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (psCfg.getWalStorePath() == null ^ psCfg.getWalArchivePath() == null) {
             throw new IgniteCheckedException(
                 "Properties should be either both specified or both null " +
-                "[walStorePath = " + psCfg.getWalStorePath() +
-                ", walArchivePath = " + psCfg.getWalArchivePath() + "]"
+                    "[walStorePath = " + psCfg.getWalStorePath() +
+                    ", walArchivePath = " + psCfg.getWalArchivePath() + "]"
             );
         }
     }
@@ -887,7 +887,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param ver Serializer version.
      * @return Entry serializer.
      */
-     static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
+    static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
         if (ver <= 0)
             throw new IgniteCheckedException("Failed to create a serializer (corrupted WAL file).");
 
@@ -904,7 +904,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * @return Sorted WAL files descriptors.
      */
-    static FileDescriptor[] scan(File[] allFiles) {
+    public static FileDescriptor[] scan(File[] allFiles) {
         if (allFiles == null)
             return EMPTY_DESCRIPTORS;
 
@@ -930,11 +930,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      * Monitor of current object is used for notify on:
      * <ul>
-     *     <li>exception occurred ({@link FileArchiver#cleanException}!=null)</li>
-     *     <li>stopping thread ({@link FileArchiver#stopped}==true)</li>
-     *     <li>current file index changed ({@link FileArchiver#curAbsWalIdx})</li>
-     *     <li>last archived file index was changed ({@link FileArchiver#lastAbsArchivedIdx})</li>
-     *     <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
+     * <li>exception occurred ({@link FileArchiver#cleanException}!=null)</li>
+     * <li>stopping thread ({@link FileArchiver#stopped}==true)</li>
+     * <li>current file index changed ({@link FileArchiver#curAbsWalIdx})</li>
+     * <li>last archived file index was changed ({@link FileArchiver#lastAbsArchivedIdx})</li>
+     * <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
      * </ul>
      */
     private class FileArchiver extends Thread {
@@ -1016,6 +1016,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * Check if WAL segment locked or reserved
+         *
          * @param absIdx Index for check reservation.
          * @return {@code True} if index is reserved.
          */
@@ -1509,7 +1510,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private final AtomicReference<WALRecord> head = new AtomicReference<>();
 
-        /** Position in current file after the end of last written record (incremented after file channel write operation) */
+        /**
+         * Position in current file after the end of last written record (incremented after file channel write
+         * operation)
+         */
         private volatile long written;
 
         /** */
@@ -1518,7 +1522,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Environment failure. */
         private volatile Throwable envFailed;
 
-        /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)}*/
+        /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)} */
         private final AtomicBoolean stop = new AtomicBoolean(false);
 
         /** */
@@ -1764,6 +1768,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * Serializes WAL records chain to provided byte buffer
+         *
          * @param buf Buffer, will be filled with records chain from end to beginning
          * @param head Head of the chain to write to the buffer.
          * @return Position in file for this buffer.
@@ -1898,7 +1903,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 try {
                     if (rollOver && written < (maxSegmentSize - 1)) {
                         ByteBuffer allocate = ByteBuffer.allocate(1);
-                        allocate.put((byte) WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal());
+                        allocate.put((byte)WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal());
 
                         ch.write(allocate, written);
 
@@ -1928,7 +1933,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert head.get() instanceof FakeRecord: "head";
+                assert head.get() instanceof FakeRecord : "head";
                 assert written == lastFsyncPos || mode != WALMode.DEFAULT :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ']';
 
@@ -1957,8 +1962,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         * @param pos Position in file to start write from.
-         * May be checked against actual position to wait previous writes to complete
+         * @param pos Position in file to start write from. May be checked against actual position to wait previous
+         * writes to complete
          * @param buf Buffer to write to file
          * @throws StorageException If failed.
          * @throws IgniteCheckedException If failed.
@@ -2202,7 +2207,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             advance();
         }
 
-
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
             curRec = null;
@@ -2323,12 +2327,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             curRec = null;
         }
 
-
         /**
          * @param absIdx Absolute index to check.
-         * @return {@code True} if we can safely read the archive, {@code false} if the segment has not been
-         *      archived yet. In this case the corresponding work segment is reserved (will not be deleted until
-         *      release).
+         * @return {@code True} if we can safely read the archive, {@code false} if the segment has not been archived
+         * yet. In this case the corresponding work segment is reserved (will not be deleted until release).
          */
         private boolean canReadArchiveOrReserveWork(long absIdx) {
             return archiver != null && archiver.checkCanReadArchiveOrReserveWorkSegment(absIdx);

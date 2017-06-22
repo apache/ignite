@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -27,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * WAL reader iterator, for creation in standalone WAL reader tool
@@ -36,9 +40,18 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Wal files directory. Already contains consistent ID */
-    private final File walFilesDir;
+    /** Wal files directory. Should already contain consistent ID as subfolder */
+    @Nullable
+    private File walFilesDir;
 
+    @Nullable
+    private List<FileWriteAheadLogManager.FileDescriptor> walFileDescriptors;
+
+    /**
+     * @param walFilesDir Wal files directory.  Should already contain consistent ID as subfolder
+     * @param log Logger.
+     * @param sharedCtx Shared context.
+     */
     public StandaloneWalRecordsIterator(
         @NotNull final File walFilesDir,
         @NotNull final IgniteLogger log,
@@ -47,23 +60,47 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
             2 * 1024 * 1024);
-        this.walFilesDir = walFilesDir;
-        init();
-
+        init(walFilesDir, null);
         advance();
     }
 
-    private void init() {
-        FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walFilesDir);
-        curIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
+    public StandaloneWalRecordsIterator(
+        @NotNull final IgniteLogger log,
+        @NotNull final GridCacheSharedContext sharedCtx,
+        @NotNull final File... walFiles) throws IgniteCheckedException {
+        super(log,
+            sharedCtx,
+            new RecordV1Serializer(sharedCtx),
+            2 * 1024 * 1024);
+        init(null, walFiles);
+        advance();
+    }
 
+    /**
+     * for directory mode checks first file
+     *
+     * @param walFilesDir
+     * @param walFiles
+     */
+    private void init(@Nullable final File walFilesDir, @Nullable final File[] walFiles) {
+        if (walFilesDir != null) {
+            FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(this.walFilesDir);
+            curIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
+            this.walFilesDir = walFilesDir;
+        }
+        else {
+            FileWriteAheadLogManager.FileDescriptor[] descs = FileWriteAheadLogManager.scan(walFiles);
+            walFileDescriptors = new ArrayList<>(Arrays.asList(descs));
+            curIdx = !walFileDescriptors.isEmpty() ? walFileDescriptors.get(0).getIdx() : 0;
+        }
         curIdx--;
 
         if (log.isDebugEnabled())
             log.debug("Initialized WAL cursor [curIdx=" + curIdx + ']');
     }
 
-    protected void advanceSegment() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override protected void advanceSegment() throws IgniteCheckedException {
         FileWriteAheadLogManager.ReadFileHandle cur0 = curHandle;
 
         if (cur0 != null) {
@@ -73,11 +110,20 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         curIdx++;
-
         // curHandle.workDir is false
-        FileWriteAheadLogManager.FileDescriptor fd = new FileWriteAheadLogManager.FileDescriptor(
-            new File(walFilesDir,
-                FileWriteAheadLogManager.FileDescriptor.fileName(curIdx)));
+        FileWriteAheadLogManager.FileDescriptor fd;
+        if (walFilesDir != null) {
+            fd = new FileWriteAheadLogManager.FileDescriptor(
+                new File(walFilesDir,
+                    FileWriteAheadLogManager.FileDescriptor.fileName(curIdx)));
+        }
+        else {
+            if (walFileDescriptors.isEmpty()) {
+                curHandle = null;
+                return;
+            }
+            fd = walFileDescriptors.remove(0);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Reading next file [absIdx=" + curIdx + ", file=" + fd.getAbsolutePath() + ']');
@@ -95,7 +141,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    protected void handleRecordException(Exception e) {
+    @Override protected void handleRecordException(Exception e) {
         super.handleRecordException(e);
         e.printStackTrace();
     }
