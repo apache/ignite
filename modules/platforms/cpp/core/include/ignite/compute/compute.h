@@ -126,6 +126,37 @@ namespace ignite
                 return impl.Get()->CallAsync<R, F>(func);
             }
 
+            /**
+             * Runs provided ComputeFunc on a node within the underlying cluster
+             * group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc
+             *  class.
+             * @param action Compute function to call.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            void Run(const F& action)
+            {
+                return impl.Get()->RunAsync<F>(action).GetValue();
+            }
+
+            /**
+             * Asyncronuously runs provided ComputeFunc on a node within the
+             * underlying cluster group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc
+             *  class.
+             * @param action Compute function to call.
+             * @return Future that can be used to wait for action to complete.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            Future<void> RunAsync(const F& action)
+            {
+                return impl.Get()->RunAsync<F>(action);
+            }
+
         private:
             /** Implementation. */
             common::concurrent::SharedPointer<impl::compute::ComputeImpl> impl;
