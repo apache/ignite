@@ -426,7 +426,9 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         @Override public void examine(IgniteCache cache) {
             BinaryObject bo = (BinaryObject) cache.get(2);
 
-            assertEquals(10, bo.field(DYNAMIC_INT_FIELD_NAME));
+            int fieldVal = bo.field(DYNAMIC_INT_FIELD_NAME);
+
+            assertEquals(10, fieldVal);
         }
     };
 
@@ -435,7 +437,9 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         @Override public void examine(IgniteCache cache) {
             BinaryObject bo = (BinaryObject) cache.get(3);
 
-            assertEquals(20, bo.field(DYNAMIC_INT_FIELD_NAME));
+            int fieldVal = bo.field(DYNAMIC_INT_FIELD_NAME);
+
+            assertEquals(20, fieldVal);
             assertEquals("str", bo.field(DYNAMIC_STR_FIELD_NAME));
         }
     };
