@@ -1649,7 +1649,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                             log.info("Service processor detected a topology change during " +
                                                 "assignments calculation (will abort current iteration and " +
                                                 "re-calculate on the newer version): " +
-                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer + ']');
+                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer0 + ']');
 
                                         return;
                                     }
