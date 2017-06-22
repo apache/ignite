@@ -84,6 +84,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -1229,7 +1230,7 @@ public class GridMapQueryExecutor {
         if (!isThrottled(key)) {
             ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
 
-            ResultSetWrapper res = new ResultSetWrapper(rs);
+            ResultSetWrapper res = new ResultSetWrapper(rs, null, null);
 
             if (!res.tryTake())
                 throw new IllegalStateException();
@@ -1262,12 +1263,7 @@ public class GridMapQueryExecutor {
                 try {
                     ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
 
-                    // No need to worry about removing this key from the map if we're not the one who put it there
-                    // or if our map is stale.
-                    if (res == null && this.futs.get() == futs)
-                        futs.remove(key);
-
-                    res = new ResultSetWrapper(rs);
+                    res = new ResultSetWrapper(rs, key, fut);
 
                     if (!res.tryTake())
                         throw new IllegalStateException();
@@ -1454,6 +1450,12 @@ public class GridMapQueryExecutor {
 
     /** */
     private final class ResultSetWrapper {
+        /** Key that produced this result. */
+        private final QueryKey key;
+
+        /** Future holding this wrapper (for cleanup). */
+        private final GridFutureAdapter<ResultSetWrapper> fut;
+
         /** Usages counter. */
         private int cnt;
 
@@ -1469,9 +1471,18 @@ public class GridMapQueryExecutor {
         /**
          * Constructor.
          * @param rs Result set to wrap.
+         * @param key Key that produced this result (for cleanup), or {@code null} if this query was not throttled.
+         * @param fut Future holding this wrapper (for cleanup), or {@code null} if this query was not throttled.
          */
-        private ResultSetWrapper(ResultSet rs) {
+        private ResultSetWrapper(ResultSet rs, @Nullable QueryKey key,
+            @Nullable GridFutureAdapter<ResultSetWrapper> fut) {
             A.notNull(rs, "rs");
+
+            if (fut != null)
+                A.notNull(key, "key");
+
+            this.key = key;
+            this.fut = fut;
 
             this.rs = rs;
 
@@ -1519,6 +1530,13 @@ public class GridMapQueryExecutor {
                 closed = true;
 
                 U.close(rs, log);
+
+                if (fut != null) {
+                    ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> m = futs.get();
+
+                    if (m != null)
+                        m.remove(key, fut);
+                }
             }
             else if (cnt < 0)
                 throw new IllegalStateException();
