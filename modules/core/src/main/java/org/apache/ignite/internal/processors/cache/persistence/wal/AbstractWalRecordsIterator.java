@@ -139,7 +139,8 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
 
                 ptr.length(rec.size());
 
-                curRec = new IgniteBiTuple<>(ptr, rec);
+                //using diamond operator here can break compile for 7
+                curRec = new IgniteBiTuple<WALPointer, WALRecord>(ptr, rec);
             }
         }
         catch (IOException | IgniteCheckedException e) {
