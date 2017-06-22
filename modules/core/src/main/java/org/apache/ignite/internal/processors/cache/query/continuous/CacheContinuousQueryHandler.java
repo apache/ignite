@@ -137,6 +137,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     private boolean locCache;
 
+    /** Local query. */
+    private transient boolean localQuery;
+
     /** */
     private transient boolean keepBinary;
 
@@ -243,6 +246,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
+     * @param loc Local query.
+     */
+    public void localQuery(boolean loc) {
+        this.localQuery = loc;
+    }
+
+    /**
      * @param taskHash Task hash.
      */
     public void taskNameHash(int taskHash) {
@@ -334,13 +344,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
-        entryBufs = new ConcurrentHashMap<>();
-
-        backupQueue = new ConcurrentLinkedDeque8<>();
-
-        ackBuf = new AcknowledgeBuffer();
-
-        rcvs = new ConcurrentHashMap<>();
+        // Not need to support Fault Tolerance for local queries or local cache.
+        if (!isQueryOnlyLocal()) {
+            entryBufs = new ConcurrentHashMap<>();
+            backupQueue = new ConcurrentLinkedDeque8<>();
+            ackBuf = new AcknowledgeBuffer();
+            rcvs = new ConcurrentHashMap<>();
+        }
 
         this.nodeId = nodeId;
 
@@ -403,7 +413,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         primary,
                         evt,
                         recordIgniteEvt,
-                        fut);
+                        isQueryOnlyLocal() ? null : fut);
 
                     ctx.asyncCallbackPool().execute(clsr, evt.partitionId());
                 }
@@ -415,7 +425,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             + ", notify=" + notify + ']');
 
                     if (primary || skipPrimaryCheck) {
-                        if (fut == null)
+                        if (fut == null || isQueryOnlyLocal())
                             onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                         else {
                             fut.addContinuousQueryClosure(new CI1<Boolean>() {
@@ -437,57 +447,66 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
-                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+                if (!isQueryOnlyLocal()) {
+                    Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
-                if (backupQueue0 != null) {
-                    Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator();
+                    if (backupQueue0 != null) {
+                        Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator();
 
-                    while (it.hasNext()) {
-                        CacheContinuousQueryEntry backupEntry = it.next();
+                        while (it.hasNext()) {
+                            CacheContinuousQueryEntry backupEntry = it.next();
 
-                        Long updateCntr = updateCntrs.get(backupEntry.partition());
+                            Long updateCntr = updateCntrs.get(backupEntry.partition());
 
-                        if (updateCntr != null && backupEntry.updateCounter() <= updateCntr)
-                            it.remove();
+                            if (updateCntr != null && backupEntry.updateCounter() <= updateCntr)
+                                it.remove();
+                        }
                     }
                 }
             }
 
             @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
-                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+                if (!isQueryOnlyLocal()) {
+                    Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
-                if (backupQueue0 == null)
-                    return;
+                    if (backupQueue0 == null)
+                        return;
 
-                try {
-                    ClusterNode nodeId0 = ctx.discovery().node(nodeId);
+                    try {
+                        ClusterNode nodeId0 = ctx.discovery().node(nodeId);
 
-                    if (nodeId0 != null) {
-                        GridCacheContext<K, V> cctx = cacheContext(ctx);
+                        if (nodeId0 != null) {
+                            GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                        for (CacheContinuousQueryEntry e : backupQueue0) {
-                            if (!e.isFiltered())
-                                prepareEntry(cctx, nodeId, e);
+                            for (CacheContinuousQueryEntry e : backupQueue0) {
+                                if (!e.isFiltered())
+                                    prepareEntry(cctx, nodeId, e);
 
-                            e.topologyVersion(topVer);
+                                e.topologyVersion(topVer);
+                            }
+
+                            ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue0, topic);
                         }
+                        else
+                            // Node which start CQ leave topology. Not needed to put data to backup queue.
+                            backupQueue = null;
 
-                        ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue0, topic);
+                        backupQueue0.clear();
                     }
-                    else
-                        // Node which start CQ leave topology. Not needed to put data to backup queue.
-                        backupQueue = null;
-
-                    backupQueue0.clear();
+                    catch (IgniteCheckedException e) {
+                        U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
+                            "Failed to send backup event notification to node: " + nodeId, e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
-                        "Failed to send backup event notification to node: " + nodeId, e);
-                }
+                else
+                    assert backupQueue == null; // For local CQ backup queue should be null.
             }
 
             @Override public void acknowledgeBackupOnTimeout(GridKernalContext ctx) {
-                sendBackupAcknowledge(ackBuf.acknowledgeOnTimeout(), routineId, ctx);
+                if (!localQuery)
+                    sendBackupAcknowledge(ackBuf.acknowledgeOnTimeout(), routineId, ctx);
+                else
+                    assert ackBuf == null; // For local CQ ack buffer should be null.
             }
 
             @Override public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt,
@@ -502,14 +521,18 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void onPartitionEvicted(int part) {
-                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+                if (!isQueryOnlyLocal()) {
+                    Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
-                if (backupQueue0 != null) {
-                    for (Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator(); it.hasNext(); ) {
-                        if (it.next().partition() == part)
-                            it.remove();
+                    if (backupQueue0 != null) {
+                        for (Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator(); it.hasNext(); ) {
+                            if (it.next().partition() == part)
+                                it.remove();
+                        }
                     }
                 }
+                else
+                    assert backupQueue == null; // For local CQ backup queue should be null.
             }
 
             @Override public boolean oldValueRequired() {
@@ -788,7 +811,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             final CacheContinuousQueryEntry entry = evt.entry();
 
             if (loc) {
-                if (!locCache) {
+                if (isQueryOnlyLocal()) {
+                    if (!entry.isFiltered())
+                        locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
+                }
+                else {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
                     if (!evts.isEmpty())
@@ -796,10 +823,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     if (!internal && !skipPrimaryCheck)
                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
-                }
-                else {
-                    if (!entry.isFiltered())
-                        locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
                 }
             }
             else {
@@ -846,6 +869,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 null
             ));
         }
+    }
+
+    /**
+     * @return {@code True} if query deployed only localy (local query or local cache), otherwise {@code false}.
+     */
+    private boolean isQueryOnlyLocal() {
+        return locCache || localQuery;
     }
 
     /**
