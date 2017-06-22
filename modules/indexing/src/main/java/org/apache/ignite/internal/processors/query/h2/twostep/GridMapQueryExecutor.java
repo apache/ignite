@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -130,6 +131,12 @@ public class GridMapQueryExecutor {
     /** */
     private IgniteH2Indexing h2;
 
+    /**
+     * Identical simultaneous queries throttling flag.
+     * @see IgniteConfiguration#sqlMapThrottle
+     */
+    private boolean throttle;
+
     /** */
     private ConcurrentMap<UUID, NodeResults> qryRess = new ConcurrentHashMap8<>();
 
@@ -161,6 +168,8 @@ public class GridMapQueryExecutor {
         this.h2 = h2;
 
         log = ctx.log(GridMapQueryExecutor.class);
+
+        throttle = ctx.grid().configuration().isSqlMapThrottle();
 
         final UUID locNodeId = ctx.localNodeId();
 
@@ -1286,8 +1295,9 @@ public class GridMapQueryExecutor {
      * @return {@code true} if this key corresponds to a query whose result may be reused, {@code false} otherwise.
      */
     private boolean isThrottled(QueryKey key) {
-        // Throttle the query if we don't have partitions list set, OR if it's what we've got from partitions map.
-        return key.parts == null || (key.partsMap != null && key.partsMap.get(ctx.localNodeId()) == key.parts);
+        return throttle &&
+            // Throttle the query if we don't have partitions list set, OR if it's what we've got from partitions map.
+            (key.parts == null || (key.partsMap != null && key.partsMap.get(ctx.localNodeId()) == key.parts));
     }
 
     /**

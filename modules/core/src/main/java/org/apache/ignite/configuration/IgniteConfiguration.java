@@ -196,6 +196,9 @@ public class IgniteConfiguration {
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;
 
+    /** Default value for SQL MAP throttling flag. */
+    public static final boolean DFLT_SQL_MAP_THROTTLE = true;
+
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
@@ -272,6 +275,9 @@ public class IgniteConfiguration {
 
     /** Daemon flag. */
     private boolean daemon;
+
+    /** SQL MAP throttling flag. */
+    private boolean sqlMapThrottle = DFLT_SQL_MAP_THROTTLE;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -547,6 +553,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sqlMapThrottle = cfg.isSqlMapThrottle();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -625,6 +632,44 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setDaemon(boolean daemon) {
         this.daemon = daemon;
+
+        return this;
+    }
+
+    /**
+     * Whether or not SQL MAP queries should be throttled on this node.
+     * <p>
+     * Distributed SQL queries in Ignite are internally executed in two stages: <b>MAP</b>
+     * and <b>REDUCE</b>.
+     * <p>
+     * If many identical SQL queries are executed on the grid within short amount of time
+     * or simultaneously, their <b>MAP</b> stages occurring on the same node may be <b>throttled</b> -
+     * i.e. instead of fetching data on each query, it's possible to make all identical queries
+     * arriving simultaneously reuse the same result set - as long as data is not concurrently modified.
+     *
+     * @return {@code True} if SQL <b>MAP</b> queries should be throttled on this node, {@code false} otherwise.
+     */
+    public boolean isSqlMapThrottle() {
+        return sqlMapThrottle;
+    }
+
+    /**
+     * Whether or not SQL MAP queries should be throttled on this node.
+     * <p>
+     * Distributed SQL queries in Ignite are internally executed in two stages: <b>MAP</b>
+     * and <b>REDUCE</b>.
+     * <p>
+     * If many identical SQL queries are executed on the grid within short amount of time
+     * or simultaneously, their <b>MAP</b> stages occurring on the same node may be <b>throttled</b> -
+     * i.e. instead of fetching data on each query, it's possible to make all identical queries
+     * arriving simultaneously reuse the same result set - as long as data is not concurrently modified.
+     *
+     * @param sqlMapThrottle SQL MAP throttling flag.
+     * @return {@code this} for chaining.
+     *
+     */
+    public IgniteConfiguration setSqlMapThrottle(boolean sqlMapThrottle) {
+        this.sqlMapThrottle = sqlMapThrottle;
 
         return this;
     }
