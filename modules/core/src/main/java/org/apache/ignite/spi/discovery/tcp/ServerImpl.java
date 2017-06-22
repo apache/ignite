@@ -1147,8 +1147,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             boolean openSock = false;
 
-            boolean wasHandshake = false;
-
             Socket sock = null;
 
             try {
@@ -1165,8 +1163,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
                     ackTimeout0));
-
-                wasHandshake = true;
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -1247,17 +1243,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
-                if (X.hasCause(e, SSLException.class)) {
+                if (X.hasCause(e, SSLException.class, StreamCorruptedException.class)) {
                     if (--sslConnectAttempts == 0)
                         throw new IgniteException("Unable to establish secure connection. " +
-                            "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
-
-                    continue;
-                }
-
-                if (X.hasCause(e, StreamCorruptedException.class)) {
-                    if (--sslConnectAttempts == 0)
-                        throw new IgniteException("Unable to establish plain connection. " +
                             "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
 
                     continue;
@@ -1269,7 +1257,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
                     break;
 
-                if (!openSock || !wasHandshake) {
+                if (!openSock) {
                     // Reconnect for the second time, if connection is not established.
                     if (connectAttempts < 2) {
                         connectAttempts++;
