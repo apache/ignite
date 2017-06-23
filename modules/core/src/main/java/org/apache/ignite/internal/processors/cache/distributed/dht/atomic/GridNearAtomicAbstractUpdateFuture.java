@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -29,14 +33,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.expiry.ExpiryPolicy;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -211,14 +213,18 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
             // Cannot remap.
             remapCnt = 1;
 
-            map(topVer);
+            GridCacheVersion futVer = addAtomicFuture(topVer);
+
+            if (futVer != null)
+                map(topVer, futVer);
         }
     }
 
     /**
      * @param topVer Topology version.
+     * @param futVer Future version
      */
-    protected abstract void map(AffinityTopologyVersion topVer);
+    protected abstract void map(AffinityTopologyVersion topVer, GridCacheVersion futVer);
 
     /**
      * Maps future on ready topology.
@@ -245,5 +251,103 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      */
     protected boolean storeFuture() {
         return cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC;
+    }
+
+    /**
+     * Maps future to single node.
+     *
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    protected void mapSingle(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
+        if (cctx.localNodeId().equals(nodeId)) {
+            cache.updateAllAsyncInternal(nodeId, req,
+                new CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                        onResult(res.nodeId(), res, false);
+                    }
+                });
+        }
+        else {
+            try {
+                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, sent request [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.updateVersion() +
+                        ", node=" + req.nodeId() + ']');
+                }
+
+                if (syncMode == FULL_ASYNC)
+                    onDone(new GridCacheReturn(cctx, true, true, null, true));
+            }
+            catch (IgniteCheckedException e) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, failed to send request [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.updateVersion() +
+                        ", node=" + req.nodeId() +
+                        ", err=" + e + ']');
+                }
+
+                onSendError(req, e);
+            }
+        }
+    }
+
+    /**
+     * Response callback.
+     *
+     * @param nodeId Node ID.
+     * @param res Update response.
+     * @param nodeErr {@code True} if response was created on node failure.
+     */
+    public abstract void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr);
+
+    /**
+     * @param req Request.
+     * @param e Error.
+     */
+    protected final void onSendError(GridNearAtomicAbstractUpdateRequest req, IgniteCheckedException e) {
+        synchronized (mux) {
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
+                req.nodeId(),
+                req.futureVersion(),
+                cctx.deploymentEnabled());
+
+            res.addFailedKeys(req.keys(), e);
+
+            onResult(req.nodeId(), res, true);
+        }
+    }
+
+    /**
+     * Adds future prevents topology change before operation complete.
+     * Should be invoked before topology lock released.
+     *
+     * @param topVer Topology version.
+     * @return Future version in case future added.
+     */
+    protected final GridCacheVersion addAtomicFuture(AffinityTopologyVersion topVer) {
+        GridCacheVersion futVer = cctx.versions().next(topVer);
+
+        synchronized (mux) {
+            assert this.futVer == null : this;
+            assert this.topVer == AffinityTopologyVersion.ZERO : this;
+
+            this.topVer = topVer;
+            this.futVer = futVer;
+        }
+
+        if (storeFuture() && !cctx.mvcc().addAtomicFuture(futVer, this))
+            return null;
+
+        return futVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicAbstractUpdateFuture.class, this,
+            "topLocked", topLocked, "remapCnt", remapCnt, "resCnt", resCnt, "err", err,
+            "parent", super.toString());
     }
 }
