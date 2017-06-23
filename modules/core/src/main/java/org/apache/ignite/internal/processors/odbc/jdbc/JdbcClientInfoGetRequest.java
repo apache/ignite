@@ -15,28 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener request handler.
+ * JDBC client info get request.
  */
-public interface SqlListenerRequestHandler {
+public class JdbcClientInfoGetRequest extends JdbcRequest {
     /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @param ses Session of the request.
-     * @return Response.
      */
-    public SqlListenerResponse handle(SqlListenerRequest req, GridNioSession ses);
+    public JdbcClientInfoGetRequest() {
+        super(CLI_INFO_GET);
+    }
 
-    /**
-     * Handle exception.
-     *
-     * @param e Exception.
-     * @return Error response.
-     */
-    public SqlListenerResponse handleException(Exception e);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcClientInfoGetRequest.class, this);
+    }
 }

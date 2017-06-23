@@ -35,6 +35,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Get columns meta query result. */
     public static final byte QRY_META = 4;
 
+    /** Get client info. */
+    public static final byte CLI_INFO_GET = 5;
+
     /** Success status. */
     private byte type;
 
@@ -78,6 +81,10 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case QRY_META:
                 res = new JdbcQueryMetadataResult();
+                break;
+
+            case CLI_INFO_GET:
+                res = new JdbcClientInfoGetResult();
                 break;
 
             default:

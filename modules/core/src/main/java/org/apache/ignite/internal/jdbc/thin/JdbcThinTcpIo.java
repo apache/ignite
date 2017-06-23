@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
+import java.util.Properties;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -32,6 +33,9 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcClientInfoGetRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcClientInfoGetResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcClientInfoSetRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -66,6 +70,12 @@ public class JdbcThinTcpIo {
 
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
+
+    /** Initial output size for various length requests. */
+    private static final int MSG_VAR_SIZE = 256;
+
+    /** Initial output size for various length requests. */
+    private static final int CLI_INFO_GET_MSG_SIZE = 1;
 
     /** Host. */
     private final String host;
@@ -286,6 +296,34 @@ public class JdbcThinTcpIo {
      */
     public void queryClose(long qryId) throws IOException, IgniteCheckedException {
         sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
+    }
+
+    /**
+     * @param name Property name.
+     * @param val Property value.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public void setClientInfo(String name, String val) throws IOException, IgniteCheckedException {
+        sendRequest(new JdbcClientInfoSetRequest(name, val), MSG_VAR_SIZE);
+    }
+
+    /**
+     * @param props Client info properties.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public void setClientInfo(Properties props) throws IOException, IgniteCheckedException {
+        sendRequest(new JdbcClientInfoSetRequest(props), MSG_VAR_SIZE);
+    }
+
+    /**
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     * @return Client info result.
+     */
+    public JdbcClientInfoGetResult getClientInfo() throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcClientInfoGetRequest(), CLI_INFO_GET_MSG_SIZE);
     }
 
     /**

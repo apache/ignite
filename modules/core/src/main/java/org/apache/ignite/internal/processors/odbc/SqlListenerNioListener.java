@@ -149,7 +149,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                     ", req=" + req + ']');
             }
 
-            SqlListenerResponse resp = handler.handle(req);
+            SqlListenerResponse resp = handler.handle(req, ses);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;

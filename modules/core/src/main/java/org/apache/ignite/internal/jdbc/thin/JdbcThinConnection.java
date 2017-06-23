@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.IOException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcClientInfoGetResult;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.sql.Array;
@@ -452,26 +455,97 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(String name, String val) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
+
+        try {
+            cliIo.setClientInfo(name, val);
+        }
+        catch (IOException e) {
+            try {
+                close();
+            }
+            catch (SQLException e1) {
+                SQLClientInfoException ecli = new SQLClientInfoException("Failed to set client info.", null, e);
+
+                ecli.addSuppressed(e1);
+
+                throw ecli;
+            }
+
+            throw new SQLClientInfoException("Failed to set client info.", null, e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLClientInfoException("Failed to set client info.", null, e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(Properties props) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
+
+        try {
+            cliIo.setClientInfo(props);
+        }
+        catch (IOException e) {
+            try {
+                close();
+            }
+            catch (SQLException e1) {
+                SQLClientInfoException ecli = new SQLClientInfoException("Failed to set client info.", null, e);
+
+                ecli.addSuppressed(e1);
+
+                throw ecli;
+            }
+
+            throw new SQLClientInfoException("Failed to set client info.", null, e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLClientInfoException("Failed to set client info.", null, e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String getClientInfo(String name) throws SQLException {
         ensureNotClosed();
 
-        return null;
+        try {
+            JdbcClientInfoGetResult res = cliIo.getClientInfo();
+
+            if (res.properties() == null)
+                return null;
+
+            return res.properties().getProperty(name);
+        }
+        catch (IOException e) {
+            close();
+
+            throw new SQLException("Failed to get client info.", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to get client info.", e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Properties getClientInfo() throws SQLException {
         ensureNotClosed();
 
-        return new Properties();
+        try {
+            JdbcClientInfoGetResult res = cliIo.getClientInfo();
+
+            return res.properties();
+        }
+        catch (IOException e) {
+            close();
+
+            throw new SQLException("Failed to get client info.", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to get client info.", e);
+        }
     }
 
     /** {@inheritDoc} */

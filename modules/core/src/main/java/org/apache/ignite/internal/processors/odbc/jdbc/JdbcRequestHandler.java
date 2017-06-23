@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.Map;
+import java.util.Properties;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -27,6 +29,8 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,6 +39,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.CLI_INFO_GET;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.CLI_INFO_SET;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
@@ -46,6 +52,9 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_ME
 public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
+
+    /** Connection-related metadata key. */
+    public static final int CLIENT_INFO_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Kernel context. */
     private final GridKernalContext ctx;
@@ -105,7 +114,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handle(SqlListenerRequest req0) {
+    @Override public SqlListenerResponse handle(SqlListenerRequest req0, GridNioSession ses) {
         assert req0 != null;
 
         assert req0 instanceof JdbcRequest;
@@ -129,6 +138,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 case QRY_META:
                     return getQueryMeta((JdbcQueryMetadataRequest)req);
+
+                case CLI_INFO_GET:
+                    return getClientInfo((JdbcClientInfoGetRequest)req, ses);
+
+                case CLI_INFO_SET:
+                    return setClientInfo((JdbcClientInfoSetRequest)req, ses);
             }
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "Unsupported JDBC request [req=" + req + ']');
@@ -306,5 +321,41 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
+    }
+
+    /**
+     * @param req Request.
+     * @param ses Session.
+     * @return Response.
+     */
+    private SqlListenerResponse setClientInfo(JdbcClientInfoSetRequest req, GridNioSession ses) {
+        if (req.isSingleProperty()) {
+            assert req.properties() != null;
+            assert req.properties().size() == 1;
+
+            Map.Entry<Object, Object> p = req.properties().entrySet().iterator().next();
+
+            Properties props = ses.meta(CLIENT_INFO_META_KEY);
+
+            if (props == null)
+                props = new Properties();
+
+            props.setProperty((String)p.getKey(), (String)p.getValue());
+
+            ses.addMeta(CLIENT_INFO_META_KEY, props);
+        }
+        else
+            ses.addMeta(CLIENT_INFO_META_KEY, req.properties());
+
+        return new JdbcResponse(null);
+    }
+
+    /**
+     * @param req Request.
+     * @param ses Session.
+     * @return Response.
+     */
+    private SqlListenerResponse getClientInfo(JdbcClientInfoGetRequest req, GridNioSession ses) {
+        return new JdbcResponse(new JdbcClientInfoGetResult((Properties)ses.meta(CLIENT_INFO_META_KEY)));
     }
 }
