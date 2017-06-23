@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCache;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -36,7 +38,11 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Types;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -103,6 +109,9 @@ public class OdbcRequestHandler {
             switch (req.command()) {
                 case HANDSHAKE:
                     return performHandshake(reqId, (OdbcHandshakeRequest)req);
+
+                case QRY_EXEC_BATCH:
+                    return executeBatchQuery((OdbcQueryExecuteBatchRequest)req);
 
                 case EXECUTE_SQL_QUERY:
                     return executeQuery(reqId, (OdbcQueryExecuteRequest)req);
@@ -227,6 +236,101 @@ public class OdbcRequestHandler {
 
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString());
         }
+    }
+
+    /**
+     * {@link OdbcQueryExecuteBatchRequest} command handler.
+     *
+     * @param req Execute query request.
+     * @return Response.
+     */
+    private OdbcResponse executeBatchQuery(OdbcQueryExecuteBatchRequest req) {
+        long rowsAffected = 0;
+        int currentSet = 0;
+
+        try {
+            String sql = OdbcEscapeUtils.parse(req.sqlQuery());
+
+            if (log.isDebugEnabled())
+                log.debug("ODBC query parsed [original=" + req.sqlQuery() + ", parsed=" + sql + ']');
+
+            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+
+            qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder);
+
+            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.schema());
+
+            if (cache0 == null)
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                        "Cache doesn't exist (did you configure it?): " + req.schema());
+
+            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
+
+            if (cache == null)
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                        "Can not get cache with keep binary: " + req.schema());
+
+            Object[][] paramSet = req.arguments();
+
+            if (paramSet.length <= 0)
+                throw new IgniteException("Batch execute request with non-positive batch length. [len="
+                        + paramSet.length + ']');
+
+            // Getting meta and do the checks for the first execution.
+            qry.setArgs(paramSet[0]);
+
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)cache.query(qry);
+
+            if (qryCur.isQuery())
+                throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
+                        req.sqlQuery() + ']');
+
+            rowsAffected += getRowsAffected(qryCur);
+
+            for (currentSet = 1; currentSet < paramSet.length; ++currentSet)
+            {
+                qry.setArgs(paramSet[currentSet]);
+
+                QueryCursor<List<?>> cur = cache.query(qry);
+
+                rowsAffected += getRowsAffected(cur);
+            }
+
+            OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
+
+            return new OdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to execute SQL query [req=" + req + ']', e);
+
+            OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, currentSet,
+                    e.getMessage());
+
+            return new OdbcResponse(res);
+        }
+    }
+
+    /**
+     * Get affected rows for DML statement.
+     * @param qryCur Cursor.
+     * @return Number of table rows affected.
+     */
+    private static long getRowsAffected(QueryCursor<List<?>> qryCur) {
+        Iterator<List<?>> iter = qryCur.iterator();
+
+        if (iter.hasNext()) {
+            List<?> res = iter.next();
+
+            if (res.size() > 0) {
+                Long affected = (Long) res.get(0);
+
+                if (affected != null)
+                    return affected;
+            }
+        }
+
+        return 0;
     }
 
     /**

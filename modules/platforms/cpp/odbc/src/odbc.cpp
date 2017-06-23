@@ -417,9 +417,9 @@ namespace ignite
         using odbc::Statement;
         using odbc::app::ApplicationDataBuffer;
 
-        LOG_MSG("SQLBindCol called: index=" << colNum << ", type=" << targetType << 
-                ", targetValue=" << reinterpret_cast<size_t>(targetValue) << 
-                ", bufferLength=" << bufferLength << 
+        LOG_MSG("SQLBindCol called: index=" << colNum << ", type=" << targetType <<
+                ", targetValue=" << reinterpret_cast<size_t>(targetValue) <<
+                ", bufferLength=" << bufferLength <<
                 ", lengthInd=" << reinterpret_cast<size_t>(strLengthOrIndicator));
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
@@ -618,7 +618,7 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        statement->BindParameter(paramIdx, ioType, bufferType, paramSqlType, columnSize, decDigits, buffer, bufferLen, resLen);
+        statement->BindParameter(paramIdx,ioType , bufferType, paramSqlType, columnSize, decDigits, buffer, bufferLen, resLen);
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -897,7 +897,13 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         if (paramCnt)
-            *paramCnt = static_cast<SQLSMALLINT>(statement->GetParametersNumber());
+        {
+            uint16_t num = 0;
+
+            statement->GetParametersNumber(num);
+
+            *paramCnt = static_cast<SQLSMALLINT>(num);
+        }
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
