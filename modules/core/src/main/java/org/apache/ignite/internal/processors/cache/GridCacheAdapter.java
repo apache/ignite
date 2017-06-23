@@ -2441,7 +2441,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return syncOp(new SyncOp<EntryProcessorResult<T>>(true) {
             @Nullable @Override public EntryProcessorResult<T> op(IgniteTxLocalAdapter tx)
                 throws IgniteCheckedException {
-                assert topVer == null || tx.implicit();
+                assert topVer == null || tx.implicit() : "topVer ="  + topVer + ", tx.implicit = " + tx.implicit();
 
                 if (topVer != null)
                     tx.topologyVersion(topVer);
