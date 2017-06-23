@@ -427,7 +427,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public void clearCache(GridCacheContext cctx, boolean readers) {
         GridCacheVersion obsoleteVer = null;
 
-        try (GridCloseableIterator<CacheDataRow> it = evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
+        try (GridCloseableIterator<CacheDataRow> it = grp.isLocal() ? iterator(cctx.cacheId(), cacheDataStores().iterator()) :
+            evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
             while (it.hasNext()) {
                 KeyCacheObject key = it.next().key();
 
@@ -590,7 +591,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param dataIt Data store iterator.
      * @return Rows iterator
      */
-    private GridIterator<CacheDataRow> iterator(final int cacheId, final Iterator<CacheDataStore> dataIt) {
+    private GridCloseableIterator<CacheDataRow> iterator(final int cacheId, final Iterator<CacheDataStore> dataIt) {
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
             private GridCursor<? extends CacheDataRow> cur;
