@@ -15,11 +15,46 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
+.file--ignite {
+    label {
+        cursor: pointer;
+    }
+
+    &.choosen {
+        .ignite-form-field__control {
+            .btn-ignite {
+                display: none;
+            }
+
+            .tipField {
+                display: block;
+            }
+        }
+    }
+
+    &:not(.choosen) {
+        .ignite-form-field__label {
+            font-size: 0;
+            line-height: 0;
+            margin-bottom: 0px;
+        }
+    }
+
+    .ignite-form-field__control {
+        display: flex;
+
+        input[type='file'] {
+            position: absolute;
+            opacity: 0;
+            z-index: -1;
+        }
+
+        .tipField {
+            display: none;
+        }
+
+        .input-tip {
+            order: -1;
+        }
+    }
+}

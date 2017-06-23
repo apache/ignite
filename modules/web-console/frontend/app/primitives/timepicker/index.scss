@@ -15,32 +15,21 @@
  * limitations under the License.
  */
 
-.datepicker.dropdown-menu {
-    width: 250px;
-    height: 270px;
+.timepicker.dropdown-menu {
+    padding: 0 4px;
 
     button {
         outline: none;
         border: 0;
     }
 
-    tbody {
-        height: 180px;
-    }
-
     tbody button {
-        padding: 6px;
         height: 100%;
-    }
-
-    &.datepicker-mode-1, &.datepicker-mode-2 {
-        tbody button {
-            height: 65px;
-        }
+        padding: 6px;
     }
 }
 
-.datepicker--ignite {
+.timepicker--ignite {
     $height: 36px;
 
     display: inline-block;
@@ -62,7 +51,7 @@
         input {
             width: auto;
             height: $height;
-            min-width: 70px;
+            min-width: 40px;
             max-width: 70px;
             padding: 0;
             padding-left: 5px;
@@ -76,19 +65,73 @@
 
             border: none;
             box-shadow: none;
+            background: none;
 
             &:hover, &:focus {
                 text-shadow: 0 0 0 #a8110f;
             }
         }
     }
-}
 
-.theme--ignite {
-    .datepicker--ignite {
-        display: block;
-        width: 100%;
+    .dropdown-menu {
+        line-height: 30px;
 
-        font-size: 14px;
+        thead, tfoot {
+            th {
+                text-align: center;
+                line-height: 0;
+            }
+
+            .btn.btn-default {
+                float: none !important;
+                display: inline-block;
+                margin-right: 0;
+
+                &:active {
+                    box-shadow: none;
+                    background: none;
+                }
+
+                &:before {
+                    content: '';
+
+                    display: block;
+                    width: 10px;
+                    height: 10px;
+
+                    border: 2px solid #757575;
+                    transform: rotate(45deg);
+                }
+
+                &:hover {
+                    background: none;
+                }
+            }
+        }
+
+        thead {
+            th {
+                padding-top: 10px;
+            }
+
+            .btn.btn-default {
+                &:before {
+                    border-width: 2px 0 0 2px;
+                }
+            }
+        }
+
+        tfoot {
+            th {
+                padding-top: 2px;
+                padding-bottom: 10px;
+            }
+
+            .btn.btn-default {
+                &:before {
+                    border-width: 0 2px 2px 0;
+                }
+            }
+        }
     }
 }

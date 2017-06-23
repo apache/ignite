@@ -14,13 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.modal.center(tabindex='-1' role='dialog')
+.modal.modal--ignite.theme--ignite.center(tabindex='-1' role='dialog')
     .modal-dialog(ng-switch='ctrl.status')
         .modal-content(ng-switch-when='agentMissing')
             .modal-header.header
                 h4.modal-title
                     i.fa.fa-download
                     span Connection to Ignite Web Agent is not established
+                button.close(type='button' aria-label='Close' ng-click='$hide()')
+                     svg(ignite-icon="cross")
             .modal-body.agent-download
                 p Please download and run #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] to use this functionality
                 p To start:
@@ -31,14 +33,14 @@
                 .modal-advanced-options
                     i.fa(ng-class='showToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"' ng-click='showToken = !showToken')
                     a(ng-click='showToken = !showToken') {{showToken ? 'Hide security token...' : 'Show security token...'}}
-                .details-row(ng-show='showToken')
+                p(ng-show='showToken')
                     label.labelField Security token: {{user.becameToken || user.token}}
                     i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.becameToken || user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                     i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
 
             .modal-footer
-                button.btn.btn-default(ng-click='ctrl.back()') {{::ctrl.backText}}
-                a.btn.btn-primary(href='/api/v1/downloads/agent' target='_self') Download agent
+                button.btn-ignite.btn-ignite--link-success(ng-click='ctrl.back()') {{::ctrl.backText}}
+                a.btn-ignite.btn-ignite--success(href='/api/v1/downloads/agent' target='_self') Download agent
 
         .modal-content(ng-switch-when='nodeMissing')
             .modal-header.header
@@ -49,11 +51,12 @@
             .modal-body.agent-download
                 p Connection to Ignite Web Agent is established, but agent failed to connect to Ignite Node
                 p Please check the following:
-                ul
-                    li Ignite Grid is up and Ignite REST server started (copy "ignite-rest-http" folder from libs/optional/ to libs/)
-                    li In agent settings check URI for connect to Ignite REST server
-                    li Check agent logs for errors
-                    li Refer to #[b README.txt] in the ignite-web-agent folder for more information.
+                p
+                    ul
+                        li Ignite Grid is up and Ignite REST server started (copy "ignite-rest-http" folder from libs/optional/ to libs/)
+                        li In agent settings check URI for connect to Ignite REST server
+                        li Check agent logs for errors
+                        li Refer to #[b README.txt] in the ignite-web-agent folder for more information.
 
             .modal-footer
-                button.btn.btn-default(ng-click='ctrl.back()') {{::ctrl.backText}}
+                button.btn-ignite.btn-ignite--link-success(ng-click='ctrl.back()') {{::ctrl.backText}}

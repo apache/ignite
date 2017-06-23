@@ -15,11 +15,22 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
+@import '../../../public/stylesheets/variables';
+
+.theme--ignite {
+    p {
+        margin: 20px 0;
+
+        color: $text-color;
+        font-size: 14px;
+        line-height: 17px;
+    }
+
+    h4 {
+        margin-top: 20px;
+
+        color: $text-color;
+        font-size: 16px;
+        font-weight: normal;
+    }
+}
