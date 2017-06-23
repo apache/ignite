@@ -427,25 +427,28 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public void clearCache(GridCacheContext cctx, boolean readers) {
         GridCacheVersion obsoleteVer = null;
 
-        GridIterator<CacheDataRow> it = iterator(cctx.cacheId(), cacheDataStores().iterator());
+        try (GridCloseableIterator<CacheDataRow> it = evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
+            while (it.hasNext()) {
+                KeyCacheObject key = it.next().key();
 
-        while (it.hasNext()) {
-            KeyCacheObject key = it.next().key();
+                try {
+                    if (obsoleteVer == null)
+                        obsoleteVer = ctx.versions().next();
 
-            try {
-                if (obsoleteVer == null)
-                    obsoleteVer = ctx.versions().next();
+                    GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
-                GridCacheEntryEx entry = cctx.cache().entryEx(key);
-
-                entry.clear(obsoleteVer, readers);
+                    entry.clear(obsoleteVer, readers);
+                }
+                catch (GridDhtInvalidPartitionException ignore) {
+                    // Ignore.
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to clear cache entry: " + key, e);
+                }
             }
-            catch (GridDhtInvalidPartitionException ignore) {
-                // Ignore.
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to clear cache entry: " + key, e);
-            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to close iterator", e);
         }
     }
 
@@ -633,6 +636,97 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 }
 
                 return next != null;
+            }
+        };
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param dataIt Data store iterator.
+     * @return Rows iterator
+     */
+    private GridCloseableIterator<CacheDataRow> evictionSafeIterator(final int cacheId, final Iterator<CacheDataStore> dataIt) {
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** */
+            private GridCursor<? extends CacheDataRow> cur;
+
+            /** */
+            private GridDhtLocalPartition curPart;
+
+            /** */
+            private CacheDataRow next;
+
+            @Override protected CacheDataRow onNext() {
+                CacheDataRow res = next;
+
+                next = null;
+
+                return res;
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (next != null)
+                    return true;
+
+                while (true) {
+                    if (cur == null) {
+                        if (dataIt.hasNext()) {
+                            CacheDataStore ds = dataIt.next();
+
+                            if (!reservePartition(ds.partId()))
+                                continue;
+
+                            cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                        }
+                        else
+                            break;
+                    }
+
+                    if (cur.next()) {
+                        next = cur.get();
+                        next.key().partition(curPart.id());
+
+                        break;
+                    }
+                    else {
+                        cur = null;
+
+                        releaseCurrentPartition();
+                    }
+                }
+
+                return next != null;
+            }
+
+            /** */
+            private void releaseCurrentPartition() {
+                GridDhtLocalPartition p = curPart;
+
+                assert p != null;
+
+                curPart = null;
+                p.release();
+            }
+
+            /** */
+            private boolean reservePartition(int partId) {
+                GridDhtLocalPartition p = grp.topology().localPartition(partId);
+
+                assert p != null;
+
+                if (p.reserve()) {
+                    curPart = p;
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() throws IgniteCheckedException {
+                if(curPart != null)
+                    releaseCurrentPartition();
             }
         };
     }
