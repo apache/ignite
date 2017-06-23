@@ -85,8 +85,18 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
 
     }
 
-    protected static FileWriteAheadLogManager.FileDescriptor[] loadFileDescriptors(File walFilesDir) {
-        return FileWriteAheadLogManager.scan(walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER));
+    /**
+     * Scans provided folder for a WAL segment files
+     * @param walFilesDir directory to scan
+     * @return found WAL file descriptors
+     */
+    protected static FileWriteAheadLogManager.FileDescriptor[] loadFileDescriptors(@NotNull final File walFilesDir) throws IgniteCheckedException {
+        final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+        if (files == null) {
+            throw new IgniteCheckedException("WAL files directory does not not denote a " +
+                "     directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
+        }
+        return FileWriteAheadLogManager.scan(files);
     }
 
     /** {@inheritDoc} */

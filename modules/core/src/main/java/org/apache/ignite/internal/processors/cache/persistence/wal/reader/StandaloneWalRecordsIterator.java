@@ -40,15 +40,27 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Wal files directory. Should already contain consistent ID as subfolder */
+    /** Record buffer size */
+    private static final int BUF_SIZE = 2 * 1024 * 1024;
+
+    /**
+     * WAL files directory. Should already contain 'consistent ID' as subfolder.
+     * <code>null</code> value means file-by-file iteration mode
+     */
     @Nullable
     private File walFilesDir;
 
+    /**
+     * File descriptors remained to scan.
+     * <code>null</code> value means directory scan mode
+     */
     @Nullable
     private List<FileWriteAheadLogManager.FileDescriptor> walFileDescriptors;
 
     /**
-     * @param walFilesDir Wal files directory.  Should already contain consistent ID as subfolder
+     * Creates iterator in directory scan mode
+     *
+     * @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
      * @param log Logger.
      * @param sharedCtx Shared context.
      */
@@ -59,11 +71,18 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
-            2 * 1024 * 1024);
+            BUF_SIZE);
         init(walFilesDir, null);
         advance();
     }
 
+    /**
+     * Creates iterator in file-by-file iteration mode. Directory
+     *
+     * @param log Logger.
+     * @param sharedCtx Shared context.
+     * @param walFiles Wal files.
+     */
     public StandaloneWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
@@ -71,20 +90,21 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
-            2 * 1024 * 1024);
+            BUF_SIZE);
         init(null, walFiles);
         advance();
     }
 
     /**
-     * for directory mode checks first file
+     * For directory mode sets oldest file as initial segment,
+     * for file by file mode, converts all files to descriptors and gets oldest as initial.
      *
-     * @param walFilesDir
-     * @param walFiles
+     * @param walFilesDir directory for directory scan mode
+     * @param walFiles files for file-by-file iteration mode
      */
-    private void init(@Nullable final File walFilesDir, @Nullable final File[] walFiles) {
+    private void init(@Nullable final File walFilesDir, @Nullable final File[] walFiles) throws IgniteCheckedException {
         if (walFilesDir != null) {
-            FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(this.walFilesDir);
+            FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walFilesDir);
             curIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
             this.walFilesDir = walFilesDir;
         }

@@ -1324,9 +1324,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         protected final long idx;
 
         /**
-         * @param file File.
+         * Creates file descriptor. Index is restored from file name
+         * @param file WAL segment file.
          */
-        public FileDescriptor(File file) {
+        public FileDescriptor(@NotNull File file) {
             this(file, null);
         }
 

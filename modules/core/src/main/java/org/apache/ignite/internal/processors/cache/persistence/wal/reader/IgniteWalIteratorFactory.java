@@ -27,23 +27,48 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Created by dpavlov on 22.06.2017
+ * Factory for creating iterator over WAL files
  */
 public class IgniteWalIteratorFactory {
+    /** Logger. */
     private final IgniteLogger log;
+    /** Page size, in standalone iterator mode this value can't be taken from memory configuration */
     private final int pageSize;
 
+    /**
+     * Creates WAL files iterator factory
+     * @param log Logger.
+     * @param pageSize Page size, size is validated
+     */
     public IgniteWalIteratorFactory(IgniteLogger log, int pageSize) {
         this.log = log;
         this.pageSize = pageSize;
         new MemoryConfiguration().setPageSize(pageSize); // just for validate
     }
 
-    public WALIterator iteratorDirectory(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
+    /**
+     * Creates iterator for (archive) directory scan mode.
+     * Note in this mode total scanned files at end of iteration may be wider that initial files in directory.
+     * This mode does not support work directory scan because work directory contains unpredictable number in file name.
+     * Such file may broke iteration.
+     *
+     * @param walDirWithConsistentId directory with WAL files. Should already contain node consistent ID as subfolder
+     * @return closable WAL records iterator, should be closed when non needed
+     * @throws IgniteCheckedException if failed to read folder
+     */
+    public WALIterator iteratorArchiveDirectory(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
         return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx());
     }
 
-    public WALIterator iteratorFiles(@NotNull final File ...files) throws IgniteCheckedException {
+    /**
+     * Creates iterator for file by file scan mode.
+     * This method may be used also for archive folder (not for work).
+     * In this mode only provided WAL segments will be scanned, new WAL files will be ignored
+     * @param files files to scan. Order it not important, but is significant to provide all segments without omissions
+     * @return closable WAL records iterator, should be closed when non needed
+     * @throws IgniteCheckedException if failed to read files
+     */
+    public WALIterator iteratorArchiveFiles(@NotNull final File ...files) throws IgniteCheckedException {
         return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), files);
     }
 

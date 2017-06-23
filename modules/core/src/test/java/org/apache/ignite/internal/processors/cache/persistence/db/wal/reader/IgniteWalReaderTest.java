@@ -162,7 +162,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, pageSize);
         int count2 = 0;
 
-        try (WALIterator stIt = factory.iteratorDirectory(walArchiveDirWithConsistentId)) {
+        try (WALIterator stIt = factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
                 if (dumpRecords)
@@ -171,7 +171,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         }
 
-        try (WALIterator stIt = factory.iteratorDirectory(walDirWithConsistentId)) {
+        try (WALIterator stIt = factory.iteratorArchiveDirectory(walDirWithConsistentId)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
                 if (dumpRecords)
@@ -183,7 +183,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         int count3 = 0;
         File[] files = walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
-        try (WALIterator stIt = factory.iteratorFiles(files)) {
+        try (WALIterator stIt = factory.iteratorArchiveFiles(files)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
                 if (dumpRecords)
