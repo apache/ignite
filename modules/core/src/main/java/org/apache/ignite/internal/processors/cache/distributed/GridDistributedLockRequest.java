@@ -48,6 +48,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int STORE_USED_FLAG_MASK = 0x04;
+
     /** Sender node ID. */
     private UUID nodeId;
 
@@ -260,6 +263,23 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public boolean keepBinary() {
         return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @return Flag indicating whether transaction use cache store.
+     */
+    public boolean storeUsed() {
+        return (flags & STORE_USED_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @param storeUsed Store used value.
+     */
+    public void storeUsed(boolean storeUsed) {
+        if (storeUsed)
+            flags = (byte)(flags | STORE_USED_FLAG_MASK);
+        else
+            flags &= ~STORE_USED_FLAG_MASK;
     }
 
     /**

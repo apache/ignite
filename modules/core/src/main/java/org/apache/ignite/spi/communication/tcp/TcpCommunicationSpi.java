@@ -344,6 +344,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** */
     private ConnectionPolicy connPlc;
 
+    /** */
+    private boolean enableForcibleNodeKill = IgniteSystemProperties
+        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
         new GridNioServerListenerAdapter<Message>() {
@@ -448,8 +452,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 final ClusterNode rmtNode = getSpiContext().node(sndId);
 
                 if (rmtNode == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Close incoming connection, unknown node: " + sndId);
+                    U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId +
+                        ", ses=" + ses + ']');
 
                     ses.close();
 
@@ -508,10 +512,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     if (oldClient != null) {
                         if (oldClient instanceof GridTcpNioCommunicationClient) {
-                            if (log.isDebugEnabled())
-                                log.debug("Received incoming connection when already connected " +
-                                    "to this node, rejecting [locNode=" + locNode.id() +
-                                    ", rmtNode=" + sndId + ']');
+                            if (log.isInfoEnabled())
+                                log.info("Received incoming connection when already connected " +
+                                "to this node, rejecting [locNode=" + locNode.id() +
+                                ", rmtNode=" + sndId + ']');
 
                             ses.send(new RecoveryLastReceivedMessage(-1));
 
@@ -540,10 +544,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             if (oldClient instanceof GridTcpNioCommunicationClient) {
                                 assert oldClient.connectionIndex() == connKey.connectionIndex() : oldClient;
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Received incoming connection when already connected " +
-                                        "to this node, rejecting [locNode=" + locNode.id() +
-                                        ", rmtNode=" + sndId + ']');
+                                if (log.isInfoEnabled())
+                                    log.info("Received incoming connection when already connected " +
+                                    "to this node, rejecting [locNode=" + locNode.id() +
+                                    ", rmtNode=" + sndId + ']');
 
                                 ses.send(new RecoveryLastReceivedMessage(-1));
 
@@ -563,7 +567,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (log.isDebugEnabled())
                             log.debug("Received incoming connection from remote node " +
-                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
+                            "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
 
                         if (reserved) {
                             try {
@@ -579,11 +583,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                     else {
                         if (oldFut instanceof ConnectFuture && locNode.order() < rmtNode.order()) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Received incoming connection from remote node while " +
-                                    "connecting to this node, rejecting [locNode=" + locNode.id() +
-                                    ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
-                                    ", rmtNodeOrder=" + rmtNode.order() + ']');
+                            if (log.isInfoEnabled()) {
+                                log.info("Received incoming connection from remote node while " +
+                                "connecting to this node, rejecting [locNode=" + locNode.id() +
+                                ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
+                                ", rmtNodeOrder=" + rmtNode.order() + ']');
                             }
 
                             ses.send(new RecoveryLastReceivedMessage(-1));
@@ -2493,8 +2497,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                     }
                                 }
                             }
-                            else
+                            else {
                                 U.sleep(200);
+
+                                if (getSpiContext().node(node.id()) == null)
+                                    throw new ClusterTopologyCheckedException("Failed to send message " +
+                                        "(node left topology): " + node);
+                            }
                         }
 
                         fut.onDone(client0);
@@ -2940,11 +2949,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 ", addr=" + addr + ", err=" + e + ']');
 
                     if (attempt == reconCnt || connTimeout0 > maxConnTimeout) {
-                        if (log.isDebugEnabled())
-                            log.debug("Handshake timedout (will stop attempts to perform the handshake) " +
-                                "[timeout=" + connTimeout0 + ", maxConnTimeout=" + maxConnTimeout +
-                                ", attempt=" + attempt + ", reconCnt=" + reconCnt +
-                                ", err=" + e.getMessage() + ", addr=" + addr + ']');
+                        U.warn(log, "Handshake timedout (will stop attempts to perform the handshake) " +
+                            "[node=" + node.id() + ", timeout=" + connTimeout0 +
+                            ", maxConnTimeout=" + maxConnTimeout +
+                            ", attempt=" + attempt + ", reconCnt=" + reconCnt +
+                            ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
@@ -2978,6 +2987,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(e);
 
+                    U.error(log, "Failed to establish connection to a remote node [node=" + node +
+                        ", addr=" + addr + ", connectAttempts=" + connectAttempts +
+                        ", failureDetThrReached" + failureDetThrReached + ']', e);
+
                     if (failureDetThrReached)
                         LT.warn(log, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
                             "configuration property) [addr=" + addr + ", failureDetectionTimeout=" +
@@ -2995,8 +3008,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
 
                     // Reconnect for the second time, if connection is not established.
-                    if (!failureDetThrReached && connectAttempts < 2 &&
-                        (e instanceof ConnectException || X.hasCause(e, ConnectException.class))) {
+                    if (!failureDetThrReached && connectAttempts < 5 &&
+                        (X.hasCause(e, ConnectException.class) || X.hasCause(e, SocketTimeoutException.class))) {
+                        U.sleep(200);
+
                         connectAttempts++;
 
                         continue;
@@ -3019,22 +3034,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
 
-            if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
-                X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
-                    IgniteSpiOperationTimeoutException.class)) {
-                LT.warn(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
-                    "cluster [" +
-                    "rmtNode=" + node +
-                    ", err=" + errs +
-                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+            if (enableForcibleNodeKill) {
+                if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
+                    X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
+                        IgniteSpiOperationTimeoutException.class)) {
+                    U.error(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+                        "cluster [" + "rmtNode=" + node + ']', errs);
 
-                getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
-                    "rmtNode=" + node +
-                    ", errs=" + errs +
-                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+                    getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
+                        "rmtNode=" + node +
+                        ", errs=" + errs +
+                        ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+                }
             }
 
-            throw errs;
+            if (X.hasCause(errs, ConnectException.class))
+                throw errs;
         }
 
         return client;
@@ -3287,8 +3302,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             // Ignoring whatever happened after timeout - reporting only timeout event.
             if (!cancelled)
-                throw new HandshakeTimeoutException("Failed to perform handshake due to timeout (consider increasing " +
-                    "'connectionTimeout' configuration property).");
+                throw new HandshakeTimeoutException(
+                    new IgniteSpiOperationTimeoutException("Failed to perform handshake due to timeout " +
+                        "(consider increasing 'connectionTimeout' configuration property)."));
         }
 
         return rcvCnt;
@@ -3470,10 +3486,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param msg Message.
+         * @param cause Exception cause
          */
-        HandshakeTimeoutException(String msg) {
-            super(msg);
+        HandshakeTimeoutException(IgniteSpiOperationTimeoutException cause) {
+            super(cause);
         }
     }
 

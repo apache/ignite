@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -198,7 +199,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private boolean centralizedAff;
 
     /** Forced Rebalance future. */
-    private GridFutureAdapter<Boolean> forcedRebFut;
+    private GridCompoundFuture<Boolean, Boolean> forcedRebFut;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -236,7 +237,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param forcedRebFut Forced Rebalance future.
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext cctx, DiscoveryEvent discoEvt,
-        GridDhtPartitionExchangeId exchId, GridFutureAdapter<Boolean> forcedRebFut) {
+        GridDhtPartitionExchangeId exchId, GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
         dummy = false;
         forcePreload = true;
 
@@ -417,7 +418,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * @return Forced Rebalance future.
      */
-    @Nullable public GridFutureAdapter<Boolean> forcedRebalanceFuture() {
+    @Nullable public GridCompoundFuture<Boolean, Boolean> forcedRebalanceFuture() {
         return forcedRebFut;
     }
 

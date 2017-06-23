@@ -93,6 +93,7 @@ namespace ignite
              * @param buffer A pointer to a buffer for the parameter's data.
              * @param bufferLen Length of the ParameterValuePtr buffer in bytes.
              * @param resLen A pointer to a buffer for the parameter's length.
+             * @return Operation result.
              */
             void BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
                 SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
@@ -405,6 +406,7 @@ namespace ignite
              * @param buffer A pointer to a buffer for the parameter's data.
              * @param bufferLen Length of the ParameterValuePtr buffer in bytes.
              * @param resLen A pointer to a buffer for the parameter's length.
+             * @return Operation result.
              */
             void SafeBindParameter(uint16_t paramIdx, const app::Parameter& param);
 

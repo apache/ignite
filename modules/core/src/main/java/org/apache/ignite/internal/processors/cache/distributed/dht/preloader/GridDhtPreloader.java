@@ -416,7 +416,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         boolean forceRebalance,
         int cnt,
         Runnable next,
-        @Nullable GridFutureAdapter<Boolean> forcedRebFut) {
+        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
         return demander.addAssignments(assignments, forceRebalance, cnt, next, forcedRebFut);
     }
 
