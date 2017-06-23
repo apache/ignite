@@ -3777,6 +3777,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return map.publicSize(ctx.cacheId());
     }
 
+    /**
+     * Gets the approximate number of entries cached on this node.
+     * It has relaxed accuracy for the sake of speed.
+     *
+     * @return approximate number of entries.
+     */
+    public int approximateSize() {
+        return size();
+    }
+
     /** {@inheritDoc} */
     @Override public long sizeLong() {
         return map.publicSize(ctx.cacheId());

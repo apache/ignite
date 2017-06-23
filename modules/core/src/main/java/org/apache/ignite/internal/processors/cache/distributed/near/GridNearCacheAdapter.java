@@ -302,6 +302,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
+    @Override public int approximateSize() {
+        return super.size() + dht().size();
+    }
+
+    /** {@inheritDoc} */
     @Override public long sizeLong() {
         return nearEntries().size() + dht().size();
     }
@@ -318,6 +323,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int nearSize() {
+//        return map.internalSize();
         return nearEntries().size();
     }
 
