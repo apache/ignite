@@ -758,14 +758,25 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
-        for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()){
+        for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()) {
             cctx.exchange().clearClientTopology(grpDesc.groupId());
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grpDesc.groupId());
 
-            if (gctx != null){
-                gctx.affinity().cancelFutures(
-                    new IgniteCheckedException("Failed to wait for topology update, cache group is stopping."));
+            if (gctx != null) {
+                IgniteCheckedException ex;
+
+                String msg = "Failed to wait for topology update, cache group is stopping.";
+
+                // If snapshot operation in progress we must throw CacheStoppedException
+                // for correct cache proxy restart. For more details see
+                // IgniteCacheProxy.cacheException()
+                if (cctx.cache().context().snapshot().snapshotOperationInProgress())
+                    ex = new CacheStoppedException(msg);
+                else
+                    ex = new IgniteCheckedException(msg);
+
+                gctx.affinity().cancelFutures(ex);
             }
         }
 
