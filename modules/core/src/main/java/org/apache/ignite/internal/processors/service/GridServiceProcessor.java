@@ -1604,7 +1604,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         private volatile AffinityTopologyVersion currTopVer = null;
 
         /** {@inheritDoc} */
-        @Override public void onEvent(Event evt) {
+        @Override public void onEvent(final Event evt) {
             if (!busyLock.enterBusy())
                 return;
 

@@ -1146,6 +1146,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             boolean openSock = false;
 
+            boolean wasHandshake = false;
+
             Socket sock = null;
 
             try {
@@ -1162,6 +1164,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
                     ackTimeout0));
+
+                wasHandshake = true;
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -1264,7 +1268,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
                     break;
 
-                if (!openSock) {
+                if (!openSock || !wasHandshake) {
                     // Reconnect for the second time, if connection is not established.
                     if (connectAttempts < 2) {
                         connectAttempts++;
