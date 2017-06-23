@@ -231,6 +231,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private AffinityAttachmentHolder affAttachmentHolder;
 
+    /** */
+    private volatile boolean exchangeFinished;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -2100,6 +2103,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Finishes exchange on nodes no receiving {@link GridDhtFinishExchangeMessage}.
      */
     public void finishExchange() {
+        if (this.exchangeFinished)
+            return;
+
         // Exchange can be finished on new coordinator, but some nodes still might wait for completion.
         if (crd != null && crd.isLocal()) {
             List<GridDhtReadyAssignmentsFetchFuture> futs = new LinkedList<>();
@@ -2163,7 +2169,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            if (!nodesToFix.isEmpty() && !assignmentChange.isEmpty()) {
+            if (!isDone() || (!nodesToFix.isEmpty() && !assignmentChange.isEmpty())) {
                 GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
 
                 GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
@@ -2179,6 +2185,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     onFinishExchangeMessage(cctx.localNode(), msg);
                 }
             }
+
+            this.exchangeFinished = true;
         }
     }
 
