@@ -31,9 +31,10 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs identical query operations with occasional puts to measure effect of query throttling.
+ * Ignite benchmark that performs identical query operations with occasional puts to measure effect
+ * of query results reuse.
  */
-public class IgniteSqlQueryThrottlingBenchmark extends IgniteCacheAbstractBenchmark<Integer, Person> {
+public class IgniteSqlQueryResultsReuseBenchmark extends IgniteCacheAbstractBenchmark<Integer, Person> {
     /** */
     private final AtomicInteger putCnt = new AtomicInteger();
 

@@ -196,8 +196,8 @@ public class IgniteConfiguration {
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;
 
-    /** Default value for SQL MAP throttling flag. */
-    public static final boolean DFLT_SQL_MAP_THROTTLE = true;
+    /** Default value for SQL results reuse flag. */
+    public static final boolean DFLT_SQL_RESULTS_REUSE = true;
 
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
@@ -276,8 +276,8 @@ public class IgniteConfiguration {
     /** Daemon flag. */
     private boolean daemon;
 
-    /** SQL MAP throttling flag. */
-    private boolean sqlMapThrottle = DFLT_SQL_MAP_THROTTLE;
+    /** SQL results reuse flag. */
+    private boolean sqlResultsReuse = DFLT_SQL_RESULTS_REUSE;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -553,7 +553,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        sqlMapThrottle = cfg.isSqlMapThrottle();
+        sqlResultsReuse = cfg.isSqlResultsReuse();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -643,14 +643,14 @@ public class IgniteConfiguration {
      * and <b>REDUCE</b>.
      * <p>
      * If many identical SQL queries are executed on the grid within short amount of time
-     * or simultaneously, their <b>MAP</b> stages occurring on the same node may be <b>throttled</b> -
-     * i.e. instead of fetching data on each query, it's possible to make all identical queries
-     * arriving simultaneously reuse the same result set - as long as data is not concurrently modified.
+     * or simultaneously, instead of fetching data on each query, <b>MAP</b> stages
+     * of all those identical queries occurring on the same node may
+     * reuse the same result - as long as data is not concurrently modified.
      *
      * @return {@code True} if SQL <b>MAP</b> queries should be throttled on this node, {@code false} otherwise.
      */
-    public boolean isSqlMapThrottle() {
-        return sqlMapThrottle;
+    public boolean isSqlResultsReuse() {
+        return sqlResultsReuse;
     }
 
     /**
@@ -660,16 +660,15 @@ public class IgniteConfiguration {
      * and <b>REDUCE</b>.
      * <p>
      * If many identical SQL queries are executed on the grid within short amount of time
-     * or simultaneously, their <b>MAP</b> stages occurring on the same node may be <b>throttled</b> -
-     * i.e. instead of fetching data on each query, it's possible to make all identical queries
-     * arriving simultaneously reuse the same result set - as long as data is not concurrently modified.
+     * or simultaneously, instead of fetching data on each query, <b>MAP</b> stages
+     * of all those identical queries occurring on the same node may
+     * reuse the same result - as long as data is not concurrently modified.
      *
-     * @param sqlMapThrottle SQL MAP throttling flag.
+     * @param sqlResultsReuse SQL results reuse flag.
      * @return {@code this} for chaining.
-     *
      */
-    public IgniteConfiguration setSqlMapThrottle(boolean sqlMapThrottle) {
-        this.sqlMapThrottle = sqlMapThrottle;
+    public IgniteConfiguration setSqlResultsReuse(boolean sqlResultsReuse) {
+        this.sqlResultsReuse = sqlResultsReuse;
 
         return this;
     }

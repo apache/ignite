@@ -132,10 +132,10 @@ public class GridMapQueryExecutor {
     private IgniteH2Indexing h2;
 
     /**
-     * Identical simultaneous queries throttling flag.
-     * @see IgniteConfiguration#sqlMapThrottle
+     * Identical simultaneous queries results reuse flag.
+     * @see IgniteConfiguration#sqlResultsReuse
      */
-    private boolean throttle;
+    private boolean reuseResults;
 
     /** */
     private ConcurrentMap<UUID, NodeResults> qryRess = new ConcurrentHashMap8<>();
@@ -169,7 +169,7 @@ public class GridMapQueryExecutor {
 
         log = ctx.log(GridMapQueryExecutor.class);
 
-        throttle = ctx.grid().configuration().isSqlMapThrottle();
+        reuseResults = ctx.grid().configuration().isSqlResultsReuse();
 
         final UUID locNodeId = ctx.localNodeId();
 
@@ -1224,7 +1224,7 @@ public class GridMapQueryExecutor {
 
     /**
      * Execute query specified by {@code key} or reuse result of the same concurrently running query.
-     * @param key Query key to throttle similar queries as needed.
+     * @param key Query key to make similar queries reuse the same result as needed.
      * @param node Cluster node.
      * @param mainCctx Cache context.
      * @param conn H2 connection.
@@ -1236,7 +1236,7 @@ public class GridMapQueryExecutor {
      */
     private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, GridCacheContext mainCctx, Connection conn,
         int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
-        if (!isThrottled(key)) {
+        if (!isResultReused(key)) {
             ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
 
             ResultSetWrapper res = new ResultSetWrapper(rs, null, null);
@@ -1294,9 +1294,9 @@ public class GridMapQueryExecutor {
     /**
      * @return {@code true} if this key corresponds to a query whose result may be reused, {@code false} otherwise.
      */
-    private boolean isThrottled(QueryKey key) {
-        return throttle &&
-            // Throttle the query if we don't have partitions list set, OR if it's what we've got from partitions map.
+    private boolean isResultReused(QueryKey key) {
+        return reuseResults &&
+            // Reuse query result if we don't have partitions list set, OR if it's what we've got from partitions map.
             (key.parts == null || (key.partsMap != null && key.partsMap.get(ctx.localNodeId()) == key.parts));
     }
 
