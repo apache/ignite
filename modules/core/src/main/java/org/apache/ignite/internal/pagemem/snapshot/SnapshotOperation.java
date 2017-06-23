@@ -46,19 +46,25 @@ public class SnapshotOperation implements Serializable {
     /** Additional parameter. */
     private final Object extraParam;
 
+    /** Optional list of dependent snapshot IDs. */
+    private final Set<Long> dependentSnapshotIds;
+
     /**
      * @param type Type.
      * @param snapshotId Snapshot id.
      * @param cacheNames Cache names.
-     * @param msg
+     * @param msg Message.
      * @param extraParam Additional parameter.
+     * @param dependentSnapshotIds Optional list of dependent snapshot IDs.
      */
-    public SnapshotOperation(SnapshotOperationType type, long snapshotId, Set<String> cacheNames, String msg, Object extraParam) {
+    public SnapshotOperation(SnapshotOperationType type, long snapshotId, Set<String> cacheNames, String msg,
+        Object extraParam, Set<Long> dependentSnapshotIds) {
         this.type = type;
         this.snapshotId = snapshotId;
         this.cacheNames = cacheNames;
         this.msg = msg;
         this.extraParam = extraParam;
+        this.dependentSnapshotIds = dependentSnapshotIds;
     }
 
     /**
@@ -100,6 +106,12 @@ public class SnapshotOperation implements Serializable {
         return extraParam;
     }
 
+    /**
+     * @return Optional dependent snapshot IDs.
+     */
+    public Set<Long> dependentSnapshotIds() {
+        return dependentSnapshotIds;
+    }
 
     /**
      * @param op Op.
@@ -131,9 +143,11 @@ public class SnapshotOperation implements Serializable {
         return (File)op.extraParameter();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
@@ -164,6 +178,7 @@ public class SnapshotOperation implements Serializable {
             ", cacheNames=" + cacheNames +
             ", msg='" + msg + '\'' +
             ", extraParam=" + extraParam +
+            ", dependentSnapshotIds=" + dependentSnapshotIds +
             '}';
     }
 }
