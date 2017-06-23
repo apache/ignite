@@ -1792,7 +1792,7 @@ BOOST_AUTO_TEST_CASE(TestTablesMeta)
 
 BOOST_AUTO_TEST_CASE(TestParamsNum)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
 
     CheckParamsNum("SELECT * FROM TestType", 0);
     CheckParamsNum("SELECT * FROM TestType WHERE _key=?", 1);
