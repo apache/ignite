@@ -284,6 +284,11 @@ namespace Apache.Ignite.Linq.Impl
 
                 ResultBuilder.AppendFormat("{0}.{1}", tableName, fieldname);
             }
+            else if (joinClause != null && joinClause.InnerSequence is SubQueryExpression)
+            {
+                var subQueryExpression = (SubQueryExpression) joinClause.InnerSequence;
+                base.Visit(subQueryExpression.QueryModel.SelectClause.Selector);
+            }
             else
             {
                 // Count, sum, max, min expect a single field or *

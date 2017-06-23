@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -265,7 +267,7 @@ public class IgniteDiagnosticMessage implements Message {
         private final int cacheId;
 
         /** */
-        private final Set<KeyCacheObject> keys;
+        private Collection<KeyCacheObject> keys;
 
         /**
          * @param cacheId Cache ID.
@@ -320,6 +322,21 @@ public class IgniteDiagnosticMessage implements Message {
             assert other0 != null && cacheId == other0.cacheId : other;
 
             this.keys.addAll(other0.keys);
+        }
+
+        /**
+         * @param out Output stream.
+         * @throws IOException If failed.
+         */
+        private void writeObject(java.io.ObjectOutputStream out)
+            throws IOException {
+            /*
+            Transform to List, otherwise Set unmarshalling fails since need
+            call KeyCacheObject.finishUnmarshal before adding in Set.
+             */
+            this.keys = new ArrayList<>(keys);
+
+            out.defaultWriteObject();
         }
     }
 
