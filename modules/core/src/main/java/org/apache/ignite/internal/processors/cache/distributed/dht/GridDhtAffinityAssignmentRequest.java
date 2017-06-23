@@ -104,7 +104,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
      * {@inheritDoc}
      */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /**
