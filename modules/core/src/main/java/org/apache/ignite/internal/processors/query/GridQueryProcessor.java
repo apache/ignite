@@ -256,17 +256,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     desc.tableName(qryEntity.getTableName());
 
-                    if (binaryEnabled && !keyOrValMustDeserialize) {
-                        // Safe to check null.
-                        if (SQL_TYPES.contains(valCls))
-                            desc.valueClass(valCls);
-                        else
+                    if (binaryEnabled) {
+                        if (!valMustDeserialize && !SQL_TYPES.contains(valCls))
                             desc.valueClass(Object.class);
-
-                        if (SQL_TYPES.contains(keyCls))
-                            desc.keyClass(keyCls);
                         else
+                            desc.valueClass(valCls);
+
+                        if (!keyMustDeserialize && !SQL_TYPES.contains(keyCls))
                             desc.keyClass(Object.class);
+                        else
+                            desc.keyClass(keyCls);
                     }
                     else {
                         if (keyCls == null)
@@ -298,7 +297,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+                    if (valCls == null || (binaryEnabled && (!valMustDeserialize))) {
                         processBinaryMeta(qryEntity, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
@@ -373,17 +372,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     desc.name(simpleValType);
 
-                    if (binaryEnabled && !keyOrValMustDeserialize) {
-                        // Safe to check null.
-                        if (SQL_TYPES.contains(valCls))
-                            desc.valueClass(valCls);
-                        else
+                    if (binaryEnabled) {
+                        if (!valMustDeserialize && !SQL_TYPES.contains(valCls))
                             desc.valueClass(Object.class);
-
-                        if (SQL_TYPES.contains(keyCls))
-                            desc.keyClass(keyCls);
                         else
+                            desc.valueClass(valCls);
+
+                        if (!keyMustDeserialize && !SQL_TYPES.contains(keyCls))
                             desc.keyClass(Object.class);
+                        else
+                            desc.keyClass(keyCls);
                     }
                     else {
                         desc.valueClass(valCls);
@@ -407,7 +405,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+                    if (valCls == null || (binaryEnabled && !valMustDeserialize)) {
                         processBinaryMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));

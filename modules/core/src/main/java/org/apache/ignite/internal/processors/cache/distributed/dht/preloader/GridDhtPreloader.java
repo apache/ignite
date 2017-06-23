@@ -413,7 +413,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload, int cnt, Runnable next,  @Nullable GridFutureAdapter<Boolean> forcedRebFut) {
+        boolean forcePreload, int cnt, Runnable next,  @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
         return demander.addAssignments(assignments, forcePreload, cnt, next, forcedRebFut);
     }
 
