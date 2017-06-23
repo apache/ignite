@@ -54,9 +54,11 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -1567,6 +1569,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param sndErr Send error.
+     * @param ping {@code True} if try ping node.
+     * @return {@code True} if node left.
+     * @throws IgniteClientDisconnectedCheckedException If ping failed.
+     */
+    public boolean checkNodeLeft(UUID nodeId, IgniteCheckedException sndErr, boolean ping)
+        throws IgniteClientDisconnectedCheckedException
+    {
+        return sndErr instanceof ClusterTopologyCheckedException ||
+            ctx.discovery().node(nodeId) == null ||
+            (ping && !ctx.discovery().pingNode(nodeId));
+    }
+
+    /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param topicOrd GridTopic enumeration ordinal.
@@ -1628,6 +1645,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     getSpi().sendMessage(node, ioMsg);
             }
             catch (IgniteSpiException e) {
+                if (e.getCause() instanceof ClusterTopologyCheckedException)
+                    throw (ClusterTopologyCheckedException)e.getCause();
+
                 throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
                     "TCP connection cannot be established due to firewall issues) " +
                     "[node=" + node + ", topic=" + topic +
@@ -1767,7 +1787,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        send(nodes, topic, topic.ordinal(), msg, plc, true, timeout, skipOnTimeout);
+        IgniteCheckedException err = null;
+
+        for (ClusterNode node : nodes) {
+            try {
+                send(node, topic, topic.ordinal(), msg, plc, true, timeout, skipOnTimeout, null, false);
+            }
+            catch (IgniteCheckedException e) {
+                if (err == null)
+                    err = e;
+                else
+                    err.addSuppressed(e);
+            }
+        }
+
+        if (err != null)
+            throw err;
     }
 
     /**
@@ -1783,7 +1818,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        send(nodes, topic, topic.ordinal(), msg, plc, false, 0, false);
+        assert F.find(nodes, null, F.localNode(locNodeId)) == null :
+            "Internal Ignite code should never call the method with local node in a node list.";
+
+        IgniteCheckedException err = null;
+
+        for (ClusterNode node : nodes) {
+            try {
+                send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
+            }
+            catch (IgniteCheckedException e) {
+                if (err == null)
+                    err = e;
+                else
+                    err.addSuppressed(e);
+            }
+        }
+
+        if (err != null)
+            throw err;
     }
 
     /**
@@ -1808,17 +1861,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert timeout > 0 || skipOnTimeout;
 
         send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, ackC, false);
-    }
-
-    /**
-     * Sends a peer deployable user message.
-     *
-     * @param nodes Destination nodes.
-     * @param msg Message to send.
-     * @throws IgniteCheckedException Thrown in case of any errors.
-     */
-    void sendUserMessage(Collection<? extends ClusterNode> nodes, Object msg) throws IgniteCheckedException {
-        sendUserMessage(nodes, msg, null, false, 0, false);
     }
 
     /**
@@ -1955,54 +1997,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * @param nodes Destination nodes.
-     * @param topic Topic to send the message to.
-     * @param topicOrd Topic ordinal value.
-     * @param msg Message to send.
-     * @param plc Type of processing.
-     * @param ordered Ordered flag.
-     * @param timeout Message timeout.
-     * @param skipOnTimeout Whether message can be skipped in timeout.
-     * @throws IgniteCheckedException Thrown in case of any errors.
-     */
-    private void send(
-        Collection<? extends ClusterNode> nodes,
-        Object topic,
-        int topicOrd,
-        Message msg,
-        byte plc,
-        boolean ordered,
-        long timeout,
-        boolean skipOnTimeout
-    ) throws IgniteCheckedException {
-        assert nodes != null;
-        assert topic != null;
-        assert msg != null;
-
-        if (!ordered)
-            assert F.find(nodes, null, F.localNode(locNodeId)) == null :
-                "Internal Ignite code should never call the method with local node in a node list.";
-
-        try {
-            // Small optimization, as communication SPIs may have lighter implementation for sending
-            // messages to one node vs. many.
-            if (!nodes.isEmpty()) {
-                for (ClusterNode node : nodes)
-                    send(node, topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout, null, false);
-            }
-            else if (log.isDebugEnabled())
-                log.debug("Failed to send message to empty nodes collection [topic=" + topic + ", msg=" +
-                    msg + ", policy=" + plc + ']');
-        }
-        catch (IgniteSpiException e) {
-            throw new IgniteCheckedException("Failed to send message (nodes may have left the grid or " +
-                "TCP connection cannot be established due to firewall issues) " +
-                "[nodes=" + nodes + ", topic=" + topic +
-                ", msg=" + msg + ", policy=" + plc + ']', e);
         }
     }
 
