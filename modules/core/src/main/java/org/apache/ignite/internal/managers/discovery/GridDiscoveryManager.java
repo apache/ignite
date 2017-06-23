@@ -1947,7 +1947,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 inject();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to init consisten ID.", e);
+                throw new IgniteException("Failed to init consistent ID.", e);
             }
 
             consistentId = getSpi().consistentId();
