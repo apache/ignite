@@ -78,7 +78,7 @@ public class IgniteWalReader {
 
     private static int help() {
         System.out.println("Usage:\n");
-        System.out.println(" walReader.[bat|sh] {pageSize} {walArchiveDir}");
+        System.out.println(" walreader.[bat|sh] {pageSize} {walArchiveDir}");
         System.out.println("   {pageSize} - page size selected in grid memory configuration. Page size must be between 1kB and 16kB.");
         System.out.println("   {walArchiveDir} - WAL archive directory");
         return 0;

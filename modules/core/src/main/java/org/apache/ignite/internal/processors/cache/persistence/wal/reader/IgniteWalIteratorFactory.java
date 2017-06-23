@@ -40,7 +40,7 @@ public class IgniteWalIteratorFactory {
      * @param log Logger.
      * @param pageSize Page size, size is validated
      */
-    public IgniteWalIteratorFactory(IgniteLogger log, int pageSize) {
+    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, final int pageSize) {
         this.log = log;
         this.pageSize = pageSize;
         new MemoryConfiguration().setPageSize(pageSize); // just for validate

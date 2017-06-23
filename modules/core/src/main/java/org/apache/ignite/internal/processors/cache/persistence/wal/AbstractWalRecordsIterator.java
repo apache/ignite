@@ -94,7 +94,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
         final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
         if (files == null) {
             throw new IgniteCheckedException("WAL files directory does not not denote a " +
-                "     directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
+                "directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
         }
         return FileWriteAheadLogManager.scan(files);
     }

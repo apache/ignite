@@ -64,7 +64,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param log Logger.
      * @param sharedCtx Shared context.
      */
-    public StandaloneWalRecordsIterator(
+    StandaloneWalRecordsIterator(
         @NotNull final File walFilesDir,
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
@@ -83,7 +83,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param sharedCtx Shared context.
      * @param walFiles Wal files.
      */
-    public StandaloneWalRecordsIterator(
+    StandaloneWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final File... walFiles) throws IgniteCheckedException {
