@@ -3981,6 +3981,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Processes node added message.
          *
+         * For coordinator node method marks the messages as verified for rest of nodes to apply the
+         * changes this message is issued for.
+         *
+         * Node added message is processed by other nodes only after coordinator verification.
+         *
          * @param msg Node added message.
          * @deprecated Due to current protocol node add process cannot be dropped in the middle of the ring,
          *      if new node auth fails due to config inconsistency. So, we need to finish add
