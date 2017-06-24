@@ -30,11 +30,11 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -105,9 +105,9 @@ public class GridToStringBuilder {
         }
     };
 
-    private static ThreadLocal<ArrayList<ObjectWithPosition>> savedObjects = new ThreadLocal<ArrayList<ObjectWithPosition>>() {
-        @Override protected ArrayList<ObjectWithPosition> initialValue() {
-            return new ArrayList<>();
+    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
+        @Override protected IdentityHashMap<Object, Integer> initialValue() {
+            return new IdentityHashMap<>();
         }
     };
 
@@ -845,7 +845,7 @@ public class GridToStringBuilder {
 
             buf.setLength(0);
 
-            savedObjects.get().add(new ObjectWithPosition(obj, buf.length()));
+            savedObjects.get().put(obj, buf.length());
 
             buf.a(cd.getSimpleClassName()).a(" [");
 
@@ -907,7 +907,7 @@ public class GridToStringBuilder {
 
             buf.a(']');
 
-            savedObjects.get().remove(savedObjects.get().size() - 1);
+            savedObjects.get().remove(obj);
 
             return buf.toString();
         }
@@ -944,10 +944,11 @@ public class GridToStringBuilder {
 
         if (isPrimitiveWraper(cls)) {
             buf.a(String.valueOf(obj));
+
             return;
         }
 
-        savedObjects.get().add(new ObjectWithPosition(obj, buf.length()));
+        savedObjects.get().put(obj, buf.length());
 
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
@@ -983,6 +984,7 @@ public class GridToStringBuilder {
                         val = F.retain((Collection)val, true, MAX_COL_SIZE);
                     else if (val instanceof Map && ((Map)val).size() > MAX_COL_SIZE) {
                         Map tmp = U.newHashMap(MAX_COL_SIZE);
+
                         int cntr = 0;
 
                         for (Object o : ((Map)val).entrySet()) {
@@ -1007,7 +1009,7 @@ public class GridToStringBuilder {
 
             buf.a(']');
 
-            savedObjects.get().remove(savedObjects.get().size() - 1);
+            savedObjects.get().remove(obj);
         }
         // Specifically catching all exceptions.
         catch (Exception e) {
@@ -1027,13 +1029,13 @@ public class GridToStringBuilder {
         }
     }
 
-	private static boolean isPrimitiveWraper(Class cls) {
-		return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
-				cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
-                cls == String.class || cls == StringBuilder.class;
-	}
+    private static boolean isPrimitiveWraper(Class cls) {
+        return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
+            cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
+            cls == String.class || cls == StringBuilder.class;
+    }
 
-	/**
+    /**
      * @param arrType Type of the array.
      * @param arr Array object.
      * @return String representation of an array.
@@ -1697,33 +1699,17 @@ public class GridToStringBuilder {
     }
 
     private static boolean isSaved(Object o) {
-        ArrayList<ObjectWithPosition> list = savedObjects.get();
-        for (ObjectWithPosition obj : savedObjects.get()) {
-            if (obj.obj.equals(o)) {
-                return !list.get(list.size() - 1).obj.equals(o);
-            }
-        }
-        return false;
+        return savedObjects.get().containsKey(o);
     }
 
     private static Object getPosition(Object o) {
-        ArrayList<ObjectWithPosition> list = savedObjects.get();
-        boolean contains = false;
-        for (ObjectWithPosition obj : savedObjects.get()) {
-            if (obj.obj.equals(o)) {
-                return obj.pos;
-            }
-        }
-        throw new IllegalStateException("Must be called only after method isSaved(object) returned true.");
-    }
+        IdentityHashMap<Object, Integer> map = savedObjects.get();
 
-    private static class ObjectWithPosition {
-        private final Object obj;
-        private final int pos;
+        Object obj = map.get(o);
 
-        private ObjectWithPosition(Object obj, int pos) {
-            this.obj = obj;
-            this.pos = pos;
-        }
+        if (obj != null)
+            return obj;
+        else
+            throw new IllegalStateException("Method \"getPosition(Object o)\" must be called only after method isSaved(object) returned true.");
     }
 }

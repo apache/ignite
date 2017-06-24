@@ -88,8 +88,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         list2.add(list1);
         list1.add(list2);
 
-        System.out.println(GridToStringBuilder.toString(ArrayList.class, list1, "name", list2));
-        System.out.println(GridToStringBuilder.toString(ArrayList.class, list2, "name", list1));
+        GridToStringBuilder.toString(ArrayList.class, list1, "name", list2);
+        GridToStringBuilder.toString(ArrayList.class, list2, "name", list1);
     }
 
     /**
