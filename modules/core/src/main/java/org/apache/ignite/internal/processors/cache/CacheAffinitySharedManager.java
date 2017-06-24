@@ -1682,7 +1682,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (!pendingReadyAssignmentsFetchFuts.isEmpty()) {
-            U.warn(log, "Pending assignment fetch futures 2:");
+            U.warn(log, "Pending ready assignment fetch futures");
 
             for (GridDhtReadyAssignmentsFetchFuture fut : pendingReadyAssignmentsFetchFuts.values())
                 U.warn(log, ">>> " + fut);

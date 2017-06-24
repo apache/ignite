@@ -74,4 +74,13 @@ public class FinishSnapshotOperationAckDiscoveryMessage implements DiscoveryCust
     public boolean success() {
         return success;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "FinishSnapshotOperationAckDiscoveryMessage{" +
+                "id=" + id +
+                ", opId=" + opId +
+                ", success=" + success +
+                '}';
+    }
 }

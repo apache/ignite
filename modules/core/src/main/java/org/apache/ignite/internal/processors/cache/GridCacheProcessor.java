@@ -1945,6 +1945,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return ctx;
         }
+        else
+            sharedCtx.exchange().clearClientTopology(CU.cacheId(req.cacheName()));
 
         return null;
     }
@@ -1977,20 +1979,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (reqs != null) {
             for (DynamicCacheChangeRequest req : reqs) {
-                if (req.stop() && GridCacheUtils.isSystemCache(req.cacheName()))
+                if (req.stop() && req.restart() && GridCacheUtils.isUtilityCache(req.cacheName()))
                     ctx.service().removeDiscoveryEventListener();
 
+                //will execute only once (we stop system caches on deactivate and on restore)
                 if (req.start() && GridCacheUtils.isSystemCache(req.cacheName())) {
                     ctx.dataStructures().restoreStructuresState(ctx);
 
-                    if (!ctx.config().isDaemon()) {
-                        try {
-                            ctx.service().addDiscoveryEventListener();
-                            ctx.cacheObjects().onUtilityCacheStarted();
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.warn(log, "Error during handling utility cache start", e);
-                        }
+                    assert !ctx.config().isDaemon();
+
+                    try {
+                        ctx.service().addDiscoveryEventListener();
+                        ctx.cacheObjects().onUtilityCacheStarted();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Error during handling utility cache start", e);
                     }
 
                     break;
