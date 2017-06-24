@@ -82,16 +82,60 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testToStringCheckAdvancedRecursionPrevention() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-602");
-
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
 
         list2.add(list1);
         list1.add(list2);
 
-        GridToStringBuilder.toString(ArrayList.class, list1, "name", list2);
-        GridToStringBuilder.toString(ArrayList.class, list2, "name", list1);
+        System.out.println(GridToStringBuilder.toString(ArrayList.class, list1, "name", list2));
+        System.out.println(GridToStringBuilder.toString(ArrayList.class, list2, "name", list1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testToStringCheckAdvancedRecursionPrevention2() throws Exception {
+        Node n1 = new Node();
+        Node n2 = new Node();
+
+        n1.next = n2;
+        n2.next = n1;
+
+        System.out.println(n1);
+        System.out.println(n2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testToStringCheckAdvancedRecursionPrevention3() throws Exception {
+        Node n1 = new Node();
+        Node n2 = new Node();
+        Node n3 = new Node();
+
+        n1.name = "n1";
+        n2.name = "n2";
+        n3.name = "n3";
+
+        n1.next = n2;
+        n2.next = n3;
+        n3.next = n2;
+
+        System.out.println(n1);
+        System.out.println(n2);
+    }
+
+    /** */
+    private static class Node {
+        @GridToStringInclude
+        String name;
+        @GridToStringInclude
+        Node next;
+
+        @Override public String toString() {
+            return GridToStringBuilder.toString(Node.class, this);
+        }
     }
 
     /**
@@ -185,7 +229,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             buf.append(getClass().getSimpleName()).append(" [");
 
             buf.append("id=").append(id).append(", ");
-            buf.append("uuidVar=").append(uuidVar).append(", ");
+            buf.append("uuidVar=UUID [mostSigBits=").append(uuidVar.getMostSignificantBits()).append(", ");
+            buf.append("leastSigBits=").append(uuidVar.getLeastSignificantBits()).append("], ");
             buf.append("intVar=").append(intVar).append(", ");
             if (S.INCLUDE_SENSITIVE)
                 buf.append("longVar=").append(longVar).append(", ");
