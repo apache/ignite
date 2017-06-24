@@ -346,7 +346,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** */
     private boolean enableForcibleNodeKill = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, true);
 
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
