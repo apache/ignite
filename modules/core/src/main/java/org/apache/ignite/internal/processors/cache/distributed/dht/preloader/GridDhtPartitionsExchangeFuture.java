@@ -53,6 +53,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -78,6 +79,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -247,9 +249,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private AffinityAttachmentHolder affAttachmentHolder;
-
-    /** */
-    private volatile boolean exchangeFinished;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -1163,12 +1162,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         GridCacheVersion last = lastVer.get();
 
         GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(
-            nodes,
-            exchangeId(),
-            last != null ? last : cctx.versions().last(),
-            partHistSuppliers,
-            partsToReload,
-            compress);
+                nodes,
+                exchangeId(),
+                last != null ? last : cctx.versions().last(),
+                partHistSuppliers,
+                partsToReload,
+                compress);
 
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
             m.setExceptionsMap(changeGlobalStateExceptions);
@@ -1921,12 +1920,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             log.debug("Received full partition map from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override public void apply(IgniteInternalFuture<Boolean> f) {
+            @Override
+            public void apply(IgniteInternalFuture<Boolean> f) {
                 try {
                     if (!f.get())
                         return;
-                }
-                catch (IgniteCheckedException e) {
+                } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to initialize exchange future: " + this, e);
 
                     return;
@@ -2034,7 +2033,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert exchId.equals(msg.exchangeId()) : msg;
 
         onDiscoveryEvent(new IgniteRunnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 if (isDone() || !enterBusy())
                     return;
 
@@ -2043,8 +2043,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (crd.equals(node)) {
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
-                            crd.isLocal(),
-                            msg);
+                                crd.isLocal(),
+                                msg);
 
                         if (!crd.isLocal()) {
                             GridDhtPartitionsFullMessage partsMsg = msg.partitionFullMessage();
@@ -2056,17 +2056,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         onDone(topologyVersion());
-                    }
-                    else {
+                    } else {
                         if (log.isDebugEnabled()) {
                             log.debug("Ignore affinity change message, coordinator changed [node=" + node.id() +
-                                ", crd=" + crd.id() +
-                                ", msg=" + msg +
-                                ']');
+                                    ", crd=" + crd.id() +
+                                    ", msg=" + msg +
+                                    ']');
                         }
                     }
-                }
-                finally {
+                } finally {
                     leaveBusy();
                 }
             }
@@ -2117,94 +2115,140 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * Finishes exchange on nodes no receiving {@link GridDhtFinishExchangeMessage}.
+     * Finishes exchange on nodes not receiving {@link GridDhtFinishExchangeMessage}.
      */
-    public void finishExchange() {
-        if (this.exchangeFinished)
+    public void finishStaleExchange(ClusterNode node) {
+        if (discoEvt.type() != EVT_NODE_LEFT && discoEvt.type() != EVT_NODE_FAILED || crd == null)
             return;
 
-        // Exchange can be finished on new coordinator, but some nodes still might wait for completion.
-        if (crd != null && crd.isLocal()) {
-            List<GridDhtReadyAssignmentsFetchFuture> futs = new LinkedList<>();
+        synchronized (mux) {
+            discoCache.updateAlives(node);
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                GridDhtReadyAssignmentsFetchFuture fut = new GridDhtReadyAssignmentsFetchFuture(cctx, cacheCtx.name(),
-                        topologyVersion(), discoCache());
+            // New coordinator must resend assignments, if any.
+            boolean isCrdLeft = crd.equals(node);
 
-                futs.add(fut);
+            if (!isCrdLeft)
+                return;
 
-                fut.init();
-            }
+            boolean rmv = srvNodes.remove(node);
 
-            Map<Integer, Map<Integer, List<UUID>>> assignmentChange = new HashMap<>();
+            assert rmv;
 
-            Set<ClusterNode> nodesToFix = new HashSet<>();
+            crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
+        }
 
-            // Receive current assignment, if any.
-            // TODO how to handle race when no assignments were done yet?
-            for (GridDhtReadyAssignmentsFetchFuture fut : futs) {
-                assert topologyVersion() == fut.key().get2();
+        if (crd == null || !crd.isLocal())
+            return;
 
-                try {
-                    Map<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> data = fut.get();
+        // Prevent blocking discovery thread.
+        cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+            @Override public void run() {
+                exchLog.info("start finishStaleExchange [node=" + cctx.localNode() + ']');
 
-                    GridCacheContext<?, ?> ctx = cctx.cacheContext(fut.key().get1());
+                // Exchange can be finished on new coordinator, but some nodes still might wait for completion.
+                List<GridDhtReadyAssignmentsFetchFuture> futs = new LinkedList<>();
 
-                    List<List<ClusterNode>> ideal = ctx.affinity().assignment(fut.key().get2()).idealAssignment();
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    GridDhtReadyAssignmentsFetchFuture fut = new GridDhtReadyAssignmentsFetchFuture(cctx, cacheCtx.name(),
+                            topologyVersion(), discoCache());
 
-                    // Expecting same assignment from all nodes.
-                    for (Map.Entry<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> entry : data.entrySet()) {
-                        GridDhtAffinityAssignmentResponse resp = entry.getValue().get();
+                    futs.add(fut);
 
-                        assert resp != null;
+                    fut.init();
+                }
 
-                        List<List<ClusterNode>> tmp = resp.affinityAssignment(cctx.discovery());
+                Map<Integer, Map<Integer, List<UUID>>> assignmentChange = new HashMap<>();
 
-                        if (tmp == null)
-                            nodesToFix.add(ctx.discovery().node(entry.getKey())); // Affinity not ready, message was not delivered.
-                        else {
-                            if (!assignmentChange.containsKey(ctx.cacheId())) {
-                                for (int p = 0; p < ctx.affinity().partitions(); p++) {
-                                    List<ClusterNode> nodes = tmp.get(p);
+                Set<ClusterNode> nodesToFix = new HashSet<>();
 
-                                    if (!nodes.equals(ideal.get(p))) {
-                                        Map<Integer, List<UUID>> map = assignmentChange.get(ctx.cacheId());
+                // Receive current assignment, if any.
+                // TODO how to handle race when no assignments were done yet?
+                for (GridDhtReadyAssignmentsFetchFuture fut : futs) {
+                    assert topologyVersion() == fut.key().get2();
 
-                                        if (map == null)
-                                            assignmentChange.put(ctx.cacheId(), map = U.newHashMap(nodes.size()));
+                    try {
+                        Map<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> data = fut.get();
 
-                                        map.put(p, F.nodeIdsCopy(nodes));
+                        GridCacheContext<?, ?> ctx = cctx.cacheContext(fut.key().get1());
+
+                        List<List<ClusterNode>> ideal = ctx.affinity().assignment(fut.key().get2()).idealAssignment();
+
+                        // Expecting same assignment from all nodes.
+                        for (Map.Entry<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> entry : data.entrySet()) {
+                            GridDhtAffinityAssignmentResponse resp = entry.getValue().get();
+
+                            assert resp != null;
+
+                            List<List<ClusterNode>> tmp = resp.affinityAssignment(cctx.discovery());
+
+                            if (tmp == null) // Node hadn't finished exchange yet.
+                                nodesToFix.add(ctx.discovery().node(entry.getKey()));
+                            else {
+                                if (!assignmentChange.containsKey(ctx.cacheId())) {
+                                    for (int p = 0; p < ctx.affinity().partitions(); p++) {
+                                        List<ClusterNode> nodes = tmp.get(p);
+
+                                        if (!nodes.equals(ideal.get(p))) {
+                                            Map<Integer, List<UUID>> map = assignmentChange.get(ctx.cacheId());
+
+                                            if (map == null)
+                                                assignmentChange.put(ctx.cacheId(), map = U.newHashMap(nodes.size()));
+
+                                            map.put(p, F.nodeIdsCopy(nodes));
+                                        }
                                     }
                                 }
+                                // TODO validate same assignment from all nodes.
                             }
-                            // TODO validate same assignment from all nodes.
+                        }
+                    } catch (IgniteCheckedException e) {
+                        // No-op.
+                    }
+                }
 
+                if (isDone() && assignmentChange.isEmpty()) {
+                    // Compute difference with ideal for local node.
+                    for (GridCacheContext ctx : cctx.cacheContexts()) {
+                        List<List<ClusterNode>> assignment = ctx.affinity().assignment(topologyVersion()).assignment();
+                        List<List<ClusterNode>> ideal = ctx.affinity().assignment(topologyVersion()).idealAssignment();
+
+                        for (int p = 0; p < ctx.affinity().partitions(); p++) {
+                            List<ClusterNode> a1 = assignment.get(p);
+                            List<ClusterNode> a2 = ideal.get(p);
+
+                            if (!a1.equals(a2)) {
+                                Map<Integer, List<UUID>> map = assignmentChange.get(ctx.cacheId());
+
+                                if (map == null)
+                                    assignmentChange.put(ctx.cacheId(), map = U.newHashMap(a1.size()));
+
+                                map.put(p, F.nodeIdsCopy(a1));
+                            }
                         }
                     }
-                } catch (IgniteCheckedException e) {
-                    // No-op.
+                    // TODO validate same assignment from all nodes.
                 }
+
+                if (!isDone() || !nodesToFix.isEmpty()) {
+                    GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true); // TODO seems incorrect.
+
+                    GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
+
+                    try {
+                        cctx.io().safeSend(nodesToFix, msg, SYSTEM_POOL, null);
+                    } catch (IgniteCheckedException e) {
+                        // No-op.
+                    }
+
+                    if (!isDone()) {
+                        // Finish locally.
+                        onFinishExchangeMessage(cctx.localNode(), msg);
+                    }
+                }
+
+                exchLog.info("finish finishStaleExchange [node=" + cctx.localNode() + ']');
             }
-
-            if (!isDone() || (!nodesToFix.isEmpty() && !assignmentChange.isEmpty())) {
-                GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
-
-                GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
-
-                try {
-                    cctx.io().safeSend(nodesToFix, msg, SYSTEM_POOL, null);
-                } catch (IgniteCheckedException e) {
-                    // No-op.
-                }
-
-                if (!isDone()) {
-                    // Finish locally.
-                    onFinishExchangeMessage(cctx.localNode(), msg);
-                }
-            }
-
-            this.exchangeFinished = true;
-        }
+        });
     }
 
     /**

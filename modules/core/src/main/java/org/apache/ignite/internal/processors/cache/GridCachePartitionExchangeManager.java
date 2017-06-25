@@ -217,11 +217,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         for (GridDhtPartitionsExchangeFuture f : exchFuts.values()) {
-                            if (f != initFut) {
-                                //f.finishExchange();
-
+                            if (f != initFut)
                                 f.onNodeLeft(n);
-                            }
+                        }
+
+                        if (exchFuts.size() > 2) {
+                            GridDhtPartitionsExchangeFuture topFut = exchFuts.get(0);
+
+                            if (topFut.isDone())
+                                topFut.finishStaleExchange(n);
                         }
                     }
 

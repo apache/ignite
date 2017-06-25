@@ -198,7 +198,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        assert affAssignment != null ^ affAssignmentIds != null;
+        assert affAssignment == null || affAssignmentIds == null;
 
         if (affAssignment != null && affAssignmentBytes == null)
             affAssignmentBytes = U.marshal(ctx, affAssignment);
@@ -214,7 +214,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        assert affAssignmentBytes != null ^ affAssignmentIdsBytes != null;
+        assert affAssignmentBytes == null || affAssignmentIdsBytes == null;
 
         ldr = U.resolveClassLoader(ldr, ctx.gridConfig());
 

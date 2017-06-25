@@ -117,6 +117,9 @@ public class GridDhtReadyAssignmentsFetchFuture extends GridFutureAdapter<Map<UU
      * @param res Response.
      */
     public void onResponse(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+        log.info("Received affinity assignment for topology version " +
+                "[node=" + nodeId + ", res=" + res + ", topVer=" + key.get2() + ']');
+
         if (!res.topologyVersion().equals(key.get2())) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topology version (will ignore) " +

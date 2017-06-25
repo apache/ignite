@@ -659,14 +659,17 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
+        if (req.ready())
+            log.info("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
+
         IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.affinity().affinityReadyFuture(req.topologyVersion());
 
-        if (req.ready() && fut.isDone()) {
-            AffinityAssignment assignment = cctx.affinity().assignment(topVer);
+        if (req.ready()) {
+            List<List<ClusterNode>> assignment = fut.isDone() ? cctx.affinity().assignment(topVer).assignment() : null;
 
             GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
                     topVer,
-                    assignment.assignment(),
+                    assignment,
                     true);
 
             try {
