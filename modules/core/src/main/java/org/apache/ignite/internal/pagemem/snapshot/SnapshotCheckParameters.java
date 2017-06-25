@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
  * Tuple for passing optional parameters of {@link SnapshotOperationType#CHECK}.
  */
 public class SnapshotCheckParameters implements Serializable {
+    /** Serial version uid. */
+    private final static long serialVersionUID = 0L;
+
     /** Optional paths. */
     private final Collection<File> optionalPaths;
 
