@@ -3252,7 +3252,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
-            if (restartingCaches.size() > 0) {
+            if (!restartingCaches.isEmpty()) {
                 String msg = "Joining server node during cache restarting is not allowed";
 
                 return new IgniteNodeValidationResult(node.id(), msg, msg);
@@ -3292,6 +3292,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return null;
+    }
+
+    /**
+     *
+     */
+    public Set<String> restartingCaches(){
+        return restartingCaches;
     }
 
     /**
