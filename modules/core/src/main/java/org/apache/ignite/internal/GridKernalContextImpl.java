@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
@@ -238,6 +240,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
+    private HadoopHelper hadoopHelper;
+
+    /** */
+    @GridToStringInclude
     private GridSegmentationProcessor segProc;
 
     /** */
@@ -251,6 +257,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private HadoopProcessorAdapter hadoopProc;
+
+    /** */
+    @GridToStringExclude
+    private PoolProcessor poolProc;
 
     /** */
     @GridToStringExclude
@@ -303,6 +313,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     protected ExecutorService restExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService affExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService idxExecSvc;
 
     /** */
     @GridToStringExclude
@@ -367,6 +385,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @param affExecSvc Affinity executor service.
+     * @param idxExecSvc Indexing executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -384,6 +404,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        ExecutorService affExecSvc,
+        @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
@@ -401,9 +423,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
+        this.affExecSvc = affExecSvc;
+        this.idxExecSvc = idxExecSvc;
         this.callbackExecSvc = callbackExecSvc;
 
-        marshCtx = new MarshallerContextImpl(plugins);
+        String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
+
+        marshCtx = new MarshallerContextImpl(workDir, plugins);
 
         try {
             spring = SPRING.create(false);
@@ -526,6 +552,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             cluster = (ClusterProcessor)comp;
         else if (comp instanceof PlatformProcessor)
             platformProc = (PlatformProcessor)comp;
+        else if (comp instanceof PoolProcessor)
+            poolProc = (PoolProcessor) comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -541,6 +569,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         if (helper instanceof IgfsHelper)
             igfsHelper = (IgfsHelper)helper;
+        else if (helper instanceof HadoopHelper)
+            hadoopHelper = (HadoopHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
     }
@@ -733,6 +763,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public HadoopHelper hadoopHelper() {
+        return hadoopHelper;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
         return contProc;
     }
@@ -740,6 +775,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public HadoopProcessorAdapter hadoop() {
         return hadoopProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PoolProcessor pools() {
+        return poolProc;
     }
 
     /** {@inheritDoc} */
@@ -925,6 +965,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
         return restExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getAffinityExecutorService() {
+        return affExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public ExecutorService getIndexingExecutorService() {
+        return idxExecSvc;
     }
 
     /** {@inheritDoc} */

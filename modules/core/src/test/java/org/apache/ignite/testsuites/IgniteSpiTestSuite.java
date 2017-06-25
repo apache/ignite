@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
 import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
 
 /**
@@ -63,6 +64,9 @@ public class IgniteSpiTestSuite extends TestSuite {
 
         // All other tests.
         suite.addTestSuite(GridNoopManagerSelfTest.class);
+
+        // Local Message Listener tests.
+        suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
 
         return suite;
     }

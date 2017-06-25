@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
@@ -68,5 +69,11 @@ public class TcpDiscoveryS3IpFinderSelfTest
             throw new Exception("Failed to initialize IP finder.");
 
         return finder;
+    }
+
+    /** {@inheritDoc} */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Override public void testIpFinder() throws Exception {
+        super.testIpFinder();
     }
 }

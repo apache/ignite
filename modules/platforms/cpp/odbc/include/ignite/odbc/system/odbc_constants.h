@@ -27,10 +27,6 @@
 #   undef min
 #endif // min
 
-#ifdef GetMessage
-#   undef GetMessage
-#endif // GetMessage
-
 #endif //_WIN32
 
 #define ODBCVER 0x0380
