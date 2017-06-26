@@ -1041,36 +1041,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished() throws Exception {
-        Ignite ignite0 = startServer(0, 1);
-
-        Ignite ignite1 = startServer(1, 2);
-
-        Ignite ignite2 = startServer(2, 3);
-
-        startServer(3, 4);
-
-        TestRecordingCommunicationSpi spi0 =
-                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
-
-        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
-
-        stopNode(3, 5); // Doesn't change primary assignment.
-
-        AffinityTopologyVersion topVer = topVer(5, 0);
-
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(1_000);
-
-        assertTrue(fut0.isDone());
-        assertTrue(fut1.isDone());
-        assertFalse(fut2.isDone());
-
-        stopNode(0, 6);
-
-        checkAffinity(2, topVer(6, 0), true);
+        doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(1);
     }
 
     /**
@@ -1079,24 +1050,34 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished2() throws Exception {
-        Ignite ignite0 = startServer(0, 1);
+        doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(2);
+    }
 
-        Ignite ignite1 = startServer(1, 2);
+    /**
+     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
+     *
+     * @throws Exception
+     */
+    private void doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(int cnt) throws Exception {
+        int ord = 1;
 
-        Ignite ignite2 = startServer(2, 3);
+        Ignite ignite0 = startServer(ord - 1, ord++);
 
-        startServer(3, 4);
+        Ignite ignite1 = startServer(ord - 1, ord++);
 
-        startServer(4, 5);
+        Ignite ignite2 = startServer(ord - 1, ord++);
 
         TestRecordingCommunicationSpi spi0 =
                 (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
         spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
-        stopNode(3, 5);
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
 
-        AffinityTopologyVersion topVer = topVer(5, 0);
+        stopNode(3, ord);
+
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
 
         IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
         IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
@@ -1108,9 +1089,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         assertTrue(fut1.isDone());
         assertFalse(fut2.isDone());
 
-        stopNode(0, 6);
+        stopNode(0, ord);
 
-        checkAffinity(2, topVer(6, 0), true);
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
     }
 
     /**
