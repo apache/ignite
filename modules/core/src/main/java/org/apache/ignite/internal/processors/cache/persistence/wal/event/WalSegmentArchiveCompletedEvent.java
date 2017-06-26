@@ -21,27 +21,40 @@ import java.io.File;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.EventAdapter;
 import org.apache.ignite.events.EventType;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Event indicates there was movement of WAL segment file to archive completed
  */
 public class WalSegmentArchiveCompletedEvent extends EventAdapter {
+    /** Absolute WAL segment file index. */
     private long absWalSegmentIdx;
+
+    /** Destination archive file. This file is completed and closed archive segment */
     private final File archiveFile;
 
-    public WalSegmentArchiveCompletedEvent(ClusterNode node,
-        long absWalSegmentIdx,
-        File archiveFile) {
+    /**
+     * Creates WAL segment event
+     *
+     * @param node Node.
+     * @param absWalSegmentIdx Absolute wal segment index.
+     * @param archiveFile Archive file.
+     */
+    public WalSegmentArchiveCompletedEvent(
+        @NotNull final ClusterNode node,
+        final long absWalSegmentIdx,
+        final File archiveFile) {
         super(node, "", EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED);
         this.absWalSegmentIdx = absWalSegmentIdx;
         this.archiveFile = archiveFile;
     }
 
-
+    /** @return {@link #archiveFile} */
     public File getArchiveFile() {
         return archiveFile;
     }
 
+    /** @return {@link #absWalSegmentIdx} */
     public long getAbsWalSegmentIdx() {
         return absWalSegmentIdx;
     }

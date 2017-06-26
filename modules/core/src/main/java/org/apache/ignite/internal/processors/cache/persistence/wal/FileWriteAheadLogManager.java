@@ -1275,34 +1275,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-
-    private static class SegmentArchiveResult {
-
-        private final long absWalIdx;
-        private final File origWorkFile;
-        private final File dstArchiveFile;
-
-        public SegmentArchiveResult(long absWalIdx, File origWorkFile, File dstArchiveFile) {
-
-            this.absWalIdx = absWalIdx;
-            this.origWorkFile = origWorkFile;
-            this.dstArchiveFile = dstArchiveFile;
-        }
-
-        public long getAbsIdx() {
-            return absWalIdx;
-        }
-
-        public File getOrigWorkFile() {
-            return origWorkFile;
-        }
-
-
-        public File getDstArchiveFile() {
-            return dstArchiveFile;
-        }
-    }
-
     /**
      * Validate files depending on {@link PersistentStoreConfiguration#getWalSegments()}  and create if need.
      * Check end when exit condition return false or all files are passed.

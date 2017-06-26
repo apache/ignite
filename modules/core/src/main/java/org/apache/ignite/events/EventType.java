@@ -20,6 +20,7 @@ package org.apache.ignite.events;
 import java.util.List;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.wal.event.WalSegmentArchiveCompletedEvent;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -766,7 +767,16 @@ public interface EventType {
      */
     public static final int EVT_IGFS_FILE_PURGED = 127;
 
-
+    /**
+     * Built-in event type: WAL segment movement to archive folder completed
+     * <p>
+     * Fired for each completed WAL segment which was moved to archive
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see WalSegmentArchiveCompletedEvent
+     */
     public static final int EVT_WAL_SEGMENT_ARCHIVE_COMPLETED = 128;
 
     /**
