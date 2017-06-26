@@ -700,7 +700,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         }
     }
 
-
     /**
      * @param event Event.
      * @param type Event type.
@@ -1212,14 +1211,15 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 default:
                     fail("Op:" + op);
             }
-        } finally {
+        }
+        finally {
             if (tx != null)
                 tx.close();
         }
     }
 
     /**
-     *  @param evtsQueues Queue.
+     * @param evtsQueues Queue.
      * @param partCntrs Counters.
      * @param aff Affinity.
      * @param vals Values.
@@ -1271,9 +1271,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 assertNotNull(qryEntryEvt);
                 assertTrue(cntr <= curPartCntr);
                 assertEquals((long)cntr, qryEntryEvt.getPartitionUpdateCounter());
-
-                assertTrue(qryEntryEvt.isPrimary());
-                assertFalse(qryEntryEvt.isBackup());
             }
         }
     }
@@ -1370,9 +1367,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             assertNotNull(qryEntryEvt);
             assertTrue(cntr <= curPartCntr);
             assertEquals((long)cntr, qryEntryEvt.getPartitionUpdateCounter());
-
-            assertTrue(qryEntryEvt.isPrimary());
-            assertFalse(qryEntryEvt.isBackup());
         }
     }
 
@@ -1389,7 +1383,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     }
 
     /**
-     *
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
@@ -1514,7 +1507,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            QueryTestValue that = (QueryTestValue) o;
+            QueryTestValue that = (QueryTestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }
