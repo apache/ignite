@@ -247,7 +247,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         if (ctx.isDaemon() || !ctx.state().active())
             return;
 
-        cache = ctx.cache().utilityCache();
+        updateUtilityCache();
 
         addDiscoveryEventListener();
 
@@ -300,6 +300,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
+    }
+
+    /**
+     *
+     */
+    public void updateUtilityCache() {
+        cache = ctx.cache().utilityCache();
     }
 
     /**

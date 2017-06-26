@@ -1990,6 +1990,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     try {
                         ctx.service().addDiscoveryEventListener();
+                        ctx.service().updateUtilityCache();
                         ctx.cacheObjects().onUtilityCacheStarted();
                     }
                     catch (IgniteCheckedException e) {
@@ -2604,7 +2605,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> dynamicStartCaches(
         Collection<CacheConfiguration> ccfgList, boolean failIfExists, boolean checkThreadTx
     ) {
-        return dynamicStartCaches(ccfgList, CacheType.USER, failIfExists, checkThreadTx);
+        return dynamicStartCaches(ccfgList, null, failIfExists, checkThreadTx);
     }
 
     /**
@@ -2629,11 +2630,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             for (CacheConfiguration ccfg : ccfgList) {
+                CacheType ct = cacheType;
+
+                if (ct == null) {
+                    if (CU.isUtilityCache(ccfg.getName()))
+                        ct = CacheType.UTILITY;
+                    else if (CU.isMarshallerCache(ccfg.getName()))
+                        ct = CacheType.MARSHALLER;
+                    else if (internalCaches.contains(ccfg.getName()))
+                        ct = CacheType.INTERNAL;
+                    else
+                        ct = CacheType.USER;
+                }
+
+
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg,
                     ccfg.getName(),
                     null,
-                    cacheType,
+                    ct,
                     failIfExists,
                     true
                 );

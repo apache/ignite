@@ -255,10 +255,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringExclude
     private TransactionProxyImpl proxy;
 
-    public Exception ex;
-
-    public String cacheName;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -319,12 +315,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         nodeId = cctx.discovery().localNode().id();
 
         threadId = Thread.currentThread().getId();
-
-        if (CU.isSystemCache(cctx.gridName()) && !implicit) {
-            ex = new Exception();
-
-            cacheName = cctx.gridName();
-        }
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);

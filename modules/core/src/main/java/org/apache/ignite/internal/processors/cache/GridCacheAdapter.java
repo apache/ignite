@@ -23,8 +23,6 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -2443,17 +2441,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return syncOp(new SyncOp<EntryProcessorResult<T>>(true) {
             @Nullable @Override public EntryProcessorResult<T> op(IgniteTxLocalAdapter tx)
                 throws IgniteCheckedException {
-                if (!(topVer == null || tx.implicit())) {
-                    StringWriter sw = new StringWriter();
 
-                    PrintWriter pw = new PrintWriter(sw);
-
-                    if (tx.ex != null)
-                        tx.ex.printStackTrace(pw);
-
-                    assert false : "topVer =" + topVer + ", tx.implicit = " + tx.implicit() +
-                        ", cache=" + tx.cacheName + ", stack=" + sw.toString();
-                }
+                assert topVer == null || tx.implicit() : "topVer =" + topVer + ", tx.implicit = " + tx.implicit();
 
                 if (topVer != null)
                     tx.topologyVersion(topVer);
