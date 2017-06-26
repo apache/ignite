@@ -204,7 +204,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed
      */
     public void testArchiveCompletedEventFired() throws Exception {
-        AtomicBoolean evtRecorded = new AtomicBoolean();
+        final AtomicBoolean evtRecorded = new AtomicBoolean();
 
         Ignite ignite = startGrid("node0");
         ignite.active(true);
