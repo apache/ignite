@@ -27,6 +27,9 @@ import org.jetbrains.annotations.NotNull;
  * Event indicates there was movement of WAL segment file to archive completed
  */
 public class WalSegmentArchiveCompletedEvent extends EventAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Absolute WAL segment file index. */
     private long absWalSegmentIdx;
 
