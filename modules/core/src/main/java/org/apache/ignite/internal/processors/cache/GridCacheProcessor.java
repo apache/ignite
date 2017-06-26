@@ -2102,31 +2102,41 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void onExchangeDone(
         AffinityTopologyVersion topVer,
         @Nullable ExchangeActions exchActions,
-        Throwable err
+        @Nullable Throwable err
     ) {
         initCacheProxies(topVer, err);
 
-        if (exchActions != null && exchActions.systemCachesStarting() && exchActions.newClusterState() == null)
+        if (exchActions == null)
+            return;
+
+        if (exchActions.systemCachesStarting() && exchActions.newClusterState() == null)
             ctx.dataStructures().restoreStructuresState(ctx);
 
-        if (exchActions != null && err == null) {
-            Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps = null;
+        if (err == null) {
+            // Force checkpoint if there is any cache stop request
+            if (exchActions.cacheStopRequests().size() > 0) {
+                try {
+                    sharedCtx.database().waitForCheckpoint("caches stop");
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
+                }
+            }
 
-            boolean forceCheckpoint = false;
+            Map<Integer, IgniteBiTuple<CacheGroupContext, Boolean>> groupsToBeStopped = retrieveGroupsToBeStopped(exchActions);
 
             for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
-                GridCacheContext<?, ?> stopCtx;
-                boolean destroy;
+                String cacheName = action.request().cacheName();
+                boolean destroy = action.request().destroy();
 
-                if (!forceCheckpoint){
-                    try {
-                        sharedCtx.database().waitForCheckpoint("caches stop");
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-                    }
+                if (!caches.containsKey(cacheName))
+                    continue;
 
-                    forceCheckpoint = true;
+                if (groupsToBeStopped != null) {
+                    Integer cacheGroupId = caches.get(cacheName).context().group().groupId();
+                    // If group associated with cache which will be stopped
+                    // it's not necessary to explicitly destroy it
+                    destroy = !groupsToBeStopped.containsKey(cacheGroupId);
                 }
 
                 stopGateway(action.request());
@@ -2134,8 +2144,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sharedCtx.database().checkpointReadLock();
 
                 try {
-                    stopCtx = prepareCacheStop(action.request().cacheName(), action.request().destroy());
-                    destroy = action.request().destroy();
+                    prepareCacheStop(cacheName, destroy);
 
                     if (exchActions.newClusterState() == null)
                         ctx.state().onCacheStop(action.request());
@@ -2143,21 +2152,52 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 finally {
                     sharedCtx.database().checkpointReadUnlock();
                 }
+            }
 
-                if (stopCtx != null && !stopCtx.group().hasCaches()) {
-                    if (stoppedGrps == null)
-                        stoppedGrps = new ArrayList<>();
+            if (groupsToBeStopped != null) {
+                for (Integer groupId : groupsToBeStopped.keySet()) {
+                    stopCacheGroup(groupId);
+                }
 
-                    stoppedGrps.add(F.t(stopCtx.group(), destroy));
+                if (!sharedCtx.kernalContext().clientNode())
+                    sharedCtx.database().onCacheGroupsStopped(groupsToBeStopped.values());
+            }
+        }
+    }
+
+    /**
+     * Method retrieves map containing groups to be stopped from exchange actions
+     *
+     * @param exchActions Exchange actions
+     * @return Map with following structure <GroupId, <GroupContext, DestroyFlag>>
+     */
+    private Map<Integer, IgniteBiTuple<CacheGroupContext, Boolean>> retrieveGroupsToBeStopped(ExchangeActions exchActions) {
+        List<CacheGroupDescriptor> cacheGroupsToStop = exchActions.cacheGroupsToStop();
+
+        if (cacheGroupsToStop.size() == 0)
+            return null;
+
+        Map<Integer, IgniteBiTuple<CacheGroupContext, Boolean>> result = new HashMap<>();
+
+        for (CacheGroupDescriptor grpDesc : cacheGroupsToStop) {
+            CacheGroupContext groupContext = cacheGrps.get(grpDesc.groupId());
+
+            if (groupContext == null)
+                continue;
+
+            boolean destroyGroup = false;
+            // Check if there is any cache stop & destroy action associated with this group
+            for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
+                if (action.request().destroy() && groupContext.hasCache(action.request().cacheName())) {
+                    destroyGroup = true;
+                    break;
                 }
             }
 
-            for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop())
-                stopCacheGroup(grpDesc.groupId());
-
-            if (stoppedGrps != null && !sharedCtx.kernalContext().clientNode())
-                sharedCtx.database().onCacheGroupsStopped(stoppedGrps);
+            result.put(grpDesc.groupId(), F.t(groupContext, destroyGroup));
         }
+
+        return result;
     }
 
     /**
