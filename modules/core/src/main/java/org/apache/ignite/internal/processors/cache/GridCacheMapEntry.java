@@ -2210,17 +2210,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             if (updateCntr != null)
                                 updateCntr0 = updateCntr;
 
-                            cctx.continuousQueries().onEntryUpdated(
-                                key,
-                                evtVal,
-                                prevVal,
-                                isInternal() || !context().userCache(),
-                                partition(),
-                                primary,
-                                false,
-                                updateCntr0,
-                                null,
-                                topVer);
+                            if (lsnrs != null)
+                                cctx.continuousQueries().skipUpdateEvent(
+                                    lsnrs,
+                                    key,
+                                    partition(),
+                                    updateCntr0,
+                                    primary,
+                                    topVer);
                         }
 
                         return new GridCacheUpdateAtomicResult(false,
