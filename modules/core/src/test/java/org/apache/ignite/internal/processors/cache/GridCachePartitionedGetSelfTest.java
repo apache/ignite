@@ -226,7 +226,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
                 ((IgniteKernal)g).context().io().addMessageListener(
                     TOPIC_CACHE,
                     new GridMessageListener() {
-                        @Override public void onMessage(UUID nodeId, Object msg) {
+                        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                             info("Received message from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
                             if (msg instanceof GridNearSingleGetRequest) {
