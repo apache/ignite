@@ -137,6 +137,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
             true,
             1,
+            true,
             1L,
             new AffinityTopologyVersion(1L));
 
