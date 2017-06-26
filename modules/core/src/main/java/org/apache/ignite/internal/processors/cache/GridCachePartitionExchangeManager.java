@@ -1356,6 +1356,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         null,
                         null);
 
+                    log.info("Received client GridDhtPartitionsSingleMessage [topVer=" + msg.exchangeId().topologyVersion() +
+                        ", node=" + node +
+                        ", exchFut=" + exchFut.shortInfo() + ']');
+
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             // Finished future should reply only to sender client node.
@@ -2191,6 +2195,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (node == null) {
                 if (log.isDebugEnabled())
                     log.debug("Received message from failed node [node=" + nodeId + ", msg=" + msg + ']');
+
+                log.info("Received message from failed node [node=" + nodeId + ", msg=" + msg + ']');
 
                 return;
             }

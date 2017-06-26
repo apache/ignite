@@ -2973,6 +2973,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (log.isDebugEnabled())
             log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
 
+        log.info("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
+
         boolean conn = false;
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
@@ -3026,7 +3028,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     GridSslMeta sslMeta = null;
 
                     try {
+                        log.info("Trying connect to node [rmtNode=" + node.id() + ", addr=" + addr + ']');
+
                         ch.socket().connect(addr, (int)timeoutHelper.nextTimeoutChunk(connTimeout));
+
+                        log.info("Connected to node [rmtNode=" + node.id() + ", addr=" + addr + ']');
 
                         if (isSslEnabled()) {
                             meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
@@ -3086,6 +3092,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 catch (HandshakeTimeoutException | IgniteSpiOperationTimeoutException e) {
+                    log.info("Failed to connect to node [rmtNode=" + node.id() + ", addr=" + addr + ", err=" + e + ']');
+
                     if (client != null) {
                         client.forceClose();
 
@@ -3150,9 +3158,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
+                    log.info("Failed to connect to node, node left [rmtNode=" + node.id() + ", addr=" + addr + ", err=" + e + ']');
+
                     throw e;
                 }
                 catch (Exception e) {
+                    log.info("Failed to connect to node [rmtNode=" + node.id() + ", addr=" + addr + ", err=" + e + ']');
+
                     if (client != null) {
                         client.forceClose();
 
@@ -3308,6 +3320,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     UUID rmtNodeId0 = U.bytesToUuid(buf.array(), Message.DIRECT_TYPE_SIZE);
 
+                    log.info("Read remote nodeId [rmtNodeId0=" + rmtNodeId0 + ", rmtNode=" + rmtNodeId + ']');
+
                     if (!rmtNodeId.equals(rmtNodeId0))
                         throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
                             ", rcvd=" + rmtNodeId0 + ']');
@@ -3379,6 +3393,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ch.write(ByteBuffer.wrap(nodeIdMessage().nodeIdBytesWithType));
                     }
 
+                    log.info("Sent handshake [rmtNode=" + rmtNodeId + ']');
+
                     if (recovery != null) {
                         if (log.isDebugEnabled())
                             log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
@@ -3446,6 +3462,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (log.isDebugEnabled())
                             log.debug("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
 
+                        log.info("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
+
                         if (rcvCnt == -1) {
                             if (log.isDebugEnabled())
                                 log.debug("Connection rejected, will retry client creation [rmtNode=" + rmtNodeId + ']');
@@ -3457,6 +3475,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         success = true;
                 }
                 catch (IOException e) {
+                    log.info("Handshake failed [rmtNode=" + rmtNodeId + ", err=" + e + ']');
+
                     if (log.isDebugEnabled())
                         log.debug("Failed to read from channel: " + e);
 

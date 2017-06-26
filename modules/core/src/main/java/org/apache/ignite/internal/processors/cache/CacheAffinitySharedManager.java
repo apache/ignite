@@ -1302,6 +1302,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     private void fetchAffinityOnJoin(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        long start = U.currentTimeMillis();
+
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
@@ -1344,6 +1346,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 cctx.cache().cacheGroup(grpId).affinity(),
                 fetchFut);
         }
+
+        log.info("fetchAffinityOnJoin [topVer=" + fut.topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
     }
 
     /**

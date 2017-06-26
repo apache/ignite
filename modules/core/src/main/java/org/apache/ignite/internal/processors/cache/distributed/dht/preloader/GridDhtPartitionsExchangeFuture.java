@@ -579,9 +579,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
                 if (msg instanceof DynamicCacheChangeBatch) {
+                    long start = U.currentTimeMillis();
+
                     assert exchActions != null && !exchActions.empty();
 
                     exchange = onCacheChangeRequest(crdNode);
+
+                    exchLog.info("Caches start time [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
                 }
                 else if (msg instanceof StartSnapshotOperationAckDiscoveryMessage) {
                     exchange = CU.clientNode(discoEvt.eventNode()) ?
@@ -595,6 +599,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
             else {
+                long start = U.currentTimeMillis();
+
                 if (discoEvt.type() == EVT_NODE_JOINED) {
                     if (!discoEvt.eventNode().isLocal()) {
                         Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(
@@ -606,6 +612,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     else
                         cctx.cache().startCachesOnLocalJoin(topVer);
                 }
+
+                exchLog.info("Caches start time [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
 
                 exchange = CU.clientNode(discoEvt.eventNode()) ?
                     onClientNodeEvent(crdNode) :
@@ -696,6 +704,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void updateTopologies(boolean crd) throws IgniteCheckedException {
+        long start = U.currentTimeMillis();
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
@@ -726,6 +736,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies())
             top.updateTopologyVersion(this, discoCache(), -1, cacheGroupStopping(top.groupId()));
+
+        exchLog.info("updateTopologies [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
     }
 
     /**
@@ -845,8 +857,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
             else {
-                if (!centralizedAff)
+                if (!centralizedAff) {
+                    sndTs = U.currentTimeMillis();
+
                     sendLocalPartitions(crd);
+                }
 
                 initDone();
 
@@ -1141,6 +1156,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
+        long start = U.currentTimeMillis();
+
         assert node != null;
 
         // Reset lost partition before send local partition to coordinator.
@@ -1172,6 +1189,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (log.isDebugEnabled())
                 log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
         }
+
+        exchLog.info("sendLocalPartitions [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
     }
 
     /**
@@ -1927,11 +1946,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void sendAllPartitions(final UUID nodeId, final int retryCnt) {
         ClusterNode n = cctx.node(nodeId);
 
+        exchLog.info("Send all partitions to node [topVer=" + topologyVersion() +
+            ", nodeId=" + nodeId +
+            ", node=" + n + ']');
+
         try {
             if (n != null)
                 sendAllPartitions(F.asList(n));
         }
         catch (IgniteCheckedException e) {
+            exchLog.info("Failed to send all partitions to node [topVer=" + topologyVersion() +
+                ", nodeId=" + nodeId +
+                ", err=" + e + ']');
+
             if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send full partition map to node, node left grid " +
