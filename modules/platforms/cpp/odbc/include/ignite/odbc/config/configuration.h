@@ -73,6 +73,12 @@ namespace ignite
 
                     /** Connection attribute keyword for fetch results page size attribute. */
                     static const std::string pageSize;
+
+                    /** Connection attribute keyword for replicated only attribute. */
+                    static const std::string replicatedOnly;
+
+                    /** Connection attribute keyword for collocated attribute. */
+                    static const std::string collocated;
                 };
 
                 /** Default values for configuration. */
@@ -107,6 +113,12 @@ namespace ignite
 
                     /** Default value for enforce join order attribute. */
                     static const bool enforceJoinOrder;
+
+                    /** Default value for replicated only attribute. */
+                    static const bool replicatedOnly;
+
+                    /** Default value for collocated attribute. */
+                    static const bool collocated;
                 };
 
                 /**
@@ -303,6 +315,46 @@ namespace ignite
                 void SetEnforceJoinOrder(bool val)
                 {
                     SetBoolValue(Key::enforceJoinOrder, val);
+                }
+
+                /**
+                 * Check replicated only flag.
+                 *
+                 * @return True if replicated only is enabled.
+                 */
+                bool IsReplicatedOnly() const
+                {
+                    return GetBoolValue(Key::replicatedOnly, DefaultValue::replicatedOnly);
+                }
+
+                /**
+                 * Set replicated only flag.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetReplicatedOnly(bool val)
+                {
+                    SetBoolValue(Key::replicatedOnly, val);
+                }
+
+                /**
+                 * Check collocated flag.
+                 *
+                 * @return True if collocated is enabled.
+                 */
+                bool IsCollocated() const
+                {
+                    return GetBoolValue(Key::collocated, DefaultValue::collocated);
+                }
+
+                /**
+                 * Set collocated.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetCollocated(bool val)
+                {
+                    SetBoolValue(Key::collocated, val);
                 }
 
                 /**

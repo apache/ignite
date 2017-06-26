@@ -17,13 +17,18 @@
 
 @import '../../../public/stylesheets/variables';
 
-.ui-grid--ignite {
+.ui-grid.ui-grid--ignite {
     $height: 46px;
 
+    position: relative;
     border-top: none;
 
     [role="button"] {
       outline: none;
+    }
+
+    sup {
+        color: $ignite-brand-success;
     }
 
     .ui-grid-top-panel {
@@ -40,6 +45,14 @@
         border-color: transparent;
     }
 
+    .ui-grid-top-panel {
+        overflow: visible;
+
+        .ui-grid-header-viewport {
+            overflow: visible;
+        }
+    }
+
     .ui-grid-cell,
     .ui-grid-header-cell {
         .ui-grid-cell-contents {
@@ -47,10 +60,14 @@
 
             text-align: left;
             font-family: Roboto;
+            white-space: nowrap;
         }
     }
 
     .ui-grid-contents-wrapper {
+        position: absolute;
+        top: 0;
+
         border-bottom-right-radius: 6px;
         overflow: hidden;
     }
@@ -69,24 +86,78 @@
         }
     }
 
-    .ui-grid-header--subcategories {
-        .ui-grid-header-span {
-            background: initial;
-
-            .ui-grid-cell-contents {
-                color: $gray-light;
-                font-size: 14px;
-                font-weight: normal;
-                font-style: normal;
-                line-height: 18px;
-                text-align: left;
-
-                padding: 8px 20px;
-
-                & > i {
+    .ui-grid-header-viewport {
+        .ui-grid-header-canvas {
+            .ui-grid-header-cell {
+                .ui-grid-cell-contents {
+                    color: $gray-light;
+                    font-size: 14px;
+                    font-weight: normal;
+                    font-style: normal;
                     line-height: 18px;
+                    text-align: left;
+
+                    padding: 15px 20px;
+
+                    & > i {
+                        line-height: 18px;
+                    }
+
+                    .ui-grid-header-cell-label {
+                        // position: relative;
+                    }
+
+                    .ui-grid-header-cell-label + span {
+                        position: relative;
+                        right: 3px;
+                    }
+
+                    .ui-grid-header-cell-filter {
+                        background-image: 
+                            linear-gradient(to right, $ignite-brand-success, transparent), 
+                            linear-gradient(to right, $ignite-brand-success 70%, transparent 0%);
+                        background-position: left bottom;
+                        background-repeat: repeat-x;
+                        background-size: 0, 8px 1px, 0, 0;
+
+                        &:hover {
+                            background-image: none;
+                            // linear-gradient(to right, change-color($ignite-brand-success, $lightness: 26%), transparent), 
+                            // linear-gradient(to right, change-color($ignite-brand-success, $lightness: 26%) 70%, transparent 0%);
+                        }
+
+                        div {
+                            z-index: 1;
+                            position: fixed;
+
+                            width: calc(100% - 40px);
+                            width: 100px;
+                            height: 20px;
+                            margin-top: -20px;
+
+                            font-size: 0; 
+                        }
+
+                        &.active {
+                            color: $ignite-brand-primary;
+
+                            background-image: 
+                                linear-gradient(to right, $ignite-brand-primary, transparent), 
+                                linear-gradient(to right, $ignite-brand-primary 70%, transparent 0%);
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    .ui-grid-header--subcategories {
+        .ui-grid-header-span.ui-grid-header-cell {
+            .ui-grid-cell-contents {
+                padding: 8px 20px;
+            }
+
+            background: initial;
 
             [ng-show] .ui-grid-cell-contents {
                 text-align: center;
@@ -111,10 +182,6 @@
                     padding-right: 20px;
                 }
             }
-
-            .ui-grid-header-cell-label + span {
-                position: relative;
-            }
         }
     }
 
@@ -130,6 +197,24 @@
                     .ui-grid-canvas {
                         width: auto;
                     }
+                }
+
+                .ui-grid-header--subcategories {
+                    .ui-grid-tree-base-row-header-buttons {
+                        margin-top: 10px;
+                    }
+
+                    .ui-grid-selection-row-header-buttons {
+                        margin-top: 12px;
+
+                        &:after {
+                            top: 3px;
+                        }
+                    }
+                }
+
+                .ui-grid-cell.ui-grid-disable-selection.ui-grid-row-header-cell {
+                    pointer-events: auto;
                 }
 
                 &:before {
@@ -339,11 +424,6 @@
         }
 
         .ui-grid-tree-header-row {
-            .ui-grid-selection-row-header-buttons {
-                opacity: .2;
-                cursor: default;
-            }
-
             & ~ .ui-grid-row:not(.ui-grid-tree-header-row) {
                 position: relative;
 
@@ -413,4 +493,37 @@
             background-position: center;
         }
     }
+
+    .ui-grid-icon-filter {
+        position: absolute;
+        right: 20px;
+
+        color: $text-color;
+
+        &:before {
+            content: '';
+        }
+    }
+}
+
+.ui-grid--ignite.ui-grid-disabled-group-selection {
+    .ui-grid-pinned-container {
+        .ui-grid-tree-header-row {
+            .ui-grid-selection-row-header-buttons {
+                opacity: .2;
+                cursor: default;
+            }
+        }
+    }
+}
+
+.ui-grid--ignite.no-data {
+    position: relative;
+
+    padding: 16px 51px;
+    
+    border-radius: 0 0 4px 4px;
+    
+    font-style: italic;
+    line-height: 16px;
 }

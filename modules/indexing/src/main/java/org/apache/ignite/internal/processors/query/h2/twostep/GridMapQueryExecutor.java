@@ -791,7 +791,7 @@ public class GridMapQueryExecutor {
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to send message.", e);
+            U.error(log, "Failed to send message.", e);
 
             throw new IgniteException(e);
         }

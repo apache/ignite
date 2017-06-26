@@ -384,12 +384,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 return 'null';
 
             switch (clsName) {
-                case 'var':
-                    return item;
                 case 'byte':
                     return `(byte) ${item}`;
                 case 'float':
                     return `${item}f`;
+                case 'double':
+                    return `${item}`;
                 case 'long':
                     return `${item}L`;
                 case 'java.io.Serializable':

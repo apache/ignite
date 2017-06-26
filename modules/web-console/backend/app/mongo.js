@@ -991,7 +991,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
         persistenceStoreConfiguration: {
             enabled: Boolean,
-            persistenceStorePath: String,
+            persistentStorePath: String,
             metricsEnabled: Boolean,
             alwaysWriteFullPages: Boolean,
             checkpointingFrequency: Number,
