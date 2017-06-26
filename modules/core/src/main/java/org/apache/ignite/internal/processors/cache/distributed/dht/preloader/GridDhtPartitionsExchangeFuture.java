@@ -2117,31 +2117,32 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * Finishes exchange on nodes not receiving {@link GridDhtFinishExchangeMessage}.
      */
-    public void finishStaleExchange(ClusterNode node) {
+    public void finishStaleExchange(ClusterNode node, boolean skipCrdChange, CI1<IgniteInternalFuture<?>> clo) {
         if (discoEvt.type() != EVT_NODE_LEFT && discoEvt.type() != EVT_NODE_FAILED || crd == null)
             return;
 
-        synchronized (mux) {
-            discoCache.updateAlives(node);
+        if (!skipCrdChange)
+            synchronized (mux) {
+                discoCache.updateAlives(node);
 
-            // New coordinator must resend assignments, if any.
-            boolean isCrdLeft = crd.equals(node);
+                // New coordinator must resend assignments, if any.
+                boolean isCrdLeft = crd.equals(node);
 
-            if (!isCrdLeft)
-                return;
+                if (!isCrdLeft)
+                    return;
 
-            boolean rmv = srvNodes.remove(node);
+                boolean rmv = srvNodes.remove(node);
 
-            assert rmv;
+                assert rmv;
 
-            crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
-        }
+                crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
+            }
 
         if (crd == null || !crd.isLocal())
             return;
 
         // Prevent blocking discovery thread.
-        cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+        IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
             @Override public void run() {
                 exchLog.info("start finishStaleExchange [node=" + cctx.localNode() + ']');
 
@@ -2249,6 +2250,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 exchLog.info("finish finishStaleExchange [node=" + cctx.localNode() + ']');
             }
         });
+
+        if (clo != null)
+            fut.listen(clo);
     }
 
     /**
@@ -2269,33 +2273,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         return;
 
                     try {
-                        boolean crdChanged = false;
-                        boolean allReceived = false;
-                        Set<UUID> reqFrom = null;
+                        final boolean crdChanged;
 
-                        ClusterNode crd0;
+                        final ClusterNode crd0;
 
                         discoCache.updateAlives(node);
+
+                        final boolean rmvd;
 
                         synchronized (mux) {
                             if (!srvNodes.remove(node))
                                 return;
 
-                            boolean rmvd = remaining.remove(node.id());
+                            rmvd = remaining.remove(node.id());
 
-                            if (node.equals(crd)) {
-                                crdChanged = true;
+                            crdChanged = node.equals(crd);
 
-                                crd = !srvNodes.isEmpty() ? srvNodes.get(0) : null;
-                            }
-
-                            if (crd != null && crd.isLocal()) {
-                                if (rmvd)
-                                    allReceived = remaining.isEmpty();
-
-                                if (crdChanged && !remaining.isEmpty())
-                                    reqFrom = new HashSet<>(remaining);
-                            }
+                            if (crdChanged) crd = !srvNodes.isEmpty() ? srvNodes.get(0) : null;
 
                             crd0 = crd;
                         }
@@ -2320,36 +2314,50 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         if (crd0.isLocal()) {
-                            if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
-                                changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
+                            finishStaleExchange(node, true, new CI1<IgniteInternalFuture<?>>() {
+                                @Override public void apply(IgniteInternalFuture<?> igniteInternalFut) {
+                                    if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
+                                        changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
 
-                            if (allReceived) {
-                                onAllReceived();
+                                    boolean allReceived = false;
+                                    Set<UUID> reqFrom = null;
 
-                                return;
-                            }
+                                    if (crd != null && crd.isLocal()) {
+                                        if (rmvd)
+                                            allReceived = remaining.isEmpty();
 
-                            if (crdChanged && reqFrom != null) {
-                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
-
-                                for (UUID nodeId : reqFrom) {
-                                    try {
-                                        // It is possible that some nodes finished exchange with previous coordinator.
-                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
+                                        if (crdChanged && !remaining.isEmpty())
+                                            reqFrom = new HashSet<>(remaining);
                                     }
-                                    catch (ClusterTopologyCheckedException e) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
-                                                ", exchId=" + exchId + ']');
+
+
+                                    if (allReceived) {
+                                        onAllReceived();
+
+                                        return;
                                     }
-                                    catch (IgniteCheckedException e) {
-                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
+
+                                    if (crdChanged && reqFrom != null) {
+                                        GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
+
+                                        for (UUID nodeId : reqFrom) {
+                                            try {
+                                                // It is possible that some nodes finished exchange with previous coordinator.
+                                                cctx.io().send(nodeId, req, SYSTEM_POOL);
+                                            } catch (ClusterTopologyCheckedException e) {
+                                                if (log.isDebugEnabled())
+                                                    log.debug("Node left during partition exchange [nodeId=" + nodeId +
+                                                            ", exchId=" + exchId + ']');
+                                            } catch (IgniteCheckedException e) {
+                                                U.error(log, "Failed to request partitions from node: " + nodeId, e);
+                                            }
+                                        }
                                     }
+
+                                    for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
+                                        processMessage(m.getKey(), m.getValue());
                                 }
-                            }
-
-                            for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
-                                processMessage(m.getKey(), m.getValue());
+                            });
                         }
                         else {
                             if (crdChanged) {

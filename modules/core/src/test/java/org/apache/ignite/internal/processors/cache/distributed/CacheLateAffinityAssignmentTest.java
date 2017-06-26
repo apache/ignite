@@ -1095,6 +1095,51 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
+     *
+     * @throws Exception
+     */
+    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished3() throws Exception {
+        int ord = 1;
+
+        Ignite ignite0 = startServer(ord - 1, ord++);
+
+        Ignite ignite1 = startServer(ord - 1, ord++);
+
+        Ignite ignite2 = startServer(ord - 1, ord++);
+
+        Ignite ignite3 = startServer(ord - 1, ord++);
+
+        TestRecordingCommunicationSpi spi0 =
+                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+
+        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name()); // Block completion on new coord.
+
+        int cnt = 1;
+
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
+
+        stopNode(3, ord);
+
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
+
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+
+        U.sleep(1_000);
+
+        assertTrue(fut0.isDone());
+        assertFalse(fut1.isDone());
+        assertTrue(fut2.isDone());
+
+        stopNode(0, ord);
+
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
+    }
+
+    /**
      * Assignment is delayed, coordinator leaves, nodes must complete exchange with same assignments.
      *
      * @throws Exception

@@ -225,15 +225,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             GridDhtPartitionsExchangeFuture topFut = exchFuts.get(0);
 
                             if (topFut.isDone())
-                                topFut.finishStaleExchange(n);
+                                topFut.finishStaleExchange(n, false, null);
                         }
                     }
-
-//                    if (evt.type() == EVT_NODE_JOINED) {
-//                        for (GridDhtPartitionsExchangeFuture f : exchFuts.values()) {
-//                            f.finishExchange();
-//                        }
-//                    }
 
                     assert evt.type() != EVT_NODE_JOINED || n.order() > loc.order() :
                         "Node joined with smaller-than-local " +
