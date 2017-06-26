@@ -38,12 +38,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -121,7 +119,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final int tlbSize;
 
     /** WAL flush frequency. Makes sense only for {@link WALMode#BACKGROUND} log WALMode. */
-    public final int flushFreq;
+    private final int flushFreq;
 
     /** Fsync delay. */
     private final long fsyncDelay;
@@ -130,7 +128,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final PersistentStoreConfiguration psCfg;
 
     /** Events service */
-    private final GridEventStorageManager event;
+    private final GridEventStorageManager evt;
 
     /** */
     private IgniteConfiguration igCfg;
@@ -173,9 +171,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile FileArchiver archiver;
 
     /** */
-    private QueueFlusher flusher;
-
-    /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
     /** Current log segment handle */
@@ -199,7 +194,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         flushFreq = psCfg.getWalFlushFrequency();
         fsyncDelay = psCfg.getWalFsyncDelay();
         alwaysWriteFullPages = psCfg.isAlwaysWriteFullPages();
-        event = ctx.event();
+        evt = ctx.event();
     }
 
     /** {@inheritDoc} */
@@ -281,11 +276,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileWriteHandle currentHnd = currentHandle();
 
         try {
-            QueueFlusher flusher0 = flusher;
-
-            if (flusher0 != null) {
-                flusher0.shutdown();
-
+            if (mode == WALMode.BACKGROUND) {
                 if (currentHnd != null)
                     currentHnd.flush((FileWALPointer)null);
             }
@@ -357,9 +348,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             if (mode == WALMode.BACKGROUND) {
-                flusher = new QueueFlusher(cctx.igniteInstanceName());
-
-                flusher.start();
+                cctx.time().schedule(new Runnable() {
+                    @Override public void run() {
+                        doFlush();
+                    }
+                }, flushFreq, flushFreq);
             }
         }
         catch (StorageException e) {
@@ -1103,8 +1096,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                             notifyAll();
                         }
-                        if (event.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED))
-                            event.record(new WalSegmentArchiveCompletedEvent(cctx.discovery().localNode(),
+                        if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED))
+                            evt.record(new WalSegmentArchiveCompletedEvent(cctx.discovery().localNode(),
                                 res.getAbsIdx(), res.getDstArchiveFile()));
                     }
                     catch (IgniteCheckedException e) {
@@ -2360,51 +2353,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Periodically flushes current file handle for {@link WALMode#BACKGROUND} WALMode.
+     * Flushes current file handle for {@link WALMode#BACKGROUND} WALMode.
+     * Called periodically from scheduler.
      */
-    private class QueueFlusher extends Thread {
-        /** */
-        private volatile boolean stopped;
+    private void doFlush() {
+        final FileWriteHandle hnd = currentHandle();
 
-        /**
-         * @param gridName Grid name.
-         */
-        private QueueFlusher(String gridName) {
-            super("wal-queue-flusher-#" + gridName);
+        try {
+            hnd.flush(hnd.head.get());
         }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            while (!stopped) {
-                long wakeup = U.currentTimeMillis() + flushFreq;
-
-                LockSupport.parkUntil(wakeup);
-
-                FileWriteHandle hnd = currentHandle();
-
-                try {
-                    hnd.flush(hnd.head.get());
-                }
-                catch (IgniteCheckedException e) {
-                    U.warn(log, "Failed to flush WAL record queue", e);
-                }
-            }
-        }
-
-        /**
-         * Signals stop, wakes up thread and waiting until completion.
-         */
-        private void shutdown() {
-            stopped = true;
-
-            LockSupport.unpark(this);
-
-            try {
-                join();
-            }
-            catch (InterruptedException ignore) {
-                // Got interrupted while waiting for flusher to shutdown.
-            }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Failed to flush WAL record queue", e);
         }
     }
 }

@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -96,6 +97,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         pCfg.setWalHistorySize(1);
         pCfg.setWalSegmentSize(1024 * 1024);
         pCfg.setWalSegments(WAL_SEGMENTS);
+        pCfg.setWalMode(WALMode.BACKGROUND);
         cfg.setPersistentStoreConfiguration(pCfg);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -204,7 +206,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed
      */
     public void testArchiveCompletedEventFired() throws Exception {
-        AtomicBoolean evtRecorded = new AtomicBoolean();
+        final AtomicBoolean evtRecorded = new AtomicBoolean();
 
         Ignite ignite = startGrid("node0");
         ignite.active(true);

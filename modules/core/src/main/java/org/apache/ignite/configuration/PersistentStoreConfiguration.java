@@ -121,7 +121,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /** WAl thread local buffer size. */
     private int tlbSize = DFLT_TLB_SIZE;
 
-    /** Wal flush frequency. */
+    /** Wal flush frequency in milliseconds. */
     private int walFlushFreq = DFLT_WAL_FLUSH_FREQ;
 
     /** Wal fsync delay. */
