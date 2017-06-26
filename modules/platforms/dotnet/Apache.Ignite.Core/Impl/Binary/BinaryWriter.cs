@@ -54,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Whether we are currently detaching an object. */
         private bool _detaching;
 
+        /** Whether we are directly within peer loading object holder. */
+        private bool _isInWrapper;
+
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
 
@@ -858,7 +861,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                var type = val.GetType();
+                // Unwrap nullable.
+                var valType = val.GetType();
+                var type = Nullable.GetUnderlyingType(valType) ?? valType;
 
                 if (!type.IsEnum)
                 {
@@ -1165,6 +1170,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
+            // Wrap objects as required.
+            if (WrapperFunc != null && type != WrapperFunc.Method.ReturnType)
+            {
+                if (_isInWrapper)
+                {
+                    _isInWrapper = false;
+                }
+                else
+                {
+                    _isInWrapper = true;
+                    Write(WrapperFunc(obj));
+
+                    return;
+                }
+            }
+
             // Suppose that we faced normal object and perform descriptor lookup.
             var desc = _marsh.GetDescriptor(type);
 
@@ -1180,7 +1201,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Write type name for unregistered types
             if (!desc.IsRegistered)
-                WriteString(type.AssemblyQualifiedName);
+            {
+                WriteString(Marshaller.GetTypeName(type));
+            }
 
             var headerSize = _stream.Position - pos;
 
@@ -1422,6 +1445,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
             }
         }
+
+        /// <summary>
+        /// Gets or sets a function to wrap all serializer objects.
+        /// </summary>
+        internal Func<object, object> WrapperFunc { get; set; }
 
         /// <summary>
         /// Stream.

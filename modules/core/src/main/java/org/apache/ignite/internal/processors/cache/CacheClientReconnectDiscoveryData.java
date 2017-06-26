@@ -31,13 +31,26 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private final Map<Integer, CacheGroupInfo> clientCacheGrps;
+
+    /** */
     private final Map<String, CacheInfo> clientCaches;
 
     /**
      * @param clientCaches Information about caches started on re-joining client node.
+     * @param clientCacheGrps Information about cach groups started on re-joining client node.
      */
-    CacheClientReconnectDiscoveryData(Map<String, CacheInfo> clientCaches) {
+    CacheClientReconnectDiscoveryData(Map<Integer, CacheGroupInfo> clientCacheGrps,
+        Map<String, CacheInfo> clientCaches) {
+        this.clientCacheGrps = clientCacheGrps;
         this.clientCaches = clientCaches;
+    }
+
+    /**
+     * @return Information about caches started on re-joining client node.
+     */
+    Map<Integer, CacheGroupInfo> clientCacheGroups() {
+        return clientCacheGrps;
     }
 
     /**
@@ -45,6 +58,53 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
      */
     Map<String, CacheInfo> clientCaches() {
         return clientCaches;
+    }
+
+    /**
+     *
+     */
+    static class CacheGroupInfo implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final CacheConfiguration ccfg;
+
+        /** */
+        private final IgniteUuid deploymentId;
+
+        /** Flags added for future usage. */
+        private final long flags;
+
+        /**
+         * @param ccfg Cache group configuration.
+         * @param deploymentId Cache group deployment ID.
+         * @param flags Flags (for future usage).
+         */
+        CacheGroupInfo(CacheConfiguration ccfg,
+            IgniteUuid deploymentId,
+            long flags) {
+            assert ccfg != null;
+            assert deploymentId != null;
+
+            this.ccfg = ccfg;
+            this.deploymentId = deploymentId;
+            this.flags = flags;
+        }
+
+        /**
+         * @return Cache group configuration.
+         */
+        CacheConfiguration config() {
+            return ccfg;
+        }
+
+        /**
+         * @return Cache group deployment ID.
+         */
+        IgniteUuid deploymentId() {
+            return deploymentId;
+        }
     }
 
     /**
@@ -67,7 +127,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
         private final boolean nearCache;
 
         /** Flags added for future usage. */
-        private final byte flags;
+        private final long flags;
 
         /**
          * @param ccfg Cache configuration.
@@ -80,7 +140,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
             CacheType cacheType,
             IgniteUuid deploymentId,
             boolean nearCache,
-            byte flags) {
+            long flags) {
             assert ccfg != null;
             assert cacheType != null;
             assert deploymentId != null;

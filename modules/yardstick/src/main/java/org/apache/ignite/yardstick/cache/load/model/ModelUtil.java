@@ -38,6 +38,7 @@ public class ModelUtil {
      * Classes of keys.
      */
     private static Class[] keyClasses = {
+        Integer.class,
         Double.class,
         Identifier.class,
         Mark.class,
@@ -150,6 +151,9 @@ public class ModelUtil {
                 break;
             case "String":
                 res = String.valueOf(id);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported class: " + c.getSimpleName());
         }
 
         return res;

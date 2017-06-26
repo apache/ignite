@@ -190,12 +190,12 @@ public class ClusterListener {
     }
 
     /** */
-    private class TopologySnapshot {
+    private static class TopologySnapshot {
         /** */
         private Collection<UUID> nids;
 
         /** */
-        private String clusterVersion;
+        private String clusterVer;
 
         /**
          * @param nodes Nodes.
@@ -210,7 +210,21 @@ public class ClusterListener {
                     }
                 });
 
-            clusterVersion = Collections.min(vers).toString();
+            clusterVer = Collections.min(vers).toString();
+        }
+
+        /**
+         * @return Cluster version.
+         */
+        public String getClusterVersion() {
+            return clusterVer;
+        }
+
+        /**
+         * @return Cluster nodes IDs.
+         */
+        public Collection<UUID> getNids() {
+            return nids;
         }
 
         /**  */
@@ -219,11 +233,11 @@ public class ClusterListener {
         }
 
         /**  */
-        boolean isSameCluster(TopologySnapshot snapshot) {
-            if (snapshot == null || F.isEmpty(snapshot.nids))
-                return false;
+        boolean differentCluster(TopologySnapshot old) {
+            if (old == null || F.isEmpty(old.nids))
+                return true;
 
-            return Collections.disjoint(nids, snapshot.nids);
+            return Collections.disjoint(nids, old.nids);
         }
     }
 
@@ -241,7 +255,7 @@ public class ClusterListener {
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                        if (newTop.isSameCluster(top))
+                        if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
 
                         top = newTop;
@@ -256,7 +270,9 @@ public class ClusterListener {
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (Exception e) {
+                log.error("WatchTask failed", e);
+
                 clusterDisconnect();
             }
         }
@@ -276,7 +292,7 @@ public class ClusterListener {
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                        if (top == null || top.isSameCluster(newTop)) {
+                        if (top.differentCluster(newTop)) {
                             clusterDisconnect();
 
                             log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
@@ -296,7 +312,9 @@ public class ClusterListener {
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (Exception e) {
+                log.error("BroadcastTask failed", e);
+
                 clusterDisconnect();
 
                 watch();

@@ -44,13 +44,17 @@ export default class IgniteAgentManager {
         $root.$on('$stateChangeSuccess', () => this.stopWatch());
 
         this.ignite2x = false;
+        this.ignite2_1 = false;
 
-        $root.$watch(() => _.get(this, 'cluster.clusterVersion'), (ver) => {
-            if (_.isEmpty(ver))
-                return;
+        if (!$root.IgniteDemoMode) {
+            $root.$watch(() => _.get(this, 'cluster.clusterVersion'), (ver) => {
+                if (_.isEmpty(ver))
+                    return;
 
-            this.ignite2x = ver.startsWith('2.');
-        }, true);
+                this.ignite2x = ver.startsWith('2.');
+                this.ignite2_1 = ver.startsWith('2.1');
+            }, true);
+        }
 
         /**
          * Connection to backend.
@@ -509,6 +513,9 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryNextPage(nid, queryId, pageSize) {
+        if (this.ignite2x)
+            return this.visorTask('queryFetchX2', nid, queryId, pageSize);
+
         return this.visorTask('queryFetch', nid, queryId, pageSize);
     }
 

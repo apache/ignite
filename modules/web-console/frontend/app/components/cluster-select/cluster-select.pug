@@ -26,7 +26,7 @@ ul.nav(ng-switch='ctrl.clusters.length')
             label.padding-left-dflt {{ctrl.cluster.name}}
 
     li(ng-switch-default)
-        a.dropdown-toggle(bs-dropdown='' data-placement='bottom-left' data-trigger='hover focus' data-container='self' data-animation='' ng-click='$event.stopPropagation()' aria-haspopup='true' aria-expanded='expanded')
+        a.dropdown-toggle(bs-dropdown='' data-placement='bottom-left' data-trigger='hover focus' data-container='self' ng-click='$event.stopPropagation()' aria-haspopup='true' aria-expanded='expanded')
             i.icon-cluster
             label.padding-left-dflt {{ctrl.cluster.name}}
             span.caret

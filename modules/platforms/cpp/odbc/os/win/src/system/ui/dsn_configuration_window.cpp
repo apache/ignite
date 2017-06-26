@@ -32,18 +32,20 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(270),
+                    height(280),
                     connectionSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
                     addressLabel(),
                     addressEdit(),
-                    cacheLabel(),
-                    cacheEdit(),
+                    schemaLabel(),
+                    schemaEdit(),
                     pageSizeLabel(),
                     pageSizeEdit(),
                     distributedJoinsCheckBox(),
                     enforceJoinOrderCheckBox(),
+                    replicatedOnlyCheckBox(),
+                    collocatedCheckBox(),
                     protocolVersionLabel(),
                     protocolVersionComboBox(),
                     okButton(),
@@ -115,9 +117,9 @@ namespace ignite
 
                     rowPos += interval + rowSize;
 
-                    val = config.GetCache().c_str();
-                    cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache name:", ChildId::CACHE_LABEL);
-                    cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::CACHE_EDIT);
+                    val = config.GetSchema().c_str();
+                    schemaLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Schema name:", ChildId::SCHEMA_LABEL);
+                    schemaEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::SCHEMA_EDIT);
 
                     rowPos += interval + rowSize;
 
@@ -158,6 +160,14 @@ namespace ignite
 
                     enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
                         rowSize, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
+
+                    rowPos += rowSize;
+
+                    replicatedOnlyCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Replicated Only", ChildId::REPLICATED_ONLY_CHECK_BOX, config.IsReplicatedOnly());
+
+                    collocatedCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
+                        rowSize, "Collocated", ChildId::COLLOCATED_CHECK_BOX, config.IsCollocated());
 
                     rowPos += interval * 2 + rowSize;
 
@@ -222,6 +232,20 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::REPLICATED_ONLY_CHECK_BOX:
+                                {
+                                    replicatedOnlyCheckBox->SetChecked(!replicatedOnlyCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::COLLOCATED_CHECK_BOX:
+                                {
+                                    collocatedCheckBox->SetChecked(!collocatedCheckBox->IsChecked());
+
+                                    break;
+                                }
+
                                 case ChildId::PROTOCOL_VERSION_COMBO_BOX:
                                 default:
                                     return false;
@@ -248,16 +272,18 @@ namespace ignite
                 {
                     std::string dsn;
                     std::string address;
-                    std::string cache;
+                    std::string schema;
                     std::string pageSizeStr;
                     std::string version;
 
                     bool distributedJoins;
                     bool enforceJoinOrder;
+                    bool replicatedOnly;
+                    bool collocated;
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
-                    cacheEdit->GetText(cache);
+                    schemaEdit->GetText(schema);
                     protocolVersionComboBox->GetText(version);
                     pageSizeEdit->GetText(pageSizeStr);
 
@@ -271,26 +297,32 @@ namespace ignite
 
                     distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
                     enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
+                    replicatedOnly = replicatedOnlyCheckBox->IsEnabled() && replicatedOnlyCheckBox->IsChecked();
+                    collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:");
                     LOG_MSG("DSN:                " << dsn);
                     LOG_MSG("Address:            " << address);
-                    LOG_MSG("Cache:              " << cache);
+                    LOG_MSG("Schema:             " << schema);
                     LOG_MSG("Page size:          " << pageSize);
                     LOG_MSG("Protocol version:   " << version);
                     LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
                     LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
 
                     cfg.SetDsn(dsn);
                     cfg.SetAddress(address);
-                    cfg.SetCache(cache);
+                    cfg.SetSchema(schema);
                     cfg.SetPageSize(pageSize);
                     cfg.SetProtocolVersion(version);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
+                    cfg.SetReplicatedOnly(replicatedOnly);
+                    cfg.SetCollocated(collocated);
                 }
             }
         }

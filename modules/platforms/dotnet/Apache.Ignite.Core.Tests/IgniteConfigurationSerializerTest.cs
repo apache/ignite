@@ -40,7 +40,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.DataStructures.Configuration;
+    using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
@@ -65,7 +67,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false' keepDeserialized='true'>
                                 <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -90,9 +92,9 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
                             </lifecycleHandlers>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'>
                                     <queryEntities>    
-                                        <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>    
+                                        <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
                                             <fields>
                                                 <queryField name='length' fieldType='System.Int32' isKeyField='true' />
                                             </fields>
@@ -136,9 +138,10 @@ namespace Apache.Ignite.Core.Tests
                             <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                             <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheInitialSize='67' systemCacheMaxSize='68'>
                                 <memoryPolicies>
-                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' />
+                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' rateTimeInterval='0:1:2' subIntervals='9' />
                                 </memoryPolicies>
                             </memoryConfiguration>
+                            <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -164,6 +167,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
             Assert.AreEqual(@"c:\myconfig.xml", cfg.SpringConfigUrl);
             Assert.IsTrue(cfg.AutoGenerateIgniteInstanceName);
+            Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
@@ -176,6 +180,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cacheCfg.EnableStatistics);
             Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
             Assert.AreEqual(PartitionLossPolicy.ReadWriteAll, cacheCfg.PartitionLossPolicy);
+            Assert.AreEqual("fooGroup", cacheCfg.GroupName);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -273,6 +278,21 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(89, memPlc.InitialSize);
             Assert.AreEqual(98, memPlc.MaxSize);
             Assert.IsTrue(memPlc.MetricsEnabled);
+            Assert.AreEqual(9, memPlc.SubIntervals);
+            Assert.AreEqual(TimeSpan.FromSeconds(62), memPlc.RateTimeInterval);
+
+            Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
+
+            var sql = cfg.SqlConnectorConfiguration;
+            Assert.IsNotNull(sql);
+            Assert.AreEqual("bar", sql.Host);
+            Assert.AreEqual(10, sql.Port);
+            Assert.AreEqual(11, sql.PortRange);
+            Assert.AreEqual(12, sql.SocketSendBufferSize);
+            Assert.AreEqual(13, sql.SocketReceiveBufferSize);
+            Assert.IsTrue(sql.TcpNoDelay);
+            Assert.AreEqual(14, sql.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(15, sql.ThreadPoolSize);
         }
 
         /// <summary>
@@ -644,7 +664,6 @@ namespace Apache.Ignite.Core.Tests
                         KeepBinaryInStore = true,
                         LoadPreviousValue = true,
                         LockTimeout = TimeSpan.FromSeconds(56),
-                        LongQueryWarningTimeout = TimeSpan.FromSeconds(99),
                         MaxConcurrentAsyncOperations = 24,
                         QueryEntities = new[]
                         {
@@ -707,7 +726,8 @@ namespace Apache.Ignite.Core.Tests
                             new MyPluginConfiguration()
                         },
                         MemoryPolicyName = "somePolicy",
-                        PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll
+                        PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll,
+                        GroupName = "abc"
                     }
                 },
                 ClientMode = true,
@@ -796,6 +816,7 @@ namespace Apache.Ignite.Core.Tests
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
                 ClientFailureDetectionTimeout = TimeSpan.FromMinutes(3),
+                LongQueryWarningTimeout = TimeSpan.FromDays(4),
                 PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
                 EventStorageSpi = new MemoryEventStorageSpi
                 {
@@ -819,7 +840,9 @@ namespace Apache.Ignite.Core.Tests
                             MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
-                            SwapFilePath = "myPath1"
+                            SwapFilePath = "myPath1",
+                            RateTimeInterval = TimeSpan.FromSeconds(22),
+                            SubIntervals = 99
                         },
                         new MemoryPolicyConfiguration
                         {
@@ -831,6 +854,18 @@ namespace Apache.Ignite.Core.Tests
                             MetricsEnabled = true
                         }
                     }
+                },
+                PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
+                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                {
+                    Host = "foo",
+                    Port = 2,
+                    PortRange = 3,
+                    MaxOpenCursorsPerConnection = 4,
+                    SocketReceiveBufferSize = 5,
+                    SocketSendBufferSize = 6,
+                    TcpNoDelay = false,
+                    ThreadPoolSize = 7
                 }
             };
         }

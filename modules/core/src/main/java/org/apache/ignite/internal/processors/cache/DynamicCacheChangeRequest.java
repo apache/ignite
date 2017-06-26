@@ -67,8 +67,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Destroy. */
     private boolean destroy;
 
-    /** Close flag. */
-    private boolean close;
+    /** Whether cache was created through SQL. */
+    private boolean sql;
 
     /** Fail if exists flag. */
     private boolean failIfExists;
@@ -152,25 +152,14 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @param ctx Context.
      * @param cacheName Cache name.
-     * @return Request to close client cache.
-     */
-    static DynamicCacheChangeRequest closeRequest(GridKernalContext ctx, String cacheName) {
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
-
-        req.close(true);
-
-        return req;
-    }
-
-    /**
-     * @param ctx Context.
-     * @param cacheName Cache name.
+     * @param sql {@code true} if the cache must be stopped only if it was created by SQL command {@code CREATE TABLE}.
      * @param destroy Destroy flag.
      * @return Cache stop request.
      */
-    static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean destroy) {
+    static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean sql, boolean destroy) {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
+        req.sql(sql);
         req.stop(true);
         req.destroy(destroy);
 
@@ -367,17 +356,17 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Close flag.
+     * @return SQL flag.
      */
-    public boolean close() {
-        return close;
+    public boolean sql() {
+        return sql;
     }
 
     /**
-     * @param close New close flag.
+     * @param sql New SQL flag.
      */
-    public void close(boolean close) {
-        this.close = close;
+    public void sql(boolean sql) {
+        this.sql = sql;
     }
 
     /**

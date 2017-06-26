@@ -109,6 +109,11 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     }
 
     /** {@inheritDoc} */
+    @Override public int typeId() {
+        return typeId;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeField(BinaryObject obj, ByteBuffer buf) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
@@ -222,13 +227,15 @@ public class BinaryFieldImpl implements BinaryFieldEx {
 
                     buf.get(data);
 
+                    boolean negative = data[0] < 0;
+
+                    if (negative)
+                        data[0] &= 0x7F;
+
                     BigInteger intVal = new BigInteger(data);
 
-                    if (scale < 0) {
-                        scale &= 0x7FFFFFFF;
-
+                    if (negative)
                         intVal = intVal.negate();
-                    }
 
                     val = new BigDecimal(intVal, scale);
 

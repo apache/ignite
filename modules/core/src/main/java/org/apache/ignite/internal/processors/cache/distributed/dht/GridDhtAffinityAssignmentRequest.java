@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -27,9 +27,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Affinity assignment request.
  */
-public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
+public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int SND_PART_STATE_MASK = 0x01;
+
+    /** */
+    private byte flags;
 
     /** */
     private long futId;
@@ -46,18 +52,30 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
     /**
      * @param futId Future ID.
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param topVer Topology version.
+     * @param sndPartMap {@code True} if need send in response cache partitions state.
      */
     public GridDhtAffinityAssignmentRequest(
         long futId,
-        int cacheId,
-        AffinityTopologyVersion topVer) {
+        int grpId,
+        AffinityTopologyVersion topVer,
+        boolean sndPartMap) {
         assert topVer != null;
 
         this.futId = futId;
-        this.cacheId = cacheId;
+        this.grpId = grpId;
         this.topVer = topVer;
+
+        if (sndPartMap)
+            flags |= SND_PART_STATE_MASK;
+    }
+
+    /**
+     * @return {@code True} if need send in response cache partitions state.
+     */
+    public boolean sendPartitionsState() {
+        return (flags & SND_PART_STATE_MASK) != 0;
     }
 
     /**
@@ -91,7 +109,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */
@@ -110,12 +128,18 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 4:
+                if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -138,7 +162,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                futId = reader.readLong("futId");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -146,6 +170,14 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())

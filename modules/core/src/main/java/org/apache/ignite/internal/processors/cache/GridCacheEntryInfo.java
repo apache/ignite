@@ -317,17 +317,17 @@ public class GridCacheEntryInfo implements Message {
     }
 
     /**
+     * @param ctx Cache object context.
      * @return Marshalled size.
+     * @throws IgniteCheckedException If failed.
      */
-    public int marshalledSize(GridCacheContext ctx) throws IgniteCheckedException {
+    public int marshalledSize(CacheObjectContext ctx) throws IgniteCheckedException {
         int size = 0;
 
-        CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
-
         if (val != null)
-            size += val.valueBytes(cacheObjCtx).length;
+            size += val.valueBytes(ctx).length;
 
-        size += key.valueBytes(cacheObjCtx).length;
+        size += key.valueBytes(ctx).length;
 
         return SIZE_OVERHEAD + size;
     }
@@ -337,12 +337,20 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
+        marshal(ctx.cacheObjectContext());
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void marshal(CacheObjectContext ctx) throws IgniteCheckedException {
         assert key != null;
 
-        key.prepareMarshal(ctx.cacheObjectContext());
+        key.prepareMarshal(ctx);
 
         if (val != null)
-            val.prepareMarshal(ctx.cacheObjectContext());
+            val.prepareMarshal(ctx);
 
         if (expireTime == 0)
             expireTime = -1;
@@ -362,10 +370,21 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+        unmarshal(ctx.cacheObjectContext(), clsLdr);
+    }
+
+    /**
+     * Unmarshalls entry.
+     *
+     * @param ctx Cache context.
+     * @param clsLdr Class loader.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public void unmarshal(CacheObjectContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
+        key.finishUnmarshal(ctx, clsLdr);
 
         if (val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+            val.finishUnmarshal(ctx, clsLdr);
 
         long remaining = expireTime;
 
