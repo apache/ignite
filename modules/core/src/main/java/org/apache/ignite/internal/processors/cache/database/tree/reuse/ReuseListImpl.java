@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.freelist.PagesList;
@@ -35,6 +36,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     private volatile Stripe[] bucket;
 
     /**
+     * @param log Ignite logger.
      * @param cacheId   Cache ID.
      * @param name Name (for debug purpose).
      * @param pageMem   Page memory.
@@ -43,17 +45,20 @@ public class ReuseListImpl extends PagesList implements ReuseList {
      * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseListImpl(int cacheId,
+    public ReuseListImpl(
+        IgniteLogger log,
+        int cacheId,
         String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
+        boolean initNew
+    ) throws IgniteCheckedException {
         super(cacheId, name, pageMem, 1, wal, metaPageId);
 
         reuseList = this;
 
-        init(metaPageId, initNew);
+        init(log, metaPageId, initNew);
     }
 
     /** {@inheritDoc} */

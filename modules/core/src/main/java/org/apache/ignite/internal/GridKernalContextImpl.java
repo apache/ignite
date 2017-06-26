@@ -397,7 +397,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    protected GridKernalContextImpl(
+    public GridKernalContextImpl(
         GridLoggerProxy log,
         IgniteEx grid,
         IgniteConfiguration cfg,

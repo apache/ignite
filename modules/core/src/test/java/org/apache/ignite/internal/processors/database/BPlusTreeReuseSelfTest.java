@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.database;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -36,7 +37,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
     @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
         throws IgniteCheckedException {
-        return new TestReuseList(cacheId, "test", pageMem, null, rootId, initNew);
+        return new TestReuseList(log, cacheId, "test", pageMem, null, rootId, initNew);
     }
 
     /** {@inheritDoc} */
@@ -74,6 +75,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
          * @throws IgniteCheckedException If failed.
          */
         public TestReuseList(
+            IgniteLogger log,
             int cacheId,
             String name,
             PageMemory pageMem,
@@ -81,7 +83,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             long metaPageId,
             boolean initNew
         ) throws IgniteCheckedException {
-            super(cacheId, name, pageMem, wal, metaPageId, initNew);
+            super(log, cacheId, name, pageMem, wal, metaPageId, initNew);
         }
 
         /** {@inheritDoc} */
