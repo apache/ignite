@@ -2140,7 +2140,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (!caches.containsKey(cacheName))
                     continue;
 
-                if (groupsToBeStopped != null) {
+                if (destroy && groupsToBeStopped != null) {
                     Integer cacheGroupId = caches.get(cacheName).context().group().groupId();
                     // If group associated with cache which will be stopped
                     // it's not necessary to explicitly destroy it
