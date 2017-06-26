@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -1275,6 +1276,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     }
 
                     ctx.io().sendToCustomTopic(node, req.responseTopic(), res, PUBLIC_POOL);
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send event query response, node failed [node=" + nodeId + ']');
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send event query response to node [node=" + nodeId + ", res=" +

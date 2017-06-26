@@ -30,6 +30,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -183,6 +184,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                         TOPIC_MAPPING_MARSH,
                         new MissingMappingResponseMessage(platformId, typeId, resolvedClsName),
                         SYSTEM_POOL);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send missing mapping response, node failed: " + nodeId);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send missing mapping response.", e);
