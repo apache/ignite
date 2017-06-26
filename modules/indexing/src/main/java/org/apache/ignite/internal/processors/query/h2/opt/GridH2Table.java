@@ -462,11 +462,11 @@ public class GridH2Table extends TableBase {
 
         // Clear metadata for all used indexes if this table was created with SQL.
         if (desc.type().sql()) {
-            // Clear all beyond PK.
+            // Clear all beyond PK that is registered in schema.
             while (idxs.size() > pkIndexPos + 1) {
                 Index idx = idxs.get(pkIndexPos + 1);
 
-                if (idx.getName() != null)
+                if (idx.getName() != null && idx.getSchema().findIndex(ses, idx.getName()) == idx)
                     database.removeSchemaObject(ses, idx);
 
                 idxs.remove(idx);
@@ -828,7 +828,7 @@ public class GridH2Table extends TableBase {
             Index cloneIdx = createDuplicateIndexIfNeeded(idx);
 
             ArrayList<Index> newIdxs = new ArrayList<>(
-                    idxs.size() + ((cloneIdx == null) ? 1 : 2));
+                idxs.size() + ((cloneIdx == null) ? 1 : 2));
 
             newIdxs.addAll(idxs);
 
