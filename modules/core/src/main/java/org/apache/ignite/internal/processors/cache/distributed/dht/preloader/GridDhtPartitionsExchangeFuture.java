@@ -741,8 +741,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onAffinityChangeRequest(boolean crd) throws IgniteCheckedException {
         assert affChangeMsg != null : this;
@@ -757,8 +757,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onClientNodeEvent(boolean crd) throws IgniteCheckedException {
         assert CU.clientNode(discoEvt.eventNode()) : this;
@@ -778,8 +778,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onServerNodeEvent(boolean crd) throws IgniteCheckedException {
         assert !CU.clientNode(discoEvt.eventNode()) : this;
@@ -1334,7 +1334,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
             if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage)
-                return  (StartSnapshotOperationAckDiscoveryMessage)customMsg;
+                return (StartSnapshotOperationAckDiscoveryMessage)customMsg;
         }
         return null;
     }
@@ -2294,7 +2294,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     cctx.kernalContext().cluster().dumpExchangeInfo(crd.id(), topologyVersion(), "Exchange future waiting for coordinator " +
                         "response [crd=" + crd.id() + ", topVer=" + topologyVersion() + ']');
                 }
-                else if (!remaining.isEmpty()){
+                else if (!remaining.isEmpty()) {
                     UUID nodeId = remaining.iterator().next();
 
                     cctx.kernalContext().cluster().dumpExchangeInfo(crd.id(), topologyVersion(), "Exchange future waiting for server " +
