@@ -1301,12 +1301,14 @@ export default class IgniteConfigurationGenerator {
             const plcBean = new Bean('org.apache.ignite.configuration.MemoryPolicyConfiguration', 'policy', plc, clusterDflts.memoryConfiguration.memoryPolicies);
 
             plcBean.stringProperty('name')
-                .intProperty('initialSize')
-                .intProperty('maxSize')
+                .longProperty('initialSize')
+                .longProperty('maxSize')
                 .stringProperty('swapFilePath')
                 .enumProperty('pageEvictionMode')
-                .intProperty('evictionThreshold')
+                .doubleProperty('evictionThreshold')
                 .intProperty('emptyPagesPoolSize')
+                .intProperty('subIntervals')
+                .longProperty('rateTimeInterval')
                 .boolProperty('metricsEnabled');
 
             if (plcBean.isEmpty()) return;
@@ -1315,7 +1317,7 @@ export default class IgniteConfigurationGenerator {
         });
 
         if (!_.isEmpty(policies))
-            memoryBean.arrayProperty('memoryPolicies', 'memoryPolicies', policies, 'org.apache.ignite.configuration.MemoryPolicyConfiguration');
+            memoryBean.varArgProperty('memoryPolicies', 'memoryPolicies', policies, 'org.apache.ignite.configuration.MemoryPolicyConfiguration');
 
         if (memoryBean.isEmpty())
             return cfg;
@@ -1471,7 +1473,7 @@ export default class IgniteConfigurationGenerator {
         const bean = new Bean('org.apache.ignite.configuration.PersistentStoreConfiguration', 'PersistenceCfg',
             persistence, clusterDflts.persistenceStoreConfiguration);
 
-        bean.stringProperty('persistenceStorePath')
+        bean.stringProperty('persistentStorePath')
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
             .intProperty('checkpointingFrequency')

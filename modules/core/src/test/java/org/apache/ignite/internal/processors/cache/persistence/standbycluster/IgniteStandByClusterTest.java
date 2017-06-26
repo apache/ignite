@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,8 +41,12 @@ import org.junit.Assert;
  *
  */
 public class IgniteStandByClusterTest extends GridCommonAbstractTest {
+    /** */
     private static final TcpDiscoveryIpFinder vmIpFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /**
+     *
+     */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -52,6 +57,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @throws Exception if fail.
+     */
     public void testNotStartDynamicCachesOnClientAfterActivation() throws Exception {
         final String cacheName0 = "cache0";
         final String cacheName = "cache";
@@ -117,6 +125,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         assertNotNull(ig3.cache(cacheName));
     }
 
+    /**
+     * @throws Exception if fail.
+     */
     public void testStaticCacheStartAfterActivationWithCacheFilter() throws Exception {
         String cache1 = "cache1";
         String cache2 = "cache2";
@@ -187,6 +198,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         Assert.assertNotNull(caches3.get(cache3));
     }
 
+    /**
+     * @throws Exception if fail.
+     */
     public void testSimple() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -209,6 +223,29 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         assertEquals("1", cache.get(1));
     }
 
+    /**
+     * @throws Exception if fail.
+     */
+    public void testJoinDaemonAndDaemonStop() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        IgniteEx daemon = startGrid(
+            getConfiguration("daemon")
+                .setDaemon(true)
+                .setClientMode(true)
+        );
+
+        Collection<ClusterNode> daemons = ig.cluster().forDaemons().nodes();
+
+        Assert.assertEquals(1, daemons.size());
+        assertEquals(daemon.localNode().id(), daemons.iterator().next().id());
+
+        daemon.close();
+    }
+
+    /**
+     * @throws Exception if fail.
+     */
     public void testRestartCluster() throws Exception {
         IgniteEx ig1 = startGrid(getConfiguration("node1"));
         IgniteEx ig2 = startGrid(getConfiguration("node2"));
@@ -241,18 +278,29 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
             assertEquals(String.valueOf(i), cache2.get(i));
     }
 
+    /**
+     *
+     */
     private static class NodeFilterIgnoreByName implements IgnitePredicate<ClusterNode> {
+        /** */
         private final String name;
 
+        /**
+         * @param name
+         */
         private NodeFilterIgnoreByName(String name) {
             this.name = name;
         }
 
+        /** */
         @Override public boolean apply(ClusterNode node) {
             return !name.equals(node.consistentId());
         }
     }
 
+    /**
+     *
+     */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -261,6 +309,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true));
     }
 
+    /**
+     *
+     */
     @Override protected void afterTest() throws Exception {
         super.beforeTest();
 

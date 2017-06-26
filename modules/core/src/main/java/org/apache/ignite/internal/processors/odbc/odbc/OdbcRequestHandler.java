@@ -80,22 +80,32 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
+    /** Replicated only flag. */
+    private final boolean replicatedOnly;
+
+    /** Collocated flag. */
+    private final boolean collocated;
+
     /**
      * Constructor.
-     *
      * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param replicatedOnly Replicated only flag.
+     * @param collocated Collocated flag.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder) {
+                              boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
+                              boolean collocated) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.replicatedOnly = replicatedOnly;
+        this.collocated = collocated;
 
         log = ctx.log(getClass());
     }
@@ -175,6 +185,8 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
+            qry.setReplicatedOnly(replicatedOnly);
+            qry.setCollocated(collocated);
             qry.setSchema(req.schema());
 
             QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
@@ -296,29 +308,25 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @return Response.
      */
     private SqlListenerResponse closeQuery(OdbcQueryCloseRequest req) {
+        long queryId = req.queryId();
+
         try {
-            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(queryId);
 
             if (tuple == null)
                 return new OdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + req.queryId());
+                    "Failed to find query with ID: " + queryId);
 
-            QueryCursor cur = tuple.get1();
+            CloseCursor(tuple, queryId);
 
-            assert(cur != null);
-
-            cur.close();
-
-            qryCursors.remove(req.queryId());
-
-            OdbcQueryCloseResult res = new OdbcQueryCloseResult(req.queryId());
+            OdbcQueryCloseResult res = new OdbcQueryCloseResult(queryId);
 
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryCursors.remove(req.queryId());
+            qryCursors.remove(queryId);
 
-            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req.queryId() + ']', e);
+            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + queryId + ']', e);
 
             return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
@@ -332,16 +340,19 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse fetchQuery(OdbcQueryFetchRequest req) {
         try {
-            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
+            long queryId = req.queryId();
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(queryId);
 
             if (tuple == null)
                 return new OdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + req.queryId());
+                    "Failed to find query with ID: " + queryId);
 
             Iterator iter = tuple.get2();
 
             if (iter == null) {
                 QueryCursor cur = tuple.get1();
+
+                assert(cur != null);
 
                 iter = cur.iterator();
 
@@ -353,7 +364,13 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             for (int i = 0; i < req.pageSize() && iter.hasNext(); ++i)
                 items.add(iter.next());
 
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !iter.hasNext());
+            boolean lastPage = !iter.hasNext();
+
+            // Automatically closing cursor if no more data is available.
+            if (lastPage)
+                CloseCursor(tuple, queryId);
+
+            OdbcQueryFetchResult res = new OdbcQueryFetchResult(queryId, items, lastPage);
 
             return new OdbcResponse(res);
         }
@@ -506,6 +523,21 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
             return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
+    }
+
+    /**
+     * Close cursor.
+     * @param tuple Query map element.
+     * @param queryId Query ID.
+     */
+    private void CloseCursor(IgniteBiTuple<QueryCursor, Iterator> tuple, long queryId) {
+        QueryCursor cur = tuple.get1();
+
+        assert(cur != null);
+
+        cur.close();
+
+        qryCursors.remove(queryId);
     }
 
     /**

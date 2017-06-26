@@ -537,6 +537,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected void beforeTestsStarted() throws Exception {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
     }
 
     /**

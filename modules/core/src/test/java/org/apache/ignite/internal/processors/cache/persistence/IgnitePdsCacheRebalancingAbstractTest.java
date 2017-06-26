@@ -211,8 +211,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If fails.
      */
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5514");
-
         IgniteEx ignite0 = startGrid(0);
 
         IgniteEx ignite1 = startGrid(1);
@@ -242,8 +240,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         ignite2.close();
         ignite3.close();
 
-        awaitPartitionMapExchange();
-
         ignite0.resetLostPartitions(Collections.singletonList(cache1.getName()));
 
         assert cache1.lostPartitions().isEmpty();
@@ -265,8 +261,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite2.cache(cacheName).rebalance().get();
         ignite3.cache(cacheName).rebalance().get();
-
-        awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
         IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
@@ -379,7 +373,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5514");
+        final long timeOut = U.currentTimeMillis() + 10 * 60 * 1000;
 
         final int entriesCnt = 10_000;
         int maxNodesCount = 4;
@@ -460,6 +454,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }, 1, "load-runner");
 
         for (int i = 0; i < topChanges; i++) {
+            if (U.currentTimeMillis() > timeOut)
+                break;
+
             U.sleep(3_000);
 
             boolean add;
@@ -469,7 +466,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             else if (nodesCnt.get() > maxNodesCount)
                 add = false;
             else // More chance that node will be added
-                add = ThreadLocalRandom.current().nextInt(3 ) <= 1;
+                add = ThreadLocalRandom.current().nextInt(3) <= 1;
 
             if (add)
                 startGrid(nodesCnt.incrementAndGet());
