@@ -31,6 +31,9 @@ import org.jetbrains.annotations.Nullable;
  * to make sure that there is the least amount of data movement possible and optimal
  * network and memory utilization.
  * <p>
+ * Note that data streamer is not transactional and therefore dishonours any active transaction
+ * when updating data.
+ * <p>
  * Note that streamer will stream data concurrently by multiple internal threads, so the
  * data may get to remote nodes in different order from which it was added to
  * the streamer.
