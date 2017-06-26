@@ -181,9 +181,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;
 
-    /** Local hode cached */
-    private ClusterNode localNode;
-
     /**
      * @param ctx Kernal context.
      */
@@ -203,7 +200,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         fsyncDelay = psCfg.getWalFsyncDelay();
         alwaysWriteFullPages = psCfg.isAlwaysWriteFullPages();
         event = ctx.event();
-        localNode = ctx.discovery().localNode();
     }
 
     /** {@inheritDoc} */
@@ -1108,7 +1104,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             notifyAll();
                         }
                         if (event.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED))
-                            event.record(new WalSegmentArchiveCompletedEvent(localNode,
+                            event.record(new WalSegmentArchiveCompletedEvent(cctx.discovery().localNode(),
                                 res.getAbsIdx(), res.getDstArchiveFile()));
                     }
                     catch (IgniteCheckedException e) {
