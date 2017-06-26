@@ -43,11 +43,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -58,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.event.WalSegmentArchiveCompletedEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -125,6 +129,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private final PersistentStoreConfiguration psCfg;
 
+    /** Events service */
+    private final GridEventStorageManager event;
+
     /** */
     private IgniteConfiguration igCfg;
 
@@ -174,10 +181,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;
 
+    /** Local hode cached */
+    private ClusterNode localNode;
+
     /**
      * @param ctx Kernal context.
      */
-    public FileWriteAheadLogManager(GridKernalContext ctx) {
+    public FileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
         igCfg = ctx.config();
 
         PersistentStoreConfiguration psCfg = igCfg.getPersistentStoreConfiguration();
@@ -192,6 +202,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         flushFreq = psCfg.getWalFlushFrequency();
         fsyncDelay = psCfg.getWalFsyncDelay();
         alwaysWriteFullPages = psCfg.isAlwaysWriteFullPages();
+        event = ctx.event();
+        localNode = ctx.discovery().localNode();
     }
 
     /** {@inheritDoc} */
@@ -1080,7 +1092,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         break;
 
                     try {
-                        File workFile = archiveSegment(toArchive);
+                        final SegmentArchiveResult res = archiveSegment(toArchive);
 
                         synchronized (this) {
                             while (locked.containsKey(toArchive) && !stopped)
@@ -1088,13 +1100,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                             // Firstly, format working file
                             if (!stopped)
-                                formatFile(workFile);
+                                formatFile(res.getOrigWorkFile());
 
                             // Then increase counter to allow rollover on clean working file
                             lastAbsArchivedIdx = toArchive;
 
                             notifyAll();
                         }
+                        if (event.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED))
+                            event.record(new WalSegmentArchiveCompletedEvent(localNode,
+                                res.getAbsIdx(), res.getDstArchiveFile()));
                     }
                     catch (IgniteCheckedException e) {
                         synchronized (this) {
@@ -1195,9 +1210,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
+         * Moves WAL segment from work folder to archive folder.
+         * Temp file is used to do movement
          * @param absIdx Absolute index to archive.
          */
-        private File archiveSegment(long absIdx) throws IgniteCheckedException {
+        private SegmentArchiveResult archiveSegment(long absIdx) throws IgniteCheckedException {
             long segIdx = absIdx % psCfg.getWalSegments();
 
             File origFile = new File(walWorkDir, FileDescriptor.fileName(segIdx));
@@ -1235,7 +1252,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 log.debug("Copied file [src=" + origFile.getAbsolutePath() +
                     ", dst=" + dstFile.getAbsolutePath() + ']');
 
-            return origFile;
+            return new SegmentArchiveResult(absIdx, origFile, dstFile);
         }
 
         /**
@@ -1255,6 +1272,34 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     return !checkStop();
                 }
             });
+        }
+    }
+
+
+    private static class SegmentArchiveResult {
+
+        private final long absWalIdx;
+        private final File origWorkFile;
+        private final File dstArchiveFile;
+
+        public SegmentArchiveResult(long absWalIdx, File origWorkFile, File dstArchiveFile) {
+
+            this.absWalIdx = absWalIdx;
+            this.origWorkFile = origWorkFile;
+            this.dstArchiveFile = dstArchiveFile;
+        }
+
+        public long getAbsIdx() {
+            return absWalIdx;
+        }
+
+        public File getOrigWorkFile() {
+            return origWorkFile;
+        }
+
+
+        public File getDstArchiveFile() {
+            return dstArchiveFile;
         }
     }
 
