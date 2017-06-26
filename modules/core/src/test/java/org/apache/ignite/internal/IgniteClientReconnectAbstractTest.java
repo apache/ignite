@@ -69,12 +69,17 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     /** */
     private static final long RECONNECT_TIMEOUT = 10_000;
 
+    /** Reconnect should occurs before failure detection time is out. */
+    public static final long FAILURE_DETECTION_TIMEOUT = RECONNECT_TIMEOUT +2000;
+
     /** */
     protected boolean clientMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
 
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
