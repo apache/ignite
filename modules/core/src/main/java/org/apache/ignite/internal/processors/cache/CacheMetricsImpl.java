@@ -229,7 +229,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     @Override public int getSize() {
         GridCacheAdapter<?, ?> cache = cctx.cache();
 
-        return cache != null ? cache.approximateSize() : 0;
+        return cache != null ? cache.size() : 0;
     }
 
     /** {@inheritDoc} */
