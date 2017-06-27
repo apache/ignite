@@ -161,7 +161,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("default");
-        memPlcCfg.setSize(20 * 1024 * 1024);
+        memPlcCfg.setMaxSize(20 * 1024 * 1024);
 
         if (isRelativePath)
             memPlcCfg.setSwapFilePath(RELATIVE_SWAP_PATH);
