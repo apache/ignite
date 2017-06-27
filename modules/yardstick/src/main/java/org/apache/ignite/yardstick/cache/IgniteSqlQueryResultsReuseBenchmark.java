@@ -19,12 +19,14 @@ package org.apache.ignite.yardstick.cache;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -35,6 +37,12 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * of query results reuse.
  */
 public class IgniteSqlQueryResultsReuseBenchmark extends IgniteCacheAbstractBenchmark<Integer, Person> {
+    /** Timeout for this client to use to make cache puts. */
+    private int putTimeoutMs = DFLT_PUT_TIMEOUT_MS;
+
+    /** Time after which one of this client's threads is allowed to do a cache put. */
+    private volatile long nextPutTime;
+
     /** */
     private final AtomicInteger putCnt = new AtomicInteger();
 
@@ -47,9 +55,28 @@ public class IgniteSqlQueryResultsReuseBenchmark extends IgniteCacheAbstractBenc
     /** Max salary to query. */
     private int maxSalary;
 
+    /** Flag to synchronize puts (one thread gets to make an actual put within a timeout). */
+    private final AtomicBoolean putFlag = new AtomicBoolean();
+
+    /** Default put timeout. */
+    private final static int DFLT_PUT_TIMEOUT_MS = 500;
+
+    /** Property name for put timeout. */
+    private final static String PUT_TIMEOUT_PROP_NAME = "PUT_TIMEOUT";
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        String timeoutProp = cfg.customProperties().get(PUT_TIMEOUT_PROP_NAME);
+
+        if (!F.isEmpty(timeoutProp)) {
+            putTimeoutMs = Integer.parseInt(timeoutProp);
+
+            A.ensure(putTimeoutMs > 0, PUT_TIMEOUT_PROP_NAME);
+
+            println(cfg, "Using custom PUT timeout: " + putTimeoutMs);
+        }
 
         println(cfg, "Populating query data...");
 
@@ -75,16 +102,25 @@ public class IgniteSqlQueryResultsReuseBenchmark extends IgniteCacheAbstractBenc
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        // Let's make puts 20% of all operations.
-        boolean put = (ThreadLocalRandom.current().nextInt(5) == 0);
+        // Let's avoid locking by using CAS here.
+        boolean put = putFlag.compareAndSet(false, true);
 
         if (put) {
-            cache().put(ThreadLocalRandom.current().nextInt(args.range),
-                person(ThreadLocalRandom.current().nextInt(args.range)));
+            long curTime = System.currentTimeMillis();
 
-            putCnt.incrementAndGet();
+            if (curTime > nextPutTime) {
+                cache().put(nextRandom(args.range), person(nextRandom(args.range)));
 
-            return true;
+                putCnt.incrementAndGet();
+
+                nextPutTime = curTime + putTimeoutMs;
+
+                putFlag.set(false);
+
+                return true;
+            }
+            else // It's not the time to put yet, let's release the flag for others to try.
+                putFlag.set(false);
         }
 
         Collection<Cache.Entry<Integer, Person>> entries = executeQuery(minSalary, maxSalary);
