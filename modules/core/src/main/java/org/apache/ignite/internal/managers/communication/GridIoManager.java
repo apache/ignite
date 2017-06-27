@@ -321,7 +321,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             log.debug(startInfo());
 
         addMessageListener(TOPIC_IO_TEST, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 ClusterNode node = ctx.discovery().node(nodeId);
 
                 if (node == null)
@@ -1508,7 +1508,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             CUR_PLC.set(plc);
 
         try {
-            lsnr.onMessage(nodeId, msg);
+            lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
             if (change)
@@ -2333,14 +2333,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param nodeId Node ID.
          * @param msg Message.
          */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridMessageListener[] arr0 = arr;
 
             if (arr0 == null)
                 return;
 
             for (GridMessageListener l : arr0)
-                l.onMessage(nodeId, msg);
+                l.onMessage(nodeId, msg, plc);
         }
 
         /**
@@ -2440,7 +2440,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** {@inheritDoc} */
         @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
             "OverlyStrongTypeCast"})
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridIoUserMessage)) {
                 U.error(log, "Received unknown message (potentially fatal problem): " + msg);
 
