@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -124,7 +125,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE =
-        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, 1000);
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, 1_000);
 
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -784,7 +785,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchFut Exchange future.
      */
     public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionsExchangeFuture exchFut) {
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
         exchWorker.addExchangeFuture(
             new GridDhtPartitionsExchangeFuture(cctx, exchFut.discoveryEvent(), exchFut.exchangeId(), fut));
@@ -1278,7 +1279,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         top = grp.topology();
 
                     if (top != null)
-                        updated |= top.update(null, entry.getValue(), null, msg.partsToReload(cctx.localNodeId(), grpId)) != null;
+                        updated |= top.update(null, entry.getValue(), null, msg.partsToReload(cctx.localNodeId(), grpId));
                 }
 
                 if (!cctx.kernalContext().clientNode() && updated)
@@ -1338,7 +1339,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         top = grp.topology();
 
                     if (top != null) {
-                        updated |= top.update(null, entry.getValue()) != null;
+                        updated |= top.update(null, entry.getValue());
 
                         cctx.affinity().checkRebalanceState(top, grpId);
                     }
@@ -2002,6 +2003,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
+                        if (exchFut.forcedRebalanceFuture() != null)
+                            exchFut.forcedRebalanceFuture().markInitialized();
+
                         if (assignsCancelled) { // Pending exchange.
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
@@ -2143,7 +2147,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             while (size() > EXCHANGE_HISTORY_SIZE) {
                 GridDhtPartitionsExchangeFuture last = last();
 
-                if (last != null && !last.isDone())
+                if (!last.isDone())
                     break;
 
                 removeLast();
@@ -2155,8 +2159,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture removex(
-            GridDhtPartitionsExchangeFuture val
-        ) {
+            GridDhtPartitionsExchangeFuture val) {
+
             return super.removex(val);
         }
 

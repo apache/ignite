@@ -55,6 +55,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -1396,7 +1397,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
         catch (IgniteCheckedException e) {
             // The only option here is to log, as we must assume that resending will fail too.
-            if (isDeadNode(node.id()))
+            if ((e instanceof ClusterTopologyCheckedException) || isDeadNode(node.id()))
                 // Avoid stack trace for left nodes.
                 U.error(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
                     ", jobId=" + req.getJobId() + ']');

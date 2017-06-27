@@ -72,4 +72,4 @@ mixin grid-settings()
                     | {{ $ctrl.selected.length }} item{{ $ctrl.selected.length > 1 ? 's' : '' }} selected            
 
         .panel-collapse
-            .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping)
+            .grid.ui-grid--ignite.ui-grid-disabled-group-selection(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping)

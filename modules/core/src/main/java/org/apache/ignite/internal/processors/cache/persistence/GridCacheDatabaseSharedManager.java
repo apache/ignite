@@ -246,7 +246,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private FilePageStoreManager storeMgr;
 
-    /** */
+    /** Checkpoint metadata directory ("cp"), contains files with checkpoint start and end */
     private File cpDir;
 
     /** */
@@ -676,8 +676,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     ByteBuffer pageBuf,
                     Integer tag
                 ) throws IgniteCheckedException {
+                    // First of all, write page to disk.
                     storeMgr.write(fullId.cacheId(), fullId.pageId(), pageBuf, tag);
 
+                    // Only after write we can write page into snapshot.
                     snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
                 }
             },
@@ -1573,6 +1575,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal())
+                // Local cache has no partitions and its states.
+                continue;
+
             int grpId = grp.groupId();
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
@@ -2109,7 +2115,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
-            CheckpointRecord cpRec = new CheckpointRecord(null, false);
+            CheckpointRecord cpRec = new CheckpointRecord(null);
 
             WALPointer cpPtr = null;
 
@@ -2377,7 +2383,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
 
-                    Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
+                    Integer tag = pageMem.getForCheckpoint(
+                        fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
 
                     if (tag != null) {
                         tmpWriteBuf.rewind();
@@ -2581,7 +2588,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Checkpoint history.
+     * Checkpoint history. Holds chronological ordered map with {@link GridCacheDatabaseSharedManager.CheckpointEntry CheckpointEntries}.
+     * Data is loaded from corresponding checkpoint directory.
+     * This directory holds files for checkpoint start and end.
      */
     @SuppressWarnings("PublicInnerClass")
     public class CheckpointHistory {

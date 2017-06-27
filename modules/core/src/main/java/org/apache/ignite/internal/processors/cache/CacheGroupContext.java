@@ -540,7 +540,7 @@ public class CacheGroupContext {
      */
     public GridDhtPartitionTopology topology() {
         if (top == null)
-            throw new IllegalStateException("Topology is not initialized: " + name());
+            throw new IllegalStateException("Topology is not initialized: " + cacheOrGroupName());
 
         return top;
     }

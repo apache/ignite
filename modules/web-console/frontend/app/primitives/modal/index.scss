@@ -150,15 +150,18 @@
             border-bottom: 1px solid $table-border-color;
 
             h4 {
+                display: inline-flex;
+                align-items: center;
+                margin-top: 1px;
+                margin-bottom: -1px;
+
                 color: $text-color;
                 font-size: 16px;
                 font-family: Roboto;
                 font-weight: 400;
                 line-height: 36px;
-                margin-top: 1px;
-                margin-bottom: -1px;
 
-                svg, i {
+                i, .icon-left, svg {
                     margin-right: 8px;
 
                     color: #424242;
@@ -169,16 +172,43 @@
         }
 
         .modal-body {
-            padding: 20px;
+            margin: 0;
+            padding: 5px 20px;
+
+            .input-tip {
+                padding-top: 0;
+            }
         }
 
         .modal-footer {
             padding: 10px 20px;
 
             border-top: 1px solid $table-border-color;
-            
-            button + button {
+
+            button + button,
+            button + a {
                 margin-left: 20px;
+            }
+        }
+
+        ul.tabs {
+            margin-top: 20px;
+        }
+
+        .panel--ignite {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        ul.tabs + .panel--ignite {
+            margin-top: 0;
+        }
+
+        fieldset {
+            margin: 16px 0;
+
+            & > .row:first-child {
+                margin-top: 0;
             }
         }
     }

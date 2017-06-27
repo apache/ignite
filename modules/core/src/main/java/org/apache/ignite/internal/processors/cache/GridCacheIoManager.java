@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,6 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -355,18 +355,21 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug(msg0.toString());
                 }
-                else
+                else {
                     U.error(log, msg0.toString());
 
-            try {
-                cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
+                    try {
+                        cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
 
-                processFailedMessage(nodeId, cacheMsg, c);
+                        processFailedMessage(nodeId, cacheMsg, c);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to process failed message: " + e, e);
+                    }
+                }
+
+                return;
             }
-            catch (Exception e) {
-                U.error(log, "Failed to process failed message: " + e, e);
-            }return;
-        }
 
             onMessage0(nodeId, cacheMsg, c);
         }
@@ -1092,6 +1095,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param sndErr Send error.
+     * @return {@code True} if node left.
+     * @param ping {@code True} if try ping node.
+     * @throws IgniteClientDisconnectedCheckedException If ping failed.
+     */
+    public boolean checkNodeLeft(UUID nodeId, IgniteCheckedException sndErr, boolean ping)
+        throws IgniteClientDisconnectedCheckedException {
+        return cctx.gridIO().checkNodeLeft(nodeId, sndErr, ping);
+    }
+
+    /**
      * Sends communication message.
      *
      * @param node Node to send the message to.
@@ -1120,6 +1135,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 return;
             }
+            catch (ClusterTopologyCheckedException e) {
+                throw e;
+            }
             catch (IgniteCheckedException e) {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
                     throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
@@ -1135,119 +1153,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
-    }
-
-    /**
-     * Sends message and automatically accounts for lefts nodes.
-     *
-     * @param nodes Nodes to send to.
-     * @param msg Message to send.
-     * @param plc IO policy.
-     * @param fallback Callback for failed nodes.
-     * @throws IgniteCheckedException If send failed.
-     */
-    @SuppressWarnings({"BusyWait", "unchecked"})
-    public void safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, byte plc,
-        @Nullable IgnitePredicate<ClusterNode> fallback) throws IgniteCheckedException {
-        assert nodes != null;
-        assert msg != null;
-
-        if (nodes.isEmpty()) {
-            if (log.isDebugEnabled())
-                log.debug("Message will not be sent as collection of nodes is empty: " + msg);
-
-            return;
-        }
-
-        if (!onSend(msg, null))
-            return;
-
-        if (log.isDebugEnabled())
-            log.debug("Sending cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
-
-        final Collection<UUID> leftIds = new GridLeanSet<>();
-
-        int cnt = 0;
-
-        while (cnt < retryCnt) {
-            try {
-                Collection<? extends ClusterNode> nodesView = F.view(nodes, new P1<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode e) {
-                        return !leftIds.contains(e.id());
-                    }
-                });
-
-                cctx.gridIO().sendToGridTopic(nodesView, TOPIC_CACHE, msg, plc);
-
-                boolean added = false;
-
-                // Even if there is no exception, we still check here, as node could have
-                // ignored the message during stopping.
-                for (ClusterNode n : nodes) {
-                    if (!leftIds.contains(n.id()) && !cctx.discovery().alive(n.id())) {
-                        leftIds.add(n.id());
-
-                        if (fallback != null && !fallback.apply(n))
-                            // If fallback signalled to stop.
-                            return;
-
-                        added = true;
-                    }
-                }
-
-                if (added) {
-                    if (!F.exist(F.nodeIds(nodes), F0.not(F.contains(leftIds)))) {
-                        if (log.isDebugEnabled())
-                            log.debug("Message will not be sent because all nodes left topology [msg=" + msg +
-                                ", nodes=" + U.toShortString(nodes) + ']');
-
-                        return;
-                    }
-                }
-
-                break;
-            }
-            catch (IgniteCheckedException e) {
-                boolean added = false;
-
-                for (ClusterNode n : nodes) {
-                    if (!leftIds.contains(n.id()) &&
-                        (!cctx.discovery().alive(n.id()) || !cctx.discovery().pingNode(n.id()))) {
-                        leftIds.add(n.id());
-
-                        if (fallback != null && !fallback.apply(n))
-                            // If fallback signalled to stop.
-                            return;
-
-                        added = true;
-                    }
-                }
-
-                if (!added) {
-                    cnt++;
-
-                    if (cnt == retryCnt)
-                        throw e;
-
-                    U.sleep(retryDelay);
-                }
-
-                if (!F.exist(F.nodeIds(nodes), F0.not(F.contains(leftIds)))) {
-                    if (log.isDebugEnabled())
-                        log.debug("Message will not be sent because all nodes left topology [msg=" + msg + ", nodes=" +
-                            U.toShortString(nodes) + ']');
-
-                    return;
-                }
-
-                if (log.isDebugEnabled())
-                    log.debug("Message send will be retried [msg=" + msg + ", nodes=" + U.toShortString(nodes) +
-                        ", leftIds=" + leftIds + ']');
-            }
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Sent cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
     }
 
     /**
@@ -1295,6 +1200,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 return;
             }
+            catch (ClusterTopologyCheckedException e) {
+                throw e;
+            }
             catch (IgniteCheckedException e) {
                 if (cctx.discovery().node(node.id()) == null)
                     throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
@@ -1339,6 +1247,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
+        }
+        catch (ClusterTopologyCheckedException e) {
+            throw e;
         }
         catch (IgniteCheckedException e) {
             if (!cctx.discovery().alive(node.id()))

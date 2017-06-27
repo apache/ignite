@@ -381,11 +381,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestConditions()
         {
-            var persons = GetPersonCache().AsCacheQueryable();
+            TestConditional("even", "odd");
+            TestConditional(new Address { Zip = 99999 }, new Address { Zip = 7777777 }, (a1, a2) => a1.Zip == a2.Zip);
+            TestConditional(new RoleKey(int.MaxValue, long.MinValue), new RoleKey(int.MinValue, long.MaxValue));
+            TestConditionalWithNullableStructs<int>();
+            TestConditionalWithNullableStructs<uint>();
+            TestConditionalWithNullableStructs<Guid>();
+            TestConditionalWithNullableStructs<byte>();
+            TestConditionalWithNullableStructs<sbyte>();
+            TestConditionalWithNullableStructs<short>();
+            TestConditionalWithNullableStructs<ushort>();
+            TestConditionalWithNullableStructs<bool>();
+            TestConditionalWithNullableStructs<long>();
+            TestConditionalWithNullableStructs<ulong>();
+            TestConditionalWithNullableStructs<double>();
+            TestConditionalWithNullableStructs<float>();
+            TestConditionalWithNullableStructs<decimal>();
+            TestConditionalWithNullableStructs<DateTime>(DateTime.UtcNow);
 
-            var res = persons.Select(x => new {Foo = x.Key%2 == 0 ? "even" : "odd", x.Value}).ToArray();
-            Assert.AreEqual("even", res[0].Foo);
-            Assert.AreEqual("odd", res[1].Foo);
+            var charException = Assert.Throws<NotSupportedException>(() => TestConditionalWithNullableStructs<char>());
+            Assert.AreEqual("Type is not supported for SQL mapping: System.Char", charException.Message);
 
             var roles = GetRoleCache().AsCacheQueryable();
             CheckFunc(x => x.Value.Name ?? "def_name", roles);
@@ -538,13 +553,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var orgs = GetOrgCache().AsCacheQueryable().Where(x => x.Key > 10);
 
-            var res = persons.Join(orgs,
-                p => p.Value.OrganizationId,
-                o => o.Value.Id, (p, o) => p)
+            var qry1 = persons.Join(orgs,
+                    p => p.Value.OrganizationId,
+                    o => o.Value.Id, 
+                    (p, o) => p)
                 .Where(x => x.Key >= 0)
                 .ToList();
 
-            Assert.AreEqual(PersonCount, res.Count);
+            Assert.AreEqual(PersonCount, qry1.Count);
+
+            // With selector inline
+            var qry2 = persons
+                .Join(orgs.Select(orgEntry => orgEntry.Key),
+                    e => e.Value.OrganizationId,
+                    i => i,
+                    (e, i) => e)
+                .ToList();
+
+            Assert.AreEqual(PersonCount, qry2.Count);
+
+            // With selector from variable
+            var innerSequence = orgs
+                .Select(orgEntry => orgEntry.Key);
+
+            var qry3 = persons
+                .Join(innerSequence,
+                    e => e.Value.OrganizationId,
+                    i => i,
+                    (e, i) => e)
+                .ToList();
+
+            Assert.AreEqual(PersonCount, qry3.Count);
         }
 
         /// <summary>
@@ -1824,6 +1863,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
+        }
+
+        /// <summary>
+        /// Tests conditinal statement
+        /// </summary>
+        private void TestConditional<T>(T even , T odd, Func<T,T,bool> comparer = null)
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            var res = persons
+                .Select(x => new {Foo = x.Key % 2 == 0 ? even : odd, x.Value})
+                .ToArray();
+
+            if (comparer != null)
+            {
+                Assert.IsTrue(comparer(even, res[0].Foo));
+                Assert.IsTrue(comparer(odd, res[1].Foo));
+            }
+            else
+            {
+                Assert.AreEqual(even, res[0].Foo);
+                Assert.AreEqual(odd, res[1].Foo);
+            }
+        }
+
+        /// <summary>
+        /// Tests conditinal statement for structs with default and null values
+        /// </summary>
+        private void TestConditionalWithNullableStructs<T>(T? defaultFalue = null) where T : struct
+        {
+            var def = defaultFalue ?? default(T);
+            TestConditional(def, (T?) null);
         }
 
         public interface IPerson

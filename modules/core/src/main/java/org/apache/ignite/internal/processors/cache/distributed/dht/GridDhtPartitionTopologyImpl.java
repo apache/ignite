@@ -71,7 +71,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 @GridToStringExclude
 public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
+    /** */
     private static final GridDhtPartitionState[] MOVING_STATES = new GridDhtPartitionState[] {MOVING};
+
     /** Flag to control amount of output for full map. */
     private static final boolean FULL_MAP_DEBUG = false;
 
@@ -1057,7 +1059,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
-    @Override public GridDhtPartitionMap update(
+    @Override public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, T2<Long, Long>> cntrMap,
@@ -1072,7 +1074,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         try {
             if (stopping)
-                return null;
+                return false;
 
             if (cntrMap != null) {
                 // update local map partition counters
@@ -1102,7 +1104,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     log.debug("Stale exchange id for full partition map update (will ignore) [lastExch=" +
                         lastExchangeVer + ", exch=" + exchangeVer + ']');
 
-                return null;
+                return false;
             }
 
             if (node2part != null && node2part.compareTo(partMap) > 0) {
@@ -1110,7 +1112,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     log.debug("Stale partition map for full partition map update (will ignore) [lastExch=" +
                         lastExchangeVer + ", exch=" + exchangeVer + ", curMap=" + node2part + ", newMap=" + partMap + ']');
 
-                return null;
+                return false;
             }
 
             if (exchangeVer != null)
@@ -1266,7 +1268,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (changed)
                 ctx.exchange().scheduleResendPartitions();
 
-            return changed ? localPartitionMap() : null;
+            return changed;
         }
         finally {
             lock.writeLock().unlock();
@@ -1334,7 +1336,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
-    @Nullable @Override public GridDhtPartitionMap update(
+    @Override public boolean update(
         @Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap parts
     ) {
@@ -1346,21 +1348,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 log.debug("Received partition update for non-existing node (will ignore) [exchId=" + exchId +
                     ", parts=" + parts + ']');
 
-            return null;
+            return false;
         }
 
         lock.writeLock().lock();
 
         try {
             if (stopping)
-                return null;
+                return false;
 
             if (lastExchangeVer != null && exchId != null && lastExchangeVer.compareTo(exchId.topologyVersion()) > 0) {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for single partition map update (will ignore) [lastExch=" +
                         lastExchangeVer + ", exch=" + exchId.topologyVersion() + ']');
 
-                return null;
+                return false;
             }
 
             if (exchId != null)
@@ -1377,7 +1379,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     log.debug("Stale update for single partition map update (will ignore) [exchId=" + exchId +
                         ", curMap=" + cur + ", newMap=" + parts + ']');
 
-                return null;
+                return false;
             }
 
             long updateSeq = this.updateSeq.incrementAndGet();
@@ -1454,7 +1456,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (changed)
                 ctx.exchange().scheduleResendPartitions();
 
-            return changed ? localPartitionMap() : null;
+            return changed;
         }
         finally {
             lock.writeLock().unlock();
