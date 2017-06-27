@@ -676,8 +676,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     ByteBuffer pageBuf,
                     Integer tag
                 ) throws IgniteCheckedException {
+                    // First of all, write page to disk.
                     storeMgr.write(fullId.cacheId(), fullId.pageId(), pageBuf, tag);
 
+                    // Only after write we can write page into snapshot.
                     snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
                 }
             },
@@ -2381,7 +2383,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
 
-                    Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
+                    Integer tag = pageMem.getForCheckpoint(
+                        fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
 
                     if (tag != null) {
                         tmpWriteBuf.rewind();
