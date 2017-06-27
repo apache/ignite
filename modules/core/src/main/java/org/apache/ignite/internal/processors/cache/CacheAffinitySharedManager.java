@@ -772,10 +772,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
-        for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()) {
-            cctx.exchange().clearClientTopology(grpDesc.groupId());
+        for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
+            cctx.exchange().clearClientTopology(data.descriptor().groupId());
 
-            CacheGroupContext gctx = cctx.cache().cacheGroup(grpDesc.groupId());
+            CacheGroupContext gctx = cctx.cache().cacheGroup(data.descriptor().groupId());
 
             if (gctx != null) {
                 IgniteCheckedException ex;
@@ -797,11 +797,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Set<Integer> stoppedGrps = null;
 
         if (crd && lateAffAssign) {
-            for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()) {
-                if (grpDesc.config().getCacheMode() != LOCAL) {
-                    CacheGroupHolder cacheGrp = grpHolders.remove(grpDesc.groupId());
+            for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
+                if (data.descriptor().config().getCacheMode() != LOCAL) {
+                    CacheGroupHolder cacheGrp = grpHolders.remove(data.descriptor().groupId());
 
-                    assert cacheGrp != null : grpDesc;
+                    assert cacheGrp != null : data.descriptor();
 
                     if (stoppedGrps == null)
                         stoppedGrps = new HashSet<>();
@@ -2270,7 +2270,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (!registeredGrps.containsKey(grpDesc.groupId()))
                     registeredGrps.put(grpDesc.groupId(), grpDesc);
 
-                if (!registeredCaches.containsKey(desc.cacheName()))
+                if (!registeredCaches.containsKey(desc.cacheId()))
                     registeredCaches.put(desc.cacheId(), desc);
             }
         }
@@ -2279,14 +2279,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param exchActions Exchange actions.
          */
         void updateCachesInfo(ExchangeActions exchActions) {
-            for (CacheGroupDescriptor stopDesc : exchActions.cacheGroupsToStop()) {
-                CacheGroupDescriptor rmvd = registeredGrps.remove(stopDesc.groupId());
+            for (ExchangeActions.CacheGroupActionData stopData : exchActions.cacheGroupsToStop()) {
+                CacheGroupDescriptor rmvd = registeredGrps.remove(stopData.descriptor().groupId());
 
-                assert rmvd != null : stopDesc.cacheOrGroupName();
+                assert rmvd != null : stopData.descriptor().cacheOrGroupName();
             }
 
-            for (CacheGroupDescriptor startDesc : exchActions.cacheGroupsToStart()) {
-                CacheGroupDescriptor old = registeredGrps.put(startDesc.groupId(), startDesc);
+            for (ExchangeActions.CacheGroupActionData startData : exchActions.cacheGroupsToStart()) {
+                CacheGroupDescriptor old = registeredGrps.put(startData.descriptor().groupId(), startData.descriptor());
 
                 assert old == null : old;
             }

@@ -2131,28 +2131,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            Map<Integer, IgniteBiTuple<CacheGroupContext, Boolean>> groupsToBeStopped = retrieveGroupsToBeStopped(exchActions);
-
             for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
-                String cacheName = action.request().cacheName();
-                boolean destroy = action.request().destroy();
-
-                if (!caches.containsKey(cacheName))
-                    continue;
-
-                if (destroy && groupsToBeStopped != null) {
-                    Integer cacheGroupId = caches.get(cacheName).context().group().groupId();
-                    // If group associated with cache which will be stopped
-                    // it's not necessary to explicitly destroy it
-                    destroy = !groupsToBeStopped.containsKey(cacheGroupId);
-                }
-
                 stopGateway(action.request());
 
                 sharedCtx.database().checkpointReadLock();
 
                 try {
-                    prepareCacheStop(cacheName, destroy);
+                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
 
                     if (exchActions.newClusterState() == null)
                         ctx.state().onCacheStop(action.request());
@@ -2162,50 +2147,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            if (groupsToBeStopped != null) {
-                for (Integer groupId : groupsToBeStopped.keySet()) {
-                    stopCacheGroup(groupId);
-                }
-
-                if (!sharedCtx.kernalContext().clientNode())
-                    sharedCtx.database().onCacheGroupsStopped(groupsToBeStopped.values());
-            }
-        }
-    }
-
-    /**
-     * Method retrieves map containing groups to be stopped from exchange actions
-     *
-     * @param exchActions Exchange actions
-     * @return Map with following structure <GroupId, <GroupContext, DestroyFlag>>
-     */
-    private Map<Integer, IgniteBiTuple<CacheGroupContext, Boolean>> retrieveGroupsToBeStopped(ExchangeActions exchActions) {
-        List<CacheGroupDescriptor> cacheGroupsToStop = exchActions.cacheGroupsToStop();
-
-        if (cacheGroupsToStop.size() == 0)
-            return null;
-
-        Map<Integer, IgniteBiTuple<CacheGroupContext, Boolean>> result = new HashMap<>();
-
-        for (CacheGroupDescriptor grpDesc : cacheGroupsToStop) {
-            CacheGroupContext groupContext = cacheGrps.get(grpDesc.groupId());
-
-            if (groupContext == null)
-                continue;
-
-            boolean destroyGroup = false;
-            // Check if there is any cache stop & destroy action associated with this group
-            for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
-                if (action.request().destroy() && groupContext.hasCache(action.request().cacheName())) {
-                    destroyGroup = true;
-                    break;
-                }
+            for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+                stopCacheGroup(action.descriptor().groupId());
             }
 
-            result.put(grpDesc.groupId(), F.t(groupContext, destroyGroup));
-        }
+            if (!sharedCtx.kernalContext().clientNode()) {
+                List<IgniteBiTuple<CacheGroupContext, Boolean>> groupsToBeStopped = new ArrayList<>();
 
-        return result;
+                for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+                    Integer groupId = action.descriptor().groupId();
+
+                    if (!cacheGrps.containsKey(groupId))
+                        continue;
+
+                    groupsToBeStopped.add(F.t(cacheGrps.get(groupId), action.destroy()));
+                }
+
+                sharedCtx.database().onCacheGroupsStopped(groupsToBeStopped);
+            }
+        }
     }
 
     /**
