@@ -1405,7 +1405,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     break;
                 }
-                catch (IgniteInterruptedCheckedException e) {
+                catch (ClusterTopologyCheckedException | IgniteInterruptedCheckedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {

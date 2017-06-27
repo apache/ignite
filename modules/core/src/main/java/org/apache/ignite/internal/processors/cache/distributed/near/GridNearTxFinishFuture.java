@@ -608,10 +608,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @return {@code True} if need to send finish request for one phase commit transaction.
      */
     private boolean needFinishOnePhase(boolean commit) {
+        assert tx.onePhaseCommit();
+
         if (tx.mappings().empty())
             return false;
 
-        return tx.txState().hasNearCache(cctx) || !commit;
+        if (!commit)
+            return true;
+
+        GridDistributedTxMapping mapping = tx.mappings().singleMapping();
+
+        assert mapping != null;
+
+        return mapping.hasNearCacheEntries();
     }
 
     /**

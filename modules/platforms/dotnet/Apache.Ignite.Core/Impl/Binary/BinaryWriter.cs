@@ -1201,7 +1201,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Write type name for unregistered types
             if (!desc.IsRegistered)
-                WriteString(type.AssemblyQualifiedName);
+            {
+                WriteString(Marshaller.GetTypeName(type));
+            }
 
             var headerSize = _stream.Position - pos;
 

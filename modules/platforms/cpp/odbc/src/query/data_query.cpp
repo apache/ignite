@@ -19,6 +19,7 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/query/data_query.h"
+#include "ignite/odbc/query/batch_query.h"
 
 namespace ignite
 {
@@ -26,9 +27,8 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(diagnostic::Diagnosable& diag,
-                Connection& connection, const std::string& sql,
-                const app::ParameterBindingMap& params) :
+            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                const std::string& sql, const app::ParameterSet& params) :
                 Query(diag, QueryType::DATA),
                 connection(connection),
                 sql(sql),
@@ -39,7 +39,7 @@ namespace ignite
 
             DataQuery::~DataQuery()
             {
-                Close();
+                InternalClose();
             }
 
             SqlResult::Type DataQuery::Execute()
@@ -141,10 +141,18 @@ namespace ignite
 
             SqlResult::Type DataQuery::Close()
             {
+                return InternalClose();
+            }
+
+            SqlResult::Type DataQuery::InternalClose()
+            {
                 if (!cursor.get())
                     return SqlResult::AI_SUCCESS;
 
-                SqlResult::Type result = MakeRequestClose();
+                SqlResult::Type result = SqlResult::AI_SUCCESS;
+
+                if (cursor->HasData())
+                    result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)
                 {

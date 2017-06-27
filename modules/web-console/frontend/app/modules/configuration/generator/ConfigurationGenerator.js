@@ -1717,8 +1717,12 @@ export default class IgniteConfigurationGenerator {
 
     // Generate cache general group.
     static cacheGeneral(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
-        ccfg.stringProperty('name')
-            .enumProperty('cacheMode')
+        ccfg.stringProperty('name');
+
+        if (available('2.1.0'))
+            ccfg.stringProperty('groupName');
+
+        ccfg.enumProperty('cacheMode')
             .enumProperty('atomicityMode');
 
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('backups')) {

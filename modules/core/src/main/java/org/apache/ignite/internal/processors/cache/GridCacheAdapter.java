@@ -5368,7 +5368,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
             if (cache == null)
-                return 0;
+                return 0L;
 
             try {
                 return cache.localSizeLong(peekModes);

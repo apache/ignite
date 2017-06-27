@@ -74,10 +74,6 @@ public class DiscoCache {
     /** Node map. */
     private final Map<UUID, ClusterNode> nodeMap;
 
-    /** Caches where at least one node has near cache enabled. */
-    @GridToStringInclude
-    private final Set<Integer> nearEnabledCaches;
-
     /** Alive nodes. */
     private final Set<UUID> alives = new GridConcurrentHashSet<>();
 
@@ -93,7 +89,6 @@ public class DiscoCache {
      * @param allCacheNodes Cache nodes by cache name.
      * @param cacheGrpAffNodes Affinity nodes by cache group ID.
      * @param nodeMap Node map.
-     * @param nearEnabledCaches Caches where at least one node has near cache enabled.
      * @param alives Alive nodes.
      */
     DiscoCache(ClusterNode loc,
@@ -107,7 +102,6 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> allCacheNodes,
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
-        Set<Integer> nearEnabledCaches,
         Set<UUID> alives) {
         this.loc = loc;
         this.rmtNodes = rmtNodes;
@@ -120,7 +114,6 @@ public class DiscoCache {
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        this.nearEnabledCaches = nearEnabledCaches;
         this.alives.addAll(alives);
     }
 
@@ -240,16 +233,6 @@ public class DiscoCache {
      */
     public List<ClusterNode> cacheGroupAffinityNodes(int grpId) {
         return emptyIfNull(cacheGrpAffNodes.get(grpId));
-    }
-
-    /**
-     * Checks if cache with given ID has at least one node with near cache enabled.
-     *
-     * @param cacheId Cache ID.
-     * @return {@code True} if cache with given name has at least one node with near cache enabled.
-     */
-    public boolean hasNearCache(int cacheId) {
-        return nearEnabledCaches.contains(cacheId);
     }
 
     /**
