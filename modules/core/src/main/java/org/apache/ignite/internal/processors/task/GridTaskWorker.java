@@ -1123,7 +1123,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Reduced job responses [reduceRes=" + reduceRes + ", ses=" + ses + ']');
+                log.debug(S.toString("Reduced job responses",
+                    "reduceRes", reduceRes, true,
+                    "ses", ses, false));
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
@@ -1282,6 +1284,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             new GridJobCancelRequest(ses.getId(), res.getJobContext().getJobId(), /*courtesy*/true),
                             PUBLIC_POOL);
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send cancel request, node failed: " + nodeId);
+                }
                 catch (IgniteCheckedException e) {
                     try {
                         if (!isDeadNode(nodeId))
@@ -1372,7 +1378,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         subjId,
                         affCacheIds,
                         affPartId,
-                        mapTopVer);
+                        mapTopVer,
+                        ses.executorName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
@@ -1408,7 +1415,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             IgniteException fakeErr = null;
 
             try {
-                boolean deadNode = isDeadNode(res.getNode().id());
+                boolean deadNode = e instanceof ClusterTopologyCheckedException || isDeadNode(res.getNode().id());
 
                 // Avoid stack trace if node has left grid.
                 if (deadNode) {

@@ -132,11 +132,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNearCache(GridCacheSharedContext cctx) {
-        return cacheCtx != null && cacheCtx.isNear();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDhtTopologyFuture topologyReadLock(GridCacheSharedContext cctx, GridFutureAdapter<?> fut) {
         if (cacheCtx == null || cacheCtx.isLocal())
             return cctx.exchange().lastTopologyFuture();

@@ -276,6 +276,33 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
     }
 
+    /**
+     * @param cacheId Cache ID.
+     */
+    public void rollbackTransactionsForCache(int cacheId) {
+        rollbackTransactionsForCache(cacheId, nearIdMap);
+
+        rollbackTransactionsForCache(cacheId, threadMap);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param txMap Transactions map.
+     */
+    private void rollbackTransactionsForCache(int cacheId, ConcurrentMap<?, IgniteInternalTx> txMap) {
+        for (Map.Entry<?, IgniteInternalTx> e : txMap.entrySet()) {
+            IgniteInternalTx tx = e.getValue();
+
+            for (IgniteTxEntry entry : tx.allEntries()) {
+                if (entry.cacheId() == cacheId) {
+                    rollbackTx(tx);
+
+                    break;
+                }
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
         txFinishSync.onDisconnected(reconnectFut);
@@ -774,12 +801,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Handles prepare stage of 2PC.
+     * Handles prepare stage.
      *
      * @param tx Transaction to prepare.
+     * @param entries Entries to lock or {@code null} if use default {@link IgniteInternalTx#optimisticLockEntries()}.
      * @throws IgniteCheckedException If preparation failed.
      */
-    public void prepareTx(IgniteInternalTx tx) throws IgniteCheckedException {
+    public void prepareTx(IgniteInternalTx tx, @Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
         if (tx.state() == MARKED_ROLLBACK) {
             if (tx.remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
@@ -799,7 +827,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         // Optimistic.
         assert tx.optimistic() || !tx.local();
 
-        if (!lockMultiple(tx, tx.optimisticLockEntries())) {
+        if (!lockMultiple(tx, entries != null ? entries : tx.optimisticLockEntries())) {
             tx.setRollbackOnly();
 
             throw new IgniteTxOptimisticCheckedException("Failed to prepare transaction (lock conflict): " + tx);
@@ -2408,11 +2436,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         @Override public void onMessage(UUID nodeId, Object msg) {
             GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
-            unmarshall(nodeId, cacheMsg);
+            Throwable err = null;
 
-            if (cacheMsg.classError() != null) {
+            try {
+                unmarshall(nodeId, cacheMsg);
+            }
+            catch (Exception e) {
+                err = e;
+            }
+
+            if (err != null || cacheMsg.classError() != null) {
                 try {
-                    processFailedMessage(nodeId, cacheMsg);
+                    processFailedMessage(nodeId, cacheMsg, err);
                 }
                 catch(Throwable e){
                     U.error(log, "Failed to process message [senderId=" + nodeId +
@@ -2440,6 +2475,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                         cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
                     }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send response, node failed: " + nodeId);
+                    }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send response to node [node=" + nodeId + ", res=" + res + ']', e);
                     }
@@ -2465,7 +2504,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param nodeId Node ID.
          * @param msg Message.
          */
-        private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
+        private void processFailedMessage(UUID nodeId, GridCacheMessage msg, Throwable err) throws IgniteCheckedException {
             switch (msg.directType()) {
                 case -24: {
                     TxLocksRequest req = (TxLocksRequest)msg;
@@ -2476,6 +2515,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     try {
                         cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send response, node failed: " + nodeId);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
@@ -2497,7 +2540,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         return;
                     }
 
-                    fut.onResult(nodeId, res);
+                    if (err == null)
+                        fut.onResult(nodeId, res);
+                    else
+                        fut.onDone(null, err);
                 }
 
                 break;

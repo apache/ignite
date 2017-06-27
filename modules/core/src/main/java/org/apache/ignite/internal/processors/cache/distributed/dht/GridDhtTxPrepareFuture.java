@@ -36,6 +36,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -67,7 +69,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -101,7 +102,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
-    implements GridCacheMvccFuture<GridNearTxPrepareResponse> {
+    implements GridCacheMvccFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -373,8 +374,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.nearOnOriginatingNode() || tx.hasInterceptor();
 
                 if (readOld) {
-                    cached.unswap(retVal);
-
                     boolean readThrough = !txEntry.skipStore() &&
                         (txEntry.op() == TRANSFORM || ((retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue()));
 
@@ -482,7 +481,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 // Send old value in case if rebalancing is not finished.
-                final boolean sndOldVal = !cacheCtx.isLocal() && !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
+                final boolean sndOldVal = !cacheCtx.isLocal() &&
+                    !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
 
                 if (sndOldVal) {
                     if (oldVal == null && !readOld) {
@@ -499,11 +499,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*keepBinary*/true);
                     }
 
-                    if (oldVal != null) {
+                    if (oldVal != null)
                         oldVal.prepareMarshal(cacheCtx.cacheObjectContext());
 
-                        txEntry.oldValue(oldVal, true);
-                    }
+                    txEntry.oldValue(oldVal);
                 }
             }
             catch (IgniteCheckedException e) {
@@ -856,6 +855,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             ret,
             prepErr,
             null,
+            tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
         if (prepErr == null) {
@@ -919,6 +919,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             if (res.hasOwnedValue(ver.getKey()))
                 continue;
+
+            assert txEntry != null : ver;
 
             GridCacheContext cacheCtx = txEntry.context();
 
@@ -1087,7 +1089,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Collection<KeyCacheObject> keys = entry.getValue();
 
-            lastForceFut = cctx.cacheContext(cacheId).preloader().request(keys, tx.topologyVersion());
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            lastForceFut = ctx.group().preloader().request(ctx, keys, tx.topologyVersion());
 
             if (compFut != null && lastForceFut != null)
                 compFut.add(lastForceFut);
@@ -1142,7 +1146,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             assert key != null : entry.key();
 
-            msg.append("key=").append(key.toString()).append(", keyCls=").append(key.getClass().getName());
+            if (S.INCLUDE_SENSITIVE)
+                msg.append("key=").append(key.toString()).append(", keyCls=").append(key.getClass().getName());
         }
         catch (Exception e) {
             msg.append("key=<failed to get key: ").append(e.toString()).append(">");
@@ -1155,8 +1160,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Object val = cacheVal != null ? cctx.unwrapBinaryIfNeeded(cacheVal, entry.keepBinary(), false) : null;
 
-            if (val != null)
-                msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
+            if (val != null) {
+                if (S.INCLUDE_SENSITIVE)
+                    msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
+            }
             else
                 msg.append(", val=null");
         }
@@ -1225,6 +1232,16 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
+                if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
+                    for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
+                        if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
+                            tx.onePhaseCommit(false);
+
+                            break;
+                        }
+                    }
+                }
+
                 int miniId = 0;
 
                 assert tx.transactionNodes() != null;
@@ -1272,6 +1289,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         tx.subjectId(),
                         tx.taskNameHash(),
                         tx.activeCachesDeploymentEnabled(),
+                        tx.storeWriteThrough(),
                         retVal);
 
                     int idx = 0;
@@ -1384,6 +1402,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             tx.subjectId(),
                             tx.taskNameHash(),
                             tx.activeCachesDeploymentEnabled(),
+                            tx.storeWriteThrough(),
                             retVal);
 
                         for (IgniteTxEntry entry : nearMapping.entries()) {
@@ -1530,21 +1549,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     ) {
         GridDistributedTxMapping global = globalMap.get(n.id());
 
-        if (!F.isEmpty(entry.entryProcessors())) {
-            GridDhtPartitionState state = entry.context().topology().partitionState(n.id(),
-                entry.cached().partition());
-
-            if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
-                T2<GridCacheOperation, CacheObject> procVal = entry.entryProcessorCalculatedValue();
-
-                assert procVal != null : entry;
-
-                entry.op(procVal.get1());
-                entry.value(procVal.get2(), true, false);
-                entry.entryProcessors(null);
-            }
-        }
-
         if (global == null)
             globalMap.put(n.id(), global = new GridDistributedTxMapping(n));
 
@@ -1575,6 +1579,33 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         return lessPending;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext req) {
+        if (!isDone()) {
+            for (IgniteInternalFuture fut : futures()) {
+                if (!fut.isDone() && fut instanceof MiniFuture) {
+                    MiniFuture f = (MiniFuture)fut;
+
+                    if (!f.node().isLocal()) {
+                        GridCacheVersion dhtVer = tx.xidVersion();
+                        GridCacheVersion nearVer = tx.nearXidVersion();
+
+                        req.remoteTxInfo(f.nodeId, dhtVer, nearVer, "GridDhtTxPrepareFuture " +
+                            "waiting for response [node=" + f.nodeId +
+                            ", topVer=" + tx.topologyVersion() +
+                            ", dhtVer=" + dhtVer +
+                            ", nearVer=" + nearVer +
+                            ", futId=" + futId +
+                            ", miniId=" + f.futId +
+                            ", tx=" + tx + ']');
+
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

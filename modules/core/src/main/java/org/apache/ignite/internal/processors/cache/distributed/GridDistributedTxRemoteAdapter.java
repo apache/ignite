@@ -387,7 +387,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
 
         try {
-            cctx.tm().prepareTx(this);
+            cctx.tm().prepareTx(this, null);
 
             if (pessimistic() || isSystemInvalidate())
                 state(PREPARED);
@@ -594,6 +594,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         dhtVer,
                                                         txEntry.updateCounter());
                                                 else {
+                                                    assert val != null : txEntry;
+
                                                     cached.innerSet(this,
                                                         eventNodeId(),
                                                         nodeId,

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.spi.IgniteSpi;
@@ -153,7 +154,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         assert target != null;
 
         if (log.isDebugEnabled())
-            log.debug("Injecting resources: " + target);
+            log.debug(S.toString("Injecting resources", "target", target, true));
 
         // Unwrap Proxy object.
         target = unwrapTarget(target);
@@ -239,7 +240,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         assert obj != null;
 
         if (log.isDebugEnabled())
-            log.debug("Injecting resources: " + obj);
+            log.debug(S.toString("Injecting resources", "obj", obj, true));
 
         // Unwrap Proxy object.
         obj = unwrapTarget(obj);
@@ -388,7 +389,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     public void inject(GridDeployment dep, Class<?> taskCls, ComputeJob job, ComputeTaskSession ses,
         GridJobContextImpl jobCtx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Injecting resources: " + job);
+            log.debug(S.toString("Injecting resources", "job", job, true));
 
         // Unwrap Proxy object.
         Object obj = unwrapTarget(job);
@@ -432,7 +433,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     public void inject(GridDeployment dep, ComputeTask<?, ?> task, GridTaskSessionImpl ses,
         ComputeLoadBalancer balancer, ComputeTaskContinuousMapper mapper) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Injecting resources: " + task);
+            log.debug(S.toString("Injecting resources", "task", task, true));
 
         // Unwrap Proxy object.
         Object obj = unwrapTarget(task);

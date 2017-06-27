@@ -33,7 +33,8 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link SparseLocalOffHeapVectorStorage}.
  */
 public class SparseLocalOffHeapVectorStorageTest extends ExternalizeTest<SparseLocalOffHeapVectorStorage> {
-    /** */ private SparseLocalOffHeapVectorStorage testVectorStorage;
+    /** */
+    private SparseLocalOffHeapVectorStorage testVectorStorage;
 
     /** */
     @Before

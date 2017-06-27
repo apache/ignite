@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -45,7 +46,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,7 +58,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -89,7 +88,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration(boolean evict, boolean store) throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -157,7 +156,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             checkInternalCleanup();
         }
         finally {
-            ignite(0).destroyCache(null);
+            ignite(0).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 
@@ -261,7 +260,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             }
         });
 
-        final IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         int iter = 0;
 
@@ -443,13 +442,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     private void checkInternalCleanup() throws Exception{
         checkNoAtomicFutures();
 
-        checkOnePhaseCommitReturnValuesCleaned();
+        checkOnePhaseCommitReturnValuesCleaned(GRID_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    void checkNoAtomicFutures() throws Exception {
+    private void checkNoAtomicFutures() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             final IgniteKernal ignite = (IgniteKernal)grid(i);
 
@@ -462,27 +461,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
 
             assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    void checkOnePhaseCommitReturnValuesCleaned() throws Exception {
-        U.sleep(DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT);
-
-        for (int i = 0; i < GRID_CNT; i++) {
-            IgniteKernal ignite = (IgniteKernal)grid(i);
-
-            IgniteTxManager tm = ignite.context().cache().context().tm();
-
-            Map completedVersHashMap = U.field(tm, "completedVersHashMap");
-
-            for (Object o : completedVersHashMap.values()) {
-                assertTrue("completedVersHashMap contains" + o.getClass() + " instead of boolean. " +
-                    "These values should be replaced by boolean after onePhaseCommit finished. " +
-                    "[node=" + i + "]", o instanceof Boolean);
-            }
         }
     }
 
@@ -528,7 +506,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
             boolean eThrown = false;
 
-            IgniteCache<Object, Object> cache = ignite(0).cache(null).withNoRetries();
+            IgniteCache<Object, Object> cache = ignite(0).cache(DEFAULT_CACHE_NAME).withNoRetries();
 
             long stopTime = System.currentTimeMillis() + 60_000;
 
@@ -620,25 +598,33 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         }
     }
 
-    /**
-     *
-     */
     private static class TestStoreFactory implements Factory<CacheStore> {
         /** {@inheritDoc} */
         @Override public CacheStore create() {
-            return new CacheStoreAdapter() {
-                @Override public Object load(Object key) throws CacheLoaderException {
-                    return null;
-                }
+            return new TestCacheStore();
+        }
+    }
 
-                @Override public void write(Cache.Entry entry) throws CacheWriterException {
-                    // No-op.
-                }
+    /**
+     *
+     */
+    private static class TestCacheStore extends CacheStoreAdapter {
+        /** Store map. */
+        private static Map STORE_MAP = new ConcurrentHashMap();
 
-                @Override public void delete(Object key) throws CacheWriterException {
-                    // No-op.
-                }
-            };
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return STORE_MAP.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry entry) throws CacheWriterException {
+            STORE_MAP.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            STORE_MAP.remove(key);
         }
     }
 }

@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -221,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
 
             // Called on both nodes
-            TestUtils.WaitForCondition(() => RemovedNodes.Count > 0, 3000);
+            TestUtils.WaitForCondition(() => RemovedNodes.Count == 6, 3000);
             Assert.GreaterOrEqual(RemovedNodes.Count, 6);
             Assert.AreEqual(expectedNodeId, RemovedNodes.Distinct().Single());
         }

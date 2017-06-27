@@ -24,12 +24,14 @@ import java.io.Serializable;
  */
 public interface ValueMapper<V> extends Serializable {
     /**
-     * @param v
+     * @param v Value to map from double.
+     * @return Mapped value.
      */
     public V fromDouble(double v);
 
     /**
-     * @param v
+     * @param v Value to map to double.
+     * @return Mapped value.
      */
     public double toDouble(V v);
 }

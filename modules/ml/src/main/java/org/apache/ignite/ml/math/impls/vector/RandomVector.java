@@ -22,22 +22,23 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.ml.math.impls.storage.vector.RandomVectorStorage;
-import org.apache.ignite.ml.math.Vector;
 
 /**
  * Random vector. Each value is taken from {-1,0,1} with roughly equal probability. Note
  * that by default, the value is determined by a relatively simple hash of the index.
  */
 public class RandomVector extends AbstractReadOnlyVector {
-    /** */ private boolean fastHash;
+    /** */
+    private boolean fastHash;
 
     /**
      * @param size Vector cardinality.
-     * @param fastHash
+     * @param fastHash Whether or not to use fast hashing or Murmur hashing.
      */
     private VectorStorage mkStorage(int size, boolean fastHash) {
         this.fastHash = fastHash;
@@ -46,22 +47,22 @@ public class RandomVector extends AbstractReadOnlyVector {
     }
 
     /**
-     * @param size
-     * @param fastHash
+     * @param size Vector cardinality.
+     * @param fastHash Whether or not to use fast hashing or Murmur hashing.
      */
     public RandomVector(int size, boolean fastHash) {
         setStorage(mkStorage(size, fastHash));
     }
 
     /**
-     * @param size
+     * @param size Vector cardinality.
      */
     public RandomVector(int size) {
         this(size, true);
     }
 
     /**
-     * @param args
+     * @param args Parameters to create new vector instance.
      */
     public RandomVector(Map<String, Object> args) {
         assert args != null;

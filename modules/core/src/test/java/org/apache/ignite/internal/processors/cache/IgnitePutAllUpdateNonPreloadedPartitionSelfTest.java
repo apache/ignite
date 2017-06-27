@@ -77,11 +77,11 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         try {
             for (int i = 0; i < GRID_CNT - 1; i++)
-                grid(i).cache(null).rebalance().get();
+                grid(i).cache(DEFAULT_CACHE_NAME).rebalance().get();
 
             startGrid(GRID_CNT - 1);
 
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             final int keyCnt = 100;
 
@@ -99,7 +99,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
             for (int g = 0; g < GRID_CNT; g++) {
                 IgniteKernal k = (IgniteKernal)grid(g);
 
-                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache();
+                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
                 assertEquals(0, cacheAdapter.context().tm().idMapSize());
 

@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// <see cref="IMessaging"/> tests.
     /// </summary>
-    public class MessagingTest
+    public sealed class MessagingTest
     {
         /** */
         private IIgnite _grid1;
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests
         private IIgnite _grid3;
 
         /** */
-        public static int MessageId;
+        private static int _messageId;
 
         /// <summary>
         /// Executes before each test.
@@ -53,9 +53,9 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(GetConfiguration("grid-1"));
+            _grid2 = Ignition.Start(GetConfiguration("grid-2"));
+            _grid3 = Ignition.Start(GetConfiguration("grid-3"));
 
             Assert.AreEqual(3, _grid1.GetCluster().GetNodes().Count);
         }
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests
         /// Executes after each test.
         /// </summary>
         [TearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             try
             {
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests LocalListen.
         /// </summary>
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
-        public void TestLocalListen(object topic)
+        private void TestLocalListen(object topic)
         {
             var messaging = _grid1.GetMessaging();
             var listener = MessagingTestHelper.GetListener();
@@ -484,13 +484,11 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string name)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                IgniteInstanceName = name
             };
         }
 
@@ -508,7 +506,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static int NextId()
         {
-            return Interlocked.Increment(ref MessageId);
+            return Interlocked.Increment(ref _messageId);
         }
     }
 
@@ -522,13 +520,13 @@ namespace Apache.Ignite.Core.Tests
         public static readonly ConcurrentStack<string> ReceivedMessages = new ConcurrentStack<string>();
         
         /** */
-        public static readonly ConcurrentStack<string> Failures = new ConcurrentStack<string>();
+        private static readonly ConcurrentStack<string> Failures = new ConcurrentStack<string>();
 
         /** */
-        public static readonly CountdownEvent ReceivedEvent = new CountdownEvent(0);
+        private static readonly CountdownEvent ReceivedEvent = new CountdownEvent(0);
 
         /** */
-        public static readonly ConcurrentStack<Guid> LastNodeIds = new ConcurrentStack<Guid>();
+        private static readonly ConcurrentStack<Guid> LastNodeIds = new ConcurrentStack<Guid>();
 
         /** */
         public static volatile bool ListenResult = true;

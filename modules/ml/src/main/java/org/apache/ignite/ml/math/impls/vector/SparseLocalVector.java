@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
+import java.util.Map;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
@@ -35,8 +36,16 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
     }
 
     /**
-     * @param size
-     * @param acsMode
+     * @param map Underlying map.
+     * @param copy Should given map be copied.
+     */
+    public SparseLocalVector(Map<Integer, Double> map, boolean copy) {
+        setStorage(new SparseLocalOnHeapVectorStorage(map, copy));
+    }
+
+    /**
+     * @param size Vector size.
+     * @param acsMode Vector elements access mode.
      */
     public SparseLocalVector(int size, int acsMode) {
         assertAccessMode(acsMode);

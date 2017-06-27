@@ -48,6 +48,7 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="name" value="default"/>
                 </bean>
             </list>
         </property>

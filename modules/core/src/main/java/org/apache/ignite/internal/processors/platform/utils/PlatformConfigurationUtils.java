@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -52,11 +53,13 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
-import org.apache.ignite.internal.binary.BinaryIdentityResolver;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
@@ -148,6 +151,7 @@ public class PlatformConfigurationUtils {
         ccfg.setStoreKeepBinary(in.readBoolean());
         ccfg.setLoadPreviousValue(in.readBoolean());
         ccfg.setDefaultLockTimeout(in.readLong());
+        //noinspection deprecation
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
         ccfg.setName(in.readString());
@@ -158,16 +162,24 @@ public class PlatformConfigurationUtils {
         ccfg.setRebalanceThrottle(in.readLong());
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
-        ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
         ccfg.setWriteBehindEnabled(in.readBoolean());
         ccfg.setWriteBehindFlushFrequency(in.readLong());
         ccfg.setWriteBehindFlushSize(in.readInt());
         ccfg.setWriteBehindFlushThreadCount(in.readInt());
+        ccfg.setWriteBehindCoalescing(in.readBoolean());
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
         ccfg.setReadThrough(in.readBoolean());
         ccfg.setWriteThrough(in.readBoolean());
         ccfg.setStatisticsEnabled(in.readBoolean());
+
+        String memoryPolicyName = in.readString();
+
+        if (memoryPolicyName != null)
+            ccfg.setMemoryPolicyName(memoryPolicyName);
+
+        ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
+        ccfg.setGroupName(in.readString());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -481,6 +493,9 @@ public class PlatformConfigurationUtils {
             res.setIndexes(indexes);
         }
 
+        res.setKeyFieldName(in.readString());
+        res.setValueFieldName(in.readString());
+
         return res;
     }
 
@@ -516,20 +531,61 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
-        if (in.readBoolean()) cfg.setClientMode(in.readBoolean());
-        int[] eventTypes = in.readIntArray(); if (eventTypes != null) cfg.setIncludeEventTypes(eventTypes);
-        if (in.readBoolean()) cfg.setMetricsExpireTime(in.readLong());
-        if (in.readBoolean()) cfg.setMetricsHistorySize(in.readInt());
-        if (in.readBoolean()) cfg.setMetricsLogFrequency(in.readLong());
-        if (in.readBoolean()) cfg.setMetricsUpdateFrequency(in.readLong());
-        if (in.readBoolean()) cfg.setNetworkSendRetryCount(in.readInt());
-        if (in.readBoolean()) cfg.setNetworkSendRetryDelay(in.readLong());
-        if (in.readBoolean()) cfg.setNetworkTimeout(in.readLong());
-        String workDir = in.readString(); if (workDir != null) cfg.setWorkDirectory(workDir);
-        String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
-        if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
-        if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean()) cfg.setFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setClientMode(in.readBoolean());
+        int[] eventTypes = in.readIntArray();
+        if (eventTypes != null)
+            cfg.setIncludeEventTypes(eventTypes);
+        if (in.readBoolean())
+            cfg.setMetricsExpireTime(in.readLong());
+        if (in.readBoolean())
+            cfg.setMetricsHistorySize(in.readInt());
+        if (in.readBoolean())
+            cfg.setMetricsLogFrequency(in.readLong());
+        if (in.readBoolean())
+            cfg.setMetricsUpdateFrequency(in.readLong());
+        if (in.readBoolean())
+            cfg.setNetworkSendRetryCount(in.readInt());
+        if (in.readBoolean())
+            cfg.setNetworkSendRetryDelay(in.readLong());
+        if (in.readBoolean())
+            cfg.setNetworkTimeout(in.readLong());
+        String workDir = in.readString();
+        if (workDir != null)
+            cfg.setWorkDirectory(workDir);
+        String localHost = in.readString();
+        if (localHost != null)
+            cfg.setLocalHost(localHost);
+        if (in.readBoolean())
+            cfg.setDaemon(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setClientFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setLongQueryWarningTimeout(in.readLong());
+
+        // Thread pools.
+        if (in.readBoolean())
+            cfg.setPublicThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setStripedPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setServiceThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setAsyncCallbackPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setManagementThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setDataStreamerThreadPoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setUtilityCachePoolSize(in.readInt());
+        if (in.readBoolean())
+            cfg.setQueryThreadPoolSize(in.readInt());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -615,6 +671,12 @@ public class PlatformConfigurationUtils {
                         .setExpireAgeMs(in.readLong()));
                 break;
         }
+
+        if (in.readBoolean())
+            cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+
+        if (in.readBoolean())
+            cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         readPluginConfiguration(cfg, in);
     }
@@ -722,12 +784,9 @@ public class PlatformConfigurationUtils {
         disco.setReconnectCount(in.readInt());
         disco.setLocalPort(in.readInt());
         disco.setLocalPortRange(in.readInt());
-        disco.setMaxMissedHeartbeats(in.readInt());
-        disco.setMaxMissedClientHeartbeats(in.readInt());
         disco.setStatisticsPrintFrequency(in.readLong());
         disco.setIpFinderCleanFrequency(in.readLong());
         disco.setThreadPriority(in.readInt());
-        disco.setHeartbeatFrequency(in.readLong());
         disco.setTopHistorySize(in.readInt());
 
         cfg.setDiscoverySpi(disco);
@@ -752,6 +811,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isStoreKeepBinary());
         writer.writeBoolean(ccfg.isLoadPreviousValue());
         writer.writeLong(ccfg.getDefaultLockTimeout());
+        //noinspection deprecation
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeString(ccfg.getName());
@@ -762,16 +822,19 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
-        writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
+        writer.writeBoolean(ccfg.getWriteBehindCoalescing());
         writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
         writer.writeBoolean(ccfg.isStatisticsEnabled());
+        writer.writeString(ccfg.getMemoryPolicyName());
+        writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
+        writer.writeString(ccfg.getGroupName());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
@@ -876,6 +939,9 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeInt(0);
+
+        writer.writeString(queryEntity.getKeyFieldName());
+        writer.writeString(queryEntity.getValueFieldName());
     }
 
     /**
@@ -914,20 +980,55 @@ public class PlatformConfigurationUtils {
         assert w != null;
         assert cfg != null;
 
-        w.writeBoolean(true); w.writeBoolean(cfg.isClientMode());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isClientMode());
         w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsExpireTime());
-        w.writeBoolean(true); w.writeInt(cfg.getMetricsHistorySize());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeBoolean(true); w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeBoolean(true); w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeBoolean(true); w.writeLong(cfg.getNetworkTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsExpireTime());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getMetricsHistorySize());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
-        w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
-        w.writeBoolean(true); w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getClientFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getLongQueryWarningTimeout());
+
+        // Thread pools.
+        w.writeBoolean(true);
+        w.writeInt(cfg.getPublicThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getStripedPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getServiceThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getSystemThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getAsyncCallbackPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getManagementThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getDataStreamerThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getUtilityCacheThreadPoolSize());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getQueryThreadPoolSize());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -1020,18 +1121,22 @@ public class PlatformConfigurationUtils {
         else
             w.writeBoolean(false);
 
-        EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
+        EventStorageSpi evtStorageSpi = cfg.getEventStorageSpi();
 
-        if (eventStorageSpi == null) {
+        if (evtStorageSpi == null)
             w.writeByte((byte) 0);
-        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+        else if (evtStorageSpi instanceof NoopEventStorageSpi)
             w.writeByte((byte) 1);
-        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+        else if (evtStorageSpi instanceof MemoryEventStorageSpi) {
             w.writeByte((byte) 2);
 
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireCount());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
+
+        writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
+
+        writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1090,9 +1195,8 @@ public class PlatformConfigurationUtils {
                     w.writeInt(ttl);
             }
         }
-        else {
+        else
             w.writeBoolean(false);
-        }
 
         w.writeLong(tcp.getSocketTimeout());
         w.writeLong(tcp.getAckTimeout());
@@ -1106,12 +1210,9 @@ public class PlatformConfigurationUtils {
         w.writeInt(tcp.getReconnectCount());
         w.writeInt(tcp.getLocalPort());
         w.writeInt(tcp.getLocalPortRange());
-        w.writeInt(tcp.getMaxMissedHeartbeats());
-        w.writeInt(tcp.getMaxMissedClientHeartbeats());
         w.writeLong(tcp.getStatisticsPrintFrequency());
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
-        w.writeLong(tcp.getHeartbeatFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
     }
 
@@ -1145,40 +1246,6 @@ public class PlatformConfigurationUtils {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());
-    }
-
-    /**
-     * Reads resolver
-     *
-     * @param r Reader.
-     * @return Resolver.
-     */
-    private static BinaryIdentityResolver readBinaryIdentityResolver(BinaryRawReader r) {
-        int type = r.readByte();
-
-        switch (type) {
-            case 0:
-                return null;
-
-            case 1:
-                return new BinaryArrayIdentityResolver();
-            default:
-                assert false;
-                return null;
-        }
-    }
-
-    /**
-     * Writes the resolver.
-     *
-     * @param w Writer.
-     * @param resolver Resolver.
-     */
-    private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
-        if (resolver instanceof BinaryArrayIdentityResolver)
-            w.writeByte((byte)1);
-        else
-            w.writeByte((byte)0);
     }
 
     /**
@@ -1270,6 +1337,134 @@ public class PlatformConfigurationUtils {
         }
 
         return factory.create();
+    }
+
+    /**
+     * Reads the memory configuration.
+     *
+     * @param in Reader
+     * @return Config.
+     */
+    private static MemoryConfiguration readMemoryConfiguration(BinaryRawReader in) {
+        MemoryConfiguration res = new MemoryConfiguration();
+
+        res.setSystemCacheInitialSize(in.readLong())
+                .setSystemCacheMaxSize(in.readLong())
+                .setPageSize(in.readInt())
+                .setConcurrencyLevel(in.readInt())
+                .setDefaultMemoryPolicyName(in.readString());
+
+        int cnt = in.readInt();
+
+        if (cnt > 0) {
+            MemoryPolicyConfiguration[] plcs = new MemoryPolicyConfiguration[cnt];
+
+            for (int i = 0; i < cnt; i++) {
+                MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
+
+                cfg.setName(in.readString())
+                        .setInitialSize(in.readLong())
+                        .setMaxSize(in.readLong())
+                        .setSwapFilePath(in.readString())
+                        .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
+                        .setEvictionThreshold(in.readDouble())
+                        .setEmptyPagesPoolSize(in.readInt())
+                        .setMetricsEnabled(in.readBoolean())
+                        .setSubIntervals(in.readInt())
+                        .setRateTimeInterval(in.readLong());
+
+                plcs[i] = cfg;
+            }
+
+            res.setMemoryPolicies(plcs);
+        }
+
+        return res;
+    }
+
+    /**
+     * Writes the memory configuration.
+     *
+     * @param w Writer.
+     * @param cfg Config.
+     */
+    private static void writeMemoryConfiguration(BinaryRawWriter w, MemoryConfiguration cfg) {
+        if (cfg == null) {
+            w.writeBoolean(false);
+            return;
+        }
+
+        w.writeBoolean(true);
+
+        w.writeLong(cfg.getSystemCacheInitialSize());
+        w.writeLong(cfg.getSystemCacheMaxSize());
+        w.writeInt(cfg.getPageSize());
+        w.writeInt(cfg.getConcurrencyLevel());
+        w.writeString(cfg.getDefaultMemoryPolicyName());
+
+        MemoryPolicyConfiguration[] plcs = cfg.getMemoryPolicies();
+
+        if (plcs != null) {
+            w.writeInt(plcs.length);
+
+            for (MemoryPolicyConfiguration plc : plcs) {
+                w.writeString(plc.getName());
+                w.writeLong(plc.getInitialSize());
+                w.writeLong(plc.getMaxSize());
+                w.writeString(plc.getSwapFilePath());
+                w.writeInt(plc.getPageEvictionMode().ordinal());
+                w.writeDouble(plc.getEvictionThreshold());
+                w.writeInt(plc.getEmptyPagesPoolSize());
+                w.writeBoolean(plc.isMetricsEnabled());
+                w.writeInt(plc.getSubIntervals());
+                w.writeLong(plc.getRateTimeInterval());
+            }
+        }
+        else {
+            w.writeInt(0);
+        }
+    }
+
+    /**
+     * Reads the SQL connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
+        return new SqlConnectorConfiguration()
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
+    }
+
+    /**
+     * Writes the SQL connector configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getHost());
+            w.writeInt(cfg.getPort());
+            w.writeInt(cfg.getPortRange());
+            w.writeInt(cfg.getSocketSendBufferSize());
+            w.writeInt(cfg.getSocketReceiveBufferSize());
+            w.writeBoolean(cfg.isTcpNoDelay());
+            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+            w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
     }
 
     /**

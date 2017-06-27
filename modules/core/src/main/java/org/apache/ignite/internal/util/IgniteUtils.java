@@ -177,8 +177,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -189,8 +187,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -418,6 +414,9 @@ public abstract class IgniteUtils {
     /** Name of the JVM implementation. */
     private static String jvmImplName;
 
+    /** Will be set to {@code true} if detected a 32-bit JVM. */
+    private static boolean jvm32Bit;
+
     /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
@@ -609,6 +608,9 @@ public abstract class IgniteUtils {
         String jvmImplVendor = System.getProperty("java.vm.vendor");
         String jvmImplName = System.getProperty("java.vm.name");
 
+        // Best effort to detect a 32-bit JVM.
+        String jvmArchDataModel = System.getProperty("sun.arch.data.model");
+
         String jdkStr = javaRtName + ' ' + javaRtVer + ' ' + jvmImplVendor + ' ' + jvmImplName + ' ' +
             jvmImplVer;
 
@@ -629,6 +631,8 @@ public abstract class IgniteUtils {
         IgniteUtils.jvmImplName = jvmImplName;
         IgniteUtils.javaRtName = javaRtName;
         IgniteUtils.javaRtVer = javaRtVer;
+
+        jvm32Bit = "32".equals(jvmArchDataModel);
 
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -1860,10 +1864,10 @@ public abstract class IgniteUtils {
      * @return List of reachable addresses.
      */
     public static List<InetAddress> filterReachable(Collection<InetAddress> addrs) {
-        final int reachTimeout = 2000;
-
         if (addrs.isEmpty())
             return Collections.emptyList();
+
+        final int reachTimeout = 2000;
 
         if (addrs.size() == 1) {
             InetAddress addr = F.first(addrs);
@@ -1880,33 +1884,36 @@ public abstract class IgniteUtils {
 
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
 
-        for (final InetAddress addr : addrs) {
-            futs.add(executor.submit(new Runnable() {
-                @Override public void run() {
-                    if (reachable(addr, reachTimeout)) {
-                        synchronized (res) {
-                            res.add(addr);
+        try {
+            for (final InetAddress addr : addrs) {
+                futs.add(executor.submit(new Runnable() {
+                    @Override public void run() {
+                        if (reachable(addr, reachTimeout)) {
+                            synchronized (res) {
+                                res.add(addr);
+                            }
                         }
                     }
+                }));
+            }
+
+            for (Future<?> fut : futs) {
+                try {
+                    fut.get();
                 }
-            }));
-        }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
 
-        for (Future<?> fut : futs) {
-            try {
-                fut.get();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteException("Thread has been interrupted.", e);
-            }
-            catch (ExecutionException e) {
-                throw new IgniteException(e);
+                    throw new IgniteException("Thread has been interrupted.", e);
+                }
+                catch (ExecutionException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
-
-        executor.shutdown();
+        finally {
+            executor.shutdown();
+        }
 
         return res;
     }
@@ -2999,10 +3006,9 @@ public abstract class IgniteUtils {
      * @param data An array of characters containing hexidecimal digits
      * @return A byte array containing binary data decoded from
      *         the supplied char array.
-     * @throws org.apache.ignite.IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
      */
     public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
-
         int len = data.length;
 
         if ((len & 0x01) != 0)
@@ -3093,21 +3099,6 @@ public abstract class IgniteUtils {
      */
     public static String format(long sysTime) {
         return LONG_DATE_FMT.format(new java.util.Date(sysTime));
-    }
-
-    /**
-     * Takes given collection, shuffles it and returns iterable instance.
-     *
-     * @param <T> Type of elements to create iterator for.
-     * @param col Collection to shuffle.
-     * @return Iterable instance over randomly shuffled collection.
-     */
-    public static <T> Iterable<T> randomIterable(Collection<T> col) {
-        List<T> list = new ArrayList<>(col);
-
-        Collections.shuffle(list);
-
-        return list;
     }
 
     /**
@@ -3832,26 +3823,6 @@ public abstract class IgniteUtils {
                 for (Object v : vals)
                     if (F.eq(o, v))
                         return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks for containment of the value in the array.
-     * Both array cells and value may be {@code null}. Two {@code null}s are considered equal.
-     *
-     * @param arr Array of objects.
-     * @param c Collection to check.
-     * @return {@code true} if contains object, {@code false} otherwise.
-     */
-    public static boolean containsObjectArray(@Nullable Object[] arr, @Nullable Collection<Object> c) {
-        if (arr == null || arr.length == 0 || c == null || c.isEmpty())
-            return false;
-
-        for (Object o : arr) {
-            if (c.contains(o))
-                return true;
         }
 
         return false;
@@ -5629,6 +5600,28 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets amount of RAM memory available on this machine.
+     *
+     * @return Total amount of memory in bytes or -1 if any exception happened.
+     */
+    public static long getTotalMemoryAvailable() {
+        MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        Object attr;
+
+        try {
+            attr = mBeanSrv.getAttribute(
+                    ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
+                    "TotalPhysicalMemorySize");
+        }
+        catch (Exception e) {
+            return -1;
+        }
+
+        return (attr instanceof Long) ? (Long) attr : -1;
+    }
+
+    /**
      * Gets compilation MBean.
      *
      * @return Compilation MBean.
@@ -6483,6 +6476,15 @@ public abstract class IgniteUtils {
      */
     public static String jvmName() {
         return jvmImplName;
+    }
+
+    /**
+     * Does a best effort to detect if we a running on a 32-bit JVM.
+     *
+     * @return {@code true} if detected that we are running on a 32-bit JVM.
+     */
+    public static boolean jvm32Bit() {
+        return jvm32Bit;
     }
 
     /**
@@ -9187,185 +9189,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param uid UUID.
-     * @return Offset.
-     */
-    public static long writeGridUuid(byte[] arr, long off, @Nullable IgniteUuid uid) {
-        GridUnsafe.putBoolean(arr, off++, uid != null);
-
-        if (uid != null) {
-            GridUnsafe.putLong(arr, off, uid.globalId().getMostSignificantBits());
-
-            off += 8;
-
-            GridUnsafe.putLong(arr, off, uid.globalId().getLeastSignificantBits());
-
-            off += 8;
-
-            GridUnsafe.putLong(arr, off, uid.localId());
-
-            off += 8;
-        }
-
-        return off;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @return UUID.
-     */
-    @Nullable public static IgniteUuid readGridUuid(byte[] arr, long off) {
-        if (GridUnsafe.getBoolean(arr, off++)) {
-            long most = GridUnsafe.getLong(arr, off);
-
-            off += 8;
-
-            long least = GridUnsafe.getLong(arr, off);
-
-            off += 8;
-
-            UUID globalId = new UUID(most, least);
-
-            long locId = GridUnsafe.getLong(arr, off);
-
-            return new IgniteUuid(globalId, locId);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param ptr Offheap address.
-     * @return UUID.
-     */
-    @Nullable public static IgniteUuid readGridUuid(long ptr) {
-        if (GridUnsafe.getBoolean(null, ptr++)) {
-            long most = GridUnsafe.getLong(ptr);
-
-            ptr += 8;
-
-            long least = GridUnsafe.getLong(ptr);
-
-            ptr += 8;
-
-            UUID globalId = new UUID(most, least);
-
-            long locId = GridUnsafe.getLong(ptr);
-
-            return new IgniteUuid(globalId, locId);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param ver Version.
-     * @return Offset.
-     */
-    public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
-        boolean verEx = ver instanceof GridCacheVersionEx;
-
-        GridUnsafe.putBoolean(arr, off++, verEx);
-
-        if (verEx) {
-            GridCacheVersion drVer = ver.conflictVersion();
-
-            assert drVer != null;
-
-            GridUnsafe.putInt(arr, off, drVer.topologyVersion());
-
-            off += 4;
-
-            GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
-
-            off += 4;
-
-            GridUnsafe.putLong(arr, off, drVer.order());
-
-            off += 8;
-        }
-
-        GridUnsafe.putInt(arr, off, ver.topologyVersion());
-
-        off += 4;
-
-        GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
-
-        off += 4;
-
-        GridUnsafe.putLong(arr, off, ver.order());
-
-        off += 8;
-
-        return off;
-    }
-
-    /**
-     * @param ptr Offheap address.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    public static GridCacheVersion readVersion(long ptr, boolean verEx) {
-        GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
-            GridUnsafe.getInt(ptr + 4),
-            GridUnsafe.getLong(ptr + 8));
-
-        if (verEx) {
-            ptr += 16;
-
-            ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
-                GridUnsafe.getInt(ptr + 4),
-                GridUnsafe.getLong(ptr + 8),
-                ver);
-        }
-
-        return ver;
-    }
-
-    /**
-     * @param arr Array.
-     * @param off Offset.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
-     * @return Version.
-     */
-    public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
-        int topVer = GridUnsafe.getInt(arr, off);
-
-        off += 4;
-
-        int nodeOrderDrId = GridUnsafe.getInt(arr, off);
-
-        off += 4;
-
-        long order = GridUnsafe.getLong(arr, off);
-
-        off += 8;
-
-        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, order);
-
-        if (verEx) {
-            topVer = GridUnsafe.getInt(arr, off);
-
-            off += 4;
-
-            nodeOrderDrId = GridUnsafe.getInt(arr, off);
-
-            off += 4;
-
-            order = GridUnsafe.getLong(arr, off);
-
-            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, order, ver);
-        }
-
-        return ver;
-    }
-
-    /**
      * @param ptr Address.
      * @param size Size.
      * @return Bytes.
@@ -9554,7 +9377,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.arrayList(c, c.size(), p);
+        return arrayList(c, c.size(), p);
     }
 
     /**
@@ -10093,5 +9916,24 @@ public abstract class IgniteUtils {
         catch (Exception e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Returns {@link GridIntIterator} for range of primitive integers.
+     * @param start Start.
+     * @param cnt Count.
+     */
+    public static GridIntIterator forRange(final int start, final int cnt) {
+        return new GridIntIterator() {
+            int c = 0;
+
+            @Override public boolean hasNext() {
+                return c < cnt;
+            }
+
+            @Override public int next() {
+                return start + c++;
+            }
+        };
     }
 }

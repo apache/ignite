@@ -246,8 +246,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
-        target.setTimes(path, accessTime, modificationTime);
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
+        target.setTimes(path, modificationTime, accessTime);
     }
 
     /** {@inheritDoc} */

@@ -55,17 +55,17 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.C2;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -104,7 +104,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     public GridLocalAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        preldr = new GridCachePreloaderAdapter(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx.group());
     }
 
     /** {@inheritDoc} */
@@ -301,8 +301,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final K key,
         String taskName,
         boolean deserializeBinary,
-        boolean needVer) throws IgniteCheckedException
-    {
+        boolean needVer) throws IgniteCheckedException {
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.readThrough(),
             taskName,
@@ -385,7 +384,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         UUID subjId = ctx.subjectIdPerCall(null, opCtx);
 
-        Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
+        Map<K, V> vals = U.newHashMap(keys.size());
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -393,97 +392,140 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final IgniteCacheExpiryPolicy expiry = expiryPolicy(opCtx != null ? opCtx.expiry() : null);
 
         boolean success = true;
+        boolean readNoEntry = ctx.readNoEntry(expiry, false);
+        final boolean evt = !skipVals;
 
         for (K key : keys) {
             if (key == null)
                 throw new NullPointerException("Null key.");
 
-            GridCacheEntryEx entry = null;
-
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            while (true) {
-                try {
-                    entry = entryEx(cacheKey);
+            boolean skipEntry = readNoEntry;
 
-                    if (entry != null) {
-                        CacheObject v;
+            if (readNoEntry) {
+                CacheDataRow row = ctx.offheap().read(ctx, cacheKey);
 
-                        if (needVer) {
-                            EntryGetResult res = entry.innerGetVersioned(
+                if (row != null) {
+                    long expireTime = row.expireTime();
+
+                    if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                        ctx.addResult(vals,
+                            cacheKey,
+                            row.value(),
+                            skipVals,
+                            false,
+                            deserializeBinary,
+                            true,
+                            null,
+                            row.version(),
+                            0,
+                            0,
+                            needVer);
+
+                        if (configuration().isStatisticsEnabled() && !skipVals)
+                            metrics0().onRead(true);
+
+                        if (evt) {
+                            ctx.events().readEvent(cacheKey,
                                 null,
-                                null,
-                                /**update-metrics*/false,
-                                /*event*/!skipVals,
+                                row.value(),
                                 subjId,
-                                null,
                                 taskName,
-                                expiry,
-                                !deserializeBinary,
-                                null);
-
-                            if (res != null) {
-                                ctx.addResult(
-                                    vals,
-                                    cacheKey,
-                                    res,
-                                    skipVals,
-                                    false,
-                                    deserializeBinary,
-                                    true,
-                                    needVer);
-                            }
-                            else
-                                success = false;
-                        }
-                        else {
-                            v = entry.innerGet(
-                                null,
-                                null,
-                                /*read-through*/false,
-                                /**update-metrics*/true,
-                                /**event*/!skipVals,
-                                subjId,
-                                null,
-                                taskName,
-                                expiry,
                                 !deserializeBinary);
-
-                            if (v != null) {
-                                ctx.addResult(vals,
-                                    cacheKey,
-                                    v,
-                                    skipVals,
-                                    false,
-                                    deserializeBinary,
-                                    true,
-                                    null,
-                                    0,
-                                    0);
-                            }
-                            else
-                                success = false;
                         }
                     }
-                    else {
-                        if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
-                            metrics0().onRead(false);
+                    else
+                        skipEntry = false;
+                }
+                else
+                    success = false;
+            }
 
-                        success = false;
+            if (!skipEntry) {
+                GridCacheEntryEx entry = null;
+
+                while (true) {
+                    try {
+                        entry = entryEx(cacheKey);
+
+                        if (entry != null) {
+                            CacheObject v;
+
+                            if (needVer) {
+                                EntryGetResult res = entry.innerGetVersioned(
+                                    null,
+                                    null,
+                                    /*update-metrics*/false,
+                                    /*event*/evt,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiry,
+                                    !deserializeBinary,
+                                    null);
+
+                                if (res != null) {
+                                    ctx.addResult(
+                                        vals,
+                                        cacheKey,
+                                        res,
+                                        skipVals,
+                                        false,
+                                        deserializeBinary,
+                                        true,
+                                        needVer);
+                                }
+                                else
+                                    success = false;
+                            }
+                            else {
+                                v = entry.innerGet(
+                                    null,
+                                    null,
+                                    /*read-through*/false,
+                                    /*update-metrics*/true,
+                                    /*event*/evt,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiry,
+                                    !deserializeBinary);
+
+                                if (v != null) {
+                                    ctx.addResult(vals,
+                                        cacheKey,
+                                        v,
+                                        skipVals,
+                                        false,
+                                        deserializeBinary,
+                                        true,
+                                        null,
+                                        0,
+                                        0);
+                                }
+                                else
+                                    success = false;
+                            }
+                        }
+
+                        break; // While.
+                    }
+                    catch (GridCacheEntryRemovedException ignored) {
+                        // No-op, retry.
+                    }
+                    finally {
+                        if (entry != null)
+                            ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
                     }
 
-                    break; // While.
+                    if (!success && storeEnabled)
+                        break;
                 }
-                catch (GridCacheEntryRemovedException ignored) {
-                    // No-op, retry.
-                }
-                finally {
-                    if (entry != null)
-                        ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
-                }
-
-                if (!success && storeEnabled)
-                    break;
+            }
+            if (!success) {
+                if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
+                    metrics0().onRead(false);
             }
         }
 
@@ -1469,35 +1511,15 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (fail != null)
             return fail;
 
-        FutureHolder holder = lastFut.get();
+        IgniteInternalFuture f = ctx.closures().callLocalSafe(op);
 
-        holder.lock();
-
-        try {
-            IgniteInternalFuture fut = holder.future();
-
-            if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture f = new GridEmbeddedFuture(fut,
-                    new C2<Object, Exception, IgniteInternalFuture>() {
-                        @Override public IgniteInternalFuture apply(Object t, Exception e) {
-                            return ctx.closures().callLocalSafe(op);
-                        }
-                    });
-
-                saveFuture(holder, f, /*retry*/false);
-
-                return f;
+        f.listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                asyncOpRelease(false);
             }
+        });
 
-            IgniteInternalFuture f = ctx.closures().callLocalSafe(op);
-
-            saveFuture(holder, f, /*retry*/false);
-
-            return f;
-        }
-        finally {
-            holder.unlock();
-        }
+        return f;
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,6 +41,7 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
@@ -88,9 +90,9 @@ public class H2PkHashIndex extends GridH2IndexBase {
         IgniteBiPredicate<Object, Object> p = null;
 
         if (f != null) {
-            String spaceName = getTable().spaceName();
+            String cacheName = getTable().cacheName();
 
-            p = f.forSpace(spaceName);
+            p = f.forCache(cacheName);
         }
 
         KeyCacheObject lowerObj = null;
@@ -106,7 +108,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
             List<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores())
-                cursors.add(store.cursor(lowerObj, upperObj));
+                cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj));
 
             return new H2Cursor(new CompositeGridCursor<>(cursors.iterator()), p);
         }
@@ -124,7 +126,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     @Override public GridH2Row findOne(GridH2Row row) {
         try {
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
-                CacheDataRow found = store.find(row.key);
+                CacheDataRow found = store.find(cctx, row.key);
 
                 if (found != null)
                     tbl.rowDescriptor().createRow(row.key(), row.partition(), row.value(), row.version(), 0);
@@ -157,10 +159,10 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false);
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 

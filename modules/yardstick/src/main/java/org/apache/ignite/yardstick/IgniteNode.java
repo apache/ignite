@@ -32,8 +32,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.yardstick.io.FileUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
@@ -83,6 +85,9 @@ public class IgniteNode implements BenchmarkServer {
 
         assert c != null;
 
+        if (args.cleanWorkDirectory())
+            FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
+
         ApplicationContext appCtx = tup.get2();
 
         assert appCtx != null;
@@ -106,6 +111,9 @@ public class IgniteNode implements BenchmarkServer {
 
                     cc.setNearConfiguration(nearCfg);
                 }
+
+                if (args.cacheGroup() != null)
+                    cc.setGroupName(args.cacheGroup());
 
                 cc.setWriteSynchronizationMode(args.syncMode());
 

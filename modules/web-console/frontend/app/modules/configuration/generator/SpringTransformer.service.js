@@ -183,24 +183,20 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
                     sb.startBlock(`<property name="${prop.name}">`);
 
                     if (prop.eventTypes.length === 1) {
-                        const evtGrp = _.find(this.eventGroups, {value: _.head(prop.eventTypes)});
+                        const evtGrp = _.head(prop.eventTypes);
 
-                        evtGrp && sb.append(`<util:constant static-field="${evtGrp.class}.${evtGrp.value}"/>`);
+                        sb.append(`<util:constant static-field="${evtGrp.class}.${evtGrp.label}"/>`);
                     }
                     else {
                         sb.startBlock('<list>');
 
-                        _.forEach(prop.eventTypes, (item, ix) => {
+                        _.forEach(prop.eventTypes, (evtGrp, ix) => {
                             ix > 0 && sb.emptyLine();
 
-                            const evtGrp = _.find(this.eventGroups, {value: item});
+                            sb.append(`<!-- EventType.${evtGrp.label} -->`);
 
-                            if (evtGrp) {
-                                sb.append(`<!-- EventType.${item} -->`);
-
-                                _.forEach(evtGrp.events, (event) =>
-                                    sb.append(`<util:constant static-field="${evtGrp.class}.${event}"/>`));
-                            }
+                            _.forEach(evtGrp.events, (event) =>
+                                sb.append(`<util:constant static-field="${evtGrp.class}.${event}"/>`));
                         });
 
                         sb.endBlock('</list>');
@@ -320,10 +316,11 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         return sb;
     }
 
-    static cluster(cluster, client) {
-        const cfg = this.generator.igniteConfiguration(cluster, client);
+    static cluster(cluster, targetVer, client) {
+        const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);
 
-        const clientNearCaches = client ? _.filter(cluster.caches, (cache) => _.get(cache, 'clientNearConfiguration.enabled')) : [];
+        const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
+            cache.mode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
         return this.igniteConfiguration(cfg, clientNearCaches);
     }

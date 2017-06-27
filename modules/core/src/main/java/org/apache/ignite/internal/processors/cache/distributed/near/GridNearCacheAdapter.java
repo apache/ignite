@@ -86,20 +86,30 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param ctx Context.
      */
     protected GridNearCacheAdapter(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getNearConfiguration().getNearStartSize());
+        super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
+    @Override public void start() throws IgniteCheckedException {
+        if (map == null) {
+            map = new GridCacheLocalConcurrentMap(
+                ctx,
+                entryFactory(),
+                ctx.config().getNearConfiguration().getNearStartSize());
+        }
+    }
+
+    /**
+     * @return Entry factory.
+     */
+    private GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridNearCacheEntry(ctx, key, hash, val);
+                return new GridNearCacheEntry(ctx, key);
             }
         };
     }
@@ -341,23 +351,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        return dht().entrySet(part);
-    }
-
-    /**
-     * @return Keys for near cache only.
-     */
-    public Set<K> nearKeySet() {
-        return super.keySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<V> values() {
-        return new GridCacheValueCollection<>(ctx, entrySet(), ctx.vararg(F.<K, V>cacheHasPeekValue()));
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean evict(K key) {
         // Use unary 'and' to make sure that both sides execute.
         return super.evict(key) & dht().evict(key);
@@ -400,11 +393,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public long igfsDataSpaceUsed() {
         return dht().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return dht().igfsDataSpaceMax();
     }
 
     /** {@inheritDoc} */

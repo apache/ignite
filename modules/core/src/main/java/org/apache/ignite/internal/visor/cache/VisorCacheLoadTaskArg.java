@@ -76,7 +76,7 @@ public class VisorCacheLoadTaskArg extends VisorDataTransferObject {
     /**
      * @return Optional user arguments to be passed into CacheStore.loadCache(IgniteBiInClosure, Object...) method.
      */
-    public Object[] getLdrArgs() {
+    public Object[] getLoaderArguments() {
         return ldrArgs;
     }
 

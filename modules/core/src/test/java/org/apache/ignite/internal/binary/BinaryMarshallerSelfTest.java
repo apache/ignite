@@ -2626,16 +2626,29 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         // 1. Test reflective stuff.
         DecimalReflective obj1 = new DecimalReflective();
 
-        obj1.val = BigDecimal.ZERO;
-        obj1.valArr = new BigDecimal[] {BigDecimal.ONE, BigDecimal.TEN};
+        BigDecimal valArr[] = new BigDecimal[] {BigDecimal.ONE, BigDecimal.TEN, new BigDecimal("-100.5"),
+            BigDecimal.valueOf(Long.MAX_VALUE, 0), BigDecimal.valueOf(Long.MIN_VALUE, 0),
+            BigDecimal.valueOf(Long.MAX_VALUE, 8), BigDecimal.valueOf(Long.MIN_VALUE, 8)};
 
+        obj1.val = BigDecimal.ZERO;
+        obj1.valArr = valArr;
         BinaryObjectImpl portObj = marshal(obj1, marsh);
 
-        assertEquals(obj1.val, portObj.field("val"));
         assertArrayEquals(obj1.valArr, portObj.<BigDecimal[]>field("valArr"));
-
-        assertEquals(obj1.val, portObj.<DecimalReflective>deserialize().val);
         assertArrayEquals(obj1.valArr, portObj.<DecimalReflective>deserialize().valArr);
+        assertArrayEquals(obj1.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+
+        obj1.valArr = null;
+
+        for (BigDecimal v: valArr) {
+            obj1.val = v;
+
+            portObj = marshal(obj1, marsh);
+
+            assertEquals(obj1.val, portObj.field("val"));
+            assertEquals(obj1.val, portObj.<DecimalReflective>deserialize().val);
+            assertEquals(obj1.val, portObj.type().field("val").value(portObj));
+        }
 
         // 2. Test marshal aware stuff.
         DecimalMarshalAware obj2 = new DecimalMarshalAware();
@@ -2654,6 +2667,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj2.valArr, portObj.<DecimalMarshalAware>deserialize().valArr);
         assertEquals(obj2.rawVal, portObj.<DecimalMarshalAware>deserialize().rawVal);
         assertArrayEquals(obj2.rawValArr, portObj.<DecimalMarshalAware>deserialize().rawValArr);
+
+        assertEquals(obj2.val, portObj.type().field("val").value(portObj));
+        assertArrayEquals(obj2.valArr, (BigDecimal[])portObj.type().field("valArr").value(portObj));
+
+        for (BigDecimal v: valArr) {
+            obj2.val = v;
+
+            portObj = marshal(obj2, marsh);
+
+            assertEquals(obj2.val, portObj.field("val"));
+            assertEquals(obj2.val, portObj.<DecimalMarshalAware>deserialize().val);
+            assertEquals(obj2.val, portObj.type().field("val").value(portObj));
+        }
     }
 
     /**

@@ -151,9 +151,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     @GridToStringExclude
     private volatile GridNearTxFinishFuture rollbackFut;
 
-    /** Entries to lock on next step of prepare stage. */
-    private Collection<IgniteTxEntry> optimisticLockEntries = Collections.emptyList();
-
     /** True if transaction contains near cache entries mapped to local node. */
     private boolean nearLocallyMapped;
 
@@ -1220,7 +1217,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     drExpireTime,
                                     drVer,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    CU.isNearEnabled(cacheCtx));
                             }
                             else {
                                 txEntry = addEntry(READ,
@@ -1235,7 +1233,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                     -1L,
                                     null,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    CU.isNearEnabled(cacheCtx));
                             }
 
                             txEntry.markValid();
@@ -1265,7 +1264,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         drExpireTime,
                         drVer,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        CU.isNearEnabled(cacheCtx));
 
                     if (enlisted != null)
                         enlisted.add(cacheKey);
@@ -1368,7 +1368,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                     drExpireTime,
                     drVer,
                     skipStore,
-                    keepBinary);
+                    keepBinary,
+                    CU.isNearEnabled(cacheCtx));
 
                 if (enlisted != null)
                     enlisted.add(cacheKey);
@@ -1731,7 +1732,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         for (KeyCacheObject cacheKey : lockKeys) {
                             K keyVal = (K)
                                 (keepCacheObjects ? cacheKey :
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary));
+                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary,
+                                        true));
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -2203,7 +2205,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 -1L,
                                 null,
                                 skipStore,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                CU.isNearEnabled(cacheCtx));
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -2322,8 +2325,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                             if (hasFilters) {
                                 success = isAll(e.context(), key, cacheVal, filter);
 
-                                if (!success)
+                                if (!success) {
                                     e.value(cacheVal, false, false);
+
+                                    e.op(READ);
+                                }
                             }
                             else
                                 success = true;
@@ -2425,14 +2431,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> optimisticLockEntries() {
-        return optimisticLockEntries;
-    }
+        assert false : "Should not be called";
 
-    /**
-     * @param optimisticLockEntries Optimistic lock entries.
-     */
-    void optimisticLockEntries(Collection<IgniteTxEntry> optimisticLockEntries) {
-        this.optimisticLockEntries = optimisticLockEntries;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -2862,8 +2863,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 if (m == null) {
                     mappings.put(m = new GridDistributedTxMapping(primary));
 
-                    m.near(map.near());
-
                     if (map.explicitLock())
                         m.markExplicitLock();
                 }
@@ -2888,8 +2887,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         GridDistributedTxMapping m = new GridDistributedTxMapping(n);
 
         mappings.put(m);
-
-        m.near(map.near());
 
         if (map.explicitLock())
             m.markExplicitLock();
@@ -2933,14 +2930,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers)
     {
+        assert mapping.hasNearCacheEntries() : mapping;
+
         // Process writes, then reads.
         for (IgniteTxEntry txEntry : mapping.entries()) {
-            if (CU.writes().apply(txEntry))
+            if (CU.WRITE_FILTER_NEAR.apply(txEntry))
                 readyNearLock(txEntry, mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
         }
 
         for (IgniteTxEntry txEntry : mapping.entries()) {
-            if (CU.reads().apply(txEntry))
+            if (CU.READ_FILTER_NEAR.apply(txEntry))
                 readyNearLock(txEntry, mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
         }
     }
@@ -2952,7 +2951,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      */
-    void readyNearLock(IgniteTxEntry txEntry,
+    private void readyNearLock(IgniteTxEntry txEntry,
         GridCacheVersion dhtVer,
         Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
@@ -3333,11 +3332,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
             needReturnValue() && implicit());
 
         try {
-            // At this point all the entries passed in must be enlisted in transaction because this is an
-            // optimistic transaction.
-            optimisticLockEntries = (serializable() && optimistic()) ? F.concat(false, writes, reads) : writes;
-
-            userPrepare();
+            userPrepare((serializable() && optimistic()) ? F.concat(false, writes, reads) : writes);
 
             // Make sure to add future before calling prepare on it.
             cctx.mvcc().addFuture(fut);
@@ -3892,17 +3887,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * @param cctx Cache context.
      * @param key Key.
-     * @param val Value.
      * @param filter Filter.
      * @return {@code True} if filter passed.
      */
     private boolean isAll(GridCacheContext cctx,
         KeyCacheObject key,
-        CacheObject val,
+        final CacheObject val0,
         CacheEntryPredicate[] filter) {
-        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key, 0, val, null, 0) {
+        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
             @Nullable @Override public CacheObject peekVisibleValue() {
-                return rawGet();
+                return val0;
             }
         };
 

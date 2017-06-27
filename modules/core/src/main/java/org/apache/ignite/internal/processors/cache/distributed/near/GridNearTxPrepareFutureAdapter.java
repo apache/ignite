@@ -180,13 +180,19 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /**
      * @param m Mapping.
      * @param res Response.
+     * @param updateMapping Update mapping flag.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
+    final void onPrepareResponse(GridDistributedTxMapping m,
+        GridNearTxPrepareResponse res,
+        boolean updateMapping) {
         if (res == null)
             return;
 
         assert res.error() == null : res;
+
+        if (tx.onePhaseCommit() && !res.onePhaseCommit())
+            tx.onePhaseCommit(false);
 
         UUID nodeId = m.primary().id();
 
@@ -245,24 +251,25 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         }
 
         if (!m.empty()) {
-            GridCacheVersion writeVer = res.writeVersion();
-
-            if (writeVer == null)
-                writeVer = res.dhtVersion();
-
             // This step is very important as near and DHT versions grow separately.
             cctx.versions().onReceived(nodeId, res.dhtVersion());
 
-            // Register DHT version.
-            m.dhtVersion(res.dhtVersion(), writeVer);
+            if (updateMapping && m.hasNearCacheEntries()) {
+                GridCacheVersion writeVer = res.writeVersion();
 
-            GridDistributedTxMapping map = tx.mappings().get(nodeId);
+                if (writeVer == null)
+                    writeVer = res.dhtVersion();
 
-            if (map != null)
-                map.dhtVersion(res.dhtVersion(), writeVer);
+                // Register DHT version.
+                m.dhtVersion(res.dhtVersion(), writeVer);
 
-            if (m.near())
+                GridDistributedTxMapping map = tx.mappings().get(nodeId);
+
+                if (map != null)
+                    map.dhtVersion(res.dhtVersion(), writeVer);
+
                 tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
+            }
         }
     }
 }

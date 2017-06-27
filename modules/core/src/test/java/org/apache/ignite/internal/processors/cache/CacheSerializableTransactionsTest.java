@@ -660,8 +660,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             try {
                 IgniteCache<Integer, Integer> cache = ignite0.createCache(ccfg);
 
-                Integer key0 = primaryKey(ignite(0).cache(null));
-                Integer key1 = primaryKey(ignite(1).cache(null));
+                Integer key0 = primaryKey(ignite(0).cache(DEFAULT_CACHE_NAME));
+                Integer key1 = primaryKey(ignite(1).cache(DEFAULT_CACHE_NAME));
 
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                     cache.put(key0, key0);
@@ -5059,7 +5059,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         int backups,
         boolean storeEnabled,
         boolean nearCache) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);

@@ -71,7 +71,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         spi.setIpFinder(IP_FINDER);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setIndexedTypes(Integer.class, Integer.class);
         ccfg.setIndexedTypes(Byte.class, Byte.class);
@@ -82,7 +82,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         if ("client".equals(gridName))
             cfg.setClientMode(true);
-
 
         cfg.setIndexingSpi(new TestIndexingSpi());
 
@@ -192,7 +191,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String spaceName, Collection<Object> params,
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) {
             return idx.containsKey(GridIoPolicy.QUERY_POOL) ?
                 Collections.<Cache.Entry<?, ?>>singletonList(
@@ -201,22 +200,12 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime) {
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime) {
             idx.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable String spaceName, Object key) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) {
+        @Override public void remove(@Nullable String cacheName, Object key) {
             // No-op.
         }
     }

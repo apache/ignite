@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -59,6 +60,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -1527,6 +1529,12 @@ public class IgnitionEx {
         /** Query executor service. */
         private ThreadPoolExecutor qryExecSvc;
 
+        /** Query executor service. */
+        private ThreadPoolExecutor schemaExecSvc;
+
+        /** Executor service. */
+        private Map<String, ThreadPoolExecutor> customExecSvcs;
+
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
 
@@ -1845,6 +1853,34 @@ public class IgnitionEx {
 
             qryExecSvc.allowCoreThreadTimeOut(true);
 
+            schemaExecSvc = new IgniteThreadPoolExecutor(
+                "schema",
+                cfg.getIgniteInstanceName(),
+                2,
+                2,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            schemaExecSvc.allowCoreThreadTimeOut(true);
+
+            if (!F.isEmpty(cfg.getExecutorConfiguration())) {
+                validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
+
+                customExecSvcs = new HashMap<>();
+
+                for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
+                    ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
+                        execCfg.getName(),
+                        cfg.getIgniteInstanceName(),
+                        execCfg.getSize(),
+                        execCfg.getSize(),
+                        DFLT_THREAD_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>());
+
+                    customExecSvcs.put(execCfg.getName(), exec);
+                }
+            }
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1872,6 +1908,8 @@ public class IgnitionEx {
                     idxExecSvc,
                     callbackExecSvc,
                     qryExecSvc,
+                    schemaExecSvc,
+                    customExecSvcs,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -1944,6 +1982,30 @@ public class IgnitionEx {
             if (poolSize <= 0) {
                 throw new IgniteCheckedException("Invalid " + poolName + " thread pool size" +
                     " (must be greater than 0), actual value: " + poolSize);
+            }
+        }
+
+        /**
+         * @param cfgs Array of the executors configurations.
+         * @throws IgniteCheckedException If configuration is wrong.
+         */
+        private static void validateCustomExecutorsConfiguration(ExecutorConfiguration[] cfgs)
+            throws IgniteCheckedException {
+            if (cfgs == null)
+                return;
+
+            Set<String> names = new HashSet<>(cfgs.length);
+
+            for (ExecutorConfiguration cfg : cfgs) {
+                if (F.isEmpty(cfg.getName()))
+                    throw new IgniteCheckedException("Custom executor name cannot be null or empty.");
+
+                if (!names.add(cfg.getName()))
+                    throw new IgniteCheckedException("Duplicate custom executor name: " + cfg.getName());
+
+                if (cfg.getSize() <= 0)
+                    throw new IgniteCheckedException("Custom executor size must be positive [name=" + cfg.getName() +
+                        ", size=" + cfg.getSize() + ']');
             }
         }
 
@@ -2101,6 +2163,17 @@ public class IgnitionEx {
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
+
+            ExecutorConfiguration[] execCfgs = myCfg.getExecutorConfiguration();
+
+            if (execCfgs != null) {
+                ExecutorConfiguration[] clone = execCfgs.clone();
+
+                for (int i = 0; i < execCfgs.length; i++)
+                    clone[i] = new ExecutorConfiguration(execCfgs[i]);
+
+                myCfg.setExecutorConfiguration(clone);
+            }
 
             if (!myCfg.isClientMode() && myCfg.getMemoryConfiguration() == null) {
                 MemoryConfiguration memCfg = new MemoryConfiguration();
@@ -2348,6 +2421,7 @@ public class IgnitionEx {
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
             ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
+            ccfg.setAffinity(cfg.getAffinity());
             ccfg.setRebalanceOrder(-1); //Prior to user caches.
 
             if (cfg.getCacheMode() == PARTITIONED)
@@ -2464,6 +2538,10 @@ public class IgnitionEx {
 
             qryExecSvc = null;
 
+            U.shutdownNow(getClass(), schemaExecSvc, log);
+
+            schemaExecSvc = null;
+
             U.shutdownNow(getClass(), stripedExecSvc, log);
 
             stripedExecSvc = null;
@@ -2504,6 +2582,13 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
             callbackExecSvc = null;
+
+            if (!F.isEmpty(customExecSvcs)) {
+                for (ThreadPoolExecutor exec : customExecSvcs.values())
+                    U.shutdownNow(getClass(), exec, log);
+
+                customExecSvcs = null;
+            }
         }
 
         /**

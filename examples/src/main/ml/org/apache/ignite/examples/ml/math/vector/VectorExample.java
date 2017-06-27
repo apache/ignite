@@ -23,6 +23,8 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * This example shows how to use {@link Vector} API.
+ *
+ * Just simple local onheap version.
  */
 public final class VectorExample {
     /**
@@ -50,8 +52,6 @@ public final class VectorExample {
         System.out.println("\n>>> Dot product of vectors: [" + dotProduct
             + "], it is 0 as expected: [" + dotProductIsAsExp + "].");
 
-        assert dotProductIsAsExp : "Expect dot product of perpendicular vectors to be 0.";
-
         Vector hypotenuse = v1.plus(v2);
 
         System.out.println("\n>>> Hypotenuse (sum of vectors): " + Arrays.toString(hypotenuse.getStorage().data()));
@@ -67,8 +67,6 @@ public final class VectorExample {
         System.out.println(">>> Squared length of hypotenuse: [" + lenSquaredHypotenuse
             + "], equals sum of squared lengths of two original vectors as expected: ["
             + lenSquaredHypotenuseIsAsExp + "].");
-
-        assert lenSquaredHypotenuseIsAsExp : "Expect squared length of hypotenuse to be as per Pythagorean theorem.";
 
         System.out.println("\n>>> Basic Vector API usage example completed.");
     }

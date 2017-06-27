@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedParameter.Global
 #pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
@@ -24,7 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -39,6 +41,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class EventsTest
     {
+        /** */
+        public const string CacheName = "eventsTest";
+
         /** */
         private IIgnite _grid1;
 
@@ -238,7 +243,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     EventType = EventType.CacheAll,
                     EventObjectType = typeof (CacheEvent),
-                    GenerateEvent = g => g.GetCache<int, int>(null).Put(TestUtils.GetPrimaryKey(g), 1),
+                    GenerateEvent = g => g.GetCache<int, int>(CacheName).Put(TestUtils.GetPrimaryKey(g, CacheName), 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
                     EventCount = 3
                 };
@@ -691,21 +696,14 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration GetConfiguration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string name, bool client = false)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
-                    }
-                },
-                EventStorageSpi = new MemoryEventStorageSpi()
+                IgniteInstanceName = name,
+                EventStorageSpi = new MemoryEventStorageSpi(),
+                CacheConfiguration = new [] {new CacheConfiguration(CacheName) },
+                ClientMode = client
             };
         }
 
@@ -735,11 +733,11 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void GenerateCacheQueryEvent(IIgnite g)
         {
-            var cache = g.GetCache<int, int>(null);
+            var cache = g.GetCache<int, int>(CacheName);
 
             cache.Clear();
 
-            cache.Put(TestUtils.GetPrimaryKey(g), 1);
+            cache.Put(TestUtils.GetPrimaryKey(g, CacheName), 1);
 
             cache.Query(new ScanQuery<int, int>()).GetAll();
         }
@@ -753,7 +751,7 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var cacheEvent in e)
             {
-                Assert.AreEqual(null, cacheEvent.CacheName);
+                Assert.AreEqual(CacheName, cacheEvent.CacheName);
                 Assert.AreEqual(null, cacheEvent.ClosureClassName);
                 Assert.AreEqual(null, cacheEvent.TaskName);
                 Assert.AreEqual(grid.GetCluster().GetLocalNode(), cacheEvent.EventNode);
@@ -792,9 +790,9 @@ namespace Apache.Ignite.Core.Tests
             if (_grid1 != null)
                 return;
 
-            _grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(GetConfiguration("grid1"));
+            _grid2 = Ignition.Start(GetConfiguration("grid2"));
+            _grid3 = Ignition.Start(GetConfiguration("grid3", true));
 
             _grids = new[] {_grid1, _grid2, _grid3};
         }
@@ -971,42 +969,6 @@ namespace Apache.Ignite.Core.Tests
         public bool Invoke(IEvent evt)
         {
             return evt.Type == _type;
-        }
-    }
-
-    /// <summary>
-    /// Binary remote event filter.
-    /// </summary>
-    public class RemoteEventBinarizableFilter : IEventFilter<IEvent>, IBinarizable
-    {
-        /** */
-        private int _type;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventBinarizableFilter"/> class.
-        /// </summary>
-        /// <param name="type">The event type.</param>
-        public RemoteEventBinarizableFilter(int type)
-        {
-            _type = type;
-        }
-
-        /** <inheritdoc /> */
-        public bool Invoke(IEvent evt)
-        {
-            return evt.Type == _type;
-        }
-
-        /** <inheritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            writer.GetRawWriter().WriteInt(_type);
-        }
-
-        /** <inheritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            _type = reader.GetRawReader().ReadInt();
         }
     }
 

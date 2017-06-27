@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.math;
 
 import java.io.Externalizable;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.IndexException;
@@ -29,17 +31,17 @@ import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
 
 /**
  * A matrix interface.
- *
+ * <p>
  * Based on its flavor it can have vastly different implementations tailored for
  * for different types of data (e.g. dense vs. sparse), different sizes of data or different operation
- * optimizations.
- *
+ * optimizations.</p>
+ * <p>
  * Note also that not all operations can be supported by all underlying implementations. If an operation is not
  * supported a {@link UnsupportedOperationException} is thrown. This exception can also be thrown in partial cases
  * where an operation is unsupported only in special cases, e.g. where a given operation cannot be deterministically
- * completed in polynomial time.
- *
- * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
+ * completed in polynomial time.</p>
+ * <p>
+ * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.</p>
  */
 public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetrics, Destroyable {
     /**
@@ -174,10 +176,10 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Maps all values in this matrix through a given function.
-     *
-     * For this matrix <code>A</code>, argument matrix <code>B</code> and the
-     * function <code>F</code> this method maps every cell <code>x, y</code> as:
-     * <code>A(x,y) = fun(A(x,y), B(x,y))</code>
+     * <p>
+     * For this matrix {@code A}, argument matrix {@code B} and the
+     * function {@code F} this method maps every cell {@code x, y} as:
+     * {@code A(x,y) = fun(A(x,y), B(x,y))}.</p>
      *
      * @param mtx Argument matrix.
      * @param fun Mapping function.
@@ -306,8 +308,8 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Clones this matrix.
-     *
-     * NOTE: new matrix will have the same flavor as the this matrix but a different ID.
+     * <p>
+     * NOTE: new matrix will have the same flavor as the this matrix but a different ID.</p>
      *
      * @return New matrix of the same underlying class, the same size and the same values.
      */
@@ -315,8 +317,8 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Creates new empty matrix of the same underlying class but of different size.
-     *
-     * NOTE: new matrix will have the same flavor as the this matrix but a different ID.
+     * <p>
+     * NOTE: new matrix will have the same flavor as the this matrix but a different ID.</p>
      *
      * @param rows Number of rows for new matrix.
      * @param cols Number of columns for new matrix.
@@ -463,8 +465,8 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
      *
-     * @param off View offset as <code>int[x,y]</code>.
-     * @param size View size as <code>int[rows, cols]</code>
+     * @param off View offset as {@code int[x,y]}.
+     * @param size View size as {@code int[rows, cols]}.
      * @return New view.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      * @throws IndexException Thrown in case of offset is out of bound.
@@ -474,10 +476,10 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
      *
-     * @param rowOff
-     * @param rows
-     * @param colOff
-     * @param cols
+     * @param rowOff View offset in rows.
+     * @param rows Amount of rows in the view.
+     * @param colOff View offset in columns.
+     * @param cols Amount of columns in the view.
      * @return New view.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      * @throws IndexException Thrown in case of offset is out of bound.

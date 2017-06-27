@@ -51,9 +51,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCacheEntryInfo>
     implements GridDhtFuture<GridCacheEntryInfo> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -76,7 +73,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private KeyCacheObject key;
 
     /** */
-    private boolean addRdr;
+    private final boolean addRdr;
 
     /** Reserved partitions. */
     private int part = -1;
@@ -90,8 +87,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Topology version .*/
     private AffinityTopologyVersion topVer;
 
-    /** Retries because ownership changed. */
-    private Collection<Integer> retries;
+    /** Retry because ownership changed. */
+    private Integer retry;
 
     /** Subject ID. */
     private UUID subjId;
@@ -126,7 +123,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         long msgId,
         UUID reader,
         KeyCacheObject key,
-        Boolean addRdr,
+        boolean addRdr,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
@@ -197,17 +194,21 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      *
      */
     private void map() {
-        if (cctx.dht().dhtPreloader().needForceKeys()) {
-            GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(
+        if (cctx.group().preloader().needForceKeys()) {
+            GridDhtFuture<Object> fut = cctx.group().preloader().request(
+                cctx,
                 Collections.singleton(key),
                 topVer);
 
             if (fut != null) {
-                if (F.isEmpty(fut.invalidPartitions())) {
-                    if (retries == null)
-                        retries = new HashSet<>();
+                if (!F.isEmpty(fut.invalidPartitions())) {
+                    assert fut.invalidPartitions().size() == 1 : fut.invalidPartitions();
 
-                    retries.addAll(fut.invalidPartitions());
+                    retry = F.first(fut.invalidPartitions());
+
+                    onDone((GridCacheEntryInfo)null);
+
+                    return;
                 }
 
                 fut.listen(
@@ -242,17 +243,14 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      *
      */
     private void map0() {
-        // Assign keys to primary nodes.
-        int part = cctx.affinity().partition(key);
+        assert retry == null : retry;
 
-        if (retries == null || !retries.contains(part)) {
-            if (!map(key)) {
-                retries = Collections.singleton(part);
+        if (!map(key)) {
+            retry = cctx.affinity().partition(key);
 
-                onDone((GridCacheEntryInfo)null);
+            onDone((GridCacheEntryInfo)null);
 
-                return;
-            }
+            return;
         }
 
         getAsync();
@@ -260,7 +258,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> invalidPartitions() {
-        return retries == null ? Collections.<Integer>emptyList() : retries;
+        return retry == null ? Collections.<Integer>emptyList() : Collections.singletonList(retry);
     }
 
     /**
@@ -268,9 +266,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key) {
+        int keyPart = cctx.affinity().partition(key);
+
         GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
-            cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
-            cache().topology().localPartition(key, false);
+            cache().topology().localPartition(keyPart, topVer, true) :
+            cache().topology().localPartition(keyPart);
 
         if (part == null)
             return false;
@@ -303,11 +303,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         IgniteInternalFuture<Boolean> rdrFut = null;
 
-        ClusterNode readerNode = cctx.discovery().node(reader);
-
         ReaderArguments readerArgs = null;
 
-        if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
+        if (addRdr && !skipVals && !cctx.localNodeId().equals(reader)) {
             while (true) {
                 GridDhtCacheEntry e = cache().entryExx(key, topVer);
 
@@ -315,7 +313,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                     if (e.obsolete())
                         continue;
 
-                    boolean addReader = (!e.deleted() && this.addRdr && !skipVals);
+                    boolean addReader = !e.deleted();
 
                     if (addReader) {
                         e.unswap(false);

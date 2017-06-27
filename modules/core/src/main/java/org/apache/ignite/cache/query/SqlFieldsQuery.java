@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
@@ -69,6 +70,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /** */
     private boolean replicatedOnly;
+
+    /** Partitions for query */
+    private int[] parts;
+
+    /** Schema. */
+    private String schema;
 
     /**
      * Constructs SQL fields query.
@@ -259,6 +266,53 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isReplicatedOnly() {
         return replicatedOnly;
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     * <p>
+     * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setPartitions(@Nullable int... parts) {
+        this.parts = prepare(parts);
+
+        return this;
+    }
+
+    /**
+     * Get schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @return Schema. Null if schema is not set.
+     */
+    @Nullable public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @param schema Schema. Null to unset schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setSchema(@Nullable String schema) {
+        this.schema = schema;
+
+        return this;
     }
 
     /** {@inheritDoc} */

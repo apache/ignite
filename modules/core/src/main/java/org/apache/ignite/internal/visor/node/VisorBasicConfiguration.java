@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -58,9 +57,6 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
 
     /** Local host value used. */
     private String locHost;
-
-    /** Node id. */
-    private UUID nodeId;
 
     /** Marshaller used. */
     private String marsh;
@@ -113,6 +109,54 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
     /** Whether update checker is enabled. */
     private boolean updateNtf;
 
+    /** Active on start flag. */
+    private boolean activeOnStart;
+
+    /** Address resolver. */
+    private String addrRslvr;
+
+    /** Flag indicating whether cache sanity check is enabled. */
+    private boolean cacheSanityCheckEnabled;
+
+    /** User's class loader. */
+    private String clsLdr;
+
+    /** Consistent globally unique node ID which survives node restarts. */
+    private String consistentId;
+
+    /** Failure detection timeout. */
+    private Long failureDetectionTimeout;
+
+    /** Ignite work folder. */
+    private String igniteWorkDir;
+
+    /** */
+    private boolean lateAffAssignment;
+
+    /** Marshal local jobs. */
+    private boolean marshLocJobs;
+
+    /** Full metrics enabled flag. */
+    private long metricsUpdateFreq;
+
+    /** Failure detection timeout for client nodes. */
+    private Long clientFailureDetectionTimeout;
+
+    /** Message send retries delay. */
+    private int sndRetryCnt;
+
+    /** Interval between message send retries. */
+    private long sndRetryDelay;
+
+    /** Base port number for time server. */
+    private int timeSrvPortBase;
+
+    /** Port number range for time server. */
+    private int timeSrvPortRange;
+
+    /** Utility cache pool keep alive time. */
+    private long utilityCacheKeepAliveTime;
+
     /**
      * Default constructor.
      */
@@ -130,7 +174,6 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         igniteInstanceName = c.getIgniteInstanceName();
         ggHome = getProperty(IGNITE_HOME, c.getIgniteHome());
         locHost = getProperty(IGNITE_LOCAL_HOST, c.getLocalHost());
-        nodeId = ignite.localNode().id();
         marsh = compactClass(c.getMarshaller());
         deployMode = c.getDeploymentMode();
         clientMode = c.isClientMode();
@@ -148,6 +191,22 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         quiet = boolValue(IGNITE_QUIET, true);
         successFile = getProperty(IGNITE_SUCCESS_FILE);
         updateNtf = boolValue(IGNITE_UPDATE_NOTIFIER, true);
+        activeOnStart = c.isActiveOnStart();
+        addrRslvr = compactClass(c.getAddressResolver());
+        cacheSanityCheckEnabled = c.isCacheSanityCheckEnabled();
+        clsLdr = compactClass(c.getClassLoader());
+        consistentId = String.valueOf(c.getConsistentId());
+        failureDetectionTimeout = c.getFailureDetectionTimeout();
+        igniteWorkDir = c.getWorkDirectory();
+        lateAffAssignment = c.isLateAffinityAssignment();
+        marshLocJobs = c.isMarshalLocalJobs();
+        metricsUpdateFreq = c.getMetricsUpdateFrequency();
+        clientFailureDetectionTimeout = c.getClientFailureDetectionTimeout();
+        sndRetryCnt = c.getNetworkSendRetryCount();
+        sndRetryDelay = c.getNetworkSendRetryDelay();
+        timeSrvPortBase = c.getTimeServerPortBase();
+        timeSrvPortRange = c.getTimeServerPortRange();
+        utilityCacheKeepAliveTime = c.getUtilityCacheKeepAliveTime();
     }
 
     /**
@@ -169,13 +228,6 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
      */
     @Nullable public String getLocalHost() {
         return locHost;
-    }
-
-    /**
-     * @return Node id.
-     */
-    public UUID getNodeId() {
-        return nodeId;
     }
 
     /**
@@ -297,12 +349,125 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         return updateNtf;
     }
 
+    /**
+     * @return Active on start flag.
+     */
+    public boolean isActiveOnStart() {
+        return activeOnStart;
+    }
+
+    /**
+     * @return Class name of address resolver instance.
+     */
+    public String getAddressResolver() {
+        return addrRslvr;
+    }
+
+    /**
+     * @return Flag indicating whether cache sanity check is enabled.
+     */
+    public boolean isCacheSanityCheckEnabled() {
+        return cacheSanityCheckEnabled;
+    }
+
+    /**
+     * @return User's class loader.
+     */
+    public String getClassLoader() {
+        return clsLdr;
+    }
+
+    /**
+     * Gets consistent globally unique node ID which survives node restarts.
+     *
+     * @return Node consistent ID.a
+     */
+    public String getConsistentId() {
+        return consistentId;
+    }
+
+    /**
+     * @return Failure detection timeout in milliseconds.
+     */
+    public Long getFailureDetectionTimeout() {
+        return failureDetectionTimeout;
+    }
+
+    /**
+     * @return Ignite work directory.
+     */
+    public String getWorkDirectory() {
+        return igniteWorkDir;
+    }
+
+    /**
+     * @return Late affinity assignment flag.
+     */
+    public boolean isLateAffinityAssignment() {
+        return lateAffAssignment;
+    }
+
+    /**
+     * @return {@code True} if local jobs should be marshalled.
+     */
+    public boolean isMarshalLocalJobs() {
+        return marshLocJobs;
+    }
+
+    /**
+     * @return Job metrics update frequency in milliseconds.
+     */
+    public long getMetricsUpdateFrequency() {
+        return metricsUpdateFreq;
+    }
+
+    /**
+     * @return Failure detection timeout for client nodes in milliseconds.
+     */
+    public Long getClientFailureDetectionTimeout() {
+        return clientFailureDetectionTimeout;
+    }
+
+    /**
+     * @return Message send retries count.
+     */
+    public int getNetworkSendRetryCount() {
+        return sndRetryCnt;
+    }
+
+    /**
+     * @return Interval between message send retries.
+     */
+    public long getNetworkSendRetryDelay() {
+        return sndRetryDelay;
+    }
+
+    /**
+     * @return Base UPD port number for grid time server.
+     */
+    public int getTimeServerPortBase() {
+        return timeSrvPortBase;
+    }
+
+    /**
+     * @return Number of ports to try before server initialization fails.
+     */
+    public int getTimeServerPortRange() {
+        return timeSrvPortRange;
+    }
+
+    /**
+     * @return Thread pool keep alive time (in milliseconds) to be used in grid for utility cache messages.
+     */
+    public long getUtilityCacheKeepAliveTime() {
+        return utilityCacheKeepAliveTime;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, igniteInstanceName);
         U.writeString(out, ggHome);
         U.writeString(out, locHost);
-        U.writeUuid(out, nodeId);
         U.writeString(out, marsh);
         U.writeEnum(out, deployMode);
         out.writeObject(clientMode);
@@ -320,6 +485,22 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         out.writeBoolean(quiet);
         U.writeString(out, successFile);
         out.writeBoolean(updateNtf);
+        out.writeBoolean(activeOnStart);
+        U.writeString(out, addrRslvr);
+        out.writeBoolean(cacheSanityCheckEnabled);
+        U.writeString(out, clsLdr);
+        U.writeString(out, consistentId);
+        out.writeObject(failureDetectionTimeout);
+        U.writeString(out, igniteWorkDir);
+        out.writeBoolean(lateAffAssignment);
+        out.writeBoolean(marshLocJobs);
+        out.writeLong(metricsUpdateFreq);
+        out.writeObject(clientFailureDetectionTimeout);
+        out.writeInt(sndRetryCnt);
+        out.writeLong(sndRetryDelay);
+        out.writeInt(timeSrvPortBase);
+        out.writeInt(timeSrvPortRange);
+        out.writeLong(utilityCacheKeepAliveTime);
     }
 
     /** {@inheritDoc} */
@@ -327,7 +508,6 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         igniteInstanceName = U.readString(in);
         ggHome = U.readString(in);
         locHost = U.readString(in);
-        nodeId = U.readUuid(in);
         marsh = U.readString(in);
         deployMode = DeploymentMode.fromOrdinal(in.readByte());
         clientMode = (Boolean)in.readObject();
@@ -345,6 +525,22 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         quiet = in.readBoolean();
         successFile = U.readString(in);
         updateNtf = in.readBoolean();
+        activeOnStart = in.readBoolean();
+        addrRslvr = U.readString(in);
+        cacheSanityCheckEnabled = in.readBoolean();
+        clsLdr = U.readString(in);
+        consistentId = U.readString(in);
+        failureDetectionTimeout = (Long)in.readObject();
+        igniteWorkDir = U.readString(in);
+        lateAffAssignment = in.readBoolean();
+        marshLocJobs = in.readBoolean();
+        metricsUpdateFreq = in.readLong();
+        clientFailureDetectionTimeout = (Long)in.readObject();
+        sndRetryCnt = in.readInt();
+        sndRetryDelay = in.readLong();
+        timeSrvPortBase = in.readInt();
+        timeSrvPortRange = in.readInt();
+        utilityCacheKeepAliveTime = in.readLong();
     }
 
     /** {@inheritDoc} */

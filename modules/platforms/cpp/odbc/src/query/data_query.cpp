@@ -19,6 +19,7 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/query/data_query.h"
+#include "ignite/odbc/query/batch_query.h"
 
 namespace ignite
 {
@@ -26,9 +27,8 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(diagnostic::Diagnosable& diag,
-                Connection& connection, const std::string& sql,
-                const app::ParameterBindingMap& params) :
+            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                const std::string& sql, const app::ParameterSet& params) :
                 Query(diag, QueryType::DATA),
                 connection(connection),
                 sql(sql),
@@ -39,7 +39,7 @@ namespace ignite
 
             DataQuery::~DataQuery()
             {
-                Close();
+                InternalClose();
             }
 
             SqlResult::Type DataQuery::Execute()
@@ -141,10 +141,18 @@ namespace ignite
 
             SqlResult::Type DataQuery::Close()
             {
+                return InternalClose();
+            }
+
+            SqlResult::Type DataQuery::InternalClose()
+            {
                 if (!cursor.get())
                     return SqlResult::AI_SUCCESS;
 
-                SqlResult::Type result = MakeRequestClose();
+                SqlResult::Type result = SqlResult::AI_SUCCESS;
+
+                if (cursor->HasData())
+                    result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)
                 {
@@ -169,9 +177,9 @@ namespace ignite
 
             SqlResult::Type DataQuery::MakeRequestExecute()
             {
-                const std::string& cacheName = connection.GetCache();
+                const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(cacheName, sql, params);
+                QueryExecuteRequest req(schema, sql, params);
                 QueryExecuteResponse rsp;
 
                 try
@@ -199,12 +207,12 @@ namespace ignite
                 resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
 
                 LOG_MSG("Query id: " << cursor->GetQueryId());
-                for (size_t i = 0; i < rsp.GetMeta().size(); ++i)
+                for (size_t i = 0; i < resultMeta.size(); ++i)
                 {
-                    LOG_MSG("\n[" << i << "] SchemaName:     " << rsp.GetMeta()[i].GetSchemaName()
-                        <<  "\n[" << i << "] TypeName:       " << rsp.GetMeta()[i].GetTableName()
-                        <<  "\n[" << i << "] ColumnName:     " << rsp.GetMeta()[i].GetColumnName()
-                        <<  "\n[" << i << "] ColumnType:     " << rsp.GetMeta()[i].GetDataType());
+                    LOG_MSG("\n[" << i << "] SchemaName:     " << resultMeta[i].GetSchemaName()
+                        <<  "\n[" << i << "] TypeName:       " << resultMeta[i].GetTableName()
+                        <<  "\n[" << i << "] ColumnName:     " << resultMeta[i].GetColumnName()
+                        <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
                 }
 
                 return SqlResult::AI_SUCCESS;

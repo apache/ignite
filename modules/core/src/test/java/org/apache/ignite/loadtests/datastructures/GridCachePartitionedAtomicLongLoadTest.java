@@ -71,7 +71,6 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setStartSize(200);
         cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -116,7 +115,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         @Override public Boolean call() throws Exception {
             Ignite ignite = grid();
 
-            IgniteCache cache = ignite.cache(null);
+            IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             assert cache != null;
 

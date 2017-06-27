@@ -32,18 +32,18 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -82,7 +82,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         cfg.setConsistentId(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(1000);
+        cfg.setClientFailureDetectionTimeout(Integer.MAX_VALUE);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -100,13 +100,13 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      *
      */
     private void blockRebalance() {
-        for (Ignite node : G.allGrids()) {
-            testSpi(node).blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    Object msg0 = msg.message();
+        final int grpId = groupIdForCache(ignite(0), TEST_CACHE);
 
-                    return (msg0 instanceof GridDhtPartitionSupplyMessage)
-                        && ((GridCacheMessage)msg0).cacheId() == CU.cacheId(TEST_CACHE);
+        for (Ignite node : G.allGrids()) {
+            testSpi(node).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return (msg instanceof GridDhtPartitionSupplyMessage)
+                        && ((GridCacheGroupIdMessage)msg).groupId() == grpId;
                 }
             });
         }
@@ -357,7 +357,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_ASYNC));
 
-        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
+        List<Integer> keys = movingKeysAfterJoin(srv0, TEST_CACHE, putAll ? 10 : 1);
 
         testSpi(clientNode).blockMessages(GridNearAtomicSingleUpdateRequest.class, srv0.name());
         testSpi(clientNode).blockMessages(GridNearAtomicFullUpdateRequest.class, srv0.name());
@@ -372,30 +372,18 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         else
             nearCache.put(keys.get(0), map.get(keys.get(0)));
 
-        int nodeIdx = 2;
-
         Affinity<Object> aff = clientNode.affinity(TEST_CACHE);
 
-        int keysMoved;
+        startGrid(2);
 
-        do {
-            startGrid(nodeIdx);
+        awaitPartitionMapExchange();
 
-            awaitPartitionMapExchange();
+        int keysMoved = 0;
 
-            keysMoved = 0;
-
-            for (Integer key : keys) {
-                if (!aff.isPrimary(srv0.cluster().localNode(), key))
-                    keysMoved++;
-            }
-
-            if (keysMoved == keys.size())
-                break;
-
-            nodeIdx++;
+        for (Integer key : keys) {
+            if (!aff.isPrimary(srv0.cluster().localNode(), key))
+                keysMoved++;
         }
-        while (nodeIdx < 10);
 
         assertEquals(keys.size(), keysMoved);
 
@@ -664,9 +652,9 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
 
-        testSpi(ignite(0)).blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage msg) {
-                return msg.message() instanceof GridDhtAtomicAbstractUpdateRequest;
+        testSpi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtAtomicAbstractUpdateRequest;
             }
         });
 
@@ -720,16 +708,16 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
 
         if (fail0) {
-            testSpi(ignite(0)).blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    return msg.message() instanceof GridDhtAtomicAbstractUpdateRequest;
+            testSpi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridDhtAtomicAbstractUpdateRequest;
                 }
             });
         }
         if (fail1) {
-            testSpi(ignite(2)).blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    return msg.message() instanceof GridDhtAtomicAbstractUpdateRequest;
+            testSpi(ignite(2)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridDhtAtomicAbstractUpdateRequest;
                 }
             });
         }
@@ -760,24 +748,137 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPutReaderUpdate1() throws Exception {
+        readerUpdateDhtFails(false, false, false);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutReaderUpdate2() throws Exception {
+        readerUpdateDhtFails(true, false, false);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllReaderUpdate1() throws Exception {
+        readerUpdateDhtFails(false, false, true);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(false, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllReaderUpdate2() throws Exception {
+        readerUpdateDhtFails(true, false, true);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(true, true, true);
+    }
+
+    /**
+     * @param updateNearEnabled {@code True} if enable near cache for second put.
+     * @param delayReader If {@code true} delay reader response, otherwise delay backup response.
+     * @param putAll If {@code true} use putAll, otherwise put.
+     * @throws Exception If failed.
+     */
+    private void readerUpdateDhtFails(boolean updateNearEnabled,
+        boolean delayReader,
+        boolean putAll) throws Exception {
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        client = false;
+
+        startServers(2);
+
+        awaitPartitionMapExchange();
+
+        Ignite srv0 = ignite(0);
+        Ignite srv1 = ignite(1);
+
+        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
+
+        ccfg = null;
+
+        client = true;
+
+        Ignite client1 = startGrid(2);
+
+        IgniteCache<Object, Object> cache1 = client1.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+
+        Ignite client2 = startGrid(3);
+
+        IgniteCache<Object, Object> cache2 = updateNearEnabled ?
+            client2.createNearCache(TEST_CACHE, new NearCacheConfiguration<>()) : client2.cache(TEST_CACHE);
+
+        if (putAll) {
+            Map<Integer, Integer> map = new HashMap<>();
+
+            for (Integer key : keys)
+                map.put(key, 1);
+
+            cache1.putAll(map);
+        }
+        else
+            cache1.put(keys.get(0), 1);
+
+        if (delayReader)
+            testSpi(client1).blockMessages(GridDhtAtomicNearResponse.class, client2.name());
+        else
+            testSpi(srv1).blockMessages(GridDhtAtomicNearResponse.class, client2.name());
+
+        Map<Integer, Integer> map;
+
+        IgniteFuture<?> fut;
+
+        if (putAll) {
+            map = new HashMap<>();
+
+            for (Integer key : keys)
+                map.put(key, 1);
+
+            fut = cache2.putAllAsync(map);
+        }
+        else {
+            map = F.asMap(keys.get(0), 2);
+
+            fut = cache2.putAsync(keys.get(0), 2);
+        }
+
+        U.sleep(2000);
+
+        assertFalse(fut.isDone());
+
+        if (delayReader)
+            testSpi(client1).stopBlock();
+        else
+            testSpi(srv1).stopBlock();
+
+        fut.get();
+
+        checkData(map);
+    }
+
+    /**
      * @param expData Expected cache data.
      */
     private void checkData(Map<Integer, Integer> expData) {
-        assert !expData.isEmpty();
-
-        List<Ignite> nodes = G.allGrids();
-
-        assertFalse(nodes.isEmpty());
-
-        for (Ignite node : nodes) {
-            IgniteCache<Integer, Integer> cache = node.cache(TEST_CACHE);
-
-            for (Map.Entry<Integer, Integer> e : expData.entrySet()) {
-                assertEquals("Invalid value [key=" + e.getKey() + ", node=" + node.name() + ']',
-                    e.getValue(),
-                    cache.get(e.getKey()));
-            }
-        }
+        checkCacheData(expData, TEST_CACHE);
     }
 
     /**
@@ -813,7 +914,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      */
     private CacheConfiguration<Integer, Integer> cacheConfiguration(int backups,
         CacheWriteSynchronizationMode writeSync) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TEST_CACHE);
         ccfg.setAtomicityMode(ATOMIC);

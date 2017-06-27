@@ -31,6 +31,16 @@ import org.jetbrains.annotations.Nullable;
  * to make sure that there is the least amount of data movement possible and optimal
  * network and memory utilization.
  * <p>
+ * Note that data streamer data manipulation methods do not support transactions.
+ * When updating data with {@link #allowOverwrite()} set to {@code false} new entry
+ * is created on primary and backups if it has not existed. If {@link #allowOverwrite()}
+ * is {@code true} then batches are applied with regular {@code cache.put(..)} methods
+ * starting implicit transactions if streamer is targeted to a transactional cache.
+ * <p>
+ * However, explicit transactional updates inside are possible with custom {@link StreamReceiver}.
+ * This way batches can be applied within transaction(s) on target node.
+ * See {@link #receiver(StreamReceiver)} for details.
+ * <p>
  * Note that streamer will stream data concurrently by multiple internal threads, so the
  * data may get to remote nodes in different order from which it was added to
  * the streamer.

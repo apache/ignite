@@ -51,12 +51,17 @@ public class DelegatingVector implements Vector {
     }
 
     /**
-     * @param dlg
+     * @param dlg Parent vector.
      */
     public DelegatingVector(Vector dlg) {
         assert dlg != null;
 
         this.dlg = dlg;
+    }
+
+    /** Get the delegating vector */
+    public Vector getVector() {
+        return dlg;
     }
 
     /** {@inheritDoc} */

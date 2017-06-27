@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
@@ -35,9 +37,11 @@ public class BinaryTypeProxy implements BinaryType {
     private final BinaryContext ctx;
 
     /** Type ID. */
+    @GridToStringInclude(sensitive = true)
     private int typeId;
 
     /** Raw data. */
+    @GridToStringInclude(sensitive = true)
     private final String clsName;
 
     /** Target type. */
@@ -90,6 +94,11 @@ public class BinaryTypeProxy implements BinaryType {
     /** {@inheritDoc} */
     @Override public boolean isEnum() {
         return target().isEnum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryObject> enumValues() {
+        return target().enumValues();
     }
 
     /**

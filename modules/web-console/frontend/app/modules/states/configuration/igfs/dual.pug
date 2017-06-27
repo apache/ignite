@@ -19,7 +19,7 @@ include /app/helpers/jade/mixins
 -var form = 'dualMode'
 -var model = 'backupItem'
 
-.panel.panel-default(ng-form=form novalidate)
+.panel.panel-default(ng-if='$ctrl.available(["1.0.0", "2.0.0"])' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label Dual mode

@@ -66,7 +66,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
 
-        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, String.class);
 
         cfg.setCacheConfiguration(ccfg);
@@ -88,7 +88,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     public void testQueryCancelsOnGridShutdown() throws Exception {
         try (Ignite client = startGrid("client")) {
 
-            IgniteCache<Object, Object> cache = client.cache(null);
+            IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.localSize());
 
@@ -141,7 +141,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     public void testQueryResponseFailCode() throws Exception {
         try (Ignite client = startGrid("client")) {
 
-            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             cfg.setSqlFunctionClasses(Functions.class);
             cfg.setIndexedTypes(Integer.class, Integer.class);
             cfg.setName("test");

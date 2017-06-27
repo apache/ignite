@@ -33,7 +33,10 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.DataStructures.Configuration;
+    using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
@@ -96,6 +99,26 @@ namespace Apache.Ignite.Core
         /// </summary>
         public static readonly TimeSpan DefaultFailureDetectionTimeout = TimeSpan.FromSeconds(10);
 
+        /// <summary>
+        /// Default failure detection timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultClientFailureDetectionTimeout = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        /// Default thread pool size.
+        /// </summary>
+        public static readonly int DefaultThreadPoolSize = Math.Max(8, Environment.ProcessorCount);
+
+        /// <summary>
+        /// Default management thread pool size.
+        /// </summary>
+        public const int DefaultManagementThreadPoolSize = 4;
+
+        /// <summary>
+        /// Default timeout after which long query warning will be printed.
+        /// </summary>
+        public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -128,6 +151,39 @@ namespace Apache.Ignite.Core
 
         /** */
         private TimeSpan? _failureDetectionTimeout;
+
+        /** */
+        private TimeSpan? _clientFailureDetectionTimeout;
+
+        /** */
+        private int? _publicThreadPoolSize;
+
+        /** */
+        private int? _stripedThreadPoolSize;
+
+        /** */
+        private int? _serviceThreadPoolSize;
+
+        /** */
+        private int? _systemThreadPoolSize;
+
+        /** */
+        private int? _asyncCallbackThreadPoolSize;
+
+        /** */
+        private int? _managementThreadPoolSize;
+
+        /** */
+        private int? _dataStreamerThreadPoolSize;
+
+        /** */
+        private int? _utilityCacheThreadPoolSize;
+
+        /** */
+        private int? _queryThreadPoolSize;
+
+        /** */
+        private TimeSpan? _longQueryWarningTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -210,6 +266,19 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_isDaemon);
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
+            writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
+            writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
+
+            // Thread pools
+            writer.WriteIntNullable(_publicThreadPoolSize);
+            writer.WriteIntNullable(_stripedThreadPoolSize);
+            writer.WriteIntNullable(_serviceThreadPoolSize);
+            writer.WriteIntNullable(_systemThreadPoolSize);
+            writer.WriteIntNullable(_asyncCallbackThreadPoolSize);
+            writer.WriteIntNullable(_managementThreadPoolSize);
+            writer.WriteIntNullable(_dataStreamerThreadPoolSize);
+            writer.WriteIntNullable(_utilityCacheThreadPoolSize);
+            writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -350,6 +419,27 @@ namespace Apache.Ignite.Core
                 memEventStorage.Write(writer);
             }
 
+            if (MemoryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                MemoryConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            // SQL
+            if (SqlConnectorConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                SqlConnectorConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -415,6 +505,19 @@ namespace Apache.Ignite.Core
             _isDaemon = r.ReadBooleanNullable();
             _isLateAffinityAssignment = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
+            _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
+            _longQueryWarningTimeout = r.ReadTimeSpanNullable();
+
+            // Thread pools
+            _publicThreadPoolSize = r.ReadIntNullable();
+            _stripedThreadPoolSize = r.ReadIntNullable();
+            _serviceThreadPoolSize = r.ReadIntNullable();
+            _systemThreadPoolSize = r.ReadIntNullable();
+            _asyncCallbackThreadPoolSize = r.ReadIntNullable();
+            _managementThreadPoolSize = r.ReadIntNullable();
+            _dataStreamerThreadPoolSize = r.ReadIntNullable();
+            _utilityCacheThreadPoolSize = r.ReadIntNullable();
+            _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -481,6 +584,17 @@ namespace Apache.Ignite.Core
                 case 2:
                     EventStorageSpi = MemoryEventStorageSpi.Read(r);
                     break;
+            }
+
+            if (r.ReadBoolean())
+            {
+                MemoryConfiguration = new MemoryConfiguration(r);
+            }
+
+            // SQL
+            if (r.ReadBoolean())
+            {
+                SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
             }
         }
 
@@ -925,6 +1039,17 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/>
+        /// and <see cref="TcpCommunicationSpi"/> for client nodes.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:30")]
+        public TimeSpan ClientFailureDetectionTimeout
+        {
+            get { return _clientFailureDetectionTimeout ?? DefaultClientFailureDetectionTimeout; }
+            set { _clientFailureDetectionTimeout = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the configurations for plugins to be started.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -937,5 +1062,122 @@ namespace Apache.Ignite.Core
         /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the page memory configuration.
+        /// <see cref="MemoryConfiguration"/> for more details.
+        /// </summary>
+        public MemoryConfiguration MemoryConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
+        /// <para />
+        /// For example, when executing <see cref="ICompute.Call{TRes}(IComputeFunc{TRes})"/>,
+        /// the assembly with corresponding <see cref="IComputeFunc{TRes}"/> should be loaded on remote nodes.
+        /// With this option enabled, Ignite will attempt to send the assembly to remote nodes
+        /// and load it there automatically.
+        /// <para />
+        /// Default is <see cref="Apache.Ignite.Core.Deployment.PeerAssemblyLoadingMode.Disabled"/>.
+        /// <para />
+        /// Peer loading is enabled for <see cref="ICompute"/> functionality.
+        /// </summary>
+        public PeerAssemblyLoadingMode PeerAssemblyLoadingMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the public thread pool, which processes compute jobs and user messages.
+        /// </summary>
+        public int PublicThreadPoolSize
+        {
+            get { return _publicThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _publicThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the striped thread pool, which processes cache requests.
+        /// </summary>
+        public int StripedThreadPoolSize
+        {
+            get { return _stripedThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _stripedThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the service thread pool, which processes Ignite services.
+        /// </summary>
+        public int ServiceThreadPoolSize
+        {
+            get { return _serviceThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _serviceThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the system thread pool, which processes internal system messages.
+        /// </summary>
+        public int SystemThreadPoolSize
+        {
+            get { return _systemThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _systemThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the asynchronous callback thread pool.
+        /// </summary>
+        public int AsyncCallbackThreadPoolSize
+        {
+            get { return _asyncCallbackThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _asyncCallbackThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the management thread pool, which processes internal Ignite jobs.
+        /// </summary>
+        [DefaultValue(DefaultManagementThreadPoolSize)]
+        public int ManagementThreadPoolSize
+        {
+            get { return _managementThreadPoolSize ?? DefaultManagementThreadPoolSize; }
+            set { _managementThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the data streamer thread pool.
+        /// </summary>
+        public int DataStreamerThreadPoolSize
+        {
+            get { return _dataStreamerThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _dataStreamerThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the utility cache thread pool.
+        /// </summary>
+        public int UtilityCacheThreadPoolSize
+        {
+            get { return _utilityCacheThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _utilityCacheThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the query thread pool.
+        /// </summary>
+        public int QueryThreadPoolSize
+        {
+            get { return _queryThreadPoolSize ?? DefaultThreadPoolSize; }
+            set { _queryThreadPoolSize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
+        /// </summary>
+        public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timeout after which long query warning will be printed.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:03")]
+        public TimeSpan LongQueryWarningTimeout
+        {
+            get { return _longQueryWarningTimeout ?? DefaultLongQueryWarningTimeout; }
+            set { _longQueryWarningTimeout = value; }
+        }
     }
 }

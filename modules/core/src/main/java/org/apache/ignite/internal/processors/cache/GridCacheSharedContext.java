@@ -22,8 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,12 +35,15 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -52,7 +53,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionMetri
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -293,6 +294,8 @@ public class GridCacheSharedContext<K, V> {
                 mgr.start(this);
         }
 
+        kernalCtx.query().onCacheReconnect();
+
         for (GridCacheSharedManager<?, ?> mgr : mgrs)
             mgr.onKernalStart(true);
     }
@@ -404,7 +407,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param cacheCtx Cache context to remove.
      */
-    public void removeCacheContext(GridCacheContext cacheCtx) {
+    void removeCacheContext(GridCacheContext cacheCtx) {
         int cacheId = cacheCtx.cacheId();
 
         ctxMap.remove(cacheId, cacheCtx);
@@ -415,7 +418,7 @@ public class GridCacheSharedContext<K, V> {
             locStoreCnt.decrementAndGet();
 
         // Safely clean up the message listeners.
-        ioMgr.removeHandlers(cacheId);
+        ioMgr.removeCacheHandlers(cacheId);
     }
 
     /**
@@ -443,6 +446,22 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheContext<K, V> cacheContext(int cacheId) {
         return ctxMap.get(cacheId);
+    }
+
+    /**
+     * Returns cache object context if created or creates new and caches it until cache started.
+     *
+     * @param cacheId Cache id.
+     */
+    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+        GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
+
+        if (ctx != null)
+            return ctx.cacheObjectContext();
+
+        DynamicCacheDescriptor desc = cache().cacheDescriptor(cacheId);
+
+        return desc != null ? desc.cacheObjectContext(kernalContext().cacheObjects()) : null;
     }
 
     /**
@@ -698,7 +717,19 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * Waits for partition locks and transactions release.
+     * Captures all ongoing operations that we need to wait before we can proceed to the next topology version.
+     * This method must be called only after
+     * {@link GridDhtPartitionTopology#updateTopologyVersion(GridDhtTopologyFuture, DiscoCache, long, boolean)}
+     * method is called so that all new updates will wait to switch to the new version.
+     * This method will capture:
+     * <ul>
+     *     <li>All non-released cache locks</li>
+     *     <li>All non-committed transactions (local and remote)</li>
+     *     <li>All pending atomic updates</li>
+     *     <li>All pending DataStreamer updates</li>
+     * </ul>
+     *
+     * Captured updates are wrapped in a future that will be completed once pending objects are released.
      *
      * @param topVer Topology version.
      * @return {@code true} if waiting was successful.
@@ -740,7 +771,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return Error message if transactions are incompatible.
      */
-    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridLongList activeCacheIds,
+    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridIntList activeCacheIds,
         GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.systemTx() && !tx.system())
             return "system cache can be enlisted only in system transaction";
@@ -749,7 +780,7 @@ public class GridCacheSharedContext<K, V> {
             return "non-system cache can't be enlisted in system transaction";
 
         for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = (int)activeCacheIds.get(i);
+            int cacheId = activeCacheIds.get(i);
 
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 

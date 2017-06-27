@@ -45,13 +45,13 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.escapeName;
  * Task that collect keys distribution in partitions.
  */
 @GridInternal
-public class VisorCachePartitionsTask extends VisorMultiNodeTask<String,
+public class VisorCachePartitionsTask extends VisorMultiNodeTask<VisorCachePartitionsTaskArg,
     Map<UUID, VisorCachePartitions>, VisorCachePartitions> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCachePartitionsJob job(String arg) {
+    @Override protected VisorCachePartitionsJob job(VisorCachePartitionsTaskArg arg) {
         return new VisorCachePartitionsJob(arg, debug);
     }
 
@@ -72,22 +72,24 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<String,
     /**
      * Job that collect cache metrics from node.
      */
-    private static class VisorCachePartitionsJob extends VisorJob<String, VisorCachePartitions> {
+    private static class VisorCachePartitionsJob extends VisorJob<VisorCachePartitionsTaskArg, VisorCachePartitions> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * Create job with given argument.
          *
-         * @param cacheName Cache name.
+         * @param arg Tasks arguments.
          * @param debug Debug flag.
          */
-        private VisorCachePartitionsJob(String cacheName, boolean debug) {
-            super(cacheName, debug);
+        private VisorCachePartitionsJob(VisorCachePartitionsTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorCachePartitions run(final String cacheName) throws IgniteException {
+        @Override protected VisorCachePartitions run(VisorCachePartitionsTaskArg arg) throws IgniteException {
+            String cacheName = arg.getCacheName();
+
             if (debug)
                 log(ignite.log(), "Collecting partitions for cache: " + escapeName(cacheName));
 
@@ -122,9 +124,9 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<String,
                     for (GridDhtLocalPartition part : locParts) {
                         int p = part.id();
 
-                        int sz = part.publicSize();
+                        long sz = part.dataStore().cacheSize(ca.context().cacheId());
 
-                        // Pass -1 as topology version in order not to wait for topology version.
+                        // Pass NONE as topology version in order not to wait for topology version.
                         if (part.primary(AffinityTopologyVersion.NONE))
                             parts.addPrimary(p, sz);
                         else if (part.state() == GridDhtPartitionState.OWNING && part.backup(AffinityTopologyVersion.NONE))

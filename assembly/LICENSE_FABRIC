@@ -285,7 +285,7 @@ This product bundles Java Transaction API which is available under it's own lice
 See http://download.oracle.com/otndocs/jcp/jta-1.1-classes-oth-JSpec/jta-1.1-classes-oth-JSpec-license.html for details.
 
 ==============================================================================
-For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:4.2
+For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:5.0.3
 ==============================================================================
 This product bundles ASM All which is available under the following:
 BSD. For details, see http://asm.objectweb.org/license.html.

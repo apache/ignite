@@ -80,11 +80,9 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         commSpi.record(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                Message msg0 = ((GridIoMessage) msg).message();
-
-                return (msg0.getClass() == GridDhtPartitionsSingleMessage.class ||
-                    msg0.getClass() == GridDhtPartitionsFullMessage.class) &&
-                    ((GridDhtPartitionsAbstractMessage) msg0).exchangeId() != null;
+                return (msg.getClass() == GridDhtPartitionsSingleMessage.class ||
+                    msg.getClass() == GridDhtPartitionsFullMessage.class) &&
+                    ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null;
 
             }
         });
@@ -94,19 +92,19 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF1_CACHE1);
             ccfg.setAffinity(new RendezvousAffinityFunction(false, 512));
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF1_CACHE2);
             ccfg.setAffinity(new RendezvousAffinityFunction(false, 512));
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF3_CACHE1);
             ccfg.setBackups(3);
 
@@ -116,14 +114,14 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF4_FILTER_CACHE1);
             ccfg.setNodeFilter(new TestNodeFilter());
             ccfg.setAffinity(new RendezvousAffinityFunction());
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF4_FILTER_CACHE2);
             ccfg.setNodeFilter(new TestNodeFilter());
             ccfg.setAffinity(new RendezvousAffinityFunction());
@@ -285,30 +283,33 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         Map<Integer, Integer> dupPartsData,
         GridDhtPartitionsFullMessage msg)
     {
-        Integer cacheId;
-        Integer dupCacheId;
+        int cache1Grp = groupIdForCache(ignite(0), cache1);
+        int cache2Grp = groupIdForCache(ignite(0), cache2);
 
-        if (dupPartsData.containsKey(CU.cacheId(cache1))) {
-            cacheId = CU.cacheId(cache1);
-            dupCacheId = CU.cacheId(cache2);
+        Integer grpId;
+        Integer dupGrpId;
+
+        if (dupPartsData.containsKey(cache1Grp)) {
+            grpId = cache1Grp;
+            dupGrpId = cache2Grp;
         }
         else {
-            cacheId = CU.cacheId(cache2);
-            dupCacheId = CU.cacheId(cache1);
+            grpId = cache2Grp;
+            dupGrpId = cache1Grp;
         }
 
-        assertTrue(dupPartsData.containsKey(cacheId));
-        assertEquals(dupCacheId, dupPartsData.get(cacheId));
-        assertFalse(dupPartsData.containsKey(dupCacheId));
+        assertTrue(dupPartsData.containsKey(grpId));
+        assertEquals(dupGrpId, dupPartsData.get(grpId));
+        assertFalse(dupPartsData.containsKey(dupGrpId));
 
         Map<Integer, GridDhtPartitionFullMap> parts = msg.partitions();
 
-        GridDhtPartitionFullMap emptyFullMap = parts.get(cacheId);
+        GridDhtPartitionFullMap emptyFullMap = parts.get(grpId);
 
         for (GridDhtPartitionMap map : emptyFullMap.values())
             assertEquals(0, map.map().size());
 
-        GridDhtPartitionFullMap fullMap = parts.get(dupCacheId);
+        GridDhtPartitionFullMap fullMap = parts.get(dupGrpId);
 
         for (GridDhtPartitionMap map : fullMap.values())
             assertFalse(map.map().isEmpty());
@@ -325,29 +326,32 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         Map<Integer, Integer> dupPartsData,
         GridDhtPartitionsSingleMessage msg)
     {
-        Integer cacheId;
-        Integer dupCacheId;
+        int cache1Grp = groupIdForCache(ignite(0), cache1);
+        int cache2Grp = groupIdForCache(ignite(0), cache2);
 
-        if (dupPartsData.containsKey(CU.cacheId(cache1))) {
-            cacheId = CU.cacheId(cache1);
-            dupCacheId = CU.cacheId(cache2);
+        Integer grpId;
+        Integer dupGrpId;
+
+        if (dupPartsData.containsKey(cache1Grp)) {
+            grpId = cache1Grp;
+            dupGrpId = cache2Grp;
         }
         else {
-            cacheId = CU.cacheId(cache2);
-            dupCacheId = CU.cacheId(cache1);
+            grpId = cache2Grp;
+            dupGrpId = cache1Grp;
         }
 
-        assertTrue(dupPartsData.containsKey(cacheId));
-        assertEquals(dupCacheId, dupPartsData.get(cacheId));
-        assertFalse(dupPartsData.containsKey(dupCacheId));
+        assertTrue(dupPartsData.containsKey(grpId));
+        assertEquals(dupGrpId, dupPartsData.get(grpId));
+        assertFalse(dupPartsData.containsKey(dupGrpId));
 
         Map<Integer, GridDhtPartitionMap> parts = msg.partitions();
 
-        GridDhtPartitionMap emptyMap = parts.get(cacheId);
+        GridDhtPartitionMap emptyMap = parts.get(grpId);
 
         assertEquals(0, emptyMap.map().size());
 
-        GridDhtPartitionMap map = parts.get(dupCacheId);
+        GridDhtPartitionMap map = parts.get(dupGrpId);
 
         assertFalse(map.map().isEmpty());
     }

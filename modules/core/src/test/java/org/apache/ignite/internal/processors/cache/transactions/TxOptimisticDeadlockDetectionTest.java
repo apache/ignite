@@ -399,7 +399,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key0);
 
-                GridCacheMapEntry entry = map.getEntry(keyCacheObj);
+                GridCacheMapEntry entry = map.getEntry(intCache.context(), keyCacheObj);
 
                 if (entry != null)
                     assertNull("Entry still has locks " + entry, entry.mvccAllLocal());

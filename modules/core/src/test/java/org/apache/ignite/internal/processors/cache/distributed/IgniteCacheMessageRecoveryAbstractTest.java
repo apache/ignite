@@ -103,7 +103,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
 
             GridTestUtils.retryAssert(log, 10, 500, new CA() {
                 @Override public void apply() {
-                    assertTrue(grid.internalCache().context().mvcc().atomicFutures().isEmpty());
+                    assertTrue(grid.internalCache(DEFAULT_CACHE_NAME).context().mvcc().atomicFutures().isEmpty());
                 }
             });
         }
@@ -115,7 +115,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     public void testMessageRecovery() throws Exception {
         final Ignite ignite = grid(0);
 
-        final IgniteCache<Object, String> cache = ignite.cache(null);
+        final IgniteCache<Object, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Map<Integer, String> map = new HashMap<>();
 

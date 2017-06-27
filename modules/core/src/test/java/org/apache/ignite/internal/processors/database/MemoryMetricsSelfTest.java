@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.database;
 
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -41,7 +42,9 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        memMetrics = new MemoryMetricsImpl(null);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration();
+
+        memMetrics = new MemoryMetricsImpl(plcCfg);
 
         memMetrics.enableMetrics();
     }
@@ -52,7 +55,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateSingleThreaded() throws Exception {
         threadsCnt = 1;
-        memMetrics.rateTimeInterval(10);
+        memMetrics.rateTimeInterval(10_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -72,7 +75,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateMultiThreaded() throws Exception {
         threadsCnt = 4;
-        memMetrics.rateTimeInterval(5);
+        memMetrics.rateTimeInterval(5_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -107,7 +110,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateTimeIntervalConcurrentChange() throws Exception {
         threadsCnt = 5;
-        memMetrics.rateTimeInterval(5);
+        memMetrics.rateTimeInterval(5_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -120,7 +123,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++) {
             Thread.sleep(25);
 
-            memMetrics.rateTimeInterval((2 + i * 5) % 3 + 1);
+            memMetrics.rateTimeInterval(((2 + i * 5) % 3 + 1) * 1000);
         }
 
         joinAllThreads();
@@ -134,7 +137,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateSubintervalsConcurrentChange() throws Exception {
         threadsCnt = 5;
-        memMetrics.rateTimeInterval(5);
+        memMetrics.rateTimeInterval(5_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 

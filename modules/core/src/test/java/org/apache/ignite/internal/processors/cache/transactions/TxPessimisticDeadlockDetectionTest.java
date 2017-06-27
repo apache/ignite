@@ -103,7 +103,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
         plc.setName("dfltPlc");
-        plc.setSize(MemoryConfiguration.DFLT_MEMORY_POLICY_SIZE * 10);
+        plc.setMaxSize(MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE * 10);
 
         memCfg.setDefaultMemoryPolicyName("dfltPlc");
         memCfg.setMemoryPolicies(plc);
@@ -408,7 +408,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key0);
 
-                GridCacheMapEntry entry = map.getEntry(keyCacheObj);
+                GridCacheMapEntry entry = map.getEntry(intCache.context(), keyCacheObj);
 
                 if (entry != null)
                     assertNull("Entry still has locks " + entry, entry.mvccAllLocal());

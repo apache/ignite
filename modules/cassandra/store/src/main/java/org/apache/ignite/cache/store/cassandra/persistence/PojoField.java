@@ -19,12 +19,12 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
-import java.beans.PropertyDescriptor;
 import java.io.Serializable;
-import java.lang.reflect.Method;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import java.lang.annotation.Annotation;
+import java.util.List;
+
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
 
@@ -42,9 +42,6 @@ public abstract class PojoField implements Serializable {
     /** Field name. */
     private String name;
 
-    /** Java class to which the field belongs. */
-    private Class objJavaCls;
-
     /** Field column name in Cassandra table. */
     private String col;
 
@@ -54,8 +51,27 @@ public abstract class PojoField implements Serializable {
     /** Indicator for calculated field. */
     private Boolean calculated;
 
-    /** Field property descriptor. */
-    private transient PropertyDescriptor desc;
+    /** Field property accessor. */
+    private transient PojoFieldAccessor accessor;
+
+    /**
+     *  Checks if list contains POJO field with the specified name.
+     *
+     * @param fields list of POJO fields.
+     * @param fieldName field name.
+     * @return true if list contains field or false otherwise.
+     */
+    public static boolean containsField(List<PojoField> fields, String fieldName) {
+        if (fields == null || fields.isEmpty())
+            return false;
+
+        for (PojoField field : fields) {
+            if (field.getName().equals(fieldName))
+                return true;
+        }
+
+        return false;
+    }
 
     /**
      * Creates instance of {@link PojoField} based on it's description in XML element.
@@ -75,30 +91,23 @@ public abstract class PojoField implements Serializable {
         this.name = el.getAttribute(NAME_ATTR).trim();
         this.col = el.hasAttribute(COLUMN_ATTR) ? el.getAttribute(COLUMN_ATTR).trim() : name.toLowerCase();
 
-        init(PropertyMappingHelper.getPojoPropertyDescriptor(pojoCls, name));
+        init(PropertyMappingHelper.getPojoFieldAccessor(pojoCls, name));
     }
 
     /**
-     * Creates instance of {@link PojoField}  from its property descriptor.
+     * Creates instance of {@link PojoField} from its field accessor.
      *
-     * @param desc Field property descriptor.
+     * @param accessor field accessor.
      */
-    public PojoField(PropertyDescriptor desc) {
-        this.name = desc.getName();
+    public PojoField(PojoFieldAccessor accessor) {
+        this.name = accessor.getName();
 
-        Method rdMthd = desc.getReadMethod();
+        QuerySqlField sqlField = (QuerySqlField)accessor.getAnnotation(QuerySqlField.class);
 
-        QuerySqlField sqlField = rdMthd != null && rdMthd.getAnnotation(QuerySqlField.class) != null
-            ? rdMthd.getAnnotation(QuerySqlField.class)
-            : desc.getWriteMethod() == null ? null : desc.getWriteMethod().getAnnotation(QuerySqlField.class);
+        col = sqlField != null && sqlField.name() != null && !sqlField.name().isEmpty() ?
+                sqlField.name() : name.toLowerCase();
 
-        col = sqlField != null && sqlField.name() != null &&
-            !sqlField.name().trim().isEmpty() ? sqlField.name() : name.toLowerCase();
-
-        init(desc);
-
-        if (sqlField != null)
-            init(sqlField);
+        init(accessor);
     }
 
     /**
@@ -114,7 +123,7 @@ public abstract class PojoField implements Serializable {
      * @return Java class.
      */
     public Class getJavaClass() {
-        return propDesc().getPropertyType();
+        return accessor.getFieldType();
     }
 
     /**
@@ -143,7 +152,7 @@ public abstract class PojoField implements Serializable {
         if (calculated != null)
             return calculated;
 
-        return calculated = propDesc().getWriteMethod() == null;
+        return calculated = accessor.isReadOnly();
     }
 
     /**
@@ -155,28 +164,31 @@ public abstract class PojoField implements Serializable {
      * @return Object to store in Cassandra table column.
      */
     public Object getValueFromObject(Object obj, Serializer serializer) {
-        try {
-            Object val = propDesc().getReadMethod().invoke(obj);
+        Object val = accessor.getValue(obj);
 
-            if (val == null)
-                return null;
+        if (val == null)
+            return null;
 
-            DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(val.getClass());
+        DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(val.getClass());
 
-            if (cassandraType != null)
-                return val;
+        if (cassandraType != null)
+            return val;
 
-            if (serializer == null) {
-                throw new IllegalStateException("Can't serialize value from object '" +
-                    val.getClass().getName() + "' field '" + name + "', cause there is no BLOB serializer specified");
-            }
-
-            return serializer.serialize(val);
+        if (serializer == null) {
+            throw new IllegalStateException("Can't serialize value from object '" +
+                val.getClass().getName() + "' field '" + name + "', cause there is no BLOB serializer specified");
         }
-        catch (Throwable e) {
-            throw new IgniteException("Failed to get value of the field '" + name + "' from the instance " +
-                " of '" + obj.getClass().toString() + "' class", e);
-        }
+
+        return serializer.serialize(val);
+    }
+
+    /**
+     * Returns POJO field annotation.
+     *
+     * @return annotation.
+     */
+    public Annotation getAnnotation(Class clazz) {
+        return accessor.getAnnotation(clazz);
     }
 
     /**
@@ -190,56 +202,22 @@ public abstract class PojoField implements Serializable {
         if (calculatedField())
             return;
 
-        Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, propDesc().getPropertyType(), serializer);
+        Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, accessor.getFieldType(), serializer);
 
-        try {
-            propDesc().getWriteMethod().invoke(obj, val);
-        }
-        catch (Throwable e) {
-            throw new IgniteException("Failed to set value of the field '" + name + "' of the instance " +
-                " of '" + obj.getClass().toString() + "' class", e);
-        }
+        accessor.setValue(obj, val);
     }
-
-    /**
-     * Initializes field info from annotation.
-     *
-     * @param sqlField {@link QuerySqlField} annotation.
-     */
-    protected abstract void init(QuerySqlField sqlField);
 
     /**
      * Initializes field info from property descriptor.
      *
-     * @param desc {@link PropertyDescriptor} descriptor.
+     * @param accessor {@link PojoFieldAccessor} accessor.
      */
-    protected void init(PropertyDescriptor desc) {
-        if (desc.getReadMethod() == null) {
-            throw new IllegalArgumentException("Field '" + desc.getName() +
-                "' of the class instance '" + desc.getPropertyType().getName() +
-                "' doesn't provide getter method");
-        }
-
-        if (!desc.getReadMethod().isAccessible())
-            desc.getReadMethod().setAccessible(true);
-
-        if (desc.getWriteMethod() != null && !desc.getWriteMethod().isAccessible())
-            desc.getWriteMethod().setAccessible(true);
-
-        DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(desc.getPropertyType());
+    private void init(PojoFieldAccessor accessor) {
+        DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(accessor.getFieldType());
         cassandraType = cassandraType == null ? DataType.Name.BLOB : cassandraType;
 
-        this.objJavaCls = desc.getReadMethod().getDeclaringClass();
-        this.desc = desc;
         this.colDDL = "\"" + col + "\" " + cassandraType.toString();
-    }
 
-    /**
-     * Returns property descriptor of the POJO field
-     *
-     * @return Property descriptor
-     */
-    private PropertyDescriptor propDesc() {
-        return desc != null ? desc : (desc = PropertyMappingHelper.getPojoPropertyDescriptor(objJavaCls, name));
+        this.accessor = accessor;
     }
 }

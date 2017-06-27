@@ -33,8 +33,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -219,16 +219,6 @@ public interface GridCacheEntryEx {
      */
     public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter,
         boolean evictOffheap) throws IgniteCheckedException;
-
-    /**
-     * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
-     * returns batch swap entry if entry was marked obsolete.
-     *
-     * @param obsoleteVer Version to mark obsolete with.
-     * @return Swap entry if this entry was marked obsolete, {@code null} if entry was not evicted.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer) throws IgniteCheckedException;
 
     /**
      * This method should be called each time entry is marked obsolete
@@ -695,19 +685,6 @@ public interface GridCacheEntryEx {
         boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
-     * Sets new value if current version is <tt>0</tt> using swap entry data.
-     * Note that this method does not update cache index.
-     *
-     * @param key Key.
-     * @param unswapped Swap entry to set entry state from.
-     * @return {@code True} if  initial value was set.
-     * @throws IgniteCheckedException In case of error.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped)
-        throws IgniteCheckedException, GridCacheEntryRemovedException;
-
-    /**
      * Create versioned entry for this cache entry.
      *
      * @param keepBinary Keep binary flag.
@@ -900,6 +877,17 @@ public interface GridCacheEntryEx {
      */
     @Nullable public CacheObject valueBytes(@Nullable GridCacheVersion ver)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * Update index from within entry lock, passing key, value, and expiration time to provided closure.
+     *
+     * @param clo Closure to apply to key, value, and expiration time.
+     * @param link Link.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
+        GridCacheEntryRemovedException;
 
     /**
      * @return Expire time, without accounting for transactions or removals.

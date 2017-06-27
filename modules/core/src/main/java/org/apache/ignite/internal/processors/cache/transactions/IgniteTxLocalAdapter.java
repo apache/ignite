@@ -225,7 +225,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxState txState() {
+    @Override public IgniteTxLocalState txState() {
         return txState;
     }
 
@@ -401,10 +401,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
+     * @param entries Entries to lock or {@code null} if use default {@link IgniteInternalTx#optimisticLockEntries()}.
      * @throws IgniteCheckedException If prepare step failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public void userPrepare() throws IgniteCheckedException {
+    public void userPrepare(@Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
         if (state() != PREPARING) {
             if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
@@ -420,7 +421,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         checkValid();
 
         try {
-            cctx.tm().prepareTx(this);
+            cctx.tm().prepareTx(this, entries);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -659,6 +660,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.updateCounter())));
 
                                     if (op == CREATE || op == UPDATE) {
+                                        assert val != null : txEntry;
+
                                         GridCacheUpdateTxResult updRes = cached.innerSet(
                                             this,
                                             eventNodeId(),
@@ -1276,7 +1279,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean addReader
     ) {
         assert invokeArgs == null || op == TRANSFORM;
 
@@ -1352,7 +1356,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 filter,
                 drVer,
                 skipStore,
-                keepBinary);
+                keepBinary,
+                addReader);
 
             txEntry.conflictExpireTime(drExpireTime);
 

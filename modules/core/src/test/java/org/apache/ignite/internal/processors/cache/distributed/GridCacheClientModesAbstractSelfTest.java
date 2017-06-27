@@ -56,7 +56,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         super.beforeTestsStarted();
 
         if (nearEnabled())
-            grid(nearOnlyIgniteInstanceName).createNearCache(null, nearConfiguration());
+            grid(nearOnlyIgniteInstanceName).createNearCache(DEFAULT_CACHE_NAME, nearConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -119,8 +119,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
         for (int key = 0; key < 10; key++) {
             for (int i = 0; i < gridCount(); i++) {
-                if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
-                    assertEquals(key, grid(i).cache(null).localPeek(key));
+                if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key))
+                    assertEquals(key, grid(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
             }
 
             if (nearEnabled())
@@ -139,8 +139,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
             assertNull(nearOnly.localPeek(key, CachePeekMode.ALL));
 
         for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                TestClass1 val = (TestClass1)grid(i).cache(null).localPeek(key);
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                TestClass1 val = (TestClass1)grid(i).cache(DEFAULT_CACHE_NAME).localPeek(key);
 
                 assertNotNull(val);
                 assertEquals(key.intValue(), val.val);
@@ -196,7 +196,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
             if (F.eq(g.name(), nearOnlyIgniteInstanceName)) {
                 for (int k = 0; k < 10000; k++) {
-                    IgniteCache<Object, Object> cache = g.cache(null);
+                    IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     String key = "key" + k;
 
@@ -213,10 +213,10 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                 for (int k = 0; k < 10000; k++) {
                     String key = "key" + k;
 
-                    if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key))
+                    if (g.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(g.cluster().localNode(), key))
                         foundEntry = true;
 
-                    if (g.affinity(null).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
+                    if (g.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
                         foundAffinityNode = true;
                 }
 
@@ -232,7 +232,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected IgniteCache<Object, Object> nearOnlyCache() {
         assert nearOnlyIgniteInstanceName != null;
 
-        return G.ignite(nearOnlyIgniteInstanceName).cache(null);
+        return G.ignite(nearOnlyIgniteInstanceName).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -241,7 +241,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected IgniteCache<Object, Object> dhtCache() {
         for (int i = 0; i < gridCount(); i++) {
             if (!nearOnlyIgniteInstanceName.equals(grid(i).name()))
-                return grid(i).cache(null);
+                return grid(i).cache(DEFAULT_CACHE_NAME);
         }
 
         assert false : "Cannot find DHT cache for this test.";

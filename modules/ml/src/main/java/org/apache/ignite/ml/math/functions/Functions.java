@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.math.functions;
 
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.util.List;
+
 /**
  * Compatibility with Apache Mahout.
  */
@@ -63,6 +67,9 @@ public final class Functions {
     /** Function that returns {@code a - b}. */
     public static final IgniteBiFunction<Double, Double, Double> MINUS = (a, b) -> a - b;
 
+    /** Function that returns {@code min(a, b)}. */
+    public static final IgniteBiFunction<Double, Double, Double> MIN = Math::min;
+
     /** Function that returns {@code abs(a - b)}. */
     public static final IgniteBiFunction<Double, Double, Double> MINUS_ABS = (a, b) -> Math.abs(a - b);
 
@@ -78,15 +85,46 @@ public final class Functions {
     /** Function that returns {@code (a - b) * (a - b)} */
     public static final IgniteBiFunction<Double, Double, Double> MINUS_SQUARED = (a, b) -> (a - b) * (a - b);
 
-    /**
-     * Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}.
-     */
+    /** Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}. */
     public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
+
+    /** */
+    public  static <A, B, C> IgniteFunction<B, C> curry(IgniteBiFunction<A, B, C> f, A a) {
+        return (IgniteFunction<B, C>)b -> f.apply(a, b);
+    }
+
+    /** */
+    public static <A, B extends Comparable<B>> IgniteBiTuple<Integer, A> argmin(List<A> args, IgniteFunction<A, B> f) {
+        A res = null;
+        B fRes = null;
+
+        if (!args.isEmpty()) {
+            res = args.iterator().next();
+            fRes = f.apply(res);
+        }
+
+        int resInd = 0;
+        int i = 0;
+
+        for (A arg : args) {
+            B curRes = f.apply(arg);
+
+            if (fRes.compareTo(curRes) > 0) {
+                res = arg;
+                resInd = i;
+                fRes = curRes;
+            }
+
+            i++;
+        }
+        return new IgniteBiTuple<>(resInd, res);
+    }
 
     /**
      * Function that returns {@code a + b}. {@code a} is a variable, {@code b} is fixed.
      *
-     * @param b
+     * @param b Value to add.
+     * @return Function for this operation.
      */
     public static IgniteDoubleFunction<Double> plus(final double b) {
         return (a) -> a + b;
@@ -95,13 +133,19 @@ public final class Functions {
     /**
      * Function that returns {@code a * b}. {@code a} is a variable, {@code b} is fixed.
      *
-     * @param b
+     * @param b Value to multiply to.
+     * @return Function for this operation.
      */
     public static IgniteDoubleFunction<Double> mult(final double b) {
         return (a) -> a * b;
     }
 
-    /** Function that returns {@code a / b}. {@code a} is a variable, {@code b} is fixed. */
+    /**
+     * Function that returns {@code a / b}. {@code a} is a variable, {@code b} is fixed.
+     *
+     * @param b Value to divide to.
+     * @return Function for this operation.
+     */
     public static IgniteDoubleFunction<Double> div(double b) {
         return mult(1 / b);
     }
@@ -109,6 +153,9 @@ public final class Functions {
     /**
      * Function that returns {@code a + b*constant}. {@code a} and {@code b} are variables,
      * {@code constant} is fixed.
+     *
+     * @param constant Value to use in multiply.
+     * @return Function for this operation.
      */
     public static IgniteBiFunction<Double, Double, Double> plusMult(double constant) {
         return (a, b) -> a + b * constant;
@@ -117,13 +164,24 @@ public final class Functions {
     /**
      * Function that returns {@code a - b*constant}. {@code a} and {@code b} are variables,
      * {@code constant} is fixed.
+     *
+     * @param constant Value to use in multiply.
+     * @return Function for this operation.
      */
     public static IgniteBiFunction<Double, Double, Double> minusMult(double constant) {
         return (a, b) -> a - b * constant;
     }
 
+    /** Function that returns passed constant. */
+    public static IgniteDoubleFunction<Double> constant(Double c) {
+        return a -> c;
+    }
+
     /**
-     * @param b
+     * Function that returns {@code Math.pow(a, b)}.
+     *
+     * @param b Power value.
+     * @return Function for given power.
      */
     public static IgniteDoubleFunction<Double> pow(final double b) {
         return (a) -> {

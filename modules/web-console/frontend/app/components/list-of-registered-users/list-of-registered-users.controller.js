@@ -28,10 +28,14 @@ const rowTemplate = `<div
   role="{{col.isRowHeader ? 'rowheader' : 'gridcell'}}"
   ui-grid-cell/>`;
 
-export default class IgniteListOfRegisteredUsersCtrl {
-    static $inject = ['$scope', '$state', '$filter', 'User', 'uiGridGroupingConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
+const treeAggregationFinalizerFn = function(agg) {
+    return agg.rendered = agg.value;
+};
 
-    constructor($scope, $state, $filter, User, uiGridGroupingConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
+export default class IgniteListOfRegisteredUsersCtrl {
+    static $inject = ['$scope', '$state', '$filter', 'User', 'uiGridGroupingConstants', 'uiGridPinningConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
+
+    constructor($scope, $state, $filter, User, uiGridGroupingConstants, uiGridPinningConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
         const $ctrl = this;
 
         const dtFilter = $filter('date');
@@ -45,6 +49,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
             endDate: new Date()
         };
 
+        $ctrl.uiGridPinningConstants = uiGridPinningConstants;
         $ctrl.uiGridGroupingConstants = uiGridGroupingConstants;
 
         User.read().then((user) => $ctrl.user = user);
@@ -142,12 +147,12 @@ export default class IgniteListOfRegisteredUsersCtrl {
             columnDefs,
             categories,
 
+            treeRowHeaderAlwaysVisible: true,
             headerTemplate,
             columnVirtualizationThreshold: 30,
             rowTemplate,
             rowHeight: 46,
             selectWithCheckboxOnly: true,
-            selectionRowHeaderWidth: 52,
             suppressRemoveSort: false,
             enableFiltering: true,
             enableSelectAll: true,
@@ -293,118 +298,118 @@ export default class IgniteListOfRegisteredUsersCtrl {
         this.groupBy = 'user';
 
         this.gridApi.grouping.clearGrouping();
-        this.gridOptions.categories = this._userGridOptions.categories;
-        this.gridOptions.columnDefs = this._userGridOptions.columnDefs;
+        this.gridApi.selection.clearSelectedRows();
+
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'company'}), (col) => {
+            this.gridApi.pinning.pinColumn(col, this.uiGridPinningConstants.container.NONE);
+        });
+
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'country'}), (col) => {
+            this.gridApi.pinning.pinColumn(col, this.uiGridPinningConstants.container.NONE);
+        });
+
+        this.gridOptions.categories = categories;
     }
 
     groupByCompany() {
         this.groupBy = 'company';
 
         this.gridApi.grouping.clearGrouping();
+        this.gridApi.selection.clearSelectedRows();
+
+        _.forEach(this.gridApi.grid.columns, (col) => {
+            col.enableSorting = true;
+
+            if (col.colDef.type !== 'number')
+                return;
+
+            this.gridApi.grouping.aggregateColumn(col.colDef.name, this.uiGridGroupingConstants.aggregation.SUM);
+            col.customTreeAggregationFinalizerFn = treeAggregationFinalizerFn;
+        });
+
+        this.gridApi.grouping.aggregateColumn('user', this.uiGridGroupingConstants.aggregation.COUNT);
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'user'}), (col) => {
+            col.customTreeAggregationFinalizerFn = treeAggregationFinalizerFn;
+        });
+
+        this.gridApi.grouping.aggregateColumn('lastactivity', this.uiGridGroupingConstants.aggregation.MAX);
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'lastactivity'}), (col) => {
+            col.customTreeAggregationFinalizerFn = treeAggregationFinalizerFn;
+        });
 
         this.gridApi.grouping.groupColumn('company');
-        this.gridApi.grouping.aggregateColumn('user', this.uiGridGroupingConstants.aggregation.COUNT);
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'company'}), (col) => {
+            col.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.groupVal;
+        });
 
-        if (this._companyGridOptions) {
-            this.gridOptions.categories = this._companyGridOptions.categories;
-            this.gridOptions.columnDefs = this._companyGridOptions.columnDefs;
+        // Pinning left company.
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'company'}), (col) => {
+            this.gridApi.pinning.pinColumn(col, this.uiGridPinningConstants.container.LEFT);
+        });
 
-            return;
-        }
+        // Unpinning country.
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'country'}), (col) => {
+            this.gridApi.pinning.pinColumn(col, this.uiGridPinningConstants.container.NONE);
+        });
 
         const _categories = _.cloneDeep(categories);
-        const _columnDefs = _.cloneDeep(columnDefs);
-
         // Cut company category.
         const company = _categories.splice(3, 1)[0];
         company.selectable = false;
 
-        // Hide Actions category.
-        _categories.splice(0, 1);
-
-        _.forEach(_.filter(_columnDefs, {displayName: 'Actions'}), (col) => {
-            col.visible = false;
-        });
-
         // Add company as first column.
         _categories.unshift(company);
-
-        _.forEach(_columnDefs, (col) => {
-            col.enableSorting = true;
-
-            if (col.type !== 'number')
-                return;
-
-            col.treeAggregationType = this.uiGridGroupingConstants.aggregation.SUM;
-            col.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
-        });
-
-        // Set grouping to last activity column.
-        const lastactivity = _.find(_columnDefs, { name: 'lastactivity' });
-
-        if (_.nonNil(lastactivity)) {
-            lastactivity.treeAggregationType = this.uiGridGroupingConstants.aggregation.MAX;
-            lastactivity.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
-        }
-
-        this._companyGridOptions = {
-            categories: this.gridOptions.categories = _categories,
-            columnDefs: this.gridOptions.columnDefs = _columnDefs
-        };
+        this.gridOptions.categories = _categories;
     }
 
     groupByCountry() {
         this.groupBy = 'country';
 
         this.gridApi.grouping.clearGrouping();
-        this.gridApi.grouping.groupColumn('country');
+        this.gridApi.selection.clearSelectedRows();
+
+        _.forEach(this.gridApi.grid.columns, (col) => {
+            col.enableSorting = true;
+
+            if (col.colDef.type !== 'number')
+                return;
+
+            this.gridApi.grouping.aggregateColumn(col.colDef.name, this.uiGridGroupingConstants.aggregation.SUM);
+            col.customTreeAggregationFinalizerFn = treeAggregationFinalizerFn;
+        });
+
         this.gridApi.grouping.aggregateColumn('user', this.uiGridGroupingConstants.aggregation.COUNT);
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'user'}), (col) => {
+            col.customTreeAggregationFinalizerFn = treeAggregationFinalizerFn;
+        });
 
-        if (this._countryGridOptions) {
-            this.gridOptions.categories = this._countryGridOptions.categories;
-            this.gridOptions.columnDefs = this._countryGridOptions.columnDefs;
+        this.gridApi.grouping.aggregateColumn('lastactivity', this.uiGridGroupingConstants.aggregation.MAX);
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'lastactivity'}), (col) => {
+            col.customTreeAggregationFinalizerFn = treeAggregationFinalizerFn;
+        });
 
-            return;
-        }
+        this.gridApi.grouping.groupColumn('country');
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'country'}), (col) => {
+            col.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.groupVal;
+        });
+
+        // Pinning left country.
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'country'}), (col) => {
+            this.gridApi.pinning.pinColumn(col, this.uiGridPinningConstants.container.LEFT);
+        });
+
+        // Unpinning country.
+        _.forEach(_.filter(this.gridApi.grid.columns, {name: 'company'}), (col) => {
+            this.gridApi.pinning.pinColumn(col, this.uiGridPinningConstants.container.NONE);
+        });
 
         const _categories = _.cloneDeep(categories);
-        const _columnDefs = _.cloneDeep(columnDefs);
-
-        // Cut country category.
+        // Cut company category.
         const country = _categories.splice(4, 1)[0];
         country.selectable = false;
 
-        // Hide Actions category.
-        _categories.splice(0, 1);
-
-        _.forEach(_.filter(_columnDefs, {displayName: 'Actions'}), (col) => {
-            col.visible = false;
-        });
-
         // Add company as first column.
         _categories.unshift(country);
-
-        _.forEach(_columnDefs, (col) => {
-            col.enableSorting = true;
-
-            if (col.type !== 'number')
-                return;
-
-            col.treeAggregationType = this.uiGridGroupingConstants.aggregation.SUM;
-            col.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
-        });
-
-        // Set grouping to last activity column.
-        const lastactivity = _.find(_columnDefs, { name: 'lastactivity' });
-
-        if (_.nonNil(lastactivity)) {
-            lastactivity.treeAggregationType = this.uiGridGroupingConstants.aggregation.MAX;
-            lastactivity.customTreeAggregationFinalizerFn = (agg) => agg.rendered = agg.value;
-        }
-
-        this._countryGridOptions = {
-            categories: this.gridOptions.categories = _categories,
-            columnDefs: this.gridOptions.columnDefs = _columnDefs
-        };
+        this.gridOptions.categories = _categories;
     }
 }

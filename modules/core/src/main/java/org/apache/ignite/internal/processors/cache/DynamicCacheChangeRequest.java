@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Cache start/stop request.
@@ -65,8 +67,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Destroy. */
     private boolean destroy;
 
-    /** Close flag. */
-    private boolean close;
+    /** Whether cache was created through SQL. */
+    private boolean sql;
 
     /** Fail if exists flag. */
     private boolean failIfExists;
@@ -83,22 +85,85 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Reset lost partitions flag. */
     private boolean resetLostPartitions;
 
-    /** */
-    private transient boolean exchangeNeeded;
-
-    /** */
-    private transient AffinityTopologyVersion cacheFutTopVer;
+    /** Dynamic schema. */
+    private QuerySchema schema;
 
     /**
-     * Constructor creates cache stop request.
-     *
+     * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
     public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
+        assert reqId != null;
+        assert cacheName != null;
+        assert initiatingNodeId != null;
+
         this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
+    }
+
+    /**
+     * @param reqId Unique request ID.
+     * @param state New cluster state.
+     * @param initiatingNodeId Initiating node ID.
+     */
+    public DynamicCacheChangeRequest(UUID reqId, ClusterState state, UUID initiatingNodeId) {
+        assert reqId != null;
+        assert state != null;
+        assert initiatingNodeId != null;
+
+        this.reqId = reqId;
+        this.state = state;
+        this.initiatingNodeId = initiatingNodeId;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @return Request to reset lost partitions.
+     */
+    static DynamicCacheChangeRequest resetLostPartitions(GridKernalContext ctx, String cacheName) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.markResetLostPartitions();
+
+        return req;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param cfg0 Template configuration.
+     * @return Request to add template.
+     */
+    static DynamicCacheChangeRequest addTemplateRequest(GridKernalContext ctx, CacheConfiguration<?, ?> cfg0) {
+        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>(cfg0);
+
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg.getName(), ctx.localNodeId());
+
+        req.template(true);
+        req.startCacheConfiguration(cfg);
+        req.schema(new QuerySchema(cfg.getQueryEntities()));
+        req.deploymentId(IgniteUuid.randomUuid());
+
+        return req;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @param sql {@code true} if the cache must be stopped only if it was created by SQL command {@code CREATE TABLE}.
+     * @param destroy Destroy flag.
+     * @return Cache stop request.
+     */
+    static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean sql, boolean destroy) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.sql(sql);
+        req.stop(true);
+        req.destroy(destroy);
+
+        return req;
     }
 
     /**
@@ -109,13 +174,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return {@code True} if request should trigger partition exchange.
-     */
-    public boolean exchangeNeeded() {
-        return exchangeNeeded;
-    }
-
-    /**
      * @return State.
      */
     public ClusterState state() {
@@ -123,38 +181,10 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @param state State.
-     */
-    public void state(ClusterState state) {
-        this.state = state;
-    }
-
-    /**
      * @return {@code True} if global caches state is changes.
      */
     public boolean globalStateChange() {
         return state != null;
-    }
-
-    /**
-     * @param cacheFutTopVer Ready topology version when dynamic cache future should be completed.
-     */
-    public void cacheFutureTopologyVersion(AffinityTopologyVersion cacheFutTopVer) {
-        this.cacheFutTopVer = cacheFutTopVer;
-    }
-
-    /**
-     * @return Ready topology version when dynamic cache future should be completed.
-     */
-    @Nullable public AffinityTopologyVersion cacheFutureTopologyVersion() {
-        return cacheFutTopVer;
-    }
-
-    /**
-     * @param exchangeNeeded {@code True} if request should trigger partition exchange.
-     */
-    public void exchangeNeeded(boolean exchangeNeeded) {
-        this.exchangeNeeded = exchangeNeeded;
     }
 
     /**
@@ -326,17 +356,17 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Close flag.
+     * @return SQL flag.
      */
-    public boolean close() {
-        return close;
+    public boolean sql() {
+        return sql;
     }
 
     /**
-     * @param close New close flag.
+     * @param sql New SQL flag.
      */
-    public void close(boolean close) {
-        this.close = close;
+    public void sql(boolean sql) {
+        this.sql = sql;
     }
 
     /**
@@ -351,6 +381,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
+    }
+
+    /**
+     * @return Dynamic schema.
+     */
+    public QuerySchema schema() {
+        return schema;
+    }
+
+    /**
+     * @param schema Dynamic schema.
+     */
+    public void schema(QuerySchema schema) {
+        this.schema = schema != null ? schema.copy() : null;
     }
 
     /** {@inheritDoc} */

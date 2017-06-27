@@ -35,18 +35,21 @@ include /app/helpers/jade/mixins
         .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
-                    +dropdown('Marshaller:', marshaller + '.kind', '"kind"', 'true', 'Choose marshaller',
-                        '[\
-                            {value: "OptimizedMarshaller", label: "OptimizedMarshaller"},\
-                            {value: "JdkMarshaller", label: "JdkMarshaller"},\
-                            {value: undefined, label: "Not set"}\
-                        ]',
-                        'Instance of marshaller to use in grid<br/>\
-                        <ul>\
-                            <li>OptimizedMarshaller - Optimized implementation of marshaller</li>\
-                            <li>JdkMarshaller - Marshaller based on JDK serialization mechanism</li>\
-                            <li>Not set - BinaryMarshaller serialize and deserialize all objects in the binary format</li>\
-                        </ul>')
+                    div(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                        +dropdown('Marshaller:', marshaller + '.kind', '"kind"', 'true', 'Default', 'marshallerVariant',
+                            'Instance of marshaller to use in grid<br/>\
+                            <ul>\
+                                <li>OptimizedMarshaller - Optimized implementation of marshaller</li>\
+                                <li>JdkMarshaller - Marshaller based on JDK serialization mechanism</li>\
+                                <li>Default - BinaryMarshaller serialize and deserialize all objects in the binary format</li>\
+                            </ul>')
+                    div(ng-if='$ctrl.available("2.0.0")')
+                        +dropdown('Marshaller:', marshaller + '.kind', '"kind"', 'true', 'Default', 'marshallerVariant',
+                            'Instance of marshaller to use in grid<br/>\
+                            <ul>\
+                                <li>JdkMarshaller - Marshaller based on JDK serialization mechanism</li>\
+                                <li>Default - BinaryMarshaller serialize and deserialize all objects in the binary format</li>\
+                            </ul>')
                     a.customize(
                         ng-if=`${marshaller}.kind && ${marshaller}.kind === 'OptimizedMarshaller'`
                         ng-click=`${marshaller}.expanded = !${marshaller}.expanded`
@@ -66,5 +69,15 @@ include /app/helpers/jade/mixins
                                 'Whether marshaller should require Serializable interface or not')
                 .settings-row
                     +checkbox('Marshal local jobs', `${model}.marshalLocalJobs`, '"marshalLocalJobs"', 'If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node')
+
+                //- Removed in ignite 2.0
+                div(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                    .settings-row
+                        +number('Keep alive time:', `${model}.marshallerCacheKeepAliveTime`, '"marshallerCacheKeepAliveTime"', 'true', '10000', '0',
+                            'Keep alive time of thread pool that is in charge of processing marshaller messages')
+                    .settings-row
+                        +number('Pool size:', `${model}.marshallerCacheThreadPoolSize`, '"marshallerCacheThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
+                            'Default size of thread pool that is in charge of processing marshaller messages')
+
             .col-sm-6
                 +preview-xml-java(model, 'clusterMarshaller')

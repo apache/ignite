@@ -33,9 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.console.agent.AgentConfiguration;
-import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
+import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.agent.db.DbTable;
+import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.log4j.Logger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -59,18 +60,18 @@ public class DatabaseListener {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
 
-            if (args.containsKey("driverPath"))
-                driverPath = args.get("driverPath").toString();
+            if (args.containsKey("jdbcDriverJar"))
+                driverPath = args.get("jdbcDriverJar").toString();
 
-            if (!args.containsKey("driverClass"))
+            if (!args.containsKey("jdbcDriverClass"))
                 throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
 
-            String driverCls = args.get("driverClass").toString();
+            String driverCls = args.get("jdbcDriverClass").toString();
 
-            if (!args.containsKey("url"))
+            if (!args.containsKey("jdbcUrl"))
                 throw new IllegalArgumentException("Missing url in arguments: " + args);
 
-            String url = args.get("url").toString();
+            String url = args.get("jdbcUrl").toString();
 
             if (!args.containsKey("info"))
                 throw new IllegalArgumentException("Missing info in arguments: " + args);
@@ -88,18 +89,18 @@ public class DatabaseListener {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
 
-            if (args.containsKey("driverPath"))
-                driverPath = args.get("driverPath").toString();
+            if (args.containsKey("jdbcDriverJar"))
+                driverPath = args.get("jdbcDriverJar").toString();
 
-            if (!args.containsKey("driverClass"))
+            if (!args.containsKey("jdbcDriverClass"))
                 throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
 
-            String driverCls = args.get("driverClass").toString();
+            String driverCls = args.get("jdbcDriverClass").toString();
 
-            if (!args.containsKey("url"))
+            if (!args.containsKey("jdbcUrl"))
                 throw new IllegalArgumentException("Missing url in arguments: " + args);
 
-            String url = args.get("url").toString();
+            String url = args.get("jdbcUrl").toString();
 
             if (!args.containsKey("info"))
                 throw new IllegalArgumentException("Missing info in arguments: " + args);
@@ -211,19 +212,28 @@ public class DatabaseListener {
      * @return Collection of schema names.
      * @throws SQLException If failed to collect schemas.
      */
-    protected Collection<String> schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
+    protected DbSchema schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
         if (log.isDebugEnabled())
             log.debug("Start collecting database schemas [drvJar=" + jdbcDriverJarPath +
                 ", drvCls=" + jdbcDriverCls + ", jdbcUrl=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
+            String catalog = conn.getCatalog();
+
+            if (catalog == null) {
+                String[] parts = jdbcUrl.split("[/:=]");
+
+                catalog = parts.length > 0 ? parts[parts.length - 1] : "NONE";
+            }
+
             Collection<String> schemas = dbMetaReader.schemas(conn);
 
             if (log.isDebugEnabled())
-                log.debug("Finished collection of schemas [jdbcUrl=" + jdbcUrl + ", count=" + schemas.size() + "]");
+                log.debug("Finished collection of schemas [jdbcUrl=" + jdbcUrl + ", catalog=" + catalog +
+                    ", count=" + schemas.size() + "]");
 
-            return schemas;
+            return new DbSchema(catalog, schemas);
         }
         catch (Throwable e) {
             log.error("Failed to collect schemas", e);

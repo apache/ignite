@@ -69,37 +69,58 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
+    <Compile Include="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
     <Compile Include="Binary\BinaryNameMapperTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
+    <Compile Include="Binary\EnumsTestOnline.cs" />
+    <Compile Include="Deployment\GetAddressFunc.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingVersioningTest.cs" />
+    <Compile Include="Deployment\ProcessNameFunc.cs" />
+    <Compile Include="Deployment\ProcessNameTask.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
     <Compile Include="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="Binary\JavaTypeMappingTest.cs" />
     <Compile Include="Binary\Serializable\CallbacksTest.cs" />
     <Compile Include="Binary\Serializable\DelegatesTest.cs" />
     <Compile Include="Binary\Serializable\BasicSerializableObjectsTest.cs" />
+    <Compile Include="Binary\EnumsTest.cs" />
     <Compile Include="Binary\Serializable\ObjectReferenceTests.cs" />
     <Compile Include="Binary\Serializable\PrimitivesTest.cs" />
     <Compile Include="Binary\Serializable\SqlDmlTest.cs" />
     <Compile Include="Binary\TypeNameParserTest.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingTest.cs" />
     <Compile Include="Binary\TypeResolverTest.cs" />
+    <Compile Include="Cache\AddArgCacheEntryProcessor.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
+    <Compile Include="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
+    <Compile Include="Cache\BinarizableTestException.cs" />
     <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
+    <Compile Include="Cache\CacheTestKey.cs" />
+    <Compile Include="Cache\MemoryMetricsTest.cs" />
+    <Compile Include="Cache\NonSerializableCacheEntryProcessor.cs" />
+    <Compile Include="Cache\NonSerializableException.cs" />
+    <Compile Include="Cache\PartitionLossTest.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
+    <Compile Include="Cache\Query\CacheLinqTestSqlEscapeAll.cs" />
     <Compile Include="Cache\Query\CacheLinqTestSimpleName.cs" />
     <Compile Include="Cache\Query\CacheQueriesTestSimpleName.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
     <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
+    <Compile Include="Cache\TestReferenceObject.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
     <Compile Include="Common\IgniteGuidTest.cs" />
+    <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
     <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\Log4NetLoggerTest.cs" />
@@ -247,6 +268,7 @@
     <ProjectReference Include="..\Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
       <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
       <Name>Apache.Ignite.ExamplesDll</Name>
+      <Aliases>ExamplesDll</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
       <Project>{069fa680-3c4d-43a9-b84f-e67513b87827}</Project>
@@ -365,6 +387,9 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
+    <None Include="Deployment\peer_assembly_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="custom_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

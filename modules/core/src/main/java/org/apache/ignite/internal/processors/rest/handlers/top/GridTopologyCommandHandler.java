@@ -27,20 +27,18 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientCacheMode;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeMetricsBean;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -60,6 +58,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_HOST
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
@@ -212,18 +211,17 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setNodeId(node.id());
         nodeBean.setConsistentId(node.consistentId());
         nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
+        nodeBean.setOrder(node.order());
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
-        GridCacheProcessor cacheProc = ctx.cache();
-
-        Map<String, CacheMode> nodeCaches = ctx.discovery().nodeCaches(node);
+        Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
 
         Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
 
-        for (String cacheName : nodeCaches.keySet())
-            caches.add(createCacheBean(cacheProc.cacheConfiguration(cacheName)));
+        for (CacheConfiguration ccfg : nodeCaches.values())
+            caches.add(createCacheBean(ccfg));
 
         nodeBean.setCaches(caches);
 
@@ -292,6 +290,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             attrs.remove(ATTR_CACHE);
             attrs.remove(ATTR_TX_CONFIG);
             attrs.remove(ATTR_SECURITY_SUBJECT);
+            attrs.remove(ATTR_SECURITY_SUBJECT_V2);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
             attrs.remove(ATTR_BINARY_CONFIGURATION);
             attrs.remove(ATTR_NODE_CONSISTENT_ID);

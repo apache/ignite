@@ -35,16 +35,16 @@ public class SingleElementVector extends AbstractVector {
     }
 
     /**
-     * @param size
-     * @param idx
-     * @param val
+     * @param size Parent vector size.
+     * @param idx Index of the parent vector element.
+     * @param val Value of the vector element.
      */
     public SingleElementVector(int size, int idx, double val) {
         super(new SingleElementVectorStorage(size, idx, val));
     }
 
     /**
-     * @param args
+     * @param args Parameters to create new vector instance.
      */
     public SingleElementVector(Map<String, Object> args) {
         assert args != null;

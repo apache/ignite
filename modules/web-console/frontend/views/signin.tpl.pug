@@ -17,13 +17,9 @@
 mixin lblRequired(txt)
     label.col-xs-3.col-md-3.required #{txt}
 
-header#header.header
-    table.container
-        tr
-            td.col-xs-3.col-sm-3.col-md-2
-                ignite-header-logo
-            td
-                ignite-header-title
+web-console-header
+    web-console-header-left
+        ignite-header-title
 
 .container.body-container
     .main-content(ng-controller='auth')
@@ -31,7 +27,7 @@ header#header.header
             .signin-greedy
                 .col-xs-12.col-md-6
                     form(name='form' novalidate)
-                        .modal-body.row(style='padding: 0 0 10px 0; margin: 0')
+                        .row(style='padding: 0 0 10px 0; margin: 0')
                             .settings-row(ng-if='action == "signup"')
                                 h3.login-header Sign Up
                             .settings-row(ng-if='action == "signin"')
@@ -101,7 +97,7 @@ header#header.header
                         ignite-features
                 .col-xs-12.col-md-6
                     #carousel.carousel.slide
-                        // Indicators
+                        //- Indicators
                         ol.carousel-indicators
                             li.active(data-target='#carousel', data-slide-to='0')
                             li(data-target='#carousel', data-slide-to='1')
@@ -110,7 +106,7 @@ header#header.header
                             li(data-target='#carousel', data-slide-to='4')
                             li(data-target='#carousel', data-slide-to='5')
                             li(data-target='#carousel', data-slide-to='6')
-                        // Wrapper for slides
+                        //- Wrapper for slides
                         .carousel-inner(role='listbox')
                             .item.active
                                 img(src='/images/cluster.png', alt='Clusters screen')
@@ -147,7 +143,7 @@ header#header.header
                                 .carousel-caption
                                     h3 Query chart
                                     p View data in tabular form and as charts
-                        // Controls
+                        //- Controls
                         a.left.carousel-control(href='#carousel', ng-click='$event.preventDefault()', role='button', data-slide='prev')
                             span.fa.fa-chevron-left(aria-hidden='true')
                             span.sr-only Previous
@@ -155,7 +151,7 @@ header#header.header
                             span.fa.fa-chevron-right(aria-hidden='true')
                             span.sr-only Next
 
-include includes/footer
+web-console-footer
 
 script.
     $('.carousel').carousel()

@@ -106,7 +106,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         cc.setEvictionPolicy(createPolicy(plcMax));
         cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
-        cc.setStartSize(plcMax);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (nearEnabled) {
@@ -481,7 +480,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         try {
             Ignite ignite = startGrid();
 
-            IgniteCache<Object, Object> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             int cnt = 500;
 
@@ -596,7 +595,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /** @return Policy. */
     @SuppressWarnings({"unchecked"})
     protected T policy() {
-        return (T)grid().cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
+        return (T)grid().cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -605,7 +604,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      */
     @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
-        return (T)grid(i).cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
+        return (T)grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -614,7 +613,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        CacheConfiguration cfg = grid(i).cache(null).getConfiguration(CacheConfiguration.class);
+        CacheConfiguration cfg = grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -745,7 +744,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(DEFAULT_CACHE_NAME);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -781,7 +780,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
                 if (plcMax > 0) {
                     for (int i = 0; i < gridCnt; i++) {
-                        int actual = colocated(i).map().keySet().size();
+                        int actual = colocated(i).map().internalSize();
 
                         assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
                             actual <= endSize + (plcMaxMemSize > 0 ? 1 : plcBatchSize));
@@ -814,7 +813,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
                         IgniteEx grid = grid(rand.nextInt(2));
 
-                        IgniteCache<Integer, String> cache = grid.cache(null);
+                        IgniteCache<Integer, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
@@ -974,15 +973,16 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
         /**
          * @param plc Policy.
+         * @return Policy proxy.
          */
         public static EvictionPolicyProxy proxy(EvictionPolicy plc) {
             return new EvictionPolicyProxy(plc);
         }
 
         /**
-         * Get current size.
+         * @return Get current size.
          */
-        public int getCurrentSize() {
+        int getCurrentSize() {
             try {
                 return (Integer)plc.getClass().getDeclaredMethod("getCurrentSize").invoke(plc);
             }
@@ -992,9 +992,9 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /**
-         * Current memory size.
+         * @return Current memory size.
          */
-        public long getCurrentMemorySize() {
+        long getCurrentMemorySize() {
             try {
                 return (Long)plc.getClass().getMethod("getCurrentMemorySize").invoke(plc);
             }
@@ -1004,7 +1004,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /**
-         * Current queue.
+         * @return Current queue.
          */
         public Collection<EvictableEntry> queue() {
             try {

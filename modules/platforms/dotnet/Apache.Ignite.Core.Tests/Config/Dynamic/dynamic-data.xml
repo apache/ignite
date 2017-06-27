@@ -35,14 +35,12 @@
                     <property name="name" value="p"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="startSize" value="10"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="pa"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="startSize" value="10"/>
                 </bean>
             </list>
         </property>

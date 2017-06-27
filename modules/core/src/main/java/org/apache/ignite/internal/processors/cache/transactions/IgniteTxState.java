@@ -79,13 +79,7 @@ public interface IgniteTxState {
     public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx);
 
     /**
-     * @param cctx Context.
-     * @return {@code True} is tx has active near cache.
-     */
-    public boolean hasNearCache(GridCacheSharedContext cctx);
-
-    /**
-     * @param cacheCtx Ccntext.
+     * @param cacheCtx Context.
      * @param tx Transaction.
      * @throws IgniteCheckedException If cache check failed.
      */

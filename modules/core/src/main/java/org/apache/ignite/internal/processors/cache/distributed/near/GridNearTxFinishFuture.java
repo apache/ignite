@@ -608,10 +608,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @return {@code True} if need to send finish request for one phase commit transaction.
      */
     private boolean needFinishOnePhase(boolean commit) {
+        assert tx.onePhaseCommit();
+
         if (tx.mappings().empty())
             return false;
 
-        return tx.txState().hasNearCache(cctx) || !commit;
+        if (!commit)
+            return true;
+
+        GridDistributedTxMapping mapping = tx.mappings().singleMapping();
+
+        assert mapping != null;
+
+        return mapping.hasNearCacheEntries();
     }
 
     /**
@@ -642,7 +651,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param mapping Mapping to finish.
      */
     private void readyNearMappingFromBackup(GridDistributedTxMapping mapping) {
-        if (mapping.near()) {
+        if (mapping.hasNearCacheEntries()) {
             GridCacheVersion xidVer = tx.xidVersion();
 
             mapping.dhtVersion(xidVer, xidVer);
@@ -676,7 +685,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
-        assert !m.empty();
+        assert !m.empty() : m;
 
         CacheWriteSynchronizationMode syncMode = tx.syncMode();
 
@@ -698,7 +707,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            completedVer, // Reuse 'baseVersion'  to do not add new fields in message.
+            completedVer, // Reuse 'baseVersion' to do not add new fields in message.
             null,
             null,
             tx.size(),

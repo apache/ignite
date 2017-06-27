@@ -23,9 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -42,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -181,22 +178,11 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
             for (int i = 0; i < NODES; i++) {
                 log.info("Test node: " + i);
 
-                final IgniteCache cache0 = ignite(i).cache(ccfg.getName());
+                IgniteCache cache0 = ignite(i).cache(ccfg.getName());
 
-                if (cacheMode == REPLICATED && !ignite(i).configuration().isClientMode()) {
-                    GridTestUtils.assertThrows(log, new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            checkPersonAccountsJoin(cache0, putData.personAccounts, affKey);
+                checkPersonAccountsJoin(cache0, putData.personAccounts, affKey);
 
-                            return null;
-                        }
-                    }, CacheException.class, "Queries using distributed JOINs have to be run on partitioned cache");
-                }
-                else {
-                    checkPersonAccountsJoin(cache0, putData.personAccounts, affKey);
-
-                    checkOrganizationPersonsJoin(cache0, putData.orgPersons);
-                }
+                checkOrganizationPersonsJoin(cache0, putData.orgPersons);
             }
         }
         finally {
@@ -358,7 +344,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         int backups,
         boolean affKey,
         boolean includeAffKey) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
 

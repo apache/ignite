@@ -382,7 +382,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                             break;
 
                         case SET_TIMES:
-                            igfs.setTimes(req.path(), req.accessTime(), req.modificationTime());
+                            igfs.setTimes(req.path(), req.modificationTime(), req.accessTime());
 
                             res.response(true);
 

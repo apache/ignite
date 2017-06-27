@@ -20,7 +20,6 @@ using System.Text;
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -29,6 +28,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Reflection;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
@@ -51,18 +51,24 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, string> FieldNameMap =
             new CopyOnWriteConcurrentDictionary<MemberInfo, string>();
 
+        /** */
+        private readonly bool _includeAllFields;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
         /// </summary>
         /// <param name="modelVisitor">The _model visitor.</param>
         /// <param name="useStar">Flag indicating that star '*' qualifier should be used
         /// for the whole-table select instead of _key, _val.</param>
-        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar)
+        /// <param name="includeAllFields">Flag indicating that star '*' qualifier should be used
+        /// for the whole-table select as well as _key, _val.</param>
+        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields)
         {
             Debug.Assert(modelVisitor != null);
 
             _modelVisitor = modelVisitor;
             _useStar = useStar;
+            _includeAllFields = includeAllFields;
         }
 
         /// <summary>
@@ -269,13 +275,34 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            // Count, sum, max, min expect a single field or *
-            // In other cases we need both parts of cache entry
-            var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
+            // In some cases of Join clause different handling should be introduced
+            var joinClause = expression.ReferencedQuerySource as JoinClause;
+            if (joinClause != null && ExpressionWalker.GetCacheQueryable(expression, false) == null)
+            {
+                var tableName = Aliases.GetTableAlias(expression);
+                var fieldname = Aliases.GetFieldAlias(expression);
 
-            var tableName = Aliases.GetTableAlias(expression);
+                ResultBuilder.AppendFormat("{0}.{1}", tableName, fieldname);
+            }
+            else if (joinClause != null && joinClause.InnerSequence is SubQueryExpression)
+            {
+                var subQueryExpression = (SubQueryExpression) joinClause.InnerSequence;
+                base.Visit(subQueryExpression.QueryModel.SelectClause.Selector);
+            }
+            else
+            {
+                // Count, sum, max, min expect a single field or *
+                // In other cases we need both parts of cache entry
+                var format = _includeAllFields
+                    ? "{0}.*, {0}._KEY, {0}._VAL"
+                    : _useStar
+                        ? "{0}.*"
+                        : "{0}._KEY, {0}._VAL";
 
-            ResultBuilder.AppendFormat(format, tableName);
+                var tableName = Aliases.GetTableAlias(expression);
+
+                ResultBuilder.AppendFormat(format, tableName);
+            }
 
             return expression;
         }
@@ -298,30 +325,32 @@ namespace Apache.Ignite.Linq.Impl
 
             if (queryable != null)
             {
-                var fieldName = GetFieldName(expression, queryable);
+                var fieldName = GetEscapedFieldName(expression, queryable);
 
                 ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
             else
-                AppendParameter(RegisterEvaluatedParameter(expression));
+                AppendParameter(ExpressionWalker.EvaluateExpression<object>(expression));
 
             return expression;
         }
 
         /// <summary>
-        /// Registers query parameter that is evaluated from a lambda expression argument.
+        /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
-        public object RegisterEvaluatedParameter(Expression expression)
+        private static string GetEscapedFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
         {
-            _modelVisitor.ParameterExpressions.Add(expression);
+            var sqlEscapeAll = queryable.CacheConfiguration.SqlEscapeAll;
+            var fieldName = GetFieldName(expression, queryable);
 
-            return ExpressionWalker.EvaluateExpression<object>(expression);
+            return sqlEscapeAll ? string.Format("\"{0}\"", fieldName) : fieldName;
         }
 
         /// <summary>
-        /// Gets the name of the field from a member expression.
+        /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
-        private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
+        private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable,
+            bool ignoreAlias = false)
         {
             var fieldName = GetMemberFieldName(expression.Member);
 
@@ -329,20 +358,18 @@ namespace Apache.Ignite.Linq.Impl
             var cacheCfg = queryable.CacheConfiguration;
 
             if (cacheCfg.QueryEntities == null || cacheCfg.QueryEntities.All(x => x.Aliases == null))
-                return fieldName;  // There are no aliases defined - early exit
+            {
+                // There are no aliases defined - early exit.
+                return fieldName;
+            }
 
             // Find query entity by key-val types
-            var keyValTypes = queryable.ElementType.GetGenericArguments();
-
-            Debug.Assert(keyValTypes.Length == 2);
-
-            var entity = cacheCfg.QueryEntities.FirstOrDefault(e =>
-                e.Aliases != null &&
-                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName) &&
-                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
+            var entity = GetQueryEntity(queryable, cacheCfg);
 
             if (entity == null)
+            {
                 return fieldName;
+            }
 
             // There are some aliases for the current query type
             // Calculate full field name and look for alias
@@ -351,12 +378,41 @@ namespace Apache.Ignite.Linq.Impl
 
             while ((member = member.Expression as MemberExpression) != null &&
                    member.Member.DeclaringType != queryable.ElementType)
-                fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
+            {
+                fullFieldName = GetFieldName(member, queryable, true) + "." + fullFieldName;
+            }
 
-            var alias = entity.Aliases.Where(x => x.FullName == fullFieldName)
-                .Select(x => x.Alias).FirstOrDefault();
+            var alias = ignoreAlias ? null : ((IQueryEntityInternal)entity).GetAlias(fullFieldName);
 
             return alias ?? fieldName;
+        }
+
+        /// <summary>
+        /// Finds matching query entity in the cache configuration.
+        /// </summary>
+        private static QueryEntity GetQueryEntity(ICacheQueryableInternal queryable, CacheConfiguration cacheCfg)
+        {
+            if (cacheCfg.QueryEntities.Count == 1)
+            {
+                return cacheCfg.QueryEntities.Single();
+            }
+
+            var keyValTypes = queryable.ElementType.GetGenericArguments();
+
+            Debug.Assert(keyValTypes.Length == 2);
+
+            // PERF: No LINQ.
+            foreach (var e in cacheCfg.QueryEntities)
+            {
+                if (e.Aliases != null
+                    && (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName)
+                    && (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName))
+                {
+                    return e;
+                }
+            }
+            
+            return null;
         }
 
         /// <summary>
@@ -377,7 +433,7 @@ namespace Apache.Ignite.Linq.Impl
                 if (m.DeclaringType != null &&
                     m.DeclaringType.IsGenericType &&
                     m.DeclaringType.GetGenericTypeDefinition() == typeof (ICacheEntry<,>))
-                    return "_" + m.Name.ToLowerInvariant().Substring(0, 3);
+                    return "_" + m.Name.ToUpperInvariant().Substring(0, 3);
 
                 var qryFieldAttr = m.GetCustomAttributes(true)
                     .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
@@ -523,7 +579,7 @@ namespace Apache.Ignite.Linq.Impl
             }
             else
             {
-                var inValues = GetInValues(fromExpression).ToArray();
+                var inValues = ExpressionWalker.EvaluateEnumerableValues(fromExpression).ToArray();
 
                 var hasNulls = inValues.Any(o => o == null);
 
@@ -547,44 +603,6 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             ResultBuilder.Append(")");
-        }
-
-        /// <summary>
-        /// Gets values for IN expression.
-        /// </summary>
-        private static IEnumerable<object> GetInValues(Expression fromExpression)
-        {
-            IEnumerable result;
-            switch (fromExpression.NodeType)
-            {
-                case ExpressionType.MemberAccess:
-                    var memberExpression = (MemberExpression) fromExpression;
-                    result = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
-                    break;
-                case ExpressionType.ListInit:
-                    var listInitExpression = (ListInitExpression) fromExpression;
-                    result = listInitExpression.Initializers
-                        .SelectMany(init => init.Arguments)
-                        .Select(ExpressionWalker.EvaluateExpression<object>);
-                    break;
-                case ExpressionType.NewArrayInit:
-                    var newArrayExpression = (NewArrayExpression) fromExpression;
-                    result = newArrayExpression.Expressions
-                        .Select(ExpressionWalker.EvaluateExpression<object>);
-                    break;
-                case ExpressionType.Parameter:
-                    // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
-                    throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
-                default:
-                    result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
-                    break;
-            }
-
-            result = result ?? Enumerable.Empty<object>();
-
-            return result
-                .Cast<object>()
-                .ToArray();
         }
 
         /// <summary>

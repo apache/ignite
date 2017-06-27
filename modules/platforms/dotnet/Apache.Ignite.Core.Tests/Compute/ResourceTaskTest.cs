@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable UnassignedField.Global
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
@@ -96,12 +102,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             int res = Grid1.GetCompute().Execute(new NoResultCacheTask(), 0);
 
             Assert.AreEqual(GetServerCount(), res);
-        }
-
-        /** <inheritdoc /> */
-        protected override ICollection<Type> GetBinaryTypes()
-        {
-            return new[] {typeof(InjectionJobBinarizable)};
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
-            public InjectionJob(SerializationInfo info, StreamingContext context) : base(info, context)
+            protected InjectionJob(SerializationInfo info, StreamingContext context) : base(info, context)
             {
                 // No-op.
             }
@@ -264,24 +264,6 @@ namespace Apache.Ignite.Core.Tests.Compute
                 StaticGrid2 = grid;
             }
 
-            /// <summary>
-            ///
-            /// </summary>
-            public InjectionClosure()
-            {
-                // No-op.
-            }
-
-            /// <summary>
-            ///
-            /// </summary>
-            /// <param name="info"></param>
-            /// <param name="context"></param>
-            public InjectionClosure(SerializationInfo info, StreamingContext context)
-            {
-                // No-op.
-            }
-
             /** */
             [InstanceResource]
             private readonly IIgnite _grid1 = null;
@@ -352,12 +334,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.IsTrue(_mthdGrid1 == _grid1);
                 Assert.IsTrue(_mthdGrid2 == _grid1);
-            }
-
-            /** <inheritDoc /> */
-            public void GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                // No-op.
             }
 
             /** <inheritDoc /> */
@@ -459,7 +435,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <summary>
             ///
             /// </summary>
-            public Injectee()
+            protected Injectee()
             {
                 // No-op.
             }
@@ -469,7 +445,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
-            public Injectee(SerializationInfo info, StreamingContext context)
+            protected Injectee(SerializationInfo info, StreamingContext context)
             {
                 // No-op.
             }
@@ -595,24 +571,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Serializable]
         public class NoResultCacheJob : IComputeJob<int>
         {
-            /// <summary>
-            ///
-            /// </summary>
-            public NoResultCacheJob()
-            {
-                // No-op.
-            }
-
-            /// <summary>
-            ///
-            /// </summary>
-            /// <param name="info"></param>
-            /// <param name="context"></param>
-            public NoResultCacheJob(SerializationInfo info, StreamingContext context)
-            {
-                // No-op.
-            }
-
             /** <inheritDoc /> */
             public int Execute()
             {

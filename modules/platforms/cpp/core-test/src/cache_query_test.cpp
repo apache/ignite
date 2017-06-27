@@ -163,6 +163,29 @@ public:
         return recordCreated;
     }
 
+    /**
+     * @return true if objects are equal.
+     */
+    friend bool operator==(QueryPerson const& lhs, QueryPerson const& rhs)
+    {
+        return lhs.GetName() == rhs.GetName() && lhs.GetAge() == rhs.GetAge() &&
+            lhs.GetBirthday() == rhs.GetBirthday() && lhs.GetCreationTime() == rhs.GetCreationTime();
+    }
+
+    /**
+     * Outputs the object to stream.
+     *
+     * @return Stream.
+     */
+    friend std::ostream& operator<<(std::ostream& str, QueryPerson const& obj)
+    {
+        str << "QueryPerson::name: " << obj.GetName()
+            << "QueryPerson::age: " << obj.GetAge()
+            << "QueryPerson::birthday: " << obj.GetBirthday().GetMilliseconds()
+            << "QueryPerson::recordCreated: " << obj.GetCreationTime().GetSeconds() << "." << obj.GetCreationTime().GetSecondFraction();
+        return str;
+    }
+
 private:
     /** Name. */
     char* name;
@@ -848,6 +871,20 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAllIter(cursor, 1, "A1", 10);
 
+    // Test resetting query arguments.
+    qry.ClearArguments();
+    qry.AddArgument<int>(30);
+    qry.AddArgument<std::string>("A2");
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 2, "A2", 20);
+
+    cursor = cache.Query(qry);
+    CheckSingleGetAll(cursor, 2, "A2", 20);
+
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 2, "A2", 20);
+
     // Test query returning multiple entries.
     qry = SqlQuery("QueryPerson", "age < 30");
 
@@ -1057,14 +1094,14 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
             std::stringstream stream;
             stream << "A" << key;
-            BOOST_REQUIRE(entry.GetValue().GetName().compare(stream.str()) == 0);
+            BOOST_REQUIRE_EQUAL(entry.GetValue().GetName().compare(stream.str()), 0);
 
-            BOOST_REQUIRE(entry.GetValue().GetAge() == key * 10);
+            BOOST_REQUIRE_EQUAL(entry.GetValue().GetAge(), key * 10);
         }
     }
 
     // Ensure that all keys were read.
-    BOOST_REQUIRE(keys.size() == entryCnt);
+    BOOST_CHECK_EQUAL(keys.size(), entryCnt);
 }
 
 /**
@@ -1127,6 +1164,14 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
+
+    // Test resetting query arguments.
+    qry.ClearArguments();
+    qry.AddArgument<int>(30);
+    qry.AddArgument<std::string>("A2");
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 2, "A2", 20);
 }
 
 /**
@@ -1809,6 +1854,106 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryPageSingle)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryPageZero)
 {
     BOOST_CHECK_THROW(CheckFieldsQueryPages(0, 100, 0), IgniteError);
+}
+
+/**
+ * Test query for key and value fields.
+ */
+BOOST_AUTO_TEST_CASE(TestKeyValFields)
+{
+    Cache<int, QueryPerson> cache = GetPersonCache();
+
+    QueryPerson person("John", 30, MakeDateGmt(1987), MakeTimestampGmt(2017, 1, 1, 1, 1));
+
+    cache.Put(1, person);
+
+    for (int i = 0; i < 2; i++)
+    {
+        SqlFieldsQuery qry(i == 0 ?
+            "select _key, _val, k, v, name, age, birthday, recordCreated from QueryPerson" :
+            "select _key, _val, * from QueryPerson");
+
+        QueryFieldsCursor cursor = cache.Query(qry);
+
+        BOOST_REQUIRE(cursor.HasNext());
+
+        QueryFieldsRow row = cursor.GetNext();
+
+        BOOST_REQUIRE(row.HasNext());
+        int id = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(1, id);
+
+        BOOST_REQUIRE(row.HasNext());
+        QueryPerson p = row.GetNext<QueryPerson>();
+        BOOST_CHECK_EQUAL(p, person);
+
+        BOOST_REQUIRE(row.HasNext());
+        id = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(1, id);
+
+        BOOST_REQUIRE(row.HasNext());
+        p = row.GetNext<QueryPerson>();
+        BOOST_CHECK_EQUAL(p, person);
+
+        BOOST_REQUIRE(row.HasNext());
+        std::string name = row.GetNext<std::string>();
+        BOOST_CHECK_EQUAL(name, person.GetName());
+
+        BOOST_REQUIRE(row.HasNext());
+        int age = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(age, person.GetAge());
+
+        BOOST_REQUIRE(row.HasNext());
+        Date birthday = row.GetNext<Date>();
+        BOOST_CHECK(birthday == person.GetBirthday());
+
+        BOOST_REQUIRE(row.HasNext());
+        Timestamp recordCreated = row.GetNext<Timestamp>();
+        BOOST_CHECK(recordCreated == person.GetCreationTime());
+
+        BOOST_CHECK(!row.HasNext());
+    }
+}
+
+/**
+ * Test query for Public schema.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQuerySetSchema)
+{
+    Cache<int32_t, Time> timeCache = grid.GetCache<int32_t, Time>("TimeCache");
+
+    int32_t entryCnt = 1000; // Number of entries.
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        int secs = i % 60;
+        int mins = i / 60;
+        timeCache.Put(i, MakeTimeGmt(4, mins, secs));
+    }
+
+    Cache<int32_t, int32_t> intCache = grid.GetCache<int32_t, int32_t>("IntCache");
+
+    SqlFieldsQuery qry("select _key from Time where _val='04:11:02'");
+
+    BOOST_CHECK_EXCEPTION(intCache.Query(qry), IgniteError, ignite_test::IsGenericError);
+
+    qry.SetSchema("TimeCache");
+
+    QueryFieldsCursor cursor = intCache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int32_t key = row.GetNext<int32_t>();
+
+    BOOST_CHECK(key == 662);
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

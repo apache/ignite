@@ -23,17 +23,17 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * A page memory configuration for an Apache Ignite node. The page memory is a manageable off-heap based memory
- * architecture that divides all continuously allocated memory regions into pages of fixed size
+ * architecture that divides all expandable memory regions into pages of fixed size
  * (see {@link MemoryConfiguration#getPageSize()}. An individual page can store one or many cache key-value entries
  * that allows reusing the memory in the most efficient way and avoid memory fragmentation issues.
  * <p>
- * By default, the page memory allocates a single continuous memory region using settings of
+ * By default, the page memory allocates a single expandable memory region using settings of
  * {@link MemoryConfiguration#createDefaultPolicyConfig()}. All the caches that will be configured in an application
  * will be mapped to this memory region by default, thus, all the cache data will reside in that memory region.
  * <p>
  * If initial size of the default memory region doesn't satisfy requirements or it's required to have multiple memory
  * regions with different properties then {@link MemoryPolicyConfiguration} can be used for both scenarios.
- * For instance, Using memory policies you can define memory regions of different maximum size, eviction policies,
+ * For instance, using memory policies you can define memory regions of different maximum size, eviction policies,
  * swapping options, etc. Once you define a new memory region you can bind particular Ignite caches to it.
  * <p>
  * To learn more about memory policies refer to {@link MemoryPolicyConfiguration} documentation.
@@ -42,14 +42,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     {@code
  *     <property name="memoryConfiguration">
  *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
- *             <property name="systemCacheMemorySize" value="#{100 * 1024 * 1024}"/>
+ *             <property name="systemCacheInitialSize" value="#{100 * 1024 * 1024}"/>
  *             <property name="defaultMemoryPolicyName" value="default_mem_plc"/>
  *
  *             <property name="memoryPolicies">
  *                 <list>
  *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                         <property name="name" value="default_mem_plc"/>
- *                         <property name="size" value="#{5 * 1024 * 1024 * 1024}"/>
+ *                         <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
  *                     </bean>
  *                 </list>
  *             </property>
@@ -62,17 +62,35 @@ public class MemoryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default memory policy's size (1 GB). */
-    public static final long DFLT_MEMORY_POLICY_SIZE = 1024 * 1024 * 1024;
+    /** Default memory policy start size (256 MB). */
+    @SuppressWarnings("UnnecessaryBoxing")
+    public static final Long DFLT_MEMORY_POLICY_INITIAL_SIZE = new Long(256L * 1024 * 1024);
 
-    /** Default size of a memory chunk for the system cache (100 MB). */
-    public static final long DFLT_SYS_CACHE_MEM_SIZE = 100 * 1024 * 1024;
+    /** Fraction of available memory to allocate for default MemoryPolicy. */
+    private static final double DFLT_MEMORY_POLICY_FRACTION = 0.8;
+
+    /** Default memory policy's size is 80% of physical memory available on current machine. */
+    public static final long DFLT_MEMORY_POLICY_MAX_SIZE = Math.max(
+        (long)(DFLT_MEMORY_POLICY_FRACTION * U.getTotalMemoryAvailable()),
+        DFLT_MEMORY_POLICY_INITIAL_SIZE);
+
+    /** Default initial size of a memory chunk for the system cache (40 MB). */
+    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40 * 1024 * 1024;
+
+    /** Default max size of a memory chunk for the system cache (100 MB). */
+    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 2 * 1024;
 
-    /** Size of a memory chunk reserved for system cache needs. */
-    private long sysCacheMemSize = DFLT_SYS_CACHE_MEM_SIZE;
+    /** This name is assigned to default MemoryPolicy if no user-defined default MemPlc is specified */
+    public static final String DFLT_MEM_PLC_DEFAULT_NAME = "default";
+
+    /** Size of a memory chunk reserved for system cache initially. */
+    private long sysCacheInitSize = DFLT_SYS_CACHE_INIT_SIZE;
+
+    /** Maximum size of system cache. */
+    private long sysCacheMaxSize = DFLT_SYS_CACHE_MAX_SIZE;
 
     /** Memory page size. */
     private int pageSize = DFLT_PAGE_SIZE;
@@ -81,33 +99,63 @@ public class MemoryConfiguration implements Serializable {
     private int concLvl;
 
     /** A name of the memory policy that defines the default memory region. */
-    private String dfltMemPlcName;
+    private String dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
+
+    /** Size of memory (in bytes) to use for default MemoryPolicy. */
+    private Long dfltMemPlcSize;
 
     /** Memory policies. */
     private MemoryPolicyConfiguration[] memPlcs;
 
     /**
-     * Gets size of a memory chunk reserved for system cache needs.
+     * Initial size of a memory region reserved for system cache.
      *
      * @return Size in bytes.
      */
-    public long getSystemCacheMemorySize() {
-        return sysCacheMemSize;
+    public long getSystemCacheInitialSize() {
+        return sysCacheInitSize;
     }
 
     /**
-     * Sets the size of a memory chunk reserved for system cache needs.
+     * Sets initial size of a memory region reserved for system cache.
      *
-     * @param sysCacheMemSize Size in bytes.
+     * Default value is {@link #DFLT_SYS_CACHE_INIT_SIZE}
+     *
+     * @param sysCacheInitSize Size in bytes.
+     *
+     * @return {@code this} for chaining.
      */
-    public MemoryConfiguration setSystemCacheMemorySize(long sysCacheMemSize) {
-        this.sysCacheMemSize = sysCacheMemSize;
+    public MemoryConfiguration setSystemCacheInitialSize(long sysCacheInitSize) {
+        this.sysCacheInitSize = sysCacheInitSize;
 
         return this;
     }
 
     /**
-     * The pages memory consists of one or more continuous memory regions defined by {@link MemoryPolicyConfiguration}.
+     * Maximum memory region size reserved for system cache.
+     *
+     * @return Size in bytes.
+     */
+    public long getSystemCacheMaxSize() {
+        return sysCacheMaxSize;
+    }
+
+    /**
+     * Sets maximum memory region size reserved for system cache. The total size should not be less than 10 MB
+     * due to internal data structures overhead.
+     *
+     * @param sysCacheMaxSize Maximum size in bytes for system cache memory region.
+     *
+     * @return {@code this} for chaining.
+     */
+    public MemoryConfiguration setSystemCacheMaxSize(long sysCacheMaxSize) {
+        this.sysCacheMaxSize = sysCacheMaxSize;
+
+        return this;
+    }
+
+    /**
+     * The pages memory consists of one or more expandable memory regions defined by {@link MemoryPolicyConfiguration}.
      * Every memory region is split on pages of fixed size that store actual cache entries.
      *
      * @return Page size in bytes.
@@ -118,6 +166,8 @@ public class MemoryConfiguration implements Serializable {
 
     /**
      * Changes the page size.
+     *
+     * Default value is {@link #DFLT_PAGE_SIZE}
      *
      * @param pageSize Page size in bytes.
      */
@@ -153,7 +203,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     * Creates a configuration for the default memory policy that will instantiate the default continuous memory region.
+     * Creates a configuration for the default memory policy that will instantiate the default memory region.
      * To override settings of the default memory policy in order to create the default memory region with different
      * parameters, create own memory policy first, pass it to
      * {@link MemoryConfiguration#setMemoryPolicies(MemoryPolicyConfiguration...)} method and change the name of the
@@ -164,23 +214,30 @@ public class MemoryConfiguration implements Serializable {
     public MemoryPolicyConfiguration createDefaultPolicyConfig() {
         MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
 
-        memPlc.setName(null);
-        memPlc.setSize(DFLT_MEMORY_POLICY_SIZE);
+        long maxSize = (dfltMemPlcSize != null) ? dfltMemPlcSize : DFLT_MEMORY_POLICY_MAX_SIZE;
+
+        if (maxSize < DFLT_MEMORY_POLICY_INITIAL_SIZE)
+            memPlc.setInitialSize(maxSize);
+
+        memPlc.setMaxSize(maxSize);
 
         return memPlc;
     }
 
     /**
-     * TODO: document
-     * @return Concurrency level.
+     * Returns the number of concurrent segments in Ignite internal page mapping tables. By default equals
+     * to the number of available CPUs multiplied by 4.
+     *
+     * @return Mapping table concurrency level.
      */
     public int getConcurrencyLevel() {
         return concLvl;
     }
 
     /**
-     * TODO: document
-     * @param concLvl Concurrency level.
+     * Sets the number of concurrent segments in Ignite internal page mapping tables.
+     *
+     * @param concLvl Mapping table oncurrency level.
      */
     public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
@@ -189,9 +246,35 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
+     * Gets a size for default memory policy overridden by user.
+     *
+     * @return default memory policy size overridden by user or -1 if nothing was specified.
+     */
+    public long getDefaultMemoryPolicySize() {
+        return (dfltMemPlcSize != null) ? dfltMemPlcSize : -1;
+    }
+
+    /**
+     * Overrides size of default memory policy which is created automatically.
+     *
+     * If user doesn't specify any memory policy configuration, a default one with default size
+     * (80% of available RAM) is created by Ignite.
+     *
+     * This property allows user to specify desired size of default memory policy
+     * without having to use more verbose syntax of MemoryPolicyConfiguration elements.
+     *
+     * @param dfltMemPlcSize Size of default memory policy overridden by user.
+     */
+    public MemoryConfiguration setDefaultMemoryPolicySize(long dfltMemPlcSize) {
+        this.dfltMemPlcSize = dfltMemPlcSize;
+
+        return this;
+    }
+
+    /**
      * Gets a name of default memory policy.
      *
-     * @return A name of a custom memory policy configured with {@link MemoryConfiguration} or {@code null} of the
+     * @return A name of a custom memory policy configured with {@code MemoryConfiguration} or {@code null} of the
      *         default policy is used.
      */
     public String getDefaultMemoryPolicyName() {
@@ -202,7 +285,9 @@ public class MemoryConfiguration implements Serializable {
      * Sets the name for the default memory policy that will initialize the default memory region.
      * To set own default memory policy, create the policy first, pass it to
      * {@link MemoryConfiguration#setMemoryPolicies(MemoryPolicyConfiguration...)} method and change the name of the
-     * default memory policy with {@link MemoryConfiguration#setDefaultMemoryPolicyName(String)}.
+     * default memory policy with {@code MemoryConfiguration#setDefaultMemoryPolicyName(String)}.
+     *
+     * If nothing is specified by user, it is set to {@link #DFLT_MEM_PLC_DEFAULT_NAME} value.
      *
      * @param dfltMemPlcName Name of a memory policy to be used as default one.
      */

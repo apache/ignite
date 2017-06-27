@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -45,6 +47,43 @@ public class IgniteIoTestMessage implements Message {
     /** */
     private byte payload[];
 
+    /** */
+    private long reqCreateTs;
+
+    /** */
+    private long reqSndTs;
+
+    /** */
+    private long reqSndTsMillis;
+
+    /** */
+    private long reqRcvTs;
+
+    /** */
+    private long reqRcvTsMillis;
+
+    /** */
+    private long reqProcTs;
+
+    /** */
+    private long resSndTs;
+
+    /** */
+    private long resSndTsMillis;
+
+    /** */
+    private long resRcvTs;
+
+    /** */
+    private long resRcvTsMillis;
+
+    /** */
+    private long resProcTs;
+
+    /** */
+    @GridDirectTransient
+    private UUID sndNodeId;
+
     /**
      *
      */
@@ -61,6 +100,8 @@ public class IgniteIoTestMessage implements Message {
         this.id = id;
         this.req = req;
         this.payload = payload;
+
+        reqCreateTs = System.nanoTime();
     }
 
     /**
@@ -126,9 +167,172 @@ public class IgniteIoTestMessage implements Message {
         return id;
     }
 
+    /**
+     * @return Request create timestamp.
+     */
+    public long requestCreateTs() {
+        return reqCreateTs;
+    }
+
+    /**
+     * @return Request send timestamp.
+     */
+    public long requestSendTs() {
+        return reqSndTs;
+    }
+
+    /**
+     * @return Request receive timestamp.
+     */
+    public long requestReceiveTs() {
+        return reqRcvTs;
+    }
+
+    /**
+     * @return Request process started timestamp.
+     */
+    public long requestProcessTs() {
+        return reqProcTs;
+    }
+
+    /**
+     * @return Response send timestamp.
+     */
+    public long responseSendTs() {
+        return resSndTs;
+    }
+
+    /**
+     * @return Response receive timestamp.
+     */
+    public long responseReceiveTs() {
+        return resRcvTs;
+    }
+
+    /**
+     * @return Response process timestamp.
+     */
+    public long responseProcessTs() {
+        return resProcTs;
+    }
+
+    /**
+     * @return Request send timestamp (millis).
+     */
+    public long requestSendTsMillis() {
+        return reqSndTsMillis;
+    }
+
+    /**
+     * @return Request received timestamp (millis).
+     */
+    public long requestReceivedTsMillis() {
+        return reqRcvTsMillis;
+    }
+
+    /**
+     * @return Response send timestamp (millis).
+     */
+    public long responseSendTsMillis() {
+        return resSndTsMillis;
+    }
+
+    /**
+     * @return Response received timestamp (millis).
+     */
+    public long responseReceivedTsMillis() {
+        return resRcvTsMillis;
+    }
+
+    /**
+     * This method is called to initialize tracing variables.
+     * TODO: introduce direct message lifecycle API?
+     */
+    public void onAfterRead() {
+        if (req && reqRcvTs == 0) {
+            reqRcvTs = System.nanoTime();
+
+            reqRcvTsMillis = System.currentTimeMillis();
+        }
+
+        if (!req && resRcvTs == 0) {
+            resRcvTs = System.nanoTime();
+
+            resRcvTsMillis = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * This method is called to initialize tracing variables.
+     * TODO: introduce direct message lifecycle API?
+     */
+    public void onBeforeWrite() {
+        if (req && reqSndTs == 0) {
+            reqSndTs = System.nanoTime();
+
+            reqSndTsMillis = System.currentTimeMillis();
+        }
+
+        if (!req && resSndTs == 0) {
+            resSndTs = System.nanoTime();
+
+            resSndTsMillis = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     *
+     */
+    public void copyDataFromRequest(IgniteIoTestMessage req) {
+        reqCreateTs = req.reqCreateTs;
+
+        reqSndTs = req.reqSndTs;
+        reqSndTsMillis = req.reqSndTsMillis;
+
+        reqRcvTs = req.reqRcvTs;
+        reqRcvTsMillis = req.reqRcvTsMillis;
+    }
+
+    /**
+     *
+     */
+    public void onRequestProcessed() {
+        reqProcTs = System.nanoTime();
+    }
+
+    /**
+     *
+     */
+    public void onResponseProcessed() {
+        resProcTs = System.nanoTime();
+    }
+
+    /**
+     * @return Response processed timestamp.
+     */
+    public long responseProcessedTs() {
+        return resProcTs;
+    }
+
+    /**
+     * @return Sender node ID.
+     */
+    public UUID senderNodeId() {
+        return sndNodeId;
+    }
+
+    /**
+     * @param sndNodeId Sender node ID.
+     */
+    public void senderNodeId(UUID sndNodeId) {
+        this.sndNodeId = sndNodeId;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
+
+        onBeforeWrite();
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -158,6 +362,72 @@ public class IgniteIoTestMessage implements Message {
 
             case 3:
                 if (!writer.writeBoolean("req", req))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeLong("reqCreateTs", reqCreateTs))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeLong("reqProcTs", reqProcTs))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeLong("reqRcvTs", reqRcvTs))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeLong("reqRcvTsMillis", reqRcvTsMillis))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeLong("reqSndTs", reqSndTs))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeLong("reqSndTsMillis", reqSndTsMillis))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeLong("resProcTs", resProcTs))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeLong("resRcvTs", resRcvTs))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
+                if (!writer.writeLong("resRcvTsMillis", resRcvTsMillis))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeLong("resSndTs", resSndTs))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeLong("resSndTsMillis", resSndTsMillis))
                     return false;
 
                 writer.incrementState();
@@ -207,7 +477,97 @@ public class IgniteIoTestMessage implements Message {
 
                 reader.incrementState();
 
+            case 4:
+                reqCreateTs = reader.readLong("reqCreateTs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                reqProcTs = reader.readLong("reqProcTs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                reqRcvTs = reader.readLong("reqRcvTs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
+                reqRcvTsMillis = reader.readLong("reqRcvTsMillis");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                reqSndTs = reader.readLong("reqSndTs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                reqSndTsMillis = reader.readLong("reqSndTsMillis");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                resProcTs = reader.readLong("resProcTs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                resRcvTs = reader.readLong("resRcvTs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                resRcvTsMillis = reader.readLong("resRcvTsMillis");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                resSndTs = reader.readLong("resSndTs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                resSndTsMillis = reader.readLong("resSndTsMillis");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
+
+        onAfterRead();
 
         return reader.afterMessageRead(IgniteIoTestMessage.class);
     }
@@ -219,7 +579,7 @@ public class IgniteIoTestMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 15;
     }
 
     /** {@inheritDoc} */
