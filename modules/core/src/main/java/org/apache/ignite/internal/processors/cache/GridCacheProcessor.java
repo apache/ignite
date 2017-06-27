@@ -2112,6 +2112,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable ExchangeActions exchActions,
         Throwable err
     ) {
+        long start = U.currentTimeMillis();
+
         initCacheProxies(topVer, err);
 
         if (exchActions != null && exchActions.systemCachesStarting() && exchActions.newClusterState() == null)
@@ -2166,6 +2168,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (stoppedGrps != null && !sharedCtx.kernalContext().clientNode())
                 sharedCtx.database().onCacheGroupsStopped(stoppedGrps);
         }
+
+        log.info("processor onExchangeDone [topVer=" + topVer + ", time=" + (U.currentTimeMillis() - start) + ']');
     }
 
     /**

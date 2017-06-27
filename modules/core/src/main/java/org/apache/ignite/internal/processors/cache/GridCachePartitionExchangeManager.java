@@ -1158,6 +1158,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param err Error.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut, @Nullable Throwable err) {
+        long start = U.currentTimeMillis();
+
         AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
         if (log.isDebugEnabled())
@@ -1235,6 +1237,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     fut.cleanUp();
             }
         }
+
+        log.info("manager onExchangeDone [topVer=" + topVer + ", time=" + (U.currentTimeMillis() - start) + ']');
     }
 
     /**

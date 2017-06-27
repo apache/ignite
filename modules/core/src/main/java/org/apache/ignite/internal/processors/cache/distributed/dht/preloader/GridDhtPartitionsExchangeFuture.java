@@ -682,6 +682,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
+        long start = U.currentTimeMillis();
+
         cctx.database().checkpointReadLock();
 
         try {
@@ -697,6 +699,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         finally {
             cctx.database().checkpointReadUnlock();
         }
+
+        exchLog.info("initTopologies [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
     }
 
     /**
@@ -1337,12 +1341,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 discoEvt.type() == EVT_NODE_JOINED)
                 detectLostPartitions();
 
+            long start = U.currentTimeMillis();
+
             Map<Integer, CacheValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
 
             for (CacheGroupContext grp : cctx.cache().cacheGroups())
                 m.put(grp.groupId(), validateCacheGroup(grp, discoEvt.topologyNodes()));
 
             grpValidRes = m;
+
+            exchLog.info("validateCacheGroup [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
         }
 
         startLocalSnasphotOperation();
@@ -1350,6 +1358,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         cctx.cache().onExchangeDone(exchId.topologyVersion(), exchActions, err);
 
         cctx.exchange().onExchangeDone(this, err);
+
+        long start = U.currentTimeMillis();
 
         if (exchActions != null && err == null)
             exchActions.completeRequestFutures(cctx);
@@ -1379,6 +1389,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().onExchangeDone(grp.affinity().cachedAffinity(topologyVersion()));
             }
         }
+
+        exchLog.info("onExchangeDone [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
 
         if (super.onDone(res, err) && realExchange) {
             boolean crd;
@@ -1783,6 +1795,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Detect lost partitions.
      */
     private void detectLostPartitions() {
+        long start = U.currentTimeMillis();
+
         boolean detected = false;
 
         synchronized (cctx.exchange().interruptLock()) {
@@ -1800,6 +1814,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (detected)
             cctx.exchange().scheduleResendPartitions();
+
+        exchLog.info("detectLostPartitions [topVer=" + topologyVersion() + ", time=" + (U.currentTimeMillis() - start) + ']');
     }
 
     /**
