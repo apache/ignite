@@ -935,7 +935,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         client = true;
 
-        Ignite qryClient = startGrid(SRV_NODES);
+        final Ignite qryClient = startGrid(SRV_NODES);
 
         client = false;
 
