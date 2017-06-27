@@ -36,6 +36,28 @@ namespace ignite
     {
         namespace compute
         {
+            struct ComputeJobResultPolicy
+            {
+                enum Type
+                {
+                    /**
+                    * Wait for results if any are still expected. If all results have been received -
+                    * it will start reducing results.
+                    */
+                    WAIT = 0,
+
+                    /**
+                    * Ignore all not yet received results and start reducing results.
+                    */
+                    REDUCE = 1,
+
+                    /**
+                    * Fail-over job to execute on another node.
+                    */
+                    FAILOVER = 2
+                };
+            };
+
             /**
              * Used to hold compute job result.
              */

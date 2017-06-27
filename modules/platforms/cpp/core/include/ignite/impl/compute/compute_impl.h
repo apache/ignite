@@ -26,7 +26,7 @@
 #include <ignite/common/common.h>
 #include <ignite/common/promise.h>
 #include <ignite/impl/interop/interop_target.h>
-#include <ignite/impl/compute/compute_task_holder.h>
+#include <ignite/impl/compute/single_job_compute_task_holder.h>
 #include <ignite/impl/compute/cancelable_impl.h>
 
 #include <ignite/ignite_error.h>
@@ -50,7 +50,9 @@ namespace ignite
                 {
                     enum Type
                     {
-                        Unicast = 5
+                        BROADCAST = 2,
+
+                        UNICAST = 5,
                     };
                 };
 
@@ -66,41 +68,29 @@ namespace ignite
                  * Asyncronuously calls provided ComputeFunc on a node within
                  * the underlying cluster group.
                  *
-                 * @tparam F Compute function type. Should implement ComputeFunc
-                 *  class.
-                 * @tparam R Call return type. BinaryType should be specialized for
-                 *  the type if it is not primitive. Should not be void. For
+                 * @tparam F Compute function type. Should implement
+                 *  ComputeFunc<R> class.
+                 * @tparam R Call return type. BinaryType should be specialized
+                 *  for the type if it is not primitive. Should not be void. For
                  *  non-returning methods see Compute::Run().
                  * @param func Compute function to call.
-                 * @return Future that can be used to acess computation result once
-                 *  it's ready.
+                 * @return Future that can be used to acess computation result
+                 *  once it's ready.
                  * @throw IgniteError in case of error.
                  */
                 template<typename R, typename F>
                 Future<R> CallAsync(const F& func)
                 {
-                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
-                    interop::InteropOutputStream out(mem.Get());
-                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
-
                     common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, R>(func));
 
                     int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
 
-                    ComputeTaskHolderImpl<F, R>* taskPtr = new ComputeTaskHolderImpl<F, R>(jobHandle);
+                    SingleJobComputeTaskHolder<F, R>* taskPtr = new SingleJobComputeTaskHolder<F, R>(jobHandle);
                     common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
 
                     int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
 
-                    writer.WriteInt64(taskHandle);
-                    writer.WriteInt32(1);
-                    writer.WriteInt64(jobHandle);
-                    writer.WriteObject<F>(func);
-
-                    out.Synchronize();
-
-                    jobject target = InStreamOutObject(Operation::Unicast, *mem.Get());
-                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::UNICAST, jobHandle, taskHandle, func);
 
                     common::Promise<R>& promise = taskPtr->GetPromise();
                     promise.SetCancelTarget(cancelable);
@@ -112,37 +102,26 @@ namespace ignite
                  * Asyncronuously runs provided ComputeFunc on a node within
                  * the underlying cluster group.
                  *
-                 * @tparam F Compute action type. Should implement ComputeAction
-                 *  class.
+                 * @tparam F Compute action type. Should implement
+                 *  ComputeFunc<R> class.
                  * @param action Compute action to call.
-                 * @return Future that can be used to wait for action to complete.
+                 * @return Future that can be used to wait for action
+                 *  to complete.
                  * @throw IgniteError in case of error.
                  */
                 template<typename F>
                 Future<void> RunAsync(const F& action)
                 {
-                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
-                    interop::InteropOutputStream out(mem.Get());
-                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
-
                     common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, void>(action));
 
                     int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
 
-                    ComputeTaskHolderImpl<F, void>* taskPtr = new ComputeTaskHolderImpl<F, void>(jobHandle);
+                    SingleJobComputeTaskHolder<F, void>* taskPtr = new SingleJobComputeTaskHolder<F, void>(jobHandle);
                     common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
 
                     int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
 
-                    writer.WriteInt64(taskHandle);
-                    writer.WriteInt32(1);
-                    writer.WriteInt64(jobHandle);
-                    writer.WriteObject<F>(action);
-
-                    out.Synchronize();
-
-                    jobject target = InStreamOutObject(Operation::Unicast, *mem.Get());
-                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::UNICAST, jobHandle, taskHandle, action);
 
                     common::Promise<void>& promise = taskPtr->GetPromise();
                     promise.SetCancelTarget(cancelable);
@@ -150,7 +129,72 @@ namespace ignite
                     return promise.GetFuture();
                 }
 
+                /**
+                 * Asyncronuously broadcasts provided ComputeFunc to all nodes
+                 * in the underlying cluster group.
+                 *
+                 * @tparam F Compute function type. Should implement
+                 *  ComputeFunc<R> class.
+                 * @tparam R Call return type. BinaryType should be specialized
+                 *  for the type if it is not primitive. Should not be void. For
+                 *  non-returning methods see Compute::Run().
+                 * @param func Compute function to call.
+                 * @return Future that can be used to acess computation result
+                 *  once it's ready.
+                 * @throw IgniteError in case of error.
+                 */
+                template<typename R, typename F>
+                Future< std::vector<R> > BroadcastAsync(const F& func)
+                {
+                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, R>(func));
+
+                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
+
+                    SingleJobComputeTaskHolder<F, R>* taskPtr = new SingleJobComputeTaskHolder<F, R>(jobHandle);
+                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
+
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::BROADCAST, jobHandle, taskHandle, func);
+
+                    common::Promise<R>& promise = taskPtr->GetPromise();
+                    promise.SetCancelTarget(cancelable);
+
+                    return promise.GetFuture();
+                }
+
             private:
+
+                /**
+                 * Perform job.
+                 *
+                 * @param operation Operation type.
+                 * @param jobHandle Job Handle.
+                 * @param taskHandle Task Handle.
+                 * @param func Function.
+                 * @return Cancelable auto pointer.
+                 */
+                template<typename F>
+                std::auto_ptr<common::Cancelable> PerformJob(Operation::Type operation, int64_t jobHandle,
+                    int64_t taskHandle, const F& func)
+                {
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(mem.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    writer.WriteInt64(taskHandle);
+                    writer.WriteInt32(1);
+                    writer.WriteInt64(jobHandle);
+                    writer.WriteObject<F>(func);
+
+                    out.Synchronize();
+
+                    jobject target = InStreamOutObject(operation, *mem.Get());
+                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+
+                    return cancelable;
+                }
+
                 IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);
             };
         }
