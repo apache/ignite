@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -63,6 +65,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static final boolean deleteAfter = true;
     private static final boolean dumpRecords = false;
 
+    private int archiveIncompleteSegmentAfterInactivityMs = 0;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -98,6 +102,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         pCfg.setWalSegmentSize(1024 * 1024);
         pCfg.setWalSegments(WAL_SEGMENTS);
         pCfg.setWalMode(WALMode.BACKGROUND);
+        if (archiveIncompleteSegmentAfterInactivityMs > 0)
+            pCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
         cfg.setPersistentStoreConfiguration(pCfg);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -141,10 +147,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             Ignite ignite0 = startGrid("node0");
             ignite0.active(true);
 
-            IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
-
-            for (int i = 0; i < recordsToWrite; i++)
-                cache0.put(i, new IgniteWalReaderTest.IndexedObject(i));
+            putDummyRecords(ignite0, recordsToWrite);
 
             stopGrid("node0");
         }
@@ -227,14 +230,50 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         }, EVT_WAL_SEGMENT_ARCHIVE_COMPLETED);
 
-        IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
-
-        int recordsToWrite = 150;
-        for (int i = 0; i < recordsToWrite; i++)
-            cache0.put(i, new IgniteWalReaderTest.IndexedObject(i));
+        putDummyRecords(ignite, 150);
 
         stopGrid("node0");
         assert evtRecorded.get();
+    }
+
+    private void putDummyRecords(Ignite ignite, int recordsToWrite) {
+        IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
+        for (int i = 0; i < recordsToWrite; i++)
+            cache0.put(i, new IndexedObject(i));
+    }
+
+    public void testArchiveIncompleteSegmentAfterInactivity() throws Exception {
+        final AtomicBoolean waitingForEvent = new AtomicBoolean();
+        final CountDownLatch archiveSegmentForInactivity = new CountDownLatch(1);
+        archiveIncompleteSegmentAfterInactivityMs = 1000;
+
+        Ignite ignite = startGrid("node0");
+        ignite.active(true);
+
+        IgniteEvents evts = ignite.events();
+        evts.localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
+                WalSegmentArchiveCompletedEvent archComplEvt = (WalSegmentArchiveCompletedEvent)e;
+                long idx = archComplEvt.getAbsWalSegmentIdx();
+                System.err.println("Finished archive for segment [" + idx + ", " +
+                    archComplEvt.getArchiveFile() + "]: [" + e + "]");
+
+                if (waitingForEvent.get())
+                    archiveSegmentForInactivity.countDown();
+                return true;
+            }
+        }, EVT_WAL_SEGMENT_ARCHIVE_COMPLETED);
+
+        putDummyRecords(ignite, 100);
+        waitingForEvent.set(true); //flag for skipping regular log() and rollOver()
+
+        System.err.println("Wait for archiving segment for inactive grid started");
+
+        boolean recordedAfterSleep =
+            archiveSegmentForInactivity.await(archiveIncompleteSegmentAfterInactivityMs + 1001, TimeUnit.MILLISECONDS);
+
+        stopGrid("node0");
+        assert recordedAfterSleep;
     }
 
     /**
@@ -248,7 +287,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         /**
          * Data filled with recognizable pattern
          */
-        byte[] data;
+        private byte[] data;
 
         /**
          * @param iVal Integer value.

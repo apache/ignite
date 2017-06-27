@@ -147,6 +147,11 @@ public class PersistentStoreConfiguration implements Serializable {
     private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
     /**
+     *  Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
+     */
+    private long walAutoArchiveAfterInactivity = -1;
+
+    /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
      */
     public String getPersistentStorePath() {
@@ -531,6 +536,28 @@ public class PersistentStoreConfiguration implements Serializable {
         this.alwaysWriteFullPages = alwaysWriteFullPages;
 
         return this;
+    }
+
+    /**
+     * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case
+     * grid is used rarely.
+     *
+     * @param walAutoArchiveAfterInactivity time in millis to run auto archiving segment (even if incomplete) after last
+     * record logging. <br> Positive value enables incomplete segment archiving after timeout (inactivity). <br> Zero or
+     * negative  value disables auto archiving.
+     * @return current configuration instance for chaining
+     */
+    public PersistentStoreConfiguration setWalAutoArchiveAfterInactivity(long walAutoArchiveAfterInactivity) {
+        this.walAutoArchiveAfterInactivity = walAutoArchiveAfterInactivity;
+
+        return this;
+    }
+
+    /**
+     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     */
+    public long getWalAutoArchiveAfterInactivity() {
+        return walAutoArchiveAfterInactivity;
     }
 
     /** {@inheritDoc} */

@@ -34,6 +34,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
@@ -177,6 +178,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile FileWriteHandle currentHnd;
 
     /**
+     * Positive (non-0) value indicates WAL can be archived even if not complete<br>
+     * See {@link PersistentStoreConfiguration#setWalAutoArchiveAfterInactivity(long)}<br>
+     */
+    private final long walAutoArchiveAfterInactivity;
+
+    /**
+     * Container with last WAL record logged timestamp.<br>
+     * Zero value means there was no records logged to current segment, skip possible archiving for this case<br>
+     * Value is filled only for case {@link #walAutoArchiveAfterInactivity} > 0<br>
+     */
+    private AtomicLong lastRecordLoggedMs = new AtomicLong();
+
+    /**
      * @param ctx Kernal context.
      */
     public FileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
@@ -194,6 +208,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         flushFreq = psCfg.getWalFlushFrequency();
         fsyncDelay = psCfg.getWalFsyncDelay();
         alwaysWriteFullPages = psCfg.isAlwaysWriteFullPages();
+        walAutoArchiveAfterInactivity = psCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
     }
 
@@ -354,9 +369,46 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }, flushFreq, flushFreq);
             }
+
+            if (psCfg.getWalAutoArchiveAfterInactivity() > 0) {
+                cctx.time().schedule(new Runnable() {
+                    @Override public void run() {
+                        checkWalRolloverRequiredDuringInactivityPeriod();
+                    }
+                }, 1000, 1000);
+            }
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Checks if there was significant period of inactivity.
+     * If WAL auto-archive is enabled using {@link #walAutoArchiveAfterInactivity} > 0 this method will activate
+     * roll over by timeout<br>
+     */
+    private void checkWalRolloverRequiredDuringInactivityPeriod() {
+        if (walAutoArchiveAfterInactivity <= 0)
+            return; // feature not configured, nothing to do
+
+        final long lastRecMs = lastRecordLoggedMs.get();
+        if (lastRecMs == 0)
+            return; //no records were logged to current segment, does not consider inactivity
+
+        if (U.currentTimeMillis() - lastRecMs <= walAutoArchiveAfterInactivity)
+            return; // not enough time elapsed since last write
+
+        if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
+            return; // record write occurred concurrently
+
+        //todo it is possible: race between rolling over current handle and logging into same handle
+        try {
+            rollOver(currentHandle());
+        }
+        catch (IgniteCheckedException e) {
+            //todo exception handling
+            e.printStackTrace();
         }
     }
 
@@ -383,6 +435,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 lastWALPtr.set(ptr);
 
+                if (walAutoArchiveAfterInactivity > 0)
+                    lastRecordLoggedMs.set(U.currentTimeMillis());
                 return ptr;
             }
 
@@ -664,6 +718,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
 
             assert swapped : "Concurrent updates on rollover are not allowed";
+
+            if (walAutoArchiveAfterInactivity > 0)
+                lastRecordLoggedMs.set(0);
 
             // Let other threads to proceed with new segment.
             hnd.signalNextAvailable();
