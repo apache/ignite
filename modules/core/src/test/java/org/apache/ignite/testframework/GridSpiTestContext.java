@@ -328,7 +328,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @SuppressWarnings("deprecation")
     public void triggerMessage(ClusterNode node, Object msg) {
         for (GridMessageListener lsnr : msgLsnrs)
-            lsnr.onMessage(node.id(), msg);
+            lsnr.onMessage(node.id(), msg, (byte)0);
     }
 
     /** {@inheritDoc} */
@@ -667,7 +667,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         @SuppressWarnings({
             "SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
             "OverlyStrongTypeCast"})
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 
             ClusterNode node = locNode;
