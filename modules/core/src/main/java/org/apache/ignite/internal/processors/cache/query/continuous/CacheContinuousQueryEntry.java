@@ -211,6 +211,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
+     * @return Primary node.
+     */
+    boolean isPrimary() {
+        return primary;
+    }
+
+    /**
      * Mark that entry filtered.
      */
     void markFiltered() {
