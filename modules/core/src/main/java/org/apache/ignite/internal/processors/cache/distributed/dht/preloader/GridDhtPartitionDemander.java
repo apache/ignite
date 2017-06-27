@@ -363,7 +363,6 @@ public class GridDhtPartitionDemander {
     /**
      * @param fut Rebalance future.
      * @param assigns Assignments.
-     * @throws IgniteCheckedException If failed.
      */
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assigns) {
         assert fut != null;
@@ -398,9 +397,9 @@ public class GridDhtPartitionDemander {
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
             final ClusterNode node = e.getKey();
 
-            final Collection<Integer> parts = fut.remaining.get(node.id()).get2();
-
             GridDhtPartitionDemandMessage d = e.getValue();
+
+            final Collection<Integer> parts = d.partitions();
 
             U.log(log, "Starting rebalancing [mode=" + cfg.getRebalanceMode() +
                 ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
