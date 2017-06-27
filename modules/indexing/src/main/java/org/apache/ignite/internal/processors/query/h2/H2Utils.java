@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Constructor;
-import java.sql.Connection;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -35,6 +29,13 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+
+import java.lang.reflect.Constructor;
+import java.sql.Connection;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * H2 utility methods.
@@ -122,7 +123,7 @@ public class H2Utils {
     }
 
     /**
-     * Generate {@code DROP INDEX} SQL statement for given params.
+     * Generate {@code CREATE INDEX} SQL statement for given params.
      * @param schemaName <b>Quoted</b> schema name.
      * @param idxName Index name.
      * @param ifExists Quietly skip index drop if it exists.

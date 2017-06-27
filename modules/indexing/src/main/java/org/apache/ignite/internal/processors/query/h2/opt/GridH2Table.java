@@ -80,6 +80,9 @@ public class GridH2Table extends TableBase {
     /** */
     private final int pkIndexPos;
 
+    /** Total number of system indexes. */
+    private final int sysIdxsNumber;
+
     /** */
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
@@ -189,6 +192,8 @@ public class GridH2Table extends TableBase {
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
         pkIndexPos = hasHashIndex ? 2 : 1;
+
+        sysIdxsNumber = idxs.size();
 
         final int segments = desc != null ? desc.context().config().getQueryParallelism() :
             // Get index segments count from PK index. Null desc can be passed from tests.
@@ -458,18 +463,23 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Override public void removeChildrenAndResources(Session ses) {
-        super.removeChildrenAndResources(ses);
+        lock(true);
 
-        // Clear metadata for all used indexes if this table was created with SQL.
-        if (desc.type().sql()) {
-            // Clear all beyond PK that is registered in schema.
-            while (idxs.size() > pkIndexPos + 1) {
-                Index idx = idxs.get(pkIndexPos + 1);
+        try {
+            super.removeChildrenAndResources(ses);
 
-                if (idx.getName() != null && idx.getSchema().findIndex(ses, idx.getName()) == idx)
+            // Clear all user indexes registered in schema.
+            while (idxs.size() > sysIdxsNumber) {
+                Index idx = idxs.get(sysIdxsNumber);
+
+                if (idx.getName() != null && idx.getSchema().findIndex(ses, idx.getName()) == idx) {
+                    // This call implicitly removes both idx and its proxy, if any, from idxs.
                     database.removeSchemaObject(ses, idx);
 
-                idxs.remove(idx);
+                    // We have to call destroy here if we are who has removed this index from the table.
+                    if (idx instanceof GridH2IndexBase)
+                        ((GridH2IndexBase)idx).destroy();
+                }
             }
 
             if (SysProperties.CHECK) {
@@ -479,11 +489,14 @@ public class GridH2Table extends TableBase {
                         DbException.throwInternalError("index not dropped: " + idx.getName());
                 }
             }
-        }
 
-        database.removeMeta(ses, getId());
-        idxs.clear();
-        invalidate();
+            database.removeMeta(ses, getId());
+            invalidate();
+
+        }
+        finally {
+            unlock(true);
+        }
     }
 
     /**

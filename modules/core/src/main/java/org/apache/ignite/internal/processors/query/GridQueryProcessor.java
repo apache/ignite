@@ -661,11 +661,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Use with {@link #busyLock} where appropriate.
      * @param cctx Cache context.
      * @param schema Initial schema.
-     * @param sql SQL flag.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"deprecation", "ThrowableResultOfMethodCallIgnored"})
-    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema, boolean sql)
+    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema)
         throws IgniteCheckedException {
 
         cctx.shared().database().checkpointReadLock();
@@ -687,7 +686,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, cctx, qryEntity, sql,
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, cctx, qryEntity,
                             mustDeserializeClss, escape);
 
                         cands.add(cand);
@@ -814,10 +813,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param schema Index states.
-     * @param sql SQL flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx, QuerySchema schema, boolean sql) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -825,7 +823,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStart0(cctx, schema, sql);
+            onCacheStart0(cctx, schema);
         }
         finally {
             busyLock.leaveBusy();
