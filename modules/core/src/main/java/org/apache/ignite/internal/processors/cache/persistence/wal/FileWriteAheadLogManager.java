@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.sql.Time;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetric
 import org.apache.ignite.internal.processors.cache.persistence.wal.event.WalSegmentArchiveCompletedEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -71,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -370,13 +373,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }, flushFreq, flushFreq);
             }
 
-            if (psCfg.getWalAutoArchiveAfterInactivity() > 0) {
-                cctx.time().schedule(new Runnable() {
-                    @Override public void run() {
-                        checkWalRolloverRequiredDuringInactivityPeriod();
-                    }
-                }, 1000, 1000);
-            }
+            if (walAutoArchiveAfterInactivity > 0)
+                scheduleNextInactivityPeriodElapsedCheck();
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
@@ -384,7 +382,40 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Checks if there was significant period of inactivity.
+     * Schedules next check of inactivity period expired. Based on current record update timestamp.
+     * At timeout method does check of inactivity period and schedules new launch.
+     */
+    private void scheduleNextInactivityPeriodElapsedCheck() {
+        final long lastRecMs = lastRecordLoggedMs.get();
+        final long nextPossibleAutoArchive = (lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs) + walAutoArchiveAfterInactivity;
+
+        if (log.isDebugEnabled())
+            log.debug("Schedule WAL rollover check at " + new Time(nextPossibleAutoArchive).toString());
+
+        cctx.time().addTimeoutObject(new GridTimeoutObject() {
+            private final IgniteUuid id = IgniteUuid.randomUuid();
+
+            @Override public IgniteUuid timeoutId() {
+                return id;
+            }
+
+            @Override public long endTime() {
+                return nextPossibleAutoArchive;
+            }
+
+            @Override public void onTimeout() {
+                if (log.isDebugEnabled())
+                    System.err.println("Checking if WAL rollover required (" + new Time(U.currentTimeMillis()).toString() + ")");
+
+                checkWalRolloverRequiredDuringInactivityPeriod();
+
+                scheduleNextInactivityPeriodElapsedCheck();
+            }
+        });
+    }
+
+    /**
+     * Checks if there was elapsed significant period of inactivity.
      * If WAL auto-archive is enabled using {@link #walAutoArchiveAfterInactivity} > 0 this method will activate
      * roll over by timeout<br>
      */
@@ -396,19 +427,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (lastRecMs == 0)
             return; //no records were logged to current segment, does not consider inactivity
 
-        if (U.currentTimeMillis() - lastRecMs <= walAutoArchiveAfterInactivity)
+        long elapsedMs = U.currentTimeMillis() - lastRecMs;
+        if (elapsedMs <= walAutoArchiveAfterInactivity)
             return; // not enough time elapsed since last write
 
         if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
             return; // record write occurred concurrently
 
-        //todo it is possible: race between rolling over current handle and logging into same handle
+        final FileWriteHandle handle = currentHandle();
         try {
-            rollOver(currentHandle());
+            rollOver(handle);
         }
         catch (IgniteCheckedException e) {
-            //todo exception handling
-            e.printStackTrace();
+            log.error("Unable to perform segment rollover: " + e.getMessage(), e);
+            handle.invalidateEnvironment(e);
         }
     }
 
@@ -418,17 +450,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
-        FileWriteHandle current = currentHandle();
+        FileWriteHandle currWrHandle = currentHandle();
 
         // Logging was not resumed yet.
-        if (current == null)
+        if (currWrHandle == null)
             return null;
 
         // Need to calculate record size first.
         record.size(serializer.size(record));
 
-        for (; ; current = rollOver(current)) {
-            WALPointer ptr = current.addRecord(record);
+        for (; ; currWrHandle = rollOver(currWrHandle)) {
+            WALPointer ptr = currWrHandle.addRecord(record);
 
             if (ptr != null) {
                 metrics.onWalRecordLogged();
@@ -437,6 +469,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 if (walAutoArchiveAfterInactivity > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
+
                 return ptr;
             }
 
@@ -1258,6 +1291,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * Moves WAL segment from work folder to archive folder.
          * Temp file is used to do movement
+         *
          * @param absIdx Absolute index to archive.
          */
         private SegmentArchiveResult archiveSegment(long absIdx) throws IgniteCheckedException {
@@ -1388,6 +1422,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * Creates file descriptor. Index is restored from file name
+         *
          * @param file WAL segment file.
          */
         public FileDescriptor(@NotNull File file) {
