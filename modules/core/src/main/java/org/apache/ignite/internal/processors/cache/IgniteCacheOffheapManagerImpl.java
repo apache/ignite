@@ -447,30 +447,32 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public void clearCache(GridCacheContext cctx, boolean readers) {
         GridCacheVersion obsoleteVer = null;
 
-        try (GridCloseableIterator<CacheDataRow> it = grp.isLocal() ?iterator(cctx.cacheId(), cacheDataStores().iterator()):
-evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
-        while (it.hasNext()) {
-            cctx.shared().database().checkpointReadLock();
+        try (GridCloseableIterator<CacheDataRow> it = grp.isLocal() ? iterator(cctx.cacheId(), cacheDataStores().iterator()) :
+            evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
+            while (it.hasNext()) {
+                cctx.shared().database().checkpointReadLock();
 
-            try {KeyCacheObject key = it.next().key();
+                try{
+                    KeyCacheObject key = it.next().key();
 
-                try {
-                    if (obsoleteVer == null)
-                        obsoleteVer = ctx.versions().next();
+                    try {
+                        if (obsoleteVer == null)
+                            obsoleteVer = ctx.versions().next();
 
-                    GridCacheEntryEx entry = cctx.cache().entryEx(key);
+                        GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
-                    entry.clear(obsoleteVer, readers);
+                        entry.clear(obsoleteVer, readers);
+                    }
+                    catch (GridDhtInvalidPartitionException ignore) {
+                        // Ignore.
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to clear cache entry: " + key, e);
+                    }
                 }
-                catch (GridDhtInvalidPartitionException ignore) {
-                    // Ignore.
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
                 }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to clear cache entry: " + key, e);
-                }
-            }
-            finally {
-                cctx.shared().database().checkpointReadUnlock();
             }
         }
         catch (IgniteCheckedException e) {
