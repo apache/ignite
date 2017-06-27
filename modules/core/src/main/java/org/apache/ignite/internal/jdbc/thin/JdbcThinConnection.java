@@ -283,7 +283,7 @@ public class JdbcThinConnection implements Connection {
     @Override public boolean isReadOnly() throws SQLException {
         ensureNotClosed();
 
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
