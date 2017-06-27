@@ -42,10 +42,12 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public OdbcQueryExecuteRequest(String schema, String sqlQry, Object[] args) {
+    public OdbcQueryExecuteRequest(@Nullable String schema, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
-        this.schema = schema.isEmpty() ? null : schema;
+        assert sqlQry != null : "SQL query should not be null";
+
+        this.schema = schema;
         this.sqlQry = sqlQry;
         this.args = args;
     }

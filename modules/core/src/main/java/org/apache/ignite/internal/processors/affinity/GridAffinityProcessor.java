@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -364,21 +365,14 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (fut != null)
             return fut.get();
 
-        ClusterNode loc = ctx.discovery().localNode();
+        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
-        // Check local node.
-        Collection<ClusterNode> cacheNodes = ctx.discovery().cacheNodes(cacheName, topVer);
-
-        if (cacheNodes.contains(loc)) {
-            GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
-
-            // Cache is being stopped.
-            if (cache == null)
-                return null;
-
+        if (cache != null) {
             GridCacheContext<Object, Object> cctx = cache.context();
 
             cctx.awaitStarted();
+
+            AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
 
             try {
                 cctx.gate().enter();
@@ -388,8 +382,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
 
             try {
-                AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
-
                 GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
                     (GridAffinityAssignment)assign0 :
                     new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
@@ -411,6 +403,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 cctx.gate().leave();
             }
         }
+
+        Collection<ClusterNode> cacheNodes = ctx.discovery().cacheNodes(cacheName, topVer);
 
         if (F.isEmpty(cacheNodes))
             return null;
@@ -443,7 +437,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             CacheMode mode = ctx.cache().cacheMode(cacheName);
 
-            assert mode != null;
+            if (mode == null) {
+                if (ctx.clientDisconnected())
+                    throw new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+                            "Failed to get affinity mapping, client disconnected.");
+
+                throw new IgniteCheckedException("No cache nodes in topology for cache name: " + cacheName);
+            }
 
             // Map all keys to a single node, if the cache mode is LOCAL.
             if (mode == LOCAL) {
