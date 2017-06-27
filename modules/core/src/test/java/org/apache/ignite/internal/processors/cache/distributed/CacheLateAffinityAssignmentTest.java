@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -168,7 +169,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (cacheC != null)
             ccfg = cacheC.apply(gridName);
         else
-            ccfg = new CacheConfiguration[]{cacheConfiguration()};
+            ccfg = new CacheConfiguration[] {cacheConfiguration()};
 
         if (ccfg != null)
             cfg.setCacheConfiguration(ccfg);
@@ -317,7 +318,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 if (gridName.equals(getTestGridName(0)))
                     return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
+                return new CacheConfiguration[] {cacheConfiguration()};
             }
         };
 
@@ -337,7 +338,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 if (gridName.equals(getTestGridName(1)))
                     return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
+                return new CacheConfiguration[] {cacheConfiguration()};
             }
         };
 
@@ -376,7 +377,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 if (gridName.equals(getTestGridName(1)) || gridName.equals(getTestGridName(2)))
                     return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
+                return new CacheConfiguration[] {cacheConfiguration()};
             }
         };
 
@@ -452,7 +453,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 if (gridName.equals(getTestGridName(0)))
                     return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
+                return new CacheConfiguration[] {cacheConfiguration()};
             }
         };
 
@@ -464,7 +465,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         int nodes = 1;
 
-        for (int i = 0;  i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             log.info("Iteration [iter=" + i + ", topVer=" + topVer + ']');
 
             topVer++;
@@ -811,7 +812,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         Ignite ignite0 = startServer(0, 1);
 
         TestRecordingCommunicationSpi spi =
-                (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
 
         blockSupplySend(spi, CACHE_NAME1);
 
@@ -919,7 +920,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             final int NODES = 5;
 
-            for (int i = 0 ; i < NODES; i++)
+            for (int i = 0; i < NODES; i++)
                 startServer(i, i + 1);
 
             int majorVer = NODES;
@@ -1081,7 +1082,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < NODES; i++) {
             TestRecordingCommunicationSpi spi =
-                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
             spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
                 @Override public boolean apply(GridIoMessage msg) {
@@ -1107,7 +1108,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 return null;
             }
         }, "stop-thread");
-
 
         latch.countDown();
 
@@ -1166,6 +1166,73 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         commSpi0.stopBlock();
 
         checkAffinity(4, topVer(4, 1), true);
+    }
+
+    /**
+     * Wait for rebalance, send affinity change message, but affinity already changed (new node joined).
+     *
+     * @throws Exception If failed.
+     */
+    public void testDelayAssignmentAffinityChanged2() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        TestTcpDiscoverySpi discoSpi0 =
+            (TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi();
+        TestRecordingCommunicationSpi commSpi0 =
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+
+        startClient(1, 2);
+
+        checkAffinity(2, topVer(2, 0), true);
+
+        startServer(2, 3);
+
+        checkAffinity(3, topVer(3, 1), false);
+
+        discoSpi0.blockCustomEvent();
+
+        stopNode(2, 4);
+
+        discoSpi0.waitCustomEvent();
+
+        blockSupplySend(commSpi0, CACHE_NAME1);
+
+        final IgniteInternalFuture<?> startedFuture = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startServer(3, 5);
+
+                return null;
+            }
+        }, 1, "server-starter");
+
+        Thread.sleep(2_000);
+
+        discoSpi0.stopBlock();
+
+        boolean started = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return startedFuture.isDone();
+            }
+        }, 10_000);
+
+        if (!started)
+            startedFuture.cancel();
+
+        assertTrue(started);
+
+        checkAffinity(3, topVer(5, 0), false);
+
+        checkNoExchange(3, topVer(5, 1));
+
+        commSpi0.stopBlock();
+
+        checkAffinity(3, topVer(5, 1), true);
+
+        List<GridDhtPartitionsExchangeFuture> exFutures = grid(3).context().cache().context().exchange().exchangeFutures();
+
+        for (GridDhtPartitionsExchangeFuture f : exFutures)
+            //Shouldn't contains staled futures.
+            assertTrue(f.topologyVersion().topologyVersion() >= 5);
     }
 
     /**
@@ -1230,7 +1297,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 if (gridName.equals(getTestGridName(1)))
                     return null;
 
-                return new CacheConfiguration[]{cacheConfiguration()};
+                return new CacheConfiguration[] {cacheConfiguration()};
             }
         };
 
@@ -1301,7 +1368,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
-                return new CacheConfiguration[]{cacheConfiguration()};
+                return new CacheConfiguration[] {cacheConfiguration()};
             }
         };
 
@@ -1317,7 +1384,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                 ccfg.setName(CACHE_NAME2);
 
-                return new CacheConfiguration[]{ccfg};
+                return new CacheConfiguration[] {ccfg};
             }
         };
 
@@ -1929,7 +1996,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite node = grid(name);
 
-        assert  node != null;
+        assert node != null;
 
         return node;
     }
@@ -1947,7 +2014,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
                 @Override public CacheConfiguration[] apply(String s) {
-                    return new CacheConfiguration[]{ccfg};
+                    return new CacheConfiguration[] {ccfg};
                 }
             };
 
@@ -2160,8 +2227,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param expNodes Expected nodes number.
      * @param topVer Topology version.
      * @param expIdeal If {@code true} expect ideal affinity assignment.
-     * @throws Exception If failed.
      * @return Affinity assignments.
+     * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
     private Map<String, List<List<ClusterNode>>> checkAffinity(int expNodes,
@@ -2257,9 +2324,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (!aff1.equals(aff2)) {
             for (int i = 0; i < aff1.size(); i++) {
                 assertEquals("Wrong affinity [node=" + node.name() +
-                    ", topVer=" + topVer +
-                    ", cache=" + cacheName +
-                    ", part=" + i + ']',
+                        ", topVer=" + topVer +
+                        ", cache=" + cacheName +
+                        ", part=" + i + ']',
                     F.nodeIds(aff1.get(i)), F.nodeIds(aff2.get(i)));
             }
 
@@ -2290,8 +2357,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      * @param idx Node index.
      * @param topVer New topology version.
-     * @throws Exception If failed.
      * @return Started node.
+     * @throws Exception If failed.
      */
     private Ignite startServer(int idx, long topVer) throws Exception {
         Ignite node = startGrid(idx);
@@ -2366,8 +2433,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param topVer Topology version.
      * @param filterByRcvd If {@code true} filters caches by 'receivedFrom' property.
      * @param cur Optional current affinity.
-     * @throws Exception If failed.
      * @return {@code True} if some primary node changed comparing to given affinity.
+     * @throws Exception If failed.
      */
     private boolean calculateAffinity(long topVer,
         boolean filterByRcvd,
@@ -2421,7 +2488,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             }
             else
                 break;
-        } while (System.currentTimeMillis() < stopTime);
+        }
+        while (System.currentTimeMillis() < stopTime);
 
         assertNotNull("Failed to find exchange future:", evt);
 
