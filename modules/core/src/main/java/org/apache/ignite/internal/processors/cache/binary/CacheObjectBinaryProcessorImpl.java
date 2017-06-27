@@ -148,8 +148,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log);
 
-            metadataFileStore.restoreMetadata();
-
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
@@ -231,6 +229,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, map);
                 }
             }
+
+            metadataFileStore.restoreMetadata();
         }
     }
 
