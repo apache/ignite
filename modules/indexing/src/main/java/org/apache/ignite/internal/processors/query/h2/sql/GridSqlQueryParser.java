@@ -438,9 +438,12 @@ public class GridSqlQueryParser {
     public static Prepared prepared(PreparedStatement stmt) {
         Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
 
-        assert cmd instanceof CommandContainer;
-
-        return PREPARED.get(cmd);
+        if (cmd instanceof CommandContainer)
+            return PREPARED.get(cmd);
+        else {
+            throw new IgniteSQLException("Unsupported query. [qry=" + stmt + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
     }
 
     /**
