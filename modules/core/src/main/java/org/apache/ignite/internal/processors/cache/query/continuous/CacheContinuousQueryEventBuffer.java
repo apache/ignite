@@ -341,7 +341,7 @@ public class CacheContinuousQueryEventBuffer {
 
                 if (e == null) {
                     if (filtered != 0) {
-                        flushEntry = filteredEntry(cntr - 1, filtered - 1, e.isPrimary());
+                        flushEntry = filteredEntry(cntr - 1, filtered - 1);
 
                         filtered = 0;
                     }
@@ -382,7 +382,7 @@ public class CacheContinuousQueryEventBuffer {
                 if (res == null)
                     res = new TreeMap<>();
 
-                CacheContinuousQueryEntry flushEntry = filteredEntry(cntr - 1, filtered - 1,false);
+                CacheContinuousQueryEntry flushEntry = filteredEntry(cntr - 1, filtered - 1);
 
                 res.put(flushEntry.updateCounter(), flushEntry);
             }
@@ -393,10 +393,9 @@ public class CacheContinuousQueryEventBuffer {
         /**
          * @param cntr Entry counter.
          * @param filtered Number of entries filtered before this entry.
-         * @param primary Flag of primary node.
          * @return Entry.
          */
-        private CacheContinuousQueryEntry filteredEntry(long cntr, long filtered, boolean primary) {
+        private CacheContinuousQueryEntry filteredEntry(long cntr, long filtered) {
             CacheContinuousQueryEntry e = new CacheContinuousQueryEntry(0,
                 null,
                 null,
@@ -404,7 +403,7 @@ public class CacheContinuousQueryEventBuffer {
                 null,
                 false,
                 part,
-                primary,
+                false,
                 cntr,
                 topVer,
                 (byte)0);
