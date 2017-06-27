@@ -188,20 +188,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (size > 0 || updCntr > 0) {
                 int state = -1;
 
-                if (beforeDestroy)
-                    state = GridDhtPartitionState.EVICTED.ordinal();
-                else {
-                    // localPartition will not acquire writeLock here because create=false.
-                    GridDhtLocalPartition part = grp.topology().localPartition(store.partId(),
-                        AffinityTopologyVersion.NONE, false);
+                if (!grp.isLocal()) {
+                    if (beforeDestroy)
+                        state = GridDhtPartitionState.EVICTED.ordinal();
+                    else {
+                        // localPartition will not acquire writeLock here because create=false.
+                        GridDhtLocalPartition part = grp.topology().localPartition(store.partId(),
+                            AffinityTopologyVersion.NONE, false);
 
-                    if (part != null && part.state() != GridDhtPartitionState.EVICTED)
-                        state = part.state().ordinal();
+                        if (part != null && part.state() != GridDhtPartitionState.EVICTED)
+                            state = part.state().ordinal();
+                    }
+
+                    // Do not save meta for evicted partitions on next checkpoints.
+                    if (state == -1)
+                        return false;
                 }
-
-                // Do not save meta for evicted partitions on next checkpoints.
-                if (state == -1)
-                    return false;
 
                 int grpId = grp.groupId();
                 long partMetaId = pageMem.partitionMetaPageId(grpId, store.partId());
@@ -227,7 +229,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         changed |= io.setGlobalRemoveId(pageAddr, rmvId);
                         changed |= io.setSize(pageAddr, size);
 
-                        changed |= io.setPartitionState(pageAddr, (byte)state);
+                        if (state != -1)
+                            changed |= io.setPartitionState(pageAddr, (byte)state);
+                        else
+                            assert grp.isLocal() : grp.cacheOrGroupName();
 
                         long cntrsPageId;
 

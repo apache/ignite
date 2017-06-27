@@ -1573,6 +1573,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal())
+                // Local cache has no partitions and its states.
+                continue;
+
             int grpId = grp.groupId();
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();

@@ -556,9 +556,6 @@ int main()
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 1024;
-
     cfg.springCfgPath = "platforms/cpp/examples/odbc-example/config/example-odbc.xml";
 
     try
@@ -632,6 +629,8 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;

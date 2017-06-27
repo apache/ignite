@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -118,8 +119,15 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg2.setIndexedTypes(Integer.class, Value.class);
 
+        CacheConfiguration ccfg3 = new CacheConfiguration();
+
+        ccfg3.setName("cache3");
+        ccfg3.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg3.setCacheMode(CacheMode.LOCAL);
+
         ignite.createCache(ccfg1);
         ignite.createCache(ccfg2);
+        ignite.createCache(ccfg3).put(2, 3);
 
         int iterations = 20;
 
@@ -139,6 +147,9 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
             ignite.getOrCreateCache(ccfg1);
 
             ignite.getOrCreateCache(ccfg2);
+
+            assertEquals(1, ignite.cache(ccfg3.getName()).size());
+            assertEquals(3, ignite.cache(ccfg3.getName()).get(2));
 
             ignite.destroyCache(ccfg2.getName());
 

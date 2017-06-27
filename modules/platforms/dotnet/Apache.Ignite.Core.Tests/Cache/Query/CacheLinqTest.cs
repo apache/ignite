@@ -553,13 +553,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var orgs = GetOrgCache().AsCacheQueryable().Where(x => x.Key > 10);
 
-            var res = persons.Join(orgs,
-                p => p.Value.OrganizationId,
-                o => o.Value.Id, (p, o) => p)
+            var qry1 = persons.Join(orgs,
+                    p => p.Value.OrganizationId,
+                    o => o.Value.Id, 
+                    (p, o) => p)
                 .Where(x => x.Key >= 0)
                 .ToList();
 
-            Assert.AreEqual(PersonCount, res.Count);
+            Assert.AreEqual(PersonCount, qry1.Count);
+
+            // With selector inline
+            var qry2 = persons
+                .Join(orgs.Select(orgEntry => orgEntry.Key),
+                    e => e.Value.OrganizationId,
+                    i => i,
+                    (e, i) => e)
+                .ToList();
+
+            Assert.AreEqual(PersonCount, qry2.Count);
+
+            // With selector from variable
+            var innerSequence = orgs
+                .Select(orgEntry => orgEntry.Key);
+
+            var qry3 = persons
+                .Join(innerSequence,
+                    e => e.Value.OrganizationId,
+                    i => i,
+                    (e, i) => e)
+                .ToList();
+
+            Assert.AreEqual(PersonCount, qry3.Count);
         }
 
         /// <summary>

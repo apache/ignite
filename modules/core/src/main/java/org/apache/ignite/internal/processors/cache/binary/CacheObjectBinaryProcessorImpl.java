@@ -107,6 +107,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private GridBinaryMarshaller binaryMarsh;
 
     /** */
+    private BinaryMetadataFileStore metadataFileStore;
+
+    /** */
     @GridToStringExclude
     private IgniteBinary binaries;
 
@@ -143,7 +146,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (ctx.clientNode())
                 ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
 
-            transport = new BinaryMetadataTransport(metadataLocCache, ctx, log);
+            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log);
+
+            metadataFileStore.restoreMetadata();
+
+            transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
                 @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
@@ -158,7 +165,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
 
                         if (oldMeta != mergedMeta)
-                            metadataLocCache.putIfAbsent(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+                            metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
 
                         return;
                     }
@@ -881,6 +888,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     log.debug("Received metadata on join: " + localHolder);
 
                 metadataLocCache.put(e.getKey(), localHolder);
+
+                if (!ctx.clientNode())
+                    metadataFileStore.saveMetadata(holder.metadata());
             }
         }
     }

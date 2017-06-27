@@ -22,10 +22,13 @@ namespace ignite
 {
     namespace odbc
     {
-        HandshakeRequest::HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder):
+        HandshakeRequest::HandshakeRequest(const ProtocolVersion& version, bool distributedJoins,
+            bool enforceJoinOrder, bool replicatedOnly, bool collocated):
             version(version),
             distributedJoins(distributedJoins),
-            enforceJoinOrder(enforceJoinOrder)
+            enforceJoinOrder(enforceJoinOrder),
+            replicatedOnly(replicatedOnly),
+            collocated(collocated)
         {
             // No-op.
         }
@@ -47,6 +50,8 @@ namespace ignite
 
             writer.WriteBool(distributedJoins);
             writer.WriteBool(enforceJoinOrder);
+            writer.WriteBool(replicatedOnly);
+            writer.WriteBool(collocated);
         }
 
         QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql, const app::ParameterSet& params):

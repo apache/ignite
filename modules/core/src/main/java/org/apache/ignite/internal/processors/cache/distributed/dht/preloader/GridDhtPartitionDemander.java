@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -258,7 +259,7 @@ public class GridDhtPartitionDemander {
         boolean force,
         int cnt,
         final Runnable next,
-        @Nullable final GridFutureAdapter<Boolean> forcedRebFut) {
+        @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
 
@@ -281,18 +282,8 @@ public class GridDhtPartitionDemander {
                 });
             }
 
-            if (forcedRebFut != null) {
-                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> future) {
-                        try {
-                            forcedRebFut.onDone(future.get());
-                        }
-                        catch (Exception e) {
-                            forcedRebFut.onDone(e);
-                        }
-                    }
-                });
-            }
+            if (forcedRebFut != null)
+                forcedRebFut.add(fut);
 
             rebalanceFut = fut;
 

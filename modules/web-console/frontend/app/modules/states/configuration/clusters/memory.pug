@@ -107,9 +107,6 @@ include /app/helpers/jade/mixins
                                         .settings-row
                                             +number('Empty pages pool size:', 'model.emptyPagesPoolSize', '"MemoryPolicyEmptyPagesPoolSize" + $index',
                                             'true', '100', '11', 'The minimal number of empty pages to be present in reuse lists for this memory policy')
-                                        .settings-row
-                                            +checkbox('Metrics enabled', 'model.metricsEnabled', '"MemoryPolicyMetricsEnabled" + $index',
-                                            'Whether memory metrics are enabled by default on node startup')
 
                                         //- Since ignite 2.1
                                         .div(ng-if='$ctrl.available("2.1.0")')
@@ -119,5 +116,9 @@ include /app/helpers/jade/mixins
                                             .settings-row
                                                 +number('Rate time interval:', 'model.rateTimeInterval', '"MemoryPolicyRateTimeInterval" + $index',
                                                     'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
+                                                
+                                        .settings-row
+                                            +checkbox('Metrics enabled', 'model.metricsEnabled', '"MemoryPolicyMetricsEnabled" + $index',
+                                            'Whether memory metrics are enabled by default on node startup')
             .col-sm-6
                 +preview-xml-java(model, 'clusterMemory')
