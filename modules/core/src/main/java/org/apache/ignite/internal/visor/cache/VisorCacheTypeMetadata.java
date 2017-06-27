@@ -32,6 +32,7 @@ import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
 import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -371,5 +372,10 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
      */
     public Map<String, LinkedHashMap<String, IgniteBiTuple<String, Boolean>>> grps() {
         return grps;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheTypeMetadata.class, this);
     }
 }
