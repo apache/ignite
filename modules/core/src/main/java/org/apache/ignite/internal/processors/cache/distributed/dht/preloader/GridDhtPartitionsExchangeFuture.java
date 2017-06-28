@@ -2172,6 +2172,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         GridCacheContext<?, ?> ctx = cctx.cacheContext(fut.key().get1());
 
+                        // TODO local future may not be completed.
                         List<List<ClusterNode>> ideal = ctx.affinity().assignment(fut.key().get2()).idealAssignment();
 
                         // Expecting same assignment from all nodes.

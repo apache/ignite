@@ -1108,8 +1108,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startServer(ord - 1, ord++);
 
-        Ignite ignite3 = startServer(ord - 1, ord++);
-
         TestRecordingCommunicationSpi spi0 =
                 (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
