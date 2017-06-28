@@ -79,7 +79,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -89,9 +88,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -652,44 +649,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testEnumOptimized() throws Exception {
-        final MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
-        ctx.registerClassName((byte)0, 1, EnumObject.class.getName());
-        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName());
-
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
-        marsh.setContext(ctx);
-        checkEnum(marsh);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEnumJdk() throws Exception {
-        final MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
-        ctx.registerClassName((byte)0, 1, EnumObject.class.getName());
-        ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName());
-
-        JdkMarshaller marsh = new JdkMarshaller();
-        marsh.setContext(ctx);
-        checkEnum(marsh);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEnumBinary() throws Exception {
+    public void testEnumWithDeclaredBody() throws Exception {
         final MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
         ctx.registerClassName((byte)0, 1, EnumObject.class.getName());
         ctx.registerClassName((byte)0, 2, DeclaredBodyEnum.class.getName());
 
         BinaryMarshaller marsh = binaryMarshaller();
         marsh.setContext(ctx);
-        checkEnum(marsh);
-    }
 
-    /** */
-    private void checkEnum(final Marshaller marsh) throws IgniteCheckedException {
         EnumObject obj = new EnumObject(1L, "test 1", DeclaredBodyEnum.TWO);
 
         final byte[] marshal = marsh.marshal(obj);

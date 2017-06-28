@@ -565,15 +565,15 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     private void checkDeclaredBodyEnum(boolean registered) throws Exception {
         startUp(registered);
 
-        cache1.put(1, DeclaredBodyEnumType.ONE);
+        cache1.put(1, DeclaredBodyEnum.ONE);
 
         if (registered) {
-            assertEquals(DeclaredBodyEnumType.ONE, cache1.get(1));
-            assertEquals(DeclaredBodyEnumType.ONE, cache2.get(1));
+            assertEquals(DeclaredBodyEnum.ONE, cache1.get(1));
+            assertEquals(DeclaredBodyEnum.ONE, cache2.get(1));
         }
 
-        validate((BinaryObject) cacheBinary1.get(1), DeclaredBodyEnumType.ONE);
-        validate((BinaryObject) cacheBinary2.get(1), DeclaredBodyEnumType.ONE);
+        validate((BinaryObject) cacheBinary1.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject) cacheBinary2.get(1), DeclaredBodyEnum.ONE);
     }
 
     /**
@@ -651,11 +651,11 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * @param obj Binary value.
      * @param val Expected value.
      */
-    private void validate(BinaryObject obj, DeclaredBodyEnumType val) {
+    private void validate(BinaryObject obj, DeclaredBodyEnum val) {
         assertTrue(obj.type().isEnum());
 
-        assertEquals(node1.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
-        assertEquals(node2.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
+        assertEquals(node1.binary().typeId(DeclaredBodyEnum.class.getName()), obj.type().typeId());
+        assertEquals(node2.binary().typeId(DeclaredBodyEnum.class.getName()), obj.type().typeId());
 
         assertEquals(val.ordinal(), obj.enumOrdinal());
     }
@@ -703,7 +703,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     /**
      * Enumeration for tests.
      */
-    public enum DeclaredBodyEnumType {
+    public enum DeclaredBodyEnum {
         ONE {
             @Override boolean isSupported() {
                 return false;
