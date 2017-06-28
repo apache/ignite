@@ -57,7 +57,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -631,71 +630,33 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         }
     }
 
-    /**
-     *
-     */
     private static class TestStoreFactory implements Factory<CacheStore> {
         /** {@inheritDoc} */
-        @Override public CacheStore create() {
-            return new CacheStoreAdapter() {
-                @Override public Object load(Object key) throws CacheLoaderException {
-                    return null;
-                }
-
-                @Override public void write(Cache.Entry entry) throws CacheWriterException {
-                    // No-op.
-                }
-
-                @Override public void delete(Object key) throws CacheWriterException {
-                    // No-op.
-                }
-            };
-        }
-    }
-
-
-/*
-    private static class TestStoreFactory implements Factory<CacheStore> {
-        */
-/** {@inheritDoc} *//*
-
         @Override public CacheStore create() {
             return new TestCacheStore();
         }
     }
 
-    */
-/**
+    /**
      *
-     *//*
-
+     */
     private static class TestCacheStore extends CacheStoreAdapter {
-        */
-/** Store map. *//*
-
+        /** Store map. */
         private static Map STORE_MAP = new ConcurrentHashMap();
 
-        */
-/** {@inheritDoc} *//*
-
+        /** {@inheritDoc} */
         @Override public Object load(Object key) throws CacheLoaderException {
             return STORE_MAP.get(key);
         }
 
-        */
-/** {@inheritDoc} *//*
-
+        /** {@inheritDoc} */
         @Override public void write(Cache.Entry entry) throws CacheWriterException {
             STORE_MAP.put(entry.getKey(), entry.getValue());
         }
 
-        */
-/** {@inheritDoc} *//*
-
+        /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
             STORE_MAP.remove(key);
         }
     }
-*/
-
 }
