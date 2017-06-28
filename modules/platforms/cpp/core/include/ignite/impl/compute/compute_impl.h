@@ -164,7 +164,6 @@ namespace ignite
                 }
 
             private:
-
                 /**
                  * Perform job.
                  *
