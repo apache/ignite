@@ -54,7 +54,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     private long dirtyPages;
 
     /** */
-    private float pageReplaceRate;
+    private float pagesReplaceRate;
 
     /** */
     private long physicalMemoryPages;
@@ -77,7 +77,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         largeEntriesPagesPercentage = m.getLargeEntriesPagesPercentage();
         pagesFillFactor = m.getPagesFillFactor();
         dirtyPages = m.getDirtyPages();
-        pageReplaceRate = m.getPagesReplaceRate();
+        pagesReplaceRate = m.getPagesReplaceRate();
         physicalMemoryPages = m.getPhysicalMemoryPages();
     }
 
@@ -134,7 +134,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
      * @return Pages per second replace rate.
      */
     public float getPagesReplaceRate() {
-        return pageReplaceRate;
+        return pagesReplaceRate;
     }
 
     /**
@@ -153,7 +153,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         out.writeFloat(largeEntriesPagesPercentage);
         out.writeFloat(pagesFillFactor);
         out.writeLong(dirtyPages);
-        out.writeFloat(pageReplaceRate);
+        out.writeFloat(pagesReplaceRate);
         out.writeLong(physicalMemoryPages);
     }
 
@@ -166,7 +166,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         largeEntriesPagesPercentage = in.readFloat();
         pagesFillFactor = in.readFloat();
         dirtyPages = in.readLong();
-        pageReplaceRate = in.readFloat();
+        pagesReplaceRate = in.readFloat();
         physicalMemoryPages = in.readLong();
     }
 

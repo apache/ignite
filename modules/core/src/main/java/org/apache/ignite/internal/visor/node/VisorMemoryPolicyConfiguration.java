@@ -81,11 +81,6 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
         emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
     }
 
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
     /**
      * Unique name of MemoryPolicy.
      */
@@ -133,6 +128,11 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
      */
     public int getEmptyPagesPoolSize() {
         return emptyPagesPoolSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */

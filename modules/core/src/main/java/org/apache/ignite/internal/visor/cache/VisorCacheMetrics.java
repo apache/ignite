@@ -166,6 +166,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Number of cache entries stored in off-heap memory. */
     private long offHeapEntriesCnt;
 
+    /** Number of primary cache entries stored in off-heap memory. */
+    private long offHeapPrimaryEntriesCnt;
+
     /** Total number of partitions on current node. */
     private int totalPartsCnt;
 
@@ -265,6 +268,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         heapEntriesCnt = m.getHeapEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
         offHeapEntriesCnt = m.getOffHeapEntriesCount();
+        offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
 
         totalPartsCnt = m.getTotalPartitionsCount();
         rebalancingPartsCnt = m.getRebalancingPartitionsCount();
@@ -586,6 +590,20 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Number of primary cache entries stored in off-heap memory.
+     */
+    public long getOffHeapPrimaryEntriesCount() {
+        return offHeapPrimaryEntriesCnt;
+    }
+
+    /**
+     * @return Number of backup cache entries stored in off-heap memory.
+     */
+    public long getOffHeapBackupEntriesCount() {
+        return offHeapEntriesCnt - offHeapPrimaryEntriesCnt;
+    }
+
+    /**
      * @return Total number of partitions on current node.
      */
     public int getTotalPartitionsCount() {
@@ -618,6 +636,11 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
      */
     public long getRebalancingBytesRate() {
         return rebalancingBytesRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -675,6 +698,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeLong(rebalancingBytesRate);
 
         out.writeObject(qryMetrics);
+
+        out.writeLong(offHeapPrimaryEntriesCnt);
     }
 
     /** {@inheritDoc} */
@@ -731,6 +756,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         rebalancingBytesRate = in.readLong();
 
         qryMetrics = (VisorQueryMetrics)in.readObject();
+
+        if (protoVer >= V2)
+            offHeapPrimaryEntriesCnt = in.readLong();
     }
 
     /** {@inheritDoc} */
