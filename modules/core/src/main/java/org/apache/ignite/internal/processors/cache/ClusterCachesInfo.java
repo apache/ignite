@@ -542,20 +542,20 @@ class ClusterCachesInfo {
                         exchangeActions.addCacheGroupToStop(grpDesc, req.destroy());
 
                         //Check that caches associated with that group will be all stopped only or all destroyed.
-                        for (ExchangeActions.ActionData data : exchangeActions.cacheStopRequests()) {
-                            if (data.descriptor().groupId() == grpDesc.groupId()) {
-                                assert data.request().destroy() == req.destroy()
+                        for (ExchangeActions.ActionData action : exchangeActions.cacheStopRequests()) {
+                            if (action.descriptor().groupId() == grpDesc.groupId()) {
+                                assert action.request().destroy() == req.destroy()
                                         : "Both cache stop only and cache destroy request associated with one group in batch "
-                                        + data.request() + " " + req;
+                                        + action.request() + " " + req;
                             }
                         }
 
                         // If all caches in group will be destroyed it is'nt necessary to do it explicitly
                         // because group will be stopped anyway.
                         if (req.destroy()) {
-                            for (ExchangeActions.ActionData data : exchangeActions.cacheStopRequests()) {
-                                if (data.descriptor().groupId() == grpDesc.groupId())
-                                    data.request().destroy(false);
+                            for (ExchangeActions.ActionData action : exchangeActions.cacheStopRequests()) {
+                                if (action.descriptor().groupId() == grpDesc.groupId())
+                                    action.request().destroy(false);
                             }
                         }
                     }

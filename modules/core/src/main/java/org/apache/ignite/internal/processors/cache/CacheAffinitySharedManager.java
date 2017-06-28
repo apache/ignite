@@ -772,10 +772,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
-        for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
-            cctx.exchange().clearClientTopology(data.descriptor().groupId());
+        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+            cctx.exchange().clearClientTopology(action.descriptor().groupId());
 
-            CacheGroupContext gctx = cctx.cache().cacheGroup(data.descriptor().groupId());
+            CacheGroupContext gctx = cctx.cache().cacheGroup(action.descriptor().groupId());
 
             if (gctx != null) {
                 IgniteCheckedException ex;
@@ -2279,14 +2279,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param exchActions Exchange actions.
          */
         void updateCachesInfo(ExchangeActions exchActions) {
-            for (ExchangeActions.CacheGroupActionData stopData : exchActions.cacheGroupsToStop()) {
-                CacheGroupDescriptor rmvd = registeredGrps.remove(stopData.descriptor().groupId());
+            for (ExchangeActions.CacheGroupActionData stopAction : exchActions.cacheGroupsToStop()) {
+                CacheGroupDescriptor rmvd = registeredGrps.remove(stopAction.descriptor().groupId());
 
-                assert rmvd != null : stopData.descriptor().cacheOrGroupName();
+                assert rmvd != null : stopAction.descriptor().cacheOrGroupName();
             }
 
-            for (ExchangeActions.CacheGroupActionData startData : exchActions.cacheGroupsToStart()) {
-                CacheGroupDescriptor old = registeredGrps.put(startData.descriptor().groupId(), startData.descriptor());
+            for (ExchangeActions.CacheGroupActionData startAction : exchActions.cacheGroupsToStart()) {
+                CacheGroupDescriptor old = registeredGrps.put(startAction.descriptor().groupId(), startAction.descriptor());
 
                 assert old == null : old;
             }

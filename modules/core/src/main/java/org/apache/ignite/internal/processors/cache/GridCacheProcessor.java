@@ -2147,24 +2147,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
+            List<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGroups = new ArrayList<>();
+
             for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-                stopCacheGroup(action.descriptor().groupId());
-            }
+                Integer groupId = action.descriptor().groupId();
 
-            if (!sharedCtx.kernalContext().clientNode()) {
-                List<IgniteBiTuple<CacheGroupContext, Boolean>> groupsToBeStopped = new ArrayList<>();
+                if (cacheGrps.containsKey(groupId)) {
+                    stopCacheGroup(groupId);
 
-                for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-                    Integer groupId = action.descriptor().groupId();
-
-                    if (!cacheGrps.containsKey(groupId))
-                        continue;
-
-                    groupsToBeStopped.add(F.t(cacheGrps.get(groupId), action.destroy()));
+                    stoppedGroups.add(F.t(cacheGrps.get(groupId), action.destroy()));
                 }
-
-                sharedCtx.database().onCacheGroupsStopped(groupsToBeStopped);
             }
+
+            if (!sharedCtx.kernalContext().clientNode())
+                sharedCtx.database().onCacheGroupsStopped(stoppedGroups);
         }
     }
 

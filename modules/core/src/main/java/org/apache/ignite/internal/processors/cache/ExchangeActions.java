@@ -358,7 +358,7 @@ public class ExchangeActions {
          * @param desc Group descriptor
          * @param destroy Destroy flag
          */
-        public CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy) {
+        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy) {
             assert desc != null;
 
             this.desc = desc;
@@ -368,7 +368,7 @@ public class ExchangeActions {
         /**
          * @param desc Group descriptor
          */
-        public CacheGroupActionData(CacheGroupDescriptor desc) {
+        CacheGroupActionData(CacheGroupDescriptor desc) {
             this(desc, false);
         }
 
