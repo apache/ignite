@@ -2000,15 +2000,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     flushOrWait(null);
 
                 try {
-
-                    if (rollOver && written < (maxSegmentSize - 1)) {
-                        final ByteBuffer allocate = ByteBuffer.allocate(
-                            RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE);
-                        allocate.put((byte)(WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal() + 1));
+                    int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE;
+                    if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
+                        //it is expected there is sufficient space for this record because rollover should run early
+                        final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
+                        buf.put((byte)(WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal() + 1));
                         final FileWALPointer pointer = new FileWALPointer(idx, (int)ch.position(), -1);
-                        RecordV1Serializer.putPosition(allocate, pointer);
-                        allocate.rewind();
-                        ch.write(allocate, written);
+                        RecordV1Serializer.putPosition(buf, pointer);
+                        buf.rewind();
+                        ch.write(buf, written);
 
                         if (mode == WALMode.DEFAULT)
                             ch.force(false);

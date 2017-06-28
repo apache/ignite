@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 
 /**
  * This exception is thrown either when we reach the end of file of WAL segment, or when we encounter
- * a record with type equal to {@code 0}.
+ * a record with type equal to {@link WALRecord.RecordType#STOP_ITERATION_RECORD_TYPE}.
  */
 public class SegmentEofException extends IgniteCheckedException {
     /** */

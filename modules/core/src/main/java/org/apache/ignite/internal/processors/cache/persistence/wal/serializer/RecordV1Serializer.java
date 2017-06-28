@@ -108,28 +108,32 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
  *     <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
  *     <li>WAL pointer to double check consistency</li>
  *     <li>Data</li>
+ *     <li>CRC or zero padding</li>
  * </ul>
  */
 public class RecordV1Serializer implements RecordSerializer {
     /** Length of Type */
     public static final int REC_TYPE_SIZE = 1;
 
-    /** Length of Pointer */
+    /** Length of WAL Pointer */
     public static final int FILE_WAL_POINTER_SIZE = 12;
 
-    /** */
-    public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + /*Magic*/8 + /*Version*/4 + /*CRC*/4;
+    /** Length of CRC value */
+    private static final int CRC_SIZE = 4;
 
     /** */
+    public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + /*Magic*/8 + /*Version*/4 + CRC_SIZE;
+
+    /** Cache shared context */
     private GridCacheSharedContext cctx;
 
-    /** */
+    /** Size of page used for PageMemory regions */
     private int pageSize;
 
-    /** */
+    /** Cache object processor to reading {@link DataEntry DataEntries} */
     private IgniteCacheObjectProcessor co;
 
-    /** */
+    /** Skip CRC calculation/check flag */
     private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
     /**
@@ -670,7 +674,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             assert res != null;
 
-            res.size((int)(in0.position() - startPos + 4)); // Account for CRC which will be read afterwards.
+            res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
 
             return res;
         }
@@ -683,7 +687,7 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
-     * Loads record from input
+     * Loads record from input, does not read CRC value
      *
      * @param in Input to read record from
      * @param expPtr expected WAL pointer for record. Used to validate actual position against expected from the file
@@ -1228,7 +1232,7 @@ public class RecordV1Serializer implements RecordSerializer {
     /** {@inheritDoc} */
     @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public int size(WALRecord record) throws IgniteCheckedException {
-        int commonFields = /* Type */1 + /* Pointer */12 + /*CRC*/4;
+        int commonFields = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
 
         switch (record.type()) {
             case PAGE_RECORD:
@@ -1387,7 +1391,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 return commonFields + /*cacheId*/ 4 + /*pageId*/ 8;
 
             case SWITCH_SEGMENT_RECORD:
-                return commonFields;
+                return commonFields - CRC_SIZE; //CRC is not loaded for switch segment, exception is thrown instead
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
