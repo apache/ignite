@@ -33,6 +33,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
+import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
+import static org.apache.ignite.cache.CachePeekMode.BACKUP;
+
 /**
  * Data transfer object for {@link IgniteCache}.
  */
@@ -41,8 +45,12 @@ public class VisorCache extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final CachePeekMode[] PEEK_NO_NEAR =
-        new CachePeekMode[] {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
+    private static final CachePeekMode[] PEEK_ONHEAP_PRIMARY =
+        new CachePeekMode[] {ONHEAP, PRIMARY};
+
+    /** */
+    private static final CachePeekMode[] PEEK_ONHEAP_BACKUP =
+        new CachePeekMode[] {ONHEAP, BACKUP};
 
     /** Cache name. */
     private String name;
@@ -102,10 +110,12 @@ public class VisorCache extends VisorDataTransferObject {
         name = ca.name();
         dynamicDeploymentId = cctx.dynamicDeploymentId();
         mode = cfg.getCacheMode();
-        size = ca.localSizeLong(PEEK_NO_NEAR);
-        primarySize = ca.primarySizeLong();
-        backupSize = size - primarySize;
+
+        primarySize = ca.localSizeLong(PEEK_ONHEAP_PRIMARY);
+        backupSize = ca.localSizeLong(PEEK_ONHEAP_BACKUP);
         nearSize = ca.nearSize();
+        size = primarySize + backupSize + nearSize;
+        
         partitions = ca.affinity().partitions();
         near = cctx.isNear();
 

@@ -170,7 +170,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
             minHeapSize = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minHeapSize = Math.min(minHeapSize, metric.getKeySize());
+                minHeapSize = Math.min(minHeapSize, metric.getHeapEntriesCount());
         }
 
         return minHeapSize;
@@ -184,7 +184,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
             avgHeapSize = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgHeapSize += metric.getKeySize();
+                avgHeapSize += metric.getHeapEntriesCount();
 
             avgHeapSize /= metrics.size();
         }
@@ -200,7 +200,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
             maxHeapSize = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxHeapSize = Math.max(maxHeapSize, metric.getKeySize());
+                maxHeapSize = Math.max(maxHeapSize, metric.getHeapEntriesCount());
         }
 
         return maxHeapSize;
