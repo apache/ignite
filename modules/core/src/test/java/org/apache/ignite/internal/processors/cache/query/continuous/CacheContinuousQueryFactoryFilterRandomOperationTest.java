@@ -583,8 +583,6 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
             assertNotNull(qryEntryEvt);
 
             assertEquals(cntr, qryEntryEvt.getPartitionUpdateCounter());
-            assertTrue(qryEntryEvt.isPrimary());
-            assertFalse(qryEntryEvt.isBackup());
         }
     }
 
