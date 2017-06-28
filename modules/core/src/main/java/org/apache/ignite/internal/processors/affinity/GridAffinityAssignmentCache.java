@@ -88,7 +88,7 @@ public class GridAffinityAssignmentCache {
     private final AtomicReference<GridAffinityAssignment> head;
 
     /** Ready futures. */
-    private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentSkipListMap<>();
 
     /** Log. */
     private final IgniteLogger log;
@@ -434,10 +434,18 @@ public class GridAffinityAssignmentCache {
      */
     public void dumpDebugInfo() {
         if (!readyFuts.isEmpty()) {
-            U.warn(log, "Pending affinity ready futures [grp=" + cacheOrGrpName + ", lastVer=" + lastVersion() + "]:");
+            U.warn(log, "First 3 pending affinity ready futures [grp=" + cacheOrGrpName +
+                ", total=" + readyFuts.size() +
+                ", lastVer=" + lastVersion() + "]:");
 
-            for (AffinityReadyFuture fut : readyFuts.values())
+            int cnt = 0;
+
+            for (AffinityReadyFuture fut : readyFuts.values()) {
                 U.warn(log, ">>> " + fut);
+
+                if (++cnt == 3)
+                    break;
+            }
         }
     }
 

@@ -154,7 +154,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
 
     /** */
-    private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
+        new ConcurrentSkipListMap<>();
 
     /** */
     private final ConcurrentSkipListMap<AffinityTopologyVersion, IgnitePair<IgniteProductVersion>> nodeVers =
@@ -1402,10 +1403,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         exchWorker.dumpExchangeDebugInfo();
 
         if (!readyFuts.isEmpty()) {
-            U.warn(diagnosticLog, "Pending affinity ready futures:");
+            U.warn(diagnosticLog, "First 5 pending affinity ready futures [total=" + readyFuts.size() + ']');
 
-            for (AffinityReadyFuture fut : readyFuts.values())
+            int cnt = 0;
+
+            for (AffinityReadyFuture fut : readyFuts.values()) {
                 U.warn(diagnosticLog, ">>> " + fut);
+
+                if (++cnt == 5)
+                    break;
+            }
         }
 
         IgniteDiagnosticPrepareContext diagCtx = cctx.kernalContext().cluster().diagnosticEnabled() ?
@@ -1775,11 +1782,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * Dump debug info.
          */
         void dumpExchangeDebugInfo() {
-            U.warn(log, "Pending exchange futures:");
+            U.warn(log, "First 10 pending exchange futures [total=" + futQ.size() + ']');
 
-            for (CachePartitionExchangeWorkerTask task: futQ) {
-                if (isExchangeTask(task))
+            int cnt = 0;
+
+            for (CachePartitionExchangeWorkerTask task : futQ) {
+                if (isExchangeTask(task)) {
                     U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
+
+                    if (++cnt == 10)
+                        break;
+                }
             }
         }
 
