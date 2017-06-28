@@ -62,8 +62,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     private static final boolean fillWalBeforeTest = true;
     private static final boolean deleteBefore = true;
-    private static final boolean deleteAfter = true;
-    private static final boolean dumpRecords = false;
+    private static final boolean deleteAfter = false;
+    private static final boolean dumpRecords = true;
 
     private int archiveIncompleteSegmentAfterInactivityMs = 0;
 
@@ -102,6 +102,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         pCfg.setWalSegmentSize(1024 * 1024);
         pCfg.setWalSegments(WAL_SEGMENTS);
         pCfg.setWalMode(WALMode.BACKGROUND);
+
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             pCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
         cfg.setPersistentStoreConfiguration(pCfg);

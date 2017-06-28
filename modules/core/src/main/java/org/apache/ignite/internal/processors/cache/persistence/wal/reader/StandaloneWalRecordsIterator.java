@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.typedef.F;
@@ -120,14 +121,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected void advanceSegment() throws IgniteCheckedException {
-        FileWriteAheadLogManager.ReadFileHandle cur0 = curHandle;
+    @Override protected FileWriteAheadLogManager.ReadFileHandle advanceSegment(
+        @Nullable final FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException {
 
-        if (cur0 != null) {
-            cur0.close();
-
-            curHandle = null;
-        }
+        if (curWalSegment != null)
+            curWalSegment.close();
 
         curIdx++;
         // curHandle.workDir is false
@@ -138,10 +136,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                     FileWriteAheadLogManager.FileDescriptor.fileName(curIdx)));
         }
         else {
-            if (walFileDescriptors.isEmpty()) {
-                curHandle = null;
-                return;
-            }
+            if (walFileDescriptors.isEmpty())
+                return null; //no files to read, stop iteration
+
             fd = walFileDescriptors.remove(0);
         }
 
@@ -150,20 +147,23 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         assert fd != null;
 
+        curRec = null;
         try {
-            curHandle = initReadHandle(fd, null);
+            return initReadHandle(fd, null);
         }
         catch (FileNotFoundException e) {
             log.info("Missing WAL segment in the archive" + e.getMessage());
-            curHandle = null;
+            return null;
         }
-        curRec = null;
     }
 
     /** {@inheritDoc} */
-    @Override protected void handleRecordException(Exception e) {
-        super.handleRecordException(e);
+    @Override protected void handleRecordException(
+        @NotNull final Exception e,
+        @Nullable final FileWALPointer ptr) {
+        super.handleRecordException(e, ptr);
         e.printStackTrace();
+        throw new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
     }
 
     /** {@inheritDoc} */
@@ -171,10 +171,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         super.onClose();
         curRec = null;
 
-        if (curHandle != null) {
-            curHandle.close();
-            curHandle = null;
-        }
+        closeCurrentWalSegment();
 
         curIdx = Integer.MAX_VALUE;
     }

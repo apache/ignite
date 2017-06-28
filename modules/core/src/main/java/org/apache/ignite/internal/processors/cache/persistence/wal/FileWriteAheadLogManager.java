@@ -2310,14 +2310,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected void onClose() throws IgniteCheckedException {
             curRec = null;
 
-            if (curHandle != null) {
-                curHandle.close();
-
-                if (curHandle.workDir)
-                    releaseWorkSegment(curIdx);
-
-                curHandle = null;
-            }
+            final ReadFileHandle handle = closeCurrentWalSegment();
+            if (handle != null && handle.workDir)
+                releaseWorkSegment(curIdx);
 
             curIdx = Integer.MAX_VALUE;
         }
@@ -2369,21 +2364,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /** {@inheritDoc} */
-        @Override protected void advanceSegment() throws IgniteCheckedException {
-            ReadFileHandle cur0 = curHandle;
+        @Override protected ReadFileHandle advanceSegment(
+            @Nullable final ReadFileHandle curWalSegment) throws IgniteCheckedException {
+            if (curWalSegment != null) {
+                curWalSegment.close();
 
-            if (cur0 != null) {
-                cur0.close();
+                if (curWalSegment.workDir)
+                    releaseWorkSegment(curWalSegment.idx);
 
-                if (cur0.workDir)
-                    releaseWorkSegment(cur0.idx);
-
-                curHandle = null;
             }
 
             // We are past the end marker.
             if (end != null && curIdx + 1 > end.index())
-                return;
+                return null; //stop iteration
 
             curIdx++;
 
@@ -2408,22 +2401,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert fd != null;
 
+            ReadFileHandle nextHandle;
             try {
-                curHandle = initReadHandle(fd, start != null && curIdx == start.index() ? start : null);
+                nextHandle = initReadHandle(fd, start != null && curIdx == start.index() ? start : null);
             }
             catch (FileNotFoundException e) {
                 if (readArchive)
                     throw new IgniteCheckedException("Missing WAL segment in the archive", e);
                 else
-                    curHandle = null;
+                    nextHandle = null;
             }
 
-            if (curHandle != null)
-                curHandle.workDir = !readArchive;
+            if (nextHandle != null)
+                nextHandle.workDir = !readArchive;
             else
                 releaseWorkSegment(curIdx);
 
             curRec = null;
+            return nextHandle;
         }
 
         /**

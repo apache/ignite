@@ -35,48 +35,62 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.record.Header
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Iterator over WAL segments.
+ * Iterator over WAL segments. This abstract class provides most functionality for reading records in log.
+ * Subclasses are to override segment switching functionality
  */
 public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>>
     implements WALIterator {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Current record preloaded, to be returned on next() */
+    /**
+     * Current record preloaded, to be returned on next()<br>
+     * Normally this should be not null because advance() method should already prepare some value
+     */
     protected IgniteBiTuple<WALPointer, WALRecord> curRec;
 
-    /** */
+    /**
+     * Current WAL segment absolute index. <br>
+     * Determined as lowest number of file at start, is changed during advance segment
+     */
     protected long curIdx = -1;
 
-    /** */
-    protected FileWriteAheadLogManager.ReadFileHandle curHandle;
+    /**
+     * Current WAL segment read file handle. To be filled by subclass advanceSegment
+     */
+    private FileWriteAheadLogManager.ReadFileHandle currWalSegment;
 
-    protected IgniteLogger log;
-
+    /** Logger */
     @NotNull
-    private GridCacheSharedContext sharedContext;
+    protected final IgniteLogger log;
 
+    /** Shared context for creating serializer of required version and grid name access */
     @NotNull
-    private RecordSerializer serializer;
+    private final GridCacheSharedContext sharedCtx;
 
+    /** Serializer of current version to read headers. */
+    @NotNull
+    private final RecordSerializer serializer;
 
-    /** */
-    private ByteBuffer buf;
+    /** Utility buffer for reading records */
+    private final ByteBuffer buf;
 
     /**
-     *  @param log
+     * @param log Logger
      * @param sharedCtx Shared context
      * @param serializer Serializer of current version to read headers.
-     * @param bufSize
+     * @param bufSize buffer for reading records size
      */
-    protected AbstractWalRecordsIterator(IgniteLogger log,
-        @NotNull GridCacheSharedContext sharedCtx,
-        @NotNull RecordSerializer serializer,
-        int bufSize) {
+    protected AbstractWalRecordsIterator(
+        @NotNull final IgniteLogger log,
+        @NotNull final GridCacheSharedContext sharedCtx,
+        @NotNull final RecordSerializer serializer,
+        final int bufSize) {
         this.log = log;
-        this.sharedContext = sharedCtx;
+        this.sharedCtx = sharedCtx;
         this.serializer = serializer;
 
         // Do not allocate direct buffer for iterator.
@@ -114,35 +128,56 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     }
 
     /**
+     * Switches records iterator to the next record. If end of segment reached, switch to new segment is called
      * @throws IgniteCheckedException If failed.
      */
     protected void advance() throws IgniteCheckedException {
         while (true) {
-            advanceRecord();
+            advanceRecord(currWalSegment);
 
             if (curRec != null)
                 return;
             else {
-                advanceSegment();
+                currWalSegment = advanceSegment(currWalSegment);
 
-                if (curHandle == null)
+                if (currWalSegment == null)
                     return;
             }
         }
     }
 
     /**
-     * Switches records iterator to the next WAL segment
-     * as result of this method, new value of {@link #curHandle} should be set up.
-     * Null for current handle means stop of iteration
-     * @throws IgniteCheckedException if reading failed
+     * Closes and returns WAL segment (if any)
+     * @return closed handle
+     * @throws IgniteCheckedException if IO failed
      */
-    protected abstract void advanceSegment() throws IgniteCheckedException;
+    @Nullable protected FileWriteAheadLogManager.ReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
+        final FileWriteAheadLogManager.ReadFileHandle walSegmentClosed = currWalSegment;
+        if (walSegmentClosed != null) {
+            walSegmentClosed.close();
+            currWalSegment = null;
+        }
+        return walSegmentClosed;
+    }
 
     /**
-     *
+     * Switches records iterator to the next WAL segment
+     * as result of this method, new reference to segment should be returned.
+     * Null for current handle means stop of iteration
+     * @throws IgniteCheckedException if reading failed
+     * @param curWalSegment current open WAL segment or null if there is no open segment yet
+     * @return new WAL segment to read or null for stop iteration
      */
-    private void advanceRecord() {
+    protected abstract FileWriteAheadLogManager.ReadFileHandle advanceSegment(
+        @Nullable final FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException;
+
+    /**
+     * Switches {@link #curRec} to new record
+     * @param curHandle currently opened read handle
+     */
+    private void advanceRecord(
+        FileWriteAheadLogManager.ReadFileHandle curHandle) {
+        FileWALPointer ptr = null;
         try {
             FileWriteAheadLogManager.ReadFileHandle hnd = curHandle;
 
@@ -151,7 +186,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
 
                 int pos = (int)hnd.in.position();
 
-                FileWALPointer ptr = new FileWALPointer(hnd.idx, pos, 0);
+                ptr = new FileWALPointer(hnd.idx, pos, 0);
 
                 WALRecord rec = ser.readRecord(hnd.in, ptr);
 
@@ -163,7 +198,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
         }
         catch (IOException | IgniteCheckedException e) {
             if (!(e instanceof SegmentEofException))
-                handleRecordException(e);
+                handleRecordException(e, ptr);
             curRec = null;
         }
     }
@@ -171,31 +206,36 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     /**
      * Handler for record deserialization exception
      * @param e problem from records reading
+     * @param ptr file pointer was accessed
      */
-    protected void handleRecordException(Exception e) {
+    protected void handleRecordException(
+        @NotNull final Exception e,
+        @Nullable final FileWALPointer ptr) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
     }
 
     /**
      * @param desc File descriptor.
-     * @param start Optional start pointer.
+     * @param start Optional start pointer. Null means read from the beginning
      * @return Initialized file handle.
      * @throws FileNotFoundException If segment file is missing.
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
-    protected FileWriteAheadLogManager.ReadFileHandle initReadHandle(FileWriteAheadLogManager.FileDescriptor desc, FileWALPointer start)
+    protected FileWriteAheadLogManager.ReadFileHandle initReadHandle(
+        @NotNull final FileWriteAheadLogManager.FileDescriptor desc,
+        @Nullable final FileWALPointer start)
         throws IgniteCheckedException, FileNotFoundException {
         try {
             RandomAccessFile rf = new RandomAccessFile(desc.file, "r");
 
             try {
-                FileChannel channel = rf.getChannel();
-                FileInput in = new FileInput(channel, buf);
+                FileChannel ch = rf.getChannel();
+                FileInput in = new FileInput(ch, buf);
 
                 // Header record must be agnostic to the serializer version.
                 WALRecord rec = serializer.readRecord(in,
-                    new FileWALPointer(desc.idx, (int)channel.position(), 0));
+                    new FileWALPointer(desc.idx, (int)ch.position(), 0));
 
                 if (rec == null)
                     return null;
@@ -205,12 +245,12 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
 
                 int ver = ((HeaderRecord)rec).version();
 
-                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedContext, ver);
+                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, ver);
 
                 if (start != null && desc.idx == start.index())
                     in.seek(start.fileOffset());
 
-                return new FileWriteAheadLogManager.ReadFileHandle(rf, desc.idx, sharedContext.igniteInstanceName(), ser, in);
+                return new FileWriteAheadLogManager.ReadFileHandle(rf, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
