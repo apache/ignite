@@ -34,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -985,7 +986,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         qryClientCache.put(key, key);
 
-        spi.latch.await();
+        spi.latch.await(5000L, TimeUnit.MILLISECONDS);
 
         stopGrid(primaryIdx, true);
 
@@ -997,7 +998,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         }, 5000L);
 
         assertEquals(this.backups, lsnr.getCntBackup().get());
-        assertEquals(1 /** lost update primary node */, lsnr.getCntPrimary().get());
+        assertEquals(SRV_NODES - this.backups, lsnr.getCntPrimary().get());
 
         cur.close();
 
