@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.jta;
 
 import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.IgniteConfiguration;
