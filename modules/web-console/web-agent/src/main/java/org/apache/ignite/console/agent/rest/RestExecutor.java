@@ -92,14 +92,18 @@ public class RestExecutor {
                 AgentClusterDemo.tryStart().await();
             }
             catch (InterruptedException ignore) {
-                throw new IllegalStateException("Failed to execute request because of embedded node for demo mode is not started yet.");
+                throw new IllegalStateException("Failed to send request because of embedded node for demo mode is not started yet.");
             }
         }
 
         String url = demo ? AgentClusterDemo.getDemoUrl() : nodeUrl;
 
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(url)
-            .newBuilder();
+        HttpUrl httpUrl = HttpUrl.parse(url);
+
+        if (httpUrl == null)
+            throw new IllegalStateException("Failed to send request because of node URL is invalid: " + url);
+
+        HttpUrl.Builder urlBuilder = httpUrl.newBuilder();
 
         if (path != null)
             urlBuilder.addPathSegment(path);
@@ -167,6 +171,8 @@ public class RestExecutor {
             return RestResult.fail(STATUS_FAILED, "Failed connect to node and execute REST command.");
         }
         catch (ConnectException ignore) {
+            log.warn("Please ensure that nodes have ignite-rest-http module in classpath (was copied from libs/optional to libs folder).");
+
             throw new ConnectException("Failed connect to node and execute REST command [url=" + urlBuilder + "]");
         }
     }

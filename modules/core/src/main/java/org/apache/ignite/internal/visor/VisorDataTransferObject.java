@@ -35,6 +35,12 @@ public abstract class VisorDataTransferObject implements Externalizable {
     /** Magic number to detect correct transfer objects. */
     private static final int MAGIC = 0x42BEEF00;
 
+    /** Version 1. */
+    protected static final byte V1 = 1;
+
+    /** Version 2. */
+    protected static final byte V2 = 2;
+
     /**
      * @param col Source collection.
      * @param <T> Collection type.
@@ -63,7 +69,7 @@ public abstract class VisorDataTransferObject implements Externalizable {
      * @return Transfer object version.
      */
     public byte getProtocolVersion() {
-        return 1;
+        return V1;
     }
 
     /**
