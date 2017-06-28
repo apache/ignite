@@ -303,6 +303,13 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Write-behind cache store write coalescing.
+     */
+    public boolean writeBehindCoalescing() {
+        return ccfg.getWriteBehindCoalescing();
+    }
+
+    /**
      * @return Interceptor class name.
      */
     public String interceptorClassName() {

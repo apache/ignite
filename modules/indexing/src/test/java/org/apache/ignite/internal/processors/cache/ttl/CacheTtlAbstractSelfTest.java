@@ -69,7 +69,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     private static final int SIZE = 11;
 
     /** */
-    private static final long DEFAULT_TIME_TO_LIVE = 2000;
+    private static final long DEFAULT_TIME_TO_LIVE = 4000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

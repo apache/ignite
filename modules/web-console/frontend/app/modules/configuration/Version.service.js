@@ -24,7 +24,7 @@ const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
 
 export default class IgniteVersion {
     /** Current product version. */
-    static ignite = '1.8.0';
+    static ignite = '1.9.0';
 
     /**
      * Tries to parse product version from it's string representation.

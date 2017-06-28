@@ -31,6 +31,7 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -104,6 +105,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
+
         startGrids(SRVS);
 
         clientMode = true;
@@ -118,6 +121,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
         super.afterTestsStopped();
     }

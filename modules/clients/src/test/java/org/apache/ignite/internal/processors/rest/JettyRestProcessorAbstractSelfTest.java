@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetada
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -702,6 +703,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Thread.sleep(2100);
 
+        waitExpired("putKey");
+
         assertNull(jcache().get("putKey"));
     }
 
@@ -732,6 +735,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals("addVal", jcache().get("addKey"));
 
         Thread.sleep(2100);
+
+        waitExpired("addKey");
 
         assertNull(jcache().get("addKey"));
     }
@@ -864,6 +869,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         // Use larger value to avoid false positives.
         Thread.sleep(2100);
+
+        waitExpired("replaceKey");
 
         assertNull(jcache().get("replaceKey"));
     }
@@ -2268,6 +2275,18 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
             return sb.toString();
         }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception Exception.
+     */
+    private void waitExpired(final Object key) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return jcache().get(key) == null;
+            }
+        }, 5000);
     }
 
     /** {@inheritDoc} */

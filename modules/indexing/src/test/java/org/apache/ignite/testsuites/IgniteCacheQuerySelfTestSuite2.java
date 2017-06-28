@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapTieredMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionedQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiThreadedSelfTest;
@@ -61,6 +62,7 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCachePartitionedQueryMultiThreadedSelfTest.class);
         suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);
         suite.addTestSuite(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class);
+        suite.addTestSuite(IgniteCacheObjectKeyIndexingSelfTest.class);
 
         return suite;
     }

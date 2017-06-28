@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
@@ -360,74 +361,108 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
         GridDhtCacheAdapter colocated = cctx.dht();
 
+        boolean offheapRead = cctx.offheapRead(expiryPlc, false);
+        boolean evt = !skipVals;
+
         while (true) {
-            GridCacheEntryEx entry;
-
             try {
-                entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
-                    colocated.peekEx(key);
+                CacheObject v = null;
+                GridCacheVersion ver = null;
 
-                // If our DHT cache do has value, then we peek it.
-                if (entry != null) {
-                    boolean isNew = entry.isNewLocked();
+                boolean skipEntry = false;
 
-                    CacheObject v = null;
-                    GridCacheVersion ver = null;
+                if (offheapRead) {
+                    GridCacheSwapEntry swapEntry = cctx.swap().readSwapEntry(key);
 
-                    if (needVer) {
-                        EntryGetResult res = entry.innerGetVersioned(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true,
-                            null);
+                    if (swapEntry != null) {
+                        long expireTime = swapEntry.expireTime();
 
-                        if (res != null) {
-                            v = res.value();
-                            ver = res.version();
+                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                            skipEntry = true;
+
+                            v = swapEntry.value();
+
+                            if (needVer)
+                                ver = swapEntry.version();
+
+                            if (evt) {
+                                cctx.events().readEvent(key,
+                                    null,
+                                    swapEntry.value(),
+                                    subjId,
+                                    taskName,
+                                    !deserializeBinary);
+                            }
+                        }
+                        else
+                            skipEntry = false;
+                    }
+                }
+
+                if (!skipEntry) {
+                    GridCacheEntryEx entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
+                        colocated.peekEx(key);
+
+                    // If our DHT cache do has value, then we peek it.
+                    if (entry != null) {
+                        boolean isNew = entry.isNewLocked();
+
+                        if (needVer) {
+                            EntryGetResult res = entry.innerGetVersioned(
+                                null,
+                                null,
+                                /*swap*/true,
+                                /*unmarshal*/true,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                true,
+                                null);
+
+                            if (res != null) {
+                                v = res.value();
+                                ver = res.version();
+                            }
+                        }
+                        else {
+                            v = entry.innerGet(
+                                null,
+                                null,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                /*temporary*/false,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                true);
+                        }
+
+                        colocated.context().evicts().touch(entry, topVer);
+
+                        if (v == null) {
+                            // Entry was not in memory or in swap, so we remove it from cache.
+                            if (isNew && entry.markObsoleteIfEmpty(ver))
+                                colocated.removeEntry(entry);
                         }
                     }
-                    else {
-                        v = entry.innerGet(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*read-through*/false,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            /*temporary*/false,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true);
-                    }
+                }
 
-                    colocated.context().evicts().touch(entry, topVer);
+                if (v != null) {
+                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                        cctx.cache().metrics0().onRead(true);
 
-                    // Entry was not in memory or in swap, so we remove it from cache.
-                    if (v == null) {
-                        if (isNew && entry.markObsoleteIfEmpty(ver))
-                            colocated.removeEntry(entry);
-                    }
-                    else {
-                        if (!skipVals && cctx.config().isStatisticsEnabled())
-                            cctx.cache().metrics0().onRead(true);
+                    if (!skipVals)
+                        setResult(v, ver);
+                    else
+                        setSkipValueResult(true, ver);
 
-                        if (!skipVals)
-                            setResult(v, ver);
-                        else
-                            setSkipValueResult(true, ver);
-
-                        return true;
-                    }
+                    return true;
                 }
 
                 boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());

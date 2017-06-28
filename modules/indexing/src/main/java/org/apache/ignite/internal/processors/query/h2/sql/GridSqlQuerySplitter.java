@@ -207,7 +207,6 @@ public class GridSqlQuerySplitter {
         // If we have distributed joins, then we have to optimize all MAP side queries
         // to have a correct join order with respect to batched joins and check if we need
         // distributed joins at all.
-        // TODO Also we need to have a list of table aliases to filter by primary or explicit partitions.
         if (distributedJoins) {
             boolean allCollocated = true;
 
@@ -220,7 +219,7 @@ public class GridSqlQuerySplitter {
                 mapSqlQry.query(parse(prepared, true).getSQL());
             }
 
-            // We do not need distributed joins if all MAP queries are colocated.
+            // We do not need distributed joins if all MAP queries are collocated.
             if (allCollocated)
                 distributedJoins = false;
         }
@@ -861,6 +860,7 @@ public class GridSqlQuerySplitter {
         if (!tblAliases.contains(tblAlias))
             return;
 
+        GridSqlType resType = col.resultType();
         String uniqueColAlias = uniqueColumnAlias(col);
         GridSqlAlias colAlias = cols.get(uniqueColAlias);
 
@@ -874,6 +874,7 @@ public class GridSqlQuerySplitter {
         col = column(uniqueColAlias);
         // col.tableAlias(wrapAlias.alias());
         col.expressionInFrom(wrapAlias);
+        col.resultType(resType);
 
         prnt.child(childIdx, col);
     }
@@ -1066,7 +1067,7 @@ public class GridSqlQuerySplitter {
         else if (qrym.type == Type.UNION) {
             // If it is not a UNION ALL, then we have to split because otherwise we can produce duplicates or
             // wrong results for UNION DISTINCT, EXCEPT, INTERSECT queries.
-            if (!qrym.needSplitChild && !qrym.unionAll)
+            if (!qrym.needSplitChild && (!qrym.unionAll || hasOffsetLimit(qrym.<GridSqlUnion>ast())))
                 qrym.needSplitChild = true;
 
             // If we have to split some child SELECT in this UNION, then we have to enforce split
@@ -1151,11 +1152,22 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param qry Query.
+     * @return {@code true} If we have OFFSET LIMIT.
+     */
+    private static boolean hasOffsetLimit(GridSqlQuery qry) {
+        return qry.limit() != null || qry.offset() != null;
+    }
+
+    /**
      * @param select Select to check.
      * @return {@code true} If we need to split this select.
      */
     private boolean needSplitSelect(GridSqlSelect select) {
         if (select.distinct())
+            return true;
+
+        if (hasOffsetLimit(select))
             return true;
 
         if (collocatedGrpBy)
@@ -1304,8 +1316,26 @@ public class GridSqlQuerySplitter {
 
         setupParameters(map, mapQry, params);
         map.columns(collectColumns(mapExps));
+        map.sortColumns(mapQry.sort());
+        map.partitioned(hasPartitionedTables(mapQry));
 
         mapSqlQrys.add(map);
+    }
+
+    /**
+     * @param ast Map query AST.
+     * @return {@code true} If the given AST has partitioned tables.
+     */
+    private static boolean hasPartitionedTables(GridSqlAst ast) {
+        if (ast instanceof GridSqlTable)
+            return ((GridSqlTable)ast).dataTable().isPartitioned();
+
+        for (int i = 0; i < ast.size(); i++) {
+            if (hasPartitionedTables(ast.child(i)))
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1333,7 +1363,7 @@ public class GridSqlQuerySplitter {
             GridSqlType t = col.resultType();
 
             if (t == null)
-                throw new NullPointerException("Column type.");
+                throw new NullPointerException("Column type: " + col);
 
             if (t == GridSqlType.UNKNOWN)
                 throw new IllegalStateException("Unknown type: " + col);
@@ -1721,12 +1751,17 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param el Expression.
+     * @param el Expression part in SELECT clause.
      * @return {@code true} If expression contains aggregates.
      */
     private static boolean hasAggregates(GridSqlAst el) {
         if (el instanceof GridSqlAggregateFunction)
             return true;
+
+        // If in SELECT clause we have a subquery expression with aggregate,
+        // we should not split it. Run the whole subquery on MAP stage.
+        if (el instanceof GridSqlSubquery)
+            return false;
 
         for (int i = 0; i < el.size(); i++) {
             if (hasAggregates(el.child(i)))

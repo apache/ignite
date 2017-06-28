@@ -50,6 +50,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -162,7 +163,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals(0, pSize);
     }
 
-    /**     * @throws Exception If failed.
+    /**
+     * @throws Exception If failed.
      */
     public void testZeroOnCreate() throws Exception {
         factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
@@ -849,8 +851,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearCreateUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -974,8 +974,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearAccess() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -1023,10 +1021,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearExpiresOnClient() throws Exception {
-        if(cacheMode() != PARTITIONED)
+        if (cacheMode() != PARTITIONED)
             return;
 
-        factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
 
         nearCache = true;
 
@@ -1054,6 +1052,49 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         // Check client NearCache.
         assertNull(cache.localPeek(key, CachePeekMode.NEAR));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearExpiresWithCacheStore() throws Exception {
+        if(cacheMode() != PARTITIONED)
+            return;
+
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
+
+        nearCache = true;
+
+        startGridsMultiThreaded(gridCount());
+
+        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+
+        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
+
+        Ignite client = startGrid("client", clientCfg);
+
+        CacheConfiguration ccfg = cacheConfiguration("testCache");
+
+        ccfg.setCacheStoreFactory(FactoryBuilder.factoryOf(GridCacheTestStore.class));
+//        ccfg.setExpiryPolicyFactory( CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
+
+        Integer key = 1;
+
+        cache.put(key, 1);
+
+        // Make entry cached in client NearCache.
+        assertEquals(1, cache.get(key));
+
+        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
+
+        waitExpired(key);
+
+        for(int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek(key, CachePeekMode.BACKUP, CachePeekMode.PRIMARY));
+
+        assertEquals(null, cache.get(key));
     }
 
     /**
@@ -1232,7 +1273,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() throws IgniteCheckedException {
-                GridCacheEntryEx entry;
+                GridCacheEntryEx entry = null;
 
                 while (true) {
                     try {

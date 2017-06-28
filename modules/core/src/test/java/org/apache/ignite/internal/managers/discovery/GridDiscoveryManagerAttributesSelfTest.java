@@ -21,14 +21,18 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
+import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
@@ -54,10 +58,10 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     private static boolean binaryMarshallerEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (igniteInstanceName.equals(getTestGridName(1)))
             cfg.setClientMode(true);
 
         if (binaryMarshallerEnabled)
@@ -258,18 +262,69 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
+        doTestCompatibilityEnabled(IGNITE_SERVICES_COMPATIBILITY_MODE, first, second, fail);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSecurityCompatibilityEnabled() throws Exception {
+        TestReconnectPluginProvider.enabled = true;
+        TestReconnectProcessor.enabled = true;
+
+        try {
+            doTestSecurityCompatibilityEnabled(true, null, true);
+            doTestSecurityCompatibilityEnabled(true, false, true);
+            doTestSecurityCompatibilityEnabled(false, true, true);
+            doTestSecurityCompatibilityEnabled(null, true, true);
+
+            doTestSecurityCompatibilityEnabled(null, null, false);
+            doTestSecurityCompatibilityEnabled(null, false, false);
+            doTestSecurityCompatibilityEnabled(false, false, false);
+            doTestSecurityCompatibilityEnabled(false, null, false);
+            doTestSecurityCompatibilityEnabled(true, true, false);
+        }
+        finally {
+            TestReconnectPluginProvider.enabled = false;
+            TestReconnectProcessor.enabled = false;
+        }
+    }
+
+    /**
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestSecurityCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
+        doTestCompatibilityEnabled(IGNITE_SECURITY_COMPATIBILITY_MODE, first, second, fail);
+    }
+
+    /**
+     * @param prop System property.
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestCompatibilityEnabled(String prop, Object first, Object second, boolean fail) throws Exception {
+        String backup = System.getProperty(prop);
         try {
             if (first != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(first));
+                System.setProperty(prop, String.valueOf(first));
             else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+                System.clearProperty(prop);
 
-            startGrid(0);
+            IgniteEx ignite = startGrid(0);
+
+            // Ignore if disabled security plugin used.
+            if (IGNITE_SECURITY_COMPATIBILITY_MODE.equals(prop) && !ignite.context().security().enabled())
+                return;
 
             if (second != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(second));
+                System.setProperty(prop, String.valueOf(second));
             else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+                System.clearProperty(prop);
 
             try {
                 startGrid(1);
@@ -284,6 +339,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
         finally {
             stopAllGrids();
+
+            if (backup != null)
+                System.setProperty(prop, backup);
+            else
+                System.clearProperty(prop);
         }
     }
 
@@ -346,8 +406,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
+        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 

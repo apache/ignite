@@ -17,8 +17,8 @@
 
 // Controller for IGFS screen.
 export default ['igfsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
-    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable, Resource, ErrorPopover, FormUtils) {
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
+    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable, Resource, ErrorPopover, FormUtils) {
         UnsavedChangesGuard.install($scope);
 
         const emptyIgfs = {empty: true};
@@ -328,15 +328,13 @@ export default ['igfsController', [
         };
 
         function _igfsNames() {
-            return _.map($scope.igfss, function(igfs) {
-                return igfs.name;
-            });
+            return _.map($scope.igfss, (igfs) => igfs.name);
         }
 
         // Clone IGFS with new name.
         $scope.cloneItem = function() {
             if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.name, _igfsNames()).then(function(newName) {
+                Input.clone($scope.backupItem.name, _igfsNames()).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;

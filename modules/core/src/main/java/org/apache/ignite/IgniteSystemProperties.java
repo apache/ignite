@@ -308,6 +308,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
 
     /**
+     * Atomic cache deferred update timeout.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT = "IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT";
+
+    /**
      * One phase commit deferred ack request timeout.
      */
     public static final String IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -552,6 +557,30 @@ public final class IgniteSystemProperties {
             return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
         }
     };
+
+    /**
+     * Use local metadata cache instead of distributed one. May be used only when binary objects schema
+     * are not modified and all classes available on each node. Classes that implements Binarylizable are
+     * not supported.
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE = "IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE";
+
+     /**
+     * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
+     * support service security permissions. In this case security permissions will be ignored
+     * (if they set).
+     * <p>
+     *     Default is {@code false}, which means that service security permissions will be respected.
+     * </p>
+     */
+    public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
+
+    /**
+     * If this property is set, a node will forcible fail a remote node when it fails to establish a communication
+     * connection.
+     */
+    public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
      * Enforces singleton.

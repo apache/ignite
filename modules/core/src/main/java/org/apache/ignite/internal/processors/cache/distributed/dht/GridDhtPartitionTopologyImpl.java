@@ -36,6 +36,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -95,6 +96,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** */
     private volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
+    /** Discovery cache. */
+    private volatile DiscoCache discoCache;
+
     /** */
     private volatile boolean stopping;
 
@@ -151,6 +155,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             rebalancedTopVer = AffinityTopologyVersion.NONE;
 
             topVer = AffinityTopologyVersion.NONE;
+
+            discoCache = cctx.discovery().discoCache();
         }
         finally {
             lock.writeLock().unlock();
@@ -210,7 +216,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             break;
                         }
-                        catch (IgniteFutureTimeoutCheckedException ignored) {
+                        catch (IgniteFutureTimeoutCheckedException ignore) {
                             if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
                                 U.warn(log, "Failed to wait for partition eviction [" +
                                     "topVer=" + topVer +
@@ -293,6 +299,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             rebalancedTopVer = AffinityTopologyVersion.NONE;
 
             topVer = exchId.topologyVersion();
+
+            discoCache = exchFut.discoCache();
         }
         finally {
             lock.writeLock().unlock();
@@ -356,7 +364,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private void initPartitions0(GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
         ClusterNode loc = cctx.localNode();
 
-        ClusterNode oldest = currentCoordinator();
+        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
@@ -481,7 +489,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (exchId.isLeft())
                 removeNode(exchId.nodeId());
 
-            ClusterNode oldest = currentCoordinator();
+            ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -882,7 +890,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         AffinityTopologyVersion topVer,
         GridDhtPartitionState state,
         GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.affinityNodes(cctx, topVer)) : null;
+        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(discoCache.cacheAffinityNodes(cctx.cacheId())) : null;
 
         lock.readLock().lock();
 
@@ -979,7 +987,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
-    @Nullable @Override public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
+    @Override public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, Long> cntrMap) {
         if (log.isDebugEnabled())
@@ -1112,7 +1120,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
+    @Override public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
         @Nullable Map<Integer, Long> cntrMap,
         boolean checkEvictions) {
@@ -1284,7 +1292,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 List<ClusterNode> affNodes = aff.get(p);
 
                 if (!affNodes.contains(cctx.localNode())) {
-                    Collection<UUID> nodeIds = F.nodeIds(nodes(p, topVer, OWNING));
+                    List<ClusterNode> nodes = nodes(p, topVer, OWNING);
+                    Collection<UUID> nodeIds = F.nodeIds(nodes);
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
@@ -1302,15 +1311,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         int affCnt = affNodes.size();
 
                         if (ownerCnt > affCnt) {
-                            List<ClusterNode> sorted = new ArrayList<>(cctx.discovery().nodes(nodeIds));
-
                             // Sort by node orders in ascending order.
-                            Collections.sort(sorted, CU.nodeComparator(true));
+                            Collections.sort(nodes, CU.nodeComparator(true));
 
-                            int diff = sorted.size() - affCnt;
+                            int diff = nodes.size() - affCnt;
 
                             for (int i = 0; i < diff; i++) {
-                                ClusterNode n = sorted.get(i);
+                                ClusterNode n = nodes.get(i);
 
                                 if (locId.equals(n.id())) {
                                     part.rent(false);
@@ -1336,17 +1343,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
-     * @return Current coordinator node.
-     */
-    @Nullable private ClusterNode currentCoordinator() {
-        ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(topVer);
-
-        assert oldest != null || cctx.kernalContext().clientNode();
-
-        return oldest;
-    }
-
-    /**
      * Updates value for single partition.
      *
      * @param p Partition.
@@ -1356,7 +1352,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private long updateLocal(int p, GridDhtPartitionState state, long updateSeq) {
-        ClusterNode oldest = currentCoordinator();
+        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         assert oldest != null || cctx.kernalContext().clientNode();
 
@@ -1421,7 +1417,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private void removeNode(UUID nodeId) {
         assert nodeId != null;
 
-        ClusterNode oldest = CU.oldest(cctx.discovery().serverNodes(topVer));
+        ClusterNode oldest = discoCache.oldestAliveServerNode();
 
         assert oldest != null;
 

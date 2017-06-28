@@ -17,8 +17,8 @@
 
 // Controller for Clusters screen.
 export default ['clustersController', [
-    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
-    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils) {
+    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
+    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils) {
         UnsavedChangesGuard.install($scope);
 
         const emptyCluster = {empty: true};
@@ -228,7 +228,8 @@ export default ['clustersController', [
             {value: 'GoogleStorage', label: 'Google cloud storage'},
             {value: 'Jdbc', label: 'JDBC'},
             {value: 'SharedFs', label: 'Shared filesystem'},
-            {value: 'ZooKeeper', label: 'Apache ZooKeeper'}
+            {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
+            {value: 'Kubernetes', label: 'Kubernetes'}
         ];
 
         $scope.swapSpaceSpis = [
@@ -774,7 +775,7 @@ export default ['clustersController', [
         // Clone cluster with new name.
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.name, _clusterNames()).then(function(newName) {
+                Input.clone($scope.backupItem.name, _clusterNames()).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;

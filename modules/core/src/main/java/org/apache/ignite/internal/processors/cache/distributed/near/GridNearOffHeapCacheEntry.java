@@ -32,15 +32,13 @@ public class GridNearOffHeapCacheEntry extends GridNearCacheEntry {
      * @param ctx   Cache context.
      * @param key   Cache key.
      * @param hash  Key hash value.
-     * @param val   Entry value.
      */
     public GridNearOffHeapCacheEntry(
         GridCacheContext ctx,
         KeyCacheObject key,
-        int hash,
-        CacheObject val
+        int hash
     ) {
-        super(ctx, key, hash, val);
+        super(ctx, key, hash);
     }
 
     /** {@inheritDoc} */

@@ -20,10 +20,16 @@ package org.apache.ignite.internal.processors.service;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
@@ -88,6 +94,75 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         assertTrue("Deploy future isn't completed", wait);
 
         fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStopDuringHangedDeployment() throws Exception {
+        final CountDownLatch depLatch = new CountDownLatch(1);
+
+        final CountDownLatch finishLatch = new CountDownLatch(1);
+
+        final IgniteEx node0 = startGrid(0);
+        final IgniteEx node1 = startGrid(1);
+        final IgniteEx node2 = startGrid(2);
+
+        final IgniteCache<Object, Object> cache = node2.getOrCreateCache(new CacheConfiguration<Object, Object>("def")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        node0.services().deployNodeSingleton("myService", new TestServiceImpl());
+
+        // Guarantee lock owner will never left topology unexpectedly.
+        final Integer lockKey = keyForNode(node2.affinity("def"), new AtomicInteger(1),
+            node2.cluster().localNode());
+
+        // Lock to hold topology version undone.
+        final Lock lock = cache.lock(lockKey);
+
+        // Try to change topology once service has deployed.
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                depLatch.await();
+
+                node1.close();
+
+                return null;
+            }
+        }, "top-change-thread");
+
+        // Stop node on unstable topology.
+        GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                depLatch.await();
+
+                Thread.sleep(1000);
+
+                node0.close();
+
+                finishLatch.countDown();
+
+                return null;
+            }
+        }, "stopping-node-thread");
+
+        assertNotNull(node0.services().service("myService"));
+
+        // Freeze topology changing
+        lock.lock();
+
+        depLatch.countDown();
+
+        boolean wait = finishLatch.await(15, TimeUnit.SECONDS);
+
+        if (!wait)
+            U.dumpThreads(log);
+
+        assertTrue("Deploy future isn't completed", wait);
+
+        fut.get();
+
+        Ignition.stopAll(true);
     }
 
     /**

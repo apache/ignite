@@ -155,7 +155,6 @@ import org.h2.result.SortOrder;
 import org.h2.server.web.WebServer;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.h2.value.DataType;
@@ -1453,7 +1452,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
 
-                    Prepared prepared = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+                    Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
                     if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
                         throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
@@ -2900,7 +2899,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
             final int segments = tbl.rowDescriptor().configuration().getQueryParallelism();
 
-            return new GridH2TreeIndex(idxName, tbl, pk, columns, segments);
+            return new GridH2TreeIndex(idxName, tbl, pk, columns, segments > 0 ? segments : 1);
         }
     }
 

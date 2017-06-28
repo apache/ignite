@@ -86,16 +86,6 @@ Promise.all([injector('settings'), injector('app'), injector('agent-manager'), i
         agentMgr.attach(server);
         browserMgr.attach(server);
 
-        // Start legacy agent server.
-        const agentServer = settings.agent.SSLOptions
-            ? https.createServer(settings.agent.SSLOptions) : http.createServer();
-
-        agentServer.listen(settings.agent.port);
-        agentServer.on('error', _onError.bind(null, settings.agent.port));
-        agentServer.on('listening', _onListening.bind(null, agentServer.address()));
-
-        agentMgr.attachLegacy(agentServer);
-
         // Used for automated test.
         if (process.send)
             process.send('running');
