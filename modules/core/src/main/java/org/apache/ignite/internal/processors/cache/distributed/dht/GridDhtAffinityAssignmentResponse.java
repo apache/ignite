@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -69,6 +70,14 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
     /** Affinity assignment bytes. */
     private byte[] idealAffAssignmentBytes;
+
+    /** */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<Integer, List<UUID>> assignmentChange;
+
+    /** Serialized assignment change. */
+    private byte[] serializedAssignmentChange;
 
     /**
      * Empty constructor.
@@ -182,6 +191,20 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         return null;
     }
 
+    /**
+     * @return Assignment change.
+     */
+    public Map<Integer, List<UUID>> assignmentChange() {
+        return assignmentChange;
+    }
+
+    /**
+     * @param assignmentChange New assignment change.
+     */
+    public void assignmentChange(Map<Integer, List<UUID>> assignmentChange) {
+        this.assignmentChange = assignmentChange;
+    }
+
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 29;
@@ -189,7 +212,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /**
@@ -208,6 +231,9 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         if (idealAffAssignment != null && idealAffAssignmentBytes == null)
             idealAffAssignmentBytes = U.marshal(ctx, idealAffAssignment);
+
+        if (assignmentChange != null && serializedAssignmentChange == null)
+            serializedAssignmentChange = U.marshal(ctx, assignmentChange);
     }
 
     /** {@inheritDoc} */
@@ -226,6 +252,9 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         if (idealAffAssignmentBytes != null && idealAffAssignment == null)
             idealAffAssignment = U.unmarshal(ctx, idealAffAssignmentBytes, ldr);
+
+        if (serializedAssignmentChange != null && assignmentChange == null)
+            assignmentChange = U.unmarshal(ctx, serializedAssignmentChange, ldr);
     }
 
     /**
@@ -307,6 +336,11 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeByteArray("serializedAssignmentChange", serializedAssignmentChange))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -355,6 +389,13 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
+            case 7:
+                serializedAssignmentChange = reader.readByteArray("serializedAssignmentChange");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtAffinityAssignmentResponse.class);

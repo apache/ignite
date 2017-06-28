@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -2033,8 +2034,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert exchId.equals(msg.exchangeId()) : msg;
 
         onDiscoveryEvent(new IgniteRunnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (isDone() || !enterBusy())
                     return;
 
@@ -2172,35 +2172,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         GridCacheContext<?, ?> ctx = cctx.cacheContext(fut.key().get1());
 
-                        // TODO local future may not be completed.
-                        List<List<ClusterNode>> ideal = ctx.affinity().assignment(fut.key().get2()).idealAssignment();
-
                         // Expecting same assignment from all nodes.
                         for (Map.Entry<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> entry : data.entrySet()) {
                             GridDhtAffinityAssignmentResponse resp = entry.getValue().get();
 
                             assert resp != null;
 
-                            List<List<ClusterNode>> tmp = resp.affinityAssignment(cctx.discovery());
+                            Map<Integer, List<UUID>> change = resp.assignmentChange();
 
-                            if (tmp == null) // Node hadn't finished exchange yet.
+                            if (change == null) // Node hadn't finished exchange yet.
                                 nodesToFix.add(ctx.discovery().node(entry.getKey()));
                             else {
-                                if (!assignmentChange.containsKey(ctx.cacheId())) {
-                                    for (int p = 0; p < ctx.affinity().partitions(); p++) {
-                                        List<ClusterNode> nodes = tmp.get(p);
-
-                                        if (!nodes.equals(ideal.get(p))) {
-                                            Map<Integer, List<UUID>> map = assignmentChange.get(ctx.cacheId());
-
-                                            if (map == null)
-                                                assignmentChange.put(ctx.cacheId(), map = U.newHashMap(nodes.size()));
-
-                                            map.put(p, F.nodeIdsCopy(nodes));
-                                        }
-                                    }
-                                }
-                                // TODO validate same assignment from all nodes.
+                                if (!assignmentChange.containsKey(ctx.cacheId()))
+                                    assignmentChange.put(ctx.cacheId(), change);
+                                // TODO else validate same assignment from all nodes.
                             }
                         }
                     } catch (IgniteCheckedException e) {
@@ -2243,8 +2228,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
 
                     if (!isDone()) {
-                        // Finish locally.
-                        onFinishExchangeMessage(cctx.localNode(), msg);
+                        // TODO caches are not started, how to start properly.
+
+                        try {
+                            cctx.affinity().initCoordinatorCaches(GridDhtPartitionsExchangeFuture.this);
+                        } catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+
+                        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
+                                crd.isLocal(),
+                                msg);
+
+                        onDone(topologyVersion());
                     }
                 }
 
