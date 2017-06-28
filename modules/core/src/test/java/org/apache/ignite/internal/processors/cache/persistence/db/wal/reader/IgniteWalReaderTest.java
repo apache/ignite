@@ -62,8 +62,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     private static final boolean fillWalBeforeTest = true;
     private static final boolean deleteBefore = true;
-    private static final boolean deleteAfter = false;
-    private static final boolean dumpRecords = true;
+    private static final boolean deleteAfter = true;
+    private static final boolean dumpRecords = false;
 
     private int archiveIncompleteSegmentAfterInactivityMs = 0;
 

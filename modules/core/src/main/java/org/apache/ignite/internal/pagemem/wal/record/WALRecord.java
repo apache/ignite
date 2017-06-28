@@ -26,7 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public abstract class WALRecord {
     /**
-     * Record type.
+     * Record type. Ordinal of this record will be written to file. <br>
+     * <b>Note:</b> Do not change order of elements <br>
      */
     public enum RecordType {
         /** */
@@ -171,6 +172,12 @@ public abstract class WALRecord {
         public static RecordType fromOrdinal(int ord) {
             return ord < 0 || ord >= VALS.length ? null : VALS[ord];
         }
+
+        /**
+         * Fake record type, causes stop iterating and segment EOF
+         * <b>Note:</b> regular record type is incremnted by 1 and minimal value written to file is also 1
+         */
+        public static final int STOP_ITERATION_RECORD_TYPE = 0;
     }
 
     /** */

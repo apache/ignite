@@ -103,10 +103,22 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
 /**
  * Record V1 serializer.
+ * Stores records in following format:
+ * <ul>
+ *     <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
+ *     <li>WAL pointer to double check consistency</li>
+ *     <li>Data</li>
+ * </ul>
  */
 public class RecordV1Serializer implements RecordSerializer {
+    /** Length of Type */
+    public static final int REC_TYPE_SIZE = 1;
+
+    /** Length of Pointer */
+    public static final int FILE_WAL_POINTER_SIZE = 12;
+
     /** */
-    public static final int HEADER_RECORD_SIZE = /*Type*/1 + /*Pointer */12 + /*Magic*/8 + /*Version*/4 + /*CRC*/4;
+    public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + /*Magic*/8 + /*Version*/4 + /*CRC*/4;
 
     /** */
     private GridCacheSharedContext cctx;
@@ -671,12 +683,16 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
-     * @param in In.
+     * Loads record from input
+     *
+     * @param in Input to read record from
+     * @param expPtr expected WAL pointer for record. Used to validate actual position against expected from the file
+     * @throws SegmentEofException if end of WAL segment reached
      */
     private WALRecord readRecord(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
         int type = in.readUnsignedByte();
 
-        if (type == 0)
+        if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
             throw new SegmentEofException("Reached logical end of the segment", null);
 
         FileWALPointer ptr = readPosition(in);
@@ -1379,10 +1395,11 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
+     * Saves position, WAL pointer (requires {@link #FILE_WAL_POINTER_SIZE} bytes)
      * @param buf Byte buffer to serialize version to.
      * @param ptr File WAL pointer to write.
      */
-    private void putPosition(ByteBuffer buf, FileWALPointer ptr) {
+    public static void putPosition(ByteBuffer buf, FileWALPointer ptr) {
         buf.putLong(ptr.index());
         buf.putInt(ptr.fileOffset());
     }

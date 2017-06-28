@@ -105,7 +105,7 @@ public final class FileInput implements ByteBufferBackedDataInput {
             int read = ch.read(buf);
 
             if (read == -1)
-                throw new EOFException("EOF at position " + ch.position());
+                throw new EOFException("EOF at position [" + ch.position() + "] expected to read [" + requested + "] bytes");
 
             available += read;
 
