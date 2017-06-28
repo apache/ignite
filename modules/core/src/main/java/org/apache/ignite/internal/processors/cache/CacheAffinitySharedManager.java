@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1625,15 +1627,34 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
 
+        final AtomicInteger cnt = new AtomicInteger();
+        final GridAtomicLong min = new GridAtomicLong(Long.MAX_VALUE);
+        final GridAtomicLong max = new GridAtomicLong(0);
+
+        long start0 = U.currentTimeMillis();
+
         if (!crd) {
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal())
                     continue;
 
+                long start = U.currentTimeMillis();
+
                 boolean latePrimary = grp.rebalanceEnabled();
 
                 initAffinityOnNodeJoin(fut, grp.affinity(), null, latePrimary, affCache);
+
+                long time = U.currentTimeMillis() - start;
+
+                cnt.incrementAndGet();
+                min.setIfLess(time);
+                max.setIfGreater(time);
             }
+
+            long time0 = U.currentTimeMillis() - start0;
+
+            log.info("initAffinityOnNodeJoin [time=" + time0 + ", grps=" + cnt +
+                ", min=" + min.get() + ", max=" + max.get() + ", avg=" + (cnt.get() > 0 ? (time0 / (float)cnt.get()) : 0) + ']');
 
             return null;
         }
@@ -1642,16 +1663,30 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
                 @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
+                    long start = U.currentTimeMillis();
+
                     CacheGroupHolder cache = groupHolder(fut, desc);
 
                     boolean latePrimary = cache.rebalanceEnabled;
 
                     initAffinityOnNodeJoin(fut, cache.affinity(), waitRebalanceInfo, latePrimary, affCache);
+
+                    long time = U.currentTimeMillis() - start;
+
+                    cnt.incrementAndGet();
+                    min.setIfLess(time);
+                    max.setIfGreater(time);
                 }
             });
 
+            long time0 = U.currentTimeMillis() - start0;
+
+            log.info("initAffinityOnNodeJoin [time=" + time0 + ", grps=" + cnt +
+                ", min=" + min.get() + ", max=" + max.get() + ", avg=" + (cnt.get() > 0 ? (time0 / (float)cnt.get()) : 0) + ']');
+
             return waitRebalanceInfo;
         }
+
     }
 
     /**
