@@ -106,7 +106,6 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     public void testNearCacheDoesNotAffectCacheSize() throws Exception {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
-
         for (int i = 0; i < 100 ; i++)
             cache0.put(i, i);
 
