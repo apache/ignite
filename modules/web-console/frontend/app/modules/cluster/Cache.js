@@ -25,26 +25,19 @@ export default class Cache {
         // Mode.
         this.mode = cache.mode;
 
-        // Memory Usage.
-        this.memorySize = cache.memorySize;
-
         // Heap.
         this.size = cache.size;
         this.primarySize = cache.primarySize;
         this.backupSize = _.isNil(cache.backupSize) ? cache.dhtSize - cache.primarySize : cache.backupSize;
         this.nearSize = cache.nearSize;
 
-        // Off-heap.
-        this.offHeapAllocatedSize = cache.offHeapAllocatedSize;
-        this.offHeapSize = cache.offHeapEntriesCount;
-        this.offHeapPrimarySize = cache.offHeapPrimaryEntriesCount || 0;
-        this.offHeapBackupSize = cache.offHeapBackupEntriesCount || 0;
-
-        // Swap.
-        this.swapSize = cache.swapSize;
-        this.swapKeys = cache.swapKeys;
-
         const m = cache.metrics;
+
+        // Off-heap.
+        this.offHeapAllocatedSize = m.offHeapAllocatedSize;
+        this.offHeapSize = m.offHeapEntriesCount;
+        this.offHeapPrimarySize = m.offHeapPrimaryEntriesCount || 0;
+        this.offHeapBackupSize = this.offHeapSize - this.offHeapPrimarySize;
 
         // Read/write metrics.
         this.hits = m.hits;

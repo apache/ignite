@@ -1269,7 +1269,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @return {@code True} if exchange triggered by server node join or fail.
      */
-    private boolean serverNodeDiscoveryEvent() {
+    public boolean serverNodeDiscoveryEvent() {
         assert discoEvt != null;
 
         return discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && !CU.clientNode(discoEvt.eventNode());
@@ -1310,16 +1310,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
        }
 
         if (err == null && realExchange) {
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (grp.isLocal())
-                    continue;
+            if (centralizedAff) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (grp.isLocal())
+                        continue;
 
-                try {
-                    if (centralizedAff)
+                    try {
                         grp.topology().initPartitions(this);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    U.error(log, "Failed to initialize partitions.", e);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        U.error(log, "Failed to initialize partitions.", e);
+                    }
                 }
             }
 
@@ -1336,9 +1337,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            if (discoEvt.type() == EVT_NODE_LEFT ||
+            if (serverNodeDiscoveryEvent() &&
+                (discoEvt.type() == EVT_NODE_LEFT ||
                 discoEvt.type() == EVT_NODE_FAILED ||
-                discoEvt.type() == EVT_NODE_JOINED)
+                discoEvt.type() == EVT_NODE_JOINED))
                 detectLostPartitions();
 
             long start = U.currentTimeMillis();

@@ -1014,14 +1014,21 @@ public class PageMemoryImpl implements PageMemoryEx {
     @Override public long loadedPages() {
         long total = 0;
 
-        for (Segment seg : segments) {
-            seg.readLock().lock();
+        Segment[] segments = this.segments;
 
-            try {
-                total += seg.loadedPages.size();
-            }
-            finally {
-                seg.readLock().unlock();
+        if (segments != null) {
+            for (Segment seg : segments) {
+                if (seg == null)
+                    break;
+
+                seg.readLock().lock();
+
+                try {
+                    total += seg.loadedPages.size();
+                }
+                finally {
+                    seg.readLock().unlock();
+                }
             }
         }
 
