@@ -19,7 +19,7 @@
 #define _IGNITE_ODBC_QUERY_DATA_QUERY
 
 #include "ignite/odbc/query/query.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/cursor.h"
 
 namespace ignite
@@ -46,7 +46,7 @@ namespace ignite
                  * @param params SQL params.
                  */
                 DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                    const std::string& sql, const app::ParameterBindingMap& params);
+                    const std::string& sql, const app::ParameterSet& params);
 
                 /**
                  * Destructor.
@@ -122,23 +122,31 @@ namespace ignite
                  * Make query execute request and use response to set internal
                  * state.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 SqlResult MakeRequestExecute();
 
                 /**
                  * Make query close request.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 SqlResult MakeRequestClose();
 
                 /**
                  * Make data fetch request and use response to set internal state.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 SqlResult MakeRequestFetch();
+
+                /**
+                 * Close query.
+                 * Non-virtual implementation.
+                 *
+                 * @return True on success.
+                 */
+                SqlResult InternalClose();
 
                 /** Connection associated with the statement. */
                 Connection& connection;
@@ -147,7 +155,7 @@ namespace ignite
                 std::string sql;
 
                 /** Parameter bindings. */
-                const app::ParameterBindingMap& params;
+                const app::ParameterSet& params;
 
                 /** Columns metadata. */
                 meta::ColumnMetaVector resultMeta;

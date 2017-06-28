@@ -92,7 +92,7 @@ public class HadoopOffheapBuffer {
      * @return Old position pointer or {@code 0} if move goes beyond the end of the buffer.
      */
     public long move(long size) {
-        assert size > 0 : size;
+        assert size >= 0 : size;
 
         long oldPos = posPtr;
         long newPos = oldPos + size;

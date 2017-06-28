@@ -191,6 +191,9 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
 
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        sysClss.add(BinaryTreeMap.class.getName());
+
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());
             sysClss.add(TreeSet.class.getName());
@@ -603,6 +606,7 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
@@ -655,6 +659,7 @@ public class BinaryContext {
      * @param userType User type or not.
      * @param typeId Type ID.
      * @param ldr Class loader.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
@@ -710,6 +715,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
@@ -750,6 +756,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
@@ -922,7 +929,7 @@ public class BinaryContext {
      * @param typeId Type ID.
      * @return Instance of ID mapper.
      */
-    public BinaryInternalMapper userTypeMapper(int typeId) {
+    BinaryInternalMapper userTypeMapper(int typeId) {
         BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
         return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
@@ -932,7 +939,7 @@ public class BinaryContext {
      * @param clsName Type name.
      * @return Instance of ID mapper.
      */
-    private BinaryInternalMapper userTypeMapper(String clsName) {
+    BinaryInternalMapper userTypeMapper(String clsName) {
         BinaryInternalMapper mapper = cls2Mappers.get(clsName);
 
         if (mapper != null)
