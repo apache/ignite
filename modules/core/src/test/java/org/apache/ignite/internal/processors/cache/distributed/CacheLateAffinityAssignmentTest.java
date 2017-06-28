@@ -1227,11 +1227,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(3, topVer(5, 1), true);
 
+        long nodeJoinTopVer = grid(3).context().discovery().localJoinEvent().topologyVersion();
+
+        assertEquals(5, nodeJoinTopVer);
+
         List<GridDhtPartitionsExchangeFuture> exFutures = grid(3).context().cache().context().exchange().exchangeFutures();
 
         for (GridDhtPartitionsExchangeFuture f : exFutures)
             //Shouldn't contains staled futures.
-            assertTrue(f.topologyVersion().topologyVersion() >= 5);
+            assertTrue(f.topologyVersion().topologyVersion() >= nodeJoinTopVer);
     }
 
     /**
