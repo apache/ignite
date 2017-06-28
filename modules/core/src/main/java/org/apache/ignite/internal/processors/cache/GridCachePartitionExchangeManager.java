@@ -1643,6 +1643,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
+        int affDumpCnt = 0;
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
@@ -1654,8 +1656,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             GridAffinityAssignmentCache aff = grp.affinity();
 
-            if (aff != null)
-                aff.dumpDebugInfo();
+            if (aff != null && affDumpCnt < 5) {
+                if (aff.dumpDebugInfo())
+                    affDumpCnt++;
+            }
         }
     }
 
