@@ -27,6 +27,7 @@
 #include <ignite/common/promise.h>
 #include <ignite/impl/interop/interop_target.h>
 #include <ignite/impl/compute/single_job_compute_task_holder.h>
+#include <ignite/impl/compute/multiple_job_compute_task_holder.h>
 #include <ignite/impl/compute/cancelable_impl.h>
 
 #include <ignite/ignite_error.h>
@@ -150,14 +151,14 @@ namespace ignite
 
                     int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
 
-                    SingleJobComputeTaskHolder<F, R>* taskPtr = new SingleJobComputeTaskHolder<F, R>(jobHandle);
+                    MultipleJobComputeTaskHolder<F, R>* taskPtr = new MultipleJobComputeTaskHolder<F, R>(jobHandle);
                     common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
 
                     int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
 
                     std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::BROADCAST, jobHandle, taskHandle, func);
 
-                    common::Promise<R>& promise = taskPtr->GetPromise();
+                    common::Promise< std::vector<R> >& promise = taskPtr->GetPromise();
                     promise.SetCancelTarget(cancelable);
 
                     return promise.GetFuture();

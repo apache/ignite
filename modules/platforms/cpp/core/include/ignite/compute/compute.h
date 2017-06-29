@@ -189,7 +189,7 @@ namespace ignite
              * @throw IgniteError in case of error.
              */
             template<typename R, typename F>
-            std::vector<R> BroadcastAsync(const F& func)
+            Future< std::vector<R> > BroadcastAsync(const F& func)
             {
                 return impl.Get()->BroadcastAsync<R, F>(func);
             }

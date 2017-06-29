@@ -56,7 +56,10 @@ namespace ignite
                  * @param handle Job handle.
                  */
                 MultipleJobComputeTaskHolder(int64_t handle) :
-                    ComputeTaskHolder(handle)
+                    ComputeTaskHolder(handle),
+                    result(new std::vector<ResultType>()),
+                    error(),
+                    promise()
                 {
                     // No-op.
                 }
@@ -120,7 +123,7 @@ namespace ignite
                  *
                  * @return Reference to result promise.
                  */
-                common::Promise<ResultType>& GetPromise()
+                common::Promise< std::vector<ResultType> >& GetPromise()
                 {
                     return promise;
                 }
@@ -136,19 +139,19 @@ namespace ignite
                     const IgniteError& err = res.GetError();
 
                     if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
-                        result.push_back(res.GetResult());
+                        result->push_back(res.GetResult());
                     else
                         error = err;
                 }
 
                 /** Result. */
-                std::vector<ResultType> result;
+                std::auto_ptr< std::vector<ResultType> > result;
 
                 /** Error. */
                 IgniteError error;
 
                 /** Task result promise. */
-                common::Promise<ResultType> promise;
+                common::Promise< std::vector<ResultType> > promise;
             };
 
             /**
