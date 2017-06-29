@@ -447,32 +447,36 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public void clearCache(GridCacheContext cctx, boolean readers) {
         GridCacheVersion obsoleteVer = null;
 
-        GridIterator<CacheDataRow> it = iterator(cctx.cacheId(), cacheDataStores().iterator());
+        try (GridCloseableIterator<CacheDataRow> it = grp.isLocal() ? iterator(cctx.cacheId(), cacheDataStores().iterator()) :
+            evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
+            while (it.hasNext()) {
+                cctx.shared().database().checkpointReadLock();
 
-        while (it.hasNext()) {
-            cctx.shared().database().checkpointReadLock();
+                try{
+                    KeyCacheObject key = it.next().key();
 
-            try {
-                KeyCacheObject key = it.next().key();
+                    try {
+                        if (obsoleteVer == null)
+                            obsoleteVer = ctx.versions().next();
 
-                try {
-                    if (obsoleteVer == null)
-                        obsoleteVer = ctx.versions().next();
+                        GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
-                    GridCacheEntryEx entry = cctx.cache().entryEx(key);
-
-                    entry.clear(obsoleteVer, readers);
+                        entry.clear(obsoleteVer, readers);
+                    }
+                    catch (GridDhtInvalidPartitionException ignore) {
+                        // Ignore.
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to clear cache entry: " + key, e);
+                    }
                 }
-                catch (GridDhtInvalidPartitionException ignore) {
-                    // Ignore.
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to clear cache entry: " + key, e);
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
                 }
             }
-            finally {
-                cctx.shared().database().checkpointReadUnlock();
-            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to close iterator", e);
         }
     }
 
@@ -614,7 +618,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param dataIt Data store iterator.
      * @return Rows iterator
      */
-    private GridIterator<CacheDataRow> iterator(final int cacheId, final Iterator<CacheDataStore> dataIt) {
+    private GridCloseableIterator<CacheDataRow> iterator(final int cacheId, final Iterator<CacheDataStore> dataIt) {
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
             private GridCursor<? extends CacheDataRow> cur;
@@ -660,6 +664,99 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 }
 
                 return next != null;
+            }
+        };
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param dataIt Data store iterator.
+     * @return Rows iterator
+     */
+    private GridCloseableIterator<CacheDataRow> evictionSafeIterator(final int cacheId, final Iterator<CacheDataStore> dataIt) {
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** */
+            private GridCursor<? extends CacheDataRow> cur;
+
+            /** */
+            private GridDhtLocalPartition curPart;
+
+            /** */
+            private CacheDataRow next;
+
+            @Override protected CacheDataRow onNext() {
+                CacheDataRow res = next;
+
+                next = null;
+
+                return res;
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (next != null)
+                    return true;
+
+                while (true) {
+                    if (cur == null) {
+                        if (dataIt.hasNext()) {
+                            CacheDataStore ds = dataIt.next();
+
+                            if (!reservePartition(ds.partId()))
+                                continue;
+
+                            cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                        }
+                        else
+                            break;
+                    }
+
+                    if (cur.next()) {
+                        next = cur.get();
+                        next.key().partition(curPart.id());
+
+                        break;
+                    }
+                    else {
+                        cur = null;
+
+                        releaseCurrentPartition();
+                    }
+                }
+
+                return next != null;
+            }
+
+            /** */
+            private void releaseCurrentPartition() {
+                GridDhtLocalPartition p = curPart;
+
+                assert p != null;
+
+                curPart = null;
+
+                p.release();
+            }
+
+            /**
+             * @param partId Partition number.
+             * @return {@code True} if partition was reserved.
+             */
+            private boolean reservePartition(int partId) {
+                GridDhtLocalPartition p = grp.topology().localPartition(partId);
+
+                if (p != null && p.reserve()) {
+                    curPart = p;
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() throws IgniteCheckedException {
+                if (curPart != null)
+                    releaseCurrentPartition();
             }
         };
     }

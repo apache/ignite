@@ -24,11 +24,10 @@
                 button.close(type='button' aria-label='Close' ng-click='$hide()')
                      svg(ignite-icon="cross")
             .modal-body.agent-download
-                p Please download and run #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] to use this functionality
-                p To start:
-                ul
-                    li Download and unzip #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] archive
-                    li Run shell file #[b ignite-web-agent.{sh|bat}]
+                p Please download and run #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] to use this functionality:
+                    ul
+                        li Download and unzip #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] archive
+                        li Run shell file #[b ignite-web-agent.{sh|bat}]
                 p Refer to #[b README.txt] in the ignite-web-agent folder for more information.
                 .modal-advanced-options
                     i.fa(ng-class='showToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"' ng-click='showToken = !showToken')
