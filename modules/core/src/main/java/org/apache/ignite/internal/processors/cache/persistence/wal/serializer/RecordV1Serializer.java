@@ -1413,7 +1413,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
-    private FileWALPointer readPosition(DataInput in) throws IOException {
+    public static FileWALPointer readPosition(DataInput in) throws IOException {
         long idx = in.readLong();
         int fileOffset = in.readInt();
 

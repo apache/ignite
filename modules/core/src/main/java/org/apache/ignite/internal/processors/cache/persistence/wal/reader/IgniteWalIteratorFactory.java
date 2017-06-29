@@ -62,14 +62,26 @@ public class IgniteWalIteratorFactory {
 
     /**
      * Creates iterator for file by file scan mode.
-     * This method may be used also for archive folder (not for work).
-     * In this mode only provided WAL segments will be scanned, new WAL files will be ignored
+     * This method may be used only for archive folder (not for work).
+     * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored
      * @param files files to scan. Order it not important, but is significant to provide all segments without omissions
      * @return closable WAL records iterator, should be closed when non needed
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iteratorArchiveFiles(@NotNull final File ...files) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), files);
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), false, files);
+    }
+
+    /**
+     * Creates iterator for file by file scan mode.
+     * This method may be used for work folder, file indexes are scanned from the file context.
+     * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored.
+     * @param files files to scan. Order it not important, but is significant to provide all segments without omissions
+     * @return closable WAL records iterator, should be closed when non needed
+     * @throws IgniteCheckedException if failed to read files
+     */
+    public WALIterator iteratorWorkFiles(@NotNull final File ...files) throws IgniteCheckedException {
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), true, files);
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,13 +58,14 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLET
  */
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
-    private static final int WAL_SEGMENTS = 2;
+    private static final int WAL_SEGMENTS = 10;
     private static final String CACHE_NAME = "cache0";
 
     private static final boolean fillWalBeforeTest = true;
     private static final boolean deleteBefore = true;
     private static final boolean deleteAfter = true;
     private static final boolean dumpRecords = false;
+    public static final int PAGE_SIZE = 4 * 1024;
 
     private int archiveIncompleteSegmentAfterInactivityMs = 0;
 
@@ -84,7 +86,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
 
-        dbCfg.setPageSize(4 * 1024);
+        dbCfg.setPageSize(PAGE_SIZE);
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
@@ -143,12 +145,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalAndReadRecords() throws Exception {
-        int recordsToWrite = 10000;
+        int cacheObjectsToWrite = 10000;
         if (fillWalBeforeTest) {
             Ignite ignite0 = startGrid("node0");
             ignite0.active(true);
 
-            putDummyRecords(ignite0, recordsToWrite);
+            putDummyRecords(ignite0, cacheObjectsToWrite);
 
             stopGrid("node0");
         }
@@ -156,52 +158,70 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         File db = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
         File wal = new File(db, "wal");
         File walArchive = new File(wal, "archive");
-        int pageSize = 1024 * 4;
         String consistentId = "127_0_0_1_47500";
-        MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, pageSize, consistentId, WAL_SEGMENTS);
+        MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, PAGE_SIZE, consistentId, WAL_SEGMENTS);
         WALIterator it = mockItFactory.iterator(wal, walArchive);
 
-        int cnt = 0;
-        while (it.hasNextX()) {
-            IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
-            if (dumpRecords)
-                System.out.println("Record: " + next.get2());
-            cnt++;
-        }
-        System.out.println("Total records loaded " + cnt);
-        assert cnt > 0;
+        int cntUsingMockIter = iterateAndCount(it);
+        System.out.println("Total records loaded " + cntUsingMockIter);
+        assert cntUsingMockIter > 0;
+        assert cntUsingMockIter > cacheObjectsToWrite;
 
         final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
+        final File walWorkDirWithConsistentId = new File(wal, consistentId);
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, pageSize);
-        int cnt2 = 0;
-        try (WALIterator stIt = factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId)) {
-            while (stIt.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-                if (dumpRecords)
-                    System.out.println("Arch. Record: " + next.get2());
-                cnt2++;
-            }
-        }
-        System.out.println("Total records loaded2: " + cnt2);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE);
+        int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
+        System.out.println("Total records loaded using directory : " + cntArchiveDir);
 
-        int cnt3 = 0;
-        File[] files = walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
-        try (WALIterator stIt = factory.iteratorArchiveFiles(files)) {
-            while (stIt.hasNextX()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
-                if (dumpRecords)
-                    System.out.println("Arch. Record: " + next.get2());
-                cnt3++;
-            }
-        }
-        System.out.println("Total records loaded3: " + cnt3);
+        int cntArchiveFileByFile = iterateAndCount(
+            factory.iteratorArchiveFiles(
+                walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER)));
+        System.out.println("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
 
-        assert cnt3 > recordsToWrite;
-        assert cnt2 > recordsToWrite;
-        assert cnt2 == cnt3;
+        assert cntArchiveFileByFile > cacheObjectsToWrite;
+        assert cntArchiveDir > cacheObjectsToWrite;
+        assert cntArchiveDir == cntArchiveFileByFile;
         //really count2 may be less because work dir correct loading is not supported yet
-        assert cnt >= cnt2 : "Mock based reader loaded " + cnt + " records but standalone has loaded only " + cnt2;
+        assert cntUsingMockIter >= cntArchiveDir
+            : "Mock based reader loaded " + cntUsingMockIter + " records but standalone has loaded only " + cntArchiveDir;
+
+
+        File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+        int cntWork = 0;
+        try (WALIterator stIt = factory.iteratorWorkFiles(workFiles)) {
+            while (stIt.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
+                if (dumpRecords)
+                    System.out.println("Work. Record: " + next.get2());
+                cntWork++;
+            }
+        }
+        System.out.println("Total records loaded from work: " + cntWork);
+
+        assert cntWork + cntArchiveFileByFile == cntUsingMockIter
+            : "Work iterator loaded [" + cntWork + "] " +
+            "Archive iterator loaded [" + cntArchiveFileByFile + "]; " +
+            "mock iterator [" + cntUsingMockIter + "]";
+
+    }
+
+    /**
+     * @param walIter iterator to count, will be closed
+     * @return count of records
+     * @throws IgniteCheckedException if failed to iterate
+     */
+    private int iterateAndCount(WALIterator walIter) throws IgniteCheckedException {
+        int cntUsingMockIter = 0;
+        try(WALIterator it = walIter) {
+            while (it.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+                if (dumpRecords)
+                    System.out.println("Record: " + next.get2());
+                cntUsingMockIter++;
+            }
+        }
+        return cntUsingMockIter;
     }
 
     /**
@@ -277,17 +297,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         assert recordedAfterSleep;
     }
 
-    /**
-     *
-     */
+    /** Test object for placing into grid in this test */
     private static class IndexedObject {
         /** */
         @QuerySqlField(index = true)
         private int iVal;
 
-        /**
-         * Data filled with recognizable pattern
-         */
+        /** Data filled with recognizable pattern */
         private byte[] data;
 
         /**
@@ -305,18 +321,21 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
-
-            if (!(o instanceof IgniteWalReaderTest.IndexedObject))
+            if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgniteWalReaderTest.IndexedObject that = (IgniteWalReaderTest.IndexedObject)o;
+            IndexedObject object = (IndexedObject)o;
 
-            return iVal == that.iVal;
+            if (iVal != object.iVal)
+                return false;
+            return Arrays.equals(data, object.data);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return iVal;
+            int result = iVal;
+            result = 31 * result + Arrays.hashCode(data);
+            return result;
         }
 
         /** {@inheritDoc} */

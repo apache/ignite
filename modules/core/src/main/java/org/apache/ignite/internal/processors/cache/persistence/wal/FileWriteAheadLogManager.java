@@ -1433,7 +1433,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param file WAL segment file.
          * @param idx Absolute WAL segment file index. For null value index is restored from file name
          */
-        private FileDescriptor(@NotNull File file, @Nullable Long idx) {
+        public FileDescriptor(@NotNull File file, @Nullable Long idx) {
             this.file = file;
 
             String fileName = file.getName();
@@ -1502,10 +1502,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return (int)(idx ^ (idx >>> 32));
         }
 
+        /**
+         * @return Absolute WAL segment file index
+         */
         public long getIdx() {
             return idx;
         }
 
+        /**
+         * @return absolute pathname string of this file descriptor pathname.
+         */
         public String getAbsolutePath() {
             return file.getAbsolutePath();
         }

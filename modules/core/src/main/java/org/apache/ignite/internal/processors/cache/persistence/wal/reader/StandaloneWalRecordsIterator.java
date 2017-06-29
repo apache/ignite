@@ -17,21 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
+import java.io.DataInput;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 
 /**
  * WAL reader iterator, for creation in standalone WAL reader tool
@@ -59,6 +71,13 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     private List<FileWriteAheadLogManager.FileDescriptor> walFileDescriptors;
 
     /**
+     * True if this iterator used for work dir, false for archive.
+     * In work dir mode exceptions come from record reading are ignored (file may be not completed).
+     * Index of file is taken from file itself, not from file name
+     */
+    private boolean workDir;
+
+    /**
      * Creates iterator in directory scan mode
      *
      * @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
@@ -73,7 +92,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
             BUF_SIZE);
-        init(walFilesDir, null);
+        init(walFilesDir, false, null);
         advance();
     }
 
@@ -82,17 +101,20 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      *
      * @param log Logger.
      * @param sharedCtx Shared context.
+     * @param workDir Work directory is scanned, false - archive
      * @param walFiles Wal files.
      */
     StandaloneWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
+        final boolean workDir,
         @NotNull final File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
             BUF_SIZE);
-        init(null, walFiles);
+        this.workDir = workDir;
+        init(null, workDir, walFiles);
         advance();
     }
 
@@ -101,23 +123,73 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * for file by file mode, converts all files to descriptors and gets oldest as initial.
      *
      * @param walFilesDir directory for directory scan mode
+     * @param workDir work directory, only for file-by-file mode
      * @param walFiles files for file-by-file iteration mode
      */
-    private void init(@Nullable final File walFilesDir, @Nullable final File[] walFiles) throws IgniteCheckedException {
+    private void init(
+        @Nullable final File walFilesDir,
+        final boolean workDir,
+        @Nullable final File[] walFiles) throws IgniteCheckedException {
         if (walFilesDir != null) {
             FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walFilesDir);
             curIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
             this.walFilesDir = walFilesDir;
+            this.workDir = false;
         }
         else {
-            FileWriteAheadLogManager.FileDescriptor[] descs = FileWriteAheadLogManager.scan(walFiles);
-            walFileDescriptors = new ArrayList<>(Arrays.asList(descs));
+            this.workDir = workDir;
+            if (workDir)
+                walFileDescriptors = scanIndexesFromFileHeaders(walFiles);
+            else
+                walFileDescriptors = new ArrayList<>(Arrays.asList(FileWriteAheadLogManager.scan(walFiles)));
             curIdx = !walFileDescriptors.isEmpty() ? walFileDescriptors.get(0).getIdx() : 0;
         }
         curIdx--;
 
         if (log.isDebugEnabled())
             log.debug("Initialized WAL cursor [curIdx=" + curIdx + ']');
+    }
+
+    /**
+     * This methods checks all provided files to be correct WAL segment.
+     * Header record and its position is checked. WAL position is used to deremine real index.
+     * File index from file name is ignored.
+     *
+     * @param allFiles files to scan
+     * @return list of file descriptors with checked header records, file index is set
+     * @throws IgniteCheckedException if IO error occurs
+     */
+    private List<FileWriteAheadLogManager.FileDescriptor> scanIndexesFromFileHeaders(
+        @Nullable final File[] allFiles) throws IgniteCheckedException {
+        if (allFiles == null || allFiles.length == 0)
+            return Collections.emptyList();
+
+        List<FileWriteAheadLogManager.FileDescriptor> resultingDescs = new ArrayList<>();
+        for (File file : allFiles) {
+            if (file.length() < HEADER_RECORD_SIZE)
+                continue;
+            FileWALPointer ptr;
+            try (RandomAccessFile rf = new RandomAccessFile(file, "r");) {
+                FileChannel ch = rf.getChannel();
+                ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
+                buf.order(ByteOrder.nativeOrder());
+                DataInput in = new FileInput(ch, buf);
+                // Header record must be agnostic to the serializer version.
+                int type = in.readUnsignedByte();
+                if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
+                    throw new SegmentEofException("Reached logical end of the segment", null);
+                ptr = RecordV1Serializer.readPosition(in);
+
+                // System.err.println("Loaded pointer [" + ptr + "]");
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to scan index from file [" + file + "]", e);
+            }
+
+            resultingDescs.add(new FileWriteAheadLogManager.FileDescriptor(file, ptr.index()));
+        }
+        Collections.sort(resultingDescs);
+        return resultingDescs;
     }
 
     /** {@inheritDoc} */
@@ -152,7 +224,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             return initReadHandle(fd, null);
         }
         catch (FileNotFoundException e) {
-            log.info("Missing WAL segment in the archive" + e.getMessage());
+            log.info("Missing WAL segment in the archive: " + e.getMessage());
             return null;
         }
     }
@@ -162,8 +234,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
         super.handleRecordException(e, ptr);
-        e.printStackTrace();
-        throw new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
+        RuntimeException ex = new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
+        ex.printStackTrace();
+        if (!workDir)
+            throw ex;
     }
 
     /** {@inheritDoc} */
