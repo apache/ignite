@@ -1369,28 +1369,43 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @param cacheExists Cache exists flag.
      * @param clientCache {@code True} if client node has client cache.
      * @param clientNear {@code True} if client node has near-enabled client cache.
+     * @throws Exception If failed.
      */
     private void checkCacheDiscoveryData(Ignite srv,
         Ignite client,
-        String cacheName,
+        final String cacheName,
         boolean cacheExists,
-        boolean clientCache,
-        boolean clientNear) {
-        GridDiscoveryManager srvDisco = ((IgniteKernal)srv).context().discovery();
+        final boolean clientCache,
+        boolean clientNear) throws Exception {
+        final GridDiscoveryManager srvDisco = ((IgniteKernal)srv).context().discovery();
         GridDiscoveryManager clientDisco = ((IgniteKernal)client).context().discovery();
 
         ClusterNode srvNode = ((IgniteKernal)srv).localNode();
-        ClusterNode clientNode = ((IgniteKernal)client).localNode();
+        final ClusterNode clientNode = ((IgniteKernal)client).localNode();
 
         assertFalse(srvDisco.cacheAffinityNode(clientNode, cacheName));
         assertFalse(clientDisco.cacheAffinityNode(clientNode, cacheName));
 
         assertEquals(cacheExists, srvDisco.cacheAffinityNode(srvNode, cacheName));
 
-        if (clientNear)
+        if (clientNear) {
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return srvDisco.cacheNearNode(clientNode, cacheName);
+                }
+            }, 5000));
+
             assertTrue(srvDisco.cacheNearNode(clientNode, cacheName));
-        else
+        }
+        else {
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return F.eq(clientCache, srvDisco.cacheClientNode(clientNode, cacheName));
+                }
+            }, 5000));
+
             assertEquals(clientCache, srvDisco.cacheClientNode(clientNode, cacheName));
+        }
 
         assertEquals(cacheExists, clientDisco.cacheAffinityNode(srvNode, cacheName));
 

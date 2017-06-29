@@ -69,14 +69,10 @@ public class DiscoCache {
 
     /** Affinity cache nodes by cache name. */
     @GridToStringInclude
-    private final Map<Integer, List<ClusterNode>> affCacheNodes;
+    private final Map<Integer, List<ClusterNode>> cacheGrpAffNodes;
 
     /** Node map. */
     private final Map<UUID, ClusterNode> nodeMap;
-
-    /** Caches where at least one node has near cache enabled. */
-    @GridToStringInclude
-    private final Set<Integer> nearEnabledCaches;
 
     /** Alive nodes. */
     private final Set<UUID> alives = new GridConcurrentHashSet<>();
@@ -91,9 +87,8 @@ public class DiscoCache {
      * @param allNodesWithCaches All nodes with at least one cache configured.
      * @param rmtNodesWithCaches Remote nodes with at least one cache configured.
      * @param allCacheNodes Cache nodes by cache name.
-     * @param affCacheNodes Affinity cache nodes by cache name.
+     * @param cacheGrpAffNodes Affinity nodes by cache group ID.
      * @param nodeMap Node map.
-     * @param nearEnabledCaches Caches where at least one node has near cache enabled.
      * @param alives Alive nodes.
      */
     DiscoCache(ClusterNode loc,
@@ -105,9 +100,8 @@ public class DiscoCache {
         List<ClusterNode> allNodesWithCaches,
         List<ClusterNode> rmtNodesWithCaches,
         Map<Integer, List<ClusterNode>> allCacheNodes,
-        Map<Integer, List<ClusterNode>> affCacheNodes,
+        Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
-        Set<Integer> nearEnabledCaches,
         Set<UUID> alives) {
         this.loc = loc;
         this.rmtNodes = rmtNodes;
@@ -118,9 +112,8 @@ public class DiscoCache {
         this.allNodesWithCaches = allNodesWithCaches;
         this.rmtNodesWithCaches = rmtNodesWithCaches;
         this.allCacheNodes = allCacheNodes;
-        this.affCacheNodes = affCacheNodes;
+        this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        this.nearEnabledCaches = nearEnabledCaches;
         this.alives.addAll(alives);
     }
 
@@ -235,35 +228,11 @@ public class DiscoCache {
     }
 
     /**
-     * Gets all nodes that have cache with given ID and should participate in affinity calculation. With
-     * partitioned cache nodes with near-only cache do not participate in affinity node calculation.
-     *
-     * @param cacheName Cache name.
-     * @return Collection of nodes.
+     * @param grpId Cache group ID.
+     * @return All nodes that participate in affinity calculation.
      */
-    public List<ClusterNode> cacheAffinityNodes(@Nullable String cacheName) {
-        return cacheAffinityNodes(CU.cacheId(cacheName));
-    }
-
-    /**
-     * Gets all nodes that have cache with given ID and should participate in affinity calculation. With
-     * partitioned cache nodes with near-only cache do not participate in affinity node calculation.
-     *
-     * @param cacheId Cache ID.
-     * @return Collection of nodes.
-     */
-    public List<ClusterNode> cacheAffinityNodes(int cacheId) {
-        return emptyIfNull(affCacheNodes.get(cacheId));
-    }
-
-    /**
-     * Checks if cache with given ID has at least one node with near cache enabled.
-     *
-     * @param cacheId Cache ID.
-     * @return {@code True} if cache with given name has at least one node with near cache enabled.
-     */
-    public boolean hasNearCache(int cacheId) {
-        return nearEnabledCaches.contains(cacheId);
+    public List<ClusterNode> cacheGroupAffinityNodes(int grpId) {
+        return emptyIfNull(cacheGrpAffNodes.get(grpId));
     }
 
     /**

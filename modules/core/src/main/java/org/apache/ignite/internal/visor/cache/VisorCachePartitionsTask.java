@@ -124,7 +124,7 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<VisorCacheParti
                     for (GridDhtLocalPartition part : locParts) {
                         int p = part.id();
 
-                        long sz = part.dataStore().size();
+                        long sz = part.dataStore().cacheSize(ca.context().cacheId());
 
                         // Pass NONE as topology version in order not to wait for topology version.
                         if (part.primary(AffinityTopologyVersion.NONE))

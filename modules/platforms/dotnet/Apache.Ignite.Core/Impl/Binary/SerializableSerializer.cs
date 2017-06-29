@@ -87,11 +87,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos)
+        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
         {
             object res;
             var ctx = GetStreamingContext(reader);
-            var callbackPushed = false;
+
+            var type = typeOverride ?? desc.Type;
 
             // Read additional information from raw part, if flag is set.
             IEnumerable<string> fieldNames;
@@ -120,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (customType != null)
                 {
                     // Custom type is present, which returns original type via IObjectReference.
-                    var serInfo = ReadSerializationInfo(reader, fieldNames, desc, dotNetFields);
+                    var serInfo = ReadSerializationInfo(reader, fieldNames, type, dotNetFields);
 
                     res = ReadAsCustomType(customType, serInfo, ctx);
 
@@ -129,30 +130,29 @@ namespace Apache.Ignite.Core.Impl.Binary
                     reader.AddHandle(pos, res);
 
                     DeserializationCallbackProcessor.Push(res);
-                    callbackPushed = true;
                 }
                 else
                 {
-                    res = FormatterServices.GetUninitializedObject(desc.Type);
+                    res = FormatterServices.GetUninitializedObject(type);
 
                     _serializableTypeDesc.OnDeserializing(res, ctx);
 
                     DeserializationCallbackProcessor.Push(res);
-                    callbackPushed = true;
 
                     reader.AddHandle(pos, res);
 
                     // Read actual data and call constructor.
-                    var serInfo = ReadSerializationInfo(reader, fieldNames, desc, dotNetFields);
+                    var serInfo = ReadSerializationInfo(reader, fieldNames, type, dotNetFields);
                     _serializableTypeDesc.SerializationCtorUninitialized(res, serInfo, ctx);
                 }
 
                 _serializableTypeDesc.OnDeserialized(res, ctx);
+                DeserializationCallbackProcessor.Pop();
             }
-            finally
+            catch (Exception)
             {
-                if (callbackPushed)
-                    DeserializationCallbackProcessor.Pop();
+                DeserializationCallbackProcessor.Clear();
+                throw;
             }
 
             return (T) res;
@@ -538,9 +538,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Reads the serialization information.
         /// </summary>
         private static SerializationInfo ReadSerializationInfo(BinaryReader reader, 
-            IEnumerable<string> fieldNames, IBinaryTypeDescriptor desc, ICollection<int> dotNetFields)
+            IEnumerable<string> fieldNames, Type type, ICollection<int> dotNetFields)
         {
-            var serInfo = new SerializationInfo(desc.Type, new FormatterConverter());
+            var serInfo = new SerializationInfo(type, new FormatterConverter());
 
             if (dotNetFields == null)
             {

@@ -932,6 +932,13 @@ public interface GridCacheEntryEx {
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
+     * Ensures that the value stored in the entry is also inserted in the indexing.
+     *
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public void ensureIndexed() throws GridCacheEntryRemovedException, IgniteCheckedException;
+
+    /**
      * @return Value.
      * @throws IgniteCheckedException If failed to read from swap storage.
      * @throws GridCacheEntryRemovedException If entry was removed.

@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -121,6 +122,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 
         /** Echo type: IgniteUuid. */
         private const int EchoTypeIgniteUuid = 22;
+
+        /** Echo type: binary enum (created with builder). */
+        private const int EchoTypeBinaryEnum = 23;
 
         /** */
         private const string DefaultCacheName = "default";
@@ -872,9 +876,29 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskBinarizable()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
+            var values = new[] {int.MinValue, int.MaxValue, 0, 1, -1, byte.MaxValue, byte.MinValue};
+            var cache = _grid1.GetCache<int, int>(DefaultCacheName);
+            var compute = _grid1.GetCompute();
 
-            Assert.AreEqual(1, res.Field);
+            foreach (var val in values)
+            {
+                cache[EchoTypeBinarizable] = val;
+
+                var res = compute.ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
+                Assert.AreEqual(val, res.Field);
+
+                // Binary mode.
+                var binRes = compute.WithKeepBinary().ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinarizable);
+
+                Assert.AreEqual(val, binRes.GetField<long>("Field"));
+
+                var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
+
+                Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
+
+                Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
+                Assert.AreEqual(getData(dotNetBin), getData(binRes));
+            }
         }
 
         /// <summary>
@@ -934,6 +958,28 @@ namespace Apache.Ignite.Core.Tests.Compute
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnum);
 
             Assert.AreEqual(PlatformComputeEnum.Bar, res);
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskBinaryEnum()
+        {
+            var res = _grid1.GetCompute().WithKeepBinary()
+                .ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinaryEnum);
+
+            Assert.AreEqual("JavaFoo", res.EnumName);
+            Assert.AreEqual(1, res.EnumValue);
+
+            var binType = res.GetBinaryType();
+
+            Assert.IsTrue(binType.IsEnum);
+            Assert.AreEqual("JavaDynEnum", binType.TypeName);
+
+            var vals = binType.GetEnumValues().OrderBy(x => x.EnumValue).ToArray();
+            Assert.AreEqual(new[] {1, 2}, vals.Select(x => x.EnumValue));
+            Assert.AreEqual(new[] {"JavaFoo", "JavaBar"}, vals.Select(x => x.EnumName));
         }
 
         /// <summary>
@@ -1260,11 +1306,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExceptions()
         {
-            Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+            Assert.Throws<AggregateException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
 
-            Assert.Throws<BinaryObjectException>(
+            Assert.Throws<AggregateException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+
+            // Local.
+            var ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.", 
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
+
+            // Remote.
+            ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
         }
 
         /// <summary>
@@ -1465,6 +1531,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
+    class ExceptionalComputeAction : IComputeAction
+    {
+        public const string ErrorText = "Expected user exception";
+
+        public void Invoke()
+        {
+            throw new OverflowException(ErrorText);
+        }
+    }
+
     interface IUserInterface<out T>
     {
         T Invoke();
@@ -1506,7 +1582,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum PlatformComputeEnum
+    public enum PlatformComputeEnum : ushort
     {
         Foo,
         Bar,

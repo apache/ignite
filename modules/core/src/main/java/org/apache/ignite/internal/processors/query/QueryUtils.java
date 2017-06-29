@@ -17,7 +17,22 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -25,35 +40,23 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
 import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor;
 import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -62,15 +65,23 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * Utility methods for queries.
  */
 public class QueryUtils {
+    /** Default schema. */
+    public static final String DFLT_SCHEMA = "PUBLIC";
 
     /** Field name for key. */
-    public static final String KEY_FIELD_NAME = "_key";
+    public static final String KEY_FIELD_NAME = "_KEY";
 
     /** Field name for value. */
-    public static final String VAL_FIELD_NAME = "_val";
+    public static final String VAL_FIELD_NAME = "_VAL";
 
     /** Version field name. */
-    public static final String VER_FIELD_NAME = "_ver";
+    public static final String VER_FIELD_NAME = "_VER";
+
+    /** Well-known template name for PARTITIONED cache. */
+    public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
+
+    /** Well-known template name for REPLICATED cache. */
+    public static final String TEMPLATE_REPLICÄTED = "REPLICATED";
 
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
@@ -106,8 +117,14 @@ public class QueryUtils {
     public static String tableName(QueryEntity entity) {
         String res = entity.getTableName();
 
-        if (res == null)
+        if (res == null) {
+            String valTyp = entity.findValueType();
+
+            if (valTyp == null)
+                throw new IgniteException("Value type cannot be null or empty [queryEntity=" + entity + ']');
+
             res = typeName(entity.findValueType());
+        }
 
         return res;
     }
@@ -161,17 +178,180 @@ public class QueryUtils {
     }
 
     /**
+     * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
+     * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
+     *
+     * @param entity Query entity.
+     * @param escape Escape flag taken form configuration.
+     * @return Normalized query entity.
+     */
+    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+        if (escape) {
+            String tblName = tableName(entity);
+
+            entity.setTableName(tblName);
+
+            Map<String, String> aliases = new HashMap<>(entity.getAliases());
+
+            for (String fieldName : entity.getFields().keySet()) {
+                String fieldAlias = entity.getAliases().get(fieldName);
+
+                if (fieldAlias == null) {
+                    fieldAlias = aliasForFieldName(fieldName);
+
+                    aliases.put(fieldName, fieldAlias);
+                }
+            }
+
+            entity.setAliases(aliases);
+
+            for (QueryIndex idx : entity.getIndexes())
+                idx.setName(indexName(tblName, idx));
+
+            validateQueryEntity(entity);
+
+            return entity;
+        }
+
+        QueryEntity normalEntity = new QueryEntity();
+
+        // Propagate plain properties.
+        normalEntity.setKeyType(entity.getKeyType());
+        normalEntity.setValueType(entity.getValueType());
+        normalEntity.setFields(entity.getFields());
+        normalEntity.setKeyFields(entity.getKeyFields());
+        normalEntity.setKeyFieldName(entity.getKeyFieldName());
+        normalEntity.setValueFieldName(entity.getValueFieldName());
+
+        // Normalize table name.
+        String normalTblName = entity.getTableName();
+
+        if (normalTblName == null)
+            // Replace special characters for auto-generated table name.
+            normalTblName = normalizeObjectName(tableName(entity), true);
+        else
+            // No replaces for manually defined table.
+            normalTblName = normalizeObjectName(normalTblName, false);
+
+        normalEntity.setTableName(normalTblName);
+
+        // Normalize field names through aliases.
+        Map<String, String> normalAliases = new HashMap<>(normalEntity.getAliases());
+
+        for (String fieldName : normalEntity.getFields().keySet()) {
+            String fieldAlias = entity.getAliases().get(fieldName);
+
+            if (fieldAlias == null)
+                fieldAlias = aliasForFieldName(fieldName);
+
+            assert fieldAlias != null;
+
+            normalAliases.put(fieldName, normalizeObjectName(fieldAlias, false));
+        }
+
+        normalEntity.setAliases(normalAliases);
+
+        // Normalize indexes.
+        Collection<QueryIndex> normalIdxs = new LinkedList<>();
+
+        for (QueryIndex idx : entity.getIndexes()) {
+            QueryIndex normalIdx = new QueryIndex();
+
+            normalIdx.setFields(idx.getFields());
+            normalIdx.setIndexType(idx.getIndexType());
+            normalIdx.setInlineSize(idx.getInlineSize());
+
+            normalIdx.setName(normalizeObjectName(indexName(normalTblName, idx), false));
+
+            normalIdxs.add(normalIdx);
+        }
+
+        normalEntity.setIndexes(normalIdxs);
+
+        validateQueryEntity(normalEntity);
+
+        return normalEntity;
+    }
+
+    /**
+     * Stores rule for constructing schemaName according to cache configuration.
+     *
+     * @param cacheName Cache name.
+     * @param schemaName Schema name.
+     * @return Proper schema name according to ANSI-99 standard.
+     */
+    public static String normalizeSchemaName(String cacheName, @Nullable String schemaName) {
+        boolean escape = false;
+
+        String res = schemaName;
+
+        if (res == null) {
+            res = cacheName;
+
+            // If schema name is not set explicitly, we will use escaped cache name. The reason is that cache name
+            // could contain weird characters, such as underscores, dots or non-Latin stuff, which are invalid from
+            // SQL synthax perspective. We do not want node to fail on startup due to this.
+            escape = true;
+        }
+        else {
+            if (res.startsWith("\"") && res.endsWith("\"")) {
+                res = res.substring(1, res.length() - 1);
+
+                escape = true;
+            }
+        }
+
+        if (!escape)
+            res = normalizeObjectName(res, false);
+
+        return res;
+    }
+
+    /**
+     * Get alias for the field name (i.e. last part of the property).
+     *
+     * @param fieldName Field name.
+     * @return Alias.
+     */
+    private static String aliasForFieldName(String fieldName) {
+        int idx = fieldName.lastIndexOf('.');
+
+        if (idx >= 0)
+            fieldName = fieldName.substring(idx + 1);
+
+        return fieldName;
+    }
+
+    /**
+     * Normalize object name.
+     *
+     * @param str String.
+     * @param replace Whether to perform replace of special characters.
+     * @return Escaped string.
+     */
+    public static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {
+        if (str == null)
+            return null;
+
+        if (replace)
+            str = str.replace('.', '_').replace('$', '_');
+
+        return str.toUpperCase();
+    }
+
+    /**
      * Create type candidate for query entity.
      *
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param cctx Cache context.
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
+     * @param escape Escape flag.
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(String space, GridCacheContext cctx, QueryEntity qryEntity,
-        List<Class<?>> mustDeserializeClss) throws IgniteCheckedException {
+    public static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
+        List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
@@ -179,7 +359,7 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(space);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName);
 
         desc.aliases(qryEntity.getAliases());
 
@@ -244,17 +424,33 @@ public class QueryUtils {
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
             processBinaryMeta(ctx, qryEntity, desc);
 
-            typeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            typeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
 
             if (valCls != null)
-                altTypeId = new QueryTypeIdKey(space, valCls);
+                altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null) {
-                // Need to setup affinity key for distributed joins.
-                String affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
+            String affField = null;
 
-                if (affField != null)
-                    desc.affinityKey(affField);
+            // Need to setup affinity key for distributed joins.
+            String keyType = qryEntity.getKeyType();
+
+            if (!cctx.customAffinityMapper() && keyType != null) {
+                if (coCtx != null) {
+                    CacheDefaultBinaryAffinityKeyMapper mapper =
+                        (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
+
+                    BinaryField field = mapper.affinityKeyField(keyType);
+
+                    if (field != null)
+                        affField = field.name();
+                }
+            }
+
+            if (affField != null) {
+                if (!escape)
+                    affField = normalizeObjectName(affField, false);
+
+                desc.affinityKey(affField);
             }
         }
         else {
@@ -266,12 +462,16 @@ public class QueryUtils {
                 String affField =
                     ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
-                if (affField != null)
+                if (affField != null) {
+                    if (!escape)
+                        affField = normalizeObjectName(affField, false);
+
                     desc.affinityKey(affField);
+                }
             }
 
-            typeId = new QueryTypeIdKey(space, valCls);
-            altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            typeId = new QueryTypeIdKey(cacheName, valCls);
+            altTypeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
         }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
@@ -836,78 +1036,128 @@ public class QueryUtils {
     }
 
     /**
-     * Prepare cache configuration.
+     * Check given {@link CacheConfiguration} for conflicts in table and index names from any query entities
+     *     found in collection of {@link DynamicCacheDescriptor}s and belonging to the same schema.
      *
-     * @param ccfg Cache configuration.
+     * @param ccfg New cache configuration.
+     * @param descs Cache descriptors.
+     * @return Exception message describing found conflict or {@code null} if none found.
      */
-    @SuppressWarnings("unchecked")
-    public static void prepareCacheConfiguration(CacheConfiguration ccfg) {
-        assert ccfg != null;
+    public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
+        Collection<DynamicCacheDescriptor> descs) {
+        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
-        Collection<QueryEntity> entities = ccfg.getQueryEntities();
+        Set<String> idxNames = new HashSet<>();
 
-        if (!F.isEmpty(entities)) {
-            for (QueryEntity entity : entities) {
-                if (F.isEmpty(entity.findValueType()))
-                    continue;
+        Set<String> tblNames = new HashSet<>();
 
-                Collection<QueryIndex> idxs = entity.getIndexes();
+        for (DynamicCacheDescriptor desc : descs) {
+            if (F.eq(ccfg.getName(), desc.cacheName()))
+                continue;
 
-                if (!F.isEmpty(idxs)) {
-                    for (QueryIndex idx : idxs) {
-                        if (idx.getName() == null) {
-                            String idxName = indexName(entity, idx);
+            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                desc.cacheConfiguration().getSqlSchema());
 
-                            idx.setName(idxName);
-                        }
-                    }
-                }
+            if (!F.eq(schema, descSchema))
+                continue;
+
+            for (QueryEntity e : desc.schema().entities()) {
+                tblNames.add(e.getTableName());
+
+                for (QueryIndex idx : e.getIndexes())
+                    idxNames.add(idx.getName());
+            }
+        }
+
+        for (QueryEntity e : ccfg.getQueryEntities()) {
+            if (!tblNames.add(e.getTableName()))
+                return new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, e.getTableName());
+
+            for (QueryIndex idx : e.getIndexes())
+                if (!idxNames.add(idx.getName()))
+                    return new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idx.getName());
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate query entity.
+     *
+     * @param entity Entity.
+     */
+    private static void validateQueryEntity(QueryEntity entity) {
+        if (F.isEmpty(entity.findValueType()))
+            throw new IgniteException("Value type cannot be null or empty [queryEntity=" + entity + ']');
+
+        String keyFieldName = entity.getKeyFieldName();
+
+        if (keyFieldName != null && !entity.getFields().containsKey(keyFieldName)) {
+            throw new IgniteException("Key field is not in the field list [queryEntity=" + entity +
+                ", keyFieldName=" + keyFieldName + "]");
+        }
+
+        String valFieldName = entity.getValueFieldName();
+
+        if (valFieldName != null && !entity.getFields().containsKey(valFieldName)) {
+            throw new IgniteException("Value field is not in the field list [queryEntity=" + entity +
+                ", valFieldName=" + valFieldName + "]");
+        }
+
+        Collection<QueryIndex> idxs = entity.getIndexes();
+
+        if (!F.isEmpty(idxs)) {
+            Set<String> idxNames = new HashSet<>();
+
+            for (QueryIndex idx : idxs) {
+                String idxName = idx.getName();
+
+                if (idxName == null)
+                    idxName = indexName(entity, idx);
+
+                assert !F.isEmpty(idxName);
+
+                if (!idxNames.add(idxName))
+                    throw new IgniteException("Duplicate index name [queryEntity=" + entity +
+                        ", queryIdx=" + idx + ']');
+
+                if (idx.getIndexType() == null)
+                    throw new IgniteException("Index type is not set [queryEntity=" + entity +
+                        ", queryIdx=" + idx + ']');
             }
         }
     }
 
     /**
-     * Prepare cache configuration.
+     * Construct cache name for table.
      *
-     * @param ccfg Cache configuration.
-     * @throws IgniteCheckedException If failed.
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Cache name.
      */
-    @SuppressWarnings("unchecked")
-    public static void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
-        assert ccfg != null;
+    public static String createTableCacheName(String schemaName, String tblName) {
+        return "SQL_" + schemaName + "_" + tblName;
+    }
 
-        Collection<QueryEntity> entities = ccfg.getQueryEntities();
+    /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    public static String createTableValueTypeName(String schemaName, String tblName) {
+        return createTableCacheName(schemaName, tblName) + "_" + UUID.randomUUID().toString().replace("-", "_");
+    }
 
-        if (!F.isEmpty(entities)) {
-            for (QueryEntity entity : entities) {
-                if (F.isEmpty(entity.findValueType()))
-                    throw new IgniteCheckedException("Value type cannot be null or empty [cacheName=" +
-                        ccfg.getName() + ", queryEntity=" + entity + ']');
-
-                Collection<QueryIndex> idxs = entity.getIndexes();
-
-                if (!F.isEmpty(idxs)) {
-                    Set<String> idxNames = new HashSet<>();
-
-                    for (QueryIndex idx : idxs) {
-                        String idxName = idx.getName();
-
-                        if (idxName == null)
-                            idxName = indexName(entity, idx);
-
-                        assert !F.isEmpty(idxName);
-
-                        if (!idxNames.add(idxName))
-                            throw new IgniteCheckedException("Duplicate index name [cacheName=" + ccfg.getName() +
-                                ", queryEntity=" + entity + ", queryIdx=" + idx + ']');
-
-                        if (idx.getIndexType() == null)
-                            throw new IgniteCheckedException("Index type is not set [cacheName=" + ccfg.getName() +
-                                ", queryEntity=" + entity + ", queryIdx=" + idx + ']');
-                    }
-                }
-            }
-        }
+    /**
+     * Construct key type name for table.
+     *
+     * @param valTypeName Value type name.
+     * @return Key type name.
+     */
+    public static String createTableKeyTypeName(String valTypeName) {
+        return valTypeName + "_KEY";
     }
 
     /**

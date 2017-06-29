@@ -32,14 +32,14 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
@@ -100,11 +100,13 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      *
      */
     private void blockRebalance() {
+        final int grpId = groupIdForCache(ignite(0), TEST_CACHE);
+
         for (Ignite node : G.allGrids()) {
             testSpi(node).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     return (msg instanceof GridDhtPartitionSupplyMessage)
-                        && ((GridCacheMessage)msg).cacheId() == CU.cacheId(TEST_CACHE);
+                        && ((GridCacheGroupIdMessage)msg).groupId() == grpId;
                 }
             });
         }
@@ -739,6 +741,133 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
             stopGrid(0);
         if (fail1)
             stopGrid(2);
+
+        fut.get();
+
+        checkData(map);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutReaderUpdate1() throws Exception {
+        readerUpdateDhtFails(false, false, false);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutReaderUpdate2() throws Exception {
+        readerUpdateDhtFails(true, false, false);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllReaderUpdate1() throws Exception {
+        readerUpdateDhtFails(false, false, true);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(false, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllReaderUpdate2() throws Exception {
+        readerUpdateDhtFails(true, false, true);
+
+        stopAllGrids();
+
+        readerUpdateDhtFails(true, true, true);
+    }
+
+    /**
+     * @param updateNearEnabled {@code True} if enable near cache for second put.
+     * @param delayReader If {@code true} delay reader response, otherwise delay backup response.
+     * @param putAll If {@code true} use putAll, otherwise put.
+     * @throws Exception If failed.
+     */
+    private void readerUpdateDhtFails(boolean updateNearEnabled,
+        boolean delayReader,
+        boolean putAll) throws Exception {
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        client = false;
+
+        startServers(2);
+
+        awaitPartitionMapExchange();
+
+        Ignite srv0 = ignite(0);
+        Ignite srv1 = ignite(1);
+
+        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
+
+        ccfg = null;
+
+        client = true;
+
+        Ignite client1 = startGrid(2);
+
+        IgniteCache<Object, Object> cache1 = client1.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+
+        Ignite client2 = startGrid(3);
+
+        IgniteCache<Object, Object> cache2 = updateNearEnabled ?
+            client2.createNearCache(TEST_CACHE, new NearCacheConfiguration<>()) : client2.cache(TEST_CACHE);
+
+        if (putAll) {
+            Map<Integer, Integer> map = new HashMap<>();
+
+            for (Integer key : keys)
+                map.put(key, 1);
+
+            cache1.putAll(map);
+        }
+        else
+            cache1.put(keys.get(0), 1);
+
+        if (delayReader)
+            testSpi(client1).blockMessages(GridDhtAtomicNearResponse.class, client2.name());
+        else
+            testSpi(srv1).blockMessages(GridDhtAtomicNearResponse.class, client2.name());
+
+        Map<Integer, Integer> map;
+
+        IgniteFuture<?> fut;
+
+        if (putAll) {
+            map = new HashMap<>();
+
+            for (Integer key : keys)
+                map.put(key, 1);
+
+            fut = cache2.putAllAsync(map);
+        }
+        else {
+            map = F.asMap(keys.get(0), 2);
+
+            fut = cache2.putAsync(keys.get(0), 2);
+        }
+
+        U.sleep(2000);
+
+        assertFalse(fut.isDone());
+
+        if (delayReader)
+            testSpi(client1).stopBlock();
+        else
+            testSpi(srv1).stopBlock();
 
         fut.get();
 

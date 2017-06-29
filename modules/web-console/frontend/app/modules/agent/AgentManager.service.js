@@ -15,21 +15,65 @@
  * limitations under the License.
  */
 
-import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-const maskNull = (val) => _.isNil(val) ? 'null' : val;
+import maskNull from 'app/core/utils/maskNull';
 
 const State = {
-    INIT: 'INIT',
+    DISCONNECTED: 'DISCONNECTED',
     AGENT_DISCONNECTED: 'AGENT_DISCONNECTED',
     CLUSTER_DISCONNECTED: 'CLUSTER_DISCONNECTED',
     CONNECTED: 'CONNECTED'
 };
 
-export default class IgniteAgentManager {
-    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal'];
+class ConnectionState {
+    constructor(cluster) {
+        this.agents = [];
+        this.cluster = cluster;
+        this.clusters = [];
+        this.state = State.DISCONNECTED;
+    }
 
-    constructor($root, $q, socketFactory, AgentModal) {
+    update(demo, count, clusters) {
+        this.clusters = clusters;
+
+        if (_.isNil(this.cluster))
+            this.cluster = _.head(clusters);
+
+        if (_.nonNil(this.cluster))
+            this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
+
+        if (count === 0)
+            this.state = State.AGENT_DISCONNECTED;
+        else if (demo || _.get(this.cluster, 'connected'))
+            this.state = State.CONNECTED;
+        else
+            this.state = State.CLUSTER_DISCONNECTED;
+    }
+
+    useConnectedCluster() {
+        if (_.nonEmpty(this.clusters) && !this.cluster.connected) {
+            this.cluster = _.head(this.clusters);
+
+            this.state = State.CONNECTED;
+        }
+    }
+
+    disconnect() {
+        this.agents = [];
+
+        if (this.cluster)
+            this.cluster.disconnect = true;
+
+        this.clusters = [];
+        this.state = State.DISCONNECTED;
+    }
+}
+
+export default class IgniteAgentManager {
+    static $inject = ['$rootScope', '$q', 'igniteSocketFactory', 'AgentModal', 'UserNotifications'];
+
+    constructor($root, $q, socketFactory, AgentModal, UserNotifications) {
         this.$root = $root;
         this.$q = $q;
         this.socketFactory = socketFactory;
@@ -39,9 +83,14 @@ export default class IgniteAgentManager {
          */
         this.AgentModal = AgentModal;
 
-        this.clusters = [];
+        /**
+         * @type {UserNotifications}
+         */
+        this.UserNotifications = UserNotifications;
 
-        $root.$on('$stateChangeSuccess', _.bind(this.stopWatch, this));
+        this.promises = new Set();
+
+        $root.$on('$stateChangeSuccess', () => this.stopWatch());
 
         /**
          * Connection to backend.
@@ -49,15 +98,35 @@ export default class IgniteAgentManager {
          */
         this.socket = null;
 
-        this.connectionState = State.INIT;
+        let cluster;
 
-        /**
-         * Has agent with enabled demo mode.
-         * @type {boolean}
-         */
-        this.hasDemo = false;
+        try {
+            cluster = JSON.parse(localStorage.cluster);
 
-        this.clusters = [];
+            localStorage.removeItem('cluster');
+        }
+        catch (ignore) {
+            // No-op.
+        }
+
+        this.connectionSbj = new BehaviorSubject(new ConnectionState(cluster));
+
+        this.ignite2x = true;
+        this.ignite2_1 = true;
+
+        if (!$root.IgniteDemoMode) {
+            this.connectionSbj.subscribe({
+                next: ({cluster}) => {
+                    const version = _.get(cluster, 'clusterVersion');
+
+                    if (_.isEmpty(version))
+                        return;
+
+                    this.ignite2x = version.startsWith('2.');
+                    this.ignite2_1 = version.startsWith('2.1');
+                }
+            });
+        }
     }
 
     connect() {
@@ -69,57 +138,28 @@ export default class IgniteAgentManager {
         self.socket = self.socketFactory();
 
         const onDisconnect = () => {
-            self.connected = false;
+            const conn = self.connectionSbj.getValue();
+
+            conn.disconnect();
+
+            self.connectionSbj.next(conn);
         };
 
         self.socket.on('connect_error', onDisconnect);
         self.socket.on('disconnect', onDisconnect);
 
-        self.connected = null;
+        self.socket.on('agents:stat', ({clusters, count}) => {
+            const conn = self.connectionSbj.getValue();
 
-        try {
-            self.cluster = JSON.parse(localStorage.cluster);
+            conn.update(self.$root.IgniteDemoMode, count, clusters);
 
-            localStorage.removeItem('cluster');
-        }
-        catch (ignore) {
-            // No-op.
-        }
-
-        self.socket.on('agents:stat', ({count, hasDemo, clusters}) => {
-            self.hasDemo = hasDemo;
-
-            const removed = _.differenceBy(self.clusters, clusters, 'id');
-
-            if (_.nonEmpty(removed)) {
-                _.pullAll(self.clusters, removed);
-
-                if (self.cluster && _.find(removed, {id: self.cluster.id}))
-                    self.cluster.disconnect = true;
-            }
-
-            const added = _.differenceBy(clusters, self.clusters, 'id');
-
-            if (_.nonEmpty(added)) {
-                self.clusters.push(...added);
-
-                if (_.isNil(self.cluster))
-                    self.cluster = _.head(added);
-
-                if (self.cluster && _.find(added, {id: self.cluster.id}))
-                    self.cluster.disconnect = false;
-            }
-
-            if (count === 0)
-                self.connectionState = State.AGENT_DISCONNECTED;
-            else {
-                self.connectionState = self.$root.IgniteDemoMode || _.get(self.cluster, 'disconnect') === false ?
-                    State.CONNECTED : State.CLUSTER_DISCONNECTED;
-            }
+            self.connectionSbj.next(conn);
         });
+
+        self.socket.on('user:notifications', (notification) => this.UserNotifications.notification = notification);
     }
 
-    saveToStorage(cluster = this.cluster) {
+    saveToStorage(cluster = this.connectionSbj.getValue().cluster) {
         try {
             localStorage.cluster = JSON.stringify(cluster);
         } catch (ignore) {
@@ -128,20 +168,35 @@ export default class IgniteAgentManager {
     }
 
     /**
+     * @param states
      * @returns {Promise}
      */
-    awaitAgent() {
-        this.latchAwaitAgent = this.$q.defer();
+    awaitConnectionState(...states) {
+        const defer = this.$q.defer();
 
-        this.offAwaitAgent = this.$root.$watch(() => this.connectionState, (state) => {
-            if (state === State.CONNECTED) {
-                this.offAwaitAgent();
+        this.promises.add(defer);
 
-                this.latchAwaitAgent.resolve();
+        const subscription = this.connectionSbj.subscribe({
+            next: ({state}) => {
+                if (_.includes(states, state))
+                    defer.resolve();
             }
         });
 
-        return this.latchAwaitAgent.promise;
+        return defer.promise
+            .finally(() => {
+                subscription.unsubscribe();
+
+                this.promises.delete(defer);
+            });
+    }
+
+    awaitCluster() {
+        return this.awaitConnectionState(State.CONNECTED);
+    }
+
+    awaitAgent() {
+        return this.awaitConnectionState(State.CONNECTED, State.CLUSTER_DISCONNECTED);
     }
 
     /**
@@ -149,56 +204,91 @@ export default class IgniteAgentManager {
      * @param {String} [backState]
      * @returns {Promise}
      */
-    startWatch(backText, backState) {
+    startAgentWatch(backText, backState) {
         const self = this;
 
         self.backText = backText;
         self.backState = backState;
 
-        if (_.nonEmpty(self.clusters) && _.get(self.cluster, 'disconnect') === true) {
-            self.cluster = _.head(self.clusters);
+        const conn = self.connectionSbj.getValue();
 
-            self.connectionState = State.CONNECTED;
-        }
+        conn.useConnectedCluster();
 
-        self.offStateWatch = this.$root.$watch(() => self.connectionState, (state) => {
-            switch (state) {
-                case State.AGENT_DISCONNECTED:
-                    this.AgentModal.agentDisconnected(self.backText, self.backState);
+        self.connectionSbj.next(conn);
 
-                    break;
+        self.modalSubscription = this.connectionSbj.subscribe({
+            next: ({state}) => {
+                switch (state) {
+                    case State.CONNECTED:
+                    case State.CLUSTER_DISCONNECTED:
+                        this.AgentModal.hide();
 
-                case State.CLUSTER_DISCONNECTED:
-                    self.AgentModal.clusterDisconnected(self.backText, self.backState);
+                        break;
 
-                    break;
+                    case State.AGENT_DISCONNECTED:
+                        this.AgentModal.agentDisconnected(self.backText, self.backState);
 
-                case State.CONNECTED:
-                    this.AgentModal.hide();
+                        break;
 
-                    break;
-
-                default:
-                    // Connection to backend is not established yet.
+                    default:
+                        // Connection to backend is not established yet.
+                }
             }
         });
 
         return self.awaitAgent();
     }
 
-    stopWatch() {
-        if (!_.isFunction(this.offStateWatch))
-            return;
+    /**
+     * @param {String} backText
+     * @param {String} [backState]
+     * @returns {Promise}
+     */
+    startClusterWatch(backText, backState) {
+        const self = this;
 
-        this.offStateWatch();
+        self.backText = backText;
+        self.backState = backState;
+
+        const conn = self.connectionSbj.getValue();
+
+        conn.useConnectedCluster();
+
+        self.connectionSbj.next(conn);
+
+        self.modalSubscription = this.connectionSbj.subscribe({
+            next: ({state}) => {
+                switch (state) {
+                    case State.CONNECTED:
+                        this.AgentModal.hide();
+
+                        break;
+
+                    case State.AGENT_DISCONNECTED:
+                        this.AgentModal.agentDisconnected(self.backText, self.backState);
+
+                        break;
+
+                    case State.CLUSTER_DISCONNECTED:
+                        self.AgentModal.clusterDisconnected(self.backText, self.backState);
+
+                        break;
+
+                    default:
+                    // Connection to backend is not established yet.
+                }
+            }
+        });
+
+        return self.awaitCluster();
+    }
+
+    stopWatch() {
+        this.modalSubscription && this.modalSubscription.unsubscribe();
 
         this.AgentModal.hide();
 
-        if (this.latchAwaitAgent) {
-            this.offAwaitAgent();
-
-            this.latchAwaitAgent.reject('Agent watch stopped.');
-        }
+        this.promises.forEach((promise) => promise.reject('Agent watch stopped.'));
     }
 
     /**
@@ -413,12 +503,33 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz) {
-        return this.visorTask('querySql', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz)
-            .then(({error, result}) => {
-                if (_.isEmpty(error))
-                    return result;
+        if (this.ignite2x) {
+            return this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz)
+                .then(({error, result}) => {
+                    if (_.isEmpty(error))
+                        return result;
 
-                return Promise.reject(error);
+                    return Promise.reject(error);
+                });
+        }
+
+        cacheName = _.isEmpty(cacheName) ? null : cacheName;
+
+        let queryPromise;
+
+        if (enforceJoinOrder)
+            queryPromise = this.visorTask('querySqlV3', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSz);
+        else if (nonCollocatedJoins)
+            queryPromise = this.visorTask('querySqlV2', nid, cacheName, query, nonCollocatedJoins, local, pageSz);
+        else
+            queryPromise = this.visorTask('querySql', nid, cacheName, query, local, pageSz);
+
+        return queryPromise
+            .then(({key, value}) => {
+                if (_.isEmpty(key))
+                    return value;
+
+                return Promise.reject(key);
             });
     }
 
@@ -429,6 +540,9 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryNextPage(nid, queryId, pageSize) {
+        if (this.ignite2x)
+            return this.visorTask('queryFetchX2', nid, queryId, pageSize);
+
         return this.visorTask('queryFetch', nid, queryId, pageSize);
     }
 
@@ -470,8 +584,12 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryClose(nid, queryId) {
-        return this.visorTask('queryClose', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
-            nid + '=' + queryId);
+        if (this.ignite2x) {
+            return this.visorTask('queryCloseX2', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
+                nid + '=' + queryId);
+        }
+
+        return this.visorTask('queryClose', nid, queryId);
     }
 
     /**
@@ -486,13 +604,26 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryScan(nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize) {
-        return this.visorTask('queryScan', nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
-            .then(({error, result}) => {
-                if (_.isEmpty(error))
-                    return result;
+        if (this.ignite2x) {
+            return this.visorTask('queryScanX2', nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
+                .then(({error, result}) => {
+                    if (_.isEmpty(error))
+                        return result;
 
-                return Promise.reject(error);
-            });
+                    return Promise.reject(error);
+                });
+        }
+
+        /** Prefix for node local key for SCAN near queries. */
+        const SCAN_CACHE_WITH_FILTER = 'VISOR_SCAN_CACHE_WITH_FILTER';
+
+        /** Prefix for node local key for SCAN near queries. */
+        const SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE = 'VISOR_SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE';
+
+        const prefix = caseSensitive ? SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE : SCAN_CACHE_WITH_FILTER;
+        const query = `${prefix}${filter}`;
+
+        return this.querySql(nid, cacheName, query, false, false, false, local, pageSize);
     }
 
     /**

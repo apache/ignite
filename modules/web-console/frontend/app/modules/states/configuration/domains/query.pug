@@ -25,7 +25,7 @@ include /app/helpers/jade/mixins
 -var queryAliasesForm = 'queryAliases'
 -var queryIndexesForm = 'queryIndexes'
 
-// LEGACY mixin for LEGACY index fields table.
+//- LEGACY mixin for LEGACY index fields table.
 mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
     -var fieldName = `${prefix}FieldName`
     -var direction = `${prefix}Direction`
@@ -65,6 +65,8 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                 .content-not-available(ng-if=`${model}.queryMetadata === 'Annotations'`)
                     label Not available for annotated types
                 div(ng-if=`${model}.queryMetadata === 'Configuration'`)
+                    .settings-row
+                        +text('Table name:', `${model}.tableName`, '"tableName"', 'false', 'Enter table name', 'Table name for this query entity')
                     .settings-row
                         +ignite-form-group(ng-model=queryFields ng-form=queryFieldsForm)
                             ignite-form-field-label(id='queryFields')

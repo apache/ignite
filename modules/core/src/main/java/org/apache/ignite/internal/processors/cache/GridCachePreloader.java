@@ -22,13 +22,14 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,18 +44,6 @@ public interface GridCachePreloader {
      * @throws IgniteCheckedException If start failed.
      */
     public void start() throws IgniteCheckedException;
-
-    /**
-     * Stops preloading.
-     */
-    public void stop();
-
-    /**
-     * Kernal start callback.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onKernalStart() throws IgniteCheckedException;
 
     /**
      * Kernal stop callback.
@@ -90,10 +79,9 @@ public interface GridCachePreloader {
      */
     public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
-        Collection<String> caches,
         int cnt,
         Runnable next,
-        @Nullable GridFutureAdapter<Boolean> forcedRebFut);
+        @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
 
     /**
      * @param p Preload predicate.
@@ -136,20 +124,25 @@ public interface GridCachePreloader {
     /**
      * Requests that preloader sends the request for the key.
      *
+     * @param cctx Cache context.
      * @param keys Keys to request.
      * @param topVer Topology version, {@code -1} if not required.
      * @return Future to complete when all keys are preloaded.
      */
-    public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer);
+    public GridDhtFuture<Object> request(GridCacheContext cctx,
+        Collection<KeyCacheObject> keys,
+        AffinityTopologyVersion topVer);
 
     /**
      * Requests that preloader sends the request for the key.
      *
+     * @param cctx Cache context.
      * @param req Message with keys to request.
      * @param topVer Topology version, {@code -1} if not required.
      * @return Future to complete when all keys are preloaded.
      */
-    public IgniteInternalFuture<Object> request(GridNearAtomicAbstractUpdateRequest req,
+    public GridDhtFuture<Object> request(GridCacheContext cctx,
+        GridNearAtomicAbstractUpdateRequest req,
         AffinityTopologyVersion topVer);
 
     /**

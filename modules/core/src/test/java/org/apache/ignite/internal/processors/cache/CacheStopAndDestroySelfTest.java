@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -50,24 +51,25 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Checks stop and destroy methods behavior.
  */
+@SuppressWarnings("unchecked")
 public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** key-value used at test. */
-    protected static String KEY_VAL = "1";
+    /** Key-value used at test. */
+    private static String KEY_VAL = "1";
 
-    /** cache name 1. */
-    protected static String CACHE_NAME_DHT = "cache";
+    /** Cache name 1. */
+    private static String CACHE_NAME_DHT = "cache";
 
-    /** cache name 2. */
-    protected static String CACHE_NAME_CLIENT = "cache_client";
+    /** Cache name 2. */
+    private static String CACHE_NAME_CLIENT = "cache_client";
 
-    /** near cache name. */
-    protected static String CACHE_NAME_NEAR = "cache_near";
+    /** Near cache name. */
+    private static String CACHE_NAME_NEAR = "cache_near";
 
-    /** local cache name. */
-    protected static String CACHE_NAME_LOC = "cache_local";
+    /** Local cache name. */
+    private static String CACHE_NAME_LOC = "cache_local";
 
     /** Memory configuration to be used on client nodes with local caches. */
     private static MemoryConfiguration memCfg;
@@ -121,12 +123,12 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         public static AtomicInteger cnt = new AtomicInteger();
 
         /** Node filter. */
-        public static UUID nodeFilter;
+        static UUID nodeFilter;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
 
             if (nodeFilter != null &&
                 node.id().equals(nodeFilter) &&
@@ -557,8 +559,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearClose() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2189");
-
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
@@ -595,9 +595,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         cache0.put(KEY_VAL, KEY_VAL + 0);
 
         U.sleep(1000);
-
-        // Ensure near cache was NOT automatically updated.
-        assert CountingTxRequestsToClientNodeTcpCommunicationSpi.cnt.get() == 0;
 
         assert cache0.get(KEY_VAL).equals(KEY_VAL + 0);// Not affected.
         assert cache1.get(KEY_VAL).equals(KEY_VAL + 0);// Not affected.
@@ -702,7 +699,10 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion topVer = grid(1).context().cache().context().exchange().lastTopologyFuture().get();
 
-        grid(0).context().cache().context().exchange().affinityReadyFuture(topVer).get();
+        IgniteInternalFuture<?> fut = grid(0).context().cache().context().exchange().affinityReadyFuture(topVer);
+
+        if (fut != null)
+            fut.get();
 
         grid(0).getOrCreateCache(getLocalConfig());
 

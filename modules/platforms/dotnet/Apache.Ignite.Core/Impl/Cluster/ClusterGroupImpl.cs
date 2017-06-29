@@ -117,7 +117,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         
         /** */
         private const int OpResetLostPartitions = 25;
-        
+
+        /** */
+        private const int OpMemoryMetrics = 26;
+
+        /** */
+        private const int OpMemoryMetricsByName = 27;
+
+        /** */
+        private const int OpSetActive = 28;
+
+        /** */
+        private const int OpIsActive = 29;
+
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -550,6 +562,56 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
                 return new CacheMetricsImpl(reader);
             });
+        }
+
+        /// <summary>
+        /// Gets the memory metrics.
+        /// </summary>
+        public ICollection<IMemoryMetrics> GetMemoryMetrics()
+        {
+            return DoInOp(OpMemoryMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                var cnt = reader.ReadInt();
+
+                var res = new List<IMemoryMetrics>(cnt);
+
+                for (int i = 0; i < cnt; i++)
+                {
+                    res.Add(new MemoryMetrics(reader));
+                }
+
+                return res;
+            });
+        }
+
+        /// <summary>
+        /// Gets the memory metrics.
+        /// </summary>
+        public IMemoryMetrics GetMemoryMetrics(string memoryPolicyName)
+        {
+            return DoOutInOp(OpMemoryMetricsByName, w => w.WriteString(memoryPolicyName),
+                stream => stream.ReadBool() ? new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
+        }
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        public void SetActive(bool isActive)
+        {
+            DoOutInOp(OpSetActive, isActive ? True : False);
+        }
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsActive()
+        {
+            return DoOutInOp(OpIsActive) == True;
         }
 
         /// <summary>

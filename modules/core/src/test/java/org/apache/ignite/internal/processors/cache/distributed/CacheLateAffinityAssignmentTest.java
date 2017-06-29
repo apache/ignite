@@ -209,6 +209,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             parts == null ? RendezvousAffinityFunction.DFLT_PARTITION_COUNT : parts);
     }
 
+    @Override
+    protected void beforeTest() throws Exception {
+        super.beforeTest();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
@@ -476,7 +481,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             ignite0.cache(CACHE_NAME1);
 
-            checkAffinity(nodes, topVer(topVer, 2), true);
+            checkAffinity(nodes, topVer(topVer, 1), true);
 
             topVer++;
 
@@ -486,7 +491,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             ignite0.cache(CACHE_NAME1).close();
 
-            checkAffinity(nodes, topVer(topVer, 2), true);
+            checkAffinity(nodes, topVer(topVer, 1), true);
         }
     }
 
@@ -832,11 +837,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNotNull(client.cache(CACHE_NAME1));
 
-        checkAffinity(4, topVer(4, 1), false);
+        checkAffinity(4, topVer(4, 0), false);
 
         spi.stopBlock();
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 1), true);
     }
 
     /**
@@ -913,6 +918,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleStopRandomNode() throws Exception {
+        //fail("IGNITE-GG-12292");
+
         final int ITERATIONS = 3;
 
         for (int iter = 0; iter < 3; iter++) {
@@ -1240,11 +1247,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         IgniteCache cache = client.cache(CACHE_NAME1);
 
-        checkAffinity(2, topVer(2, 1), true);
+        checkAffinity(2, topVer(2, 0), true);
 
         cache.close();
 
-        checkAffinity(2, topVer(2, 2), true);
+        checkAffinity(2, topVer(2, 0), true);
     }
 
     /**
@@ -1274,11 +1281,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         client.cache(CACHE_NAME2);
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 1), true);
 
         client.destroyCache(CACHE_NAME2);
 
-        checkAffinity(4, topVer(4, 3), true);
+        checkAffinity(4, topVer(4, 2), true);
     }
 
     /**
@@ -1698,6 +1705,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoForceKeysRequests() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5510");
+
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
                 return null;
@@ -2008,12 +2017,14 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      */
     private void blockSupplySend(TestRecordingCommunicationSpi spi, final String cacheName) {
+        final int grpId = groupIdForCache(spi.ignite(), cacheName);
+
         spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
                 if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                     return false;
 
-                return ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(cacheName);
+                return ((GridDhtPartitionSupplyMessage)msg).groupId() == grpId;
             }
         });
     }
@@ -2165,7 +2176,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
 
         for (Ignite node : nodes) {
-            log.info("Check node: " + node.name());
+            log.info("Check affinity [node=" + node.name() + ", topVer=" + topVer + ", expIdeal=" + expIdeal + ']');
 
             IgniteKernal node0 = (IgniteKernal)node;
 
@@ -2175,7 +2186,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 fut.get();
 
             for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
-                if (cctx.startTopologyVersion() != null && cctx.startTopologyVersion().compareTo(topVer) > 0)
+                if (cctx.startTopologyVersion().compareTo(topVer) > 0)
                     continue;
 
                 List<List<ClusterNode>> aff1 = aff.get(cctx.name());
@@ -2420,7 +2431,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Collection<ClusterNode> allNodes = ctx.discovery().cacheNodes(topVer0);
 
-        for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors()) {
+        for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors().values()) {
             if (assignments.get(cacheDesc.cacheId()) != null)
                 continue;
 

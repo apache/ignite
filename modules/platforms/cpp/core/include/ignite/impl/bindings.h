@@ -24,6 +24,7 @@
 #include <ignite/impl/ignite_environment.h>
 #include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
 #include <ignite/impl/cache/cache_entry_processor_holder.h>
+#include <ignite/impl/compute/compute_task_holder.h>
 
 namespace ignite
 {
@@ -87,6 +88,29 @@ namespace ignite
                 writer.WriteTopObject(res);
 
                 return 0;
+            }
+
+            /**
+             * Binding for compute job creation.
+             *
+             * @tparam F The job type.
+             * @tparam R The job return type.
+             *
+             * @param reader Reader.
+             * @param env Environment.
+             * @return Handle for the job.
+             */
+            template<typename F, typename R>
+            int64_t ComputeJobCreate(binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl&, IgniteEnvironment& env)
+            {
+                using namespace common::concurrent;
+                using namespace compute;
+
+                F job = reader.ReadObject<F>();
+
+                SharedPointer<ComputeJobHolder> jobPtr(new ComputeJobHolderImpl<F, R>(job));
+
+                return env.GetHandleRegistry().Allocate(jobPtr);
             }
         }
     }

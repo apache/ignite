@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -28,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
@@ -174,7 +174,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node3, ValueClass.class);
 
         // Check restarts from the first node.
-        node1.destroyCache(CACHE_NAME);
+        destroySqlCache(node1);
 
         node1.getOrCreateCache(cacheConfiguration());
 
@@ -325,7 +325,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         if (dynamic) {
             node2 = startClientNoCache(2);
 
-            node2.getOrCreateCache(cacheConfiguration(KeyClass.class, ValueClass.class));
+            createSqlCache(node2, cacheConfiguration(KeyClass.class, ValueClass.class));
         }
         else
             node2 = startClient(2, KeyClass.class, ValueClass.class);
@@ -353,7 +353,8 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         node8.cache(CACHE_NAME);
         assertTypes(node8, ValueClass.class);
 
-        node2.destroyCache(CACHE_NAME);
+        destroySqlCache(node2);
+
         node2.getOrCreateCache(
             cacheConfiguration(KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class));
 
@@ -466,18 +467,21 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
             @Override public void run() {
                 assertTrue(node2.context().clientDisconnected());
 
-                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
                 try {
-                    queryProcessor(node1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                    dynamicIndexCreate(node1, CACHE_NAME, TBL_NAME, idx, false);
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     throw new IgniteException(e);
                 }
             }
         });
 
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME,
+            QueryUtils.normalizeObjectName(TBL_NAME, true),
+            QueryUtils.normalizeObjectName(IDX_NAME_1, false),
+            field(QueryUtils.normalizeObjectName(FIELD_NAME_1_ESCAPED, false)));
     }
 
     /**
@@ -537,13 +541,16 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setCacheConfiguration(cacheConfiguration(clss));
         cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
 
         if (filterNodeName != null && F.eq(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
 
-        return (IgniteEx)Ignition.start(cfg);
+        IgniteEx res = (IgniteEx)Ignition.start(cfg);
+
+        createSqlCache(res, cacheConfiguration(clss));
+
+        return res;
     }
 
     /**

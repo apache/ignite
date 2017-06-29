@@ -20,6 +20,7 @@ package org.apache.ignite.loadtests.hashmap;
 import java.util.IdentityHashMap;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.CacheOsConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -33,8 +34,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedTtlCleanupManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager;
@@ -68,6 +70,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 null,
                 null,
                 new IgniteCacheDatabaseSharedManager(),
+                new IgniteCacheSnapshotManager(),
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),
                 new CacheAffinitySharedManager<K, V>(),
@@ -77,12 +80,11 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 null
             ),
             defaultCacheConfiguration(),
+            null,
             CacheType.USER,
+            AffinityTopologyVersion.ZERO,
             true,
             true,
-            null,
-            null,
-            null,
             new GridCacheEventManager(),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),
@@ -91,7 +93,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new CacheDataStructuresManager(),
             new GridCacheTtlManager(),
             new GridOsCacheDrManager(),
-            null,
             new CacheOsConflictResolutionManager<K, V>(),
             new CachePluginManager(ctx, new CacheConfiguration()),
             new GridCacheAffinityManager()

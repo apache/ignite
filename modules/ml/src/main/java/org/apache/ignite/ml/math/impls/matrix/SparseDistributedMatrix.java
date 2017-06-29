@@ -1,12 +1,3 @@
-// @java.file.header
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +17,7 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
@@ -119,24 +111,24 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * @return Matrix with mapped values.
      */
     private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
-        CacheUtils.sparseMap(storage().cache().getName(), mapper);
+        CacheUtils.sparseMap(getUUID(), mapper);
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public double sum() {
-        return CacheUtils.sparseSum(storage().cache().getName());
+        return CacheUtils.sparseSum(getUUID());
     }
 
     /** {@inheritDoc} */
     @Override public double maxValue() {
-        return CacheUtils.sparseMax(storage().cache().getName());
+        return CacheUtils.sparseMax(getUUID());
     }
 
     /** {@inheritDoc} */
     @Override public double minValue() {
-        return CacheUtils.sparseMin(storage().cache().getName());
+        return CacheUtils.sparseMin(getUUID());
     }
 
     /** {@inheritDoc} */
@@ -146,11 +138,16 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
     /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        throw new UnsupportedOperationException();
+        return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
     }
 
     /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
+    }
+
+    /** */
+    public IgniteUuid getUUID(){
+        return ((SparseDistributedMatrixStorage) getStorage()).getUUID();
     }
 }

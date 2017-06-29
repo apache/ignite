@@ -26,13 +26,19 @@ import ConfigurationResource from './configuration/Configuration.resource';
 import summaryTabs from './configuration/summary/summary-tabs.directive';
 import IgniteSummaryZipper from './configuration/summary/summary-zipper.service';
 
-import sidebarTpl from 'views/configuration/sidebar.tpl.pug';
 import clustersTpl from 'views/configuration/clusters.tpl.pug';
 import cachesTpl from 'views/configuration/caches.tpl.pug';
 import domainsTpl from 'views/configuration/domains.tpl.pug';
 import igfsTpl from 'views/configuration/igfs.tpl.pug';
 import summaryTpl from 'views/configuration/summary.tpl.pug';
 import summaryTabsTemplateUrl from 'views/configuration/summary-tabs.pug';
+
+import clustersCtrl from 'Controllers/clusters-controller';
+import domainsCtrl from 'Controllers/domains-controller';
+import cachesCtrl from 'Controllers/caches-controller';
+import igfsCtrl from 'Controllers/igfs-controller';
+
+import base2 from 'views/base2.pug';
 
 angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...previewPanel)
@@ -49,46 +55,82 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
         // Setup the states.
         $stateProvider
             .state('base.configuration', {
-                url: '/configuration',
-                templateUrl: sidebarTpl,
                 abstract: true,
-                params: {
-                    linkId: null
+                views: {
+                    '@': {
+                        template: base2
+                    }
                 }
             })
-            .state('base.configuration.clusters', {
+            .state('base.configuration.tabs', {
+                url: '/configuration',
+                template: '<page-configure></page-configure>',
+                metaTags: {
+                    title: 'Configuration'
+                }
+            })
+            .state('base.configuration.tabs.basic', {
+                url: '/basic',
+                template: '<page-configure-basic></page-configure-basic>',
+                metaTags: {
+                    title: 'Basic Configuration'
+                },
+                resolve: {
+                    list: ['IgniteConfigurationResource', 'PageConfigure', (configuration, pageConfigure) => {
+                        // TODO IGNITE-5271: remove when advanced config is hooked into ConfigureState too.
+                        // This resolve ensures that basic always has fresh data, i.e. after going back from advanced
+                        // after adding a cluster.
+                        return configuration.read().then((data) => {
+                            pageConfigure.loadList(data);
+                        });
+                    }]
+                }
+            })
+            .state('base.configuration.tabs.advanced', {
+                url: '/advanced',
+                template: '<page-configure-advanced></page-configure-advanced>'
+            })
+            .state('base.configuration.tabs.advanced.clusters', {
                 url: '/clusters',
                 templateUrl: clustersTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Clusters'
-                }
+                },
+                controller: clustersCtrl,
+                controllerAs: '$ctrl'
             })
-            .state('base.configuration.caches', {
+            .state('base.configuration.tabs.advanced.caches', {
                 url: '/caches',
                 templateUrl: cachesTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Caches'
-                }
+                },
+                controller: cachesCtrl,
+                controllerAs: '$ctrl'
             })
-            .state('base.configuration.domains', {
+            .state('base.configuration.tabs.advanced.domains', {
                 url: '/domains',
                 templateUrl: domainsTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Domain Model'
-                }
+                },
+                controller: domainsCtrl,
+                controllerAs: '$ctrl'
             })
-            .state('base.configuration.igfs', {
+            .state('base.configuration.tabs.advanced.igfs', {
                 url: '/igfs',
                 templateUrl: igfsTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure IGFS'
-                }
+                },
+                controller: igfsCtrl,
+                controllerAs: '$ctrl'
             })
-            .state('base.configuration.summary', {
+            .state('base.configuration.tabs.advanced.summary', {
                 url: '/summary',
                 templateUrl: summaryTpl,
                 onEnter: AclRoute.checkAccess('configuration'),

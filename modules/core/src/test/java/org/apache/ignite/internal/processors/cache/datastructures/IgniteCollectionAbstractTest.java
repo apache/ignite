@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -126,5 +130,24 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         GridCacheAdapter cache = GridTestUtils.getFieldValue(delegate, GridCacheQueueAdapter.class, "cache");
 
         return cache.configuration();
+    }
+
+    /**
+     * @param queue Ignite queue.
+     * @return Cache context.
+     */
+    protected static GridCacheContext cctx(IgniteQueue queue) {
+        return GridTestUtils.getFieldValue(queue, "cctx");
+    }
+
+    /**
+     * @param set Ignite set.
+     * @return Cache context.
+     */
+    protected static GridCacheContext cctx(IgniteSet set) {
+        if (set instanceof GridCacheSetProxy)
+            return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
+        else
+            return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
     }
 }

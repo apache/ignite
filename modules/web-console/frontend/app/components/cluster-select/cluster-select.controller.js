@@ -23,33 +23,44 @@ export default ['$scope', 'AgentManager', function($scope, agentMgr) {
     ctrl.cluster = null;
     ctrl.clusters = [];
 
-    $scope.$watchCollection(() => agentMgr.clusters, (clusters) => {
-        if (_.isEmpty(clusters))
-            return ctrl.clusters.length = 0;
+    agentMgr.connectionSbj.subscribe({
+        next: ({cluster, clusters}) => {
+            if (_.isEmpty(clusters))
+                return ctrl.clusters.length = 0;
 
-        const removed = _.differenceBy(ctrl.clusters, clusters, 'id');
+            const removed = _.differenceBy(ctrl.clusters, clusters, 'id');
 
-        if (_.nonEmpty(removed))
-            _.pullAll(ctrl.clusters, removed);
+            if (_.nonEmpty(removed))
+                _.pullAll(ctrl.clusters, removed);
 
-        const added = _.differenceBy(clusters, ctrl.clusters, 'id');
+            const added = _.differenceBy(clusters, ctrl.clusters, 'id');
 
-        _.forEach(added, (cluster) => {
-            ctrl.clusters.push({
-                id: cluster.id,
-                name: `Cluster ${cluster.id.substring(0, 8).toUpperCase()}`,
-                click: () => {
-                    if (cluster.id === ctrl.cluster.id)
-                        return;
+            _.forEach(added, (cluster) => {
+                ctrl.clusters.push({
+                    id: cluster.id,
+                    name: `Cluster ${cluster.id.substring(0, 8).toUpperCase()}`,
+                    connected: true,
+                    click: () => {
+                        if (cluster.id === _.get(ctrl, 'cluster.id'))
+                            return;
 
-                    agentMgr.saveToStorage(cluster);
+                        if (_.get(ctrl, 'cluster.connected')) {
+                            agentMgr.saveToStorage(cluster);
 
-                    window.open(window.location.href, '_blank');
-                }
+                            window.open(window.location.href, '_blank');
+                        }
+                        else
+                            ctrl.cluster = _.find(ctrl.clusters, {id: cluster.id});
+                    }
+                });
             });
-        });
 
-        if (_.isNil(ctrl.cluster))
-            ctrl.cluster = _.find(ctrl.clusters, {id: agentMgr.cluster.id});
+            const item = _.find(ctrl.clusters, {id: cluster.id});
+
+            if (_.isNil(ctrl.cluster))
+                ctrl.cluster = item;
+            else
+                ctrl.cluster.connected = !!item;
+        }
     });
 }];

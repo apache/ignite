@@ -24,9 +24,12 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -431,7 +434,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
-     * is {@code true}.
+     * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
      * @param name Sequence name.
      * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
@@ -440,6 +443,20 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If sequence could not be fetched or created.
      */
     public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Sequence name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Sequence for the given name.
+     * @throws IgniteException If sequence could not be fetched or created.
+     */
+    public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -455,8 +472,21 @@ public interface Ignite extends AutoCloseable {
     public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException;
 
     /**
-     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * Will get a atomic long from cache and create one if it has not been created yet and {@code create} flag
      * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic long.
+     * @throws IgniteException If atomic long could not be fetched or created.
+     */
+    public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
      * @param name Atomic reference name.
      * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
@@ -465,6 +495,20 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If atomic reference could not be fetched or created.
      */
     public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic reference name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic reference for the given name.
+     * @throws IgniteException If atomic reference could not be fetched or created.
+     */
+    public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg, @Nullable T initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -479,6 +523,21 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If atomic stamped could not be fetched or created.
      */
     public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
+        @Nullable S initStamp, boolean create) throws IgniteException;
+
+    /**
+     * Will get a atomic stamped from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic stamped name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param initStamp Initial stamp for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic stamped for the given name.
+     * @throws IgniteException If atomic stamped could not be fetched or created.
+     */
+    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg, @Nullable T initVal,
         @Nullable S initStamp, boolean create) throws IgniteException;
 
     /**
@@ -618,8 +677,28 @@ public interface Ignite extends AutoCloseable {
     /**
      * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
      * instance.
+     * Returns the collection that contains the latest snapshots for each memory region
+     * configured with {@link MemoryPolicyConfiguration configuration} on this Ignite node instance.
      *
-     * @return Collection of {@link MemoryMetrics}
+     * @return Collection of {@link MemoryMetrics} snapshots.
      */
     public Collection<MemoryMetrics> memoryMetrics();
+
+    /**
+     * Returns the latest {@link MemoryMetrics} snapshot for the memory region of the given name.
+     *
+     * To get the metrics for the default memory region use
+     * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} as the name
+     * or a custom name if the default memory region has been renamed.
+     *
+     * @param memPlcName Name of memory region configured with {@link MemoryPolicyConfiguration config}.
+     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     */
+    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
+
+    /**
+     *
+     * @return {@link PersistenceMetrics} snapshot.
+     */
+    public PersistenceMetrics persistentStoreMetrics();
 }

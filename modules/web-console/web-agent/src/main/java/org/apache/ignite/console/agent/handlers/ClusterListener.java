@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -37,14 +37,16 @@ import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJetty
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- *
+ * API to retranslate topology from Ignite cluster available by node-uri.
  */
 public class ClusterListener {
     /** */
@@ -65,8 +67,8 @@ public class ClusterListener {
     /** JSON object mapper. */
     private static final ObjectMapper mapper = new GridJettyObjectMapper();
 
-    /** Nids. */
-    private Collection<UUID> latestNids = Collections.emptyList();
+    /** Latest topology snapshot. */
+    private TopologySnapshot top;
 
     /** */
     private final WatchTask watchTask = new WatchTask();
@@ -132,14 +134,14 @@ public class ClusterListener {
      * Callback on disconnect from cluster.
      */
     private void clusterDisconnect() {
-        if (latestNids.isEmpty())
+        if (top == null)
             return;
-        
-        latestNids = Collections.emptyList();
+
+        top = null;
 
         log.info("Connection to cluster was lost");
 
-        client.emit(EVENT_CLUSTER_DISCONNECTED, latestNids);
+        client.emit(EVENT_CLUSTER_DISCONNECTED);
     }
 
     /**
@@ -188,35 +190,92 @@ public class ClusterListener {
     }
 
     /** */
+    private static class TopologySnapshot {
+        /** */
+        private Collection<UUID> nids;
+
+        /** */
+        private String clusterVer;
+
+        /**
+         * @param nodes Nodes.
+         */
+        TopologySnapshot(Collection<GridClientNodeBean> nodes) {
+            nids = F.viewReadOnly(nodes, NODE2ID);
+
+            Collection<IgniteProductVersion> vers = F.transform(nodes,
+                new IgniteClosure<GridClientNodeBean, IgniteProductVersion>() {
+                    @Override public IgniteProductVersion apply(GridClientNodeBean bean) {
+                        return IgniteProductVersion.fromString((String)bean.getAttributes().get(ATTR_BUILD_VER));
+                    }
+                });
+
+            clusterVer = Collections.min(vers).toString();
+        }
+
+        /**
+         * @return Cluster version.
+         */
+        public String getClusterVersion() {
+            return clusterVer;
+        }
+
+        /**
+         * @return Cluster nodes IDs.
+         */
+        public Collection<UUID> getNids() {
+            return nids;
+        }
+
+        /**  */
+        Collection<String> nid8() {
+            return F.viewReadOnly(nids, ID2ID8);
+        }
+
+        /**  */
+        boolean differentCluster(TopologySnapshot old) {
+            if (old == null || F.isEmpty(old.nids))
+                return true;
+
+            return Collections.disjoint(nids, old.nids);
+        }
+    }
+
+    /** */
     private class WatchTask implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                RestResult top = restExecutor.topology(false, false);
+                RestResult res = restExecutor.topology(false, false);
 
-                switch (top.getStatus()) {
+                switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(top.getData(),
+                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
-                        Collection<UUID> nids = F.viewReadOnly(nodes, NODE2ID);
+                        TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                        if (Collections.disjoint(latestNids, nids))
-                            log.info("Connection successfully established to cluster with nodes: {}", F.viewReadOnly(nids, ID2ID8));
+                        if (newTop.differentCluster(top))
+                            log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
 
-                        client.emit(EVENT_CLUSTER_TOPOLOGY, nids);
+                        top = newTop;
 
-                        latestNids = nids;
+                        client.emit(EVENT_CLUSTER_TOPOLOGY, toJSON(top));
 
                         break;
 
                     default:
-                        log.warn(top.getError());
+                        log.warn(res.getError());
 
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (ConnectException ignored) {
+                clusterDisconnect();
+            }
+            catch (Exception e) {
+                log.error("WatchTask failed", e);
+
                 clusterDisconnect();
             }
         }
@@ -227,36 +286,38 @@ public class ClusterListener {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                RestResult top = restExecutor.topology(false, true);
+                RestResult res = restExecutor.topology(false, true);
 
-                switch (top.getStatus()) {
+                switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(top.getData(),
+                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
-                        Collection<UUID> nids = F.viewReadOnly(nodes, NODE2ID);
+                        TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                        if (Collections.disjoint(latestNids, nids)) {
-                            clusterConnect(nids);
-
+                        if (top.differentCluster(newTop)) {
                             clusterDisconnect();
+
+                            log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
 
                             watch();
                         }
 
-                        latestNids = nids;
+                        top = newTop;
 
-                        client.emit(EVENT_CLUSTER_TOPOLOGY, top.getData());
+                        client.emit(EVENT_CLUSTER_TOPOLOGY, res.getData());
 
                         break;
 
                     default:
-                        log.warn(top.getError());
+                        log.warn(res.getError());
 
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (Exception e) {
+                log.error("BroadcastTask failed", e);
+
                 clusterDisconnect();
 
                 watch();

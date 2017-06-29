@@ -27,8 +27,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -39,15 +41,15 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.database.DataStructure;
-import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
@@ -63,7 +65,7 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
-import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
@@ -1222,6 +1224,79 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertEquals((Long)10L, last);
 
         assertNoLocks();
+    }
+
+    /**
+     *
+     */
+    public void testConcurrentGrowDegenerateTreeAndConcurrentRemove() throws Exception {
+        //calculate tree size when split happens
+        final TestTree t = createTestTree(true);
+        long i = 0;
+
+        for (; ; i++) {
+            t.put(i);
+
+            if (t.rootLevel() > 0)  //split happened
+                break;
+        }
+
+        final long treeStartSize = i;
+
+        final AtomicReference<Throwable> failed = new AtomicReference<>();
+
+        for (int k = 0; k < 100; k++) {
+            final TestTree tree = createTestTree(true);
+
+            final AtomicBoolean start = new AtomicBoolean();
+
+            final AtomicInteger ready = new AtomicInteger();
+
+            Thread first = new Thread(new Runnable() {
+                @Override public void run() {
+                    ready.incrementAndGet();
+
+                    while (!start.get()); //waiting without blocking
+
+                    try {
+                        tree.remove(treeStartSize / 2L);
+                    }
+                    catch (Throwable th) {
+                        failed.set(th);
+                    }
+                }
+            });
+
+            Thread second = new Thread(new Runnable() {
+                @Override public void run() {
+                    ready.incrementAndGet();
+
+                    while (!start.get()); //waiting without blocking
+
+                    try {
+                        tree.put(treeStartSize + 1);
+                    }
+                    catch (Throwable th) {
+                        failed.set(th);
+                    }
+                }
+            });
+
+            for (int j = 0; j < treeStartSize; j++)
+                tree.put((long)j);
+
+            first.start();
+            second.start();
+
+            while (ready.get() != 2);
+
+            start.set(true);
+
+            first.join();
+            second.join();
+
+            assertNull(failed.get());
+        }
     }
 
     /**

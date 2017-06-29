@@ -33,6 +33,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -110,8 +111,8 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** */
     @GridToStringInclude
-    @GridDirectCollection(String.class)
-    private Collection<String> tbls;
+    @GridDirectCollection(Message.class)
+    private Collection<QueryTable> tbls;
 
     /** */
     private int timeout;
@@ -123,6 +124,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** */
     private byte[] paramsBytes;
+
+    /** Schema name. */
+    private String schemaName;
 
     /**
      * Required by {@link Externalizable}
@@ -147,6 +151,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         timeout = req.timeout;
         params = req.params;
         paramsBytes = req.paramsBytes;
+        schemaName = req.schemaName;
     }
 
     /**
@@ -173,7 +178,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @param tbls Tables.
      * @return {@code this}.
      */
-    public GridH2QueryRequest tables(Collection<String> tbls) {
+    public GridH2QueryRequest tables(Collection<QueryTable> tbls) {
         this.tbls = tbls;
 
         return this;
@@ -182,7 +187,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /**
      * @return Tables.
      */
-    public Collection<String> tables() {
+    public Collection<QueryTable> tables() {
         return tbls;
     }
 
@@ -342,6 +347,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         return this;
     }
 
+    /**
+     * @return Schema name.
+     */
+    public String schemaName() {
+        return schemaName;
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest schemaName(String schemaName) {
+        this.schemaName = schemaName;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
@@ -434,7 +456,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.STRING))
+                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -454,6 +476,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
             case 10:
                 if (!writer.writeIntArray("qryParts", qryParts))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeString("schemaName", schemaName))
                     return false;
 
                 writer.incrementState();
@@ -527,7 +555,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 7:
-                tbls = reader.readCollection("tbls", MessageCollectionItemType.STRING);
+                tbls = reader.readCollection("tbls", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -558,6 +586,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 reader.incrementState();
+
+            case 11:
+                schemaName = reader.readString("schemaName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -570,7 +606,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

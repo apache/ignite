@@ -18,6 +18,8 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    extern alias ExamplesDll;
+
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -31,7 +33,10 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Compute;
+    using Apache.Ignite.ExamplesDll.Binary;
     using NUnit.Framework;
+
+    using ExamplesAccount = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Account;
 
     /// <summary>
     /// Tests the dynamic type registration.
@@ -311,20 +316,43 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var cache = ignite.CreateCache<int, object>(cacheCfg);
 
                 // Force dynamic registration for .NET
-                cache.Put(1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(-1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(ComputeApiTest.EchoTypeBinarizable, 255);
 
                 // Run Java code that will also perform dynamic registration
                 var fromJava = ignite.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
                     ComputeApiTest.EchoTypeBinarizable);
 
                 // Check that objects are compatible
-                Assert.AreEqual(1, fromJava.Field);
+                Assert.AreEqual(255, fromJava.Field);
 
                 // Check that Java can read what .NET has put
                 var qryRes = ignite.GetCompute().ExecuteJavaTask<IList>(
-                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field < 10");
+                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field = 7");
 
                 Assert.AreEqual(7, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
+            }
+        }
+
+        /// <summary>
+        /// Tests that types with same FullName from different assemblies are mapped to each other.
+        /// </summary>
+        [Test]
+        public void TestSameTypeInDifferentAssemblies()
+        {
+            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cache1 = ignite1.CreateCache<int, ExamplesAccount>("acc");
+                cache1[1] = new ExamplesAccount(1, 2.2m);
+
+                using (var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "ignite2")))
+                {
+                    var cache2 = ignite2.GetCache<int, Account>("acc");
+                    cache2[2] = new Account {Id = 2, Balance = 3.3m};
+
+                    Assert.AreEqual(1, cache2[1].Id);  // Read ExamplesAccount as Account.
+                    Assert.AreEqual(2, cache1[2].Id);  // Read Account as ExamplesAccount.
+                }
             }
         }
 
@@ -490,5 +518,18 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return _func();
             }
         }
+    }
+}
+
+namespace Apache.Ignite.ExamplesDll.Binary
+{
+    /// <summary>
+    /// Copy of Account class in ExamplesDll. Same name and namespace, different assembly.
+    /// </summary>
+    public class Account
+    {
+        public int Id { get; set; }
+
+        public decimal Balance { get; set; }
     }
 }

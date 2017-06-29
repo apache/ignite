@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.internal.visor.cache.VisorMemoryMetrics;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
@@ -66,6 +67,12 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /** Exceptions caught during collecting events from nodes. */
     private Map<UUID, VisorExceptionWrapper> evtsEx = new HashMap<>();
 
+    /** All memory metrics collected from nodes. */
+    private Map<UUID, Collection<VisorMemoryMetrics>> memoryMetrics = new HashMap<>();
+
+    /** Exceptions caught during collecting memory metrics from nodes. */
+    private Map<UUID, VisorExceptionWrapper> memoryMetricsEx = new HashMap<>();
+
     /** All caches collected from nodes. */
     private Map<UUID, Collection<VisorCache>> caches = new HashMap<>();
 
@@ -80,6 +87,12 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
 
     /** Exceptions caught during collecting IGFS from nodes. */
     private Map<UUID, VisorExceptionWrapper> igfssEx = new HashMap<>();
+
+    /** Topology version of latest completed partition exchange from nodes. */
+    private Map<UUID, VisorAffinityTopologyVersion> readyTopVers = new HashMap<>();
+
+    /** Whether pending exchange future exists from nodes. */
+    private Map<UUID, Boolean> pendingExchanges = new HashMap<>();
 
     /**
      * Default constructor.
@@ -99,11 +112,15 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
             taskMonitoringEnabled.isEmpty() &&
             evts.isEmpty() &&
             evtsEx.isEmpty() &&
+            memoryMetrics.isEmpty() &&
+            memoryMetricsEx.isEmpty() &&
             caches.isEmpty() &&
             cachesEx.isEmpty() &&
             igfss.isEmpty() &&
             igfsEndpoints.isEmpty() &&
-            igfssEx.isEmpty();
+            igfssEx.isEmpty() &&
+            readyTopVers.isEmpty() &&
+            pendingExchanges.isEmpty();
     }
 
     /**
@@ -163,6 +180,20 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     }
 
     /**
+     * @return All memory metrics collected from nodes.
+     */
+    public Map<UUID, Collection<VisorMemoryMetrics>> getMemoryMetrics() {
+        return memoryMetrics;
+    }
+
+    /**
+     * @return Exceptions caught during collecting memory metrics from nodes.
+     */
+    public Map<UUID, VisorExceptionWrapper> getMemoryMetricsEx() {
+        return memoryMetricsEx;
+    }
+
+    /**
      * @return All caches collected from nodes.
      */
     public Map<UUID, Collection<VisorCache>> getCaches() {
@@ -204,6 +235,20 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         return errCnts;
     }
 
+    /**
+     * @return Topology version of latest completed partition exchange from nodes.
+     */
+    public Map<UUID, VisorAffinityTopologyVersion> getReadyAffinityVersions() {
+        return readyTopVers;
+    }
+
+    /**
+     * @return Whether pending exchange future exists from nodes.
+     */
+    public Map<UUID, Boolean> getPendingExchanges() {
+        return pendingExchanges;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(active);
@@ -214,11 +259,15 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         U.writeMap(out, errCnts);
         U.writeCollection(out, evts);
         U.writeMap(out, evtsEx);
+        U.writeMap(out, memoryMetrics);
+        U.writeMap(out, memoryMetricsEx);
         U.writeMap(out, caches);
         U.writeMap(out, cachesEx);
         U.writeMap(out, igfss);
         U.writeMap(out, igfsEndpoints);
         U.writeMap(out, igfssEx);
+        U.writeMap(out, readyTopVers);
+        U.writeMap(out, pendingExchanges);
     }
 
     /** {@inheritDoc} */
@@ -231,11 +280,15 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         errCnts = U.readMap(in);
         evts = U.readList(in);
         evtsEx = U.readMap(in);
+        memoryMetrics = U.readMap(in);
+        memoryMetricsEx = U.readMap(in);
         caches = U.readMap(in);
         cachesEx = U.readMap(in);
         igfss = U.readMap(in);
         igfsEndpoints = U.readMap(in);
         igfssEx = U.readMap(in);
+        readyTopVers = U.readMap(in);
+        pendingExchanges = U.readMap(in);
     }
 
     /** {@inheritDoc} */

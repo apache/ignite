@@ -415,24 +415,29 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     @SuppressWarnings({"CatchGenericClass"})
     protected void uncommit() {
-        for (IgniteTxEntry e : writeMap().values()) {
-            try {
-                GridCacheEntryEx Entry = e.cached();
+        try {
+            for (IgniteTxEntry e : writeMap().values()) {
+                try {
+                    GridCacheEntryEx Entry = e.cached();
 
-                if (e.op() != NOOP)
-                    Entry.invalidate(null, xidVer);
+                    if (e.op() != NOOP)
+                        Entry.invalidate(null, xidVer);
+                }
+                catch (Throwable t) {
+                    U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+
+                    if (t instanceof Error)
+                        throw (Error)t;
+
+                    break;
+                }
             }
-            catch (Throwable t) {
-                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                if (t instanceof Error)
-                    throw (Error)t;
-
-                break;
-            }
+            cctx.tm().uncommitTx(this);
         }
-
-        cctx.tm().uncommitTx(this);
+        catch (Exception ex) {
+            U.error(log, "Failed to do uncommit.", ex);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1480,7 +1485,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             if (modified)
                 cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
 
-            GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+            GridCacheOperation op = modified ? (cacheVal == null ? DELETE : UPDATE) : NOOP;
 
             if (op == NOOP) {
                 ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);

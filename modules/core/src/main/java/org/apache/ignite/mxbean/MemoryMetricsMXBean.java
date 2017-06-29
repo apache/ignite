@@ -73,6 +73,18 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     @MXBeanDescription("Percentage of space that is still free and can be filled in.")
     @Override public float getPagesFillFactor();
 
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of pages in memory not yet synchronized with persistent storage.")
+    @Override public long getDirtyPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Rate at which pages in memory are replaced with pages from persistent storage (pages per second).")
+    @Override public float getPagesReplaceRate();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of pages residing in physical RAM.")
+    @Override public long getPhysicalMemoryPages();
+
     /**
      * Enables memory metrics collection on an Apache Ignite node.
      */
@@ -91,7 +103,7 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
      * For instance, after setting the interval to 60 seconds, subsequent calls to {@link #getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      *
-     * @param rateTimeInterval Time interval used for allocation and eviction rates calculations.
+     * @param rateTimeInterval Time interval (in milliseconds) used for allocation and eviction rates calculations.
      */
     @MXBeanDescription(
         "Sets time interval for pages allocation and eviction monitoring purposes."
@@ -100,12 +112,12 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
         "rateTimeInterval"
     )
     @MXBeanParametersDescriptions(
-        "Time interval (in seconds) to set."
+        "Time interval (in milliseconds) to set."
     )
-    public void rateTimeInterval(int rateTimeInterval);
+    public void rateTimeInterval(long rateTimeInterval);
 
     /**
-     * Sets a number of sub-intervals the whole {@link #rateTimeInterval(int)} will be split into to calculate
+     * Sets a number of sub-intervals the whole {@link #rateTimeInterval(long)} will be split into to calculate
      * {@link #getAllocationRate()} and {@link #getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of

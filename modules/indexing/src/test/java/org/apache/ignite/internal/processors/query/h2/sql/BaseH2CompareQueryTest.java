@@ -60,6 +60,21 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /** Purchase count. */
     public static final int PURCH_CNT = PROD_CNT * 5;
 
+    /** */
+    protected static final String ORG = "org";
+
+    /** */
+    protected static final String PERS = "pers";
+
+    /** */
+    protected static final String PURCH = "purch";
+
+    /** */
+    protected static final String PROD = "prod";
+
+    /** */
+    protected static final String ADDR = "addr";
+
     /** Cache org. */
     private static IgniteCache<Integer, Organization> cacheOrg;
 
@@ -80,11 +95,11 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(
-            cacheConfiguration("org", CacheMode.PARTITIONED, Integer.class, Organization.class),
-            cacheConfiguration("pers", CacheMode.PARTITIONED, AffinityKey.class, Person.class),
-            cacheConfiguration("purch", CacheMode.PARTITIONED, AffinityKey.class, Purchase.class),
-            cacheConfiguration("prod", CacheMode.REPLICATED, Integer.class, Product.class),
-            cacheConfiguration("addr", CacheMode.REPLICATED, Integer.class, Address.class));
+            cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class),
+            cacheConfiguration(PERS, CacheMode.PARTITIONED, AffinityKey.class, Person.class),
+            cacheConfiguration(PURCH, CacheMode.PARTITIONED, AffinityKey.class, Purchase.class),
+            cacheConfiguration(PROD, CacheMode.REPLICATED, Integer.class, Product.class),
+            cacheConfiguration(ADDR, CacheMode.REPLICATED, Integer.class, Address.class));
 
         return cfg;
     }
@@ -103,11 +118,11 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void createCaches() {
-        cacheOrg = jcache(ignite, cacheConfiguration("org", CacheMode.PARTITIONED, Integer.class, Organization.class), "org", Integer.class, Organization.class);
-        cachePers = ignite.cache("pers");
-        cachePurch = ignite.cache("purch");
-        cacheProd = ignite.cache("prod");
-        cacheAddr = ignite.cache("addr");
+        cacheOrg = jcache(ignite, cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class), ORG, Integer.class, Organization.class);
+        cachePers = ignite.cache(PERS);
+        cachePurch = ignite.cache(PURCH);
+        cacheProd = ignite.cache(PROD);
+        cacheAddr = ignite.cache(ADDR);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +145,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
             insertInDb(org);
         }
 
-       // Adresses.
+        // Adresses.
         List<Address> addreses = new ArrayList<>();
 
         for (int i = 0; i < ADDR_CNT; i++) {
@@ -259,13 +274,13 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         List<List<?>> res = compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person left join \"addr\".Address " +
-            " on Person.addrId = Address.id where lower(Address.street) = lower(?)", addStreet);
+                " on Person.addrId = Address.id where lower(Address.street) = lower(?)", addStreet);
 
         assertNotSame(0, res);
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person join \"addr\".Address on Person.addrId = Address.id " +
-            "where lower(Address.street) = lower(?)", addStreet);
+                "where lower(Address.street) = lower(?)", addStreet);
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person left join \"addr\".Address " +
@@ -274,7 +289,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person, \"addr\".Address where Person.addrId = Address.id " +
-            "and lower(Address.street) = lower(?)", addStreet);
+                "and lower(Address.street) = lower(?)", addStreet);
 
         compareQueryRes0(cachePers, "select firstName, date from \"pers\".Person");
         compareQueryRes0(cachePers, "select distinct firstName, date from \"pers\".Person");
@@ -483,8 +498,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      */
     public void testOrdered() throws Exception {
         compareOrderedQueryRes0(cachePers, "select firstName, lastName" +
-                " from \"pers\".Person" +
-                " order by lastName, firstName");
+            " from \"pers\".Person" +
+            " order by lastName, firstName");
     }
 
     /**

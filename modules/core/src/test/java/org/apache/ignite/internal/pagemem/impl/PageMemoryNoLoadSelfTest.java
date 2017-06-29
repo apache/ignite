@@ -25,14 +25,15 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -42,6 +43,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final int PAGE_SIZE = 8 * 1024;
+
+    /** */
+    private static final int MAX_MEMORY_SIZE = 10 * 1024 * 1024;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -86,6 +90,31 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             finally {
                 mem.releasePage(fullId1.cacheId(), fullId1.pageId(), page1);
             }
+        }
+        finally {
+            mem.stop();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadedPagesCount() throws Exception {
+        PageMemory mem = memory();
+
+        mem.start();
+
+        int expPages = MAX_MEMORY_SIZE / mem.systemPageSize();
+
+        try {
+            for (int i = 0; i < expPages * 2; i++)
+                allocatePage(mem);
+        }
+        catch (IgniteOutOfMemoryException e) {
+            e.printStackTrace();
+            // Expected.
+
+            assertEquals(mem.loadedPages(), expPages);
         }
         finally {
             mem.stop();
@@ -280,7 +309,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     protected PageMemory memory() throws Exception {
         File memDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false);
 
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(10 * 1024 * 1024);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+            .setMaxSize(MAX_MEMORY_SIZE).setInitialSize(MAX_MEMORY_SIZE);
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);
 

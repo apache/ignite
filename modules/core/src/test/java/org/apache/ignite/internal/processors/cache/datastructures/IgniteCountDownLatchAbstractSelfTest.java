@@ -316,7 +316,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         // Ensure latch is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assertNull(((IgniteKernal)g).context().dataStructures().countDownLatch(latchName, 10, true, false));
+            assertNull(((IgniteKernal)g).context().dataStructures().countDownLatch(latchName, null, 10, true, false));
 
         checkRemovedLatch(latch);
     }
@@ -536,8 +536,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void run() {
+        @Override public void run() {
 
             IgniteCountDownLatch latch1 = createLatch1();
             IgniteCountDownLatch latch2 = createLatch2();

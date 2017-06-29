@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -31,9 +31,6 @@ import org.h2.value.Value;
  * H2 Cache object message.
  */
 public class GridH2CacheObject extends GridH2ValueMessage {
-    /** */
-    private int cacheId;
-
     /** */
     private CacheObject obj;
 
@@ -51,26 +48,16 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     public GridH2CacheObject(GridH2ValueCacheObject v) throws IgniteCheckedException {
         this.obj = v.getCacheObject();
 
-        GridCacheContext<?,?> cctx = v.getCacheContext();
-
-        if (cctx != null) {
-            this.cacheId = cctx.cacheId();
-
-            obj.prepareMarshal(cctx.cacheObjectContext());
-        }
+        obj.prepareMarshal(v.valueContext());
     }
 
     /** {@inheritDoc} */
     @Override public Value value(GridKernalContext ctx) throws IgniteCheckedException {
-        GridCacheContext<?,?> cctx = null;
+        CacheObjectValueContext valCtx = ctx.query().objectContext();
 
-        if (ctx != null) {
-            cctx = ctx.cache().context().cacheContext(cacheId);
+        obj.finishUnmarshal(valCtx, ctx.cache().context().deploy().globalLoader());
 
-            obj.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
-        }
-
-        return new GridH2ValueCacheObject(cctx, obj);
+        return new GridH2ValueCacheObject(obj, valCtx);
     }
 
     /** {@inheritDoc} */
@@ -85,14 +72,6 @@ public class GridH2CacheObject extends GridH2ValueMessage {
 
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 obj = reader.readMessage("obj");
 
                 if (!reader.isLastRead())
@@ -121,12 +100,6 @@ public class GridH2CacheObject extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMessage("obj", obj))
                     return false;
 
@@ -144,7 +117,7 @@ public class GridH2CacheObject extends GridH2ValueMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
