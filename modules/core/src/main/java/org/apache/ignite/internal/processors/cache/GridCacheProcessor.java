@@ -2153,9 +2153,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 Integer groupId = action.descriptor().groupId();
 
                 if (cacheGrps.containsKey(groupId)) {
-                    stopCacheGroup(groupId);
-
                     stoppedGroups.add(F.t(cacheGrps.get(groupId), action.destroy()));
+
+                    stopCacheGroup(groupId);
                 }
             }
 
