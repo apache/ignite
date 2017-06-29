@@ -33,6 +33,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -127,7 +128,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
-        @Override public void onMessage(final UUID nodeId, final Object msg) {
+        @Override public void onMessage(final UUID nodeId, final Object msg, final byte plc) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
                     ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
@@ -206,6 +207,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         log.debug(msg0.toString());
                     }
 
+                    if (plc == GridIoPolicy.UTILITY_CACHE_POOL)
+                        rmtAffVer = new AffinityTopologyVersion(cctx.localNode().order());
+
                     fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
                 }
             }
@@ -213,22 +217,27 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (fut != null && !fut.isDone()) {
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
-                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                            @Override public void run() {
-                                IgniteLogger log = cacheMsg.messageLogger(cctx);
+                        try {
+                            cctx.kernalContext().pools().poolForPolicy(plc).execute(new Runnable() {
+                                @Override public void run() {
+                                    IgniteLogger log = cacheMsg.messageLogger(cctx);
 
-                                if (log.isDebugEnabled()) {
-                                    StringBuilder msg0 = new StringBuilder("Process cache message after wait for " +
-                                        "affinity topology version [");
+                                    if (log.isDebugEnabled()) {
+                                        StringBuilder msg0 = new StringBuilder("Process cache message after wait for " +
+                                            "affinity topology version [");
 
-                                    appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
+                                        appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
 
-                                    log.debug(msg0.toString());
+                                        log.debug(msg0.toString());
+                                    }
+
+                                    handleMessage(nodeId, cacheMsg);
                                 }
-
-                                handleMessage(nodeId, cacheMsg);
-                            }
-                        });
+                            });
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(cacheMsg.messageLogger(cctx), "Failed to get pool for policy: " + plc, e);
+                        }
                     }
                 });
 
@@ -1336,7 +1345,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"CatchGenericClass", "unchecked"})
-        @Override public void onMessage(final UUID nodeId, Object msg) {
+        @Override public void onMessage(final UUID nodeId, Object msg, byte plc) {
             if (log.isDebugEnabled())
                 log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');
 
