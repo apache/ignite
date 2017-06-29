@@ -32,9 +32,13 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.ignite.console.demo.*;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
-import org.apache.log4j.Logger;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
@@ -45,7 +49,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 public class RestExecutor {
     /** */
-    private static final Logger log = Logger.getLogger(RestExecutor.class);
+    private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
 
     /** JSON object mapper. */
     private static final ObjectMapper mapper = new GridJettyObjectMapper();
@@ -166,12 +170,15 @@ public class RestExecutor {
             }
 
             if (resp.code() == 401)
-                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in grid. Please check agent\'s login and password or node port.");
+                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in grid. " +
+                    "Please check agent\'s login and password or node port.");
 
             return RestResult.fail(STATUS_FAILED, "Failed connect to node and execute REST command.");
         }
-        catch (ConnectException ignore) {
-            log.warn("Please ensure that nodes have ignite-rest-http module in classpath (was copied from libs/optional to libs folder).");
+        catch (ConnectException ignored) {
+            LT.warn(log, "Failed connect to node and execute REST command. " +
+                "Please ensure that nodes have [ignite-rest-http] module in classpath " +
+                "(was copied from libs/optional to libs folder).");
 
             throw new ConnectException("Failed connect to node and execute REST command [url=" + urlBuilder + "]");
         }
@@ -187,14 +194,15 @@ public class RestExecutor {
      */
     public RestResult execute(boolean demo, String path, Map<String, Object> params,
         String mtd, Map<String, Object> headers, String body) {
-        log.debug("Start execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+        if (log.isDebugEnabled())
+            log.debug("Start execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]");
 
         try {
             return sendRequest(demo, path, params, mtd, headers, body);
         }
         catch (Exception e) {
-            log.info("Failed to execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+            U.error(log, "Failed to execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]", e);
 
             return RestResult.fail(404, e.getMessage());
