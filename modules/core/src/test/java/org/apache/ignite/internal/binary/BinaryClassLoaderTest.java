@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -40,6 +41,9 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
     private static final String ENUM_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Color";
+    private static final String ORGANIZATION_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Organization";
+    private static final String ADDRESS_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Address";
+
     private static final String[] enumVals = {"GREY", "RED", "GREEN", "PURPLE", "LIGHTBLUE"};
 
     private boolean startClient = false;
@@ -55,6 +59,9 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC),
                 new CacheConfiguration("SomeCacheEnum")
                     .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC),
+                new CacheConfiguration("OrganizationCache")
+                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
     }
 
@@ -68,6 +75,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
             final Ignite ignite3 = startGrid(3);
 
             loadItems(testClassLoader, ignite1);
+            loadOrganization(testClassLoader, ignite1);
             loadEnumItems(testClassLoader, ignite1);
 
             checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, ignite1);
@@ -78,6 +86,9 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
             checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite2);
             checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite3);
 
+            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite1);
+            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite2);
+            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite3);
         }
         finally {
             stopAllGrids();
@@ -97,6 +108,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
             final Ignite client = startGrid(3);
 
             loadItems(testClassLoader, client);
+            loadOrganization(testClassLoader, client);
             loadEnumItems(testClassLoader, client);
 
             checkItems(testClassLoader, "SomeCache", PERSON_CLASS_NAME, ignite1);
@@ -107,6 +119,9 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
             checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, ignite2);
             checkItems(testClassLoader, "SomeCacheEnum", ENUM_CLASS_NAME, client);
 
+            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite1);
+            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, ignite2);
+            checkItems(testClassLoader, "OrganizationCache", ORGANIZATION_CLASS_NAME, client);
         }
         finally {
             stopAllGrids();
@@ -125,6 +140,13 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
         for (int i =0; i< 100; i++) {
 
             BinaryObject binaryVal = binaryCache.get(i);
+
+            if (i%50 == 0)
+                try {
+                    info("Val: " + binaryVal.toString());
+                } catch (IgniteException e) {
+                    info("Can not execute toString() on class " + binaryVal.type().typeName());
+                }
 
             assertEquals(binaryVal.type().typeName(), valClassName);
 
@@ -160,6 +182,28 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
         for (int i =0; i< 100; i++)
             cache.put(i, personConstructor.newInstance("Persone name " + i));
+
+        assertEquals(cache.size(CachePeekMode.PRIMARY), 100);
+    }
+
+    /**
+     * @param testClassLoader Test class loader.
+     * @param ignite Ignite.
+     */
+    private void loadOrganization(ClassLoader testClassLoader, Ignite ignite) throws Exception {
+        Class personClass = testClassLoader.loadClass(PERSON_CLASS_NAME);
+        Class addressClass = testClassLoader.loadClass(ADDRESS_CLASS_NAME);
+
+        Constructor personConstructor = testClassLoader.loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
+        Constructor addressConstructor = testClassLoader.loadClass(ADDRESS_CLASS_NAME).getConstructor(String.class, Integer.TYPE);
+        Constructor organizationConstructor = testClassLoader.loadClass(ORGANIZATION_CLASS_NAME).getConstructor(String.class, personClass, addressClass);
+
+        IgniteCache cache = ignite.cache("OrganizationCache");
+
+        for (int i =0; i< 100; i++)
+            cache.put(i, organizationConstructor.newInstance("Organization " + i,
+                personConstructor.newInstance("Persone name " + i),
+                addressConstructor.newInstance("Street " + i, i)));
 
         assertEquals(cache.size(CachePeekMode.PRIMARY), 100);
     }

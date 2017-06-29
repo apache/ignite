@@ -716,7 +716,7 @@ class OptimizedClassDescriptor {
 
             case OBJ_ARR:
                 OptimizedClassDescriptor compDesc = OptimizedMarshallerUtils.classDescriptor(clsMap,
-                    obj.getClass().getComponentType(),
+                    obj.getClass().getComponentType(), true,
                     ctx,
                     mapper);
 
@@ -777,7 +777,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, (Class<?>)obj, true, ctx, mapper);
 
                 clsDesc.writeTypeData(out);
 
@@ -787,7 +787,7 @@ class OptimizedClassDescriptor {
                 out.writeInt(proxyIntfs.length);
 
                 for (Class<?> intf : proxyIntfs) {
-                    OptimizedClassDescriptor intfDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, intf, ctx, mapper);
+                    OptimizedClassDescriptor intfDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, intf, true, ctx, mapper);
 
                     intfDesc.writeTypeData(out);
                 }

@@ -495,7 +495,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);
+                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null, true);
 
                 break;
         }

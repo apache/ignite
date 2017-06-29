@@ -251,7 +251,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     // Restore buffer position.
                     buf.position(pos);
 
-                    val = BinaryUtils.unmarshal(BinaryByteBufferInputStream.create(buf), ctx, null);
+                    val = BinaryUtils.unmarshal(BinaryByteBufferInputStream.create(buf), ctx, null, true);
 
                     break;
             }

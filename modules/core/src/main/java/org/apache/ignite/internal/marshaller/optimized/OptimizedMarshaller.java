@@ -212,7 +212,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
         assert in != null;
 
         OptimizedObjectInputStream objIn = null;
@@ -220,7 +220,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, useCache);
 
             objIn.in().inputStream(in);
 
@@ -250,7 +250,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, true);
 
             objIn.in().bytes(arr, arr.length);
 

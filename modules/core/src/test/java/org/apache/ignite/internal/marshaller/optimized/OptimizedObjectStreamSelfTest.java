@@ -1068,7 +1068,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = OptimizedObjectStreamRegistry.in();
 
-            in.context(clsMap, CTX, null, getClass().getClassLoader());
+            in.context(clsMap, CTX, null, getClass().getClassLoader(), true);
 
             in.in().bytes(arr, arr.length);
 

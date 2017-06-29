@@ -394,7 +394,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
                 stream.position(fieldPos);
 
-                val = BinaryUtils.unmarshal(stream, ctx, null);
+                val = BinaryUtils.unmarshal(stream, ctx, null, true);
 
                 break;
         }
