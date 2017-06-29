@@ -28,7 +28,7 @@ public class RocketMQStreamerTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Apache Kafka streamer Test Suite");
+        TestSuite suite = new TestSuite("Apache RocketMQ streamer Test Suite");
 
         suite.addTest(new TestSuite(RocketMQStreamerTest.class));
 

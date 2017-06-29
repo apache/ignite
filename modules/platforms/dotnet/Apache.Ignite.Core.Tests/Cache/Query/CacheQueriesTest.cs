@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -956,9 +957,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error flag
         public bool ThrowErr { get; set; }
 
+        // Injection test
+        [InstanceResource]
+        public IIgnite Ignite { get; set; }
+
         /** <inheritdoc /> */
         public bool Invoke(ICacheEntry<int, TV> entry)
         {
+            Assert.IsNotNull(Ignite);
+
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 

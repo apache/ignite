@@ -145,22 +145,33 @@ class ClusterCachesInfo {
         if (gridData != null && gridData.conflictErr != null)
             throw new IgniteCheckedException(gridData.conflictErr);
 
-        if (checkConsistency && joinDiscoData != null && gridData != null) {
+        if (joinDiscoData != null && gridData != null) {
             for (CacheJoinNodeDiscoveryData.CacheInfo locCacheInfo : joinDiscoData.caches().values()) {
                 CacheConfiguration locCfg = locCacheInfo.config();
 
                 CacheData cacheData = gridData.gridData.caches().get(locCfg.getName());
 
-                if (cacheData != null)
-                    checkCache(locCacheInfo, cacheData, cacheData.receivedFrom());
+                if (cacheData != null) {
+                    if (!F.eq(cacheData.sql(), locCacheInfo.sql())) {
+                        throw new IgniteCheckedException("Cache configuration mismatch (local cache was created " +
+                            "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "Ignite API") + ", while remote cache " +
+                            "was created via " + (cacheData.sql() ? "CREATE TABLE" : "Ignite API") + "): " +
+                            locCacheInfo.config().getName());
+                    }
 
-                validateStartCacheConfiguration(locCfg);
+                    if (checkConsistency)
+                        checkCache(locCacheInfo, cacheData, cacheData.receivedFrom());
+                }
+
+                if (checkConsistency)
+                    validateStartCacheConfiguration(locCfg);
             }
         }
 
         joinDiscoData = null;
         gridData = null;
     }
+
     /**
      * Checks that remote caches has configuration compatible with the local.
      *
@@ -172,17 +183,14 @@ class ClusterCachesInfo {
     @SuppressWarnings("unchecked")
     private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
-        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.sql());
-        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.config(), locInfo.sql());
+        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration());
+        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.config());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
         CU.checkAttributeMismatch(log, rmtAttr.groupName(), rmt, "groupName", "Cache group name",
             locAttr.groupName(), rmtAttr.groupName(), true);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "sql", "SQL flag",
-            locAttr.sql(), rmtAttr.sql(), true);
 
         if (rmtAttr.cacheMode() != LOCAL) {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
@@ -276,6 +284,40 @@ class ClusterCachesInfo {
     }
 
     /**
+     * @param msg Message.
+     * @param node Node sent message.
+     */
+    void onClientCacheChange(ClientCacheChangeDiscoveryMessage msg, ClusterNode node) {
+        Map<Integer, Boolean> startedCaches = msg.startedCaches();
+
+        if (startedCaches != null) {
+            for (Map.Entry<Integer, Boolean> e : startedCaches.entrySet()) {
+                for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                    if (e.getKey().equals(desc.cacheId())) {
+                        ctx.discovery().addClientNode(desc.cacheName(), node.id(), e.getValue());
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        Set<Integer> closedCaches = msg.closedCaches();
+
+        if (closedCaches != null) {
+            for (Integer cacheId : closedCaches) {
+                for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                    if (cacheId.equals(desc.cacheId())) {
+                        ctx.discovery().onClientCacheClose(desc.cacheName(), node.id());
+
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * @param batch Cache change request.
      * @param topVer Topology version.
      * @return {@code True} if minor topology version should be increased.
@@ -321,9 +363,13 @@ class ClusterCachesInfo {
                 continue;
             }
 
+            assert !req.clientStartOnly() : req;
+
             DynamicCacheDescriptor desc = req.globalStateChange() ? null : registeredCaches.get(req.cacheName());
 
             boolean needExchange = false;
+
+            boolean clientCacheStart = false;
 
             AffinityTopologyVersion waitTopVer = null;
 
@@ -384,6 +430,7 @@ class ClusterCachesInfo {
                         assert old == null;
 
                         ctx.discovery().setCacheFilter(
+                            startDesc.cacheId(),
                             grpDesc.groupId(),
                             ccfg.getName(),
                             ccfg.getNearConfiguration() != null);
@@ -402,40 +449,35 @@ class ClusterCachesInfo {
                 else {
                     assert req.initiatingNodeId() != null : req;
 
-                    // Cache already exists, exchange is needed only if client cache should be created.
-                    ClusterNode node = ctx.discovery().node(req.initiatingNodeId());
-
-                    boolean clientReq = node != null &&
-                        !ctx.discovery().cacheAffinityNode(node, req.cacheName());
-
-                    if (req.clientStartOnly()) {
-                        needExchange = clientReq && ctx.discovery().addClientNode(req.cacheName(),
-                            req.initiatingNodeId(),
-                            req.nearCacheConfiguration() != null);
+                    if (req.failIfExists()) {
+                        ctx.cache().completeCacheStartFuture(req, false,
+                            new CacheExistsException("Failed to start cache " +
+                                "(a cache with the same name is already started): " + req.cacheName()));
                     }
                     else {
-                        if (req.failIfExists()) {
-                            ctx.cache().completeCacheStartFuture(req, false,
-                                new CacheExistsException("Failed to start cache " +
-                                    "(a cache with the same name is already started): " + req.cacheName()));
-                        }
-                        else {
-                            needExchange = clientReq && ctx.discovery().addClientNode(req.cacheName(),
+                        // Cache already exists, it is possible client cache is needed.
+                        ClusterNode node = ctx.discovery().node(req.initiatingNodeId());
+
+                        boolean clientReq = node != null &&
+                            !ctx.discovery().cacheAffinityNode(node, req.cacheName());
+
+                        if (clientReq) {
+                            ctx.discovery().addClientNode(req.cacheName(),
                                 req.initiatingNodeId(),
                                 req.nearCacheConfiguration() != null);
+
+                            if (node.id().equals(req.initiatingNodeId())) {
+                                desc.clientCacheStartVersion(topVer);
+
+                                clientCacheStart = true;
+
+                                ctx.discovery().clientCacheStartEvent(req.requestId(), F.asMap(req.cacheName(), req), null);
+                            }
                         }
-                    }
-
-                    if (needExchange) {
-                        req.clientStartOnly(true);
-
-                        desc.clientCacheStartVersion(topVer.nextMinorVersion());
-
-                        exchangeActions.addClientCacheToStart(req, desc);
                     }
                 }
 
-                if (!needExchange && desc != null) {
+                if (!needExchange && !clientCacheStart && desc != null) {
                     if (desc.clientCacheStartVersion() != null)
                         waitTopVer = desc.clientCacheStartVersion();
                     else {
@@ -504,19 +546,11 @@ class ClusterCachesInfo {
                     }
                 }
             }
-            else if (req.close()) {
-                if (desc != null) {
-                    needExchange = ctx.discovery().onClientCacheClose(req.cacheName(), req.initiatingNodeId());
-
-                    if (needExchange)
-                        exchangeActions.addCacheToClose(req, desc);
-                }
-            }
             else
                 assert false : req;
 
             if (!needExchange) {
-                if (req.initiatingNodeId().equals(ctx.localNodeId()))
+                if (!clientCacheStart && req.initiatingNodeId().equals(ctx.localNodeId()))
                     reqsToComplete.add(new T2<>(req, waitTopVer));
             }
             else
@@ -845,6 +879,7 @@ class ClusterCachesInfo {
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
 
             ctx.discovery().setCacheFilter(
+                desc.cacheId(),
                 grpDesc.groupId(),
                 cfg.getName(),
                 cfg.getNearConfiguration() != null);
@@ -1078,6 +1113,7 @@ class ClusterCachesInfo {
                     joinData.cacheDeploymentId());
 
                 ctx.discovery().setCacheFilter(
+                    cacheId,
                     grpDesc.groupId(),
                     cfg.getName(),
                     cfg.getNearConfiguration() != null);
@@ -1223,8 +1259,8 @@ class ClusterCachesInfo {
      */
     private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg)
         throws IgniteCheckedException {
-        GridCacheAttributes attr1 = new GridCacheAttributes(cfg, false);
-        GridCacheAttributes attr2 = new GridCacheAttributes(startCfg, false);
+        GridCacheAttributes attr1 = new GridCacheAttributes(cfg);
+        GridCacheAttributes attr2 = new GridCacheAttributes(startCfg);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);

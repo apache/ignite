@@ -433,6 +433,62 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
             };
         }
 
+        function isValidJavaIdentifier(s) {
+            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
+                SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
+        }
+
+        function toJavaIdentifier(name) {
+            if (_.isEmpty(name))
+                return 'DB';
+
+            const len = name.length;
+
+            let ident = '';
+
+            let capitalizeNext = true;
+
+            for (let i = 0; i < len; i++) {
+                const ch = name.charAt(i);
+
+                if (ch === ' ' || ch === '_')
+                    capitalizeNext = true;
+                else if (ch === '-') {
+                    ident += '_';
+                    capitalizeNext = true;
+                }
+                else if (capitalizeNext) {
+                    ident += ch.toLocaleUpperCase();
+
+                    capitalizeNext = false;
+                }
+                else
+                    ident += ch.toLocaleLowerCase();
+            }
+
+            return ident;
+        }
+
+        function toJavaClassName(name) {
+            const clazzName = toJavaIdentifier(name);
+
+            if (isValidJavaIdentifier(clazzName))
+                return clazzName;
+
+            return 'Class' + clazzName;
+        }
+
+        function toJavaFieldName(dbName) {
+            const javaName = toJavaIdentifier(dbName);
+
+            const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
+
+            if (isValidJavaIdentifier(fieldName))
+                return fieldName;
+
+            return 'field' + javaName;
+        }
+
         /**
          * Show import domain models modal.
          */
@@ -544,17 +600,14 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
                     return agentMgr.schemas(preset);
                 })
-                .then(function(schemas) {
-                    $scope.importDomain.schemas = _.map(schemas, function(schema) {
-                        return {use: true, name: schema};
-                    });
-
+                .then((schemaInfo) => {
                     $scope.importDomain.action = 'schemas';
+                    $scope.importDomain.info = INFO_SELECT_SCHEMAS;
+                    $scope.importDomain.catalog = toJavaIdentifier(schemaInfo.catalog);
+                    $scope.importDomain.schemas = _.map(schemaInfo.schemas, (schema) => ({use: true, name: schema}));
 
                     if ($scope.importDomain.schemas.length === 0)
                         $scope.importDomainNext();
-
-                    $scope.importDomain.info = INFO_SELECT_SCHEMAS;
                 })
                 .catch(Messages.showError)
                 .then(() => Loading.finish('importDomainFromDb'));
@@ -594,55 +647,6 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
 
             return 'Associate with ' + cacheName;
         };
-
-        function isValidJavaIdentifier(s) {
-            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
-                SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
-        }
-
-        function toJavaIdentifier(name) {
-            const len = name.length;
-
-            let ident = '';
-
-            let capitalizeNext = true;
-
-            for (let i = 0; i < len; i++) {
-                const ch = name.charAt(i);
-
-                if (ch === ' ' || ch === '_')
-                    capitalizeNext = true;
-                else if (capitalizeNext) {
-                    ident += ch.toLocaleUpperCase();
-
-                    capitalizeNext = false;
-                }
-                else
-                    ident += ch.toLocaleLowerCase();
-            }
-
-            return ident;
-        }
-
-        function toJavaClassName(name) {
-            const clazzName = toJavaIdentifier(name);
-
-            if (isValidJavaIdentifier(clazzName))
-                return clazzName;
-
-            return 'Class' + clazzName;
-        }
-
-        function toJavaFieldName(dbName) {
-            const javaName = toJavaIdentifier(dbName);
-
-            const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
-
-            if (isValidJavaIdentifier(fieldName))
-                return fieldName;
-
-            return 'field' + javaName;
-        }
 
         function _fillCommonCachesOrTemplates(item) {
             return function(action) {
@@ -968,9 +972,14 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                         if (!newCache.cacheStoreFactory || newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
                             const dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
 
+                            const catalog = $scope.importDomain.catalog;
+
                             newCache.cacheStoreFactory = {
                                 kind: 'CacheJdbcPojoStoreFactory',
-                                CacheJdbcPojoStoreFactory: {dataSourceBean: 'ds' + dialect, dialect},
+                                CacheJdbcPojoStoreFactory: {
+                                    dataSourceBean: 'ds' + dialect + '_' + catalog,
+                                    dialect
+                                },
                                 CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
                             };
                         }
