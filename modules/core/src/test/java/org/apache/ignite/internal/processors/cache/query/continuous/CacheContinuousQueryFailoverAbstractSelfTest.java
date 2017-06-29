@@ -840,8 +840,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
-            spi.skipMsg = true;
-
             Ignite ignite = ignite(i);
 
             IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -1259,8 +1257,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @param e Event
      * @param expVals expected value
-     * @return {@code True} if entries has the same key, value and oldValue. If cache start without backups than
-     * oldValue ignoring in comparison.
+     * @return {@code True} if entries has the same key, value and oldValue. If cache start without backups
+     * than oldValue ignoring in comparison.
      */
     private boolean equalOldValue(CacheEntryEvent<?, ?> e, T3<Object, Object, Object> expVals) {
         return (e.getOldValue() == null && expVals.get3() == null) // Both null
