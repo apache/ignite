@@ -175,6 +175,21 @@ namespace ignite
             }
 
             /**
+             * Broadcasts provided ComputeFunc to all nodes in the cluster group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
+             *  class.
+             * @param func Compute function to call.
+             * @return Vector containing computation results.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            void Broadcast(const F& func)
+            {
+                return impl.Get()->BroadcastAsync<F, false>(func).GetValue();
+            }
+
+            /**
              * Asyncronuously broadcasts provided ComputeFunc to all nodes in the
              * cluster group.
              *
@@ -192,6 +207,24 @@ namespace ignite
             Future< std::vector<R> > BroadcastAsync(const F& func)
             {
                 return impl.Get()->BroadcastAsync<R, F>(func);
+            }
+
+            /**
+             * Asyncronuously broadcasts provided ComputeFunc to all nodes in the
+             * cluster group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
+             *  class.
+             * @param func Compute function to call.
+             * @return Vector containing computation results.
+             * @return Future that can be used to access computation results once
+             *  they are ready.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            Future<void> BroadcastAsync(const F& func)
+            {
+                return impl.Get()->BroadcastAsync<F, false>(func);
             }
 
         private:

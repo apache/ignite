@@ -164,6 +164,37 @@ namespace ignite
                     return promise.GetFuture();
                 }
 
+                /**
+                 * Asyncronuously broadcasts provided ComputeFunc to all nodes
+                 * in the underlying cluster group.
+                 *
+                 * @tparam F Compute function type. Should implement
+                 *  ComputeFunc<R> class.
+                 * @param func Compute function to call.
+                 * @return Future that can be used to acess computation result
+                 *  once it's ready.
+                 * @throw IgniteError in case of error.
+                 */
+                template<typename F, bool>
+                Future<void> BroadcastAsync(const F& func)
+                {
+                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, void>(func));
+
+                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
+
+                    MultipleJobComputeTaskHolder<F, void>* taskPtr = new MultipleJobComputeTaskHolder<F, void>(jobHandle);
+                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
+
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::BROADCAST, jobHandle, taskHandle, func);
+
+                    common::Promise<void>& promise = taskPtr->GetPromise();
+                    promise.SetCancelTarget(cancelable);
+
+                    return promise.GetFuture();
+                }
+
             private:
                 /**
                  * Perform job.
