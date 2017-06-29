@@ -1331,7 +1331,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             long updateSeq = this.updateSeq.incrementAndGet();
 
-            node2part.updateSequence(updateSeq);
+            node2part.newUpdateSequence(updateSeq);
 
             boolean changed = false;
 

@@ -2121,6 +2121,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (discoEvt.type() != EVT_NODE_LEFT && discoEvt.type() != EVT_NODE_FAILED || crd == null)
             return;
 
+        ClusterNode crd0 = crd;
+
         if (!skipCrdChange)
             synchronized (mux) {
                 discoCache.updateAlives(node);
@@ -2135,10 +2137,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 assert rmv;
 
+                remaining.remove(node.id());
+
                 crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
+
+                crd0 = crd;
             }
 
-        if (crd == null || !crd.isLocal())
+        if (crd0 == null || !crd0.isLocal())
             return;
 
         // Prevent blocking discovery thread.
@@ -2160,9 +2166,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 Map<Integer, Map<Integer, List<UUID>>> assignmentChange = new HashMap<>();
 
-                Set<ClusterNode> nodesToFix = new HashSet<>();
+                Set<ClusterNode> nodesToFix = new HashSet<>(); // Nodes with stale exchange.
 
-                // Receive current assignment, if any.
                 // TODO how to handle race when no assignments were done yet?
                 for (GridDhtReadyAssignmentsFetchFuture fut : futs) {
                     assert topologyVersion() == fut.key().get2();
@@ -2185,23 +2190,28 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             else {
                                 if (!assignmentChange.containsKey(ctx.cacheId()))
                                     assignmentChange.put(ctx.cacheId(), change);
-                                // TODO else validate same assignment from all nodes.
+                                else
+                                    assert assignmentChange.get(ctx.cacheId()).equals(change);
                             }
                         }
                     } catch (IgniteCheckedException e) {
-                        // No-op.
+                        log.error("Unable to fetch ready assignment for [cacheId=" + fut.key().get1() +
+                                ", topVer=" + fut.key().get2() + ", exchId=" + exchangeId() + ']');
+
+                        // TODO what to do in case of error?
                     }
                 }
 
+                // New coordinator is the only node with completed exchange, use local assignment for all other nodes.
                 if (isDone() && assignmentChange.isEmpty()) {
-                    // Compute difference with ideal for local node.
                     for (GridCacheContext ctx : cctx.cacheContexts()) {
-                        List<List<ClusterNode>> assignment = ctx.affinity().assignment(topologyVersion()).assignment();
-                        List<List<ClusterNode>> ideal = ctx.affinity().assignment(topologyVersion()).idealAssignment();
+                        AffinityAssignment affAssignment = ctx.affinity().assignment(topologyVersion());
+                        List<List<ClusterNode>> assignment = affAssignment.assignment();
+                        List<List<ClusterNode>> idealAssignment = affAssignment.idealAssignment();
 
                         for (int p = 0; p < ctx.affinity().partitions(); p++) {
                             List<ClusterNode> a1 = assignment.get(p);
-                            List<ClusterNode> a2 = ideal.get(p);
+                            List<ClusterNode> a2 = idealAssignment.get(p);
 
                             if (!a1.equals(a2)) {
                                 Map<Integer, List<UUID>> map = assignmentChange.get(ctx.cacheId());
@@ -2217,7 +2227,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 if (!isDone() || !nodesToFix.isEmpty()) {
-                    GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true); // TODO seems incorrect.
+                    // TODO seems incorrect, we have to store and use partition map received on exchange finish msg.
+                    GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
 
                     GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
 
