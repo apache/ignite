@@ -29,14 +29,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 class JdkMarshallerObjectInputStream extends ObjectInputStream {
     /** */
     private final ClassLoader clsLdr;
+    /** The flag declares will be use class loader cache or not. */
+    private boolean useCache;
 
     /**
      * @param in Parent input stream.
      * @param clsLdr Custom class loader.
+     * @param useCache True if class loader cache will be used, false otherwise.
      * @throws IOException If initialization failed.
      */
-    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
+    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr, boolean useCache) throws IOException {
         super(in);
+
+        this.useCache = useCache;
 
         assert clsLdr != null;
 
@@ -51,7 +56,7 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return U.forName(desc.getName(), clsLdr);
+        return U.forName(desc.getName(), clsLdr, useCache);
     }
 
     /** {@inheritDoc} */

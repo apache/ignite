@@ -91,7 +91,19 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
         String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
 
         try {
-            return unmarshal0(in, clsLdr);
+            return unmarshal0(in, clsLdr, true);
+        }
+        finally {
+            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
+        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
+
+        try {
+            return unmarshal0(in, clsLdr, useCache);
         }
         finally {
             IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
@@ -117,17 +129,18 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
      */
     protected abstract byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException;
 
-    /**
+   /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
      *
      * @param <T> Type of unmarshalled object.
      * @param in Input stream.
      * @param clsLdr Class loader to use.
+     * @param useCache True if class loader cache will be used, false otherwise.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    protected abstract <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException;
+    protected abstract <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException;
 
     /**
      * Unmarshals object from byte array using given class loader.

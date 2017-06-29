@@ -107,7 +107,7 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
         assert in != null;
 
         if (clsLdr == null)
@@ -116,7 +116,7 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
         ObjectInputStream objIn = null;
 
         try {
-            objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr);
+            objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr, useCache);
 
             return (T)objIn.readObject();
         }
