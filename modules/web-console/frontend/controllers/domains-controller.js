@@ -661,9 +661,6 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                 }
 
                 if (!_.isEmpty($scope.caches)) {
-                    if (item.cachesOrTemplates.length > 0)
-                        item.cachesOrTemplates.push(null);
-
                     _.forEach($scope.caches, function(cache) {
                         item.cachesOrTemplates.push(cache);
                     });

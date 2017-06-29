@@ -113,7 +113,7 @@ export default class PageConfigureBasicController {
     getClustersMenu(clusters = new Map()) {
         const newOne = {_id: -1, name: '+ Add new cluster'};
         return clusters.size
-            ? [newOne, {}, ...clusters.values()]
+            ? [newOne, ...clusters.values()]
             : [newOne];
     }
 

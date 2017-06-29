@@ -188,7 +188,6 @@ suite('page-configure-basic component controller', () => {
                 ],
                 clustersMenu: [
                     {_id: -1, name: '+ Add new cluster'},
-                    {},
                     {_id: 1, name: '1', caches: [1, 2]},
                     {_id: 2, name: '2'}
                 ],

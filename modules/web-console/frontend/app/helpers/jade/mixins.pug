@@ -499,7 +499,7 @@ mixin evictionPolicy(model, name, enabled, required, tip)
             {value: "LRU", label: "LRU"},\
             {value: "FIFO", label: "FIFO"},\
             {value: "SORTED", label: "Sorted"},\
-            {value: undefined, label: "Not set"}\
+            {value: null, label: "Not set"}\
         ]', tip)
     span(ng-show=kind)
         +showHideLink('expanded', 'settings')
