@@ -343,14 +343,13 @@ public class QueryUtils {
      * @param cacheName Cache name.
      * @param cctx Cache context.
      * @param qryEntity Query entity.
-     * @param sql SQL flag.
      * @param mustDeserializeClss Classes which must be deserialized.
      * @param escape Escape flag.
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
-        boolean sql, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
+    public static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
+        List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
@@ -381,8 +380,6 @@ public class QueryUtils {
         desc.name(simpleValType);
 
         desc.tableName(qryEntity.getTableName());
-
-        desc.sql(sql);
 
         if (binaryEnabled && !keyOrValMustDeserialize) {
             // Safe to check null.
