@@ -15,8 +15,10 @@
     limitations under the License.
 
 .row
-    .col-xs-3.col-sm-3.col-md-2.border-right.section-left.greedy
+    .col-xs-3.col-sm-3.col-md-2.border-right.section-left
         .sidebar-nav(bs-affix)
+            version-picker
+            hr
             ul.menu(ignite-sidebar)
                 li(ng-repeat='item in sidebar.items')
                     a(ui-sref-active='active' ui-sref='{{::item.sref}}')

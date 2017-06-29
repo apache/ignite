@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,21 +62,36 @@ import static java.sql.Types.VARCHAR;
 public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** SQL to get columns metadata. */
     private static final String SQL_COLUMNS = "SELECT a.owner, a.table_name, a.column_name, a.nullable," +
-        " a.data_type, a.data_precision, a.data_scale " +
-        "FROM all_tab_columns a %s " +
+        " a.data_type, a.data_precision, a.data_scale" +
+        " FROM all_tab_columns a %s" +
         " %s " +
         " ORDER BY a.owner, a.table_name, a.column_id";
 
     /** SQL to get list of PRIMARY KEYS columns. */
     private static final String SQL_PRIMARY_KEYS = "SELECT b.column_name" +
         " FROM all_constraints a" +
-        "  INNER JOIN all_cons_columns b ON a.owner = b.owner AND a.constraint_name = b.constraint_name" +
+        "  INNER JOIN all_cons_columns b" +
+        "   ON a.owner = b.owner" +
+        "  AND a.constraint_name = b.constraint_name" +
         " WHERE a.owner = ? and a.table_name = ? AND a.constraint_type = 'P'";
+
+    /** SQL to get list of UNIQUE INDEX columns. */
+    private static final String SQL_UNIQUE_INDEXES_KEYS = "SELECT a.index_name, b.column_name" +
+        " FROM all_indexes a" +
+        " INNER JOIN all_ind_columns b" +
+        "   ON a.index_name = b.index_name" +
+        "  AND a.table_owner = b.table_owner" +
+        "  AND a.table_name = b.table_name" +
+        "  AND a.owner = b.index_owner" +
+        " WHERE a.owner = ? AND a.table_name = ? AND a.uniqueness = 'UNIQUE'" +
+        " ORDER BY b.column_position";
 
     /** SQL to get indexes metadata. */
     private static final String SQL_INDEXES = "SELECT i.index_name, u.column_expression, i.column_name, i.descend" +
         " FROM all_ind_columns i" +
-        " LEFT JOIN user_ind_expressions u on u.index_name = i.index_name and i.table_name = u.table_name" +
+        " LEFT JOIN user_ind_expressions u" +
+        "   ON u.index_name = i.index_name" +
+        "  AND i.table_name = u.table_name" +
         " WHERE i.index_owner = ? and i.table_name = ?" +
         " ORDER BY i.index_name, i.column_position";
 
@@ -100,6 +116,12 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** Numeric scale index. */
     private static final int DATA_SCALE_IDX = 7;
 
+    /** Unique index name index. */
+    private static final int UNQ_IDX_NAME_IDX = 1;
+
+    /** Unique index column name index. */
+    private static final int UNQ_IDX_COL_NAME_IDX = 2;
+
     /** Index name index. */
     private static final int IDX_NAME_IDX = 1;
 
@@ -114,9 +136,9 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
     /** {@inheritDoc} */
     @Override public Set<String> systemSchemas() {
-        return new HashSet<>(Arrays.asList("ANONYMOUS", "CTXSYS", "DBSNMP", "EXFSYS", "LBACSYS", "MDSYS", "MGMT_VIEW",
-            "OLAPSYS", "OWBSYS", "ORDPLUGINS", "ORDSYS", "OUTLN", "SI_INFORMTN_SCHEMA", "SYS", "SYSMAN", "SYSTEM",
-            "TSMSYS", "WK_TEST", "WKSYS", "WKPROXY", "WMSYS", "XDB",
+        return new HashSet<>(Arrays.asList("ANONYMOUS", "APPQOSSYS", "CTXSYS", "DBSNMP", "EXFSYS", "LBACSYS", "MDSYS",
+            "MGMT_VIEW", "OLAPSYS", "OWBSYS", "ORDPLUGINS", "ORDSYS", "OUTLN", "SI_INFORMTN_SCHEMA", "SYS", "SYSMAN",
+            "SYSTEM", "TSMSYS", "WK_TEST", "WKSYS", "WKPROXY", "WMSYS", "XDB",
 
             "APEX_040000", "APEX_PUBLIC_USER", "DIP", "FLOWS_30000", "FLOWS_FILES", "MDDATA", "ORACLE_OCM",
             "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "XS$NULL",
@@ -235,10 +257,10 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
      * @throws SQLException If failed to retrieve primary key columns.
      */
     private Set<String> primaryKeys(PreparedStatement stmt, String owner, String tbl) throws SQLException {
-        Set<String> pkCols = new HashSet<>();
-
         stmt.setString(1, owner);
         stmt.setString(2, tbl);
+
+        Set<String> pkCols = new LinkedHashSet<>();
 
         try (ResultSet pkRs = stmt.executeQuery()) {
             while(pkRs.next())
@@ -249,23 +271,63 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     }
 
     /**
+     * Retrieve unique indexes with columns.
+     *
+     * @param stmt Prepared SQL statement to execute.
+     * @param owner DB owner.
+     * @param tbl Table name.
+     * @return Unique indexes.
+     * @throws SQLException If failed to retrieve unique indexes columns.
+     */
+    private Map<String, Set<String>> uniqueIndexes(PreparedStatement stmt, String owner, String tbl) throws SQLException {
+        stmt.setString(1, owner);
+        stmt.setString(2, tbl);
+
+        Map<String, Set<String>> uniqueIdxs = new LinkedHashMap<>();
+
+        try (ResultSet idxsRs = stmt.executeQuery()) {
+            while (idxsRs.next()) {
+                String idxName = idxsRs.getString(UNQ_IDX_NAME_IDX);
+                String colName = idxsRs.getString(UNQ_IDX_COL_NAME_IDX);
+
+                Set<String> idxCols = uniqueIdxs.get(idxName);
+
+                if (idxCols == null) {
+                    idxCols = new LinkedHashSet<>();
+
+                    uniqueIdxs.put(idxName, idxCols);
+                }
+
+                idxCols.add(colName);
+            }
+        }
+
+        return uniqueIdxs;
+    }
+
+    /**
      * Retrieve index columns.
      *
      * @param stmt Prepared SQL statement to execute.
      * @param owner DB owner.
      * @param tbl Table name.
+     * @param uniqueIdxAsPk Optional unique index that used as PK.
      * @return Indexes.
      * @throws SQLException If failed to retrieve indexes columns.
      */
-    private Collection<QueryIndex> indexes(PreparedStatement stmt, String owner, String tbl) throws SQLException {
-        Map<String, QueryIndex> idxs = new LinkedHashMap<>();
-
+    private Collection<QueryIndex> indexes(PreparedStatement stmt, String owner, String tbl, String uniqueIdxAsPk) throws SQLException {
         stmt.setString(1, owner);
         stmt.setString(2, tbl);
+
+        Map<String, QueryIndex> idxs = new LinkedHashMap<>();
 
         try (ResultSet idxsRs = stmt.executeQuery()) {
             while (idxsRs.next()) {
                 String idxName = idxsRs.getString(IDX_NAME_IDX);
+
+                // Skip unique index used as PK.
+                if (idxName.equals(uniqueIdxAsPk))
+                    continue;
 
                 QueryIndex idx = idxs.get(idxName);
 
@@ -287,12 +349,9 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<DbTable> tables(Connection conn, List<String> schemas, boolean tblsOnly)
-        throws SQLException {
-        Collection<DbTable> tbls = new ArrayList<>();
-
+    @Override public Collection<DbTable> tables(Connection conn, List<String> schemas, boolean tblsOnly) throws SQLException {
         PreparedStatement pkStmt = conn.prepareStatement(SQL_PRIMARY_KEYS);
-
+        PreparedStatement uniqueIdxsStmt = conn.prepareStatement(SQL_UNIQUE_INDEXES_KEYS);
         PreparedStatement idxStmt = conn.prepareStatement(SQL_INDEXES);
 
         if (schemas.isEmpty())
@@ -300,15 +359,12 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
         Set<String> sysSchemas = systemSchemas();
 
+        Collection<DbTable> tbls = new ArrayList<>();
+
         try (Statement colsStmt = conn.createStatement()) {
             for (String schema: schemas) {
                 if (systemSchemas().contains(schema) || (schema != null && schema.startsWith("FLOWS_")))
                     continue;
-
-                Collection<DbColumn> cols = new ArrayList<>();
-
-                Set<String> pkCols = Collections.emptySet();
-                Collection<QueryIndex> idxs = Collections.emptyList();
 
                 String sql = String.format(SQL_COLUMNS,
                         tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "",
@@ -319,6 +375,10 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                     String prevTbl = "";
 
                     boolean first = true;
+
+                    Set<String> pkCols = Collections.emptySet();
+                    Collection<DbColumn> cols = new ArrayList<>();
+                    Collection<QueryIndex> idxs = Collections.emptyList();
 
                     while (colsRs.next()) {
                         String owner = colsRs.getString(OWNER_IDX);
@@ -339,7 +399,17 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                             prevTbl = tbl;
                             cols = new ArrayList<>();
                             pkCols = primaryKeys(pkStmt, owner, tbl);
-                            idxs = indexes(idxStmt, owner, tbl);
+
+                            Map.Entry<String, Set<String>> uniqueIdxAsPk = null;
+
+                            if (pkCols.isEmpty()) {
+                                uniqueIdxAsPk = uniqueIndexAsPk(uniqueIndexes(uniqueIdxsStmt, owner, tbl));
+
+                                if (uniqueIdxAsPk != null)
+                                    pkCols.addAll(uniqueIdxAsPk.getValue());
+                            }
+
+                            idxs = indexes(idxStmt, owner, tbl, uniqueIdxAsPk != null ? uniqueIdxAsPk.getKey() : null);
                         }
 
                         String colName = colsRs.getString(COL_NAME_IDX);

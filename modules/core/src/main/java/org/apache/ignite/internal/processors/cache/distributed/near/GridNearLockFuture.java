@@ -1074,6 +1074,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 skipStore,
                                                 keepBinary,
                                                 clientFirst,
+                                                true,
                                                 cctx.deploymentEnabled());
 
                                             mapping.request(req);
@@ -1492,9 +1493,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private final int futId;
 

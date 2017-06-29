@@ -401,8 +401,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return default(T);
 
                 case BinaryUtils.TypeEnum:
-                    // Never read enums in binary mode when reading a field (we do not support half-binary objects)
-                    return ReadEnum0<T>(this, false);  
+                    return ReadEnum0<T>(this, _mode == BinaryMode.ForceBinary);
+
+                case BinaryUtils.TypeBinaryEnum:
+                    return ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                 case BinaryUtils.HdrFull:
                     // Unregistered enum written as serializable
@@ -411,9 +413,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return ReadObject<T>(); 
 
                 default:
-                    throw new BinaryObjectException(
-                        string.Format("Invalid header on enum deserialization. Expected: {0} or {1} but was: {2}",
-                            BinaryUtils.TypeEnum, BinaryUtils.HdrFull, hdr));
+                    throw new BinaryObjectException(string.Format(
+                        "Invalid header on enum deserialization. Expected: {0} or {1} or {2} but was: {3}",
+                            BinaryUtils.TypeEnum, BinaryUtils.TypeBinaryEnum, BinaryUtils.HdrFull, hdr));
             }
         }
 
@@ -521,13 +523,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Deserialize object.
         /// </summary>
+        /// <param name="typeOverride">The type override.
+        /// There can be multiple versions of the same type when peer assembly loading is enabled.
+        /// Only first one is registered in Marshaller.
+        /// This parameter specifies exact type to be instantiated.</param>
         /// <returns>Deserialized object.</returns>
-        public T Deserialize<T>()
+        public T Deserialize<T>(Type typeOverride = null)
         {
             T res;
 
             // ReSharper disable once CompareNonConstrainedGenericWithNull
-            if (!TryDeserialize(out res) && default(T) != null)
+            if (!TryDeserialize(out res, typeOverride) && default(T) != null)
                 throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
                     "Expected: '{0}' But was: null", typeof (T)));
 
@@ -537,8 +543,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Deserialize object.
         /// </summary>
-        /// <returns>Deserialized object.</returns>
-        public bool TryDeserialize<T>(out T res)
+        /// <param name="res">Deserialized object.</param>
+        /// <param name="typeOverride">The type override.
+        /// There can be multiple versions of the same type when peer assembly loading is enabled.
+        /// Only first one is registered in Marshaller.
+        /// This parameter specifies exact type to be instantiated.</param>
+        /// <returns>
+        /// Deserialized object.
+        /// </returns>
+        public bool TryDeserialize<T>(out T res, Type typeOverride = null)
         {
             int pos = Stream.Position;
 
@@ -556,12 +569,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return false;
 
                 case BinaryUtils.HdrHnd:
-                    res = ReadHandleObject<T>(pos);
+                    res = ReadHandleObject<T>(pos, typeOverride);
 
                     return true;
 
                 case BinaryUtils.HdrFull:
-                    res = ReadFullObject<T>(pos);
+                    res = ReadFullObject<T>(pos, typeOverride);
 
                     return true;
 
@@ -571,6 +584,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryUtils.TypeEnum:
+                    res = ReadEnum0<T>(this, _mode == BinaryMode.ForceBinary);
+
+                    return true;
+
+                case BinaryUtils.TypeBinaryEnum:
                     res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                     return true;
@@ -581,7 +599,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
-                
+
         /// <summary>
         /// Gets the flag indicating that there is custom type information in raw region.
         /// </summary>
@@ -655,8 +673,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the full object.
         /// </summary>
+        /// <param name="pos">The position.</param>
+        /// <param name="typeOverride">The type override.
+        /// There can be multiple versions of the same type when peer assembly loading is enabled.
+        /// Only first one is registered in Marshaller.
+        /// This parameter specifies exact type to be instantiated.</param>
+        /// <returns>Resulting object</returns>
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
-        private T ReadFullObject<T>(int pos)
+        private T ReadFullObject<T>(int pos, Type typeOverride)
         {
             var hdr = BinaryObjectHeader.Read(Stream, pos);
 
@@ -694,24 +718,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     // Find descriptor.
                     var desc = hdr.TypeId == BinaryUtils.TypeUnregistered
-                        ? _marsh.GetDescriptor(Type.GetType(ReadString(), true))
-                        : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true);
+                        ? _marsh.GetDescriptor(ReadUnregisteredType(typeOverride))
+                        : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true, null, typeOverride);
 
                     // Instantiate object. 
                     if (desc.Type == null)
                     {
-                        if (desc is BinarySurrogateTypeDescriptor)
-                        {
-                            throw new BinaryObjectException(string.Format(
-                                "Unknown type ID: {0}. " +
-                                "This usually indicates missing BinaryConfiguration. " +
-                                "Make sure that all nodes have the same BinaryConfiguration.", hdr.TypeId));
-                        }
-
                         throw new BinaryObjectException(string.Format(
                             "No matching type found for object [typeId={0}, typeName={1}]. " +
                             "This usually indicates that assembly with specified type is not loaded on a node. " +
-                            "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter.",
+                            "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter. " +
+                            "Alternatively, set IgniteConfiguration.PeerAssemblyLoadingEnabled to true.",
                             desc.TypeId, desc.TypeName));
                     }
 
@@ -726,7 +743,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _frame.Raw = false;
 
                     // Read object.
-                    var obj = desc.Serializer.ReadBinary<T>(this, desc, pos);
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc, pos, typeOverride);
 
                     _frame.Struct.UpdateReaderStructure();
 
@@ -741,6 +758,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Advance stream pointer.
                 Stream.Seek(pos + hdr.Length, SeekOrigin.Begin);
             }
+        }
+
+        /// <summary>
+        /// Reads the unregistered type.
+        /// </summary>
+        private Type ReadUnregisteredType(Type knownType)
+        {
+            var typeName = ReadString();  // Must read always.
+
+            return knownType ?? Marshaller.ResolveType(typeName);
         }
 
         /// <summary>
@@ -813,7 +840,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the handle object.
         /// </summary>
-        private T ReadHandleObject<T>(int pos)
+        private T ReadHandleObject<T>(int pos, Type typeOverride)
         {
             // Get handle position.
             int hndPos = pos - Stream.ReadInt();
@@ -831,7 +858,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         // No such handler, i.e. we trying to deserialize inner object before deserializing outer.
                         Stream.Seek(hndPos, SeekOrigin.Begin);
 
-                        hndObj = Deserialize<T>();
+                        hndObj = Deserialize<T>(typeOverride);
                     }
 
                     // Notify builder that we deserialized object on other location.
@@ -975,7 +1002,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return default(T);
 
             if (hdr == BinaryUtils.HdrHnd)
-                return ReadHandleObject<T>(Stream.Position - 1);
+                return ReadHandleObject<T>(Stream.Position - 1, null);
 
             if (expHdr != hdr)
                 throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
@@ -994,7 +1021,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             var enumValue = reader.ReadInt();
 
             if (!keepBinary)
+            {
                 return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
+            }
 
             return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }

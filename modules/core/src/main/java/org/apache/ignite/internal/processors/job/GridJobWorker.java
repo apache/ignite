@@ -929,7 +929,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         }
                         catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.
-                            if (isDeadNode(taskNode.id())) {
+                            if ((e instanceof ClusterTopologyCheckedException) || isDeadNode(taskNode.id())) {
                                 onMasterNodeLeft();
 
                                 // Avoid stack trace for left nodes.

@@ -200,11 +200,8 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
             this.data = data;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean equals(final Object o) {
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
             if (this == o)
                 return true;
             if (o == null || getClass() != o.getClass())
@@ -216,19 +213,13 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public int hashCode() {
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
             return data != null ? data.hashCode() : 0;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return S.toString(TestClass.class, this);
         }
     }

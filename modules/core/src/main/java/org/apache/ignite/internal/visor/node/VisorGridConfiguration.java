@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -110,8 +110,8 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /** Hadoop configuration. */
     private VisorHadoopConfiguration hadoopCfg;
 
-    /** ODBC configuration. */
-    private VisorOdbcConfiguration odbcCfg;
+    /** SQL connector configuration. */
+    private VisorSqlConnectorConfiguration sqlConnCfg;
 
     /** List of service configurations. */
     private List<VisorServiceConfiguration> srvcCfgs;
@@ -168,10 +168,10 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         if (hc != null)
             hadoopCfg = new VisorHadoopConfiguration(hc);
 
-        OdbcConfiguration oc = c.getOdbcConfiguration();
+        SqlConnectorConfiguration scc = c.getSqlConnectorConfiguration();
 
-        if (oc != null)
-            odbcCfg = new VisorOdbcConfiguration(c.getOdbcConfiguration());
+        if (scc != null)
+            sqlConnCfg = new VisorSqlConnectorConfiguration(scc);
 
         srvcCfgs = VisorServiceConfiguration.list(c.getServiceConfiguration());
     }
@@ -331,10 +331,10 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return ODBC configuration.
+     * @return SQL connector configuration.
      */
-    public VisorOdbcConfiguration getOdbcConfiguration() {
-        return odbcCfg;
+    public VisorSqlConnectorConfiguration getSqlConnectorConfiguration() {
+        return sqlConnCfg;
     }
 
     /**
@@ -368,7 +368,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         out.writeObject(binaryCfg);
         U.writeCollection(out, cacheKeyCfgs);
         out.writeObject(hadoopCfg);
-        out.writeObject(odbcCfg);
+        out.writeObject(sqlConnCfg);
         U.writeCollection(out, srvcCfgs);
     }
 
@@ -396,7 +396,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         binaryCfg = (VisorBinaryConfiguration)in.readObject();
         cacheKeyCfgs = U.readList(in);
         hadoopCfg = (VisorHadoopConfiguration)in.readObject();
-        odbcCfg = (VisorOdbcConfiguration)in.readObject();
+        sqlConnCfg = (VisorSqlConnectorConfiguration) in.readObject();
         srvcCfgs = U.readList(in);
     }
 

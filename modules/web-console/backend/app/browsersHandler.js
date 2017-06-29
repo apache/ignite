@@ -114,11 +114,8 @@ module.exports.factory = (_, socketio, configure, errors) => {
                         acc.count += 1;
                         acc.hasDemo |= _.get(agentSock, 'demo.enabled');
 
-                        if (agentSock.cluster) {
-                            acc.clusters.push({
-                                id: agentSock.cluster.id
-                            });
-                        }
+                        if (agentSock.cluster)
+                            acc.clusters.push(agentSock.cluster);
 
                         return acc;
                     }, {count: 0, hasDemo: false, clusters: []});
@@ -199,10 +196,19 @@ module.exports.factory = (_, socketio, configure, errors) => {
 
             const internalVisor = (postfix) => `org.apache.ignite.internal.visor.${postfix}`;
 
-            this.registerVisorTask('querySql', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryTaskArg'));
-            this.registerVisorTask('queryScan', internalVisor('query.VisorScanQueryTask'), internalVisor('query.VisorScanQueryTaskArg'));
-            this.registerVisorTask('queryFetch', internalVisor('query.VisorQueryNextPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
-            this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));
+            this.registerVisorTask('querySql', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryArg'));
+            this.registerVisorTask('querySqlV2', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryArgV2'));
+            this.registerVisorTask('querySqlV3', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryArgV3'));
+            this.registerVisorTask('querySqlX2', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryTaskArg'));
+
+            this.registerVisorTask('queryScanX2', internalVisor('query.VisorScanQueryTask'), internalVisor('query.VisorScanQueryTaskArg'));
+
+            this.registerVisorTask('queryFetch', internalVisor('query.VisorQueryNextPageTask'), 'org.apache.ignite.lang.IgniteBiTuple', 'java.lang.String', 'java.lang.Integer');
+            this.registerVisorTask('queryFetchX2', internalVisor('query.VisorQueryNextPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
+
+            this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), 'java.util.Map', 'java.util.UUID', 'java.util.Set');
+            this.registerVisorTask('queryCloseX2', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));
+
 
             // Return command result from grid to browser.
             sock.on('node:visor', (clusterId, taskId, nids, ...args) => {

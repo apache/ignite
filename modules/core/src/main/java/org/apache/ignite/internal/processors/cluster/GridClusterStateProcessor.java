@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
@@ -133,7 +134,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         cacheProc = ctx.cache();
         sharedCtx = cacheProc.context();
 
-        sharedCtx.io().addHandler(0,
+        sharedCtx.io().addCacheHandler(0,
             GridChangeGlobalStateMessageResponse.class,
             new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
                 @Override public void apply(UUID nodeId, GridChangeGlobalStateMessageResponse msg) {
@@ -193,7 +194,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        sharedCtx.io().removeHandler(0, GridChangeGlobalStateMessageResponse.class);
+        sharedCtx.io().removeHandler(false, 0, GridChangeGlobalStateMessageResponse.class);
         ctx.event().removeLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         IgniteCheckedException stopErr = new IgniteInterruptedCheckedException(
@@ -279,9 +280,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
                 DynamicCacheChangeRequest changeGlobalStateReq = new DynamicCacheChangeRequest(
-                    requestId, null, ctx.localNodeId());
-
-                changeGlobalStateReq.state(activate ? ACTIVE : INACTIVE);
+                    requestId, activate ? ACTIVE : INACTIVE, ctx.localNodeId());
 
                 reqs.add(changeGlobalStateReq);
 
@@ -329,26 +328,25 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param reqs Requests.
+     * @param exchActions Requests.
+     * @param topVer Exchange topology version.
      */
     public boolean changeGlobalState(
-        Collection<DynamicCacheChangeRequest> reqs,
+        ExchangeActions exchActions,
         AffinityTopologyVersion topVer
     ) {
-        assert !F.isEmpty(reqs);
+        assert exchActions != null;
         assert topVer != null;
 
-        for (DynamicCacheChangeRequest req : reqs)
-            if (req.globalStateChange()) {
-                ChangeGlobalStateContext cgsCtx = lastCgsCtx;
+        if (exchActions.newClusterState() != null) {
+            ChangeGlobalStateContext cgsCtx = lastCgsCtx;
 
-                assert cgsCtx != null : "reqs: " + Arrays.toString(reqs.toArray());
+            assert cgsCtx != null : exchActions;
 
-                cgsCtx.topologyVersion(topVer);
+            cgsCtx.topologyVersion(topVer);
 
-                return true;
-            }
-
+            return true;
+        }
 
         return false;
     }
@@ -379,7 +377,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         actx.setFail();
 
-        // revert change if activation request fail
+        // Revert change if activation request fail.
         if (actx.activate) {
             try {
                 cacheProc.onKernalStopCaches(true);

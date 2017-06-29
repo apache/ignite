@@ -20,6 +20,7 @@ include ../../primitives/datepicker/index
 include ../../primitives/dropdown/index
 include ../../primitives/tooltip/index
 include ../../primitives/ui-grid-settings/index
+include ../../primitives/switch/index
 
 //- Mixin for advanced options toggle.
 mixin advanced-options-toggle(click, cond, showMessage, hideMessage)
@@ -66,9 +67,9 @@ mixin save-remove-clone-undo-buttons(objectName)
         .panel-tip-container(ng-show='backupItem._id')
             a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
 
-        -var actions = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
+        -var options = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
 
-        +btn-group(actions, removeTip)(ng-show='backupItem._id')
+        +btn-group(false, options, removeTip)(ng-show='backupItem._id')
 
         .panel-tip-container(ng-show='backupItem')
             i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
@@ -531,9 +532,9 @@ mixin preview(master, generator, detail)
                 a(ng-class='{active: mode === "csharp"}' ng-click='mode = "csharp"') C#
                 //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
             .preview-content(ng-switch='mode')
-                ignite-ui-ace-spring(ng-switch-when="spring" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
-                ignite-ui-ace-java(ng-switch-when="java" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
-                ignite-ui-ace-sharp(ng-switch-when="csharp" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-spring(ng-switch-when='spring' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when='java' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-sharp(ng-switch-when='csharp' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
             .preview-content-empty(ng-if='!data')
                 label All Defaults
 
@@ -547,8 +548,8 @@ mixin preview-xml-java(master, generator, detail)
                 //a(ng-class='{active: mode === "csharp"}' ng-click='mode = "csharp"') C#
                 //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
             .preview-content(ng-switch='mode')
-                ignite-ui-ace-spring(ng-switch-when="spring" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
-                ignite-ui-ace-java(ng-switch-when="java" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-spring(ng-switch-when='spring' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when='java' data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
                 //ignite-ui-ace-sharp(ng-switch-when="csharp" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
             .preview-content-empty(ng-if='!data')
                 label All Defaults

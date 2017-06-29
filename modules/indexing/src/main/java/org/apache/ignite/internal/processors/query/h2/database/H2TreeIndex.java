@@ -100,8 +100,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         name = BPlusTree.treeName(name, "H2Tree");
 
         if (cctx.affinityNode()) {
-            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
             inlineIdxs = getAvailableInlineColumns(cols);
 
             segments = new H2Tree[segmentsCnt];
@@ -110,8 +108,9 @@ public class H2TreeIndex extends GridH2IndexBase {
                 RootPage page = getMetaPage(name, i);
 
                 segments[i] = new H2Tree(
-                    name,cctx.offheap().reuseListForIndex(name),
-                    cctx.cacheId(),
+                    name,
+                    cctx.offheap().reuseListForIndex(name),
+                    cctx.groupId(),
                     cctx.memoryPolicy().pageMemory(),
                     cctx.shared().wal(),
                     cctx.offheap().globalRemoveId(),
@@ -167,9 +166,9 @@ public class H2TreeIndex extends GridH2IndexBase {
             IgniteBiPredicate<Object, Object> p = null;
 
             if (f != null) {
-                String spaceName = getTable().spaceName();
+                String cacheName = getTable().cacheName();
 
-                p = f.forSpace(spaceName);
+                p = f.forCache(cacheName);
             }
 
             int seg = threadLocalSegment();

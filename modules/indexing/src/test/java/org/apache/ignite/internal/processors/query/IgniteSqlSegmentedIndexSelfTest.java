@@ -135,6 +135,31 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check correct index snapshots with segmented indices.
+     * @throws Exception If failed.
+     */
+    public void testSegmentedIndexReproducableResults() throws Exception {
+        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
+
+        IgniteCache<Object, Object> cache = ignite(0).cache(ORG_CACHE_NAME);
+
+        // Unequal entries distribution among partitions.
+        int expectedSize = nodesCount() * QRY_PARALLELISM_LVL *  3 / 2;
+
+        for (int i = 0; i < expectedSize; i++)
+            cache.put(i, new Organization("org-" + i));
+
+        String select0 = "select * from \"org\".Organization o";
+
+        // Check for stable results.
+        for(int i = 0; i < 10; i++) {
+            List<List<?>> result = cache.query(new SqlFieldsQuery(select0)).getAll();
+
+            assertEquals(expectedSize, result.size());
+        }
+    }
+
+    /**
      * Run tests on single-node grid
      *
      * @throws Exception If failed.

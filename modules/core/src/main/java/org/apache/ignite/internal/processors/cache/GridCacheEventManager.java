@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
@@ -59,6 +60,37 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public void removeListener(GridLocalEventListener lsnr) {
         cctx.gridEvents().removeLocalEventListener(lsnr);
+    }
+
+    /**
+     * @param key Key for event.
+     * @param tx Possible surrounding transaction.
+     * @param val Read value.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param keepBinary Keep binary flag.
+     */
+    public void readEvent(KeyCacheObject key,
+        @Nullable IgniteInternalTx tx,
+        @Nullable CacheObject val,
+        @Nullable UUID subjId,
+        @Nullable String taskName,
+        boolean keepBinary) {
+        if (isRecordable(EVT_CACHE_OBJECT_READ)) {
+            addEvent(cctx.affinity().partition(key),
+                key,
+                tx,
+                null,
+                EVT_CACHE_OBJECT_READ,
+                val,
+                val != null,
+                val,
+                val != null,
+                subjId,
+                null,
+                taskName,
+                keepBinary);
+        }
     }
 
     /**
@@ -277,7 +309,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false);
             }
             catch (Exception e) {
-                if (!cctx.cacheObjectContext().processor().isBinaryEnabled(cctx.config()))
+                if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
                     throw e;
 
                 if (log.isDebugEnabled())
@@ -333,42 +365,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         }
 
         return null;
-    }
-
-    /**
-     * Adds preloading event.
-     *
-     * @param part Partition.
-     * @param type Event type.
-     * @param discoNode Discovery node.
-     * @param discoType Discovery event type.
-     * @param discoTs Discovery event timestamp.
-     */
-    public void addPreloadEvent(int part, int type, ClusterNode discoNode, int discoType, long discoTs) {
-        assert discoNode != null;
-        assert type > 0;
-        assert discoType > 0;
-        assert discoTs > 0;
-
-        if (!cctx.events().isRecordable(type))
-            LT.warn(log, "Added event without checking if event is recordable: " + U.gridEventName(type));
-
-        cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
-            "Cache rebalancing event.", type, part, discoNode, discoType, discoTs));
-    }
-
-    /**
-     * Adds partition unload event.
-     *
-     * @param part Partition.
-     */
-    public void addUnloadEvent(int part) {
-        if (!cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
-            LT.warn(log, "Added event without checking if event is recordable: " +
-                U.gridEventName(EVT_CACHE_REBALANCE_PART_UNLOADED));
-
-        cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
-            "Cache unloading event.", EVT_CACHE_REBALANCE_PART_UNLOADED, part, null, 0, 0));
     }
 
     /**

@@ -64,7 +64,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all local tests located in org.apache.ignite.math.impls.* package.
+ * Test suite for all local tests located in org.apache.ignite.ml.math.impls.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -117,9 +117,7 @@ import org.junit.runners.Suite;
     EigenDecompositionTest.class,
     CholeskyDecompositionTest.class,
     QRDecompositionTest.class,
-    SingularValueDecompositionTest.class,
-    // Regressions.
-    OLSMultipleLinearRegressionTest.class
+    SingularValueDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

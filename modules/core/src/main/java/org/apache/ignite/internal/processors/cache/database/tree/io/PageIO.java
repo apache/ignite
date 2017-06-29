@@ -157,6 +157,18 @@ public abstract class PageIO {
     /** */
     public static final short T_PAGE_UPDATE_TRACKING = 15;
 
+    /** */
+    public static final short T_CACHE_ID_AWARE_DATA_REF_INNER = 16;
+
+    /** */
+    public static final short T_CACHE_ID_AWARE_DATA_REF_LEAF = 17;
+
+    /** */
+    public static final short T_CACHE_ID_AWARE_PENDING_REF_INNER = 18;
+
+    /** */
+    public static final short T_CACHE_ID_AWARE_PENDING_REF_LEAF = 19;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
 
@@ -484,6 +496,12 @@ public abstract class PageIO {
             case T_DATA_REF_LEAF:
                 return (Q)IgniteCacheOffheapManagerImpl.DataLeafIO.VERSIONS.forVersion(ver);
 
+            case T_CACHE_ID_AWARE_DATA_REF_INNER:
+                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_AWARE_DATA_REF_LEAF:
+                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
+
             case T_METASTORE_INNER:
                 return (Q)MetadataStorage.MetaStoreInnerIO.VERSIONS.forVersion(ver);
 
@@ -495,6 +513,12 @@ public abstract class PageIO {
 
             case T_PENDING_REF_LEAF:
                 return (Q)IgniteCacheOffheapManagerImpl.PendingEntryLeafIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_AWARE_PENDING_REF_INNER:
+                return (Q) IgniteCacheOffheapManagerImpl.CacheIdAwarePendingEntryInnerIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_AWARE_PENDING_REF_LEAF:
+                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
 
             default:
                 // For tests.

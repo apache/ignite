@@ -1022,7 +1022,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         // Swap and offheap are disabled for near cache.
         IgniteCacheOffheapManager offheapManager = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
         //First count entries...
-        int cnt = (int)offheapManager.entriesCount(part);
+        int cnt = (int)offheapManager.cacheEntriesCount(ctx.cacheId(), part);
 
         GridCacheAffinityManager affinity = ctx.affinity();
         AffinityTopologyVersion topVer = affinity.affinityTopologyVersion();

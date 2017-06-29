@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,7 +45,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicUpdateTimeoutException;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -67,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -212,15 +210,6 @@ public class GridCacheUtils {
         new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
                 return false;
-            }
-        }
-    );
-
-    /** */
-    private static final CacheEntryPredicate ALWAYS_TRUE0 = new CacheEntrySerializablePredicate(
-        new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                return true;
             }
         }
     );
@@ -376,21 +365,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param ctx Cache context.
-     * @param meta Meta name.
-     * @return Filter for entries with meta.
-     */
-    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final int meta) {
-        return new P1<KeyCacheObject>() {
-            @Override public boolean apply(KeyCacheObject k) {
-                GridCacheEntryEx e = ctx.cache().peekEx(k);
-
-                return e != null && e.hasMeta(meta);
-            }
-        };
-    }
-
-    /**
      * @param err If {@code true}, then throw {@link GridCacheFilterFailedException},
      *      otherwise return {@code val} passed in.
      * @return Always return {@code null}.
@@ -453,28 +427,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param ctx Cache registry.
-     * @return Space name.
-     */
-    public static String swapSpaceName(GridCacheContext<?, ?> ctx) {
-        String name = ctx.namex();
-
-        name = name == null ? "gg-swap-cache-dflt" : "gg-swap-cache-" + name;
-
-        return name;
-    }
-
-    /**
-     * @param swapSpaceName Swap space name.
-     * @return Cache name.
-     */
-    public static String cacheNameForSwapSpaceName(String swapSpaceName) {
-        assert swapSpaceName != null;
-
-        return "gg-swap-cache-dflt".equals(swapSpaceName) ? null : swapSpaceName.substring("gg-swap-cache-".length());
-    }
-
-    /**
      * Gets all nodes on which cache with the same name is started.
      *
      * @param ctx Cache context.
@@ -516,7 +468,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started.
      */
     public static Collection<ClusterNode> affinityNodes(final GridCacheContext ctx) {
-        return ctx.discovery().cacheAffinityNodes(ctx.cacheId(), AffinityTopologyVersion.NONE);
+        return ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -527,7 +479,7 @@ public class GridCacheUtils {
      * @return Affinity nodes.
      */
     public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().cacheAffinityNodes(ctx.cacheId(), topOrder);
+        return ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), topOrder);
     }
 
     /**
@@ -588,45 +540,15 @@ public class GridCacheUtils {
     /**
      * @return Always false filter.
      */
-    public static CacheEntryPredicate alwaysFalse0() {
-        return ALWAYS_FALSE0;
-    }
-
-    /**
-     * @return Always false filter.
-     */
-    public static CacheEntryPredicate alwaysTrue0() {
-        return ALWAYS_TRUE0;
-    }
-
-    /**
-     * @return Always false filter.
-     */
     public static CacheEntryPredicate[] alwaysFalse0Arr() {
         return ALWAYS_FALSE0_ARR;
-    }
-
-    /**
-     * @param p Predicate.
-     * @return {@code True} if always false filter.
-     */
-    public static boolean isAlwaysFalse0(@Nullable CacheEntryPredicate[] p) {
-        return p != null && p.length == 1 && p[0]  == ALWAYS_FALSE0;
-    }
-
-    /**
-     * @param p Predicate.
-     * @return {@code True} if always false filter.
-     */
-    public static boolean isAlwaysTrue0(@Nullable CacheEntryPredicate[] p) {
-        return p != null && p.length == 1 && p[0]  == ALWAYS_TRUE0;
     }
 
     /**
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
+    public static IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
         return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
     }
 
@@ -965,24 +887,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Converts cache version to byte array.
-     *
-     * @param ver Version.
-     * @return Byte array.
-     */
-    public static byte[] versionToBytes(GridCacheVersion ver) {
-        assert ver != null;
-
-        byte[] bytes = new byte[20];
-
-        U.intToBytes(ver.topologyVersion(), bytes, 0);
-        U.longToBytes(ver.order(), bytes, 4);
-        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 12);
-
-        return bytes;
-    }
-
-    /**
      * Mask cache name in case it is null.
      *
      * @param cacheName Cache name.
@@ -1084,6 +988,44 @@ public class GridCacheUtils {
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
                     ", rmtNodeId=" + rmtNodeId + ']');
             }
+        }
+    }
+    /**
+     * @param cfg1 Existing configuration.
+     * @param cfg2 Cache configuration to start.
+     * @param attrName Short attribute name for error message.
+     * @param attrMsg Full attribute name for error message.
+     * @param val1 Attribute value in existing configuration.
+     * @param val2 Attribute value in starting configuration.
+     * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
+     * @throws IgniteCheckedException If validation failed.
+     */
+    public static void validateCacheGroupsAttributesMismatch(IgniteLogger log,
+        CacheConfiguration cfg1,
+        CacheConfiguration cfg2,
+        String attrName,
+        String attrMsg,
+        Object val1,
+        Object val2,
+        boolean fail) throws IgniteCheckedException {
+        if (F.eq(val1, val2))
+            return;
+
+        if (fail) {
+            throw new IgniteCheckedException(attrMsg + " mismatch for caches related to the same group " +
+                "[groupName=" + cfg1.getGroupName() +
+                ", existingCache=" + cfg1.getName() +
+                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", startingCache=" + cfg2.getName() +
+                ", starting" + capitalize(attrName) + "=" + val2 + ']');
+        }
+        else {
+            U.warn(log, attrMsg + " mismatch for caches related to the same group " +
+                "[groupName=" + cfg1.getGroupName() +
+                ", existingCache=" + cfg1.getName() +
+                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", startingCache=" + cfg2.getName() +
+                ", starting" + capitalize(attrName) + "=" + val2 + ']');
         }
     }
 
@@ -1346,47 +1288,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Reads array from input stream.
-     *
-     * @param in Input stream.
-     * @return Deserialized array.
-     * @throws IOException If failed.
-     * @throws ClassNotFoundException If class not found.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> CacheEntryPredicate[] readEntryFilterArray(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        int len = in.readInt();
-
-        CacheEntryPredicate[] arr = null;
-
-        if (len > 0) {
-            arr = new CacheEntryPredicate[len];
-
-            for (int i = 0; i < len; i++)
-                arr[i] = (CacheEntryPredicate)in.readObject();
-        }
-
-        return arr;
-    }
-
-    /**
-     * @param aff Affinity.
-     * @param n Node.
-     * @return Predicate that evaluates to {@code true} if entry is primary for node.
-     */
-    public static CacheEntryPredicate cachePrimary(
-        final Affinity aff,
-        final ClusterNode n
-    ) {
-        return new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                return aff.isPrimary(n, e.key());
-            }
-        };
-    }
-
-    /**
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
@@ -1409,6 +1310,8 @@ public class GridCacheUtils {
             return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
         else if (e instanceof ClusterTopologyServerNotFoundException)
             return new CacheServerNotFoundException(e.getMessage(), e);
+        else if (e instanceof SchemaOperationException)
+            return new CacheException(e.getMessage(), e);
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();
@@ -1543,14 +1446,14 @@ public class GridCacheUtils {
         for (Map.Entry<Integer, Set<Integer>> entry : partsMap.entrySet()) {
             Set<Integer> parts = entry.getValue();
 
-            int[] partsArray = new int[parts.size()];
+            int[] partsArr = new int[parts.size()];
 
             int idx = 0;
 
             for (Integer part : parts)
-                partsArray[idx++] = part;
+                partsArr[idx++] = part;
 
-            res.put(entry.getKey(), partsArray);
+            res.put(entry.getKey(), partsArr);
         }
 
         return res;

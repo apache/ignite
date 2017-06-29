@@ -74,6 +74,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** Partitions for query */
     private int[] parts;
 
+    /** Schema. */
+    private String schema;
+
     /**
      * Constructs SQL fields query.
      *
@@ -283,6 +286,31 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setPartitions(@Nullable int... parts) {
         this.parts = prepare(parts);
+
+        return this;
+    }
+
+    /**
+     * Get schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @return Schema. Null if schema is not set.
+     */
+    @Nullable public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @param schema Schema. Null to unset schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setSchema(@Nullable String schema) {
+        this.schema = schema;
 
         return this;
     }

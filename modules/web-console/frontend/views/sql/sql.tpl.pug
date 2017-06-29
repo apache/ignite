@@ -133,8 +133,8 @@ mixin table-result-heading-query
                 +result-toolbar
         .col-xs-4
             .pull-right
-                -var actions = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group(actions, '{{ actionTooltip(paragraph, "export", false) }}')(ng-disabled='paragraph.loading')
+                -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
 
 mixin table-result-heading-scan
     .total.row
@@ -148,8 +148,8 @@ mixin table-result-heading-scan
                 +result-toolbar
         .col-xs-4
             .pull-right
-                -var actions = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group(actions, '{{ actionTooltip(paragraph, "export", false) }}')(ng-disabled='paragraph.loading')
+                -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
 
 mixin table-result-body
     .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter)

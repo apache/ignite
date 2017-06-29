@@ -204,7 +204,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
      */
     private void checkStreamerClosed(IgniteDataStreamer<Integer, Integer> streamer) {
         try {
-            streamer.addData(100, 100);
+            streamer.addData(100, 100).get();
 
             fail();
         }

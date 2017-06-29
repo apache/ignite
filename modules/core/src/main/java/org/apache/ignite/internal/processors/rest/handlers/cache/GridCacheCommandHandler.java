@@ -360,7 +360,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestCacheRequest req0 = (GridRestCacheRequest)req;
 
-        final String cacheName = req0.cacheName();
+        final String cacheName = req0.cacheName() == null ? DFLT_CACHE_NAME: req0.cacheName();
 
         final Object key = req0.key();
 
@@ -379,11 +379,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             switch (cmd) {
                 case DESTROY_CACHE: {
                     // Do not check thread tx here since there can be active system cache txs.
-                    fut = ((IgniteKernal)ctx.grid()).destroyCacheAsync(cacheName, false).chain(
+                    fut = ((IgniteKernal)ctx.grid()).destroyCacheAsync(cacheName, false, false).chain(
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
-                                return new GridRestResponse(f.get());
+                                f.get();
+
+                                return new GridRestResponse(null);
                             }
                         });
 
@@ -396,7 +398,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
-                                return new GridRestResponse(f.get());
+                                f.get();
+
+                                return new GridRestResponse(null);
                             }
                         });
 
@@ -939,10 +943,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             boolean sameCaches = true;
 
-            int hash = discovery.nodeCaches(F.first(subgrid)).hashCode();
+            Set<String> caches = discovery.nodePublicCaches(F.first(subgrid)).keySet();
 
             for (int i = 1; i < subgrid.size(); i++) {
-                if (hash != discovery.nodeCaches(subgrid.get(i)).hashCode()) {
+                if (!caches.equals(discovery.nodePublicCaches(subgrid.get(i)).keySet())) {
                     sameCaches = false;
 
                     break;

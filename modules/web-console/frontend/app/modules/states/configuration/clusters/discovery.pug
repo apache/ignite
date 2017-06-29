@@ -55,8 +55,18 @@ include /app/helpers/jade/mixins
                         '0 means wait forever')
                 .settings-row
                     +number('Thread priority:', `${model}.threadPriority`, '"threadPriority"', 'true', '10', '1', 'Thread priority for all threads started by SPI')
-                .settings-row
-                    +number('Metrics update frequency:', `${model}.metricsUpdateFrequency`, '"metricsUpdateFrequency"', 'true', '2000', '1', 'Metrics update messages issuing frequency')
+
+                //- Removed in ignite 2.0
+                div(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                    .settings-row
+                        +number('Heartbeat frequency:', `${model}.heartbeatFrequency`, '"heartbeatFrequency"', 'true', '2000', '1', 'Heartbeat messages issuing frequency')
+                    .settings-row
+                        +number('Max heartbeats miss w/o init:', `${model}.maxMissedHeartbeats`, '"maxMissedHeartbeats"', 'true', '1', '1',
+                            'Max heartbeats count node can miss without initiating status check')
+                    .settings-row
+                        +number('Max missed client heartbeats:', `${model}.maxMissedClientHeartbeats`, '"maxMissedClientHeartbeats"', 'true', '5', '1',
+                            'Max heartbeats count node can miss without failing client node')
+
                 .settings-row
                     +number('Topology history:', `${model}.topHistorySize`, '"topHistorySize"', 'true', '1000', '0', 'Size of topology snapshots history')
                 .settings-row

@@ -175,7 +175,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
-            for (GridCacheEntryEx e : c.map().entries()) {
+            for (GridCacheEntryEx e : c.map().entries(c.context().cacheId())) {
                 Object key = e.key().value(c.context().cacheObjectContext(), false);
                 Object val = CU.value(e.rawGet(), c.context(), false);
 
@@ -1232,8 +1232,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * No-op entry processor.
      */
     private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
-        @Override
-        public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
+        @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
             TestObject obj = entry.getValue();
 
             entry.setValue(new TestObject(obj.val));
