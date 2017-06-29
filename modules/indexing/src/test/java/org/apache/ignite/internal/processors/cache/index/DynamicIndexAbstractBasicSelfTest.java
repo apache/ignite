@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -32,11 +37,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
-
-import javax.cache.CacheException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -909,6 +910,76 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
         assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1);
+    }
+
+    /**
+     * Test behavior depending on index name case sensitivity.
+     */
+    public void testIndexNameCaseSensitivity() throws Exception {
+        doTestIndexNameCaseSensitivity("myIdx", false);
+
+        doTestIndexNameCaseSensitivity("myIdx", true);
+    }
+
+    /**
+     * Perform a check on given index name considering case sensitivity.
+     * @param idxName Index name to check.
+     * @param sensitive Whether index should be created w/case sensitive name or not.
+     */
+    private void doTestIndexNameCaseSensitivity(String idxName, boolean sensitive) throws Exception {
+        String idxNameSql = (sensitive ? '"' + idxName + '"' : idxName);
+
+        // This one should always work.
+        assertIndexNameIsValid(idxNameSql, idxNameSql);
+
+        if (sensitive) {
+            assertIndexNameIsNotValid(idxNameSql, idxName.toUpperCase());
+
+            assertIndexNameIsNotValid(idxNameSql, idxName.toLowerCase());
+        }
+        else {
+            assertIndexNameIsValid(idxNameSql, '"' + idxName.toUpperCase() + '"');
+
+            assertIndexNameIsValid(idxNameSql, idxName.toUpperCase());
+
+            assertIndexNameIsValid(idxNameSql, idxName.toLowerCase());
+        }
+    }
+
+    /**
+     * Check that given variant of index name works for DDL context.
+     * @param idxNameToCreate Name of the index to use in {@code CREATE INDEX}.
+     * @param checkedIdxName Index name to use in actual check.
+     */
+    private void assertIndexNameIsValid(String idxNameToCreate, String checkedIdxName) throws Exception {
+        info("Checking index name variant for validity: " + checkedIdxName);
+
+        final QueryIndex idx = index(idxNameToCreate, field(FIELD_NAME_1));
+
+        dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
+
+        dynamicIndexDrop(STATIC_CACHE_NAME, checkedIdxName, false);
+    }
+
+    /**
+     * Check that given variant of index name works for DDL context.
+     * @param idxNameToCreate Name of the index to use in {@code CREATE INDEX}.
+     * @param checkedIdxName Index name to use in actual check.
+     */
+    private void assertIndexNameIsNotValid(String idxNameToCreate, final String checkedIdxName) throws Exception {
+        info("Checking index name variant for invalidity: " + checkedIdxName);
+
+        final QueryIndex idx = index(idxNameToCreate, field(FIELD_NAME_1));
+
+        dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dynamicIndexDrop(STATIC_CACHE_NAME, checkedIdxName, false);
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Index doesn't exist: " + checkedIdxName.toUpperCase());
     }
 
     /**

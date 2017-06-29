@@ -62,6 +62,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -208,6 +209,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @throws IgniteCheckedException If failed.
      */
     private boolean waitForRent() throws IgniteCheckedException {
+        if (!grp.affinityNode())
+            return false;
+
         final long longOpDumpTimeout =
             IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
 
@@ -379,91 +383,93 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      */
     private void initPartitions0(GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
-        ClusterNode loc = ctx.localNode();
-
-        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
-
-        GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
-
-        assert topVer.equals(exchFut.topologyVersion()) :
-            "Invalid topology [topVer=" + topVer +
-                ", grp=" + grp.cacheOrGroupName() +
-                ", futVer=" + exchFut.topologyVersion() +
-                ", fut=" + exchFut + ']';
-        assert grp.affinity().lastVersion().equals(exchFut.topologyVersion()) :
-            "Invalid affinity [topVer=" + grp.affinity().lastVersion() +
-                ", grp=" + grp.cacheOrGroupName() +
-                ", futVer=" + exchFut.topologyVersion() +
-                ", fut=" + exchFut + ']';
-
         List<List<ClusterNode>> aff = grp.affinity().assignments(exchFut.topologyVersion());
 
-        int num = grp.affinity().partitions();
+        if (grp.affinityNode()) {
+            ClusterNode loc = ctx.localNode();
 
-        if (grp.rebalanceEnabled()) {
-            boolean added = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
+            ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
-            boolean first = added || (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined());
+            GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
-            if (first) {
-                assert exchId.isJoined() || added;
+            assert topVer.equals(exchFut.topologyVersion()) :
+                "Invalid topology [topVer=" + topVer +
+                    ", grp=" + grp.cacheOrGroupName() +
+                    ", futVer=" + exchFut.topologyVersion() +
+                    ", fut=" + exchFut + ']';
+            assert grp.affinity().lastVersion().equals(exchFut.topologyVersion()) :
+                "Invalid affinity [topVer=" + grp.affinity().lastVersion() +
+                    ", grp=" + grp.cacheOrGroupName() +
+                    ", futVer=" + exchFut.topologyVersion() +
+                    ", fut=" + exchFut + ']';
 
-                for (int p = 0; p < num; p++) {
-                    if (localNode(p, aff)) {
-                        GridDhtLocalPartition locPart = createPartition(p);
+            int num = grp.affinity().partitions();
 
-                        boolean owned = locPart.own();
+            if (grp.rebalanceEnabled()) {
+                boolean added = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
-                        assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
-                            ", part=" + locPart + ']';
+                boolean first = added || (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined());
 
-                        if (log.isDebugEnabled())
-                            log.debug("Owned partition for oldest node: " + locPart);
+                if (first) {
+                    assert exchId.isJoined() || added;
 
-                        updateSeq = updateLocal(p, locPart.state(), updateSeq);
-                    }
-                }
-            }
-            else
-                createPartitions(aff, updateSeq);
-        }
-        else {
-            // If preloader is disabled, then we simply clear out
-            // the partitions this node is not responsible for.
-            for (int p = 0; p < num; p++) {
-                GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
+                    for (int p = 0; p < num; p++) {
+                        if (localNode(p, aff)) {
+                            GridDhtLocalPartition locPart = createPartition(p);
 
-                boolean belongs = localNode(p, aff);
+                            boolean owned = locPart.own();
 
-                if (locPart != null) {
-                    if (!belongs) {
-                        GridDhtPartitionState state = locPart.state();
-
-                        if (state.active()) {
-                            locPart.rent(false);
-
-                            updateSeq = updateLocal(p, locPart.state(), updateSeq);
+                            assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
+                                ", part=" + locPart + ']';
 
                             if (log.isDebugEnabled())
-                                log.debug("Evicting partition with rebalancing disabled " +
-                                    "(it does not belong to affinity): " + locPart);
+                                log.debug("Owned partition for oldest node: " + locPart);
+
+                            updateSeq = updateLocal(p, locPart.state(), updateSeq);
                         }
                     }
-                    else
-                        locPart.own();
                 }
-                else if (belongs) {
-                    locPart = createPartition(p);
+                else
+                    createPartitions(aff, updateSeq);
+            }
+            else {
+                // If preloader is disabled, then we simply clear out
+                // the partitions this node is not responsible for.
+                for (int p = 0; p < num; p++) {
+                    GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
 
-                    locPart.own();
+                    boolean belongs = localNode(p, aff);
 
-                    updateLocal(p, locPart.state(), updateSeq);
+                    if (locPart != null) {
+                        if (!belongs) {
+                            GridDhtPartitionState state = locPart.state();
+
+                            if (state.active()) {
+                                locPart.rent(false);
+
+                                updateSeq = updateLocal(p, locPart.state(), updateSeq);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Evicting partition with rebalancing disabled " +
+                                        "(it does not belong to affinity): " + locPart);
+                            }
+                        }
+                        else
+                            locPart.own();
+                    }
+                    else if (belongs) {
+                        locPart = createPartition(p);
+
+                        locPart.own();
+
+                        updateLocal(p, locPart.state(), updateSeq);
+                    }
                 }
             }
-        }
 
-        if (node2part != null && node2part.valid())
-            checkEvictions(updateSeq, aff);
+            if (node2part != null && node2part.valid())
+                checkEvictions(updateSeq, aff);
+        }
 
         updateRebalanceVersion(aff);
     }
@@ -473,6 +479,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      */
     private void createPartitions(List<List<ClusterNode>> aff, long updateSeq) {
+        if (!grp.affinityNode())
+            return;
+
         int num = grp.affinity().partitions();
 
         for (int p = 0; p < num; p++) {
@@ -527,15 +536,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             try {
-                GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
-
                 if (stopping)
                     return;
+
+                GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
                 assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
                     topVer + ", exchId=" + exchId + ']';
 
-                if (exchId.isLeft())
+                if (exchId.isLeft() && exchFut.serverNodeDiscoveryEvent())
                     removeNode(exchId.nodeId());
 
                 ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
@@ -547,8 +556,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 cntrMap.clear();
 
+                boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
+
                 // If this is the oldest node.
-                if (oldest != null && (loc.equals(oldest) || exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom()))) {
+                if (oldest != null && (loc.equals(oldest) || grpStarted)) {
                     if (node2part == null) {
                         node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
@@ -572,12 +583,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
 
-                if (affReady)
-                    initPartitions0(exchFut, updateSeq);
-                else {
-                    List<List<ClusterNode>> aff = grp.affinity().idealAssignment();
+                if (grpStarted ||
+                    exchFut.discoveryEvent().type() == EVT_DISCOVERY_CUSTOM_EVT ||
+                    exchFut.serverNodeDiscoveryEvent()) {
+                    if (affReady)
+                        initPartitions0(exchFut, updateSeq);
+                    else {
+                        List<List<ClusterNode>> aff = grp.affinity().idealAssignment();
 
-                    createPartitions(aff, updateSeq);
+                        createPartitions(aff, updateSeq);
+                    }
                 }
 
                 consistencyCheck();

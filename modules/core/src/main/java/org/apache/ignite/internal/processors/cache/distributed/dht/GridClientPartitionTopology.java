@@ -269,7 +269,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
             topVer + ", exchId=" + exchId + ']';
 
-        if (!exchId.isJoined())
+        if (exchId.isLeft() && exchFut.serverNodeDiscoveryEvent())
             removeNode(exchId.nodeId());
 
         // In case if node joins, get topology at the time of joining node.

@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.h2.jdbc.JdbcSQLException;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -159,6 +160,115 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testCreateTableNoTemplate() throws Exception {
         doTestCreateTable(null, null, CacheMode.PARTITIONED);
+    }
+
+    /**
+     * Test behavior depending on table name case sensitivity.
+     */
+    public void testTableNameCaseSensitivity() {
+        doTestTableNameCaseSensitivity("Person", false);
+
+        doTestTableNameCaseSensitivity("Person", true);
+    }
+
+    /**
+     * Perform a check on given table name considering case sensitivity.
+     * @param tblName Table name to check.
+     * @param sensitive Whether table should be created w/case sensitive name or not.
+     */
+    private void doTestTableNameCaseSensitivity(String tblName, boolean sensitive) {
+        String tblNameSql = (sensitive ? '"' + tblName + '"' : tblName);
+
+        // This one should always work.
+        assertTableNameIsValid(tblNameSql, tblNameSql);
+
+        if (sensitive) {
+            assertTableNameIsNotValid(tblNameSql, tblName.toUpperCase());
+
+            assertTableNameIsNotValid(tblNameSql, tblName.toLowerCase());
+        }
+        else {
+            assertTableNameIsValid(tblNameSql, '"' + tblName.toUpperCase() + '"');
+
+            assertTableNameIsValid(tblNameSql, tblName.toUpperCase());
+
+            assertTableNameIsValid(tblNameSql, tblName.toLowerCase());
+        }
+    }
+
+    /**
+     * Check that given variant of table name works for DML and DDL contexts, as well as selects.
+     * @param tblNameToCreate Name of the table to use in {@code CREATE TABLE}.
+     * @param checkedTblName Table name to use in actual checks.
+     */
+    private void assertTableNameIsValid(String tblNameToCreate, String checkedTblName) {
+        info("Checking table name variant for validity: " + checkedTblName);
+
+        execute("create table if not exists " + tblNameToCreate + " (id int primary key, name varchar)");
+
+        execute("MERGE INTO " + checkedTblName + " (id, name) values (1, 'A')");
+
+        execute("SELECT * FROM " + checkedTblName);
+
+        execute("DROP TABLE " + checkedTblName);
+    }
+
+    /**
+     * Check that given variant of table name does not work for DML and DDL contexts, as well as selects.
+     * @param tblNameToCreate Name of the table to use in {@code CREATE TABLE}.
+     * @param checkedTblName Table name to use in actual checks.
+     */
+    private void assertTableNameIsNotValid(String tblNameToCreate, String checkedTblName) {
+        info("Checking table name variant for invalidity: " + checkedTblName);
+
+        execute("create table if not exists " + tblNameToCreate + " (id int primary key, name varchar)");
+
+        assertCommandThrowsTableNotFound(checkedTblName.toUpperCase(),
+            "MERGE INTO " + checkedTblName + " (id, name) values (1, 'A')");
+
+        assertCommandThrowsTableNotFound(checkedTblName.toUpperCase(), "SELECT * FROM " + checkedTblName);
+
+        assertDdlCommandThrowsTableNotFound(checkedTblName.toUpperCase(), "DROP TABLE " + checkedTblName);
+    }
+
+    /**
+     * Check that given (non DDL) command throws an exception as expected.
+     * @param checkedTblName Table name to expect in error message.
+     * @param cmd Command to execute.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void assertCommandThrowsTableNotFound(String checkedTblName, final String cmd) {
+        final Throwable e = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                execute(cmd);
+
+                return null;
+            }
+        }, JdbcSQLException.class);
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @SuppressWarnings("ConstantConditions")
+            @Override public Object call() throws Exception {
+                throw (Exception)e.getCause();
+            }
+        }, JdbcSQLException.class, "Table \"" + checkedTblName + "\" not found");
+    }
+
+    /**
+     * Check that given DDL command throws an exception as expected.
+     * @param checkedTblName Table name to expect in error message.
+     * @param cmd Command to execute.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void assertDdlCommandThrowsTableNotFound(String checkedTblName, final String cmd) {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @SuppressWarnings("ConstantConditions")
+            @Override public Object call() throws Exception {
+                execute(cmd);
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Table doesn't exist: " + checkedTblName);
     }
 
     /**
