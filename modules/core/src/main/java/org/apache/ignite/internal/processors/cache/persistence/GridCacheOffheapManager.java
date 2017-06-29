@@ -318,6 +318,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                         io.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
 
+                                        if (log != null && log.isDebugEnabled())
+                                            log.debug("Save next snapshot before checkpoint start for grId = " + grpId
+                                                + ", nextSnapshotTag = " + nextSnapshotTag);
+
                                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
                                             metaPage, wal, null))
                                             wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
