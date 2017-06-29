@@ -55,7 +55,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /** */
     public static final int DFLT_WAL_SEGMENTS = 10;
 
-    /** */
+    /** Default WAL file segment size, 64MBytes */
     public static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** Default wal mode. */
@@ -103,10 +103,10 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Number of work WAL segments. */
     private int walSegments = DFLT_WAL_SEGMENTS;
 
-    /** Number of WAL segments to keep. */
+    /** Size of one WAL segment in bytes. 64 Mb is used by default.  Maximum value is 2Gb */
     private int walSegmentSize = DFLT_WAL_SEGMENT_SIZE;
 
-    /** WAL persistence path. */
+    /** Directory where WAL is stored (work directory) */
     private String walStorePath = DFLT_WAL_STORE_PATH;
 
     /** WAL archive path. */
@@ -302,7 +302,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets size of a WAL segment.
+     * Gets size of a WAL segment in bytes.
      *
      * @return WAL segment size.
      */
@@ -313,7 +313,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Sets size of a WAL segment.
      *
-     * @param walSegmentSize WAL segment size. 64 MB is used by default.
+     * @param walSegmentSize WAL segment size. 64 MB is used by default.  Maximum value is 2Gb
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalSegmentSize(int walSegmentSize) {
