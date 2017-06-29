@@ -566,4 +566,35 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastAsyncLocalError)
     BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
 }
 
+BOOST_AUTO_TEST_CASE(IgniteBroadcastRemote)
+{
+    Ignite node2 = MakeNode("ComputeNode2");
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Broadcasting");
+    std::vector<std::string> res = compute.Broadcast<std::string>(Func2(8, 5));
+
+    BOOST_CHECK_EQUAL(res.size(), 2);
+    BOOST_CHECK_EQUAL(res[0], "8.5");
+    BOOST_CHECK_EQUAL(res[1], "8.5");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteBroadcastRemoteError)
+{
+    Ignite node2 = MakeNode("ComputeNode2");
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Broadcasting");
+    Future< std::vector<std::string> > res = compute.BroadcastAsync<std::string>(Func2(MakeTestError()));
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECKPOINT("Waiting with timeout");
+    res.WaitFor(100);
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
