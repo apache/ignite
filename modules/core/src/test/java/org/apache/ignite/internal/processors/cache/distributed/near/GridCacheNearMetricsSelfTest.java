@@ -21,7 +21,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -95,6 +97,31 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         cc.setBackups(1);
 
         return cc;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearCacheDoesNotAffectCacheSize() throws Exception {
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100 ; i++)
+            cache0.put(i, i);
+
+        IgniteEx g1 = grid(1);
+
+        IgniteCache<Integer, Integer> cache1 = g1.cache(DEFAULT_CACHE_NAME);
+
+        ClusterNode localNode = g1.cluster().localNode();
+
+        int beforeSize = cache1.localMetrics().getSize();
+
+        for (int i = 0; i < 100 ; i++) {
+            if (!affinity(cache1).isPrimaryOrBackup(localNode, i))
+                cache1.get(i); // put entry to near cache
+        }
+
+        assertEquals(beforeSize, cache1.localMetrics().getSize());
     }
 
     /**
