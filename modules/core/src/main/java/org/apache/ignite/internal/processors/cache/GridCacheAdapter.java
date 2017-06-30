@@ -642,7 +642,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return (IgniteInternalFuture)getAsync(
             key,
-            /*force primary*/false,
+            /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             /*subj id*/null,
             /*task name*/null,
@@ -669,7 +669,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return getAllAsync(
             keys,
-            /*force primary*/false,
+            /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             /*subj id*/null,
             /*task name*/null,
@@ -1137,7 +1137,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     execSvc = Executors.newFixedThreadPool(jobs.size() - 1);
 
                     for (int i = 1; i < jobs.size(); i++)
-                        execSvc.submit(jobs.get(i));
+                        execSvc.execute(jobs.get(i));
                 }
 
                 jobs.get(0).run();
@@ -2715,6 +2715,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable final Map<? extends K, ? extends V> m) throws IgniteCheckedException {
+        A.notNull(m, "map");
+
         if (F.isEmpty(m))
             return;
 
@@ -3000,6 +3002,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param key Key.
+     * @param filter Filter.
      * @return {@code True} if entry was removed.
      * @throws IgniteCheckedException If failed.
      */
@@ -3011,7 +3014,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     Collections.singletonList(key),
                     /*retval*/false,
                     filter,
-                    /*singleRmv*/false).get().success();
+                    /*singleRmv*/filter == null).get().success();
             }
 
             @Override public String toString() {
