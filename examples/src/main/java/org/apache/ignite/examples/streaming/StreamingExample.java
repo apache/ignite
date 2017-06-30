@@ -10,10 +10,6 @@ import javax.cache.processor.MutableEntry;
 import java.io.IOException;
 
 /**
- * Created by Grigory on 30.06.2017.
- */
-
-/**
  * Stream value.
  * To start the example, you should:
  * <ul>

@@ -45,6 +45,7 @@ import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
 import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.apache.ignite.examples.StreamingExampleSelfTest;
 
 /**
  * Examples test suite.
@@ -78,6 +79,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
         suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupExampleSelfTest.class));
+        suite.addTest(new TestSuite(StreamingExampleSelfTest.class));
 
         // Multi-node.
         suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));
