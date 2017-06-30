@@ -105,12 +105,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -2851,6 +2853,26 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     }
 
     /**
+     * Suspends transaction. It could be resumed later.
+     * TODO: IGNITE-4887, Add support for pessimistic transactions, currently supports only optimistic ones.
+     *
+     * @throws IgniteCheckedException If the transaction is in an incorrect state, or it was suspended by thread,
+     * not owning it.
+     */
+    public void suspend() throws IgniteCheckedException {
+        if (pessimistic())
+            throw new UnsupportedOperationException("Suspension is not supported yet.");
+
+        if (!ACTIVE.equals(state()))
+            throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
+                + "[expected=" + ACTIVE + ", actual=" + state() + ']');
+
+        cctx.tm().detachThread(this);
+
+        state(SUSPENDED);
+    }
+
+    /**
      * @param maps Mappings.
      */
     void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
@@ -2988,6 +3010,32 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 // Replace the entry.
                 txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
             }
+        }
+    }
+
+    /**
+     * Resumes transaction (possibly in another thread) if it was previously suspended.
+     * TODO: IGNITE-4887, Add support for pessimistic transactions, currently supports only optimistic ones.
+     *
+     * @throws IgniteCheckedException If the transaction is in an incorrect state.
+     */
+    public void resume() throws IgniteCheckedException {
+        if (pessimistic())
+            throw new UnsupportedOperationException("Resuming is not supported yet.");
+
+        synchronized (this) {
+            if (!SUSPENDED.equals(state()))
+                throw new IgniteCheckedException("Trying to resume transaction with incorrect state "
+                    + "[expected=" + SUSPENDED + ", actual=" + state() + ']');
+
+            cctx.tm().attachThread(this);
+
+            if (pessimistic())
+                txState().updateMvccCandidatesWithCurrentThread(threadId);
+
+            threadId = Thread.currentThread().getId();
+
+            state(ACTIVE);
         }
     }
 

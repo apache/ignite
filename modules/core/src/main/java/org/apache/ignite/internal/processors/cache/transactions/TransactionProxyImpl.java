@@ -204,6 +204,20 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     }
 
     /** {@inheritDoc} */
+    @Override public void suspend() throws IgniteException {
+        enter();
+
+        try {
+            cctx.suspendTx(tx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        } finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public long timeout(long timeout) {
         return tx.timeout(timeout);
     }
@@ -278,6 +292,9 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         try {
             return (IgniteFuture<Void>)createFuture(cctx.commitTxAsync(tx));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             leave();
         }
@@ -329,6 +346,20 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             throw U.convertException(e);
         }
         finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() throws IgniteException {
+        enter();
+
+        try {
+            cctx.resumeTx(tx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        } finally {
             leave();
         }
     }
