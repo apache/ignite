@@ -36,6 +36,7 @@
     border-radius: $ignite-button-border-radius;
     border: 1px solid #c5c5c5;
     background: white;
+    color: initial; // Fixes color inheritance inside some containers
 
     .bssm-active-indicator {
         font-size: 14px;
