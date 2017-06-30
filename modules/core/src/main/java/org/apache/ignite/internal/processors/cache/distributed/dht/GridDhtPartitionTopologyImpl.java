@@ -1556,8 +1556,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             for (GridDhtPartitionMap partMap : node2part.values()) {
                 for (Map.Entry<Integer, GridDhtPartitionState> e : partMap.entrySet()) {
-                    if (e.getValue() == OWNING)
+                    if (e.getValue() == OWNING) {
                         lost.remove(e.getKey());
+
+                        if (lost.isEmpty())
+                            break;
+                    }
                 }
             }
 
