@@ -2237,6 +2237,32 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Attaches current thread to transaction.
+     *
+     * @param tx Transaction to be attached.
+     */
+    public void attachThread(IgniteInternalTx tx) {
+        assert tx != null;
+
+        assert !threadMap.keySet().contains(tx.threadId());
+        assert !threadMap.values().contains(tx);
+
+        threadMap.put(Thread.currentThread().getId(), tx);
+    }
+
+    /**
+     * Detaches thread from the transaction.
+     *
+     * @param tx Transaction to be detached.
+     * @return True if transaction was successfully detached.
+     */
+    public boolean detachThread(IgniteInternalTx tx) {
+        assert tx != null;
+
+        return threadMap.remove(tx.threadId(), tx);
+    }
+
+    /**
      * Timeout object for node failure handler.
      */
     private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {

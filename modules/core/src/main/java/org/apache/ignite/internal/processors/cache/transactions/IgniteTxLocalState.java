@@ -41,4 +41,11 @@ public interface IgniteTxLocalState extends IgniteTxState {
      *
      */
     public void seal();
+
+    /**
+     * Changes local candidate owner's thread id to current thread id(used in pessimistic transactions resuming).
+     *
+     * @param oldThreadId Owner's initial threadId.
+     */
+    public void updateMvccCandidatesWithCurrentThread(long oldThreadId);
 }

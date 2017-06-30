@@ -333,6 +333,26 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void suspend() throws IgniteException {
+        try {
+            tx().suspend();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() throws IgniteException {
+        try {
+            tx().resume();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
     /**
      * @param res Result to convert to finished future.
      */

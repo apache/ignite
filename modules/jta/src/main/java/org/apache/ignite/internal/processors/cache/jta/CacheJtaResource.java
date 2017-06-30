@@ -71,12 +71,20 @@ final class CacheJtaResource implements XAResource, Synchronization {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(Xid xid, int flags) {
+    @Override public void start(Xid xid, int flags) throws XAException {
         if (log.isDebugEnabled())
             log.debug("XA resource start(...) [xid=" + xid + ", flags=<" + flags(flags) + ">]");
 
         // Simply save global transaction id.
         this.xid = xid;
+
+        if ((flags & TMRESUME) == TMRESUME)
+            try {
+                cacheTx.resume();
+            }
+            catch (IgniteCheckedException e) {
+                throwException("Failed to resume transaction.", e);
+            }
     }
 
     /**
@@ -128,13 +136,20 @@ final class CacheJtaResource implements XAResource, Synchronization {
     }
 
     /** {@inheritDoc} */
-    @Override public void end(Xid xid, int flags) {
+    @Override public void end(Xid xid, int flags) throws XAException {
         assert this.xid.equals(xid);
 
         if (log.isDebugEnabled())
             log.debug("XA resource end(...) [xid=" + xid + ", flags=<" + flags(flags) + ">]");
 
-        if ((flags & TMFAIL) > 0)
+        if ((flags & TMSUSPEND) == TMSUSPEND)
+            try {
+                cacheTx.suspend();
+            }
+            catch (IgniteCheckedException e) {
+                throwException("Failed to suspend transaction.", e);
+            }
+        else if ((flags & TMFAIL) > 0)
             cacheTx.setRollbackOnly();
     }
 

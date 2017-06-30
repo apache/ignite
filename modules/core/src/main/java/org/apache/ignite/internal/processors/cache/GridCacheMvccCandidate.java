@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.DHT_LOCAL;
@@ -668,6 +669,15 @@ public class GridCacheMvccCandidate implements Externalizable,
             "masks", Mask.toString(flags()), false,
             "prevVer", prev == null ? null : prev.version(), false,
             "nextVer", next == null ? null : next.version(), false);
+    }
+
+    /**
+     * Updates candidate's thread id to new thread id. Used in transaction resuming.
+     *
+     * @param threadId New thread id.
+     */
+    public void setThreadId(long threadId) {
+        this.threadId = threadId;
     }
 
     /**

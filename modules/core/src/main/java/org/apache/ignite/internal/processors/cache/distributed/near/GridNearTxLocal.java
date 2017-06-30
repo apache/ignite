@@ -105,12 +105,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -3993,6 +3995,41 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
          * @throws IgniteCheckedException If failed.
          */
         abstract T finish(T t) throws IgniteCheckedException;
+    }
+
+    /**
+     * Suspends transaction. It could be resumed later.
+     *
+     * @throws IgniteCheckedException If transaction with incorrect state.
+     */
+    public void suspend() throws IgniteCheckedException {
+        if (!ACTIVE.equals(state()))
+            throw new IgniteCheckedException("Trying to suspend transaction with incorrect state [expected="
+                + ACTIVE + ", actual=" + state() + ']');
+
+        state(SUSPENDED);
+
+        cctx.tm().detachThread(this);
+    }
+
+    /**
+     * Resume transaction(possibly in another thread) if it was previously suspended.
+     *
+     * @throws IgniteCheckedException If transaction with incorrect state.
+     */
+    public void resume() throws IgniteCheckedException {
+        if (!SUSPENDED.equals(state()))
+            throw new IgniteCheckedException("Trying to resume transaction with incorrect state [expected="
+                + SUSPENDED + ", actual=" + state() + ']');
+
+        cctx.tm().attachThread(this);
+
+        if (pessimistic())
+            txState().updateMvccCandidatesWithCurrentThread(threadId);
+
+        threadId = Thread.currentThread().getId();
+
+        state(ACTIVE);
     }
 
     /** {@inheritDoc} */

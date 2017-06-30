@@ -211,7 +211,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         cctx.cacheId(),
                         req.id(),
                         new IgniteCheckedException("Received request for incorrect cache [expected=" + cctx.name() +
-                            ", actual=" + req.cacheName()),
+                            ", actual=" + req.cacheName() + ']'),
                         cctx.deploymentEnabled());
 
                     sendQueryResponse(sndId, res, 0);
