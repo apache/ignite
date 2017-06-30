@@ -616,7 +616,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(obj1, obj2);
 
-            Assert.AreEqual(-88648479, obj1.GetHashCode());
+            Assert.AreEqual(109523595, obj1.GetHashCode());
             Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
 
             Assert.AreEqual("myType [, int=1, str=foo]", Regex.Replace(obj1.ToString(), "idHash=\\d+", ""));
