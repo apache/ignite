@@ -3011,7 +3011,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     Collections.singletonList(key),
                     /*retval*/false,
                     filter,
-                    /*singleRmv*/true).get().success();
+                    /*singleRmv*/false).get().success();
             }
 
             @Override public String toString() {
