@@ -1286,8 +1286,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         Map<Integer, Long> cntrs = msg0.partitionUpdateCounters(cacheId);
 
-                        if (cntrs != null)
+                        if (cntrs != null) {
+                            if (cacheCtx.userCache()) {
+                                int z = 0;
+
+                                ++z;
+                            }
+
                             top.applyUpdateCounters(cntrs);
+                        }
                     }
                 }
             }
