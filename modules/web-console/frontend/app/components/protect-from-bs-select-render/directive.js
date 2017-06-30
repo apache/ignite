@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+export default function protectFromBsSelectRender() {
+    return {
+        link(scope, el, attr, ctrl) {
+            const {$render} = ctrl;
 
-import component from './component';
-import service from './service';
-
-import pcbScaleNumber from './components/pcbScaleNumber';
-
-export default angular
-    .module('ignite-console.page-configure-basic', [])
-    .component('pageConfigureBasic', component)
-    .directive('pcbScaleNumber', pcbScaleNumber)
-    .service('PageConfigureBasic', service);
+            Object.defineProperty(ctrl, '$render', {
+                set() {},
+                get() {
+                    return $render;
+                }
+            });
+        },
+        require: 'ngModel'
+    };
+}

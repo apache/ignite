@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import template from './template.pug';
+import controller from './controller.js';
+import './style.scss';
 
-import component from './component';
-import service from './service';
-
-import pcbScaleNumber from './components/pcbScaleNumber';
-
-export default angular
-    .module('ignite-console.page-configure-basic', [])
-    .component('pageConfigureBasic', component)
-    .directive('pcbScaleNumber', pcbScaleNumber)
-    .service('PageConfigureBasic', service);
+export default {
+    template,
+    controller,
+    transclude: true,
+    bindings: {
+        gridApi: '<'
+    }
+};

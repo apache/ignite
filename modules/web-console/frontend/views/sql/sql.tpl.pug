@@ -124,7 +124,8 @@ mixin query-actions
 mixin table-result-heading-query
     .total.row
         .col-xs-4
-            +ui-grid-settings
+            grid-column-selector(grid-api='paragraph.gridOptions.api')
+                .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
@@ -139,7 +140,8 @@ mixin table-result-heading-query
 mixin table-result-heading-scan
     .total.row
         .col-xs-4
-            +ui-grid-settings
+            grid-column-selector(grid-api='paragraph.gridOptions.api')
+                .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]

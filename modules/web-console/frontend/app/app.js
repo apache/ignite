@@ -123,7 +123,9 @@ import userNotifications from './components/user-notifications';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
+import gridColumnSelector from './components/grid-column-selector';
 import bsSelectMenu from './components/bs-select-menu';
+import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -189,7 +191,9 @@ angular
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
+    gridColumnSelector.name,
     bsSelectMenu.name,
+    protectFromBsSelectRender.name,
     // Ignite modules.
     IgniteModules.name
 ])

@@ -246,52 +246,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
             this.selected = ids;
     }
 
-    _enableColumns(_categories, visible) {
-        _.forEach(_categories, (cat) => {
-            cat.visible = visible;
-
-            _.forEach(this.gridOptions.columnDefs, (col) => {
-                if (col.categoryDisplayName === cat.name)
-                    col.visible = visible;
-            });
-        });
-
-        // Check to all selected columns.
-        this.gridOptions.selectedAll = true;
-        _.forEach(this._selectableColumns(), ({ visible }) => this.gridOptions.selectedAll = visible);
-
-        // Workaround for this.gridApi.grid.refresh() didn't return promise.
-        this.gridApi.grid.processColumnsProcessors(this.gridApi.grid.columns)
-            .then((renderableColumns) => this.gridApi.grid.setVisibleColumns(renderableColumns))
-            .then(() => this.gridApi.grid.redrawInPlace())
-            .then(() => this.gridApi.grid.refreshCanvas(true))
-            .then(() => {
-                if (visible) {
-                    const categoryDisplayName = _.last(_categories).name;
-
-                    const col = _.findLast(this.gridOptions.columnDefs, {categoryDisplayName});
-
-                    this.gridApi.grid.scrollTo(null, col);
-                }
-            });
-    }
-
-    _selectableColumns() {
-        return _.filter(this.gridOptions.categories, (cat) => cat.selectable);
-    }
-
-    toggleColumns(category, visible) {
-        this._enableColumns([category], visible);
-    }
-
-    selectAllColumns() {
-        this._enableColumns(this._selectableColumns(), true);
-    }
-
-    clearAllColumns() {
-        this._enableColumns(this._selectableColumns(), false);
-    }
-
     exportCsv() {
         this.gridApi.exporter.csvExport('visible', 'visible');
     }

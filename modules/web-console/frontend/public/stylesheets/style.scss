@@ -604,6 +604,19 @@ button.form-control {
 
             padding: 5px 10px;
         }
+
+        grid-column-selector {
+            margin-right: 5px;
+
+            .btn-ignite {
+                padding: 5px 0;
+                box-shadow: none !important;
+
+                .fa {
+                    font-size: 14px;
+                }
+            }
+        }
     }
 }
 

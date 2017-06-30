@@ -17,6 +17,9 @@
 
 @import "./../../../public/stylesheets/variables.scss";
 
+$btn-content-padding: 10px 12px;
+$btn-content-padding-with-border: 9px 11px;
+
 @mixin active-focus-shadows(
     $focus: (0 0 5px #095d9a, 0 0 5px #095d9a),
     $active: (inset 0 1px 3px 0 rgba(0, 0, 0, 0.5))
@@ -39,7 +42,6 @@
 }
 
 .btn-ignite {
-    $content-padding: 10px 12px;
     $icon-margin: 8px;
 
     display: inline-flex;
@@ -48,7 +50,7 @@
     align-items: center;
     box-sizing: border-box;
     margin: 0;
-    padding: $content-padding;
+    padding: $btn-content-padding;
 
     border: none;
     border-radius: $ignite-button-border-radius;
@@ -128,6 +130,7 @@
     border: 1px solid $accent-color;
     background: white;
     color: $accent-color;
+    padding: $btn-content-padding-with-border;
 
     &:hover, &.hover,
     &:active, &.active {
@@ -248,6 +251,7 @@
     background-color: white;
     color: #424242;
     border: 1px solid #dedede;
+    padding: $btn-content-padding-with-border;
 
     &:hover, &.hover,
     &:active, &.active {

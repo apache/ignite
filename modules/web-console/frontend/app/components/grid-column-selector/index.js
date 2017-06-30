@@ -15,18 +15,10 @@
  * limitations under the License.
  */
 
-export default function pcbProtectFromBsSelectRender() {
-    return {
-        link(scope, el, attr, ctrl) {
-            const {$render} = ctrl;
+import angular from 'angular';
 
-            Object.defineProperty(ctrl, '$render', {
-                set() {},
-                get() {
-                    return $render;
-                }
-            });
-        },
-        require: 'ngModel'
-    };
-}
+import component from './component';
+
+export default angular
+    .module('ignite-console.grid-column-selector', [])
+    .component('gridColumnSelector', component);

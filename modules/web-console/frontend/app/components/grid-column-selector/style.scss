@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+grid-column-selector {
+    display: inline-block;
 
-import component from './component';
-import service from './service';
-
-import pcbScaleNumber from './components/pcbScaleNumber';
-
-export default angular
-    .module('ignite-console.page-configure-basic', [])
-    .component('pageConfigureBasic', component)
-    .directive('pcbScaleNumber', pcbScaleNumber)
-    .service('PageConfigureBasic', service);
+    .btn-ignite, .icon {
+        margin: 0 !important;
+    }
+}

@@ -17,13 +17,8 @@
 
 import angular from 'angular';
 
-import component from './component';
-import service from './service';
-
-import pcbScaleNumber from './components/pcbScaleNumber';
+import directive from './directive';
 
 export default angular
-    .module('ignite-console.page-configure-basic', [])
-    .component('pageConfigureBasic', component)
-    .directive('pcbScaleNumber', pcbScaleNumber)
-    .service('PageConfigureBasic', service);
+    .module('ignite-console.protect-from-bs-select-render', [])
+    .directive('protectFromBsSelectRender', directive);
