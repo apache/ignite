@@ -199,7 +199,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
                         : (DiscoveryCustomMessage) U.field(spiCustomMsg, "delegate");
 
-                if (customMsg != null)
+                if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator
                     if ("MappingProposedMessage".equals(customMsg.getClass().getSimpleName())) {
                         String conflClsName = U.field(customMsg, "conflictingClsName");
@@ -211,8 +211,10 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                                 aaClsRejected = true;
                         }
                     }
+                }
 
-                delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                if (delegate != null)
+                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
             }
 
             /** {@inheritDoc} */
