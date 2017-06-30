@@ -2118,34 +2118,39 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Finishes exchange on nodes not receiving {@link GridDhtFinishExchangeMessage}.
      */
     public void finishStaleExchange(ClusterNode node, boolean skipCrdChange, CI1<IgniteInternalFuture<?>> clo) {
-        if (discoEvt.type() != EVT_NODE_LEFT && discoEvt.type() != EVT_NODE_FAILED || crd == null)
-            return;
+        try {
+            if (discoEvt.type() != EVT_NODE_LEFT && discoEvt.type() != EVT_NODE_FAILED || crd == null)
+                return;
 
-        ClusterNode crd0 = crd;
+            ClusterNode crd0 = crd;
 
-        if (!skipCrdChange)
-            synchronized (mux) {
-                discoCache.updateAlives(node);
+            if (!skipCrdChange)
+                synchronized (mux) {
+                    discoCache.updateAlives(node);
 
-                // New coordinator must resend assignments, if any.
-                boolean isCrdLeft = crd.equals(node);
+                    // New coordinator must resend assignments, if any.
+                    boolean isCrdLeft = crd.equals(node);
 
-                if (!isCrdLeft)
-                    return;
+                    if (!isCrdLeft)
+                        return;
 
-                boolean rmv = srvNodes.remove(node);
+                    boolean rmv = srvNodes.remove(node);
 
-                assert rmv;
+                    assert rmv;
 
-                remaining.remove(node.id());
+                    remaining.remove(node.id());
 
-                crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
+                    crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
-                crd0 = crd;
-            }
+                    crd0 = crd;
+                }
 
-        if (crd0 == null || !crd0.isLocal())
-            return;
+            if (crd0 == null || !crd0.isLocal())
+                return;
+        } finally {
+            if (clo != null)
+                clo.apply(null);
+        }
 
         // Prevent blocking discovery thread.
         IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
