@@ -1163,12 +1163,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         GridCacheVersion last = lastVer.get();
 
         GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(
-                nodes,
-                exchangeId(),
-                last != null ? last : cctx.versions().last(),
-                partHistSuppliers,
-                partsToReload,
-                compress);
+            nodes,
+            exchangeId(),
+            last != null ? last : cctx.versions().last(),
+            partHistSuppliers,
+            partsToReload,
+            compress);
 
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
             m.setExceptionsMap(changeGlobalStateExceptions);
@@ -1311,7 +1311,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             initFut.onDone(err == null);
 
-            if(affAttachmentHolder != null)
+            if (affAttachmentHolder != null)
                 affAttachmentHolder.attachment(null);
 
             if (exchId.isLeft()) {
@@ -1921,12 +1921,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             log.debug("Received full partition map from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override
-            public void apply(IgniteInternalFuture<Boolean> f) {
+            @Override public void apply(IgniteInternalFuture<Boolean> f) {
                 try {
                     if (!f.get())
                         return;
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to initialize exchange future: " + this, e);
 
                     return;
@@ -2064,7 +2064,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                     ']');
                         }
                     }
-                } finally {
+                } 
+                finally {
                     leaveBusy();
                 }
             }

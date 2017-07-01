@@ -119,6 +119,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
  * Partition exchange manager.
  */
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, 1_000);
@@ -2050,8 +2051,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture removex(
-            GridDhtPartitionsExchangeFuture val
-        ) {
+            GridDhtPartitionsExchangeFuture val) {
+
             return super.removex(val);
         }
 

@@ -2380,11 +2380,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                         else {
                             ClusterNode primary = cacheAff.mapKeyToNode(i);
 
-                            try {
-                                assertEquals(primary, partNodes.get(0));
-                            } catch (Throwable e) {
-                                ClusterNode clusterNode = cacheAff.mapKeyToNode(i);
-                            }
+                            assertEquals(primary, partNodes.get(0));
                         }
                     }
 
