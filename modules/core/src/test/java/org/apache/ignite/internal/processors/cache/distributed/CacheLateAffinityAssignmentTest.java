@@ -1067,6 +1067,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
+    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished4() throws Exception {
+        doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(2, true);
+    }
+
+    /**
+     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
+     *
+     * @throws Exception
+     */
     private void doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(int cnt, boolean delayToNewCrd) throws Exception {
         int ord = 1;
 
@@ -1076,6 +1085,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startServer(ord - 1, ord++);
 
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
+
         TestRecordingCommunicationSpi spi0 =
                 (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
@@ -1083,9 +1095,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
         else
             spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
-
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
 
         stopNode(3, ord);
 
@@ -1098,8 +1107,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         U.sleep(1_000);
 
         assertTrue(fut0.isDone());
-        assertTrue(fut1.isDone());
-        assertFalse(fut2.isDone());
+        assertTrue(delayToNewCrd ? !fut1.isDone() : fut1.isDone());
+        assertTrue(delayToNewCrd ? fut2.isDone() : !fut2.isDone());
 
         stopNode(0, ord);
 
@@ -1929,7 +1938,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         }, NODES, "update-thread");
 
         IgniteInternalFuture<?> srvRestartFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override
+            public Void call() throws Exception {
                 while (!fail.get() && System.currentTimeMillis() < stopTime) {
                     Ignite node = startGrid(NODES);
 

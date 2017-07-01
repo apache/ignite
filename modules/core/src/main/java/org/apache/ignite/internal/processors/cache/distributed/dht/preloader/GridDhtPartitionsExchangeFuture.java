@@ -2204,7 +2204,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         log.error("Unable to fetch ready assignment for [cacheId=" + fut.key().get1() +
                                 ", topVer=" + fut.key().get2() + ", exchId=" + exchangeId() + ']');
 
-                        // TODO what to do in case of error?
+                        throw new IgniteException(e);
                     }
                 }
 
@@ -2333,6 +2333,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                     if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
                                         changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
 
+                                    if (isDone())
+                                        return;
+
                                     boolean allReceived = false;
                                     Set<UUID> reqFrom = null;
 
@@ -2343,7 +2346,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                         if (crdChanged && !remaining.isEmpty())
                                             reqFrom = new HashSet<>(remaining);
                                     }
-
 
                                     if (allReceived) {
                                         onAllReceived();
