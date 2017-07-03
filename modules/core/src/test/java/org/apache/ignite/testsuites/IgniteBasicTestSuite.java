@@ -20,6 +20,8 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -172,6 +174,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(MetadataStorageSelfTest.class);
         suite.addTestSuite(FreeListImplSelfTest.class);
         suite.addTestSuite(MemoryMetricsSelfTest.class);
+        suite.addTestSuite(SwapPathConstructionSelfTest.class);
 
         suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
