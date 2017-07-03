@@ -18,17 +18,23 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import javax.cache.CacheException;
+import mockit.Invocation;
+import mockit.Mock;
+import mockit.MockUp;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,6 +56,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
+
+    /** Next nodes after MAX_CACHE_COUNT start without cache */
+    private static final int MAX_CACHE_COUNT = 4;
 
     /** Started grid counter. */
     private static int cnt;
@@ -73,8 +82,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        // Forth node goes without cache.
-        if (cnt < 4)
+        if (cnt < MAX_CACHE_COUNT)
             cfg.setCacheConfiguration(cacheConfiguration());
 
         cnt++;
@@ -229,6 +237,34 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             noNodesFilter = false;
 
             assertTrue(failed);
+        }
+    }
+
+    /**
+     * Cluster topology mismatch shall result in DataStreamer retrying cache update with the latest topology and
+     * no error logged to the console.
+     *
+     * @throws Exception if failed
+     */
+    public void testClusterTopologyCheckedExceptionWhenTopologyMismatch() throws Exception {
+        startGrids(MAX_CACHE_COUNT - 1); // cache-enabled nodes
+
+        try (Ignite ignite = startGrid(MAX_CACHE_COUNT);
+             IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
+
+            new MockUp<DataStreamerRequest>() {
+                @Mock AffinityTopologyVersion topologyVersion(Invocation invocation) {
+                    DataStreamerRequest req = invocation.getInvokedInstance();
+                    Collection<DataStreamerEntry> entries = req.entries();
+                    ((IgniteEx)ignite).context().cacheObjects().contextForCache(ignite.cache)
+
+                    assertEquals(1, entries.size());
+
+                    return new AffinityTopologyVersion(MAX_CACHE_COUNT - 2, 0); // this will cause topology mismatch
+                }
+            };
+
+            streamer.addData(1, "1");
         }
     }
 
