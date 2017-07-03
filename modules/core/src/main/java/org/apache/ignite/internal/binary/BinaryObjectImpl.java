@@ -791,8 +791,16 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
-        BinaryReaderExImpl reader = reader(null, coCtx != null ?
-            coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
+        ClassLoader clsLdr;
+
+        if (coCtx == null)
+            clsLdr = ctx.configuration().getClassLoader();
+        else if (coCtx.kernalContext().config().isPeerClassLoadingEnabled())
+            clsLdr = coCtx.kernalContext().cache().context().deploy().globalLoader();
+        else
+            clsLdr = coCtx.kernalContext().config().getClassLoader();
+
+        BinaryReaderExImpl reader = reader(null, clsLdr, true);
 
         Object obj0 = reader.deserialize();
 
