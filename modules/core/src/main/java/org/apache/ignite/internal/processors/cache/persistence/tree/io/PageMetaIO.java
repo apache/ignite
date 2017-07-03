@@ -195,6 +195,7 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
+     * @return Last allocated index
      */
     public int getLastPageCount(long pageAddr) {
         return PageUtils.getInt(pageAddr, LAST_PAGE_COUNT_OFF);

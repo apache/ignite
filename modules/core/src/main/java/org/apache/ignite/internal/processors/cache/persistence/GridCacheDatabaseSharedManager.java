@@ -139,6 +139,7 @@ import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -264,8 +265,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private boolean stopping;
 
-    /** Checkpoint runner thread pool. */
-    private ExecutorService asyncRunner;
+    /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
+    @Nullable private ExecutorService asyncRunner;
 
     /** Buffer for the checkpoint threads. */
     private ThreadLocal<ByteBuffer> threadBuf;
@@ -1968,6 +1969,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             asyncRunner == null ? 1 : chp.cpPages.collectionsSize());
 
                         tracker.onPagesWriteStart();
+                        LongAdder8 writtenPagesCtr = new LongAdder8();
 
                         if (asyncRunner != null) {
                             for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
@@ -1975,7 +1977,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     tracker,
                                     chp.cpPages.innerCollection(i),
                                     updStores,
-                                    doneWriteFut
+                                    doneWriteFut,
+                                    writtenPagesCtr
                                 );
 
                                 try {
@@ -1989,7 +1992,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                         else {
                             // Single-threaded checkpoint.
-                            Runnable write = new WriteCheckpointPages(tracker, chp.cpPages, updStores, doneWriteFut);
+                            Runnable write = new WriteCheckpointPages(tracker,
+                                chp.cpPages,
+                                updStores,
+                                doneWriteFut,
+                                writtenPagesCtr);
 
                             write.run();
                         }
@@ -2325,9 +2332,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     *
-     */
+    /** Pages write task */
     private class WriteCheckpointPages implements Runnable {
         /** */
         private CheckpointMetricsTracker tracker;
@@ -2341,19 +2346,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private CountDownFuture doneFut;
 
+        /** Counter for all written pages */
+        private LongAdder8 writtenPagesCtr;
+
         /**
          * @param writePageIds Write page IDs.
+         * @param writtenPagesCtr all written pages counter, may be shared between several write tasks
          */
         private WriteCheckpointPages(
             CheckpointMetricsTracker tracker,
             Collection<FullPageId> writePageIds,
             GridConcurrentHashSet<PageStore> updStores,
-            CountDownFuture doneFut
-        ) {
+            CountDownFuture doneFut,
+            @NotNull final LongAdder8 writtenPagesCtr) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
+            this.writtenPagesCtr = writtenPagesCtr;
         }
 
         /** {@inheritDoc} */
@@ -2401,7 +2411,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tmpWriteBuf.rewind();
                         }
 
-                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf);
+                        writtenPagesCtr.increment();
+
+                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf, writtenPagesCtr.longValue());
 
                         tmpWriteBuf.rewind();
 

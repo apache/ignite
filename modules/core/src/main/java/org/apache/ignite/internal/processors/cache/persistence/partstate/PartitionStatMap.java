@@ -24,15 +24,14 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Information structure with partitions state.
  * Page counts map.
- * Maps following pairs: (cacheId, partId) -> (lastAllocatedIndex, count)
  */
 public class PartitionStatMap {
+    /** Maps following pairs: (cacheId, partId) -> (lastAllocatedIndex, count) */
     private final NavigableMap<Key, Value> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
 
     public Value get(Key key) {
@@ -104,10 +103,6 @@ public class PartitionStatMap {
             this.partId = partId;
         }
 
-        public Key(T2<Integer, Integer> pair) {
-            this(pair.get1(), pair.get2());
-        }
-
         public int getCacheId() {
             return cacheId;
         }
@@ -116,10 +111,12 @@ public class PartitionStatMap {
             return partId;
         }
 
+        /** Tmp method for compatibility with tuple */
         public int get1() {
             return getCacheId();
         }
 
+        /** Tmp method for compatibility with tuple */
         public int get2() {
             return getPartId();
         }
@@ -168,13 +165,37 @@ public class PartitionStatMap {
                 return 1;
             return 0;
         }
+
+        /**
+         * @param pageIdx  Page Index, monotonically growing number within each partition
+         * @return page ID (64 bits) constructed from partition ID
+         */
+        public long createPageId(int pageIdx) {
+            return PageIdUtils.pageId( getPartId(), (byte)0, pageIdx);
+        }
+
+        /**
+         * Returns Full page ID
+         *
+         * @param pageIdx Page Index, monotonically growing number within each partition
+         * @return FullPageId consists of cache ID (32 bits) and page ID (64 bits).
+         */
+        @NotNull public FullPageId createFullPageId(int pageIdx) {
+            return new FullPageId(createPageId(pageIdx), getCacheId());
+        }
     }
 
     public static class Value {
         /**
-         * last Allocated Page Index (previousSnapshotPageCount
+         * Last Allocated Page Index (count) from PageMetaIO.
+         * Used only in incremental shapshots
+         * (previousSnapshotPageCount
          */
         private final int lastAllocatedIndex;
+
+        /**
+         * Total number of pages allocated for partition <code>[partition, cacheId]</code>
+         */
         private final int count;
 
         public Value(int lastAllocatedIndex, int count) {
@@ -182,14 +203,11 @@ public class PartitionStatMap {
             this.count = count;
         }
 
-        public Value(T2<Integer, Integer> pair) {
-            this(pair.get1(), pair.get2());
-        }
-
         public int getCount() {
             return count;
         }
 
+        /** Tmp method for compatibility with tuple */
         public int get2() {
             return getCount();
         }
@@ -198,10 +216,12 @@ public class PartitionStatMap {
             return lastAllocatedIndex;
         }
 
+        /** Tmp method for compatibility with tuple */
         public int get1() {
             return getLastAllocatedIndex();
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "Value{" +
                 "lastAllocatedIndex=" + lastAllocatedIndex +

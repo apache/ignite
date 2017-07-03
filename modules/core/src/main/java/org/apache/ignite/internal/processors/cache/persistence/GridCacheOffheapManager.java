@@ -397,7 +397,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param io Page Meta IO
      * @param cacheId Cache ID.
      * @param partition Partition ID.
-     * @param pages Number of pages to add - total page allocated for partition  <code>[partition, cacheId]</code>
+     * @param pages Number of pages to add - total page allocated for partition <code>[partition, cacheId]</code>
      */
     private static void addPartition(
         PartitionStatMap map,

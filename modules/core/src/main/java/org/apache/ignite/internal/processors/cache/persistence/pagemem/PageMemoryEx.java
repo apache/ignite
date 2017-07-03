@@ -117,7 +117,7 @@ public interface PageMemoryEx extends PageMemory {
      *      the {@link #beginCheckpoint()} method call.
      * @param tmpBuf Temporary buffer to write changes into.
      * @param tracker Checkpoint metrics tracker.
-     * @return {@code True} if data were read, {@code false} otherwise (data already saved to storage).
+     * @return {@code  Partition tag} if data were read, {@code null} otherwise (data already saved to storage).
      * @throws IgniteException If failed to obtain page data.
      */
     @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker);
