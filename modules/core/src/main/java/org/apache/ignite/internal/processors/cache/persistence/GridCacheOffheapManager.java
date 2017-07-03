@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionStatMap;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -397,10 +397,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param io Page Meta IO
      * @param cacheId Cache ID.
      * @param partition Partition ID.
-     * @param pages Number of pages to add.
+     * @param pages Number of pages to add - total page allocated for partition  <code>[partition, cacheId]</code>
      */
     private static void addPartition(
-        Map<T2<Integer, Integer>, T2<Integer, Integer>> map,
+        PartitionStatMap map,
         long pageAddr,
         PagePartitionMetaIO io,
         int cacheId,
@@ -413,7 +413,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         assert PageIO.getPageId(pageAddr) != 0;
 
         int lastAllocatedIdx = io.getLastPageCount(pageAddr);
-        map.put(new T2<>(cacheId, partition), new T2<>(lastAllocatedIdx, pages));
+        map.put(
+            new PartitionStatMap.Key(cacheId, partition),
+            new PartitionStatMap.Value(lastAllocatedIdx, pages));
     }
 
     /** {@inheritDoc} */

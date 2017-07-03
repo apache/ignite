@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
-import java.util.NavigableMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -28,8 +27,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionStatMap;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,12 +51,13 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
 
     /**
      * @param snapOp current snapshot operation.
+     * @param map  (cacheId, partId) -> (lastAllocatedIndex, count)
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */
     public boolean onMarkCheckPointBegin(
         SnapshotOperation snapOp,
-        NavigableMap<T2<Integer, Integer>, T2<Integer, Integer>> map
+        PartitionStatMap map
     ) throws IgniteCheckedException {
         return false;
     }

@@ -15,34 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.persistence.partstate;
 
 import java.io.Serializable;
 import java.util.Comparator;
-import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  *
  */
-public class FullPageIdIterableComparator implements Comparator<T2<Integer, Integer>>, Serializable {
+public class PartStatMapFullPageIdComparator implements Comparator<PartitionStatMap.Key>, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final FullPageIdIterableComparator INSTANCE = new FullPageIdIterableComparator();
+    public static final PartStatMapFullPageIdComparator INSTANCE = new PartStatMapFullPageIdComparator();
 
-    /** {@inheritDoc} */
-    @Override public int compare(T2<Integer, Integer> o1, T2<Integer, Integer> o2) {
-        if (o1.get1() < o2.get1())
+    /** {@inheritDoc} (cacheId, partition) */
+    @Override public int compare(PartitionStatMap.Key o1, PartitionStatMap.Key o2) {
+        if (o1.getCacheId() < o2.getCacheId())
             return -1;
 
-        if (o1.get1() > o2.get1())
+        if (o1.getCacheId() > o2.getCacheId())
             return 1;
 
-        if (o1.get2() < o2.get2())
+        if (o1.getPartId() < o2.getPartId())
             return -1;
 
-        if (o1.get2() > o2.get2())
+        if (o1.getPartId() > o2.getPartId())
             return 1;
 
         return 0;

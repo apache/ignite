@@ -40,7 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -109,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionStatMap;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -2144,15 +2144,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     curCpProgress = curr;
                 }
 
-                final NavigableMap<T2<Integer, Integer>, T2<Integer, Integer>> map =
-                    new TreeMap<>(FullPageIdIterableComparator.INSTANCE);
+                final PartitionStatMap map = new PartitionStatMap();
 
                 DbCheckpointListener.Context ctx0 = new DbCheckpointListener.Context() {
                     @Override public boolean nextSnapshot() {
                         return curr.nextSnapshot;
                     }
 
-                    @Override public Map<T2<Integer, Integer>, T2<Integer, Integer>> partitionStatMap() {
+                    @Override public PartitionStatMap partitionStatMap() {
                         return map;
                     }
                 };

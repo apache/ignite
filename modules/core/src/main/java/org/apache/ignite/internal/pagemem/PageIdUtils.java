@@ -150,7 +150,9 @@ public final class PageIdUtils {
 
     /**
      * @param partId Partition ID.
-     * @return Part ID constructed from the given cache ID and partition ID.
+     * @param flag
+     * @param pageIdx
+     * @return Part ID constructed from the given pageIdx and partition ID.
      */
     public static long pageId(int partId, byte flag, int pageIdx) {
         long pageId = flag & FLAG_MASK;
