@@ -175,6 +175,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;
 
+    /** Environment failure. */
+    private volatile Throwable envFailed;
+
     /**
      * @param ctx Kernal context.
      */
@@ -385,6 +388,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 return ptr;
             }
+
+            checkEnvironment();
 
             if (isStopping())
                 throw new IgniteCheckedException("Stopping.");
@@ -923,6 +928,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * @throws StorageException If environment is no longer valid and we missed a WAL write.
+     */
+    private void checkEnvironment() throws StorageException {
+        if (envFailed != null)
+            throw new StorageException("Failed to flush WAL buffer (environment was invalidated by a " +
+                    "previous error)", envFailed);
+    }
+
+    /**
      * File archiver operates on absolute segment indexes. For any given absolute segment index N we can calculate
      * the work WAL segment: S(N) = N % psCfg.walSegments.
      * When a work segment is finished, it is given to the archiver. If the absolute index of last archived segment
@@ -1407,7 +1421,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      *
      */
-    private abstract static class FileHandle {
+    public abstract static class FileHandle {
         /** */
         protected RandomAccessFile file;
 
@@ -1484,7 +1498,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * File handle for one log segment.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    private class FileWriteHandle extends FileHandle {
+    public class FileWriteHandle extends FileHandle {
         /** */
         private final RecordSerializer serializer;
 
@@ -1504,9 +1518,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** */
         private volatile long lastFsyncPos;
-
-        /** Environment failure. */
-        private volatile Throwable envFailed;
 
         /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)}*/
         private final AtomicBoolean stop = new AtomicBoolean(false);
@@ -1748,6 +1759,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             catch (Throwable e) {
                 invalidateEnvironment(e);
 
+                // All workers waiting for a next segment must be woken up and stopped
+                signalNextAvailable();
+
                 throw e;
             }
         }
@@ -1918,9 +1932,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert head.get() instanceof FakeRecord: "head";
-                assert written == lastFsyncPos || mode != WALMode.DEFAULT :
-                    "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ']';
+                if (envFailed == null) {
+                    assert head.get() instanceof FakeRecord: "head";
+                    assert written == lastFsyncPos || mode != WALMode.DEFAULT :
+                            "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ']';
+                }
 
                 ch = null;
 
@@ -2064,15 +2080,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }.start();
             }
-        }
-
-        /**
-         * @throws StorageException If environment is no longer valid and we missed a WAL write.
-         */
-        private void checkEnvironment() throws StorageException {
-            if (envFailed != null)
-                throw new StorageException("Failed to flush WAL buffer (environment was invalidated by a " +
-                    "previous error)", envFailed);
         }
 
         /**
@@ -2511,7 +2518,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 try {
                     hnd.flush(hnd.head.get());
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     U.warn(log, "Failed to flush WAL record queue", e);
                 }
             }
