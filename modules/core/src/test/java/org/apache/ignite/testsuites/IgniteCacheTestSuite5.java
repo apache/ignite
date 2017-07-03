@@ -40,9 +40,9 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinity
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.MultipleThreadsClientTransactionsTest;
-import org.apache.ignite.internal.processors.cache.distributed.MultipleThreadsTransactionsFailoverTest;
-import org.apache.ignite.internal.processors.cache.distributed.MultipleThreadsTransactionsTest;
+import org.apache.ignite.internal.processors.cache.distributed.TransactionsInMultipleThreadsClientTest;
+import org.apache.ignite.internal.processors.cache.distributed.TransactionsInMultipleThreadsFailoverTest;
+import org.apache.ignite.internal.processors.cache.distributed.TransactionsInMultipleThreadsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
@@ -95,9 +95,9 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
 
-        suite.addTestSuite(MultipleThreadsTransactionsTest.class);
-        suite.addTestSuite(MultipleThreadsClientTransactionsTest.class);
-        suite.addTestSuite(MultipleThreadsTransactionsFailoverTest.class);
+        suite.addTestSuite(TransactionsInMultipleThreadsTest.class);
+        suite.addTestSuite(TransactionsInMultipleThreadsClientTest.class);
+        suite.addTestSuite(TransactionsInMultipleThreadsFailoverTest.class);
 
         return suite;
     }

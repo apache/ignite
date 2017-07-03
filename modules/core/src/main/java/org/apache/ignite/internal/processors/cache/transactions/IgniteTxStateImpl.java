@@ -482,7 +482,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 }
 
                 if (candidate != null)
-                    candidate.threadId(curThreadId);
+                    candidate.setThreadId(curThreadId);
             }
         }
     }

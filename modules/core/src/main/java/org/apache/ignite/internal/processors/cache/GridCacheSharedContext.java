@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -884,6 +885,29 @@ public class GridCacheSharedContext<K, V> {
         tx.txState().awaitLastFut(this);
 
         return tx.rollbackNearTxLocalAsync();
+    }
+
+    /**
+     * Suspends transaction. It could be resume later.
+     *
+     * @param tx Transaction to suspend.
+     * @throws IgniteCheckedException If suspension failed.
+     */
+    public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFut(this);
+
+        tx.suspend();
+    }
+
+    /**
+     * Resume transaction if it was previously suspended.
+     *
+     * @throws IgniteException If resume failed.
+     */
+    public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFut(this);
+
+        tx.resume();
     }
 
     /**

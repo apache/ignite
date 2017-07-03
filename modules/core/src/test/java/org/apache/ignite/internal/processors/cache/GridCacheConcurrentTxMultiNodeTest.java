@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -134,7 +135,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         atomicCfg.setCacheMode(mode);
 
         c.setAtomicConfiguration(atomicCfg);
-
         if (cacheOn) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
