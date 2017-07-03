@@ -335,21 +335,29 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void suspend() throws IgniteException {
+        enter();
+
         try {
-            tx().suspend();
+            cctx.suspendTx(tx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        } finally {
+            leave();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
+        enter();
+
         try {
-            tx().resume();
+            cctx.resumeTx(tx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        } finally {
+            leave();
         }
     }
 

@@ -4003,10 +4003,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * @throws IgniteCheckedException If the transaction is in an incorrect state.
      */
     public void suspend() throws IgniteCheckedException {
-        if (!ACTIVE.equals(state())) {
+        if (!ACTIVE.equals(state()))
             throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
                 + "[expected=" + ACTIVE + ", actual=" + state() + ']');
-        }
 
         state(SUSPENDED);
 
