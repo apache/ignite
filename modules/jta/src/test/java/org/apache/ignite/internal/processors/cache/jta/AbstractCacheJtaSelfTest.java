@@ -192,8 +192,6 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     }
 
     /**
-     * JUnit.
-     *
      * @throws Exception If failed.
      */
     public void testJtaPrepare() throws Exception {
@@ -203,19 +201,19 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        Thread t = factory.newThread(new Runnable() {
+        Thread task = factory.newThread(new Runnable() {
             @Override public void run() {
                 try {
                     //Preparing jta transaction
-                    TransactionProxyImpl t = (TransactionProxyImpl) ignite(0).transactions().txStart();
+                    TransactionProxyImpl tx = (TransactionProxyImpl) ignite(0).transactions().txStart();
 
-                    Field f = t.getClass().getDeclaredField("tx");
+                    Field f = tx.getClass().getDeclaredField("tx");
 
                     f.setAccessible(true);
 
-                    GridNearTxLocal tx = (GridNearTxLocal) f.get(t);
+                    GridNearTxLocal internalTx = (GridNearTxLocal) f.get(tx);
 
-                    CacheJtaResource jta = new CacheJtaResource(tx, grid(0).context());
+                    CacheJtaResource jta = new CacheJtaResource(internalTx, grid(0).context());
 
                     XidImpl xid = new XidImpl();
 
@@ -237,17 +235,17 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
             }
         });
 
-        try (Transaction transaction = ignite(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             cache.put("key", 0);
 
-            t.start();
+            task.start();
 
             latch.await();
 
-            while (t.getState() != Thread.State.WAITING)
+            while (task.getState() != Thread.State.WAITING)
                 factory.checkError();
 
-            transaction.commit();
+            tx.commit();
         }
     }
 }
