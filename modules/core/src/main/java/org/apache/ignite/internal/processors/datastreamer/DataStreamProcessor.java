@@ -336,7 +336,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (!allowOverwrite && (topVer.topologyVersion() != req.topologyVersion().topologyVersion())) {
+                if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
                     Exception err = new ClusterTopologyCheckedException(
                         "DataStreamer will retry data transfer at stable topology " +
                             "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
