@@ -43,7 +43,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.PA;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -260,7 +259,7 @@ public class CacheContinuousQueryCounterTest extends GridCommonAbstractTest {
 
             ass.add(0, nodes);
 
-            System.out.println("Assigment: " + Arrays.toString(ass.toArray()));
+            System.out.println("Assignment: " + Arrays.toString(ass.toArray()));
 
             return ass;
         }
