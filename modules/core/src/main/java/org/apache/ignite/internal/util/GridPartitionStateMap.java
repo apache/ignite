@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.BitSet;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 
@@ -34,6 +32,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
  * Null values are prohibited.
  */
 public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartitionState> implements Serializable {
+    /** Empty map. */
+    public static final GridPartitionStateMap EMPTY = new GridPartitionStateMap(0);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +52,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     @Override public Set<Entry<Integer, GridDhtPartitionState>> entrySet() {
         return new AbstractSet<Entry<Integer, GridDhtPartitionState>>() {
             @Override public Iterator<Entry<Integer, GridDhtPartitionState>> iterator() {
-                final int size = states.length() == 0 ? 0 : (states.length() - 1)/ BITS + 1;
+                final int size = states.isEmpty() ? 0 : (states.length() - 1)/ BITS + 1;
 
                 return new Iterator<Entry<Integer, GridDhtPartitionState>>() {
                     private int next;
@@ -65,6 +66,9 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
                     }
 
                     @Override public Entry<Integer, GridDhtPartitionState> next() {
+                        if (!hasNext())
+                            throw new NoSuchElementException();
+
                         cur = next;
                         next++;
 
@@ -109,6 +113,32 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      */
     public GridPartitionStateMap(int parts) {
         states = new BitSet(parts);
+    }
+
+    /**
+     * Creates map copy.
+     * @param from Source map.
+     * @param onlyActive Retains only active partitions.
+     */
+    public GridPartitionStateMap(GridPartitionStateMap from, boolean onlyActive) {
+        size = from.size();
+
+        states = (BitSet)from.states.clone();
+
+        if (onlyActive) {
+            int part = 0;
+
+            int maxPart = states.size() / BITS;
+
+            while (part < maxPart) {
+                GridDhtPartitionState state = from.state(part);
+
+                if (state != null && !state.active())
+                    remove(part);
+
+                part++;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -169,6 +199,24 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
         for (int i = 0; i < BITS; i++)
             st |= ((states.get(off + i) ? 1 : 0) << i);
 
-        return st == 0 ? null : GridDhtPartitionState.values()[st - 1];
+        return st == 0 ? null : GridDhtPartitionState.fromOrdinal(st - 1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridPartitionStateMap map = (GridPartitionStateMap)o;
+
+        return size == map.size && states.equals(map.states);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return 31 * states.hashCode() + size;
     }
 }
