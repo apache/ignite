@@ -1251,11 +1251,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.onStarted();
 
+        String memPlcName = cfg.getMemoryPolicyName();
+
+        if (memPlcName == null
+            && ctx.config().getMemoryConfiguration() != null)
+            memPlcName = ctx.config().getMemoryConfiguration().getDefaultMemoryPolicyName();
+
 
         if (log.isInfoEnabled()) {
             log.info("Started cache [name=" + cfg.getName() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
-                ", memoryPolicyName=" + cfg.getMemoryPolicyName() +
+                ", memoryPolicyName=" + memPlcName +
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() + ']');
 }
