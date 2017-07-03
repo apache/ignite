@@ -187,21 +187,13 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         QueryCursor<?> cur = qryClientCache.query(qry);
 
-        final Affinity<Object> aff = qryClient.affinity(qryClientCache.getName());
-
         Object key = new Integer(1);
 
         qryClientCache.put(key, key);
 
-        ClusterNode primary = aff.mapKeyToNode(key);
+        Ignite primary = primaryNode(key, qryClientCache.getName());
 
-//        primaryKey(qryClientCache);
-
-        final String gridName = primary.attribute("org.apache.ignite.ignite.name").toString();
-
-        final int primaryIdx = Integer.valueOf(gridName.substring(gridName.length() - 1));
-
-        TestCommunicationSpi spi = (TestCommunicationSpi)ignite(primaryIdx).configuration().getCommunicationSpi();
+        TestCommunicationSpi spi = (TestCommunicationSpi)primary.configuration().getCommunicationSpi();
 
         spi.clientNode = qryClient.cluster().localNode();
 
@@ -211,7 +203,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         spi.latch.await(5000L, TimeUnit.MILLISECONDS);
 
-        stopGrid(primaryIdx, true);
+        stopGrid(primary.name(), true);
 
         awaitPartitionMapExchange();
 
