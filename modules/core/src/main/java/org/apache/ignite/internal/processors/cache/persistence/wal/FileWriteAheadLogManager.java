@@ -1918,7 +1918,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert head.get() instanceof FakeRecord: "head";
+                WALRecord rec = head.get();
+
+                assert rec instanceof FakeRecord : "Expected head FakeRecord, actual head "
+                    + (rec != null ? rec.getClass().getSimpleName() : "null");
+
                 assert written == lastFsyncPos || mode != WALMode.DEFAULT :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ']';
 
