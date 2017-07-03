@@ -70,34 +70,13 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
      * Cleans up swap files and directories after test.
      */
     private void cleanUpSwapDir() {
-        Path dirToDel = Paths.get(U.getIgniteHome() + File.separator + RELATIVE_SWAP_PATH);
+        Path relDir = Paths.get(U.getIgniteHome(), RELATIVE_SWAP_PATH);
 
-        try {
-            Files.walkFileTree(dirToDel, new FileVisitor<Path>() {
-                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Files.delete(file);
+        deleteRecursively(relDir.toFile());
 
-                    return FileVisitResult.CONTINUE;
-                }
+        Path absDir = Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH);
 
-                @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    Files.delete(dir);
-
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        }
-        catch (IOException ignored) {
-            // No-op.
-        }
+        deleteRecursively(absDir.toFile());
     }
 
     /**
@@ -112,7 +91,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(allocPath);
 
-        assertTrue(allocPath.contains(U.getIgniteHome() + File.separator + RELATIVE_SWAP_PATH));
+        assertTrue(allocPath.contains(Paths.get(U.getIgniteHome(), RELATIVE_SWAP_PATH).toString()));
     }
 
     /**
@@ -128,7 +107,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(allocPath);
 
-        String expectedPath = getTmpDir() + File.separator + ABSOLUTE_SWAP_PATH;
+        String expectedPath = Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString();
 
         assertTrue("Expected path: "
                         + expectedPath
@@ -166,7 +145,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         if (isRelativePath)
             memPlcCfg.setSwapFilePath(RELATIVE_SWAP_PATH);
         else
-            memPlcCfg.setSwapFilePath(getTmpDir() + File.separator + ABSOLUTE_SWAP_PATH);
+            memPlcCfg.setSwapFilePath(Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString());
 
         memCfg.setMemoryPolicies(memPlcCfg);
 
