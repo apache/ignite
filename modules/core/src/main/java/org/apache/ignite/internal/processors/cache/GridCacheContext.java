@@ -1665,16 +1665,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
-        return keepBinary(operationContextPerCall());
+        CacheOperationContext opCtx = operationContextPerCall();
+
+        return opCtx != null && opCtx.isKeepBinary();
     }
 
-    public boolean keepBinary(CacheOperationContext opCtx) {
-        return keepBinary(opCtx, binaryMarshaller());
-    }
-
-    public boolean keepBinary(CacheOperationContext opCtx, boolean defaultValue) {
-        return opCtx != null ? opCtx.isKeepBinary() : defaultValue;
-    }
 
     /**
      * @return {@code True} if the value for the cache object has to be copied because

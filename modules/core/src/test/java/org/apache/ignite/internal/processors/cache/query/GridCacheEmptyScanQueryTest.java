@@ -142,6 +142,7 @@ public class GridCacheEmptyScanQueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEmptyScanQuery4WithBinaryMarshaller() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5659");
         runEmptyScanQuery(new ScanQuery<>(new EmployeePredicate()), 2,
                           "org.apache.ignite.internal.binary.BinaryMarshaller", EXCL_FROM_CFG);
     }
