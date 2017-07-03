@@ -33,7 +33,7 @@ namespace ignite
         /**
          * Big decimal number implementation.
          */
-        class Decimal
+        class IGNITE_IMPORT_EXPORT Decimal
         {
         public:
             /**

@@ -32,7 +32,7 @@ namespace ignite
         /**
          * Big integer number implementation.
          */
-        class BigInteger
+        class IGNITE_IMPORT_EXPORT BigInteger
         {
             friend class Decimal;
         public:
