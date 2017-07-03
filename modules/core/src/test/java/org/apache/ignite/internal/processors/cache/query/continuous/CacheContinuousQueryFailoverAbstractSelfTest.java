@@ -832,10 +832,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
 
         for (int i = 0; i < (atomicityMode() == CacheAtomicityMode.ATOMIC ? SRV_NODES - 1 : SRV_NODES - 2); i++) {
-
-            lsnr.setCntBackup(0);
-            lsnr.setCntPrimary(0);
-
             log.info("Stop iteration: " + i);
 
             TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -883,19 +879,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                 filtered = !filtered;
             }
-
-            // check size primary node
-            assertEquals(keys.size(), lsnr.getCntPrimary().get());
-
-            // check size backup nodes
-            if (cacheMode() != REPLICATED)
-                if (ignite.cluster().forServers().nodes().size() <= backups)
-                    assertEquals(keys.size(), lsnr.getCntBackup().get());
-                else
-                    assertEquals(keys.size() * backups, lsnr.getCntBackup().get());
-
-            if (cacheMode() == REPLICATED)
-                assertEquals(keys.size() * (SRV_NODES - (i + 1 /** client */)), lsnr.getCntBackup().get());
 
             stopGrid(i);
 
@@ -2580,12 +2563,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         /** Events. */
         private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
-        /** Counter primary nodes. */
-        private static AtomicInteger cntPrimary = new AtomicInteger(0);
-
-        /** Counter backup nodes. */
-        private static AtomicInteger cntBackup = new AtomicInteger(0);
-
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
             for (CacheEntryEvent<?, ?> e : evts) {
@@ -2599,31 +2576,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
-            boolean primary = e.unwrap(CacheQueryEntryEvent.class).isPrimary();
-            boolean backup = e.unwrap(CacheQueryEntryEvent.class).isBackup();
-
-            if (primary)
-                cntPrimary.incrementAndGet();
-            else if (backup)
-                cntBackup.incrementAndGet();
-
             return (Integer)e.getValue() % 2 == 0;
-        }
-
-        public AtomicInteger getCntPrimary() {
-            return cntPrimary;
-        }
-
-        public void setCntPrimary(int cntPrimary) {
-            this.cntPrimary.set(cntPrimary);
-        }
-
-        public AtomicInteger getCntBackup() {
-            return cntBackup;
-        }
-
-        public void setCntBackup(int cntBackup) {
-            this.cntBackup.set(cntBackup);
         }
     }
 

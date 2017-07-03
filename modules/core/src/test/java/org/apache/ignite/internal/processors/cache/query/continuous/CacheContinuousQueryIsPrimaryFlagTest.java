@@ -49,7 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class CacheContinuousQueryLostNodeTest extends GridCommonAbstractTest {
+public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -80,7 +80,6 @@ public class CacheContinuousQueryLostNodeTest extends GridCommonAbstractTest {
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
-        commSpi.setIdleConnectionTimeout(100);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -95,20 +94,12 @@ public class CacheContinuousQueryLostNodeTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setBackups(backups);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setNearConfiguration(nearCacheConfiguration());
 
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setClientMode(client);
 
         return cfg;
-    }
-
-    /**
-     * @return Near cache configuration.
-     */
-    protected NearCacheConfiguration nearCacheConfiguration() {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -199,8 +190,6 @@ public class CacheContinuousQueryLostNodeTest extends GridCommonAbstractTest {
 
         qry.setLocalListener(lsnr);
 
-        qry.setRemoteFilter(lsnr);
-
         QueryCursor<?> cur = qryClientCache.query(qry);
 
         final Affinity<Object> aff = qryClient.affinity(qryClientCache.getName());
@@ -209,10 +198,9 @@ public class CacheContinuousQueryLostNodeTest extends GridCommonAbstractTest {
 
         qryClientCache.put(key, key);
 
-        lsnr.setCntBackup(0);
-        lsnr.setCntPrimary(0);
-
         ClusterNode primary = aff.mapKeyToNode(key);
+
+//        primaryKey(qryClientCache);
 
         final String gridName = primary.attribute("org.apache.ignite.ignite.name").toString();
 
@@ -230,15 +218,14 @@ public class CacheContinuousQueryLostNodeTest extends GridCommonAbstractTest {
 
         stopGrid(primaryIdx, true);
 
+        awaitPartitionMapExchange();
+
         assert GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return qryClient.cluster().nodes().size() == (SRV_NODES + 1 /** client node */)
                     - 1 /** Primary node */;
             }
         }, 5000L);
-
-        assertEquals(this.backups, lsnr.getCntBackup().get());
-        assertEquals(SRV_NODES - this.backups, lsnr.getCntPrimary().get());
 
         cur.close();
 
@@ -248,51 +235,14 @@ public class CacheContinuousQueryLostNodeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object>,
-        CacheEntryEventSerializableFilter<Object, Object> {
+    public static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object> {
         /** Keys. */
         GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
 
-        /** Events. */
-        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
-
-        /** Counter primary nodes. */
-        private static AtomicInteger cntPrimary = new AtomicInteger(0);
-
-        /** Counter backup nodes. */
-        private static AtomicInteger cntBackup = new AtomicInteger(0);
-
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
-            // No-op.
-        }
+            CacheEntryEvent<?, ?> next = evts.iterator().next();
 
-        /** {@inheritDoc} */
-        @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
-            boolean primary = e.unwrap(CacheQueryEntryEvent.class).isPrimary();
-            boolean backup = e.unwrap(CacheQueryEntryEvent.class).isBackup();
-
-            if (primary)
-                cntPrimary.incrementAndGet();
-            else if (backup)
-                cntBackup.incrementAndGet();
-
-            return (Integer) e.getKey() > 0;
-        }
-
-        public AtomicInteger getCntPrimary() {
-            return cntPrimary;
-        }
-
-        public void setCntPrimary(int cntPrimary) {
-            this.cntPrimary.set(cntPrimary);
-        }
-
-        public AtomicInteger getCntBackup() {
-            return cntBackup;
-        }
-
-        public void setCntBackup(int cntBackup) {
-            this.cntBackup.set(cntBackup);
+            assertTrue(next.unwrap(CacheQueryEntryEvent.class).isBackup());
         }
     }
 
