@@ -2114,8 +2114,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         initCacheProxies(topVer, err);
 
-        if (exchActions != null && exchActions.systemCachesStarting() && exchActions.newClusterState() == null)
+        if (exchActions != null && exchActions.systemCachesStarting() && exchActions.newClusterState() == null) {
             ctx.dataStructures().restoreStructuresState(ctx);
+
+            ctx.service().updateUtilityCache();
+        }
 
         if (exchActions != null && err == null) {
             Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps = null;
@@ -2601,7 +2604,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
         boolean checkThreadTx) {
-        return dynamicStartCaches(ccfgList, CacheType.USER, failIfExists, checkThreadTx);
+        return dynamicStartCaches(ccfgList, null, failIfExists, checkThreadTx);
     }
 
     /**
@@ -2627,11 +2630,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             for (CacheConfiguration ccfg : ccfgList) {
+                CacheType ct = cacheType;
+
+                if (ct == null) {
+                    if (CU.isUtilityCache(ccfg.getName()))
+                        ct = CacheType.UTILITY;
+                    else if (internalCaches.contains(ccfg.getName()))
+                        ct = CacheType.INTERNAL;
+                    else
+                        ct = CacheType.USER;
+                }
+
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg,
                     ccfg.getName(),
                     null,
-                    cacheType,
+                    ct,
                     false,
                     failIfExists,
                     true
