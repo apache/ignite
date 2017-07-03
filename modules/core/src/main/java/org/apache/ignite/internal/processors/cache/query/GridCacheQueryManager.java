@@ -1892,22 +1892,35 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Gets SQL metadata.
+     * Gets SQL metadata for all available caches.
      *
      * @return SQL metadata.
      * @throws IgniteCheckedException In case of error.
      */
     public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
+        return sqlMetadata(null);
+    }
+
+    /**
+     * Gets SQL metadata.
+     *
+     * @param cacheName Cache name.
+     * @return SQL metadata.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public Collection<GridCacheSqlMetadata> sqlMetadata(@Nullable final String cacheName) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
         try {
-            Callable<Collection<CacheSqlMetadata>> job = new MetadataJob();
+            Callable<Collection<CacheSqlMetadata>> job = new MetadataJob(cacheName);
+
+            final String cName = cacheName == null ? this.cacheName : cacheName;
 
             // Remote nodes that have current cache.
             Collection<ClusterNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode n) {
-                    return cctx.kernalContext().discovery().cacheAffinityNode(n, cacheName);
+                    return cctx.kernalContext().discovery().cacheAffinityNode(n, cName);
                 }
             });
 
@@ -1945,7 +1958,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
 
             // Metadata for current cache must be first in list.
-            col.add(new CacheSqlMetadata(map.remove(cacheName)));
+            col.add(new CacheSqlMetadata(map.remove(cName)));
 
             for (Collection<CacheSqlMetadata> metas : map.values())
                 col.add(new CacheSqlMetadata(metas));
@@ -2040,23 +2053,35 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @IgniteInstanceResource
         private Ignite ignite;
 
+        private final String cacheName;
+
+        MetadataJob (@Nullable String cacheName) {
+            this.cacheName = cacheName;
+        }
+
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
             final GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
-            Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
-                new C1<IgniteInternalCache<?, ?>, String>() {
-                    @Override public String apply(IgniteInternalCache<?, ?> c) {
-                        return c.name();
+            Collection<String> cacheNames;
+
+            if (cacheName != null)
+                cacheNames = Collections.singletonList(cacheName);
+            else {
+                cacheNames = F.viewReadOnly(ctx.cache().caches(),
+                    new C1<IgniteInternalCache<?, ?>, String>() {
+                        @Override public String apply(IgniteInternalCache<?, ?> c) {
+                            return c.name();
+                        }
+                    },
+                    new P1<IgniteInternalCache<?, ?>>() {
+                        @Override public boolean apply(IgniteInternalCache<?, ?> c) {
+                            return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
+                                !CU.ATOMICS_CACHE_NAME.equals(c.name());
+                        }
                     }
-                },
-                new P1<IgniteInternalCache<?, ?>>() {
-                    @Override public boolean apply(IgniteInternalCache<?, ?> c) {
-                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
-                            !CU.ATOMICS_CACHE_NAME.equals(c.name());
-                    }
-                }
-            );
+                );
+            }
 
             return F.transform(cacheNames, new C1<String, CacheSqlMetadata>() {
                 @Override public CacheSqlMetadata apply(String cacheName) {

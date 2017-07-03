@@ -36,6 +36,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMetrics;
@@ -360,7 +361,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestCacheRequest req0 = (GridRestCacheRequest)req;
 
-        final String cacheName = req0.cacheName() == null ? DFLT_CACHE_NAME: req0.cacheName();
+        final String cacheName = req0.cacheName() == null ? DFLT_CACHE_NAME : req0.cacheName();
 
         final Object key = req0.key();
 
@@ -408,7 +409,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_METADATA: {
-                    fut = ctx.task().execute(MetadataTask.class, null);
+                    fut = ctx.task().execute(MetadataTask.class, cacheName);
 
                     break;
                 }
@@ -927,7 +928,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     @GridInternal
-    private static class MetadataTask extends ComputeTaskAdapter<Void, GridRestResponse> {
+    private static class MetadataTask extends ComputeTaskAdapter<String, GridRestResponse> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -937,7 +938,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Void arg) throws IgniteException {
+            String cacheName) throws IgniteException {
 
             GridDiscoveryManager discovery = ignite.context().discovery();
 
@@ -956,10 +957,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             Map<ComputeJob, ClusterNode> map = U.newHashMap(sameCaches ? 1 : subgrid.size());
 
             if (sameCaches)
-                map.put(new MetadataJob(), ignite.localNode());
+                map.put(new MetadataJob(cacheName), ignite.localNode());
             else {
                 for (ClusterNode node : subgrid)
-                    map.put(new MetadataJob(), node);
+                    map.put(new MetadataJob(cacheName), node);
             }
 
             return map;
@@ -997,19 +998,29 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Cache name. */
+        private final String cacheName;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
+        /**
+         * @param cacheName Cache name.
+         */
+        MetadataJob(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
-            IgniteCacheProxy<?, ?> cache = F.first(ignite.context().cache().publicCaches());
+            IgniteInternalCache<?, ?> cache = ignite.context().cache().publicCache(cacheName);
 
             if (cache == null)
                 return Collections.emptyList();
 
             try {
-                return cache.context().queries().sqlMetadata();
+                return cache.context().queries().sqlMetadata(cacheName);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
