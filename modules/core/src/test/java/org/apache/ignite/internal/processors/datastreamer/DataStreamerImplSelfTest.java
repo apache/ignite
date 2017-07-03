@@ -29,12 +29,17 @@ import mockit.Mock;
 import mockit.MockUp;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,6 +48,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -251,16 +257,39 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         try (Ignite ignite = startGrid(MAX_CACHE_COUNT);
              IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
+            GridKernalContext gridContext = ((IgniteEx)ignite).context();
+            final CacheObjectContext objectContext =
+                gridContext.cacheObjects().contextForCache(gridContext.cache().cacheConfiguration(null));
+            final int KEY = 1;
+            final String VALUE = "1";
+            final KeyCacheObject marshalledKey =
+                gridContext.cacheObjects().toCacheKeyObject(objectContext, null, KEY, true);
+            final CacheObject marshalledValue = gridContext.cacheObjects().toCacheObject(objectContext, VALUE, true);
 
             new MockUp<DataStreamerRequest>() {
                 @Mock AffinityTopologyVersion topologyVersion(Invocation invocation) {
                     DataStreamerRequest req = invocation.getInvokedInstance();
                     Collection<DataStreamerEntry> entries = req.entries();
-                    ((IgniteEx)ignite).context().cacheObjects().contextForCache(ignite.cache)
 
                     assertEquals(1, entries.size());
 
-                    return new AffinityTopologyVersion(MAX_CACHE_COUNT - 2, 0); // this will cause topology mismatch
+                    DataStreamerEntry entry = entries.iterator().next();
+
+                    try {
+                        Assert.assertArrayEquals(
+                            marshalledKey.valueBytes(objectContext),
+                            entry.getKey().valueBytes(objectContext));
+                        Assert.assertArrayEquals(
+                            marshalledValue.valueBytes(objectContext),
+                            entry.getValue().valueBytes(objectContext));
+                    }
+                    catch (IgniteCheckedException e) {
+                        Assert.fail();
+                    }
+
+                    // Simulate situation when this client node have not received the last "node joined" topology
+                    // update causing topology mismatch
+                    return new AffinityTopologyVersion(MAX_CACHE_COUNT - 1, 0);
                 }
             };
 
