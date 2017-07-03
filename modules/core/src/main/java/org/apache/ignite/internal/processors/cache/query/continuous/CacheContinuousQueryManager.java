@@ -721,11 +721,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                                 CacheDataRow e = it.next();
 
-                                boolean primary = cctx.affinity().primaryByPartition(
-                                    cctx.localNode(),
-                                    e.partition(),
-                                    AffinityTopologyVersion.NONE);
-
                                 CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(
                                     cctx.cacheId(),
                                     CREATED,
@@ -734,7 +729,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     null,
                                     keepBinary,
                                     0,
-                                    primary,
                                     -1,
                                     null,
                                     (byte)0);

@@ -403,7 +403,7 @@ public class CacheContinuousQueryEventBuffer {
                 null,
                 false,
                 part,
-                false,
+                true,
                 cntr,
                 topVer,
                 (byte)0);

@@ -227,6 +227,8 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
             }
         }, 5000L);
 
+        assertTrue(lsnr.isBackup.get());
+
         cur.close();
 
         stopAllGrids();
@@ -239,10 +241,13 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         /** Keys. */
         GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
 
-        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
-            CacheEntryEvent<?, ?> next = evts.iterator().next();
+        /** */
+        private volatile static AtomicBoolean isBackup = new AtomicBoolean(false);
 
-            assertTrue(next.unwrap(CacheQueryEntryEvent.class).isBackup());
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
+            CacheEntryEvent<?, ?> e = evts.iterator().next();
+
+            isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
         }
     }
 

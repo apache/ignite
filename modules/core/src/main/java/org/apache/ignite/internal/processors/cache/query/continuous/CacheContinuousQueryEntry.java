@@ -54,6 +54,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private static final byte KEEP_BINARY = 0b0100;
 
     /** */
+    private static final byte PRIMARY_NODE = 0b1000;
+
+    /** */
     private static final EventType[] EVT_TYPE_VALS = EventType.values();
 
     /**
@@ -119,6 +122,43 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     public CacheContinuousQueryEntry() {
         // No-op.
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param evtType Event type.
+     * @param key Key.
+     * @param newVal New value.
+     * @param oldVal Old value.
+     * @param keepBinary Keep binary flag.
+     * @param part Partition.
+     * @param updateCntr Update partition counter.
+     * @param topVer Topology version if applicable.
+     * @param flags Flags.
+     */
+    CacheContinuousQueryEntry(
+        int cacheId,
+        EventType evtType,
+        KeyCacheObject key,
+        @Nullable CacheObject newVal,
+        @Nullable CacheObject oldVal,
+        boolean keepBinary,
+        int part,
+        long updateCntr,
+        @Nullable AffinityTopologyVersion topVer,
+        byte flags) {
+        this.cacheId = cacheId;
+        this.evtType = evtType;
+        this.key = key;
+        this.newVal = newVal;
+        this.oldVal = oldVal;
+        this.part = part;
+        this.updateCntr = updateCntr;
+        this.topVer = topVer;
+        this.flags = flags;
+
+        if (keepBinary)
+            this.flags |= KEEP_BINARY;
     }
 
     /**
@@ -211,10 +251,17 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @return Primary node.
+     * Mark that entry call on primary node.
+     */
+    void markPrimary() {
+        flags |= PRIMARY_NODE;
+    }
+
+    /**
+     * @return {@code True} if entry sent by primary node.
      */
     boolean isPrimary() {
-        return primary;
+        return (flags & PRIMARY_NODE) != 0;
     }
 
     /**
@@ -426,16 +473,23 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeBoolean("primary", primary))
                     return false;
 
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeLong("updateCntr", updateCntr))
                     return false;
 
                 writer.incrementState();
+
 
         }
 
@@ -515,7 +569,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 8:
-                topVer = reader.readMessage("topVer");
+                primary = reader.readBoolean("primary");
 
                 if (!reader.isLastRead())
                     return false;
@@ -523,6 +577,14 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 9:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 updateCntr = reader.readLong("updateCntr");
 
                 if (!reader.isLastRead())

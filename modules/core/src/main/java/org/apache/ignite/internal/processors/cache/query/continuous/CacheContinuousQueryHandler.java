@@ -380,6 +380,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (ignoreExpired && evt.getEventType() == EventType.EXPIRED)
                     return;
 
+                if (primary)
+                    evt.entry().markPrimary();
+
                 if (log.isDebugEnabled())
                     log.debug("Entry updated on affinity node [evt=" + evt + ", primary=" + primary + ']');
 
@@ -1214,6 +1217,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         /** {@inheritDoc} */
         @Override public void run() {
             final boolean notify = filter(evt);
+
+            if (primary)
+                evt.entry().markPrimary();
 
             if (primary || skipPrimaryCheck) {
                 if (fut == null) {
