@@ -46,6 +46,12 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly AliasDictionary _aliases = new AliasDictionary();
 
+        /** */
+        private static readonly Type DefaultIfEmptyEnumeratorType = new object[0]
+            .DefaultIfEmpty()
+            .GetType()
+            .GetGenericTypeDefinition();
+
         /// <summary>
         /// Generates the query.
         /// </summary>
@@ -466,31 +472,97 @@ namespace Apache.Ignite.Linq.Impl
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
+            var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
 
-            var subQuery = joinClause.InnerSequence as SubQueryExpression;
-
-            if (subQuery != null)
+            if (queryable != null)
             {
-                var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                var subQuery = joinClause.InnerSequence as SubQueryExpression;
 
-                _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
+                if (subQuery != null)
+                {
+                    var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
 
-                VisitQueryModel(subQuery.QueryModel, true);
+                    _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
 
-                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
-                _builder.AppendFormat(") as {0} on (", alias);
+                    VisitQueryModel(subQuery.QueryModel, true);
+
+                    var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                    _builder.AppendFormat(") as {0} on (", alias);
+                }
+                else
+                {
+                    var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
+                    var alias = _aliases.GetTableAlias(joinClause);
+                    _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                }
             }
             else
             {
-                var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
-                var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
-                var alias = _aliases.GetTableAlias(joinClause);
-                _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                VisitJoinWithLocalCollectionClause(joinClause);
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
 
             _builder.Append(") ");
+        }
+
+        /// <summary>
+        /// Visists Join clause in case of join with local collection
+        /// </summary>
+        private void VisitJoinWithLocalCollectionClause(JoinClause joinClause)
+        {
+            var type = joinClause.InnerSequence.Type;
+
+            var itemType = EnumerableHelper.GetIEnumerableItemType(type);
+
+            var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
+
+            if (string.IsNullOrWhiteSpace(sqlTypeName))
+            {
+                throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
+            }
+
+            var isOuter = false;
+            var sequenceExpression = joinClause.InnerSequence;
+            object values;
+
+            var subQuery = sequenceExpression as SubQueryExpression;
+            if (subQuery != null)
+            {
+                isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                sequenceExpression = subQuery.QueryModel.MainFromClause.FromExpression;
+            }
+
+            switch (sequenceExpression.NodeType)
+            {
+                case ExpressionType.Constant:
+                    var constantValueType = ((ConstantExpression)sequenceExpression).Value.GetType();
+                    if (constantValueType.IsGenericType)
+                    {
+                        isOuter = DefaultIfEmptyEnumeratorType == constantValueType.GetGenericTypeDefinition();
+                    }
+                    values = ExpressionWalker.EvaluateEnumerableValues(sequenceExpression);
+                    break;
+
+                case ExpressionType.Parameter:
+                    values = ExpressionWalker.EvaluateExpression<object>(sequenceExpression);
+                    break;
+
+                default:
+                    throw new NotSupportedException("Expression not supported for Join with local collection: "
+                                                    + sequenceExpression);
+            }
+
+            var tableAlias = _aliases.GetTableAlias(joinClause);
+            var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
+
+            _builder.AppendFormat("{0} join table ({1} {2} = ?) {3} on (", 
+                isOuter ? "left outer" : "inner",
+                fieldAlias,
+                sqlTypeName, 
+                tableAlias);
+
+            Parameters.Add(values);
         }
 
         /// <summary>

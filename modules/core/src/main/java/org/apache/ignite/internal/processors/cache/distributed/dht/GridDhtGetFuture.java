@@ -112,6 +112,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** */
     private final boolean recovery;
 
+    /** */
+    private final boolean addReaders;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -135,7 +138,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean recovery
+        boolean recovery,
+        boolean addReaders
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
@@ -153,6 +157,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
+        this.addReaders = addReaders;
 
         futId = IgniteUuid.randomUuid();
 
@@ -346,12 +351,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         GridCompoundFuture<Boolean, Boolean> txFut = null;
 
-        ClusterNode readerNode = cctx.discovery().node(reader);
-
         ReaderArguments readerArgs = null;
 
-        if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
+        if (addReaders && !skipVals && !cctx.localNodeId().equals(reader)) {
             for (Map.Entry<KeyCacheObject, Boolean> k : keys.entrySet()) {
+                if (!k.getValue())
+                    continue;
+
                 while (true) {
                     GridDhtCacheEntry e = cache().entryExx(k.getKey(), topVer);
 
@@ -359,7 +365,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (e.obsolete())
                             continue;
 
-                        boolean addReader = (!e.deleted() && k.getValue() && !skipVals);
+                        boolean addReader = !e.deleted();
 
                         if (addReader) {
                             e.unswap(false);

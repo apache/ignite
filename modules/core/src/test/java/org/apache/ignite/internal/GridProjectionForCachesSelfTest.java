@@ -26,15 +26,16 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -131,10 +132,18 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
+        final ClusterGroup prj = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
         assertNotNull(prj);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return prj.nodes().size() == 3;
+            }
+        }, 5000);
+
         assertEquals(3, prj.nodes().size());
+
         assertTrue(prj.nodes().contains(grid(0).localNode()));
         assertFalse(prj.nodes().contains(grid(1).localNode()));
         assertTrue(prj.nodes().contains(grid(2).localNode()));
@@ -146,9 +155,16 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForNamedCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
+        final ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
-        assert prj != null;
+        assertNotNull(prj);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return prj.nodes().size() == 3;
+            }
+        }, 5000);
+
         assertEquals("Invalid projection: " + prj.nodes(), 3, prj.nodes().size());
         assert !prj.nodes().contains(grid(0).localNode());
         assert prj.nodes().contains(grid(1).localNode());

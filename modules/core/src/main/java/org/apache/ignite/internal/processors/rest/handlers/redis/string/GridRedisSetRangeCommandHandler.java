@@ -94,7 +94,7 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
         getReq.clientId(msg.clientId());
         getReq.key(msg.key());
         getReq.command(CACHE_GET);
-        getReq.cacheName(CACHE_NAME);
+        getReq.cacheName(msg.cacheName());
 
         if (val.isEmpty())
             return getReq;
@@ -111,7 +111,7 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
         putReq.clientId(msg.clientId());
         putReq.key(msg.key());
         putReq.command(CACHE_PUT);
-        putReq.cacheName(CACHE_NAME);
+        putReq.cacheName(msg.cacheName());
 
         if (resp == null) {
             byte[] dst = new byte[totalLen];

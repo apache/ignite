@@ -351,6 +351,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         init();
 
         aff = new GridCacheAffinityImpl<>(ctx);
+
+        // The check of methods 'equals' and 'hashCode' that they had been overrode isn't required, since BinaryMarshaller doesn't use them.
+        if (keyCheck && ctx.binaryMarshaller())
+            keyCheck = false;
     }
 
     /**
@@ -5368,7 +5372,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
             if (cache == null)
-                return 0;
+                return 0L;
 
             try {
                 return cache.localSizeLong(peekModes);

@@ -139,6 +139,15 @@
     <ClCompile Include="..\..\src\protocol_version.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\app\parameter_set.cpp">
+      <Filter>Code\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\batch_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\message.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -265,6 +274,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\app\parameter_set.h">
+      <Filter>Code\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\batch_query.h">
+      <Filter>Code\query</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

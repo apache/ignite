@@ -726,15 +726,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         return sum;
     }
 
-    /**
-     * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, Map, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean, boolean)}
-     * method instead to retrieve DHT value.
-     *  @param keys {@inheritDoc}
-     * @param forcePrimary {@inheritDoc}
-     * @param skipTx {@inheritDoc}
-     * @param needVer Need version.  @return {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
@@ -805,6 +797,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param reader Reader node ID.
      * @param msgId Message ID.
      * @param keys Keys to get.
+     * @param addReaders Add readers flag.
      * @param readThrough Read through flag.
      * @param topVer Topology version.
      * @param subjId Subject ID.
@@ -816,6 +809,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public GridDhtFuture<Collection<GridCacheEntryInfo>> getDhtAsync(UUID reader,
         long msgId,
         Map<KeyCacheObject, Boolean> keys,
+        boolean addReaders,
         boolean readThrough,
         AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
@@ -834,7 +828,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskNameHash,
             expiry,
             skipVals,
-            recovery);
+            recovery,
+            addReaders);
 
         fut.init();
 
@@ -854,7 +849,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param skipVals Skip vals flag.
      * @return Future for the operation.
      */
-    private IgniteInternalFuture<GridCacheEntryInfo> getDhtSingleAsync(
+    public GridDhtGetSingleFuture getDhtSingleAsync(
         UUID nodeId,
         long msgId,
         KeyCacheObject key,
@@ -867,7 +862,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean skipVals,
         boolean recovery
     ) {
-        GridDhtGetSingleFuture<K, V> fut = new GridDhtGetSingleFuture<>(
+        GridDhtGetSingleFuture fut = new GridDhtGetSingleFuture<>(
             ctx,
             msgId,
             nodeId,
@@ -992,7 +987,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest req) {
         assert ctx.affinityNode();
-        assert !req.reload() : req;
 
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
@@ -1000,6 +994,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             getDhtAsync(nodeId,
                 req.messageId(),
                 req.keys(),
+                req.addReaders(),
                 req.readThrough(),
                 req.topologyVersion(),
                 req.subjectId(),

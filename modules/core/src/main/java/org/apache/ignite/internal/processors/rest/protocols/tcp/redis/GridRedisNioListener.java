@@ -42,7 +42,9 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedi
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.CIX1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,6 +57,9 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     /** Redis-specific handlers. */
     protected final Map<GridRedisCommand, GridRedisCommandHandler> handlers = new EnumMap<>(GridRedisCommand.class);
 
+    /** Connection-related metadata key. Used for cache name only. */
+    public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /**
      * @param log Logger.
      * @param hnd REST protocol handler.
@@ -64,7 +69,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         this.log = log;
 
         // connection commands.
-        addCommandHandler(new GridRedisConnectionCommandHandler());
+        addCommandHandler(new GridRedisConnectionCommandHandler(log, hnd, ctx));
 
         // string commands.
         addCommandHandler(new GridRedisGetCommandHandler(log, hnd, ctx));
@@ -120,8 +125,21 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
 
     /** {@inheritDoc} */
     @Override public void onMessage(final GridNioSession ses, final GridRedisMessage msg) {
-        if (handlers.get(msg.command()) != null) {
-            IgniteInternalFuture<GridRedisMessage> f = handlers.get(msg.command()).handleAsync(msg);
+        if (handlers.get(msg.command()) == null) {
+            U.warn(log, "Cannot find the corresponding command (session will be closed) [ses=" + ses +
+                ", command=" + msg.command().name() + ']');
+
+            ses.close();
+
+            return;
+        }
+        else {
+            String cacheName = ses.meta(CONN_CTX_META_KEY);
+
+            if (cacheName != null)
+                msg.cacheName(cacheName);
+
+            IgniteInternalFuture<GridRedisMessage> f = handlers.get(msg.command()).handleAsync(ses, msg);
 
             f.listen(new CIX1<IgniteInternalFuture<GridRedisMessage>>() {
                 @Override public void applyx(IgniteInternalFuture<GridRedisMessage> f) throws IgniteCheckedException {
@@ -134,7 +152,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     }
 
     /**
-     * Sends a response to be decoded and sent to the Redis client.
+     * Sends a response to be encoded and sent to the Redis client.
      *
      * @param ses NIO session.
      * @param res Response.

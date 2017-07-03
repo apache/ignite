@@ -74,7 +74,7 @@ include /app/helpers/jade/mixins
                             ignite-form-field-label
                                 | Executor configurations
                             ignite-form-group-tooltip
-                                | Сustom thread pool configurations for compute tasks
+                                | Custom thread pool configurations for compute tasks
                             ignite-form-group-add(ng-click='tableNewItem(executorConfigurationsTbl)')
                                 | Add executor configuration
                             .group-content-empty(ng-if=`!(${executors} && ${executors}.length > 0)`)
