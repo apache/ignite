@@ -1670,7 +1670,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         return opCtx != null && opCtx.isKeepBinary();
     }
 
-
     /**
      * @return {@code True} if the value for the cache object has to be copied because
      * of {@link CacheConfiguration#isCopyOnRead()}.
