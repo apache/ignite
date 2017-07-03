@@ -148,16 +148,15 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                     GridNearTxLocal tx = cctx.tm().userTx();
 
                     if (tx == null) {
-                        TransactionConfiguration tCfg = cctx.kernalContext().config()
-                                .getTransactionConfiguration();
+                        TransactionConfiguration txCfg = cctx.kernalContext().config().getTransactionConfiguration();
 
                         tx = cctx.tm().newTx(
                                 /*implicit*/false,
                                 /*implicit single*/false,
-                                null,
-                                tCfg.getDefaultTxConcurrency(),
-                                tCfg.getDefaultTxIsolation(),
-                                tCfg.getDefaultTxTimeout(),
+                            null,
+                            txCfg.getDefaultTxConcurrency(),
+                            txCfg.getDefaultTxIsolation(),
+                            txCfg.getDefaultTxTimeout(),
                                 /*store enabled*/true,
                                 /*tx size*/0
                         );

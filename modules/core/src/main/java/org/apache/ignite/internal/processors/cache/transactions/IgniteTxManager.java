@@ -2243,9 +2243,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void attachThread(IgniteInternalTx tx) {
         assert tx != null;
-
-        assert !threadMap.keySet().contains(tx.threadId());
-        assert !threadMap.values().contains(tx);
+        assert !threadMap.containsKey(tx.threadId());
+        assert !threadMap.containsValue(tx);
 
         threadMap.put(Thread.currentThread().getId(), tx);
     }
@@ -2254,7 +2253,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Detaches thread from the transaction.
      *
      * @param tx Transaction to be detached.
-     * @return True if transaction was successfully detached.
+     * @return {@code true} if transaction was successfully detached, otherwise {@code false}.
      */
     public boolean detachThread(IgniteInternalTx tx) {
         assert tx != null;

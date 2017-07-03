@@ -40,9 +40,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCacheAbstractSelfTest
     /** */
     private static final int GRID_CNT = 1;
 
-    /**
-     * Java Open Transaction Manager facade.
-     */
+    /** Java Open Transaction Manager facade. */
     private static Jotm jotm;
 
     /** {@inheritDoc} */
@@ -96,9 +94,9 @@ public class GridJtaTransactionManagerSelfTest extends GridCacheAbstractSelfTest
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
 
-                TransactionConfiguration configuration = grid(0).context().config().getTransactionConfiguration();
-                configuration.setDefaultTxConcurrency(concurrency);
-                configuration.setDefaultTxIsolation(isolation);
+                TransactionConfiguration cfg = grid(0).context().config().getTransactionConfiguration();
+                cfg.setDefaultTxConcurrency(concurrency);
+                cfg.setDefaultTxIsolation(isolation);
 
                 jtaTransactionContextSwitch(TransactionConcurrency.OPTIMISTIC.equals(concurrency)
                     && (TransactionIsolation.REPEATABLE_READ.equals(isolation)));

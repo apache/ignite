@@ -465,24 +465,24 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMvccCandidatesWithCurrentThread(long oldThreadId) {
-        long currentThreadId = Thread.currentThread().getId();
+    @Override public void updateMvccCandidatesWithCurrentThread(long oldThreadId) throws IgniteCheckedException {
+        long curThreadId = Thread.currentThread().getId();
 
-        for (IgniteTxEntry igniteTxEntry : txMap.values()) {
-            GridCacheEntryEx cached = igniteTxEntry.cached();
+        for (IgniteTxEntry entry : txMap.values()) {
+            GridCacheEntryEx cached = entry.cached();
 
             if (cached != null && !cached.obsolete()) {
-                GridCacheMvccCandidate candidate = null;
+                GridCacheMvccCandidate candidate;
 
                 try {
                     candidate = cached.localCandidate(oldThreadId);
                 }
-                catch (GridCacheEntryRemovedException ignore) {
-                    assert false; // Impossible situation.
+                catch (GridCacheEntryRemovedException e) {
+                    throw new IgniteCheckedException(e);
                 }
 
                 if (candidate != null)
-                    candidate.setThreadId(currentThreadId);
+                    candidate.threadId(curThreadId);
             }
         }
     }

@@ -4000,12 +4000,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * Suspends transaction. It could be resumed later.
      *
-     * @throws IgniteCheckedException If transaction with incorrect state.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state.
      */
     public void suspend() throws IgniteCheckedException {
-        if (!ACTIVE.equals(state()))
-            throw new IgniteCheckedException("Trying to suspend transaction with incorrect state [expected="
-                + ACTIVE + ", actual=" + state() + ']');
+        if (!ACTIVE.equals(state())) {
+            throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
+                + "[expected=" + ACTIVE + ", actual=" + state() + ']');
+        }
 
         state(SUSPENDED);
 
@@ -4013,14 +4014,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     }
 
     /**
-     * Resume transaction(possibly in another thread) if it was previously suspended.
+     * Resumes transaction (possibly in another thread) if it was previously suspended.
      *
-     * @throws IgniteCheckedException If transaction with incorrect state.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state.
      */
     public void resume() throws IgniteCheckedException {
-        if (!SUSPENDED.equals(state()))
-            throw new IgniteCheckedException("Trying to resume transaction with incorrect state [expected="
-                + SUSPENDED + ", actual=" + state() + ']');
+        if (!SUSPENDED.equals(state())) {
+            throw new IgniteCheckedException("Trying to resume transaction with incorrect state "
+                + "[expected=" + SUSPENDED + ", actual=" + state() + ']');
+        }
 
         cctx.tm().attachThread(this);
 

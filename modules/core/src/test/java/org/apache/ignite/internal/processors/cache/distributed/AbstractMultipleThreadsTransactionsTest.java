@@ -20,23 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
- *
+ * Abstract class for tests of multiple threads transactions.
  */
-public abstract class AbstractTransactionsInMultipleThreadsTest extends GridCacheAbstractSelfTest {
-    /** Transaction concurrency control. */
-    protected TransactionConcurrency transactionConcurrency;
-
-    /** Transaction isolation level. */
-    protected TransactionIsolation transactionIsolation;
-
-    /** Id of node, started transaction. */
-    protected int txInitiatorNodeId = 0;
-
+public abstract class AbstractMultipleThreadsTransactionsTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
@@ -53,29 +43,31 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridCach
     }
 
     /**
-     * Starts test scenario for all transaction controls, and isolation levels.
-     *
-     * @param consumer Scenario.
+     * @return Id of node, started transaction.
      */
-    protected void withAllIsolationsAndConcurrencies(IgniteClosure<Object, Void> consumer) {
-        withAllIsolationsAndConcurrencies(consumer, null);
+    protected int txInitiatorNodeId() {
+        return 0;
     }
 
     /**
-     * Starts test scenario for all transaction controls, and isolation levels.
+     * Starts test scenario in mix mode of all transaction concurrency and all isolation levels.
      *
-     * @param consumer Scenario.
-     * @param arg Argument.
+     * @param test Test's scenario.
+     * @throws Exception In case of error.
      */
-    protected void withAllIsolationsAndConcurrencies(IgniteClosure<Object, Void> consumer, Object arg) {
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            this.transactionConcurrency = concurrency;
+    protected void runMixIsolationsAndConcurrencies(Testable test) throws Exception {
+        for (TransactionConcurrency txConcurrency : TransactionConcurrency.values())
+            for (TransactionIsolation txIsolation : TransactionIsolation.values())
+                test.test(txConcurrency, txIsolation);
+    }
 
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                this.transactionIsolation = isolation;
-
-                consumer.apply(arg);
-            }
-        }
+    /** */
+    protected interface Testable {
+        /**
+         * @param txConcurrency Transaction Concurrency.
+         * @param txIsolation Transaction txIsolation level.
+         * @throws Exception In case of error.
+         */
+        void test(TransactionConcurrency txConcurrency, TransactionIsolation txIsolation) throws Exception;
     }
 }
