@@ -1127,17 +1127,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
+        assertEquals(5, metas.size());
+
+        Collection<GridCacheSqlMetadata> dfltCacheMeta = cache.context().queries().sqlMetadata(DEFAULT_CACHE_NAME);
+
         String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
 
         info("Cache metadata: " + ret);
 
-        testMetadata(metas, ret);
-
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
-
-        info("Cache metadata with cacheName parameter: " + ret);
-
-        testMetadata(metas, ret);
+        testMetadata(dfltCacheMeta, ret);
     }
 
     /**
@@ -1151,19 +1149,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
-        Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> meta = c.context().queries().sqlMetadata(DEFAULT_CACHE_NAME);
 
         String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
 
         info("Cache metadata: " + ret);
 
-        testMetadata(metas, ret);
-
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
-
-        info("Cache metadata with cacheName parameter: " + ret);
-
-        testMetadata(metas, ret);
+        testMetadata(meta, ret);
     }
 
     /**
