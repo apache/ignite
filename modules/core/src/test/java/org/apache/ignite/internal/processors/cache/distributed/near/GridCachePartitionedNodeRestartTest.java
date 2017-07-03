@@ -56,11 +56,6 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
         return cc;
     }
 
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5529");
-    }
-
-
     /** {@inheritDoc} */
     @Override public void testRestart() throws Exception {
         super.testRestart();
