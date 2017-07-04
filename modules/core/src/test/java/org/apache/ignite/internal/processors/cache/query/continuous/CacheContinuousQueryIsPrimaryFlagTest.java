@@ -355,9 +355,10 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         /** Events. */
         private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
-        /** */
+        /** Flag backup node. */
         private volatile static AtomicBoolean isBackup = new AtomicBoolean(false);
 
+        /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
             for (CacheEntryEvent<?, ?> e : evts) {
                 Integer key = (Integer)e.getKey();
@@ -376,14 +377,13 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
      */
     public static class CacheEventListener2 implements CacheEntryUpdatedListener<Object, Object>,
         CacheEntryEventSerializableFilter<Object, Object> {
-
         /** Keys. */
         private final GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
 
         /** Events. */
         private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
-        /** */
+        /** Filtred events. */
         private final static GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags = new GridConcurrentHashSet<>();
 
         /** {@inheritDoc} */
@@ -393,6 +393,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
             for (CacheEntryEvent<?, ?> e : evts) {
                 Integer key = (Integer)e.getKey();
