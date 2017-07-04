@@ -68,8 +68,8 @@ public class RandomAccessFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(byte[] buffer, int offset, int length) throws IOException {
-        file.read(buffer, offset, length);
+    @Override public int read(byte[] buffer, int offset, int length) throws IOException {
+        return file.read(buffer, offset, length);
     }
 
     /** {@inheritDoc} */

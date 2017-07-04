@@ -20,28 +20,135 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * Interface to perform file I/O operations.
+ */
 public interface FileIO extends AutoCloseable {
+    /**
+     * Returns current file position.
+     *
+     * @return  Current file position,
+     *          a non-negative integer counting the number of bytes
+     *          from the beginning of the file to the current position.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     long position() throws IOException;
 
+    /**
+     * Sets new current file position.
+     *
+     * @param  newPosition
+     *         The new position, a non-negative integer counting
+     *         the number of bytes from the beginning of the file.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     void position(long newPosition) throws IOException;
 
+    /**
+     * Reads a sequence of bytes from this file into the {@code destinationBuffer}.
+     *
+     * @param destinationBuffer Destination byte buffer.
+     *
+     * @return Number of read bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     int read(ByteBuffer destinationBuffer) throws IOException;
 
+    /**
+     * Reads a sequence of bytes from this file into the {@code destinationBuffer}
+     * starting from specified file {@code position}.
+     *
+     * @param destinationBuffer Destination byte buffer.
+     * @param position Starting position of file.
+     *
+     * @return Number of read bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     int read(ByteBuffer destinationBuffer, long position) throws IOException;
 
-    void read(byte[] buffer, int offset, int length) throws IOException;
+    /**
+     * Reads a up to {@code length} bytes from this file into the {@code buffer}.
+     *
+     * @param buffer Destination byte array.
+     * @param offset The start offset in array {@code b}
+     *               at which the data is written.
+     * @param length Maximum number of bytes read.
+     *
+     * @return Number of read bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    int read(byte[] buffer, int offset, int length) throws IOException;
 
+    /**
+     * Writes a sequence of bytes to this file from the {@code sourceBuffer}.
+     *
+     * @param sourceBuffer Source buffer.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     int write(ByteBuffer sourceBuffer) throws IOException;
 
+    /**
+     * Writes a sequence of bytes to this file from the {@code sourceBuffer}
+     * starting from specified file {@code position}
+     *
+     * @param sourceBuffer Source buffer.
+     * @param position Starting file position.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     int write(ByteBuffer sourceBuffer, long position) throws IOException;
 
+    /**
+     * Writes {@code length} bytes from the {@code buffer}
+     * starting at offset {@code off} to this file.
+     *
+     * @param buffer Source byte array.
+     * @param offset Start offset in the {@code buffer}.
+     * @param length Number of bytes to write.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     void write(byte[] buffer, int offset, int length) throws IOException;
 
+    /**
+     * Forces any updates of this file to be written to the storage
+     * device that contains it.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     void force() throws IOException;
 
+    /**
+     * Returns current file size in bytes.
+     *
+     * @return File size.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     long size() throws IOException;
 
+    /**
+     * Truncates current file to zero length
+     * and resets current file position to zero.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     void clear() throws IOException;
 
+    /**
+     * Closes current file.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
     void close() throws IOException;
 }

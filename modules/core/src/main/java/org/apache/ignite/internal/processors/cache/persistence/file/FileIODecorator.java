@@ -57,8 +57,8 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(byte[] buffer, int offset, int length) throws IOException {
-        delegate.read(buffer, offset, length);
+    @Override public int read(byte[] buffer, int offset, int length) throws IOException {
+        return delegate.read(buffer, offset, length);
     }
 
     /** {@inheritDoc} */
