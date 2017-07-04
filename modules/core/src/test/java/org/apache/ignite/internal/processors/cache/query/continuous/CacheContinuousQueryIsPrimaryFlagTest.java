@@ -3,6 +3,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -11,8 +12,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -21,7 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -222,12 +222,63 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryAndBackupFlags() throws Exception {
+        this.cacheMode = PARTITIONED;
+
+        this.atomicityMode = ATOMIC;
+
+        this.backups = 2;
+
+        final int SRV_NODES = 4;
+
+        final int KEYS = 1_000;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
+
+        if (cacheMode != REPLICATED)
+            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        final CacheEventListener2 lsnr = new CacheEventListener2();
+
+        qry.setLocalListener(lsnr);
+
+        qry.setRemoteFilter(lsnr);
+
+        QueryCursor<?> cur = qryClientCache.query(qry);
+
+        Ignite ignite = ignite(0);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int key = 0; key < KEYS; key++) {
+            cache.put(0, key);
+        }
+
+        assertEquals(KEYS, lsnr.primaryFiltred.get());
+
+        assertEquals(KEYS * this.backups, lsnr.backupFiltred.get());
+
+        stopAllGrids();
+
+        cur.close();
+    }
+
+    /**
      *
      */
     public static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object> {
-        /** Keys. */
-        GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
-
         /** */
         private volatile static AtomicBoolean isBackup = new AtomicBoolean(false);
 
@@ -235,6 +286,35 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
             CacheEntryEvent<?, ?> e = evts.iterator().next();
 
             isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventListener2 implements CacheEntryUpdatedListener<Object, Object>,
+        CacheEntryEventSerializableFilter<Object, Object> {
+        /** */
+        private volatile static AtomicInteger primaryFiltred = new AtomicInteger(0);
+
+        /** */
+        private volatile static AtomicInteger backupFiltred = new AtomicInteger(0);
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
+            boolean primary = e.unwrap(CacheQueryEntryEvent.class).isPrimary();
+            boolean backup = e.unwrap(CacheQueryEntryEvent.class).isBackup();
+
+            if (primary)
+                primaryFiltred.incrementAndGet();
+            else if (backup)
+                backupFiltred.incrementAndGet();
+
+            return true;
+        }
+
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> iterable) throws CacheEntryListenerException {
+            // No-op
         }
     }
 
@@ -262,7 +342,8 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
             if (msg0 instanceof GridContinuousMessage) {
                 if (clientNode != null && node != null) {
-                    if (clientNode.id().toString().equals(node.id().toString()) && skipFirstMsg.compareAndSet(true, false)) {
+                    if (clientNode.id().toString().equals(node.id().toString()) &&
+                        skipFirstMsg.compareAndSet(true, false)) {
                         assertEquals(clientNode.id().toString(), node.id().toString());
 
                         if (log.isDebugEnabled())
