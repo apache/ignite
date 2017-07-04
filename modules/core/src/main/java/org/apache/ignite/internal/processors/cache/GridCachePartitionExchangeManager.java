@@ -863,7 +863,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param nodes Nodes.
      */
     private void sendAllPartitions(Collection<ClusterNode> nodes) {
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, null, null, true);
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(null, null, null, null);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -886,18 +886,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param nodes Target nodes.
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
-     * @param compress {@code True} if it is possible to use compression for message.
      * @return Message.
      */
-    public GridDhtPartitionsFullMessage createPartitionsFullMessage(Collection<ClusterNode> nodes,
+    public GridDhtPartitionsFullMessage createPartitionsFullMessage(
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
-        @Nullable IgniteDhtPartitionsToReloadMap partsToReload,
-        final boolean compress) {
+        @Nullable IgniteDhtPartitionsToReloadMap partsToReload
+    ) {
         final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
             lastVer,
             exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE,
@@ -905,7 +903,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             partsToReload
             );
 
-        m.compress(compress);
+        m.compress(true);
 
         final Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
 
@@ -925,7 +923,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (locMap != null) {
                     addFullPartitionsMap(m,
                         dupData,
-                        compress,
+                        true,
                         grp.groupId(),
                         locMap,
                         affCache.similarAffinityKey());
@@ -943,7 +941,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (map != null) {
                 addFullPartitionsMap(m,
                     dupData,
-                    compress,
+                    true,
                     top.groupId(),
                     map,
                     top.similarAffinityKey());
