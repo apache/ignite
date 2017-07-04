@@ -729,6 +729,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     null,
                                     keepBinary,
                                     0,
+                                    false,
                                     -1,
                                     null,
                                     (byte)0);
@@ -1254,7 +1255,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean isPrimary() {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */

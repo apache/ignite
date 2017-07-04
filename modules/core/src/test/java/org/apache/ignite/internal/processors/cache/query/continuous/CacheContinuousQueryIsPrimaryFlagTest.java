@@ -1,19 +1,42 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -22,7 +45,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.PAX;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
@@ -99,7 +126,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 8 * 60_000;
+        return 5 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -187,13 +214,13 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         QueryCursor<?> cur = qryClientCache.query(qry);
 
-        Object key = new Integer(1);
-
-        qryClientCache.put(key, key);
+        Object key = 1;
 
         Ignite primary = primaryNode(key, qryClientCache.getName());
 
         TestCommunicationSpi spi = (TestCommunicationSpi)primary.configuration().getCommunicationSpi();
+
+        spi.primaryNode = primary.cluster().localNode();
 
         spi.clientNode = qryClient.cluster().localNode();
 
@@ -201,7 +228,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         qryClientCache.put(key, key);
 
-        spi.latch.await(5000L, TimeUnit.MILLISECONDS);
+        U.await(spi.latch, 5000L, TimeUnit.MILLISECONDS);
 
         stopGrid(primary.name(), true);
 
@@ -233,8 +260,6 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         final int SRV_NODES = 4;
 
-        final int KEYS = 1_000;
-
         startGridsMultiThreaded(SRV_NODES);
 
         client = true;
@@ -244,9 +269,6 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         client = false;
 
         IgniteCache<Object, Object> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
-
-        if (cacheMode != REPLICATED)
-            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -260,15 +282,45 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         Ignite ignite = ignite(0);
 
+        final int SIZE = 500;
+
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int key = 0; key < KEYS; key++) {
-            cache.put(0, key);
+        Affinity<Object> aff = qryClient.affinity(DEFAULT_CACHE_NAME);
+
+        List<Integer> keys = testKeys(SIZE);
+
+        final List<T2<Object, Object>> expEvts = new ArrayList<>();
+
+        for (Integer key : keys) {
+            log.info("Put [node=" + ignite.name() + ", key=" + key + ", part=" + aff.partition(key) + ']');
+
+            Integer val = key * 2;
+
+            expEvts.add(new T2<>((Object)key, (Object)val));
+
+            cache.put(key, val);
         }
 
-        assertEquals(KEYS, lsnr.primaryFiltred.get());
+        boolean check = GridTestUtils.waitForCondition(new PAX() {
+            @Override public boolean applyx() throws IgniteCheckedException {
+                return expEvts.size() == lsnr.keys.size();
+            }
+        }, 5000L);
 
-        assertEquals(KEYS * this.backups, lsnr.backupFiltred.get());
+        if (!check) {
+            Set<Integer> keys0 = new HashSet<>(keys);
+
+            keys0.removeAll(lsnr.keys);
+
+            log.info("Missed events for keys: " + keys0);
+
+            fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + keys0.size() + ']');
+        }
+
+        assertEquals(keys.size() * (SRV_NODES - 1 /** client node */), lsnr.evtsFlags.size());
+
+        checkFlags(keys.size(), lsnr.evtsFlags);
 
         stopAllGrids();
 
@@ -278,14 +330,44 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      *
      */
+    private void checkFlags(int size, GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags) {
+        int backup = 0;
+        int primary = 0;
+
+        for (CacheQueryEntryEvent evt : evtsFlags) {
+            if (evt.isPrimary())
+                primary++;
+            else if (evt.isBackup())
+                backup++;
+        }
+
+        assertEquals(size, primary);
+        assertEquals(size * this.backups, backup);
+    }
+
+    /**
+     *
+     */
     public static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object> {
+        /** Keys. */
+        private final GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
+
+        /** Events. */
+        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
+
         /** */
         private volatile static AtomicBoolean isBackup = new AtomicBoolean(false);
 
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
-            CacheEntryEvent<?, ?> e = evts.iterator().next();
+            for (CacheEntryEvent<?, ?> e : evts) {
+                Integer key = (Integer)e.getKey();
 
-            isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
+                keys.add(key);
+
+                isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
+
+                assert this.evts.put(key, e) == null;
+            }
         }
     }
 
@@ -294,27 +376,31 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
      */
     public static class CacheEventListener2 implements CacheEntryUpdatedListener<Object, Object>,
         CacheEntryEventSerializableFilter<Object, Object> {
-        /** */
-        private volatile static AtomicInteger primaryFiltred = new AtomicInteger(0);
+
+        /** Keys. */
+        private final GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
+
+        /** Events. */
+        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
         /** */
-        private volatile static AtomicInteger backupFiltred = new AtomicInteger(0);
+        private final static GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags = new GridConcurrentHashSet<>();
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
-            boolean primary = e.unwrap(CacheQueryEntryEvent.class).isPrimary();
-            boolean backup = e.unwrap(CacheQueryEntryEvent.class).isBackup();
-
-            if (primary)
-                primaryFiltred.incrementAndGet();
-            else if (backup)
-                backupFiltred.incrementAndGet();
+            evtsFlags.add(e.unwrap(CacheQueryEntryEvent.class));
 
             return true;
         }
 
-        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> iterable) throws CacheEntryListenerException {
-            // No-op
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
+            for (CacheEntryEvent<?, ?> e : evts) {
+                Integer key = (Integer)e.getKey();
+
+                keys.add(key);
+
+                assert this.evts.put(key, e) == null;
+            }
         }
     }
 
@@ -333,6 +419,9 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         private volatile static ClusterNode clientNode = null;
 
         /** */
+        private volatile static ClusterNode primaryNode = null;
+
+        /** */
         private final static CountDownLatch latch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
@@ -341,22 +430,35 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
             Object msg0 = ((GridIoMessage)msg).message();
 
             if (msg0 instanceof GridContinuousMessage) {
-                if (clientNode != null && node != null) {
-                    if (clientNode.id().toString().equals(node.id().toString()) &&
-                        skipFirstMsg.compareAndSet(true, false)) {
-                        assertEquals(clientNode.id().toString(), node.id().toString());
+                if (clientNode != null && primaryNode != null && skipFirstMsg != null &&
+                    node.id().equals(clientNode.id()) &&
+                    this.getLocalNode().id().equals(primaryNode.id()) &&
+                    skipFirstMsg.compareAndSet(true, false)) {
+                    assertEquals(node.id(), clientNode.id());
 
-                        if (log.isDebugEnabled())
-                            log.debug("Skip continuous message: " + msg0);
+                    if (log.isDebugEnabled())
+                        log.debug("Skip continuous message: " + msg0);
 
-                        latch.countDown();
+                    latch.countDown();
 
-                        return;
-                    }
+                    return;
                 }
             }
 
             super.sendMessage(node, msg, ackC);
         }
+    }
+
+    /**
+     *
+     */
+    private List<Integer> testKeys(int size) throws Exception {
+        List<Integer> res = new ArrayList<>();
+
+        for (int key = 0; key < size; key++) {
+            res.add(key);
+        }
+
+        return res;
     }
 }
