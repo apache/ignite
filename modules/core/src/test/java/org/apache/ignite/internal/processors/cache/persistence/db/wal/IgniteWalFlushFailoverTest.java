@@ -58,66 +58,6 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         return 30_000L;
     }
 
-    /**
-     * Test flushing error recovery when flush is triggered by QueueFlusher asynchronously
-     *
-     * @throws Exception In case of fail
-     */
-    public void testErrorOnQueueFlusher() throws Exception {
-        errorOnQueueFlusher = true;
-        flushingErrorTest();
-    }
-
-    /**
-     * Test flushing error recovery when flush is triggered directly by transaction commit
-     *
-     * @throws Exception In case of fail
-     */
-    public void testErrorOnDirectFlush() throws Exception {
-        errorOnQueueFlusher = false;
-        flushingErrorTest();
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    private void flushingErrorTest() throws Exception {
-        IgniteEx grid = startGrid(0);
-        grid.active(true);
-
-        IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
-
-        final int iterations = 100;
-
-        try {
-            for (int i = 0; i < iterations; i++) {
-                Transaction tx = grid.transactions().txStart(
-                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
-
-                cache.put(i, "testValue" + i);
-
-                Thread.sleep(100L);
-
-                tx.commitAsync().get();
-
-                // Corrupt WAL after some iterations
-                if (i > 15)
-                    corruptWalLogFile(grid);
-            }
-        }
-        catch (Throwable expected) {
-            // There can be any exception. Do nothing.
-        }
-
-        // We should await successful stop of node.
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
-                return grid.context().gateway().getState() == GridKernalState.STOPPED;
-            }
-        }, getTestTimeout());
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -145,6 +85,66 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         cfg.setPersistentStoreConfiguration(storeCfg);
 
         return cfg;
+    }
+
+    /**
+     * Test flushing error recovery when flush is triggered asynchronously by QueueFlusher
+     *
+     * @throws Exception In case of fail
+     */
+    public void testErrorOnQueueFlusher() throws Exception {
+        errorOnQueueFlusher = true;
+        flushingErrorTest();
+    }
+
+    /**
+     * Test flushing error recovery when flush is triggered directly by transaction commit
+     *
+     * @throws Exception In case of fail
+     */
+    public void testErrorOnDirectFlush() throws Exception {
+        errorOnQueueFlusher = false;
+        flushingErrorTest();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void flushingErrorTest() throws Exception {
+        final IgniteEx grid = startGrid(0);
+        grid.active(true);
+
+        IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
+
+        final int iterations = 100;
+
+        try {
+            for (int i = 0; i < iterations; i++) {
+                Transaction tx = grid.transactions().txStart(
+                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+
+                cache.put(i, "testValue" + i);
+
+                Thread.sleep(100L);
+
+                tx.commitAsync().get();
+
+                // Corrupt WAL after some iterations.
+                if (i > 15)
+                    corruptWalLogFile(grid);
+            }
+        }
+        catch (Throwable expected) {
+            // There can be any exception. Do nothing.
+        }
+
+        // We should await successful stop of node.
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override
+            public boolean apply() {
+                return grid.context().gateway().getState() == GridKernalState.STOPPED;
+            }
+        }, getTestTimeout());
     }
 
     /**
