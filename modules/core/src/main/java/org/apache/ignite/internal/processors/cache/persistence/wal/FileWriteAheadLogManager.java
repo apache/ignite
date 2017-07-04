@@ -1426,7 +1426,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      *
      */
-    public abstract static class FileHandle {
+    private abstract static class FileHandle {
         /** */
         protected FileIO fileIO;
 
@@ -1496,7 +1496,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * File handle for one log segment.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    public class FileWriteHandle extends FileHandle {
+    private class FileWriteHandle extends FileHandle {
         /** */
         private final RecordSerializer serializer;
 
