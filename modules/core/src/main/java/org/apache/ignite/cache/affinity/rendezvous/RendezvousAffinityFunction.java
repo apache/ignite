@@ -17,21 +17,20 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -44,8 +43,10 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
+//import org.apache.ignite.logger.log4j.Log4JLogger;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -83,7 +84,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     private int parts;
 
     /** Mask to use in calculation when partitions count is power of 2. */
-    private int mask = -1;
+    private transient int mask = -1;
 
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
@@ -170,6 +171,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         setPartitions(parts);
 
         this.backupFilter = backupFilter;
+
+        log = new Log4JLogger().getLogger(RendezvousAffinityFunction.class);
     }
 
     /**
@@ -493,7 +496,95 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             assignments.add(partAssignment);
         }
 
+	    List<List<Integer>> dist = freqDistribution(assignments, nodes);
+	    printDistribution(dist);
+
         return assignments;
+    }
+
+    /**
+     * The table with count of partitions on node:
+     *
+     * column 0 - primary partitions counts
+     * column 1 - backup#0 partitions counts
+     * etc
+     *
+     * Rows correspond to the nodes.
+     *
+     * @param lst Affinity result.
+     * @param nodes Topology.
+     * @return Frequency distribution: counts of partitions on node.
+     */
+	private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> lst, Collection<ClusterNode> nodes) {
+		List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
+
+		int backups = lst.get(0).size();
+
+		for (int i = 0; i < backups; ++i) {
+			Map<ClusterNode, AtomicInteger> map = new HashMap<>();
+
+			for (List<ClusterNode> l : lst) {
+				ClusterNode node = l.get(i);
+
+				if (!map.containsKey(node))
+					map.put(node, new AtomicInteger(1));
+				else
+					map.get(node).incrementAndGet();
+			}
+			/*
+
+                chiSquare(dist0, aff0.partitions(), 1.0 / nodesCnt),
+
+			 */
+
+			nodeMaps.add(map);
+		}
+
+		List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
+		for (ClusterNode node : nodes) {
+			List<Integer> byBackups = new ArrayList<>(backups);
+
+			for (int j = 0; j < backups; ++j) {
+				if (nodeMaps.get(j).get(node) == null)
+					byBackups.add(0);
+				else
+					byBackups.add(nodeMaps.get(j).get(node).get());
+			}
+
+			byNodes.add(byBackups);
+		}
+		return byNodes;
+	}
+
+    /**
+     * @param byNodes Frequency distribution.
+     * @throws IOException On error.
+     */
+    private void printDistribution(Collection<List<Integer>> byNodes) {
+        int nodes = byNodes.size();
+        int nr = 0;
+        int node = 0;
+
+        log.info("#### NODES:" + nodes + " nodes\n");
+
+        for (List<Integer> byNode : byNodes) {
+
+            log.info("## Node " + node++ + ":");
+
+            nr = 0;
+
+            for (int w : byNode) {
+                int percentage = (int)Math.round((double)w / this.getPartitions() * 100);
+
+                log.info((nr == 0 ? "Primary" : "Backup" + nr) + " node: " +
+                    "partitions count=" + w + " percentage of parts count=" + percentage + "% ");
+
+                nr++;
+            }
+
+            log.info("");
+        }
+
     }
 
     /** {@inheritDoc} */
