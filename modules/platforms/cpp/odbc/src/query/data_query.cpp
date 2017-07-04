@@ -149,7 +149,10 @@ namespace ignite
                 if (!cursor.get())
                     return SqlResult::AI_SUCCESS;
 
-                SqlResult::Type result = MakeRequestClose();
+                SqlResult::Type result = SqlResult::AI_SUCCESS;
+
+                if (cursor->HasData())
+                    result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)
                 {

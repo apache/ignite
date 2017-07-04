@@ -2325,8 +2325,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                             if (hasFilters) {
                                 success = isAll(e.context(), key, cacheVal, filter);
 
-                                if (!success)
+                                if (!success) {
                                     e.value(cacheVal, false, false);
+
+                                    e.op(READ);
+                                }
                             }
                             else
                                 success = true;

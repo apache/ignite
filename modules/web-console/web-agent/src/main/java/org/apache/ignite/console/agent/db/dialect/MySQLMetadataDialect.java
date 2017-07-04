@@ -22,6 +22,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,6 +33,11 @@ import java.util.Set;
 public class MySQLMetadataDialect extends JdbcMetadataDialect {
     /** Type name index. */
     private static final int TYPE_NAME_IDX = 1;
+
+    /** {@inheritDoc} */
+    @Override public Set<String> systemSchemas() {
+        return new HashSet<>(Arrays.asList("information_schema", "mysql", "performance_schema", "sys"));
+    }
 
     /** {@inheritDoc} */
     @Override public Collection<String> schemas(Connection conn) throws SQLException {

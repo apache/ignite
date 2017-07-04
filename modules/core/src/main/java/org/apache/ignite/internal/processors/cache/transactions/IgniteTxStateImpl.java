@@ -28,6 +28,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -55,7 +58,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     private GridIntList activeCacheIds = new GridIntList();
 
     /** Per-transaction read map. */
-    @GridToStringInclude
+    @GridToStringExclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Read view on transaction map. */
@@ -270,8 +273,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         nonLocCtx.topology().readLock();
 
         if (nonLocCtx.topology().stopping()) {
-            fut.onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
-                nonLocCtx.name()));
+            fut.onDone(new CacheStoppedException(nonLocCtx.name()));
 
             return null;
         }
@@ -461,6 +463,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(IgniteTxStateImpl.class, this);
+        return S.toString(IgniteTxStateImpl.class, this, "txMap", allEntriesCopy());
     }
 }

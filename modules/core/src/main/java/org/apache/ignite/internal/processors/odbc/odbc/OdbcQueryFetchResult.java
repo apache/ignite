@@ -29,7 +29,7 @@ public class OdbcQueryFetchResult {
     /** Query result rows. */
     private final Collection<?> items;
 
-    /** Flag indicating the query has no unfetched results. */
+    /** Flag indicating the query has no non-fetched results. */
     private final boolean last;
 
     /**
@@ -58,7 +58,7 @@ public class OdbcQueryFetchResult {
     }
 
     /**
-     * @return Flag indicating the query has no unfetched results.
+     * @return Flag indicating the query has no non-fetched results.
      */
     public boolean last() {
         return last;

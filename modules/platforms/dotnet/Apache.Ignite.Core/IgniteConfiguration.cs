@@ -45,6 +45,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Transactions;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -185,6 +186,9 @@ namespace Apache.Ignite.Core
         /** */
         private TimeSpan? _longQueryWarningTimeout;
 
+        /** */
+        private bool? _isActiveOnStart;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -194,6 +198,11 @@ namespace Apache.Ignite.Core
         /// Default late affinity assignment mode.
         /// </summary>
         public const bool DefaultIsLateAffinityAssignment = true;
+
+        /// <summary>
+        /// Default value for <see cref="IsActiveOnStart"/> property.
+        /// </summary>
+        public const bool DefaultIsActiveOnStart = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -268,6 +277,7 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
+            writer.WriteBooleanNullable(_isActiveOnStart);
 
             // Thread pools
             writer.WriteIntNullable(_publicThreadPoolSize);
@@ -440,6 +450,17 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
+            // Persistence.
+            if (PersistentStoreConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                PersistentStoreConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -507,6 +528,7 @@ namespace Apache.Ignite.Core
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
+            _isActiveOnStart = r.ReadBooleanNullable();
 
             // Thread pools
             _publicThreadPoolSize = r.ReadIntNullable();
@@ -595,6 +617,12 @@ namespace Apache.Ignite.Core
             if (r.ReadBoolean())
             {
                 SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
+            }
+
+            // Persistence.
+            if (r.ReadBoolean())
+            {
+                PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
             }
         }
 
@@ -1178,6 +1206,22 @@ namespace Apache.Ignite.Core
         {
             get { return _longQueryWarningTimeout ?? DefaultLongQueryWarningTimeout; }
             set { _longQueryWarningTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the persistent store configuration.
+        /// </summary>
+        public PersistentStoreConfiguration PersistentStoreConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether grid should be active on start.
+        /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
+        /// </summary>
+        [DefaultValue(DefaultIsActiveOnStart)]
+        public bool IsActiveOnStart
+        {
+            get { return _isActiveOnStart ?? DefaultIsActiveOnStart; }
+            set { _isActiveOnStart = value; }
         }
     }
 }

@@ -1253,17 +1253,24 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     try {
                         GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 
-                        if (entry.initialValue(info.value(),
-                            info.version(),
-                            info.ttl(),
-                            info.expireTime(),
-                            true, topVer,
-                            replicate ? DR_PRELOAD : DR_NONE,
-                            false)) {
-                            if (rec && !entry.isInternal())
-                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                    false, null, null, null, false);
+                        cctx.shared().database().checkpointReadLock();
+
+                        try {
+                            if (entry.initialValue(info.value(),
+                                info.version(),
+                                info.ttl(),
+                                info.expireTime(),
+                                true, topVer,
+                                replicate ? DR_PRELOAD : DR_NONE,
+                                false)) {
+                                if (rec && !entry.isInternal())
+                                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
+                                        (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                        false, null, null, null, false);
+                            }
+                        }
+                        finally {
+                            cctx.shared().database().checkpointReadUnlock();
                         }
                     }
                     catch (IgniteCheckedException e) {

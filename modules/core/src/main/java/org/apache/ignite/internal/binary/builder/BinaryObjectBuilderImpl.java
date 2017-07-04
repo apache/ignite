@@ -86,6 +86,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** Context of BinaryObject reading process. Or {@code null} if object is not created from BinaryObject. */
     private final BinaryBuilderReader reader;
 
+    /** Affinity key field name. */
+    private String affFieldName;
+
     /**
      * @param clsName Class name.
      * @param ctx Binary context.
@@ -349,8 +352,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 BinarySchema curSchema = writer.currentSchema();
 
-                ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta,
-                    ctx.affinityKeyFieldName(typeId), Collections.singleton(curSchema), false, null));
+                String affFieldName0 = affFieldName;
+
+                if (affFieldName0 == null)
+                    affFieldName0 = ctx.affinityKeyFieldName(typeId);
+
+                ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
+                    Collections.singleton(curSchema), false, null));
 
                 schemaReg.addSchema(curSchema.schemaId(), curSchema);
             }
@@ -617,5 +625,14 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     public int typeId() {
         return typeId;
+    }
+
+    /**
+     * Set known affinity key field name.
+     *
+     * @param affFieldName Affinity key field name.
+     */
+    public void affinityFieldName(String affFieldName) {
+        this.affFieldName = affFieldName;
     }
 }

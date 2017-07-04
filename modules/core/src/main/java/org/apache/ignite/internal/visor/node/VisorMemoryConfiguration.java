@@ -36,8 +36,11 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Size of a memory chunk reserved for system cache initially. */
+    private long sysCacheInitSize;
+
     /** Size of memory for system cache. */
-    private long sysCacheMemSize;
+    private long sysCacheMaxSize;
 
     /** Page size. */
     private int pageSize;
@@ -47,6 +50,9 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
 
     /** Name of MemoryPolicy to be used as default. */
     private String dfltMemPlcName;
+
+    /** Size of memory (in bytes) to use for default MemoryPolicy. */
+    private long dfltMemPlcSize;
 
     /** Memory policies. */
     private List<VisorMemoryPolicyConfiguration> memPlcs;
@@ -66,10 +72,12 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     public VisorMemoryConfiguration(MemoryConfiguration memCfg) {
         assert memCfg != null;
 
-        sysCacheMemSize = memCfg.getSystemCacheInitialSize();
+        sysCacheInitSize = memCfg.getSystemCacheInitialSize();
+        sysCacheMaxSize = memCfg.getSystemCacheMaxSize();
         pageSize = memCfg.getPageSize();
         concLvl = memCfg.getConcurrencyLevel();
         dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
+        dfltMemPlcSize = memCfg.getDefaultMemoryPolicySize();
 
         MemoryPolicyConfiguration[] plcs = memCfg.getMemoryPolicies();
 
@@ -89,10 +97,17 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Size of memory for system cache.
+     * @return Initial size of a memory region reserved for system cache.
      */
-    public long getSystemCacheMemorySize() {
-        return sysCacheMemSize;
+    public long getSystemCacheInitialSize() {
+        return sysCacheInitSize;
+    }
+
+    /**
+     * @return Maximum memory region size reserved for system cache.
+     */
+    public long getSystemCacheMaxSize() {
+        return sysCacheMaxSize;
     }
 
     /**
@@ -110,6 +125,13 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     }
 
     /**
+     * @return Default memory policy size.
+     */
+    public long getDefaultMemoryPolicySize() {
+        return dfltMemPlcSize;
+    }
+
+    /**
      * @return Collection of MemoryPolicyConfiguration objects.
      */
     public List<VisorMemoryPolicyConfiguration> getMemoryPolicies() {
@@ -118,19 +140,23 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(sysCacheMemSize);
+        out.writeLong(sysCacheInitSize);
+        out.writeLong(sysCacheMaxSize);
         out.writeInt(pageSize);
         out.writeInt(concLvl);
         U.writeString(out, dfltMemPlcName);
+        out.writeLong(dfltMemPlcSize);
         U.writeCollection(out, memPlcs);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        sysCacheMemSize = in.readLong();
+        sysCacheInitSize = in.readLong();
+        sysCacheMaxSize = in.readLong();
         pageSize = in.readInt();
         concLvl = in.readInt();
         dfltMemPlcName = U.readString(in);
+        dfltMemPlcSize = in.readLong();
         memPlcs = U.readList(in);
     }
 
