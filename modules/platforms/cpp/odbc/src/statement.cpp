@@ -684,9 +684,6 @@ namespace ignite
 
             SqlResult result = currentQuery->Close();
 
-            if (result == SQL_RESULT_SUCCESS)
-                currentQuery.reset();
-
             return result;
         }
 
