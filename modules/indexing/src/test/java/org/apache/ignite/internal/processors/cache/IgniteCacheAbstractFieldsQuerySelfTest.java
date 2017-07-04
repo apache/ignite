@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,8 +30,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -41,6 +46,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
@@ -51,6 +58,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -873,6 +881,70 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             assertEquals(i, row.get(0));
             assertEquals(i, row.get(1));
         }
+    }
+
+    /**
+     * Test behavior when many similar concurrent queries are run.
+     */
+    public void testConcurrentSimilarQueries() throws Exception {
+        jcache("large", Integer.class, Integer.class);
+
+        try (IgniteDataStreamer<Integer, Integer> stream = grid(0).dataStreamer("large")) {
+            for (int i = 0; i < 1_000_000; i++)
+                stream.addData(i, i);
+        }
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final AtomicInteger cnt = new AtomicInteger();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                while (!stop.get()) {
+                    IgniteEx node = grid(gridCount() > 0 ? ThreadLocalRandom.current().nextInt(0, gridCount()) : 0);
+
+                    SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * from \"large\".Integer WHERE _key > ? and " +
+                        "_val < ? order by _key").setArgs(3000, 950000)
+                        .setPageSize(ThreadLocalRandom.current().nextInt(100, 5000));
+
+                    List<List<?>> res = node.cache("large").query(qry).getAll();
+
+                    assertEquals(946999, res.size());
+
+                    for (int i = 1; i <= res.size(); i++)
+                        assertEquals(Arrays.asList(3000 + i, 3000 + i), res.get(i - 1));
+
+                    cnt.incrementAndGet();
+                }
+                return null;
+            }
+        }, 8);
+
+        // Let's also make some threads do occasional puts.
+        IgniteInternalFuture<?> putFut = multithreadedAsync(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                while (!stop.get()) {
+                    IgniteEx node = grid(gridCount() > 0 ? ThreadLocalRandom.current().nextInt(0, gridCount()) : 0);
+
+                    int x = ThreadLocalRandom.current().nextInt(0, 1_000_000);
+
+                    node.cache("large").put(x, x);
+
+                    Thread.sleep(ThreadLocalRandom.current().nextInt(500, 1000));
+                }
+                return null;
+            }
+        }, 4);
+
+        Thread.sleep(30000);
+
+        System.out.println("Iterations done: " + cnt);
+
+        stop.set(true);
+
+        putFut.get();
+
+        fut.get();
     }
 
     /** @throws Exception If failed. */

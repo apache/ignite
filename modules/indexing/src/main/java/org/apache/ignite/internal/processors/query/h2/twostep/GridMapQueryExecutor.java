@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -30,7 +31,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,6 +41,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -72,10 +76,12 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
@@ -126,6 +132,12 @@ public class GridMapQueryExecutor {
     /** */
     private IgniteH2Indexing h2;
 
+    /**
+     * Identical simultaneous queries results reuse flag.
+     * @see IgniteConfiguration#sqlResultsReuse
+     */
+    private boolean reuseResults;
+
     /** */
     private ConcurrentMap<UUID, NodeResults> qryRess = new ConcurrentHashMap8<>();
 
@@ -135,6 +147,10 @@ public class GridMapQueryExecutor {
     /** */
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, GridReservable> reservations =
         new ConcurrentHashMap8<>();
+
+    /** Futures for query results reuse. */
+    private final AtomicReference<ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>>> futs =
+        new AtomicReference<>();
 
     /**
      * @param busyLock Busy lock.
@@ -153,6 +169,8 @@ public class GridMapQueryExecutor {
         this.h2 = h2;
 
         log = ctx.log(GridMapQueryExecutor.class);
+
+        reuseResults = ctx.grid().configuration().isSqlResultsReuse();
 
         final UUID locNodeId = ctx.localNodeId();
 
@@ -219,6 +237,13 @@ public class GridMapQueryExecutor {
         catch(Throwable th) {
             U.error(log, "Failed to process message: " + msg, th);
         }
+    }
+
+    /**
+     * Clear map of currently running queries to avoid re-use of their results.
+     */
+    public void clearRunningQueriesState() {
+        futs.set(null);
     }
 
     /**
@@ -611,35 +636,15 @@ public class GridMapQueryExecutor {
                 boolean evt = mainCctx != null && ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
                 for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = null;
+                    ResultSetWrapper rs = null;
 
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
-                            F.asList(qry.parameters(params)), true,
-                            timeout,
-                            qr.cancels[qryIdx]);
+                        QueryKey key = new QueryKey(qry.query(), topVer, segmentId, qry.parameters(params),
+                                distributedJoinMode, enforceJoinOrder, partsMap, parts);
 
-                        if (evt) {
-                            assert mainCctx != null;
-
-                            ctx.event().record(new CacheQueryExecutedEvent<>(
-                                node,
-                                "SQL query executed.",
-                                EVT_CACHE_QUERY_EXECUTED,
-                                CacheQueryType.SQL.name(),
-                                mainCctx.name(),
-                                null,
-                                qry.query(),
-                                null,
-                                null,
-                                params,
-                                node.id(),
-                                null));
-                        }
-
-                        assert rs instanceof JdbcResultSet : rs.getClass();
+                        rs = runQuery(key, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
                     }
 
                     qr.addResult(qryIdx, qry, node.id(), rs, params);
@@ -1005,7 +1010,7 @@ public class GridMapQueryExecutor {
          * @param qrySrcNodeId Query source node.
          * @param rs Result set.
          */
-        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
+        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSetWrapper rs, Object[] params) {
             if (!results.compareAndSet(qry, null, new QueryResult(rs, ctx, cacheName, qrySrcNodeId, q, params)))
                 throw new IllegalStateException();
         }
@@ -1060,7 +1065,7 @@ public class GridMapQueryExecutor {
         private final ResultInterface res;
 
         /** */
-        private final ResultSet rs;
+        private final ResultSetWrapper rs;
 
         /** Kernal context. */
         private final GridKernalContext ctx;
@@ -1100,7 +1105,7 @@ public class GridMapQueryExecutor {
          * @param qry Query.
          * @param params Query params.
          */
-        private QueryResult(ResultSet rs, GridKernalContext ctx, @Nullable String cacheName,
+        private QueryResult(ResultSetWrapper rs, GridKernalContext ctx, @Nullable String cacheName,
             UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
             this.ctx = ctx;
             this.cacheName = cacheName;
@@ -1111,12 +1116,7 @@ public class GridMapQueryExecutor {
 
             if (rs != null) {
                 this.rs = rs;
-                try {
-                    res = (ResultInterface)RESULT_FIELD.get(rs);
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e); // Must not happen.
-                }
+                this.res = rs.rows();
 
                 rowCnt = res.getRowCount();
                 cols = res.getVisibleColumnCount();
@@ -1142,22 +1142,26 @@ public class GridMapQueryExecutor {
 
             boolean readEvt = cacheName != null && ctx.event().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
-            page++;
+            synchronized (rs) {
+                // We can't use ResultSet#absolute here as it may expire inside H2, and those calls will all fail.
+                absolute(res, page * pageSize);
 
-            for (int i = 0 ; i < pageSize; i++) {
-                if (!res.next())
-                    return true;
+                page++;
 
-                Value[] row = res.currentRow();
+                for (int i = 0; i < pageSize; i++) {
+                    if (!res.next())
+                        return true;
 
-                if (cpNeeded) {
-                    boolean copied = false;
+                    Value[] row = res.currentRow();
 
-                    for (int j = 0; j < row.length; j++) {
-                        Value val = row[j];
+                    if (cpNeeded) {
+                        boolean copied = false;
 
-                        if (val instanceof GridH2ValueCacheObject) {
-                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+                        for (int j = 0; j < row.length; j++) {
+                            Value val = row[j];
+
+                            if (val instanceof GridH2ValueCacheObject) {
+                                GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject) val;
 
                             row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
                                 @Override public Object getObject() {
@@ -1169,11 +1173,11 @@ public class GridMapQueryExecutor {
                         }
                     }
 
-                    if (i == 0 && !copied)
-                        cpNeeded = false; // No copy on read caches, skip next checks.
-                }
+                        if (i == 0 && !copied)
+                            cpNeeded = false; // No copy on read caches, skip next checks.
+                    }
 
-                assert row != null;
+                    assert row != null;
 
                 if (readEvt) {
                     ctx.event().record(new CacheQueryReadEvent<>(
@@ -1195,10 +1199,11 @@ public class GridMapQueryExecutor {
                         row(row)));
                 }
 
-                rows.add(res.currentRow());
-            }
+                    rows.add(res.currentRow());
+                }
 
-            return false;
+                return false;
+            }
         }
 
         /**
@@ -1221,7 +1226,345 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            U.close(rs, log);
+            rs.release();
+        }
+    }
+
+    /**
+     * Execute query specified by {@code key} or reuse result of the same concurrently running query.
+     * @param key Query key to make similar queries reuse the same result as needed.
+     * @param node Cluster node.
+     * @param mainCctx Cache context.
+     * @param conn H2 connection.
+     * @param timeout Query timeout.
+     * @param cancel Query cancel state holder.
+     * @param evt {@code true} if this query event is recordable, {@code false} otherwise.
+     * @return Query result.
+     * @throws IgniteCheckedException if failed.
+     */
+    private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, GridCacheContext mainCctx, Connection conn,
+        int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
+        if (!isResultReused(key)) {
+            ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
+
+            ResultSetWrapper res = new ResultSetWrapper(rs, null, null);
+
+            if (!res.tryTake())
+                throw new IllegalStateException();
+
+            return res;
+        }
+
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = runningFutures();
+
+        ResultSetWrapper res = null;
+
+        GridFutureAdapter<ResultSetWrapper> fut = futs.get(key);
+
+        if (fut != null)
+            res = fut.get();
+
+        if (res == null || !res.tryTake()) {
+            res = null;
+
+            GridFutureAdapter<ResultSetWrapper> newFut = new GridFutureAdapter<>();
+
+            fut = futs.putIfAbsent(key, newFut);
+
+            if (fut != null)
+                res = fut.get();
+
+            if (res == null || !res.tryTake()) {
+                fut = newFut;
+
+                try {
+                    ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
+
+                    res = new ResultSetWrapper(rs, key, fut);
+
+                    if (!res.tryTake())
+                        throw new IllegalStateException();
+
+                    fut.onDone(res);
+                }
+                catch (Throwable e) {
+                    // All other folks waiting for the same query result must see the same exception.
+                    fut.onDone(e);
+
+                    throw e;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * @return {@code true} if this key corresponds to a query whose result may be reused, {@code false} otherwise.
+     */
+    private boolean isResultReused(QueryKey key) {
+        return reuseResults &&
+            // Reuse query result if we don't have partitions list set, OR if it's what we've got from partitions map.
+            (key.parts == null || (key.partsMap != null && key.partsMap.get(ctx.localNodeId()) == key.parts));
+    }
+
+    /**
+     * Execute query on internal H2 instance and optionally record query event.
+     * @param node Cluster node.
+     * @param mainCctx Cache context.
+     * @param conn H2 connection.
+     * @param qry SQL query string.
+     * @param params Parameters.
+     * @param timeout Query timeout.
+     * @param cancel Query cancel state holder.
+     * @param evt {@code true} if this query event is recordable, {@code false} otherwise.
+     * @return Query result.
+     * @throws IgniteCheckedException if failed.
+     */
+    private ResultSet executeQuery(ClusterNode node, GridCacheContext mainCctx, Connection conn, String qry,
+        Object[] params, int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
+        ResultSet rs = h2.executeSqlQueryWithTimer(conn, qry, F.asList(params), true, timeout, cancel);
+
+        if (evt) {
+            ctx.event().record(new CacheQueryExecutedEvent<>(
+                node,
+                "SQL query executed.",
+                EVT_CACHE_QUERY_EXECUTED,
+                CacheQueryType.SQL.name(),
+                mainCctx.name(),
+                null,
+                qry,
+                null,
+                null,
+                params,
+                node.id(),
+                null));
+        }
+
+        assert rs instanceof JdbcResultSet : rs.getClass();
+
+        return rs;
+    }
+
+    /**
+     * @return Map containing futures for currently running queries.
+     */
+    private ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> runningFutures() {
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> futs = this.futs.get();
+
+        ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> newFuts = null;
+
+        while (futs == null) {
+            if (newFuts == null)
+                newFuts = new ConcurrentHashMap<>();
+
+            if (this.futs.compareAndSet(null, newFuts))
+                futs = newFuts;
+            else
+                futs = this.futs.get();
+        }
+
+        return futs;
+    }
+
+    /**
+     * Rewind given {@link ResultInterface} to the desired position.
+     * @param res Result.
+     * @param pos Position (JDBC row numbering compatible - 0 means 'before first row').
+     * @return Resulting status.
+     */
+    private static boolean absolute(ResultInterface res, int pos) {
+        if (pos < 0)
+            pos = res.getRowCount() + pos + 1;
+
+        if (--pos < res.getRowId())
+            res.reset();
+
+        while (res.getRowId() < pos) {
+            if (!res.next())
+                return false;
+        }
+
+        return res.getRowId() >= 0 && !res.isAfterLast();
+    }
+
+    /**
+     * Query key.
+     */
+    private final static class QueryKey {
+        /** Query string. */
+        private final String qry;
+
+        /** Topology version. */
+        private final AffinityTopologyVersion topVer;
+
+        /** Segment id. */
+        private final int segment;
+
+        /** Query parameters. */
+        private final Object[] params;
+
+        /** Distributed join mode. */
+        private final DistributedJoinMode joinMode;
+
+        /** Enforce join order flag. */
+        private final boolean enforceJoinOrder;
+
+        /** Partitions map. */
+        private final Map<UUID, int[]> partsMap;
+
+        /** Partitions to run query on. */
+        private final int[] parts;
+
+        /**
+         * Constructor.
+         * @param qry Query string.
+         * @param topVer Topology version.
+         * @param segment Segment id.
+         * @param params Query parameters.
+         * @param joinMode Distributed join mode.
+         * @param enforceJoinOrder Enforce join order flag.
+         * @param partsMap Partitions map.
+         * @param parts Partitions to run query on.
+         */
+        private QueryKey(String qry, AffinityTopologyVersion topVer, int segment, Object[] params,
+            DistributedJoinMode joinMode, boolean enforceJoinOrder, Map<UUID, int[]> partsMap, int[] parts) {
+            this.qry = qry;
+            this.topVer = topVer;
+            this.segment = segment;
+            this.params = params;
+            this.joinMode = joinMode;
+            this.enforceJoinOrder = enforceJoinOrder;
+            this.partsMap = partsMap;
+            this.parts = parts;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            QueryKey qryKey = (QueryKey) o;
+
+            return (segment == qryKey.segment) && (enforceJoinOrder == qryKey.enforceJoinOrder) &&
+            F.eq(qry, qryKey.qry) && F.eq(topVer, qryKey.topVer) && Arrays.equals(params, qryKey.params) &&
+            (joinMode == qryKey.joinMode) && (F.eq(partsMap, qryKey.partsMap)) && Arrays.equals(parts, qryKey.parts);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = qry.hashCode();
+            res = 31 * res + topVer.hashCode();
+            res = 31 * res + segment;
+            res = 31 * res + Arrays.hashCode(params);
+            res = 31 * res + joinMode.hashCode();
+            res = 31 * res + (enforceJoinOrder ? 1 : 0);
+            res = 31 * res + (partsMap != null ? partsMap.hashCode() : 0);
+            return 31 * res + Arrays.hashCode(parts);
+        }
+    }
+
+    /** */
+    private final class ResultSetWrapper {
+        /** Key that produced this result. */
+        private final QueryKey key;
+
+        /** Future holding this wrapper (for cleanup). */
+        private final GridFutureAdapter<ResultSetWrapper> fut;
+
+        /** Usages counter. */
+        private int cnt;
+
+        /** Wrapped result set. */
+        private final ResultSet rs;
+
+        /** Rows of {@link #rs}. */
+        private final ResultInterface rows;
+
+        /** State flag. */
+        private volatile boolean closed;
+
+        /**
+         * Constructor.
+         * @param rs Result set to wrap.
+         * @param key Key that produced this result (for cleanup), or {@code null} if this query was not throttled.
+         * @param fut Future holding this wrapper (for cleanup), or {@code null} if this query was not throttled.
+         */
+        private ResultSetWrapper(ResultSet rs, @Nullable QueryKey key,
+            @Nullable GridFutureAdapter<ResultSetWrapper> fut) {
+            A.notNull(rs, "rs");
+
+            if (fut != null)
+                A.notNull(key, "key");
+
+            this.key = key;
+            this.fut = fut;
+
+            this.rs = rs;
+
+            try {
+                this.rows = (ResultInterface)RESULT_FIELD.get(rs);
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e); // Must not happen.
+            }
+
+            assert rows != null;
+        }
+
+        /**
+         * @return Wrapped result set.
+         */
+        synchronized ResultInterface rows() {
+            checkState();
+
+            return rows;
+        }
+
+        /**
+         * @return {@code true} if {@link ResultSet} wrapped by this object may be used.
+         */
+        synchronized boolean tryTake() {
+            if (++cnt <= 0) {
+                assert closed;
+
+                // Should never happen - counter can be negative iff release has somehow negated it which at a glance
+                // does not seem possible.
+                throw new IllegalStateException();
+            }
+
+            return !closed;
+        }
+
+        /**
+         * Release the hold on this result set.
+         */
+        synchronized void release() {
+            checkState();
+
+            if (--cnt == 0) {
+                closed = true;
+
+                U.close(rs, log);
+
+                if (fut != null) {
+                    ConcurrentHashMap<QueryKey, GridFutureAdapter<ResultSetWrapper>> m = futs.get();
+
+                    if (m != null)
+                        m.remove(key, fut);
+                }
+            }
+            else if (cnt < 0)
+                throw new IllegalStateException();
+        }
+
+        /**
+         * Check if {@link #closed} is set, throw an exception if so.
+         */
+        private void checkState() {
+            if (closed)
+                throw new IllegalStateException();
         }
     }
 
