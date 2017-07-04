@@ -2246,8 +2246,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (!isDone()) {
                         // TODO caches are not started, how to start properly.
-
                         try {
+                            exchLog.info("initCoordinatorCaches [exchId=" + exchangeId() + ']');
+
                             cctx.affinity().initCoordinatorCaches(GridDhtPartitionsExchangeFuture.this);
                         } catch (IgniteCheckedException e) {
                             throw new IgniteException(e);
