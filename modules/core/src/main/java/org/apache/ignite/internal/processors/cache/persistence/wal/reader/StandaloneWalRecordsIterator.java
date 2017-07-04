@@ -173,17 +173,18 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             FileWALPointer ptr;
 
             try (RandomAccessFile rf = new RandomAccessFile(file, "r");) {
-                FileChannel ch = rf.getChannel();
-                ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
+                final FileChannel ch = rf.getChannel();
+                final ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
+
                 buf.order(ByteOrder.nativeOrder());
-                DataInput in = new FileInput(ch, buf);
+
+                final DataInput in = new FileInput(ch, buf);
                 // Header record must be agnostic to the serializer version.
-                int type = in.readUnsignedByte();
+                final int type = in.readUnsignedByte();
+
                 if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
                     throw new SegmentEofException("Reached logical end of the segment", null);
                 ptr = RecordV1Serializer.readPosition(in);
-
-                // System.err.println("Loaded pointer [" + ptr + "]");
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to scan index from file [" + file + "]", e);
