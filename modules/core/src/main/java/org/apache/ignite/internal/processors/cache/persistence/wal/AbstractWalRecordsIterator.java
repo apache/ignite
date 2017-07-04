@@ -48,7 +48,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
 
     /**
      * Current record preloaded, to be returned on next()<br>
-     * Normally this should be not null because advance() method should already prepare some value
+     * Normally this should be not null because advance() method should already prepare some value<br>
      */
     protected IgniteBiTuple<WALPointer, WALRecord> curRec;
 
@@ -56,7 +56,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
      * Current WAL segment absolute index. <br>
      * Determined as lowest number of file at start, is changed during advance segment
      */
-    protected long curIdx = -1;
+    protected long curWalSegmIdx = -1;
 
     /**
      * Current WAL segment read file handle. To be filled by subclass advanceSegment
@@ -64,16 +64,13 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     private FileWriteAheadLogManager.ReadFileHandle currWalSegment;
 
     /** Logger */
-    @NotNull
-    protected final IgniteLogger log;
+    @NotNull protected final IgniteLogger log;
 
     /** Shared context for creating serializer of required version and grid name access */
-    @NotNull
-    private final GridCacheSharedContext sharedCtx;
+    @NotNull private final GridCacheSharedContext sharedCtx;
 
     /** Serializer of current version to read headers. */
-    @NotNull
-    private final RecordSerializer serializer;
+    @NotNull private final RecordSerializer serializer;
 
     /** Utility buffer for reading records */
     private final ByteBuffer buf;
@@ -106,6 +103,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
      */
     protected static FileWriteAheadLogManager.FileDescriptor[] loadFileDescriptors(@NotNull final File walFilesDir) throws IgniteCheckedException {
         final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+
         if (files == null) {
             throw new IgniteCheckedException("WAL files directory does not not denote a " +
                 "directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
@@ -128,12 +126,19 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     }
 
     /**
-     * Switches records iterator to the next record. If end of segment reached, switch to new segment is called
+     * Switches records iterator to the next record.
+     * <ul>
+     * <li>{@link #curRec} will be updated.</li>
+     * <li> If end of segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li>
+     * </ul>
+     *
+     * {@code advance()} runs a step ahead {@link #next()}
+     *
      * @throws IgniteCheckedException If failed.
      */
     protected void advance() throws IgniteCheckedException {
         while (true) {
-            advanceRecord(currWalSegment);
+            curRec = advanceRecord(currWalSegment);
 
             if (curRec != null)
                 return;
@@ -153,6 +158,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
      */
     @Nullable protected FileWriteAheadLogManager.ReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
         final FileWriteAheadLogManager.ReadFileHandle walSegmentClosed = currWalSegment;
+
         if (walSegmentClosed != null) {
             walSegmentClosed.close();
             currWalSegment = null;
@@ -172,34 +178,32 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
         @Nullable final FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException;
 
     /**
-     * Switches {@link #curRec} to new record
-     * @param curHandle currently opened read handle
+     * Switches to new record
+     * @param hnd currently opened read handle
+     * @return next advanced record
      */
-    private void advanceRecord(
-        FileWriteAheadLogManager.ReadFileHandle curHandle) {
-        FileWALPointer ptr = null;
+    private IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
+        @Nullable final FileWriteAheadLogManager.ReadFileHandle hnd) {
+        if (hnd == null)
+            return null;
+
+        final FileWALPointer ptr = new FileWALPointer(
+            hnd.idx,
+            (int)hnd.in.position(),
+            0);
+
         try {
-            FileWriteAheadLogManager.ReadFileHandle hnd = curHandle;
+            final WALRecord rec = hnd.ser.readRecord(hnd.in, ptr);
 
-            if (hnd != null) {
-                RecordSerializer ser = hnd.ser;
+            ptr.length(rec.size());
 
-                int pos = (int)hnd.in.position();
-
-                ptr = new FileWALPointer(hnd.idx, pos, 0);
-
-                WALRecord rec = ser.readRecord(hnd.in, ptr);
-
-                ptr.length(rec.size());
-
-                //using diamond operator here can break compile for 7
-                curRec = new IgniteBiTuple<WALPointer, WALRecord>(ptr, rec);
-            }
+            // cast using diamond operator here can break compile for 7
+            return new IgniteBiTuple<>((WALPointer)ptr, rec);
         }
         catch (IOException | IgniteCheckedException e) {
             if (!(e instanceof SegmentEofException))
                 handleRecordException(e, ptr);
-            curRec = null;
+            return null;
         }
     }
 

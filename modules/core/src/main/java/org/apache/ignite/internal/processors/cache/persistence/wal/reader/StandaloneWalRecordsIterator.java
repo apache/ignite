@@ -132,7 +132,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @Nullable final File[] walFiles) throws IgniteCheckedException {
         if (walFilesDir != null) {
             FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walFilesDir);
-            curIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
+            curWalSegmIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
             this.walFilesDir = walFilesDir;
             this.workDir = false;
         }
@@ -142,12 +142,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 walFileDescriptors = scanIndexesFromFileHeaders(walFiles);
             else
                 walFileDescriptors = new ArrayList<>(Arrays.asList(FileWriteAheadLogManager.scan(walFiles)));
-            curIdx = !walFileDescriptors.isEmpty() ? walFileDescriptors.get(0).getIdx() : 0;
+            curWalSegmIdx = !walFileDescriptors.isEmpty() ? walFileDescriptors.get(0).getIdx() : 0;
         }
-        curIdx--;
+        curWalSegmIdx--;
 
         if (log.isDebugEnabled())
-            log.debug("Initialized WAL cursor [curIdx=" + curIdx + ']');
+            log.debug("Initialized WAL cursor [curWalSegmIdx=" + curWalSegmIdx + ']');
     }
 
     /**
@@ -164,11 +164,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (allFiles == null || allFiles.length == 0)
             return Collections.emptyList();
 
-        List<FileWriteAheadLogManager.FileDescriptor> resultingDescs = new ArrayList<>();
+        final List<FileWriteAheadLogManager.FileDescriptor> resultingDescs = new ArrayList<>();
+
         for (File file : allFiles) {
             if (file.length() < HEADER_RECORD_SIZE)
                 continue;
+
             FileWALPointer ptr;
+
             try (RandomAccessFile rf = new RandomAccessFile(file, "r");) {
                 FileChannel ch = rf.getChannel();
                 ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
@@ -199,13 +202,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (curWalSegment != null)
             curWalSegment.close();
 
-        curIdx++;
+        curWalSegmIdx++;
         // curHandle.workDir is false
-        FileWriteAheadLogManager.FileDescriptor fd;
+        final FileWriteAheadLogManager.FileDescriptor fd;
+
         if (walFilesDir != null) {
             fd = new FileWriteAheadLogManager.FileDescriptor(
                 new File(walFilesDir,
-                    FileWriteAheadLogManager.FileDescriptor.fileName(curIdx)));
+                    FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx)));
         }
         else {
             if (walFileDescriptors.isEmpty())
@@ -215,7 +219,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Reading next file [absIdx=" + curIdx + ", file=" + fd.getAbsolutePath() + ']');
+            log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.getAbsolutePath() + ']');
 
         assert fd != null;
 
@@ -234,7 +238,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
         super.handleRecordException(e, ptr);
-        RuntimeException ex = new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
+        final RuntimeException ex = new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
+
         ex.printStackTrace();
         if (!workDir)
             throw ex;
@@ -247,6 +252,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         closeCurrentWalSegment();
 
-        curIdx = Integer.MAX_VALUE;
+        curWalSegmIdx = Integer.MAX_VALUE;
     }
 }

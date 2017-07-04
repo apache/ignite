@@ -43,7 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.event.WalSegmentArchiveCompletedEvent;
+import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,29 +51,44 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED;
+import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 
 /**
  * Test suite for WAL segments reader and event generator.
  */
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
-
+    /** Wal segments count */
     private static final int WAL_SEGMENTS = 10;
+
+    /** Cache name. */
     private static final String CACHE_NAME = "cache0";
 
+    /** Fill wal with some data before iterating. Should be true for non local run */
     private static final boolean fillWalBeforeTest = true;
+
+    /** Delete DB dir before test. */
     private static final boolean deleteBefore = true;
+
+    /** Delete DB dir after test. */
     private static final boolean deleteAfter = true;
+
+    /** Dump records to system out. Should be false for non local run */
     private static final boolean dumpRecords = false;
+
+    /** Page size to set */
     public static final int PAGE_SIZE = 4 * 1024;
 
+    /**
+     * Field for transferring setting from test to getConfig method
+     * Archive incomplete segment after inactivity milliseconds.
+     */
     private int archiveIncompleteSegmentAfterInactivityMs = 0;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration<Integer, IgniteWalReaderTest.IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
+        final CacheConfiguration<Integer, IgniteWalReaderTest.IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
@@ -82,13 +97,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED);
+        cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        final MemoryConfiguration dbCfg = new MemoryConfiguration();
 
         dbCfg.setPageSize(PAGE_SIZE);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        final MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
@@ -99,7 +114,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        final PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
         pCfg.setWalHistorySize(1);
         pCfg.setWalSegmentSize(1024 * 1024);
         pCfg.setWalSegments(WAL_SEGMENTS);
@@ -107,9 +122,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             pCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
+
         cfg.setPersistentStoreConfiguration(pCfg);
 
-        BinaryConfiguration binCfg = new BinaryConfiguration();
+        final BinaryConfiguration binCfg = new BinaryConfiguration();
 
         binCfg.setCompactFooter(false);
 
@@ -145,9 +161,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalAndReadRecords() throws Exception {
-        int cacheObjectsToWrite = 10000;
+        final int cacheObjectsToWrite = 10000;
+
         if (fillWalBeforeTest) {
-            Ignite ignite0 = startGrid("node0");
+            final Ignite ignite0 = startGrid("node0");
+
             ignite0.active(true);
 
             putDummyRecords(ignite0, cacheObjectsToWrite);
@@ -155,14 +173,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             stopGrid("node0");
         }
 
-        File db = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File wal = new File(db, "wal");
-        File walArchive = new File(wal, "archive");
-        String consistentId = "127_0_0_1_47500";
-        MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, PAGE_SIZE, consistentId, WAL_SEGMENTS);
-        WALIterator it = mockItFactory.iterator(wal, walArchive);
+        final File db = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
+        final File wal = new File(db, "wal");
+        final File walArchive = new File(wal, "archive");
+        final String consistentId = "127_0_0_1_47500";
+        final MockWalIteratorFactory mockItFactory = new MockWalIteratorFactory(log, PAGE_SIZE, consistentId, WAL_SEGMENTS);
+        final WALIterator it = mockItFactory.iterator(wal, walArchive);
+        final int cntUsingMockIter = iterateAndCount(it);
 
-        int cntUsingMockIter = iterateAndCount(it);
         System.out.println("Total records loaded " + cntUsingMockIter);
         assert cntUsingMockIter > 0;
         assert cntUsingMockIter > cacheObjectsToWrite;
@@ -170,13 +188,15 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final File walArchiveDirWithConsistentId = new File(walArchive, consistentId);
         final File walWorkDirWithConsistentId = new File(wal, consistentId);
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE);
-        int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE);
+        final int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
+
         System.out.println("Total records loaded using directory : " + cntArchiveDir);
 
-        int cntArchiveFileByFile = iterateAndCount(
+        final int cntArchiveFileByFile = iterateAndCount(
             factory.iteratorArchiveFiles(
                 walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER)));
+
         System.out.println("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
 
         assert cntArchiveFileByFile > cacheObjectsToWrite;
@@ -187,8 +207,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             : "Mock based reader loaded " + cntUsingMockIter + " records but standalone has loaded only " + cntArchiveDir;
 
 
-        File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+        final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
         int cntWork = 0;
+
         try (WALIterator stIt = factory.iteratorWorkFiles(workFiles)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
@@ -213,6 +234,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     private int iterateAndCount(WALIterator walIter) throws IgniteCheckedException {
         int cntUsingMockIter = 0;
+
         try(WALIterator it = walIter) {
             while (it.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
@@ -232,16 +254,18 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     public void testArchiveCompletedEventFired() throws Exception {
         final AtomicBoolean evtRecorded = new AtomicBoolean();
 
-        Ignite ignite = startGrid("node0");
+        final Ignite ignite = startGrid("node0");
+
         ignite.active(true);
 
-        IgniteEvents evts = ignite.events();
-        if (!evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVE_COMPLETED))
+        final IgniteEvents evts = ignite.events();
+
+        if (!evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVED))
             return; //nothing to test
 
         evts.localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event e) {
-                WalSegmentArchiveCompletedEvent archComplEvt = (WalSegmentArchiveCompletedEvent)e;
+                WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
                 long idx = archComplEvt.getAbsWalSegmentIdx();
                 System.err.println("Finished archive for segment [" + idx + ", " +
                     archComplEvt.getArchiveFile() + "]: [" + e + "]");
@@ -249,7 +273,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 evtRecorded.set(true);
                 return true;
             }
-        }, EVT_WAL_SEGMENT_ARCHIVE_COMPLETED);
+        }, EVT_WAL_SEGMENT_ARCHIVED);
 
         putDummyRecords(ignite, 150);
 
@@ -257,36 +281,51 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         assert evtRecorded.get();
     }
 
+    /**
+     * Puts provided number of records to fill WAL
+     *
+     * @param ignite ignite instance
+     * @param recordsToWrite count
+     */
     private void putDummyRecords(Ignite ignite, int recordsToWrite) {
         IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
+
         for (int i = 0; i < recordsToWrite; i++)
             cache0.put(i, new IndexedObject(i));
     }
 
+    /**
+     * Tests time out based WAL segment archiving
+     *
+     * @throws Exception if failure occurs
+     */
     public void testArchiveIncompleteSegmentAfterInactivity() throws Exception {
-        final AtomicBoolean waitingForEvent = new AtomicBoolean();
+        final AtomicBoolean waitingForEvt = new AtomicBoolean();
         final CountDownLatch archiveSegmentForInactivity = new CountDownLatch(1);
+
         archiveIncompleteSegmentAfterInactivityMs = 1000;
 
-        Ignite ignite = startGrid("node0");
+        final Ignite ignite = startGrid("node0");
+
         ignite.active(true);
 
-        IgniteEvents evts = ignite.events();
+        final IgniteEvents evts = ignite.events();
+
         evts.localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event e) {
-                WalSegmentArchiveCompletedEvent archComplEvt = (WalSegmentArchiveCompletedEvent)e;
+                WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
                 long idx = archComplEvt.getAbsWalSegmentIdx();
                 System.err.println("Finished archive for segment [" + idx + ", " +
                     archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
-                if (waitingForEvent.get())
+                if (waitingForEvt.get())
                     archiveSegmentForInactivity.countDown();
                 return true;
             }
-        }, EVT_WAL_SEGMENT_ARCHIVE_COMPLETED);
+        }, EVT_WAL_SEGMENT_ARCHIVED);
 
         putDummyRecords(ignite, 100);
-        waitingForEvent.set(true); //flag for skipping regular log() and rollOver()
+        waitingForEvt.set(true); //flag for skipping regular log() and rollOver()
 
         System.err.println("Wait for archiving segment for inactive grid started");
 
@@ -324,18 +363,18 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IndexedObject object = (IndexedObject)o;
+            IndexedObject obj = (IndexedObject)o;
 
-            if (iVal != object.iVal)
+            if (iVal != obj.iVal)
                 return false;
-            return Arrays.equals(data, object.data);
+            return Arrays.equals(data, obj.data);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = iVal;
-            result = 31 * result + Arrays.hashCode(data);
-            return result;
+            int res = iVal;
+            res = 31 * res + Arrays.hashCode(data);
+            return res;
         }
 
         /** {@inheritDoc} */

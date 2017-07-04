@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.event;
+package org.apache.ignite.events;
 
 import java.io.File;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.events.EventType;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Event indicates there was movement of WAL segment file to archive completed
+ * Event indicates there was movement of WAL segment file to archive has been completed
  */
-public class WalSegmentArchiveCompletedEvent extends EventAdapter {
+public class WalSegmentArchivedEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,11 +41,11 @@ public class WalSegmentArchiveCompletedEvent extends EventAdapter {
      * @param absWalSegmentIdx Absolute wal segment index.
      * @param archiveFile Archive file.
      */
-    public WalSegmentArchiveCompletedEvent(
+    public WalSegmentArchivedEvent(
         @NotNull final ClusterNode node,
         final long absWalSegmentIdx,
         final File archiveFile) {
-        super(node, "", EventType.EVT_WAL_SEGMENT_ARCHIVE_COMPLETED);
+        super(node, "", EventType.EVT_WAL_SEGMENT_ARCHIVED);
         this.absWalSegmentIdx = absWalSegmentIdx;
         this.archiveFile = archiveFile;
     }

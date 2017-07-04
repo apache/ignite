@@ -89,7 +89,9 @@ public class IgniteWalIteratorFactory {
      */
     @NotNull private GridCacheSharedContext prepareSharedCtx() {
         final GridKernalContext kernalCtx = new StandaloneGridKernalContext(log);
+
         final StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
+
         dbMgr.setPageSize(pageSize);
         return new GridCacheSharedContext<>(
             kernalCtx, null, null, null,
