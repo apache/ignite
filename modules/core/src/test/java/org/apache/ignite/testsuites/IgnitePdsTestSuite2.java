@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTrans
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsNoActualWalHistoryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
@@ -68,6 +69,9 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
+
+        // Failover test
+        suite.addTestSuite(IgniteWalFlushFailoverTest.class);
 
         return suite;
     }
