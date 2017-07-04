@@ -831,8 +831,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        ClusterNode locNode = ctx.discovery().localNode();
-
         boolean active = ctx.state().active();
 
         try {
@@ -881,7 +879,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         final List<IgniteInternalFuture> syncFuts = new ArrayList<>(caches.size());
 
         sharedCtx.forAllCaches(new CIX1<GridCacheContext>() {
-            @Override public void applyx(GridCacheContext cctx) throws IgniteCheckedException {
+            @Override public void applyx(GridCacheContext cctx) {
                 CacheConfiguration cfg = cctx.config();
 
                 if (cctx.affinityNode() &&
@@ -3015,13 +3013,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Reset restarting caches.
+     */
+    public void resetRestartingCaches(){
+        cachesInfo.restartingCaches().clear();
+    }
+
+    /**
      * @param node Joining node to validate.
      * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
      */
     private IgniteNodeValidationResult validateRestartingCaches(ClusterNode node) {
         if (cachesInfo.hasRestartingCaches()) {
             String msg = "Joining node during caches restart is not allowed [joiningNodeId=" + node.id() +
-                ", restartingCaches=" + new HashSet<String>(cachesInfo.restartingCaches()) + ']';
+                ", restartingCaches=" + new HashSet<>(cachesInfo.restartingCaches()) + ']';
 
             return new IgniteNodeValidationResult(node.id(), msg, msg);
         }
@@ -3984,7 +3989,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         RemovedItemsCleanupTask(long timeout) {
             this.timeout = timeout;
-            this.endTime = U.currentTimeMillis() + timeout;
+
+            endTime = U.currentTimeMillis() + timeout;
         }
 
         /** {@inheritDoc} */
