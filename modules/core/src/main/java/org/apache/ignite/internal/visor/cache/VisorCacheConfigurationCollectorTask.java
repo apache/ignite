@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 @GridInternal
 public class VisorCacheConfigurationCollectorTask
-    extends VisorOneNodeTask<VisorCacheConfigurationCollectorTaskArg, Map<IgniteUuid, VisorCacheConfiguration>> {
+    extends VisorOneNodeTask<VisorCacheConfigurationCollectorTaskArg, Map<String, VisorCacheConfiguration>> {
     /** */
     private static final long serialVersionUID = 0L;
 

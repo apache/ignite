@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -54,15 +55,15 @@ public interface GridDhtPartitionTopology {
     /**
      * Updates topology version.
      *
-     * @param exchId Exchange ID.
      * @param exchFut Exchange future.
+     * @param discoCache Discovery data cache.
      * @param updateSeq Update sequence.
      * @param stopping Stopping flag.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void updateTopologyVersion(
-        GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut,
+        GridDhtTopologyFuture exchFut,
+        DiscoCache discoCache,
         long updateSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException;
@@ -126,6 +127,18 @@ public interface GridDhtPartitionTopology {
      *      does not belong to this node.
      */
     @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
+        throws GridDhtInvalidPartitionException;
+
+    /**
+     * @param topVer Topology version at the time of creation.
+     * @param p Partition ID.
+     * @param create If {@code true}, then partition will be created if it's not there.
+     * @return Local partition.
+     * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
+     *      does not belong to this node.
+     */
+    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create,
+        boolean showRenting)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -221,21 +234,23 @@ public interface GridDhtPartitionTopology {
     public void onRemoved(GridDhtCacheEntry e);
 
     /**
-     * @param exchId Exchange ID.
+     * @param exchangeVer Exchange version.
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
-     * @return Local partition map if there were evictions or {@code null} otherwise.
+     * @return {@code True} if local state was changed.
      */
-    public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
+    public boolean update(
+        @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap);
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
+        Set<Integer> partsToReload);
 
     /**
      * @param exchId Exchange ID.
      * @param parts Partitions.
-     * @return Local partition map if there were evictions or {@code null} otherwise.
+     * @return {@code True} if local state was changed.
      */
-    @Nullable public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
+    public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap parts);
 
     /**
@@ -250,7 +265,7 @@ public interface GridDhtPartitionTopology {
      * This method should be called on topology coordinator after all partition messages are received.
      *
      * @param discoEvt Discovery event for which we detect lost partitions.
-     * @return {@code True} if partitons state got updated.
+     * @return {@code True} if partitions state got updated.
      */
     public boolean detectLostPartitions(DiscoveryEvent discoEvt);
 
@@ -312,6 +327,13 @@ public interface GridDhtPartitionTopology {
      * @param p Partition ID.
      * @param updateSeq If should increment sequence when updated.
      * @param owners Set of new owners.
+     * @return Set of node IDs that should reload partitions.
      */
-    public void setOwners(int p, Set<UUID> owners, boolean updateSeq);
+    public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
+
+    /**
+     * Callback on exchange done.
+     * @param assignment New affinity assignment.
+     */
+    public void onExchangeDone(AffinityAssignment assignment);
 }

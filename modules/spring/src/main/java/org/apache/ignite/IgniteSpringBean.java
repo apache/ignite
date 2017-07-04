@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -286,6 +287,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
+        checkIgnite();
+
+        return g.persistentStoreMetrics();
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         checkIgnite();
 
@@ -447,10 +455,25 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicSequence(name, cfg, initVal, create);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         checkIgnite();
 
         return g.atomicLong(name, initVal, create);
+    }
+
+    @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicLong(name, cfg, initVal, create);
     }
 
     /** {@inheritDoc} */
@@ -464,6 +487,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicReference(name, cfg, initVal, create);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
@@ -472,6 +503,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         return g.atomicStamped(name, initVal, initStamp, create);
+    }
+
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicStamped(name, cfg, initVal, initStamp, create);
     }
 
     /** {@inheritDoc} */

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInterceptorSelfTestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDaemonNodePartitionedSelfTest;
@@ -90,6 +91,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 3");
+
+        suite.addTestSuite(IgniteCacheGroupsTest.class);
 
         // Value consistency tests.
         suite.addTestSuite(GridCacheValueConsistencyAtomicSelfTest.class);
@@ -195,8 +198,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteTxGetAfterStopTest.class);
 
         suite.addTestSuite(CacheAsyncOperationsTest.class);
-
-        suite.addTestSuite(IgniteCacheGroupsTest.class);
 
         return suite;
     }

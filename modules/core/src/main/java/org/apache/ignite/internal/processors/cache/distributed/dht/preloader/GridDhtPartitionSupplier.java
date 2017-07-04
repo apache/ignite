@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -246,6 +246,22 @@ class GridDhtPartitionSupplier {
 
             Iterator<Integer> partIt = sctx != null ? sctx.partIt : d.partitions().iterator();
 
+            if (sctx == null) {
+                for (Integer part : d.partitions()) {
+                    GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
+
+                    if (loc == null || loc.state() != OWNING)
+                        continue;
+
+                    if (grp.sharedGroup()) {
+                        for (int cacheId : grp.cacheIds())
+                            s.addKeysForCache(cacheId, grp.offheap().cacheEntriesCount(cacheId, part));
+                    }
+                    else
+                        s.addEstimatedKeysCount(grp.offheap().totalPartitionEntriesCount(part));
+                }
+            }
+
             while ((sctx != null && newReq) || partIt.hasNext()) {
                 int part = sctx != null && newReq ? sctx.part : partIt.next();
 
@@ -284,10 +300,16 @@ class GridDhtPartitionSupplier {
                         IgniteRebalanceIterator iter;
 
                         if (sctx == null || sctx.entryIt == null) {
-                            iter = grp.offheap().rebalanceIterator(part, d.topologyVersion(), d.partitionCounter(part));
+                            iter = grp.offheap().rebalanceIterator(part, d.topologyVersion(),
+                                d.isHistorical(part) ? d.partitionCounter(part) : null);
 
-                            if (!iter.historical())
+                            if (!iter.historical()) {
+                                assert !grp.shared().database().persistenceEnabled() || !d.isHistorical(part);
+
                                 s.clean(part);
+                            }
+                            else
+                                assert grp.shared().database().persistenceEnabled() && d.isHistorical(part);
                         }
                         else
                             iter = (IgniteRebalanceIterator)sctx.entryIt;

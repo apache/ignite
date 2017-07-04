@@ -87,6 +87,8 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
+        ignite.active(true);
+
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName("cache1");
@@ -119,6 +121,8 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         startGrids(1);
 
         Ignite ignite = ignite(0);
+
+        ignite.active(true);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

@@ -29,7 +29,6 @@ _.mixin({
 });
 
 import alertTemplateUrl from 'views/templates/alert.tpl.pug';
-import selectTemplateUrl from 'views/templates/select.tpl.pug';
 import dropdownTemplateUrl from 'views/templates/dropdown.tpl.pug';
 import validationTemplateUrl from 'views/templates/validation-error.tpl.pug';
 
@@ -77,7 +76,7 @@ igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
         maxLength: '5',
         allText: 'Select All',
         noneText: 'Clear All',
-        templateUrl: selectTemplateUrl,
+        template: '<bs-select-menu></bs-select-menu>',
         iconCheckmark: 'fa fa-check',
         caretHtml: ''
     });

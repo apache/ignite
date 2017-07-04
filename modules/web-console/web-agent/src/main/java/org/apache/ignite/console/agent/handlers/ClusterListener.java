@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -190,12 +190,12 @@ public class ClusterListener {
     }
 
     /** */
-    private class TopologySnapshot {
+    private static class TopologySnapshot {
         /** */
         private Collection<UUID> nids;
 
         /** */
-        private String clusterVersion;
+        private String clusterVer;
 
         /**
          * @param nodes Nodes.
@@ -210,7 +210,21 @@ public class ClusterListener {
                     }
                 });
 
-            clusterVersion = Collections.min(vers).toString();
+            clusterVer = Collections.min(vers).toString();
+        }
+
+        /**
+         * @return Cluster version.
+         */
+        public String getClusterVersion() {
+            return clusterVer;
+        }
+
+        /**
+         * @return Cluster nodes IDs.
+         */
+        public Collection<UUID> getNids() {
+            return nids;
         }
 
         /**  */
@@ -256,7 +270,12 @@ public class ClusterListener {
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (ConnectException ignored) {
+                clusterDisconnect();
+            }
+            catch (Exception e) {
+                log.error("WatchTask failed", e);
+
                 clusterDisconnect();
             }
         }
@@ -296,7 +315,9 @@ public class ClusterListener {
                         clusterDisconnect();
                 }
             }
-            catch (IOException ignore) {
+            catch (Exception e) {
+                log.error("BroadcastTask failed", e);
+
                 clusterDisconnect();
 
                 watch();

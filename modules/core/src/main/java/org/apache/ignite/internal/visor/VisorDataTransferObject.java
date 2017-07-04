@@ -23,7 +23,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,6 +34,12 @@ import org.jetbrains.annotations.Nullable;
 public abstract class VisorDataTransferObject implements Externalizable {
     /** Magic number to detect correct transfer objects. */
     private static final int MAGIC = 0x42BEEF00;
+
+    /** Version 1. */
+    protected static final byte V1 = 1;
+
+    /** Version 2. */
+    protected static final byte V2 = 2;
 
     /**
      * @param col Source collection.
@@ -46,10 +54,22 @@ public abstract class VisorDataTransferObject implements Externalizable {
     }
 
     /**
+     * @param col Source collection.
+     * @param <T> Collection type.
+     * @return List based on passed collection.
+     */
+    @Nullable protected static <T> Set<T> toSet(Collection<T> col) {
+        if (col != null)
+            return new LinkedHashSet<>(col);
+
+        return null;
+    }
+
+    /**
      * @return Transfer object version.
      */
     public byte getProtocolVersion() {
-        return 1;
+        return V1;
     }
 
     /**

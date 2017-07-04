@@ -160,16 +160,17 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             boolean isList = cls == Collection.class || cls == List.class;
 
             if (isList || cls == Set.class) {
+                String items = argument(startIdx + 1);
+
+                if (items == null || "null".equals(items))
+                    return null;
+
                 Class<?> itemsCls = Class.forName(arg);
 
                 Collection<Object> res = isList ? new ArrayList<>() : new HashSet<>();
 
-                String items = argument(startIdx + 1);
-
-                if (items != null) {
-                    for (String item : items.split(";"))
-                        res.add(toObject(itemsCls, item));
-                }
+                for (String item : items.split(";"))
+                    res.add(toObject(itemsCls, item));
 
                 return res;
             }

@@ -20,7 +20,6 @@ package org.apache.ignite.springdata;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;

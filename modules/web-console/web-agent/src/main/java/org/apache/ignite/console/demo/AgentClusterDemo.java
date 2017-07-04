@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.demo.service.DemoCachesLoadService;
+import org.apache.ignite.console.demo.service.DemoComputeLoadService;
 import org.apache.ignite.console.demo.service.DemoRandomCacheLoadService;
 import org.apache.ignite.console.demo.service.DemoServiceClusterSingleton;
 import org.apache.ignite.console.demo.service.DemoServiceKeyAffinity;
@@ -142,6 +143,8 @@ public class AgentClusterDemo {
 
         services.deployClusterSingleton("Demo caches load service", new DemoCachesLoadService(20));
         services.deployNodeSingleton("RandomCache load service", new DemoRandomCacheLoadService(20));
+
+        services.deployMultiple("Demo service: Compute load", new DemoComputeLoadService(), 2, 1);
     }
 
     /** */
@@ -174,7 +177,7 @@ public class AgentClusterDemo {
                     int port = basePort.get();
 
                     try {
-                        IgniteEx ignite = (IgniteEx)Ignition.start(igniteConfiguration(port, idx, idx == NODE_CNT));
+                        IgniteEx ignite = (IgniteEx)Ignition.start(igniteConfiguration(port, idx, false));
 
                         if (idx == 0) {
                             Collection<String> jettyAddrs = ignite.localNode().attribute(ATTR_REST_JETTY_ADDRS);
@@ -198,7 +201,7 @@ public class AgentClusterDemo {
 
                             initLatch.countDown();
 
-                            deployServices(ignite.services());
+                            deployServices(ignite.services(ignite.cluster().forServers()));
                         }
                     }
                     catch (Throwable e) {
