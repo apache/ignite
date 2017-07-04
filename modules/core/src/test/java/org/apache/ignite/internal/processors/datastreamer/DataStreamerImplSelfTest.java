@@ -253,7 +253,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed
      */
-    public void testClusterTopologyCheckedExceptionWhenTopologyMismatch() throws Exception {
+    public void testRetryWhenTopologyMismatch() throws Exception {
         final int KEY = 1;
         final String VAL = "1";
         final AtomicReference<Throwable> testFailure = new AtomicReference<>(null);
