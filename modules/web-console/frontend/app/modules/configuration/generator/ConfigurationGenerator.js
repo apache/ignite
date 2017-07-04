@@ -1653,8 +1653,11 @@ export default class IgniteConfigurationGenerator {
     static domainModelGeneral(domain, cfg = this.domainConfigurationBean(domain)) {
         switch (cfg.valueOf('queryMetadata')) {
             case 'Annotations':
-                if (_.nonNil(domain.keyType) && _.nonNil(domain.valueType))
-                    cfg.varArgProperty('indexedTypes', 'indexedTypes', [domain.keyType, domain.valueType], 'java.lang.Class');
+                if (_.nonNil(domain.keyType) && _.nonNil(domain.valueType)) {
+                    cfg.varArgProperty('indexedTypes', 'indexedTypes',
+                        [javaTypes.fullClassName(domain.keyType), javaTypes.fullClassName(domain.valueType)],
+                        'java.lang.Class');
+                }
 
                 break;
             case 'Configuration':
@@ -1864,7 +1867,7 @@ export default class IgniteConfigurationGenerator {
     static cacheQuery(cache, domains, available, ccfg = this.cacheConfigurationBean(cache)) {
         const indexedTypes = _.reduce(domains, (acc, domain) => {
             if (domain.queryMetadata === 'Annotations')
-                acc.push(domain.keyType, domain.valueType);
+                acc.push(javaTypes.fullClassName(domain.keyType), javaTypes.fullClassName(domain.valueType));
 
             return acc;
         }, []);
