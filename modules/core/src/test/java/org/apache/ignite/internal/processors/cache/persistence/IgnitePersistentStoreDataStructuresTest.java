@@ -181,6 +181,8 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
         for (int i = 0; i < 100; i++)
             set.add(i);
 
+        assertEquals(100, set.size());
+
         stopAllGrids();
 
         ignite = startGrids(4);
