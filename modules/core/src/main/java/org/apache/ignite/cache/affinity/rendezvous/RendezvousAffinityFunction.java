@@ -531,11 +531,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 				else
 					map.get(node).incrementAndGet();
 			}
-			/*
-
-                chiSquare(dist0, aff0.partitions(), 1.0 / nodesCnt),
-
-			 */
 
 			nodeMaps.add(map);
 		}
