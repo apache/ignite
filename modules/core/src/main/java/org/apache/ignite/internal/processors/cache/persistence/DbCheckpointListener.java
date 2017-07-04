@@ -29,6 +29,8 @@ public interface DbCheckpointListener {
         public boolean nextSnapshot();
 
         public Map<T2<Integer, Integer>, T2<Integer, Integer>> partitionStatMap();
+
+        public boolean needToSnapshot(String cacheOrGrpName);
     }
 
     /**
