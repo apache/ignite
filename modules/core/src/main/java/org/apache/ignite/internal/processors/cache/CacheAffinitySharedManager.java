@@ -37,7 +37,9 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -537,7 +540,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
 
         forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+            @Override
+            public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 List<List<ClusterNode>> idealAssignment = aff.idealAssignment();
 
                 assert idealAssignment != null;
@@ -755,7 +759,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param c Cache closure.
      * @throws IgniteCheckedException If failed
      */
-    private void forAllRegisteredCaches(IgniteInClosureX<DynamicCacheDescriptor> c) throws IgniteCheckedException {
+    public void forAllRegisteredCaches(IgniteInClosureX<DynamicCacheDescriptor> c) throws IgniteCheckedException {
         assert lateAffAssign;
 
         for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
@@ -860,7 +864,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
         else {
             forAllCaches(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-                @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+                @Override
+                public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                     if (aff.lastVersion().equals(AffinityTopologyVersion.NONE))
                         initAffinity(aff, fut, false);
                 }
@@ -1538,6 +1543,36 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param disco Discovery manager.
+     * @param assignmentIds Assignment node IDs.
+     * @return Assignment nodes.
+     */
+    private List<List<ClusterNode>> nodes(GridDiscoveryManager disco, List<List<UUID>> assignmentIds, AffinityTopologyVersion topVer) {
+        if (assignmentIds != null) {
+            List<List<ClusterNode>> assignment = new ArrayList<>(assignmentIds.size());
+
+            for (int i = 0; i < assignmentIds.size(); i++) {
+                List<UUID> ids = assignmentIds.get(i);
+                List<ClusterNode> nodes = new ArrayList<>(ids.size());
+
+                for (int j = 0; j < ids.size(); j++) {
+                    ClusterNode node = disco.node(topVer, ids.get(j));
+
+                    assert node != null;
+
+                    nodes.add(node);
+                }
+
+                assignment.add(nodes);
+            }
+
+            return assignment;
+        }
+
+        return null;
+    }
+
+    /**
      * @param fut Exchange future.
      * @return Affinity assignment.
      * @throws IgniteCheckedException If failed.
@@ -1566,84 +1601,112 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert affTopVer.topologyVersion() > 0 && !affTopVer.equals(topVer) : "Invalid affinity version " +
                     "[last=" + affTopVer + ", futVer=" + topVer + ", cache=" + cache.name() + ']';
 
-                List<List<ClusterNode>> curAssignment = cache.affinity().assignments(affTopVer);
+                Map<Integer, Map<Integer, List<UUID>>> changes = fut.assignmentChanges();
+
+                Map<Integer, List<UUID>> cacheAssignment = null;
+
                 List<List<ClusterNode>> newAssignment = cache.affinity().idealAssignment();
 
                 assert newAssignment != null;
 
-                GridDhtPartitionTopology top = cache.topology(fut);
+                if (!fut.assignmentChanges().isEmpty() && fut.assignmentChanges().containsKey(cacheDesc.cacheId())) {
+                    // Override with ready assignments.
+                    for (int p = 0; p < newAssignment.size(); p++) {
+                        List<ClusterNode> newNodes = newAssignment.get(p);
 
-                Map<Integer, List<UUID>> cacheAssignment = null;
+                        Map<Integer, List<UUID>> map = changes.get(cacheDesc.cacheId());
 
-                for (int p = 0; p < newAssignment.size(); p++) {
-                    List<ClusterNode> newNodes = newAssignment.get(p);
-                    List<ClusterNode> curNodes = curAssignment.get(p);
+                        List<UUID> uuids = map.get(p);
 
-                    ClusterNode curPrimary = curNodes.size() > 0 ? curNodes.get(0) : null;
-                    ClusterNode newPrimary = newNodes.size() > 0 ? newNodes.get(0) : null;
+                        if (uuids == null)
+                            continue;
 
-                    List<ClusterNode> newNodes0 = null;
+                        List<ClusterNode> nodes = new ArrayList<>(uuids.size());
 
-                    assert newPrimary == null || aliveNodes.contains(newPrimary) : "Invalid new primary [" +
-                        "cache=" + cache.name() +
-                        ", node=" + newPrimary +
-                        ", topVer=" + topVer + ']';
+                        for (UUID uuid : uuids)
+                            nodes.add(fut.discoCache().node(uuid));
 
-                    if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
-                        if (aliveNodes.contains(curPrimary)) {
-                            GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
+                        if (!nodes.equals(newNodes)) {
+                            if (cacheAssignment == null)
+                                cacheAssignment = new HashMap<>();
 
-                            if (state != GridDhtPartitionState.OWNING) {
-                                newNodes0 = latePrimaryAssignment(cache.affinity(),
-                                    p,
-                                    curPrimary,
-                                    newNodes,
-                                    waitRebalanceInfo);
-                            }
+                            cacheAssignment.put(p, toIds0(nodes));
                         }
-                        else {
-                            GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
+                    }
+                } else {
+                    List<List<ClusterNode>> curAssignment = cache.affinity().assignments(affTopVer);
 
-                            if (state != GridDhtPartitionState.OWNING) {
-                                // Prefer backup nodes to minimize rebalance traffic in case of leaving nodes.
-                                for (int i = 1; i < curNodes.size(); i++) {
-                                    ClusterNode curNode = curNodes.get(i);
+                    GridDhtPartitionTopology top = cache.topology(fut);
 
-                                    if (top.partitionState(curNode.id(), p) == GridDhtPartitionState.OWNING) {
-                                        newNodes0 = latePrimaryAssignment(cache.affinity(),
+                    for (int p = 0; p < newAssignment.size(); p++) {
+                        List<ClusterNode> newNodes = newAssignment.get(p);
+                        List<ClusterNode> curNodes = curAssignment.get(p);
+
+                        ClusterNode curPrimary = curNodes.size() > 0 ? curNodes.get(0) : null;
+                        ClusterNode newPrimary = newNodes.size() > 0 ? newNodes.get(0) : null;
+
+                        List<ClusterNode> newNodes0 = null;
+
+                        assert newPrimary == null || aliveNodes.contains(newPrimary) : "Invalid new primary [" +
+                                "cache=" + cache.name() +
+                                ", node=" + newPrimary +
+                                ", topVer=" + topVer + ']';
+
+                        if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
+                            if (aliveNodes.contains(curPrimary)) {
+                                GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
+
+                                if (state != GridDhtPartitionState.OWNING) {
+                                    newNodes0 = latePrimaryAssignment(cache.affinity(),
                                             p,
-                                            curNode,
+                                            curPrimary,
                                             newNodes,
                                             waitRebalanceInfo);
-
-                                        break;
-                                    }
                                 }
+                            } else {
+                                GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
-                                if (newNodes0 == null) {
-                                    List<ClusterNode> owners = top.owners(p);
+                                if (state != GridDhtPartitionState.OWNING) {
+                                    // Prefer backup nodes to minimize rebalance traffic in case of leaving nodes.
+                                    for (int i = 1; i < curNodes.size(); i++) {
+                                        ClusterNode curNode = curNodes.get(i);
 
-                                    for (ClusterNode owner : owners) {
-                                        if (aliveNodes.contains(owner)) {
+                                        if (top.partitionState(curNode.id(), p) == GridDhtPartitionState.OWNING) {
                                             newNodes0 = latePrimaryAssignment(cache.affinity(),
-                                                p,
-                                                owner,
-                                                newNodes,
-                                                waitRebalanceInfo);
+                                                    p,
+                                                    curNode,
+                                                    newNodes,
+                                                    waitRebalanceInfo);
 
                                             break;
+                                        }
+                                    }
+
+                                    if (newNodes0 == null) {
+                                        List<ClusterNode> owners = top.owners(p);
+
+                                        for (ClusterNode owner : owners) {
+                                            if (aliveNodes.contains(owner)) {
+                                                newNodes0 = latePrimaryAssignment(cache.affinity(),
+                                                        p,
+                                                        owner,
+                                                        newNodes,
+                                                        waitRebalanceInfo);
+
+                                                break;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    if (newNodes0 != null) {
-                        if (cacheAssignment == null)
-                            cacheAssignment = new HashMap<>();
+                        if (newNodes0 != null) {
+                            if (cacheAssignment == null)
+                                cacheAssignment = new HashMap<>();
 
-                        cacheAssignment.put(p, toIds0(newNodes0));
+                            cacheAssignment.put(p, toIds0(newNodes0));
+                        }
                     }
                 }
 
@@ -1725,6 +1788,42 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         return nodes;
     }
+
+    /**
+     * @param exchFut Exchange future.
+     */
+    public Map<Integer, Map<Integer, List<UUID>>> readyAssignmentChanges(final GridDhtPartitionsExchangeFuture exchFut)
+            throws IgniteCheckedException {
+
+        final Map<Integer, Map<Integer, List<UUID>>> res = new HashMap<>();
+
+        forAllRegisteredCaches(new CIX1<DynamicCacheDescriptor>() {
+            @Override public void applyx(DynamicCacheDescriptor dynamicCacheDesc) throws IgniteCheckedException {
+                CacheHolder cache = cache(exchFut, dynamicCacheDesc);
+
+                AffinityAssignment affAssignment = cache.affinity().cachedAffinity(exchFut.topologyVersion());
+
+                List<List<ClusterNode>> assignment = affAssignment.assignment();
+                List<List<ClusterNode>> idealAssignment = affAssignment.idealAssignment();
+
+                for (int p = 0; p < cache.affinity().partitions(); p++) {
+                    List<ClusterNode> nodes = assignment.get(p);
+
+                    if (!nodes.equals(idealAssignment.get(p))) {
+                        Map<Integer, List<UUID>> map = res.get(cache.cacheId());
+
+                        if (map == null)
+                            res.put(cache.cacheId(), (map = U.newHashMap(nodes.size())));
+
+                        map.put(p, F.nodeIdsCopy(nodes));
+                    }
+                }
+            }
+        });
+
+        return res;
+    }
+
     /**
      *
      */

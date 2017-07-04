@@ -187,6 +187,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Messages received from new coordinator. */
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
 
+    /** Messages received when coordinator fails to finish exchange with {@link GridDhtFinishExchangeMessage}. */
+    private final Map<Integer, Map<Integer, List<UUID>>> assignmentChanges = new ConcurrentHashMap8<>();
+
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     @GridToStringInclude
@@ -356,6 +359,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public void affinityChangeMessage(CacheAffinityChangeMessage affChangeMsg) {
         this.affChangeMsg = affChangeMsg;
+    }
+
+    /**
+     * Assignment changes.
+     * @return Changes.
+     */
+    public Map<Integer, Map<Integer, List<UUID>>> assignmentChanges() {
+        return assignmentChanges;
     }
 
     /** {@inheritDoc} */
@@ -1163,12 +1174,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         GridCacheVersion last = lastVer.get();
 
         GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(
-            nodes,
-            exchangeId(),
-            last != null ? last : cctx.versions().last(),
-            partHistSuppliers,
-            partsToReload,
-            compress);
+                nodes,
+                exchangeId(),
+                last != null ? last : cctx.versions().last(),
+                partHistSuppliers,
+                partsToReload,
+                compress);
 
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
             m.setExceptionsMap(changeGlobalStateExceptions);
@@ -1462,6 +1473,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         crd = null;
         partReleaseFut = null;
         changeGlobalStateE = null;
+        assignmentChanges.clear();
     }
 
     /**
@@ -1556,6 +1568,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 singleMsgs.put(node, msg);
         }
 
+        if (msg.assignmentChange() != null &&
+                discoEvt.type() == EventType.EVT_NODE_LEFT || discoEvt.type() == EventType.EVT_NODE_FAILED)
+            assignmentChanges.putAll(msg.assignmentChange()); // TODO validate equality.
+
         if (updateSingleMap)
             updatePartitionSingleMap(node, msg);
 
@@ -1590,7 +1606,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
 
             // todo exclude dead nodes.
-            cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg, GridIoPolicy.SYSTEM_POOL, null);
+            cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg,
+                    GridIoPolicy.SYSTEM_POOL, null);
 
             onFinishExchangeMessage(cctx.localNode(), msg);
         }
@@ -2116,161 +2133,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * Finishes exchange on nodes not receiving {@link GridDhtFinishExchangeMessage}.
-     */
-    public void finishStaleExchange(ClusterNode node, boolean skipCrdChange, CI1<IgniteInternalFuture<?>> clo) {
-        try {
-            if (discoEvt.type() != EVT_NODE_LEFT && discoEvt.type() != EVT_NODE_FAILED || crd == null)
-                return;
-
-            ClusterNode crd0 = crd;
-
-            if (!skipCrdChange)
-                synchronized (mux) {
-                    discoCache.updateAlives(node);
-
-                    // New coordinator must resend assignments, if any.
-                    boolean isCrdLeft = crd.equals(node);
-
-                    if (!isCrdLeft)
-                        return;
-
-                    boolean rmv = srvNodes.remove(node);
-
-                    assert rmv;
-
-                    remaining.remove(node.id());
-
-                    crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
-
-                    crd0 = crd;
-                }
-
-            if (crd0 == null || !crd0.isLocal())
-                return;
-        } finally {
-            if (clo != null)
-                clo.apply(null);
-        }
-
-        // Prevent blocking discovery thread.
-        IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-            @Override public void run() {
-                exchLog.info("start finishStaleExchange [node=" + cctx.localNode() + ']');
-
-                // Exchange can be finished on new coordinator, but some nodes still might wait for completion.
-                List<GridDhtReadyAssignmentsFetchFuture> futs = new LinkedList<>();
-
-                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                    GridDhtReadyAssignmentsFetchFuture fut = new GridDhtReadyAssignmentsFetchFuture(cctx, cacheCtx.name(),
-                            topologyVersion(), discoCache());
-
-                    futs.add(fut);
-
-                    fut.init();
-                }
-
-                Map<Integer, Map<Integer, List<UUID>>> assignmentChange = new HashMap<>();
-
-                Set<ClusterNode> nodesToFix = new HashSet<>(); // Nodes with stale exchange.
-
-                // TODO how to handle race when no assignments were done yet?
-                for (GridDhtReadyAssignmentsFetchFuture fut : futs) {
-                    assert topologyVersion() == fut.key().get2();
-
-                    try {
-                        Map<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> data = fut.get();
-
-                        GridCacheContext<?, ?> ctx = cctx.cacheContext(fut.key().get1());
-
-                        // Expecting same assignment from all nodes.
-                        for (Map.Entry<UUID, AtomicReference<GridDhtAffinityAssignmentResponse>> entry : data.entrySet()) {
-                            GridDhtAffinityAssignmentResponse resp = entry.getValue().get();
-
-                            assert resp != null;
-
-                            Map<Integer, List<UUID>> change = resp.assignmentChange();
-
-                            if (change == null) // Node hadn't finished exchange yet.
-                                nodesToFix.add(ctx.discovery().node(entry.getKey()));
-                            else {
-                                if (!assignmentChange.containsKey(ctx.cacheId()))
-                                    assignmentChange.put(ctx.cacheId(), change);
-                                else
-                                    assert assignmentChange.get(ctx.cacheId()).equals(change);
-                            }
-                        }
-                    } catch (IgniteCheckedException e) {
-                        log.error("Unable to fetch ready assignment for [cacheId=" + fut.key().get1() +
-                                ", topVer=" + fut.key().get2() + ", exchId=" + exchangeId() + ']');
-
-                        throw new IgniteException(e);
-                    }
-                }
-
-                // New coordinator is the only node with completed exchange, use local assignment for all other nodes.
-                if (isDone() && assignmentChange.isEmpty()) {
-                    for (GridCacheContext ctx : cctx.cacheContexts()) {
-                        AffinityAssignment affAssignment = ctx.affinity().assignment(topologyVersion());
-                        List<List<ClusterNode>> assignment = affAssignment.assignment();
-                        List<List<ClusterNode>> idealAssignment = affAssignment.idealAssignment();
-
-                        for (int p = 0; p < ctx.affinity().partitions(); p++) {
-                            List<ClusterNode> a1 = assignment.get(p);
-                            List<ClusterNode> a2 = idealAssignment.get(p);
-
-                            if (!a1.equals(a2)) {
-                                Map<Integer, List<UUID>> map = assignmentChange.get(ctx.cacheId());
-
-                                if (map == null)
-                                    assignmentChange.put(ctx.cacheId(), map = U.newHashMap(a1.size()));
-
-                                map.put(p, F.nodeIdsCopy(a1));
-                            }
-                        }
-                    }
-                    // TODO validate same assignment from all nodes.
-                }
-
-                if (!isDone() || !nodesToFix.isEmpty()) {
-                    // TODO seems incorrect, we have to store and use partition map received on exchange finish msg.
-                    GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
-
-                    GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
-
-                    try {
-                        cctx.io().safeSend(nodesToFix, msg, SYSTEM_POOL, null);
-                    } catch (IgniteCheckedException e) {
-                        // No-op.
-                    }
-
-                    if (!isDone()) {
-                        // TODO caches are not started, how to start properly.
-                        try {
-                            exchLog.info("initCoordinatorCaches [exchId=" + exchangeId() + ']');
-
-                            cctx.affinity().initCoordinatorCaches(GridDhtPartitionsExchangeFuture.this);
-                        } catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-
-                        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
-                                crd.isLocal(),
-                                msg);
-
-                        onDone(topologyVersion());
-                    }
-                }
-
-                exchLog.info("finish finishStaleExchange [node=" + cctx.localNode() + ']');
-            }
-        });
-
-        if (clo != null)
-            fut.listen(clo);
-    }
-
-    /**
      * Node left callback, processed from the same thread as {@link #onFinishExchangeMessage}.
      *
      * @param node Left node.
@@ -2288,23 +2150,33 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         return;
 
                     try {
-                        final boolean crdChanged;
+                        boolean crdChanged = false;
+                        boolean allReceived = false;
+                        Set<UUID> reqFrom = null;
 
-                        final ClusterNode crd0;
+                        ClusterNode crd0;
 
                         discoCache.updateAlives(node);
-
-                        final boolean rmvd;
 
                         synchronized (mux) {
                             if (!srvNodes.remove(node))
                                 return;
 
-                            rmvd = remaining.remove(node.id());
+                            boolean rmvd = remaining.remove(node.id());
 
-                            crdChanged = node.equals(crd);
+                            if (node.equals(crd)) {
+                                crdChanged = true;
 
-                            if (crdChanged) crd = !srvNodes.isEmpty() ? srvNodes.get(0) : null;
+                                crd = !srvNodes.isEmpty() ? srvNodes.get(0) : null;
+                            }
+
+                            if (crd != null && crd.isLocal()) {
+                                if (rmvd)
+                                    allReceived = remaining.isEmpty();
+
+                                if (crdChanged && !remaining.isEmpty())
+                                    reqFrom = new HashSet<>(remaining);
+                            }
 
                             crd0 = crd;
                         }
@@ -2329,54 +2201,35 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         if (crd0.isLocal()) {
-                            finishStaleExchange(node, true, new CI1<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> igniteInternalFut) {
-                                    if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
-                                        changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
+                            if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
+                                changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
 
-                                    if (isDone())
-                                        return;
+                            if (allReceived) {
+                                onAllReceived();
 
-                                    boolean allReceived = false;
-                                    Set<UUID> reqFrom = null;
+                                return;
+                            }
 
-                                    if (crd != null && crd.isLocal()) {
-                                        if (rmvd)
-                                            allReceived = remaining.isEmpty();
+                            if (crdChanged && reqFrom != null) {
+                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
 
-                                        if (crdChanged && !remaining.isEmpty())
-                                            reqFrom = new HashSet<>(remaining);
+                                for (UUID nodeId : reqFrom) {
+                                    try {
+                                        // It is possible that some nodes finished exchange with previous coordinator.
+                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
+                                    } catch (ClusterTopologyCheckedException e) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
+                                                    ", exchId=" + exchId + ']');
+                                    } catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
                                     }
-
-                                    if (allReceived) {
-                                        onAllReceived();
-
-                                        return;
-                                    }
-
-                                    if (crdChanged && reqFrom != null) {
-                                        GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
-
-                                        for (UUID nodeId : reqFrom) {
-                                            try {
-                                                // It is possible that some nodes finished exchange with previous coordinator.
-                                                cctx.io().send(nodeId, req, SYSTEM_POOL);
-                                            } catch (ClusterTopologyCheckedException e) {
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Node left during partition exchange [nodeId=" + nodeId +
-                                                            ", exchId=" + exchId + ']');
-                                            } catch (IgniteCheckedException e) {
-                                                U.error(log, "Failed to request partitions from node: " + nodeId, e);
-                                            }
-                                        }
-                                    }
-
-                                    for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
-                                        processMessage(m.getKey(), m.getValue());
                                 }
-                            });
-                        }
-                        else {
+                            }
+
+                            for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
+                                processMessage(m.getKey(), m.getValue());
+                        } else {
                             if (crdChanged) {
                                 sendPartitions(crd0);
 

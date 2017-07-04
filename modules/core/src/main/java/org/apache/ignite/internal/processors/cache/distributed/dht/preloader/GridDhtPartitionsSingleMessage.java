@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.io.Externalizable;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -87,6 +90,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** */
     @GridDirectTransient
     private transient boolean compress;
+
+    /** */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<Integer, Map<Integer, List<UUID>>> assignmentChange;
+
+    /** Serialized exchange id. */
+    private byte[] serializedAssignmentChange;
 
     /**
      * Required by {@link Externalizable}.
@@ -227,6 +238,20 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return ex;
     }
 
+    /**
+     * @return Assignment change.
+     */
+    public Map<Integer, Map<Integer, List<UUID>>> assignmentChange() {
+        return assignmentChange;
+    }
+
+    /**
+     * @param assignmentChange New assignment change.
+     */
+    public void assignmentChange(Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
+        this.assignmentChange = assignmentChange;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -235,13 +260,15 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         boolean marshal = (parts != null && partsBytes == null) ||
             (partCntrs != null && partCntrsBytes == null) ||
             (partHistCntrs != null && partHistCntrsBytes == null) ||
-            (ex != null && exBytes == null);
+            (ex != null && exBytes == null) ||
+            (assignmentChange != null && serializedAssignmentChange == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
             byte[] partHistCntrsBytes0 = null;
             byte[] exBytes0 = null;
+            byte[] serializedAssignmentChange0 = null;
 
             if (parts != null && partsBytes == null)
                 partsBytes0 = U.marshal(ctx, parts);
@@ -255,6 +282,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (ex != null && exBytes == null)
                 exBytes0 = U.marshal(ctx, ex);
 
+            if (assignmentChange != null && serializedAssignmentChange == null)
+                serializedAssignmentChange0 = U.marshal(ctx, assignmentChange);
+
             if (compress) {
                 assert !compressed();
 
@@ -263,11 +293,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
                     byte[] partHistCntrsBytesZip = U.zip(partHistCntrsBytes0);
                     byte[] exBytesZip = U.zip(exBytes0);
+                    byte[] serializedAssignmentChangeZip = U.zip(serializedAssignmentChange0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
                     partHistCntrsBytes0 = partHistCntrsBytesZip;
                     exBytes0 = exBytesZip;
+                    serializedAssignmentChange0 = serializedAssignmentChangeZip;
 
                     compressed(true);
                 }
@@ -280,6 +312,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partCntrsBytes = partCntrsBytes0;
             partHistCntrsBytes = partHistCntrsBytes0;
             exBytes = exBytes0;
+            serializedAssignmentChange = serializedAssignmentChange0;
         }
     }
 
@@ -313,6 +346,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 ex = U.unmarshalZip(ctx.marshaller(), exBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
             else
                 ex = U.unmarshal(ctx, exBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
+
+        if (serializedAssignmentChange != null && assignmentChange == null) {
+            if (compressed())
+                assignmentChange = U.unmarshalZip(ctx.marshaller(), serializedAssignmentChange, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            else
+                assignmentChange = U.unmarshal(ctx, serializedAssignmentChange, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
         if (dupPartsData != null) {
@@ -387,6 +427,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 writer.incrementState();
 
+            case 12:
+                if (!writer.writeByteArray("serializedAssignmentChange", serializedAssignmentChange))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -450,7 +496,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     return false;
 
                 reader.incrementState();
+            case 12:
+                serializedAssignmentChange = reader.readByteArray("serializedAssignmentChange");
 
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);
@@ -465,7 +517,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */

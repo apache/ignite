@@ -221,13 +221,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if (f != initFut)
                                 f.onNodeLeft(n);
                         }
-
-                        if (exchFuts.size() > 2) {
-                            GridDhtPartitionsExchangeFuture topFut = exchFuts.get(0);
-
-                            if (topFut.isDone())
-                                topFut.finishStaleExchange(n, false, null);
-                        }
                     }
 
                     assert evt.type() != EVT_NODE_JOINED || n.order() > loc.order() :
@@ -992,9 +985,26 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) {
         GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(node,
-            id,
-            cctx.kernalContext().clientNode(),
-            false);
+                id,
+                cctx.kernalContext().clientNode(),
+                false);
+
+        if (id != null) {
+            GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(id, null, null, null, null);
+
+            assert exchFut != null;
+
+            if (exchFut.isDone()) {
+                // Collect ready assignments.
+                try {
+                    Map<Integer, Map<Integer, List<UUID>>> map = cctx.affinity().readyAssignmentChanges(exchFut);
+
+                    m.assignmentChange(map);
+                } catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to collect ready assignments [node=" + node + ", exchId=" + id + ']', e);
+                }
+            }
+        }
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
