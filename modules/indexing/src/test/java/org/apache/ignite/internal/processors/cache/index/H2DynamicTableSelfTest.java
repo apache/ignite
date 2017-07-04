@@ -275,8 +275,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that it's possible to create a table with only {@code PRIMARY KEY} columns and manipulate data in it.
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateTableNoValue() throws Exception {
-        executeDdl("CREATE TABLE person (id int, name varchar, primary key (id, name))");
+        execute("CREATE TABLE person (id int, name varchar, primary key (id, name))");
 
         queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into person (name, id) values " +
             "('Sam', 1)"), true).getAll();
@@ -290,6 +291,42 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         assertEquals(Collections.emptyList(),
             queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("SELECT name, id from Person"), true)
                 .getAll());
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @SuppressWarnings("ConstantConditions")
+            @Override public Object call() throws Exception {
+                execute("INSERT INTO person (id, _val) values (1, true)");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "INSERT or MERGE into value column is forbidden for key only tables");
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @SuppressWarnings("ConstantConditions")
+            @Override public Object call() throws Exception {
+                execute("MERGE INTO person (id, _val) values (1, true)");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "INSERT or MERGE into value column is forbidden for key only tables");
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @SuppressWarnings("ConstantConditions")
+            @Override public Object call() throws Exception {
+                execute("UPDATE person set _val = true");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "UPDATE is forbidden for key only tables.");
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @SuppressWarnings("ConstantConditions")
+            @Override public Object call() throws Exception {
+                execute("SELECT _val from Person");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "SELECT of value column is forbidden for key only tables.");
     }
 
     /**

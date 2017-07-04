@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.lang.reflect.Constructor;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -57,6 +54,7 @@ import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.isNoValueSqlCache;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
 
 /**
@@ -118,7 +116,7 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query(), desc);
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
         }
@@ -139,7 +137,7 @@ public final class UpdatePlanBuilder {
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query(), desc);
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
@@ -182,6 +180,10 @@ public final class UpdatePlanBuilder {
             }
 
             if (desc.isValueColumn(colId)) {
+                if (isNoValueSqlCache(cctx))
+                    throw new IgniteSQLException("INSERT or MERGE into value column is forbidden for key only tables.",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                 valColIdx = i;
                 continue;
             }
@@ -245,6 +247,12 @@ public final class UpdatePlanBuilder {
 
         GridH2Table gridTbl = tbl.dataTable();
 
+        boolean noValue = isNoValueSqlCache(gridTbl.cache());
+
+        if (mode == UpdateMode.UPDATE && noValue)
+            throw new IgniteSQLException("UPDATE is forbidden for key only tables.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
         if (desc == null)
@@ -295,9 +303,9 @@ public final class UpdatePlanBuilder {
                 return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, sel.getSQL());
             }
             else {
-                sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
+                sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, noValue, errKeysPos);
 
-                return UpdatePlan.forDelete(gridTbl, sel.getSQL());
+                return UpdatePlan.forDelete(gridTbl, noValue, sel.getSQL());
             }
         }
     }
@@ -331,24 +339,14 @@ public final class UpdatePlanBuilder {
                 return new PlainValueSupplier(colIdx);
             else if (isSqlType) {
                 // We don't have primitive value given, let's check if it's a table that does not have value columns.
-                DynamicCacheDescriptor cacheDesc = cctx.grid().context().cache().cacheDescriptor(cctx.name());
+                if (QueryUtils.isNoValueSqlCache(cctx)) {
+                    assert cls == Boolean.class;
 
-                if (cacheDesc.sql()) {
-                    Collection<QueryEntity> entities = cacheDesc.schema().entities();
-
-                    assert entities.size() == 1;
-
-                    QueryEntity entity = entities.iterator().next();
-
-                    if (entity.getFields().size() == entity.getKeyFields().size()) {
-                        assert cls == Boolean.class;
-
-                        return new KeyValueSupplier() {
-                            @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                                return false;
-                            }
-                        };
-                    }
+                    return new KeyValueSupplier() {
+                        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                            return false;
+                        }
+                    };
                 }
 
                 // Non constructable keys and values (SQL types) must be present in the query explicitly.

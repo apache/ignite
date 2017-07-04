@@ -1129,6 +1129,29 @@ public class QueryUtils {
     }
 
     /**
+     * Check if given cache is created via SQL and its table has key only fields.
+     * @param cctx Cache context.
+     * @return {@code true} if given cache is created via SQL and its table has key only fields, {@code false} otherwise.
+     */
+    public static boolean isNoValueSqlCache(GridCacheContext<?, ?> cctx) {
+        if (cctx == null)
+            return false;
+
+        DynamicCacheDescriptor cacheDesc = cctx.grid().context().cache().cacheDescriptor(cctx.name());
+
+        if (!cacheDesc.sql())
+            return false;
+
+        Collection<QueryEntity> entities = cacheDesc.schema().entities();
+
+        assert entities.size() == 1;
+
+        QueryEntity entity = entities.iterator().next();
+
+        return (entity.getFields().size() == entity.getKeyFields().size());
+    }
+
+    /**
      * Construct cache name for table.
      *
      * @param schemaName Schema name.

@@ -32,9 +32,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
@@ -572,8 +574,23 @@ public class GridSqlQueryParser {
 
         ArrayList<Expression> expressions = select.getExpressions();
 
-        for (int i = 0; i < expressions.size(); i++)
-            res.addColumn(parseExpression(expressions.get(i), true), i < select.getColumnCount());
+        for (int i = 0; i < expressions.size(); i++) {
+            GridSqlAst expr = parseExpression(expressions.get(i), true);
+
+            if (expr instanceof GridSqlColumn &&
+                QueryUtils.VAL_FIELD_NAME.equals(((GridSqlColumn) expr).columnName()) &&
+                ((GridSqlColumn) expr).column().getTable() instanceof GridH2Table) {
+                GridH2Table tbl = (GridH2Table)((GridSqlColumn) expr).column().getTable();
+
+                GridCacheContext cctx = tbl.cache();
+
+                if (QueryUtils.isNoValueSqlCache(cctx))
+                    throw new IgniteSQLException("SELECT of value column is forbidden for key only tables.",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
+            res.addColumn(expr, i < select.getColumnCount());
+        }
 
         int[] grpIdx = GROUP_INDEXES.get(select);
 

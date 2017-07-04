@@ -64,11 +64,10 @@ public final class DmlAstUtils {
      * @param cols Columns to insert values into.
      * @param rows Rows to create pseudo-SELECT upon.
      * @param subQry Subquery to use rather than rows.
-     * @param desc Row descriptor.
      * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
      */
     public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
-        GridSqlQuery subQry, GridH2RowDescriptor desc) {
+        GridSqlQuery subQry) {
         if (!F.isEmpty(rows)) {
             assert !F.isEmpty(cols);
 
@@ -120,10 +119,11 @@ public final class DmlAstUtils {
      * Generate SQL SELECT based on DELETE's WHERE, LIMIT, etc.
      *
      * @param del Delete statement.
-     * @param keysParamIdx Index for .
+     * @param noValue Whether affected table does not have user defined value columns.
+     * @param keysParamIdx Index for key column.
      * @return SELECT statement.
      */
-    public static GridSqlSelect selectForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx) {
+    public static GridSqlSelect selectForDelete(GridSqlDelete del, boolean noValue, @Nullable Integer keysParamIdx) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(del.from());
@@ -141,17 +141,16 @@ public final class DmlAstUtils {
         assert gridTbl != null : "Failed to determine target grid table for DELETE";
 
         Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
-
-        Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
-
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
-
-        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName());
-        valCol.resultType(GridSqlType.fromColumn(h2ValCol));
-
         mapQry.addColumn(keyCol, true);
-        mapQry.addColumn(valCol, true);
+
+        if (!noValue) {
+            Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
+            GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName());
+            valCol.resultType(GridSqlType.fromColumn(h2ValCol));
+            mapQry.addColumn(valCol, true);
+        }
 
         GridSqlElement where = del.where();
         if (keysParamIdx != null)
