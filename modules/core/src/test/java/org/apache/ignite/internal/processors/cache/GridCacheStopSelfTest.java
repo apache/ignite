@@ -140,57 +140,55 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            final int gridsCnt = 3;
-
             for (int i = 0; i < 5; i++) {
                 log.info("Iteration: " + i);
 
-                startGridsMultiThreaded(1, gridsCnt);
+                startGridsMultiThreaded(1, 3);
 
-//                final AtomicInteger threadIdx = new AtomicInteger(0);
-//
-//                final IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-//                    @Override public Void call() throws Exception {
-//                        int idx = threadIdx.getAndIncrement();
-//
-//                        IgniteKernal node = (IgniteKernal)ignite(idx % 3 + 1);
-//
-//                        IgniteCache<Integer, Integer> cache = node.cache(null);
-//
-//                        while (true) {
-//                            try {
-//                                cacheOperations(node, cache);
-//                            }
-//                            catch (Exception e) {
-//                                if (node.isStopping())
-//                                    break;
-//                            }
-//                        }
-//
-//                        return null;
-//                    }
-//                }, 20, "tx-node-stop-thread");
-//
-//                IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-//                    @Override public Void call() throws Exception {
-//                        IgniteKernal node = (IgniteKernal)ignite(0);
-//
-//                        IgniteCache<Integer, Integer> cache = node.cache(null);
-//
-//                        while (!fut1.isDone()) {
-//                            try {
-//                                cacheOperations(node, cache);
-//                            }
-//                            catch (Exception ignore) {
-//                                // No-op.
-//                            }
-//                        }
-//
-//                        return null;
-//                    }
-//                }, 2, "tx-thread");
-//
-//                Thread.sleep(3000);
+                final AtomicInteger threadIdx = new AtomicInteger(0);
+
+                final IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        int idx = threadIdx.getAndIncrement();
+
+                        IgniteKernal node = (IgniteKernal)ignite(idx % 3 + 1);
+
+                        IgniteCache<Integer, Integer> cache = node.cache(null);
+
+                        while (true) {
+                            try {
+                                cacheOperations(node, cache);
+                            }
+                            catch (Exception e) {
+                                if (node.isStopping())
+                                    break;
+                            }
+                        }
+
+                        return null;
+                    }
+                }, 20, "tx-node-stop-thread");
+
+                IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        IgniteKernal node = (IgniteKernal)ignite(0);
+
+                        IgniteCache<Integer, Integer> cache = node.cache(null);
+
+                        while (!fut1.isDone()) {
+                            try {
+                                cacheOperations(node, cache);
+                            }
+                            catch (Exception ignore) {
+                                // No-op.
+                            }
+                        }
+
+                        return null;
+                    }
+                }, 2, "tx-thread");
+
+                Thread.sleep(3000);
 
                 final AtomicInteger nodeIdx = new AtomicInteger(1);
 
@@ -204,9 +202,10 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, gridsCnt, "stop-node");
+                }, 3, "stop-node");
 
-                awaitPartitionMapExchange();
+                fut1.get();
+                fut2.get();
             }
         }
         finally {
