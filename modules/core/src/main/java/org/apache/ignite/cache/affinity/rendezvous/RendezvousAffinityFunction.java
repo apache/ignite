@@ -563,7 +563,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         log.info("#### NODES:" + nodes + " nodes\n");
 
         for (List<Integer> byNode : byNodes) {
-
             log.info("## Node " + node++ + ":");
 
             nr = 0;
