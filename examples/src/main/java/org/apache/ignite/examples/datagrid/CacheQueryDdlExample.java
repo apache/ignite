@@ -47,6 +47,7 @@ public class CacheQueryDdlExample {
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
             orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
+            orgCacheCfg.getQueryEntities().iterator().next().setKeyFieldName("id");
 
             ignite.addCacheConfiguration(new CacheConfiguration<>("TEMPLATE_CACHE")
                 .setCacheMode(CacheMode.REPLICATED)
@@ -61,7 +62,7 @@ public class CacheQueryDdlExample {
                 execute(ignite, "CREATE TABLE Person (id int primary key, name varchar, surname varchar, age int, " +
                     "orgId int, city varchar) WITH \"template=TEMPLATE_CACHE\"");
 
-                // ...and another one based
+                // ...and another one based on explicit params – note there's no template named "partitioned"
                 execute(ignite, "CREATE TABLE City (name varchar primary key, region varchar, population int) " +
                     "WITH \"template=partitioned,atomicity=atomic,backups=3\"");
 
@@ -69,10 +70,13 @@ public class CacheQueryDdlExample {
 
                 print("Tables have been created.");
 
-                // Now let's put some data into tables
-                insert(ignite, "insert into Organization (_key, id, name) values (?, ?, ?)", ORG_CACHE,
-                    new Object[] {1L, 1L, "ASF"},
-                    new Object[] {2L, 2L, "Eclipse"});
+                // Now let's put some data into tables.
+
+                // For Organization, we have to specify schema (ORG_CACHE) as this table
+                // does not reside in common PUBLIC schema like dynamic tables do.
+                insert(ignite, "insert into Organization (id, name) values (?, ?)", ORG_CACHE,
+                    new Object[] {1L, "ASF"},
+                    new Object[] {2L, "Eclipse"});
 
                 insert(ignite,
                     "insert into Person (id, orgId, name, surname, age, city) values (?, ?, ?, ?, ?, ?)",
