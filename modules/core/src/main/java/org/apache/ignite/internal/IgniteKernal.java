@@ -2465,7 +2465,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             for (CacheConfiguration c : cacheCfgs) {
                 String cacheName = U.maskName(c.getName());
 
-                String memPlcName = U.maskName(c.getMemoryPolicyName());
+                String memPlcName = c.getMemoryPolicyName();
+
+                if (CU.isSystemCache(cacheName))
+                    memPlcName = "sysMemPlc";
+                else if (memPlcName == null && cfg.getMemoryConfiguration() != null)
+                    memPlcName = cfg.getMemoryConfiguration().getDefaultMemoryPolicyName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
                     memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
@@ -2481,10 +2486,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 for (String s : e.getValue())
                     sb.a("'").a(s).a("', ");
 
-                sb.d(sb.length() - 2, sb.length()).a("]");
+                sb.d(sb.length() - 2, sb.length()).a("], ");
             }
 
-            U.log(log, "Configured caches [" + sb.toString() + ']');
+            U.log(log, "Configured caches [" + sb.d(sb.length() - 2, sb.length()).toString() + ']');
         }
     }
 

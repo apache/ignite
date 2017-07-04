@@ -431,8 +431,10 @@ public class GridAffinityAssignmentCache {
 
     /**
      * Dumps debug information.
+     *
+     * @return {@code True} if there are pending futures.
      */
-    public void dumpDebugInfo() {
+    public boolean dumpDebugInfo() {
         if (!readyFuts.isEmpty()) {
             U.warn(log, "First 3 pending affinity ready futures [grp=" + cacheOrGrpName +
                 ", total=" + readyFuts.size() +
@@ -446,7 +448,11 @@ public class GridAffinityAssignmentCache {
                 if (++cnt == 3)
                     break;
             }
+
+            return true;
         }
+
+        return false;
     }
 
     /**
