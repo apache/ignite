@@ -821,7 +821,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Map<PageMemoryEx, Collection<Integer>> destroyed = new HashMap<>();
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
-            PageMemoryEx pageMem = (PageMemoryEx)tup.get1().memoryPolicy().pageMemory();
+            CacheGroupContext gctx = tup.get1();
+
+            snapshotMgr.onCacheGroupStop(gctx);
+
+            PageMemoryEx pageMem = (PageMemoryEx)gctx.memoryPolicy().pageMemory();
 
             Collection<Integer> grpIds = destroyed.get(pageMem);
 

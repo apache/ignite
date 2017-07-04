@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -105,6 +106,13 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
      * @param cctx Cctx.
      */
     public void onCacheStop(GridCacheContext cctx) {
+        // No-op.
+    }
+
+    /**
+     * @param gctx Cctx.
+     */
+    public void onCacheGroupStop(CacheGroupContext gctx) {
         // No-op.
     }
 
