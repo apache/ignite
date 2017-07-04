@@ -1950,7 +1950,7 @@ public class IgnitionEx {
             if (myCfg.getUserAttributes() == null)
                 myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
-            if (myCfg.getMBeanServer() == null)
+            if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
                 myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
             Marshaller marsh = myCfg.getMarshaller();
@@ -2430,6 +2430,11 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
+            if(U.IGNITE_MBEANS_DISABLED)
+                return;
+
+            assert srv != null;
+
             synchronized (mbeans) {
                 GridMBeanServerData data = mbeans.get(srv);
 
@@ -2480,6 +2485,9 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
+            if(U.IGNITE_MBEANS_DISABLED)
+                return;
+
             synchronized (mbeans) {
                 Iterator<Entry<MBeanServer, GridMBeanServerData>> iter = mbeans.entrySet().iterator();
 
