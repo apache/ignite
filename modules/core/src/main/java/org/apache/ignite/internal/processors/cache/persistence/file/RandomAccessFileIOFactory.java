@@ -25,6 +25,9 @@ import java.io.RandomAccessFile;
  * File I/O factory which provides RandomAccessFileIO implementation of FileIO.
  */
 public class RandomAccessFileIOFactory implements FileIOFactory {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
         return create(file, "rw");

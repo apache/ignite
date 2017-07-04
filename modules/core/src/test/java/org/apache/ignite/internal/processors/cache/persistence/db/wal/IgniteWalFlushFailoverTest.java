@@ -158,6 +158,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      * Create File I/O which fails after second attempt to write to File
      */
     private static class FailingFileIOFactory implements FileIOFactory {
+        private static final long serialVersionUID = 0L;
 
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
