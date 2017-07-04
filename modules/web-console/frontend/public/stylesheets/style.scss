@@ -45,10 +45,6 @@ hr {
     box-shadow: 1px 0 0 0 $gray-lighter;
 }
 
-.theme-line header {
-    background-color: $ignite-background-color;
-}
-
 .theme-line .docs-header h1 {
     color: $ignite-header-color;
     margin-top: 0;
@@ -64,66 +60,7 @@ hr {
     padding-right: 10px;
 }
 
-.sidebar-nav {
-    li.active > a {
-        color: $link-color;
-    }
 
-    li.active > a:not(.dropdown-toggle) {
-        cursor: default;
-        pointer-events: none;
-    }
-
-    version-picker {
-        margin-top: 10px;
-
-        & + hr {
-            margin-top: 10px;
-            margin-bottom: 10px;
-            margin-right: 20px;
-        }
-    }
-}
-
-.theme-line .sidebar-nav {
-    padding-bottom: 30px;
-
-    ul {
-        padding: 0;
-        list-style: none;
-        margin: 3px 0 0;
-
-        li {
-            line-height: $input-height;
-
-            a {
-                font-size: 18px;
-                color: $ignite-header-color;
-                position: relative;
-                white-space: nowrap;
-                overflow: hidden;
-                -o-text-overflow: ellipsis;
-                text-overflow: ellipsis;
-
-                span.fa-stack {
-                    margin-right: 5px;
-                    font-size: 12px;
-                    height: 26px;
-                }
-            }
-
-            a:hover { color: $link-hover-color; }
-
-            a.active {
-                color: $link-color;
-            }
-        }
-    }
-}
-
-.theme-line .sidebar-nav ul li a:hover {
-    text-decoration: none;
-}
 
 .theme-line .select {
     li a.active {
@@ -157,7 +94,7 @@ hr {
 }
 
 .theme-line ul.dropdown-menu {
-    min-width: 120px;
+    min-width: 0;
     max-width: 280px;
     max-height: 20em;
     overflow: auto;
@@ -243,9 +180,6 @@ hr {
     }
 }
 
-.theme-line .border-left .sidebar-nav {
-    padding-left: 15px;
-}
 
 .theme-line .suggest {
     padding: 5px;
@@ -272,10 +206,6 @@ hr {
             cursor: default;
         }
     }
-}
-
-.theme-line .section-right {
-    padding-left: 30px;
 }
 
 .body-overlap .main-content {
@@ -545,14 +475,6 @@ button.form-control {
     .sql-editor {
         padding: 5px 0;
 
-        .ace_cursor {
-            opacity: 1;
-        }
-
-        .ace_hidden-cursors {
-            opacity: 1;
-        }
-
         .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
             padding-right: 5px;
         }
@@ -681,6 +603,19 @@ button.form-control {
             border-top: 1px solid $ignite-border-color;
 
             padding: 5px 10px;
+        }
+
+        grid-column-selector {
+            margin-right: 5px;
+
+            .btn-ignite {
+                padding: 5px 0;
+                box-shadow: none !important;
+
+                .fa {
+                    font-size: 14px;
+                }
+            }
         }
     }
 }
@@ -1526,14 +1461,6 @@ th[st-sort] {
     padding-left: 5px;
 }
 
-.ace_hidden-cursors {
-    opacity: 0;
-}
-
-.ace_cursor {
-    opacity: 0;
-}
-
 .ace_editor {
     margin: 10px 5px 10px 0;
 
@@ -1545,6 +1472,16 @@ th[st-sort] {
 
     .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
         padding-left: 0.65em;
+    }
+}
+
+.preview-panel, .summary-tabs {
+    .ace_hidden-cursors {
+        opacity: 0;
+    }
+
+    .ace_cursor {
+        opacity: 0;
     }
 }
 
@@ -2201,6 +2138,19 @@ html,body,.splash-screen {
 }
 
 .admin-page {
+    .docs-header {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
+
+        margin: 40px 0 20px 0;
+
+        h1 {
+            font-size: 24px;
+            margin: 0 10px 0 0;
+        }
+    }
+
     .panel-heading {
         height: 38px;
 
@@ -2236,26 +2186,6 @@ html,body,.splash-screen {
     }
 }
 
-.datepicker.dropdown-menu {
-    width: 250px;
-    height: 270px;
-
-    button {
-        outline: none;
-        border: 0;
-    }
-
-    tbody {
-        height: 180px;
-    }
-
-    tbody button {
-        padding: 6px;
-    }
-
-    &.datepicker-mode-1, &.datepicker-mode-2 {
-        tbody button {
-            height: 65px;
-        }
-    }
+.center-container {
+    position: absolute !important;
 }

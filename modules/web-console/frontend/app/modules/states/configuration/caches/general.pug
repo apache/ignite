@@ -32,10 +32,14 @@ include /app/helpers/jade/mixins
             .col-sm-6
                 .settings-row
                     +text('Name:', `${model}.name`, '"cacheName"', 'true', 'Input name', 'Cache name')
+                .settings-row(ng-if='$ctrl.available("2.1.0")')
+                    +text('Group:', `${model}.groupName`, '"groupName"', 'false', 'Input group name',
+                        'Cache group name.<br/>\
+                        Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.')
                 .settings-row
                     +clusters(model, 'Associate clusters with the current cache')
                 .settings-row
-                    +dropdown-multiple('<span>Domain models:</span><a ui-sref="base.configuration.domains({linkId: linkId()})"> (add)</a>',
+                    +dropdown-multiple('<span>Domain models:</span><a ui-sref="base.configuration.tabs.advanced.domains({linkId: linkId()})"> (add)</a>',
                         `${model}.domains`, '"domains"', true, 'Choose domain models', 'No valid domain models configured', 'domains',
                         'Select domain models to describe types in cache')
                 .settings-row

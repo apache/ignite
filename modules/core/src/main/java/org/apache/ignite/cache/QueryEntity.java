@@ -25,9 +25,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -348,6 +349,31 @@ public class QueryEntity implements Serializable {
             aliases.put(fullName, alias);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+        QueryEntity entity = (QueryEntity)o;
+
+        return F.eq(keyType, entity.keyType) &&
+            F.eq(valType, entity.valType) &&
+            F.eq(keyFieldName, entity.keyFieldName) &&
+            F.eq(valueFieldName, entity.valueFieldName) &&
+            F.eq(fields, entity.fields) &&
+            F.eq(keyFields, entity.keyFields) &&
+            F.eq(aliases, entity.aliases) &&
+            F.eqNotOrdered(idxs, entity.idxs) &&
+            F.eq(tableName, entity.tableName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs, tableName);
     }
 
     /** {@inheritDoc} */

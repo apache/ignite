@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -161,6 +162,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     }
 
     /**
+     * @param cacheName Cache name.
      * @throws Exception If failed.
      */
     private void checkCacheInitialization(final String cacheName) throws Exception {
@@ -170,8 +172,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         checkFineCache(client, CACHE_NAME + 1);
 
-        assertNull(client.cache(cacheName));
-        assertNull(client.getOrCreateCache(cacheName));
+        assertNull(((IgniteKernal)client).context().cache().cache(cacheName));
 
         checkFineCache(client, CACHE_NAME + 2);
     }
@@ -209,7 +210,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 }
                 else
                     cache = client.cache(cacheName);
-
 
                 cache.put(1, "1");
 
@@ -314,13 +314,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void rebuildIndexesFromHash(GridCacheContext cctx, String schemaName,
-            String typeName) throws IgniteCheckedException {
+        @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void markForRebuildFromHash(String cacheName, String typeName) {
+        @Override public void markForRebuildFromHash(String cacheName) {
             // No-op
         }
 

@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -177,8 +178,8 @@ public class DdlStatementsProcessor {
                     if (err != null)
                         throw err;
 
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(),
-                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheGroup(),
+                        cmd.affinityKey(), cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
@@ -189,6 +190,12 @@ public class DdlStatementsProcessor {
                         QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null && cmd.ifExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
 
                 if (tbl == null) {
                     if (!cmd.ifExists())
@@ -289,8 +296,8 @@ public class DdlStatementsProcessor {
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
 
-        String valTypeName = valueType(createTbl.schemaName(), createTbl.tableName());
-        String keyTypeName = valTypeName + "_Key";
+        String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
+        String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
         int valColsNum = createTbl.columns().size() - createTbl.primaryKeyColumns().size();
 
@@ -304,18 +311,6 @@ public class DdlStatementsProcessor {
 
         return res;
     }
-
-    /**
-     * Construct value type name for table.
-     *
-     * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @return Value type name.
-     */
-    private static String valueType(String schemaName, String tblName) {
-        return "sql_" + schemaName + "_" + tblName + "_" + UUID.randomUUID().toString().replace("-", "_");
-    }
-
 
     /**
      * @param cmd Statement.

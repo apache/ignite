@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -37,10 +38,7 @@ public abstract class WALRecord {
         /** */
         DATA_RECORD,
 
-        /** */
-        STORE_OPERATION_RECORD,
-
-        /** */
+        /** Checkpoint (begin) record */
         CHECKPOINT_RECORD,
 
         /** */
@@ -129,7 +127,7 @@ public abstract class WALRecord {
         /** */
         PARTITION_META_PAGE_UPDATE_COUNTERS,
 
-        /** */
+        /** Memory recovering start marker */
         MEMORY_RECOVERY,
 
         /** */
@@ -160,7 +158,10 @@ public abstract class WALRecord {
         DATA_PAGE_UPDATE_RECORD,
 
         /** init */
-        BTREE_META_PAGE_INIT_ROOT2
+        BTREE_META_PAGE_INIT_ROOT2,
+
+        /** Partition destroy. */
+        PARTITION_DESTROY
         ;
 
         /** */
@@ -183,7 +184,7 @@ public abstract class WALRecord {
     private WALRecord prev;
 
     /** */
-    private long pos;
+    private WALPointer pos;
 
     /**
      * @param chainSize Chain size in bytes.
@@ -216,15 +217,15 @@ public abstract class WALRecord {
     /**
      * @return Position in file.
      */
-    public long position() {
+    public WALPointer position() {
         return pos;
     }
 
     /**
      * @param pos Position in file.
      */
-    public void position(long pos) {
-        assert pos >= 0: pos;
+    public void position(WALPointer pos) {
+        assert pos != null;
 
         this.pos = pos;
     }

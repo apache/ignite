@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -39,6 +40,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -427,16 +429,28 @@ public class QueryUtils {
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null) {
-                // Need to setup affinity key for distributed joins.
-                String affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
+            String affField = null;
 
-                if (affField != null) {
-                    if (!escape)
-                        affField = normalizeObjectName(affField, false);
+            // Need to setup affinity key for distributed joins.
+            String keyType = qryEntity.getKeyType();
 
-                    desc.affinityKey(affField);
+            if (!cctx.customAffinityMapper() && keyType != null) {
+                if (coCtx != null) {
+                    CacheDefaultBinaryAffinityKeyMapper mapper =
+                        (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
+
+                    BinaryField field = mapper.affinityKeyField(keyType);
+
+                    if (field != null)
+                        affField = field.name();
                 }
+            }
+
+            if (affField != null) {
+                if (!escape)
+                    affField = normalizeObjectName(affField, false);
+
+                desc.affinityKey(affField);
             }
         }
         else {
@@ -1038,6 +1052,9 @@ public class QueryUtils {
         Set<String> tblNames = new HashSet<>();
 
         for (DynamicCacheDescriptor desc : descs) {
+            if (F.eq(ccfg.getName(), desc.cacheName()))
+                continue;
+
             String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
@@ -1109,6 +1126,38 @@ public class QueryUtils {
                         ", queryIdx=" + idx + ']');
             }
         }
+    }
+
+    /**
+     * Construct cache name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Cache name.
+     */
+    public static String createTableCacheName(String schemaName, String tblName) {
+        return "SQL_" + schemaName + "_" + tblName;
+    }
+
+    /**
+     * Construct value type name for table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Value type name.
+     */
+    public static String createTableValueTypeName(String schemaName, String tblName) {
+        return createTableCacheName(schemaName, tblName) + "_" + UUID.randomUUID().toString().replace("-", "_");
+    }
+
+    /**
+     * Construct key type name for table.
+     *
+     * @param valTypeName Value type name.
+     * @return Key type name.
+     */
+    public static String createTableKeyTypeName(String valTypeName) {
+        return valTypeName + "_KEY";
     }
 
     /**

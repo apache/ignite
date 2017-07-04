@@ -38,6 +38,7 @@ public class ModelUtil {
      * Classes of keys.
      */
     private static Class[] keyClasses = {
+        Integer.class,
         Double.class,
         Identifier.class,
         Mark.class,
@@ -104,7 +105,7 @@ public class ModelUtil {
      * @return object from model
      */
     public static Object create(Class c, int id) {
-        Object res = null;
+        Object res;
 
         switch (c.getSimpleName()) {
             case "Double":

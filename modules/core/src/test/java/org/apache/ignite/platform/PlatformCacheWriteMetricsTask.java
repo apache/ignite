@@ -403,6 +403,36 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public boolean isWriteThrough() {
             return true;
         }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalPartitionsCount() {
+            return 54;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getRebalancingPartitionsCount() {
+            return 55;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getKeysToRebalanceLeft() {
+            return 56;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getRebalancingKeysRate() {
+            return 57;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getRebalancingBytesRate() {
+            return 58;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getHeapEntriesCount() {
+            return 59;
+        }
     }
 }
 
