@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -74,7 +75,7 @@ class ClusterCachesInfo {
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
 
     /** Caches currently being restarted. */
-    private final Collection<String> restartingCaches = new HashSet<>();
+    private final Collection<String> restartingCaches = new GridConcurrentHashSet<>();
 
     /** */
     private final IgniteLogger log;
@@ -539,7 +540,18 @@ class ClusterCachesInfo {
 
                         ctx.discovery().removeCacheGroup(grpDesc);
 
-                        exchangeActions.addCacheGroupToStop(grpDesc);
+                        exchangeActions.addCacheGroupToStop(grpDesc, req.destroy());
+
+                        assert exchangeActions.checkStopRequestConsistency(grpDesc.groupId());
+
+                        // If all caches in group will be destroyed it is not necessary to destroy single cache
+                        // because group will be stopped anyway.
+                        if (req.destroy()) {
+                            for (ExchangeActions.ActionData action : exchangeActions.cacheStopRequests()) {
+                                if (action.descriptor().groupId() == grpDesc.groupId())
+                                    action.request().destroy(false);
+                            }
+                        }
                     }
                 }
             }

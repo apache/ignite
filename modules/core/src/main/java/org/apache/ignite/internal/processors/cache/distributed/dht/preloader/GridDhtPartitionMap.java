@@ -73,7 +73,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     public GridDhtPartitionMap(UUID nodeId,
         long updateSeq,
         AffinityTopologyVersion top,
-        Map<Integer, GridDhtPartitionState> m,
+        GridPartitionStateMap m,
         boolean onlyActive) {
         assert nodeId != null;
         assert updateSeq > 0;
@@ -82,14 +82,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         this.updateSeq = updateSeq;
         this.top = top;
 
-        map = new GridPartitionStateMap(m.size());
-
-        for (Map.Entry<Integer, GridDhtPartitionState> e : m.entrySet()) {
-            GridDhtPartitionState state = e.getValue();
-
-            if (!onlyActive || state.active())
-                put(e.getKey(), state);
-        }
+        map = new GridPartitionStateMap(m, onlyActive);
     }
 
     /**
@@ -185,7 +178,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     /**
      * @return Underlying map.
      */
-    public Map<Integer, GridDhtPartitionState> map() {
+    public GridPartitionStateMap map() {
         return map;
     }
 

@@ -725,13 +725,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.info("Start activation process [nodeId=" + ctx.localNodeId() + ", client=" + client +
                 ", topVer=" + cgsCtx.topVer + "]");
 
-        Collection<StoredCacheData> cfgs = new ArrayList<>();
-
-        for (DynamicCacheChangeRequest req : cgsCtx.batch.requests()) {
-            if (req.startCacheConfiguration() != null)
-                cfgs.add(new StoredCacheData(req.startCacheConfiguration()));
-        }
-
         try {
             if (!client)
                 sharedCtx.database().lock();

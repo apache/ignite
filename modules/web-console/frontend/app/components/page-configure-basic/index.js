@@ -20,12 +20,10 @@ import angular from 'angular';
 import component from './component';
 import service from './service';
 
-import pcbProtectFromBsSelectRender from './components/pcbProtectFromBsSelectRender';
 import pcbScaleNumber from './components/pcbScaleNumber';
 
 export default angular
     .module('ignite-console.page-configure-basic', [])
     .component('pageConfigureBasic', component)
-    .directive('pcbProtectFromBsSelectRender', pcbProtectFromBsSelectRender)
     .directive('pcbScaleNumber', pcbScaleNumber)
     .service('PageConfigureBasic', service);

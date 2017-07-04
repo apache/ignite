@@ -831,8 +831,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        ClusterNode locNode = ctx.discovery().localNode();
-
         boolean active = ctx.state().active();
 
         try {
@@ -881,7 +879,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         final List<IgniteInternalFuture> syncFuts = new ArrayList<>(caches.size());
 
         sharedCtx.forAllCaches(new CIX1<GridCacheContext>() {
-            @Override public void applyx(GridCacheContext cctx) throws IgniteCheckedException {
+            @Override public void applyx(GridCacheContext cctx) {
                 CacheConfiguration cfg = cctx.config();
 
                 if (cctx.affinityNode() &&
@@ -1210,10 +1208,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.onStarted();
 
+        String memPlcName = cfg.getMemoryPolicyName();
+
+        if (memPlcName == null
+            && ctx.config().getMemoryConfiguration() != null)
+            memPlcName = ctx.config().getMemoryConfiguration().getDefaultMemoryPolicyName();
+
+
         if (log.isInfoEnabled()) {
             log.info("Started cache [name=" + cfg.getName() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
-                ", memoryPolicyName=" + cfg.getMemoryPolicyName() +
+                ", memoryPolicyName=" + memPlcName +
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() + ']');
         }
@@ -2110,43 +2115,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void onExchangeDone(
         AffinityTopologyVersion topVer,
         @Nullable ExchangeActions exchActions,
-        Throwable err
+        @Nullable Throwable err
     ) {
         initCacheProxies(topVer, err);
 
-        if (exchActions != null && exchActions.systemCachesStarting() && exchActions.newClusterState() == null) {
+        if (exchActions == null)
+            return;
+
+        if (exchActions.systemCachesStarting() && exchActions.newClusterState() == null) {
             ctx.dataStructures().restoreStructuresState(ctx);
 
             ctx.service().updateUtilityCache();
         }
 
-        if (exchActions != null && err == null) {
-            Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps = null;
-
-            boolean forceCheckpoint = false;
+        if (err == null) {
+            // Force checkpoint if there is any cache stop request
+            if (exchActions.cacheStopRequests().size() > 0) {
+                try {
+                    sharedCtx.database().waitForCheckpoint("caches stop");
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
+                }
+            }
 
             for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
-                GridCacheContext<?, ?> stopCtx;
-                boolean destroy;
-
-                if (!forceCheckpoint){
-                    try {
-                        sharedCtx.database().waitForCheckpoint("caches stop");
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
-                    }
-
-                    forceCheckpoint = true;
-                }
-
                 stopGateway(action.request());
 
                 sharedCtx.database().checkpointReadLock();
 
                 try {
-                    stopCtx = prepareCacheStop(action.request().cacheName(), action.request().destroy());
-                    destroy = action.request().destroy();
+                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
 
                     if (exchActions.newClusterState() == null)
                         ctx.state().onCacheStop(action.request());
@@ -2154,20 +2153,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 finally {
                     sharedCtx.database().checkpointReadUnlock();
                 }
+            }
 
-                if (stopCtx != null && !stopCtx.group().hasCaches()) {
-                    if (stoppedGrps == null)
-                        stoppedGrps = new ArrayList<>();
+            List<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGroups = new ArrayList<>();
 
-                    stoppedGrps.add(F.t(stopCtx.group(), destroy));
+            for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+                Integer groupId = action.descriptor().groupId();
+
+                if (cacheGrps.containsKey(groupId)) {
+                    stoppedGroups.add(F.t(cacheGrps.get(groupId), action.destroy()));
+
+                    stopCacheGroup(groupId);
                 }
             }
 
-            for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop())
-                stopCacheGroup(grpDesc.groupId());
-
-            if (stoppedGrps != null && !sharedCtx.kernalContext().clientNode())
-                sharedCtx.database().onCacheGroupsStopped(stoppedGrps);
+            if (!sharedCtx.kernalContext().clientNode())
+                sharedCtx.database().onCacheGroupsStopped(stoppedGroups);
         }
     }
 
@@ -3026,13 +3027,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Reset restarting caches.
+     */
+    public void resetRestartingCaches(){
+        cachesInfo.restartingCaches().clear();
+    }
+
+    /**
      * @param node Joining node to validate.
      * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
      */
     private IgniteNodeValidationResult validateRestartingCaches(ClusterNode node) {
         if (cachesInfo.hasRestartingCaches()) {
             String msg = "Joining node during caches restart is not allowed [joiningNodeId=" + node.id() +
-                ", restartingCaches=" + new HashSet<String>(cachesInfo.restartingCaches()) + ']';
+                ", restartingCaches=" + new HashSet<>(cachesInfo.restartingCaches()) + ']';
 
             return new IgniteNodeValidationResult(node.id(), msg, msg);
         }
@@ -3995,7 +4003,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         RemovedItemsCleanupTask(long timeout) {
             this.timeout = timeout;
-            this.endTime = U.currentTimeMillis() + timeout;
+
+            endTime = U.currentTimeMillis() + timeout;
         }
 
         /** {@inheritDoc} */

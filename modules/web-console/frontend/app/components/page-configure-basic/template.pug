@@ -99,7 +99,7 @@ form(novalidate name=form)
                 bs-select
                 bs-options='size as size.label for size in $ctrl.sizesMenu'
                 ng-model='$ctrl.memorySizeScale'
-                pcb-protect-from-bs-select-render
+                protect-from-bs-select-render
             )
                 | {{ $ctrl.memorySizeScale.label }}
                 span.fa.fa-caret-down.icon-right
@@ -153,7 +153,7 @@ form(novalidate name=form)
                 bs-options='cache._id as cache.name for cache in $ctrl.cachesMenu'
                 data-multiple='true'
                 data-placement='top-left'
-                pcb-protect-from-bs-select-render
+                protect-from-bs-select-render
             )
                 | + Select from existing caches
         

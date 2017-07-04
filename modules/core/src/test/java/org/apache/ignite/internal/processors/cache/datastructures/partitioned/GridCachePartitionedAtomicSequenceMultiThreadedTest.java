@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicsAbstractTest;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicSequenceImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -278,6 +280,36 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         }, seq, ITERATION_NUM, THREAD_NUM);
 
         assertEquals(17 * ITERATION_NUM * THREAD_NUM, seq.get());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testMultipleSequences() throws Exception {
+        final int seqCnt = 5;
+        final int threadCnt = 5;
+        final int incCnt = 1_000;
+
+        final IgniteAtomicSequence[] seqs = new IgniteAtomicSequence[seqCnt];
+
+        String seqName = UUID.randomUUID().toString();
+
+        for (int i = 0; i < seqs.length; i++)
+            seqs[i] = grid(0).atomicSequence(seqName, 0, true);
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < incCnt; i++) {
+                    for (IgniteAtomicSequence seq : seqs)
+                        seq.incrementAndGet();
+                }
+
+                return null;
+            }
+        }, threadCnt, "load");
+
+        for (IgniteAtomicSequence seq : seqs)
+            assertEquals(seqCnt * threadCnt * incCnt, seq.get());
     }
 
     /**

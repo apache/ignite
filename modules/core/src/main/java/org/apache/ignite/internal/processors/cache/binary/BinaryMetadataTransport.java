@@ -574,7 +574,7 @@ final class BinaryMetadataTransport {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataRequestMessage : msg;
 
             MetadataRequestMessage msg0 = (MetadataRequestMessage) msg;
@@ -619,7 +619,7 @@ final class BinaryMetadataTransport {
     private final class MetadataResponseListener implements GridMessageListener {
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataResponseMessage : msg;
 
             MetadataResponseMessage msg0 = (MetadataResponseMessage) msg;

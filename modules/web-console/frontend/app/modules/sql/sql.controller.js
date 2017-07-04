@@ -57,25 +57,6 @@ class Paragraph {
 
         _.assign(this, paragraph);
 
-        const _enableColumns = (categories, visible) => {
-            _.forEach(categories, (cat) => {
-                cat.visible = visible;
-
-                _.forEach(this.gridOptions.columnDefs, (col) => {
-                    if (col.displayName === cat.name)
-                        col.visible = visible;
-                });
-            });
-
-            this.gridOptions.api.grid.refresh();
-        };
-
-        const _selectableColumns = () => _.filter(this.gridOptions.categories, (cat) => cat.selectable);
-
-        this.toggleColumns = (category, visible) => _enableColumns([category], visible);
-        this.selectAllColumns = () => _enableColumns(_selectableColumns(), true);
-        this.clearAllColumns = () => _enableColumns(_selectableColumns(), false);
-
         Object.defineProperty(this, 'gridOptions', {value: {
             enableGridMenu: false,
             enableColumnMenus: false,
@@ -101,7 +82,7 @@ class Paragraph {
                     this.categories.push({
                         name: col.fieldName,
                         visible: self.columnFilter(col),
-                        selectable: true
+                        enableHiding: true
                     });
 
                     return cols;

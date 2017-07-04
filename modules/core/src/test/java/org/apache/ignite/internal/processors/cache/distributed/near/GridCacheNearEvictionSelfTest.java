@@ -163,12 +163,13 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < gridCnt; i++) {
                 final GridCacheAdapter cache = internalCache(i);
+                final GridCacheAdapter near =  near(i);
 
                 // Repeatedly check cache sizes because of concurrent cache updates.
                 assertTrue(GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {
                         // Every node contains either near, backup, or primary.
-                        return cnt == cache.size();
+                        return cnt == cache.size() + near.nearSize();
                     }
                 }, getTestTimeout()));
 
