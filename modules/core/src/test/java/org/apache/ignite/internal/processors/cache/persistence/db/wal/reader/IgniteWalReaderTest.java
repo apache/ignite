@@ -72,7 +72,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Delete DB dir after test. */
     private static final boolean deleteAfter = true;
 
-    /** Dump records to system out. Should be false for non local run */
+    /** Dump records to logger. Should be false for non local run */
     private static final boolean dumpRecords = false;
 
     /** Page size to set */
@@ -181,7 +181,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final WALIterator it = mockItFactory.iterator(wal, walArchive);
         final int cntUsingMockIter = iterateAndCount(it);
 
-        System.out.println("Total records loaded " + cntUsingMockIter);
+        log.info("Total records loaded " + cntUsingMockIter);
         assert cntUsingMockIter > 0;
         assert cntUsingMockIter > cacheObjectsToWrite;
 
@@ -191,13 +191,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE);
         final int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
 
-        System.out.println("Total records loaded using directory : " + cntArchiveDir);
+        log.info("Total records loaded using directory : " + cntArchiveDir);
 
         final int cntArchiveFileByFile = iterateAndCount(
             factory.iteratorArchiveFiles(
                 walArchiveDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER)));
 
-        System.out.println("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
+        log.info("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
 
         assert cntArchiveFileByFile > cacheObjectsToWrite;
         assert cntArchiveDir > cacheObjectsToWrite;
@@ -214,11 +214,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
                 if (dumpRecords)
-                    System.out.println("Work. Record: " + next.get2());
+                    log.info("Work. Record: " + next.get2());
                 cntWork++;
             }
         }
-        System.out.println("Total records loaded from work: " + cntWork);
+        log.info("Total records loaded from work: " + cntWork);
 
         assert cntWork + cntArchiveFileByFile == cntUsingMockIter
             : "Work iterator loaded [" + cntWork + "] " +
@@ -239,7 +239,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             while (it.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
                 if (dumpRecords)
-                    System.out.println("Record: " + next.get2());
+                    log.info("Record: " + next.get2());
                 cntUsingMockIter++;
             }
         }
@@ -267,7 +267,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             @Override public boolean apply(Event e) {
                 WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
                 long idx = archComplEvt.getAbsWalSegmentIdx();
-                System.err.println("Finished archive for segment [" + idx + ", " +
+                log.info("Finished archive for segment [" + idx + ", " +
                     archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
                 evtRecorded.set(true);
@@ -315,7 +315,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             @Override public boolean apply(Event e) {
                 WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
                 long idx = archComplEvt.getAbsWalSegmentIdx();
-                System.err.println("Finished archive for segment [" + idx + ", " +
+                log.info("Finished archive for segment [" + idx + ", " +
                     archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
                 if (waitingForEvt.get())
@@ -327,7 +327,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         putDummyRecords(ignite, 100);
         waitingForEvt.set(true); //flag for skipping regular log() and rollOver()
 
-        System.err.println("Wait for archiving segment for inactive grid started");
+        log.info("Wait for archiving segment for inactive grid started");
 
         boolean recordedAfterSleep =
             archiveSegmentForInactivity.await(archiveIncompleteSegmentAfterInactivityMs + 1001, TimeUnit.MILLISECONDS);
