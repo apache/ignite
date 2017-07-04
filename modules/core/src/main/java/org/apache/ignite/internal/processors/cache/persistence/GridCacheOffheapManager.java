@@ -396,7 +396,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param pageAddr page address
      * @param io Page Meta IO
      * @param cacheId Cache ID.
-     * @param partition Partition ID.
+     * @param part Partition ID.
      * @param pages Number of pages to add - total page allocated for partition <code>[partition, cacheId]</code>
      */
     private static void addPartition(
@@ -404,7 +404,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         long pageAddr,
         PagePartitionMetaIO io,
         int cacheId,
-        int partition,
+        int part,
         int pages
     ) {
         if (pages <= 1)
@@ -414,7 +414,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int lastAllocatedIdx = io.getLastPageCount(pageAddr);
         map.put(
-            new PartitionStatMap.Key(cacheId, partition),
+            new PartitionStatMap.Key(cacheId, part),
             new PartitionStatMap.Value(lastAllocatedIdx, pages));
     }
 

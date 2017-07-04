@@ -170,7 +170,7 @@ public class PartitionStatMap {
          * @param pageIdx  Page Index, monotonically growing number within each partition
          * @return page ID (64 bits) constructed from partition ID
          */
-        public long createPageId(int pageIdx) {
+        public long createPageId(final int pageIdx) {
             return PageIdUtils.pageId( getPartId(), (byte)0, pageIdx);
         }
 
@@ -180,7 +180,7 @@ public class PartitionStatMap {
          * @param pageIdx Page Index, monotonically growing number within each partition
          * @return FullPageId consists of cache ID (32 bits) and page ID (64 bits).
          */
-        @NotNull public FullPageId createFullPageId(int pageIdx) {
+        @NotNull public FullPageId createFullPageId(final int pageIdx) {
             return new FullPageId(createPageId(pageIdx), getCacheId());
         }
     }

@@ -49,10 +49,10 @@ public final class PageIdUtils {
     /** */
     public static final long TAG_MASK = ~(-1L << TAG_SIZE);
 
-    /** */
+    /** Page Index is a monotonically growing number within each partition */
     public static final long PART_ID_MASK = ~(-1L << PART_ID_SIZE);
 
-    /** */
+    /** Flags mask. Flags is a reserved field used for page ID rotation */
     public static final long FLAG_MASK = ~(-1L << FLAG_SIZE);
 
     /** */
@@ -150,8 +150,8 @@ public final class PageIdUtils {
 
     /**
      * @param partId Partition ID.
-     * @param flag
-     * @param pageIdx
+     * @param flag Flags, reserved field used for page ID rotation
+     * @param pageIdx Page index, monotonically growing number within each partition
      * @return Part ID constructed from the given pageIdx and partition ID.
      */
     public static long pageId(int partId, byte flag, int pageIdx) {

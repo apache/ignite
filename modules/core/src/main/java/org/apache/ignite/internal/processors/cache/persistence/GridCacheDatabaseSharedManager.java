@@ -52,6 +52,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1969,7 +1970,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             asyncRunner == null ? 1 : chp.cpPages.collectionsSize());
 
                         tracker.onPagesWriteStart();
-                        LongAdder8 writtenPagesCtr = new LongAdder8();
+                        final AtomicLong writtenPagesCtr = new AtomicLong();
 
                         if (asyncRunner != null) {
                             for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
@@ -2346,8 +2347,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private CountDownFuture doneFut;
 
-        /** Counter for all written pages */
-        private LongAdder8 writtenPagesCtr;
+        /** Counter for all written pages. May be shared between several workers */
+        private AtomicLong writtenPagesCtr;
 
         /**
          * @param writePageIds Write page IDs.
@@ -2358,7 +2359,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Collection<FullPageId> writePageIds,
             GridConcurrentHashSet<PageStore> updStores,
             CountDownFuture doneFut,
-            @NotNull final LongAdder8 writtenPagesCtr) {
+            @NotNull final AtomicLong writtenPagesCtr) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
@@ -2411,9 +2412,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tmpWriteBuf.rewind();
                         }
 
-                        writtenPagesCtr.increment();
+                        long curWrittenPages = writtenPagesCtr.incrementAndGet();
 
-                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf, writtenPagesCtr.longValue());
+                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages);
 
                         tmpWriteBuf.rewind();
 
