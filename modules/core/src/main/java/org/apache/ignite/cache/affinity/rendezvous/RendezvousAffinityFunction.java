@@ -171,8 +171,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         setPartitions(parts);
 
         this.backupFilter = backupFilter;
-
-        log = new Log4JLogger().getLogger(RendezvousAffinityFunction.class);
+        this.log = new Log4JLogger().getLogger(RendezvousAffinityFunction.class);
     }
 
     /**
@@ -497,7 +496,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         }
 
 	    List<List<Integer>> dist = freqDistribution(assignments, nodes);
-	    printDistribution(dist);
+
+        printDistribution(dist);
 
         return assignments;
     }
@@ -563,6 +563,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         log.info("#### NODES:" + nodes + " nodes\n");
 
         for (List<Integer> byNode : byNodes) {
+
             log.info("## Node " + node++ + ":");
 
             nr = 0;

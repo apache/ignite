@@ -352,17 +352,17 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @throws IOException On error.
      */
     public void testImprovedLog() throws IOException {
-        int[] nodesCnts1 = {4};
+        int[] nodesCnts = {4};
 
-        AffinityFunction aff3 = new RendezvousAffinityFunction(true, 1024);
+        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
 
-        for (int nodesCnt1 : nodesCnts1) {
-            List<ClusterNode> nodes0 = createBaseNodes(nodesCnt1);
+        for (int nodesCnt : nodesCnts) {
+            List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);
 
-            assignPartitions(aff3, nodes0, null, 2, 0).get2();
-            List<List<ClusterNode>> lst0 = assignPartitions(aff3, nodes0, null, 2, 1).get2();
+            assignPartitions(aff, nodes0, null, 2, 0).get2();
+            List<List<ClusterNode>> lst = assignPartitions(aff, nodes0, null, 2, 1).get2();
 
-            List<List<Integer>> dist0 = freqDistribution(lst0, nodes0);
+            List<List<Integer>> dist = freqDistribution(lst, nodes0);
         }
     }
 
