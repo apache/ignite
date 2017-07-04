@@ -78,15 +78,15 @@
     <Compile Include="Binary\EnumsTestOnline.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
-    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.Aggregates.cs" />
-    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.Join.LocalCollection.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
-    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.Misc.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Numerics.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Introspection.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
-    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.Custom.cs" />
-    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.Contains.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingVersioningTest.cs" />
@@ -398,7 +398,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
-    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.Join.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.cs" />
     <None Include="Deployment\peer_assembly_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
