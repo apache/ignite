@@ -18,28 +18,26 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,6 +46,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.log4j.Logger;
+import org.apache.log4j.SimpleLayout;
+import org.apache.log4j.WriterAppender;
 import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -253,48 +254,56 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed
      */
     public void testClusterTopologyCheckedExceptionWhenTopologyMismatch() throws Exception {
+        final int KEY = 1;
+        final String VAL = "1";
+        final AtomicReference<Throwable> testFailure = new AtomicReference<>(null);
+        final AtomicLong firstReqId = new AtomicLong(Long.MIN_VALUE);
+
+        StringWriter logWriter = new StringWriter();
+        Logger.getRootLogger().addAppender(new WriterAppender(new SimpleLayout(), logWriter));
+
         startGrids(MAX_CACHE_COUNT - 1); // cache-enabled nodes
 
         try (Ignite ignite = startGrid(MAX_CACHE_COUNT);
              IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
-            GridKernalContext gridContext = ((IgniteEx)ignite).context();
-            final CacheObjectContext objectContext =
-                gridContext.cacheObjects().contextForCache(gridContext.cache().cacheConfiguration(null));
-            final int KEY = 1;
-            final String VALUE = "1";
-            final KeyCacheObject marshalledKey =
-                gridContext.cacheObjects().toCacheKeyObject(objectContext, null, KEY, true);
-            final CacheObject marshalledValue = gridContext.cacheObjects().toCacheObject(objectContext, VALUE, true);
+            final GridCacheContext gridCacheCtx = ((IgniteKernal)ignite).internalCache().context();
+            final AffinityTopologyVersion validTop = gridCacheCtx.topology().topologyVersion();
 
             new MockUp<DataStreamerRequest>() {
                 @Mock AffinityTopologyVersion topologyVersion(Invocation invocation) {
-                    DataStreamerRequest req = invocation.getInvokedInstance();
-                    Collection<DataStreamerEntry> entries = req.entries();
-
-                    assertEquals(1, entries.size());
-
-                    DataStreamerEntry entry = entries.iterator().next();
-
                     try {
-                        Assert.assertArrayEquals(
-                            marshalledKey.valueBytes(objectContext),
-                            entry.getKey().valueBytes(objectContext));
-                        Assert.assertArrayEquals(
-                            marshalledValue.valueBytes(objectContext),
-                            entry.getValue().valueBytes(objectContext));
-                    }
-                    catch (IgniteCheckedException e) {
-                        Assert.fail();
-                    }
+                        DataStreamerRequest req = invocation.getInvokedInstance();
 
-                    // Simulate situation when this client node have not received the last "node joined" topology
-                    // update causing topology mismatch
-                    return new AffinityTopologyVersion(MAX_CACHE_COUNT - 1, 0);
+                        assertTrue(req.entries().size() > 0);
+
+                        // Simulate situation when this client node have not received the last "node joined" topology
+                        // update causing topology mismatch
+                        AffinityTopologyVersion staleTop = new AffinityTopologyVersion(
+                            validTop.topologyVersion() - 1,
+                            validTop.minorTopologyVersion());
+
+                        // Analyze request ID: we expect DataStreamer to retry updating cache and look for the request
+                        // ID increment. Thus, we return stale topology on the first request making the server fail
+                        // and then return valid topology on retry.
+                        if (firstReqId.get() == Long.MIN_VALUE)
+                            firstReqId.set(req.requestId());
+
+                        return firstReqId.get() != req.requestId() ? validTop : staleTop;
+                    }
+                    catch (Throwable e) {
+                        testFailure.set(e);
+                        return validTop;
+                    }
                 }
             };
 
-            streamer.addData(1, "1");
+            streamer.addData(KEY, VAL);
         }
+
+        if (testFailure.get() != null)
+            Assert.fail(testFailure.get().getMessage());
+
+        assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));
     }
 
     /**
