@@ -48,6 +48,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
@@ -180,6 +181,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             discoSpi.setJoinTimeout(30_000);
         }
+
+        MemoryConfiguration cfg1 = new MemoryConfiguration();
+        cfg1.setPageCacheSize(500 * 1024 * 1024L);
+        cfg.setMemoryConfiguration(cfg1);
 
         cfg.setClientMode(client);
 
@@ -1111,6 +1116,120 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         assertTrue(delayToNewCrd ? fut2.isDone() : !fut2.isDone());
 
         stopNode(0, ord);
+
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
+    }
+
+    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished5() throws Exception {
+        int ord = 1;
+
+        Ignite ignite0 = startServer(ord - 1, ord++);
+
+        Ignite ignite1 = startServer(ord - 1, ord++);
+
+        Ignite ignite2 = startServer(ord - 1, ord++);
+
+        int cnt = 1;
+
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
+
+        TestRecordingCommunicationSpi spi0 =
+                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+
+        spi0.blockMessages(new IgnitePredicate<GridIoMessage>() {
+            @Override public boolean apply(GridIoMessage msg) {
+                Message msg0 = msg.message();
+
+                return msg0.getClass().equals(GridDhtFinishExchangeMessage.class);
+            }
+        });
+
+        stopNode(3, ord);
+
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
+
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+
+        U.sleep(1_000);
+
+        assertTrue(fut0.isDone());
+        assertFalse(fut1.isDone());
+        assertFalse(fut2.isDone());
+
+        TestRecordingCommunicationSpi spi2 =
+                (TestRecordingCommunicationSpi) ignite2.configuration().getCommunicationSpi();
+
+        spi2.blockMessages(new IgnitePredicate<GridIoMessage>() {
+            @Override public boolean apply(GridIoMessage msg) {
+                Message msg0 = msg.message();
+
+                return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class);
+            }
+        });
+
+        stopNode(0, ord);
+
+        spi2.stopBlock();
+
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
+    }
+
+    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished6() throws Exception {
+        int ord = 1;
+
+        Ignite ignite0 = startServer(ord - 1, ord++);
+
+        Ignite ignite1 = startServer(ord - 1, ord++);
+
+        Ignite ignite2 = startServer(ord - 1, ord++);
+
+        int cnt = 1;
+
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
+
+        TestRecordingCommunicationSpi spi0 =
+                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+
+        spi0.blockMessages(new IgnitePredicate<GridIoMessage>() {
+            @Override public boolean apply(GridIoMessage msg) {
+                Message msg0 = msg.message();
+
+                return msg0.getClass().equals(GridDhtFinishExchangeMessage.class);
+            }
+        });
+
+        TestRecordingCommunicationSpi spi2 =
+                (TestRecordingCommunicationSpi) ignite2.configuration().getCommunicationSpi();
+
+        spi2.blockMessages(new IgnitePredicate<GridIoMessage>() {
+            @Override public boolean apply(GridIoMessage msg) {
+                Message msg0 = msg.message();
+
+                return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class);
+            }
+        });
+
+        stopNode(3, ord);
+
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
+
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+
+        U.sleep(1_000);
+
+        assertFalse(fut0.isDone());
+        assertFalse(fut1.isDone());
+        assertFalse(fut2.isDone());
+
+        stopNode(0, ord);
+
+        spi2.stopBlock();
 
         checkAffinity(1 + cnt, topVer(ord, 0), true);
     }
