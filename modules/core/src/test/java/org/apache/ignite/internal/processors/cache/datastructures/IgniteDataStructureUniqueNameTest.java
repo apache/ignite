@@ -228,13 +228,46 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testUniqueNamePerGroup() throws Exception {
+        Ignite ignite = ignite(0);
+
+        IgniteAtomicLong atomicLong = ignite.atomicLong("testName",
+            new AtomicConfiguration().setGroupName("group1"),
+            0,
+            true);
+
+        IgniteAtomicSequence atomicSeq = ignite.atomicSequence("testName",
+            new AtomicConfiguration().setGroupName("group2"),
+            0,
+            true);
+
+        assert atomicLong != null;
+        assert atomicSeq != null;
+
+        atomicLong = ignite.atomicLong("testName",
+            new AtomicConfiguration().setGroupName("group1"),
+            0,
+            false);
+
+        atomicSeq = ignite.atomicSequence("testName",
+            new AtomicConfiguration().setGroupName("group2"),
+            0,
+            false);
+
+        assert atomicLong != null;
+        assert atomicSeq != null;
+    }
+
+    /**
      * @param singleGrid If {@code true} uses single grid.
      * @throws Exception If failed.
      */
     private void testUniqueName(final boolean singleGrid) throws Exception {
         final String name = IgniteUuid.randomUuid().toString();
 
-        final int DS_TYPES = 9;
+        final int DS_TYPES = 6;
 
         final int THREADS = DS_TYPES * 3;
 
@@ -282,46 +315,26 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                                     break;
 
                                 case 3:
-                                    log.info("Create atomic latch, grid: " + ignite.name());
-
-                                    res = ignite.countDownLatch(name, 0, true, true);
-
-                                    break;
-
-                                case 4:
                                     log.info("Create atomic reference, grid: " + ignite.name());
 
                                     res = ignite.atomicReference(name, null, true);
 
                                     break;
 
-                                case 5:
+                                case 4:
                                     log.info("Create queue, grid: " + ignite.name());
 
                                     res = ignite.queue(name, 0, config(false));
 
                                     break;
 
-                                case 6:
+                                case 5:
                                     log.info("Create set, grid: " + ignite.name());
 
                                     res = ignite.set(name, config(false));
 
                                     break;
 
-                                case 7:
-                                    log.info("Create atomic semaphore, grid: " + ignite.name());
-
-                                    res = ignite.semaphore(name, 0, false, true);
-
-                                    break;
-
-                                case 8:
-                                    log.info("Create atomic reentrant lock, grid: " + ignite.name());
-
-                                    res = ignite.reentrantLock(name, true, true, true);
-
-                                    break;
                                 default:
                                     fail();
 

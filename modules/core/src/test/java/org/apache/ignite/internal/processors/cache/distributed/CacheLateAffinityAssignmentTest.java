@@ -48,6 +48,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
@@ -55,7 +56,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -181,6 +181,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             discoSpi.setJoinTimeout(30_000);
         }
 
+        MemoryConfiguration cfg1 = new MemoryConfiguration();
+
+        cfg1.setDefaultMemoryPolicySize(50 * 1024 * 1024L);
+
+        cfg.setMemoryConfiguration(cfg1);
+
         cfg.setClientMode(client);
 
         return cfg;
@@ -208,6 +214,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     protected AffinityFunction affinityFunction(@Nullable Integer parts) {
         return new RendezvousAffinityFunction(false,
             parts == null ? RendezvousAffinityFunction.DFLT_PARTITION_COUNT : parts);
+    }
+
+    @Override
+    protected void beforeTest() throws Exception {
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
@@ -914,6 +925,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleStopRandomNode() throws Exception {
+        //fail("IGNITE-GG-12292");
+
         final int ITERATIONS = 3;
 
         for (int iter = 0; iter < 3; iter++) {
@@ -1771,6 +1784,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoForceKeysRequests() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5510");
+
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
                 return null;

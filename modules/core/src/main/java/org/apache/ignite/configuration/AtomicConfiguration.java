@@ -49,6 +49,9 @@ public class AtomicConfiguration {
     /** Affinity function */
     private AffinityFunction aff;
 
+    /** Group name. */
+    private String grpName;
+
     /**
      * @return Number of backup nodes.
      */
@@ -128,6 +131,23 @@ public class AtomicConfiguration {
      */
     public AtomicConfiguration setAffinity(AffinityFunction aff) {
         this.aff = aff;
+
+        return this;
+    }
+
+    /**
+     * @return Group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * @param grpName Group name.
+     * @return {@code this} for chaining.
+     */
+    public AtomicConfiguration setGroupName(String grpName) {
+        this.grpName = grpName;
 
         return this;
     }

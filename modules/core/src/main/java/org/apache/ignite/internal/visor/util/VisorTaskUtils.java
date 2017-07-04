@@ -551,7 +551,8 @@ public class VisorTaskUtils {
             return res;
         }
 
-        return F.asList(new VisorLogFile(file));
+        // Return ArrayList, because it could be sorted in matchedFiles() method.
+        return new ArrayList<>(F.asList(new VisorLogFile(file)));
     }
 
     /**

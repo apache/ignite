@@ -56,7 +56,7 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
 
         JedisPoolConfig jedisPoolCfg = new JedisPoolConfig();
 
-        jedisPoolCfg.setMaxWaitMillis(10000);
+        jedisPoolCfg.setMaxWaitMillis(20000);
         jedisPoolCfg.setMaxIdle(100);
         jedisPoolCfg.setMinIdle(1);
         jedisPoolCfg.setNumTestsPerEvictionRun(10);
