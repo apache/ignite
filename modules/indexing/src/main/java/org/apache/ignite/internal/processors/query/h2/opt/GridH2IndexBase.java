@@ -132,10 +132,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             log = ctx.log(getClass());
 
-            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, tbl.identifier() + '.' + getName());
+            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, tbl.identifierString() + '.' + getName());
 
             msgLsnr = new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     GridSpinBusyLock l = desc.indexing().busyLock();
 
                     if (!l.enterBusy())
@@ -342,7 +342,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Filtered iterator.
      */
     protected GridCursor<GridH2Row> filter(GridCursor<GridH2Row> cursor, IndexingQueryFilter filter) {
-        return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().spaceName());
+        return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().cacheName());
     }
 
     /**
@@ -397,6 +397,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             return null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
+        GridH2RowDescriptor desc = getTable().rowDescriptor();
 
         int affColId = -1;
         boolean ucast = false;
@@ -407,13 +408,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             if (masks != null) {
                 ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
-                    (masks[KEY_COL] & IndexCondition.EQUALITY) != 0;
+                        desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
             }
         }
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
         return new DistributedLookupBatch(cctx, ucast, affColId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeChildrenAndResources(Session session) {
+        // The sole purpose of this override is to pass session to table.removeIndex
+        assert table instanceof GridH2Table;
+
+        ((GridH2Table)table).removeIndex(session, this);
+        remove(session);
+        database.removeMeta(session, getId());
     }
 
     /**
@@ -1130,7 +1141,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
                 return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
 
-            if (affColId == KEY_COL)
+            if (getTable().rowDescriptor().isKeyColumn(affColId))
                 return null;
 
             // Try to extract affinity key from primary key.
@@ -1675,18 +1686,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param cursor GridCursor.
          * @param time Time for expired rows filtering.
          * @param qryFilter Filter.
-         * @param spaceName Space name.
+         * @param cacheName Cache name.
          */
-        protected FilteringCursor(GridCursor<GridH2Row> cursor,
-            long time,
-            IndexingQueryFilter qryFilter,
-            String spaceName) {
+        protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
+            String cacheName) {
             this.cursor = cursor;
 
             this.time = time;
 
             if (qryFilter != null) {
-                this.fltr = qryFilter.forSpace(spaceName);
+                this.fltr = qryFilter.forCache(cacheName);
 
                 this.isValRequired = qryFilter.isValueRequired();
             }

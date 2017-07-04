@@ -48,6 +48,12 @@ public class VisorCacheRebalanceConfiguration extends VisorDataTransferObject {
     /** Rebalance timeout. */
     private long timeout;
 
+    /** Rebalance batches prefetch count. */
+    private long batchesPrefetchCnt;
+
+    /** Cache rebalance order. */
+    private int rebalanceOrder;
+
     /**
      * Default constructor.
      */
@@ -65,6 +71,8 @@ public class VisorCacheRebalanceConfiguration extends VisorDataTransferObject {
         partitionedDelay = ccfg.getRebalanceDelay();
         throttle = ccfg.getRebalanceThrottle();
         timeout = ccfg.getRebalanceTimeout();
+        batchesPrefetchCnt = ccfg.getRebalanceBatchesPrefetchCount();
+        rebalanceOrder = ccfg.getRebalanceOrder();
     }
 
     /**
@@ -102,6 +110,20 @@ public class VisorCacheRebalanceConfiguration extends VisorDataTransferObject {
         return timeout;
     }
 
+    /**
+     * @return Batches count
+     */
+    public long getBatchesPrefetchCnt() {
+        return batchesPrefetchCnt;
+    }
+
+    /**
+     * @return Cache rebalance order.
+     */
+    public int getRebalanceOrder() {
+        return rebalanceOrder;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, mode);
@@ -109,6 +131,8 @@ public class VisorCacheRebalanceConfiguration extends VisorDataTransferObject {
         out.writeLong(partitionedDelay);
         out.writeLong(throttle);
         out.writeLong(timeout);
+        out.writeLong(batchesPrefetchCnt);
+        out.writeInt(rebalanceOrder);
     }
 
     /** {@inheritDoc} */
@@ -118,6 +142,8 @@ public class VisorCacheRebalanceConfiguration extends VisorDataTransferObject {
         partitionedDelay = in.readLong();
         throttle = in.readLong();
         timeout = in.readLong();
+        batchesPrefetchCnt = in.readLong();
+        rebalanceOrder = in.readInt();
     }
 
     /** {@inheritDoc} */

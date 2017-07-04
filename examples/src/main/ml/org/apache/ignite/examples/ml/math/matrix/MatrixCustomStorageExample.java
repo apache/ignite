@@ -24,7 +24,7 @@ import org.apache.ignite.ml.math.impls.matrix.AbstractMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
- * This example shows how to use {@link Matrix} API based on custom {@link MatrixStorage}.
+ * This example shows how to create custom {@link Matrix} based on custom {@link MatrixStorage}.
  */
 public final class MatrixCustomStorageExample {
     /**
@@ -74,8 +74,8 @@ public final class MatrixCustomStorageExample {
         System.out.println(">>> Matrix product determinant: [" + detMult
             + "], equals product of two other matrices determinants: [" + detMultIsAsExp + "].");
 
-        assert detMultIsAsExp : "Determinant of product matrix [" + detMult
-            + "] should be equal to product of determinants [" + (det1 * det2) + "].";
+        System.out.println("Determinant of product matrix [" + detMult
+            + "] should be equal to product of determinants [" + (det1 * det2) + "].");
 
         System.out.println("\n>>> Matrix API usage example completed.");
     }

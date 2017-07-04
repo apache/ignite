@@ -25,12 +25,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -38,13 +40,18 @@ import org.apache.ignite.lang.IgniteUuid;
  * Utility methods to support output of {@link Vector} and {@link Matrix} instances to plain text or HTML.
  */
 public class Tracer {
+    /** Locale to format strings. */
+    private static final Locale LOCALE = Locale.US;
+
     /**
      * Double to color mapper.
      */
     public interface ColorMapper extends Function<Double, Color> {
     }
 
-    /** Continuous red-to-blue color mapping. */
+    /**
+     * Continuous red-to-blue color mapping.
+     */
     static private ColorMapper defaultColorMapper(double min, double max) {
         double range = max - min;
 
@@ -90,7 +97,7 @@ public class Tracer {
     public static void showAscii(Vector vec, IgniteLogger log, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        log.info(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
+        log.info(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
     }
 
     /**
@@ -108,7 +115,7 @@ public class Tracer {
     public static void showAscii(Vector vec, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        System.out.println(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
+        System.out.println(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
     }
 
     /**
@@ -132,7 +139,7 @@ public class Tracer {
         int cols = mtx.columnSize();
 
         for (int col = 0; col < cols; col++) {
-            String s = String.format(fmt, mtx.get(row, col));
+            String s = String.format(LOCALE, fmt, mtx.get(row, col));
 
             if (!first)
                 buf.append(", ");
@@ -155,7 +162,7 @@ public class Tracer {
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
-        System.out.println(String.format("%s(%dx%d)", cls, rows, cols));
+        System.out.println(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
 
         for (int row = 0; row < rows; row++)
             System.out.println(rowStr(mtx, row, fmt));
@@ -172,7 +179,7 @@ public class Tracer {
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
-        log.info(String.format("%s(%dx%d)", cls, rows, cols));
+        log.info(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
 
         for (int row = 0; row < rows; row++)
             log.info(rowStr(mtx, row, fmt));
@@ -262,7 +269,7 @@ public class Tracer {
      */
     static private String dataColorJson(double d, Color clr) {
         return "{" +
-            "d: " + String.format("%4f", d) +
+            "d: " + String.format(LOCALE, "%4f", d) +
             ", r: " + clr.getRed() +
             ", g: " + clr.getGreen() +
             ", b: " + clr.getBlue() +
@@ -303,13 +310,11 @@ public class Tracer {
     private static String fileToString(String fileName) throws IOException {
         assert Tracer.class.getResourceAsStream(fileName) != null : "Can't get resource: " + fileName;
 
-        InputStreamReader is = new InputStreamReader(Tracer.class.getResourceAsStream(fileName));
+        try (InputStreamReader is
+                 = new InputStreamReader(Tracer.class.getResourceAsStream(fileName), StandardCharsets.US_ASCII)) {
 
-        String str = new BufferedReader(is).lines().collect(Collectors.joining("\n"));
-
-        is.close();
-
-        return str;
+            return new BufferedReader(is).lines().collect(Collectors.joining("\n"));
+        }
     }
 
     /**
@@ -342,7 +347,7 @@ public class Tracer {
         StringBuilder buf = new StringBuilder();
 
         for (Vector.Element x : vec.all()) {
-            String s = String.format(Locale.US, fmt, x.get());
+            String s = String.format(LOCALE, fmt, x.get());
 
             if (!first) {
                 buf.append(", ");
@@ -440,7 +445,7 @@ public class Tracer {
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                String s = String.format(Locale.US, fmt, mtx.get(row, col));
+                String s = String.format(LOCALE, fmt, mtx.get(row, col));
 
                 if (col != 0)
                     buf.append(", ");

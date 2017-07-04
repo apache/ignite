@@ -214,8 +214,16 @@ export class Bean extends EmptyBean {
         return this._property(this.properties, 'int', model, name, _.nonNil);
     }
 
+    longProperty(model, name = model) {
+        return this._property(this.properties, 'long', model, name, _.nonNil);
+    }
+
     floatProperty(model, name = model) {
         return this._property(this.properties, 'float', model, name, _.nonNil);
+    }
+
+    doubleProperty(model, name = model) {
+        return this._property(this.properties, 'double', model, name, _.nonNil);
     }
 
     property(name, value, hint) {

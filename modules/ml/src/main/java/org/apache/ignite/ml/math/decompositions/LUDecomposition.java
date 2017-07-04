@@ -17,10 +17,15 @@
 
 package org.apache.ignite.ml.math.decompositions;
 
+import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
+
+import static org.apache.ignite.ml.math.util.MatrixUtil.copy;
+import static org.apache.ignite.ml.math.util.MatrixUtil.like;
+import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
 
 /**
  * Calculates the LU-decomposition of a square matrix.
@@ -29,8 +34,10 @@ import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
  *
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
+ *
+ * TODO: Maybe we should make this class (and other decompositions) Externalizable.
  */
-public class LUDecomposition extends DecompositionSupport {
+public class LUDecomposition implements Destroyable {
     /** Default bound to determine effective singularity in LU decomposition. */
     private static final double DEFAULT_TOO_SMALL = 1e-11;
 

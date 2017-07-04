@@ -113,8 +113,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
 
         try {
             Thread timer = new Thread(new Runnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     try {
                         U.sleep(FLUSH_FREQUENCY+50);
                     } catch (IgniteInterruptedCheckedException e) {

@@ -59,6 +59,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -99,6 +100,8 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 /**
  * Utility class for tests.
@@ -344,7 +347,7 @@ public final class GridTestUtils {
             Throwable t = e;
 
             while (t != null) {
-                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null && t.getMessage().contains(msg)))) {
                     log.info("Caught expected exception: " + t.getMessage());
 
                     return t;
@@ -1136,7 +1139,7 @@ public final class GridTestUtils {
      * @return Cache context.
      */
     public static <K, V> GridCacheContext<K, V> cacheContext(IgniteCache<K, V> cache) {
-        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache().context();
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context();
     }
 
     /**
@@ -1848,9 +1851,10 @@ public final class GridTestUtils {
      *
      * @param suite TestSuite where to place the test.
      * @param test Test.
-     * @param ignoredTests Tests to ignore.
+     * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(TestSuite suite, Class test, Set<Class> ignoredTests) {
+    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<? extends TestCase> test,
+        @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
@@ -1873,5 +1877,12 @@ public final class GridTestUtils {
             b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
 
         return b.toString();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public static void deleteDbFiles() throws Exception {
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 }

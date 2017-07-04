@@ -252,7 +252,8 @@ namespace Apache.Ignite.Core
         IgniteConfiguration GetConfiguration();
 
         /// <summary>
-        /// Starts a near cache on local node if cache with specified was previously started.
+        /// Starts a near cache on local client node if cache with specified was previously started.
+        /// This method does not work on server nodes.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="configuration">The configuration.</param>
@@ -329,5 +330,34 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="cacheNames">Names of caches to reset partitions for.</param>
         void ResetLostPartitions(params string[] cacheNames);
+
+        /// <summary>
+        /// Gets a collection of memory metrics, one for each <see cref="MemoryConfiguration.MemoryPolicies"/>.
+        /// <para />
+        /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
+        /// </summary>
+        ICollection<IMemoryMetrics> GetMemoryMetrics();
+
+        /// <summary>
+        /// Gets the memory metrics for the specified memory policy.
+        /// <para />
+        /// To get metrics for the default memory region,
+        /// use <see cref="MemoryConfiguration.DefaultMemoryPolicyName"/>.
+        /// </summary>
+        /// <param name="memoryPolicyName">Name of the memory policy.</param>
+        IMemoryMetrics GetMemoryMetrics(string memoryPolicyName);
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        void SetActive(bool isActive);
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        bool IsActive();
     }
 }

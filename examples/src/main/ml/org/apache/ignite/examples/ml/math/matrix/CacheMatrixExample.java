@@ -21,13 +21,26 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.math.vector.CacheVectorExample;
 import org.apache.ignite.ml.math.IdentityValueMapper;
 import org.apache.ignite.ml.math.MatrixKeyMapper;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.ValueMapper;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 
-/** */
+/**
+ *  Example that demonstrates how to use {@link CacheMatrix}.
+ *
+ *  Basically CacheMatrix is view over existing data in cache. So we have {@link MatrixKeyMapper} and {@link ValueMapper}
+ *  for this purpose. A {@link MatrixKeyMapper} allows us to map matrix indices to cache keys. And a {@link ValueMapper}
+ *  allows us map cache object to matrix elements - doubles.
+ *
+ *  In this example we use simple flat mapping for keys and {@link IdentityValueMapper} for cache objects
+ *  because they are Doubles.
+ *
+ *  @see CacheVectorExample
+ */
 public class CacheMatrixExample {
     /** */ private static final String CACHE_NAME = CacheMatrixExample.class.getSimpleName();
     /** */ private static final int ROWS = 3;
@@ -68,6 +81,8 @@ public class CacheMatrixExample {
 
                 cacheMatrix.assign(testValues);
 
+                Tracer.showAscii(cacheMatrix);
+
                 // Find all positive elements.
                 Integer nonZeroes = cacheMatrix.foldMap((o, aDouble) -> {
                     if (aDouble > 0)
@@ -75,16 +90,12 @@ public class CacheMatrixExample {
                     return o;
                 }, Functions.IDENTITY, 0);
 
-                assert nonZeroes.equals(6);
+                System.out.println("Quantity of non zeroes elements is " + nonZeroes.intValue());
 
                 System.out.println(">>>");
                 System.out.println(">>> Finished executing Ignite \"CacheMatrix\" example.");
                 System.out.println(">>> Lower triangular matrix 3x3 have only 6 positive elements.");
                 System.out.println(">>>");
-            }
-            finally {
-                // Distributed cache could be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

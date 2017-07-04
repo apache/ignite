@@ -38,6 +38,18 @@
                 <property name="perTask" value="false"/>
             </bean>
         </property>
+
+        <property name="memoryConfiguration">
+            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+                <property name="defaultMemoryPolicyName" value="default"/>
+                <property name="memoryPolicies">
+                    <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+                        <property name="name" value="default"/>
+                        <property name="size" value="#{8L * 1024 * 1024 * 1024}"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
     </bean>
 
     <bean name="atomic" class="org.apache.ignite.configuration.CacheConfiguration">
@@ -54,7 +66,26 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="TRANSACTIONAL"/>
+    </bean>
 
+    <bean name="atomic-onheap" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="atomic-fat-values-onheap"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="ATOMIC"/>
+
+        <property name="onheapCacheEnabled" value="true"/>
+    </bean>
+
+    <bean name="tx-onheap" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="tx-fat-values-onheap"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+        <property name="onheapCacheEnabled" value="true"/>
     </bean>
 
     <bean name="atomic-index" class="org.apache.ignite.configuration.CacheConfiguration">

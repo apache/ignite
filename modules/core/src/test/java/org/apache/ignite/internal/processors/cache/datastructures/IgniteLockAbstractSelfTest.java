@@ -124,7 +124,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("myCache");
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -406,7 +406,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         // Ensure reentrant lock is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assertNull(((IgniteKernal)g).context().dataStructures().reentrantLock(lockName, false, fair, false));
+            assertNull(((IgniteKernal)g).context().dataStructures().reentrantLock(lockName, null, false, fair, false));
 
         checkRemovedReentrantLock(lock);
     }

@@ -19,7 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -40,13 +41,23 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
     private int allocatedIdxCandidate;
 
+    /** */
+    private long cntrsPageId;
+
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param allocatedIdxCandidate Page Allocated index candidate
      */
-    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize,
-        byte state, int allocatedIdxCandidate) {
+    public MetaPageUpdatePartitionDataRecord(
+        int cacheId,
+        long pageId,
+        long updateCntr,
+        long globalRmvId,
+        int partSize,
+        long cntrsPageId, byte state,
+        int allocatedIdxCandidate
+    ) {
         super(cacheId, pageId);
 
         this.updateCntr = updateCntr;
@@ -54,6 +65,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         this.partSize = partSize;
         this.state = state;
         this.allocatedIdxCandidate = allocatedIdxCandidate;
+        this.cntrsPageId = cntrsPageId;
     }
 
     /**
@@ -78,6 +90,13 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     }
 
     /**
+     * @return Partition size.
+     */
+    public long countersPageId() {
+        return cntrsPageId;
+    }
+
+    /**
      * @return Partition state
      */
     public byte state() {
@@ -91,6 +110,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setUpdateCounter(pageAddr, updateCntr);
         io.setGlobalRemoveId(pageAddr, globalRmvId);
         io.setSize(pageAddr, partSize);
+        io.setCountersPageId(pageAddr, cntrsPageId);
     }
 
     /**
@@ -103,5 +123,10 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageUpdatePartitionDataRecord.class, this);
     }
 }

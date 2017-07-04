@@ -165,7 +165,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(25, metrics.OffHeapPrimaryEntriesCount);
                 Assert.AreEqual(26, metrics.OffHeapBackupEntriesCount);
                 Assert.AreEqual(27, metrics.OffHeapAllocatedSize);
-                Assert.AreEqual(28, metrics.OffHeapMaxSize);
                 Assert.AreEqual(29, metrics.Size);
                 Assert.AreEqual(30, metrics.KeySize);
                 Assert.AreEqual(true, metrics.IsEmpty);

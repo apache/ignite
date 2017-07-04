@@ -220,7 +220,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         // Put internal key to test filtering of internal objects.
 
         for (String cacheName : grid(0).cacheNames())
-            ((IgniteKernal)grid(0)).getCache(cacheName).getAndPut(new GridCacheInternalKeyImpl("LONG"), new GridCacheAtomicLongValue(0));
+            ((IgniteKernal)grid(0)).getCache(cacheName).getAndPut(new GridCacheInternalKeyImpl("LONG", ""), new GridCacheAtomicLongValue(0));
 
         try {
             Collection<GridCacheSqlMetadata> metas =
@@ -249,17 +249,13 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     Map<String, String> fields = meta.fields("Person");
 
                     assert fields != null;
-                    assert fields.size() == 5;
+                    assert fields.size() == 3;
 
                     if (binaryMarshaller) {
-                        assert Object.class.getName().equals(fields.get("_KEY"));
-                        assert Object.class.getName().equals(fields.get("_VAL"));
                         assert Integer.class.getName().equals(fields.get("AGE"));
                         assert Integer.class.getName().equals(fields.get("ORGID"));
                     }
                     else {
-                        assert AffinityKey.class.getName().equals(fields.get("_KEY"));
-                        assert Person.class.getName().equals(fields.get("_VAL"));
                         assert int.class.getName().equals(fields.get("AGE"));
                         assert int.class.getName().equals(fields.get("ORGID"));
                     }
@@ -310,18 +306,15 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     Map<String, String> fields = meta.fields("Organization");
 
                     assert fields != null;
-                    assertEquals("Fields: " + fields, 4, fields.size());
+                    assertEquals("Fields: " + fields, 2, fields.size());
 
                     if (binaryMarshaller) {
-                        assert Object.class.getName().equals(fields.get("_VAL"));
                         assert Integer.class.getName().equals(fields.get("ID"));
                     }
                     else {
-                        assert Organization.class.getName().equals(fields.get("_VAL"));
                         assert int.class.getName().equals(fields.get("ID"));
                     }
 
-                    assert String.class.getName().equals(fields.get("_KEY"));
                     assert String.class.getName().equals(fields.get("NAME"));
                 }
                 else if (intCache.getName().equals(meta.cacheName())) {
@@ -352,14 +345,14 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     assert String.class.getName().equals(fields.get("_KEY"));
                     assert String.class.getName().equals(fields.get("_VAL"));
                 }
-                else if (meta.cacheName() == null)
+                else if (DEFAULT_CACHE_NAME.equals(meta.cacheName()))
                     assertTrue("Invalid types size", types.isEmpty());
                 else
                     fail("Unknown cache: " + meta.cacheName());
             }
         }
         finally {
-            ((IgniteKernal)grid(0)).getCache(intCache.getName()).remove(new GridCacheInternalKeyImpl("LONG"));
+            ((IgniteKernal)grid(0)).getCache(intCache.getName()).remove(new GridCacheInternalKeyImpl("LONG", ""));
         }
     }
 
@@ -587,7 +580,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     public void testSelectAllJoined() throws Exception {
         QueryCursor<List<?>> qry =
             personCache.query(sqlFieldsQuery(
-                String.format("select * from \"%s\".Person p, \"%s\".Organization o where p.orgId = o.id",
+                String.format("select p._key, p._val, p.*, o._key, o._val, o.* from \"%s\".Person p, \"%s\".Organization o where p.orgId = o.id",
                     personCache.getName(), orgCache.getName())));
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
@@ -768,7 +761,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         cache.put(key, val);
 
-        Collection<List<?>> res = cache.query(sqlFieldsQuery("select * from Person")).getAll();
+        Collection<List<?>> res = cache.query(sqlFieldsQuery("select _key, _val, * from Person")).getAll();
 
         assertEquals(1, res.size());
 

@@ -331,7 +331,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Loaded value from store [key=" + key + ", val=" + val + ']');
+                log.debug(S.toString("Loaded value from store",
+                    "key", key, true,
+                    "val", val, true));
 
             if (convert) {
                 val = convert(val);
@@ -538,7 +540,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         LT.warn(log, "Calling Cache.loadCache() method will have no effect, " +
-            "CacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
+            "CacheConfiguration.getStore() is not defined for cache: " + cctx.name());
 
         return false;
     }
@@ -804,7 +806,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         if (e.getMessage() != null) {
             throw new IgniteCheckedException("Cache store must work with binary objects if binary are " +
-                "enabled for cache [cacheName=" + cctx.namex() + ']', e);
+                "enabled for cache [cacheName=" + cctx.name() + ']', e);
         }
         else
             throw e;

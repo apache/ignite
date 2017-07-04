@@ -69,10 +69,13 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -86,7 +89,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -626,7 +628,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testSimpleCustomTableName() throws Exception {
-        final IgniteCache<Integer, Object> cache = ignite().cache(null);
+        final IgniteCache<Integer, Object> cache = ignite().cache(DEFAULT_CACHE_NAME);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
@@ -1212,7 +1214,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testPaginationIteratorDefaultCache() throws Exception {
-        testPaginationIterator(jcache(ignite(), cacheConfiguration(), null, Integer.class, Integer.class));
+        testPaginationIterator(jcache(ignite(), cacheConfiguration(), DEFAULT_CACHE_NAME, Integer.class, Integer.class));
     }
 
     /**
@@ -1252,7 +1254,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testPaginationGetDefaultCache() throws Exception {
-        testPaginationGet(jcache(ignite(), cacheConfiguration(), null, Integer.class, Integer.class));
+        testPaginationGet(jcache(ignite(), cacheConfiguration(), DEFAULT_CACHE_NAME, Integer.class, Integer.class));
     }
 
     /**

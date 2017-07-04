@@ -36,8 +36,8 @@ import java.util.Map;
  * Descriptor of type.
  */
 public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
-    /** Space. */
-    private final String space;
+    /** Cache name. */
+    private final String cacheName;
 
     /** */
     private String name;
@@ -90,23 +90,29 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String affKey;
 
+    /** */
+    private String keyFieldName;
+
+    /** */
+    private String valFieldName;
+
     /** Obsolete. */
     private volatile boolean obsolete;
 
     /**
      * Constructor.
      *
-     * @param space Cache name.
+     * @param cacheName Cache name.
      */
-    public QueryTypeDescriptorImpl(String space) {
-        this.space = space;
+    public QueryTypeDescriptorImpl(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
-     * @return Space.
+     * @return Cache name.
      */
-    public String space() {
-        return space;
+    public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
@@ -265,7 +271,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @return {@code True} if exists.
      */
     public boolean hasField(String field) {
-        return props.containsKey(field) || QueryUtils._VAL.equalsIgnoreCase(field);
+        return props.containsKey(field) || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(field);
     }
 
     /**
@@ -414,5 +420,40 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryTypeDescriptorImpl.class, this);
+    }
+
+    /**
+     * Sets key field name.
+     * @param keyFieldName Key field name.
+     */
+    public void keyFieldName(String keyFieldName) {
+        this.keyFieldName = keyFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String keyFieldName() {
+        return keyFieldName;
+    }
+
+    /**
+     * Sets value field name.
+     * @param valueFieldName value field name.
+     */
+    public void valueFieldName(String valueFieldName) {
+        this.valFieldName = valueFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String valueFieldName() {
+        return valFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String keyFieldAlias() {
+        return keyFieldName != null ? aliases.get(keyFieldName) : null;
+    }
+
+    @Nullable @Override public String valueFieldAlias() {
+        return valFieldName != null ? aliases.get(valFieldName) : null;
     }
 }

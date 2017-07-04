@@ -77,7 +77,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         if (svcs != null)
             c.setServiceConfiguration(svcs);
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setName(CACHE_NAME);
         cc.setCacheMode(CacheMode.PARTITIONED);
@@ -303,8 +303,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
         GridTestUtils.retryAssert(log, 50, 200, new CA() {
-            @Override
-            public void apply() {
+            @Override public void apply() {
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {

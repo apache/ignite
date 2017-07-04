@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Compute.Closure;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Resource;
 
@@ -83,7 +84,8 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             _jobRes = new ComputeJobResultImpl(
                 success ? res : null, 
-                success ? null : res as Exception, 
+                success ? null : new IgniteException("Compute job has failed on local node, " +
+                                                     "examine InnerException for details.", (Exception) res), 
                 _job, 
                 _ignite.GetLocalNode().Id, 
                 cancel
@@ -101,7 +103,10 @@ namespace Apache.Ignite.Core.Impl.Compute
             object res;
             bool success;
 
-            Execute0(cancel, out res, out success);
+            using (PeerAssemblyResolver.GetInstance(_ignite, Guid.Empty))
+            {
+                Execute0(cancel, out res, out success);
+            }
 
             // 2. Try writing result to the stream.
             ClusterGroupImpl prj = _ignite.ClusterGroup;

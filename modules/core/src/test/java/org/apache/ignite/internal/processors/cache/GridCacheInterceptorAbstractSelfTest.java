@@ -1336,7 +1336,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private List<String> primaryKeys(int idx, int cnt) {
         assert cnt > 0;
 
-        Affinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         List<String> keys = new ArrayList<>(cnt);
 
@@ -1361,7 +1361,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Primary key for grid.
      */
     private String backupKey(int idx) {
-        Affinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         String key = null;
 
@@ -1383,7 +1383,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Key which does not belong to the grid.
      */
     private String nearKey(int idx) {
-        Affinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         String key = null;
 
@@ -1413,7 +1413,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         try {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(null).get(key));
+                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(DEFAULT_CACHE_NAME).get(key));
         }
         finally {
             interceptor.disabled = false;

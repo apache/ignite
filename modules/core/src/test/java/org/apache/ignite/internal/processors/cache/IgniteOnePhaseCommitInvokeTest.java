@@ -127,10 +127,12 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
 
         final Ignite clientNode = startGrid(1);
 
+        final int grpId = groupIdForCache(srv0, CACHE_NAME);
+
         TestRecordingCommunicationSpi.spi(srv0).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
                 return msg instanceof GridDhtPartitionSupplyMessage &&
-                    ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(CACHE_NAME);
+                    ((GridDhtPartitionSupplyMessage)msg).groupId() == grpId;
             }
         });
 

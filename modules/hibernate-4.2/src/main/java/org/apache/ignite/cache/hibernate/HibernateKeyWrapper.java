@@ -44,6 +44,13 @@ public class HibernateKeyWrapper implements Serializable {
         this.tenantId = tenantId;
     }
 
+    /**
+     * @return Key.
+     */
+    Object id() {
+        return key;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o) return true;

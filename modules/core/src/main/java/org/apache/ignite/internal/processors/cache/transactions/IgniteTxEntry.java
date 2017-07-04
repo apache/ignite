@@ -88,6 +88,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
     private static final int TX_ENTRY_OLD_VAL_ON_PRIMARY = 0x04;
 
+    /** Flag indicating that near cache is enabled on originating node and it should be added as reader. */
+    private static final int TX_ENTRY_ADD_READER_FLAG_MASK = 0x08;
+
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(IgniteTxEntry.class, "prepared");
@@ -275,6 +278,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param filters Put filters.
      * @param conflictVer Data center replication version.
      * @param skipStore Skip store flag.
+     * @param addReader Add reader flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
@@ -287,7 +291,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         CacheEntryPredicate[] filters,
         GridCacheVersion conflictVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean addReader
     ) {
         assert ctx != null;
         assert tx != null;
@@ -304,6 +309,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         skipStore(skipStore);
         keepBinary(keepBinary);
+        addReader(addReader);
 
         if (entryProcessor != null)
             addEntryProcessor(entryProcessor, invokeArgs);
@@ -318,6 +324,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public GridCacheContext<?, ?> context() {
         return ctx;
+    }
+
+    /**
+     * @param ctx Cache context for this tx entry.
+     */
+    public void context(GridCacheContext<?, ?> ctx) {
+        this.ctx = ctx;
     }
 
     /**
@@ -524,6 +537,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @param addReader Add reader flag.
+     */
+    public void addReader(boolean addReader) {
+        setFlag(addReader, TX_ENTRY_ADD_READER_FLAG_MASK);
+    }
+
+    /**
+     * @return Add reader flag.
+     */
+    public boolean addReader() {
+        return isFlag(TX_ENTRY_ADD_READER_FLAG_MASK);
+    }
+
+    /**
      * Sets flag mask.
      *
      * @param flag Set or clear.
@@ -565,7 +592,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public void cached(GridCacheEntryEx entry) {
         assert entry == null || entry.context() == ctx : "Invalid entry assigned to tx entry [txEntry=" + this +
-            ", entry=" + entry + ", ctxNear=" + ctx.isNear() + ", ctxDht=" + ctx.isDht() + ']';
+            ", entry=" + entry +
+            ", ctxNear=" + ctx.isNear() +
+            ", ctxDht=" + ctx.isDht() + ']';
 
         this.entry = entry;
     }

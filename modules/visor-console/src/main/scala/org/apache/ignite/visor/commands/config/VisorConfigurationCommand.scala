@@ -162,7 +162,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         cmnT += ("Grid name", escapeName(basic.getIgniteInstanceName))
         cmnT += ("Ignite home", safe(basic.getGgHome))
         cmnT += ("Localhost", safe(basic.getLocalHost))
-        cmnT += ("Node ID", safe(basic.getNodeId))
+        cmnT += ("Consistent ID", safe(basic.getConsistentId))
         cmnT += ("Marshaller", basic.getMarshaller)
         cmnT += ("Deployment mode", safe(basic.getDeploymentMode))
         cmnT += ("ClientMode", javaBoolToStr(basic.isClientMode))
@@ -273,6 +273,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.getPeerClassLoadingThreadPoolSize))
         execSvcT += ("Rebalance Thread Pool size", execCfg.getRebalanceThreadPoolSize)
         execSvcT += ("REST thread pool size", safe(execCfg.getRestThreadPoolSize))
+        execSvcT += ("SQL processor thread pool size", safe(execCfg.getSqlConnectorConfigurationThreadPoolSize))
 
         execSvcT.render()
 

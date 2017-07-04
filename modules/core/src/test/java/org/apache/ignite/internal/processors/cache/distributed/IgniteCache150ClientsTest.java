@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -71,10 +72,12 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         cfg.setClientFailureDetectionTimeout(200000);
         cfg.setClientMode(!igniteInstanceName.equals(getTestIgniteInstanceName(0)));
 
+        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPortRange(1000));
+
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
         for (int i = 0 ; i < ccfgs.length; i++) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
             ccfg.setAtomicityMode(i % 2 == 0 ? ATOMIC : TRANSACTIONAL);

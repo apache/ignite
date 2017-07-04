@@ -34,6 +34,7 @@ import java.text.DateFormat;
 import java.util.Locale;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -77,14 +78,6 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
     };
 
-    /** Custom {@code null} string serializer. */
-    private static final JsonSerializer<Object> NULL_STRING_VALUE_SERIALIZER = new JsonSerializer<Object>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(Object val, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeString("");
-        }
-    };
-
     /**
      * Custom serializers provider that provide special serializers for {@code null} values.
      */
@@ -108,7 +101,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
 
         /** {@inheritDoc} */
-        public DefaultSerializerProvider createInstance(SerializationConfig cfg, SerializerFactory jsf) {
+        @Override public DefaultSerializerProvider createInstance(SerializationConfig cfg, SerializerFactory jsf) {
             return new CustomSerializerProvider(this, cfg, jsf);
         }
 
@@ -120,19 +113,18 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
         /** {@inheritDoc} */
         @Override public JsonSerializer<Object> findNullValueSerializer(BeanProperty prop) throws JsonMappingException {
-            if (prop.getType().getRawClass() == String.class)
-                return NULL_STRING_VALUE_SERIALIZER;
-
             return NULL_VALUE_SERIALIZER;
         }
     }
 
     /** Custom serializer for {@link Throwable} */
     private static final JsonSerializer<Throwable> THROWABLE_SERIALIZER = new JsonSerializer<Throwable>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(Throwable e, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeStartObject();
-
+        /**
+         * @param e Exception to write.
+         * @param gen JSON generator.
+         * @throws IOException If failed to write.
+         */
+        private void writeException(Throwable e, JsonGenerator gen) throws IOException {
             if (e instanceof VisorExceptionWrapper) {
                 VisorExceptionWrapper wrapper = (VisorExceptionWrapper)e;
 
@@ -144,14 +136,30 @@ public class GridJettyObjectMapper extends ObjectMapper {
             if (e.getMessage() != null)
                 gen.writeStringField("message", e.getMessage());
 
-            if (e.getCause() != null)
-                gen.writeObjectField("cause", e.getCause());
-
             if (e instanceof SQLException) {
                 SQLException sqlE = (SQLException)e;
 
                 gen.writeNumberField("errorCode", sqlE.getErrorCode());
                 gen.writeStringField("SQLState", sqlE.getSQLState());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void serialize(Throwable e, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            gen.writeStartObject();
+
+            writeException(e, gen);
+
+            if (e.getCause() != null)
+                gen.writeObjectField("cause", e.getCause());
+
+            if (!F.isEmpty(e.getSuppressed())) {
+                gen.writeArrayFieldStart("suppressed");
+
+                for (Throwable sup : e.getSuppressed())
+                    gen.writeObject(sup);
+
+                gen.writeEndArray();
             }
 
             gen.writeEndObject();

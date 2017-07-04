@@ -99,6 +99,12 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         if (jobRes.getEventsEx() != null)
             taskRes.getEventsEx().put(nid, new VisorExceptionWrapper(jobRes.getEventsEx()));
 
+        if (!jobRes.getMemoryMetrics().isEmpty())
+            taskRes.getMemoryMetrics().put(nid, jobRes.getMemoryMetrics());
+
+        if (jobRes.getMemoryMetricsEx() != null)
+            taskRes.getMemoryMetricsEx().put(nid, new VisorExceptionWrapper(jobRes.getMemoryMetricsEx()));
+
         if (!jobRes.getCaches().isEmpty())
             taskRes.getCaches().put(nid, jobRes.getCaches());
 
@@ -113,5 +119,9 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
 
         if (jobRes.getIgfssEx() != null)
             taskRes.getIgfssEx().put(nid, new VisorExceptionWrapper(jobRes.getIgfssEx()));
+
+        taskRes.getReadyAffinityVersions().put(nid, jobRes.getReadyAffinityVersion());
+
+        taskRes.getPendingExchanges().put(nid, jobRes.isHasPendingExchange());
     }
 }

@@ -109,7 +109,6 @@ public interface CacheMetrics {
      */
     public float getAverageRemoveTime();
 
-
     /**
      * The mean time to execute tx commit.
      *
@@ -202,6 +201,14 @@ public interface CacheMetrics {
     public float getOffHeapMissPercentage();
 
     /**
+     * Gets the number of cache entries in heap memory, including entries held by active transactions, entries in
+     * onheap cache and near entries.
+     *
+     * @return Number of entries in heap memory.
+     */
+    public long getHeapEntriesCount();
+
+    /**
      * Gets number of entries stored in off-heap memory.
      *
      * @return Number of entries stored in off-heap memory.
@@ -228,13 +235,6 @@ public interface CacheMetrics {
      * @return Memory size allocated in off-heap.
      */
     public long getOffHeapAllocatedSize();
-
-    /**
-     * Gets off-heap memory maximum size.
-     *
-     * @return Off-heap memory maximum size.
-     */
-    public long getOffHeapMaxSize();
 
     /**
      * Gets number of non-{@code null} values in the cache.
@@ -479,6 +479,31 @@ public interface CacheMetrics {
      * @return {@code True} if the cache is store by value.
      */
     public boolean isStoreByValue();
+
+    /**
+     * @return Total number of partitions on current node.
+     */
+    public int getTotalPartitionsCount();
+
+    /**
+     * @return Number of currently rebalancing partitions on current node.
+     */
+    public int getRebalancingPartitionsCount();
+
+    /**
+     * @return Estimated number of keys to be rebalanced on current node.
+     */
+    public long getKeysToRebalanceLeft();
+
+    /**
+     * @return Estimated rebalancing speed in keys.
+     */
+    public long getRebalancingKeysRate();
+
+    /**
+     * @return Estimated rebalancing speed in bytes.
+     */
+    public long getRebalancingBytesRate();
 
     /**
      * Checks whether statistics collection is enabled in this cache.

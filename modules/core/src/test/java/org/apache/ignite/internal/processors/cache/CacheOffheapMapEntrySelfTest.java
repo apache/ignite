@@ -22,8 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
 
@@ -97,9 +96,9 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
         checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtAtomicCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtCacheEntry.class);
 
-        checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtColocatedCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtCacheEntry.class);
     }
 
     /**
@@ -125,7 +124,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
         try {
             GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(0)).internalCache(jcache.getName());
 
-            Integer key = primaryKey(grid(0).cache(null));
+            Integer key = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
 
             cache.put(key, "val");
 
@@ -135,7 +134,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
             assertNotNull(entry);
 
-            assertEquals(entry.getClass(), entryCls);
+            assertEquals(entryCls, entry.getClass());
         }
         finally {
             jcache.destroy();

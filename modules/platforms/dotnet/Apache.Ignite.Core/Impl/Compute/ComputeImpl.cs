@@ -35,7 +35,6 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Compute implementation.
@@ -445,6 +444,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="action">Job to execute.</param>
         public Future<object> AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(action, "action");
 
             return ExecuteClosures0(new ComputeSingleClosureTask<object, object, object>(),
@@ -463,6 +463,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         public Future<TJobRes> AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(clo, "clo");
 
             return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),

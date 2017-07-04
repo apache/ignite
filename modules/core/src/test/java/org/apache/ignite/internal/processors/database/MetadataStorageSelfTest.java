@@ -17,24 +17,24 @@
 
 package org.apache.ignite.internal.processors.database;
 
-import org.apache.ignite.internal.mem.DirectMemoryProvider;
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
-import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.MetadataStorage;
+import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -154,13 +154,18 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      * @return Page memory instance.
      */
     protected PageMemory memory(boolean clean) throws Exception {
-        long[] sizes = new long[10];
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * 1024;
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+            .setMaxSize(30 * 1024 * 1024).setInitialSize(30 * 1024 * 1024);
 
-        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
-
-        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE, null, new MemoryMetricsImpl(null), true);
+        return new PageMemoryNoStoreImpl(
+            log,
+            provider,
+            null,
+            PAGE_SIZE,
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
+            true);
     }
 }

@@ -107,7 +107,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
         try {
             Ignite firstIgnite = startGrid("1");
 
-            IgniteCache<Integer, String> firstCache = firstIgnite.cache(null);
+            IgniteCache<Integer, String> firstCache = firstIgnite.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < ADDITION_CACHE_NUMBER; i++)
                 startGrid(String.valueOf(i + 2));
@@ -137,8 +137,8 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
             Ignite ignite3 = startGrid("3");
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
-            IgniteCache<Integer, String> cache3 = ignite3.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, String> cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {

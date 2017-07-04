@@ -66,9 +66,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default lock timeout. </summary>
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.Zero;
 
-        /// <summary> Initial default cache size. </summary>
-        public const int DefaultStartSize = 1500000;
-
         /// <summary> Default cache size to use with eviction policy. </summary>
         public const int DefaultCacheSize = 100000;
 
@@ -110,9 +107,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary> Default timeout after which long query warning will be printed. </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
-
-        /// <summary> Default size for onheap SQL row cache size. </summary>
-        public const int DefaultSqlOnheapRowCacheSize = 10*1024;
 
         /// <summary> Default value for keep portable in store behavior .</summary>
         public const bool DefaultKeepVinaryInStore = true;
@@ -162,14 +156,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeepBinaryInStore = DefaultKeepVinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
+#pragma warning disable 618
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
             RebalanceMode = DefaultRebalanceMode;
             RebalanceThrottle = DefaultRebalanceThrottle;
             RebalanceTimeout = DefaultRebalanceTimeout;
-            StartSize = DefaultStartSize;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
             WriteBehindEnabled = DefaultWriteBehindEnabled;
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
@@ -221,7 +216,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeepBinaryInStore = reader.ReadBoolean();
             LoadPreviousValue = reader.ReadBoolean();
             LockTimeout = reader.ReadLongAsTimespan();
+#pragma warning disable 618
             LongQueryWarningTimeout = reader.ReadLongAsTimespan();
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = reader.ReadInt();
             Name = reader.ReadString();
             ReadFromBackup = reader.ReadBoolean();
@@ -231,7 +228,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceThrottle = reader.ReadLongAsTimespan();
             RebalanceTimeout = reader.ReadLongAsTimespan();
             SqlEscapeAll = reader.ReadBoolean();
-            StartSize = reader.ReadInt();
             WriteBehindBatchSize = reader.ReadInt();
             WriteBehindEnabled = reader.ReadBoolean();
             WriteBehindFlushFrequency = reader.ReadLongAsTimespan();
@@ -244,6 +240,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EnableStatistics = reader.ReadBoolean();
             MemoryPolicyName = reader.ReadString();
             PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
+            GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -279,7 +276,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(KeepBinaryInStore);
             writer.WriteBoolean(LoadPreviousValue);
             writer.WriteLong((long) LockTimeout.TotalMilliseconds);
+#pragma warning disable 618
             writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
+#pragma warning restore 618
             writer.WriteInt(MaxConcurrentAsyncOperations);
             writer.WriteString(Name);
             writer.WriteBoolean(ReadFromBackup);
@@ -289,7 +288,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) RebalanceThrottle.TotalMilliseconds);
             writer.WriteLong((long) RebalanceTimeout.TotalMilliseconds);
             writer.WriteBoolean(SqlEscapeAll);
-            writer.WriteInt(StartSize);
             writer.WriteInt(WriteBehindBatchSize);
             writer.WriteBoolean(WriteBehindEnabled);
             writer.WriteLong((long) WriteBehindFlushFrequency.TotalMilliseconds);
@@ -302,6 +300,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(EnableStatistics);
             writer.WriteString(MemoryPolicyName);
             writer.WriteInt((int) PartitionLossPolicy);
+            writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -387,12 +386,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultEagerTtl)]
         public bool EagerTtl { get; set; }
-
-        /// <summary>
-        /// Gets or sets initial cache size which will be used to pre-create internal hash table after start.
-        /// </summary>
-        [DefaultValue(DefaultStartSize)]
-        public int StartSize { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether value should be loaded from store if it is not in the cache 
@@ -551,8 +544,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
+        /// <para />
+        /// This property is obsolete, use <see cref="IgniteConfiguration.LongQueryWarningTimeout"/> instead.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:03")]
+        [Obsolete("Use IgniteConfiguration.LongQueryWarningTimeout instead.")]
         public TimeSpan LongQueryWarningTimeout { get; set; }
 
         /// <summary>
@@ -658,5 +654,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultPartitionLossPolicy)]
         public PartitionLossPolicy PartitionLossPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache group name. Caches with the same group name share single underlying 'physical'
+        /// cache (partition set), but are logically isolated. 
+        /// <para />
+        /// Since underlying cache is shared, the following configuration properties should be the same within group:
+        /// <see cref="AffinityFunction"/>, <see cref="CacheMode"/>, <see cref="PartitionLossPolicy"/>,
+        /// <see cref="MemoryPolicyName"/>
+        /// <para />
+        /// Grouping caches reduces overall overhead, since internal data structures are shared.
+        /// </summary>
+        public string GroupName { get;set; }
     }
 }

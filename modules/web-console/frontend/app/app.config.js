@@ -20,14 +20,15 @@ import angular from 'angular';
 
 const nonNil = _.negate(_.isNil);
 const nonEmpty = _.negate(_.isEmpty);
+const id8 = (uuid) => uuid.substring(0, 8).toUpperCase();
 
 _.mixin({
     nonNil,
-    nonEmpty
+    nonEmpty,
+    id8
 });
 
 import alertTemplateUrl from 'views/templates/alert.tpl.pug';
-import selectTemplateUrl from 'views/templates/select.tpl.pug';
 import dropdownTemplateUrl from 'views/templates/dropdown.tpl.pug';
 import validationTemplateUrl from 'views/templates/validation-error.tpl.pug';
 
@@ -75,7 +76,7 @@ igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
         maxLength: '5',
         allText: 'Select All',
         noneText: 'Clear All',
-        templateUrl: selectTemplateUrl,
+        template: '<bs-select-menu></bs-select-menu>',
         iconCheckmark: 'fa fa-check',
         caretHtml: ''
     });
@@ -96,7 +97,8 @@ igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
 // AngularStrap dropdowns () configuration.
 igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
     angular.extend($dropdownProvider.defaults, {
-        templateUrl: dropdownTemplateUrl
+        templateUrl: dropdownTemplateUrl,
+        animation: ''
     });
 }]);
 

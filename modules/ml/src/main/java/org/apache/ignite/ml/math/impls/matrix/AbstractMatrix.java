@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.MatrixStorage;
@@ -837,6 +839,11 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Vector viewDiagonal() {
         return new MatrixVectorView(this, 0, 0, 1, 1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        getStorage().destroy();
     }
 
     /** {@inheritDoc} */

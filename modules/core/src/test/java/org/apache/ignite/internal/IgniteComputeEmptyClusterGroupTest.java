@@ -82,11 +82,11 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = ignite(0).compute(empty);
 
-        checkFutureFails(comp.affinityRunAsync((String)null, 1, new FailRunnable()));
+        checkFutureFails(comp.affinityRunAsync(DEFAULT_CACHE_NAME, 1, new FailRunnable()));
 
         checkFutureFails(comp.applyAsync(new FailClosure(), new Object()));
 
-        checkFutureFails(comp.affinityCallAsync((String)null, 1, new FailCallable()));
+        checkFutureFails(comp.affinityCallAsync(DEFAULT_CACHE_NAME, 1, new FailCallable()));
 
         checkFutureFails(comp.broadcastAsync(new FailCallable()));
     }
@@ -102,9 +102,8 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
         final IgniteCompute comp = ignite(0).compute(empty);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                comp.affinityRun((String)null, 1, new FailRunnable());
+            @Override public Void call() throws Exception {
+                comp.affinityRun(DEFAULT_CACHE_NAME, 1, new FailRunnable());
 
                 return null;
             }
@@ -119,9 +118,8 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
         }, ClusterGroupEmptyException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                comp.affinityCall((String)null, 1, new FailCallable());
+            @Override public Void call() throws Exception {
+                comp.affinityCall(DEFAULT_CACHE_NAME, 1, new FailCallable());
 
                 return null;
             }

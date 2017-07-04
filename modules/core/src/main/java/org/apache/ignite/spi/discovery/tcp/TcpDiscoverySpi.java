@@ -238,12 +238,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
-    /**
-     * Default metrics update messages issuing frequency
-     * (value is {@link IgniteConfiguration#DFLT_METRICS_UPDATE_FREQ}).
-     */
-    public static final long DFLT_METRICS_UPDATE_FREQ = IgniteConfiguration.DFLT_METRICS_UPDATE_FREQ;
-
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
 
@@ -297,7 +291,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     protected int threadPri = DFLT_THREAD_PRI;
 
     /** Metrics update messages issuing frequency. */
-    protected long metricsUpdateFreq = DFLT_METRICS_UPDATE_FREQ;
+    protected long metricsUpdateFreq;
 
     /** Size of topology snapshots history. */
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
@@ -1317,17 +1311,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /** {@inheritDoc} */
-    @Override public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange) {
+    @Override public void setDataExchange(DiscoverySpiDataExchange exchange) {
         this.exchange = exchange;
-
-        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
+    @Override public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
         this.metricsProvider = metricsProvider;
-
-        return this;
     }
 
     /** {@inheritDoc} */
@@ -1468,6 +1458,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
         writeToSocket(sock, socketStream(sock), msg, timeout);
+    }
+
+    /**
+     * @param msg Message.
+     */
+    protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+        // No-op, intended for usage in tests.
     }
 
     /**
@@ -1980,7 +1977,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      *
      */
     void printStopInfo() {
-        if (log.isDebugEnabled())
+        IgniteLogger log = this.log;
+
+        if (log != null && log.isDebugEnabled())
             log.debug(stopInfo());
     }
 
@@ -2342,6 +2341,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         /** {@inheritDoc} */
         @Override public long getCoordinatorSinceTimestamp() {
             return TcpDiscoverySpi.this.getCoordinatorSinceTimestamp();
+        }
+
+        @Override public void checkRingLatency(int maxHops) {
+            TcpDiscoverySpi.this.impl.checkRingLatency(maxHops);
         }
     }
 }

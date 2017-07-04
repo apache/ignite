@@ -34,10 +34,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <para />
         /// Once a memory region defined by a memory policy is configured, an off-heap array is allocated to track
         /// last usage timestamp for every individual data page. The size of the array equals to
-        /// <see cref="MemoryPolicyConfiguration.Size"/> / <see cref="MemoryConfiguration.PageSize"/>.
+        /// <see cref="MemoryPolicyConfiguration.MaxSize"/> / <see cref="MemoryConfiguration.PageSize"/>.
         /// <para />
         /// When a data page is accessed, its timestamp gets updated in the tracking array. The page index in the
-        /// tracking array equals to pageAddress / <see cref="MemoryPolicyConfiguration.Size"/>.
+        /// tracking array equals to pageAddress / <see cref="MemoryPolicyConfiguration.MaxSize"/>.
         /// <para />
         /// When some pages need to be evicted, the algorithm randomly chooses 5 indexes from the tracking array and
         /// evicts a page with the latest timestamp. If some of the indexes point to non-data pages

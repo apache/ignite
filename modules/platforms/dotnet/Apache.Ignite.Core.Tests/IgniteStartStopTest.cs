@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config/default-config.xml",
+                SpringConfigUrl = "config\\start-test-grid1.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
@@ -185,9 +185,11 @@ namespace Apache.Ignite.Core.Tests
 
             Ignition.Start(cfg);
             Assert.IsNotNull(Ignition.GetIgnite());
+            Assert.IsNotNull(Ignition.TryGetIgnite());
 
             Ignition.Start(cfg);
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
+            Assert.IsNull(Ignition.TryGetIgnite());
             Assert.AreEqual(2, Ignition.GetAll().Count);
         }
 

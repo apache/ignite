@@ -108,7 +108,7 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -179,11 +179,11 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +
-            "from \"org\".Organization o, (select * from \"person\".Person) p " +
+            "from \"org\".Organization o, (select *, _key from \"person\".Person) p " +
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +
-            "from (select * from \"org\".Organization) o, (select * from \"person\".Person) p " +
+            "from (select * from \"org\".Organization) o, (select *, _key from \"person\".Person) p " +
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +

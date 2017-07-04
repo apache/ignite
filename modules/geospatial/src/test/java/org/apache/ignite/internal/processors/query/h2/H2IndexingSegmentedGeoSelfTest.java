@@ -25,6 +25,6 @@ public class H2IndexingSegmentedGeoSelfTest extends H2IndexingAbstractGeoSelfTes
      * Constructor.
      */
     public H2IndexingSegmentedGeoSelfTest() {
-        super(false, true);
+        super(true);
     }
 }

@@ -252,7 +252,10 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         V val = entry.getValue();
 
         if (log.isDebugEnabled())
-            log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
+            log.debug(S.toString("Store put",
+                "key", key, true,
+                "val", val, true,
+                "tx", tx, false));
 
         Connection conn = null;
 

@@ -255,6 +255,8 @@ namespace ignite
 
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message body");
             }
+
+            LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
         }
 
         size_t Connection::ReceiveAll(void* dst, size_t len)
@@ -278,9 +280,9 @@ namespace ignite
             return len;
         }
 
-        const std::string& Connection::GetCache() const
+        const std::string& Connection::GetSchema() const
         {
-            return config.GetCache();
+            return config.GetSchema();
         }
 
         const config::Configuration& Connection::GetConfiguration() const
@@ -321,13 +323,17 @@ namespace ignite
         {
             bool distributedJoins = false;
             bool enforceJoinOrder = false;
-            int64_t protocolVersion = 0;
+            bool replicatedOnly = false;
+            bool collocated = false;
+            ProtocolVersion protocolVersion;
 
             try
             {
+                protocolVersion = config.GetProtocolVersion();
                 distributedJoins = config.IsDistributedJoins();
                 enforceJoinOrder = config.IsEnforceJoinOrder();
-                protocolVersion = config.GetProtocolVersion().GetIntValue();
+                replicatedOnly = config.IsReplicatedOnly();
+                collocated = config.IsCollocated();
             }
             catch (const IgniteError& err)
             {
@@ -336,7 +342,15 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder);
+            if (!protocolVersion.IsSupported())
+            {
+                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
+                    "Protocol version is not supported: " + protocolVersion.ToString());
+
+                return SqlResult::AI_ERROR;
+            }
+
+            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated);
             HandshakeResponse rsp;
 
             try
@@ -350,27 +364,20 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-            {
-                LOG_MSG("Error: " << rsp.GetError().c_str());
-
-                AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, rsp.GetError());
-
-                InternalRelease();
-
-                return SqlResult::AI_ERROR;
-            }
-
             if (!rsp.IsAccepted())
             {
                 LOG_MSG("Hanshake message has been rejected.");
 
                 std::stringstream constructor;
 
-                constructor << "Node rejected handshake message. "
-                    << "Current node Apache Ignite version: " << rsp.CurrentVer() << ", "
-                    << "node protocol version introduced in version: " << rsp.ProtoVerSince() << ", "
-                    << "driver protocol version introduced in version: " << config.GetProtocolVersion().ToString() << ".";
+                constructor << "Node rejected handshake message. ";
+
+                if (!rsp.GetError().empty())
+                    constructor << "Additional info: " << rsp.GetError();
+
+                constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
+                            << "driver protocol version introduced in version: "
+                            << config.GetProtocolVersion().ToString() << ".";
 
                 AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, constructor.str());
 

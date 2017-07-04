@@ -51,7 +51,7 @@ public class IgniteCacheQueryNodeFailTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setBackups(0);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
 
@@ -107,7 +107,7 @@ public class IgniteCacheQueryNodeFailTest extends GridCommonAbstractTest {
 
         Ignite client = grid(1);
 
-        final IgniteCache<Integer, Integer> cache = client.cache(null);
+        final IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100_000; i++)
             cache.put(i, i);

@@ -103,8 +103,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         // Wait for all pending tasks in closure processor to complete.
         for (int i = 0; i < THREADS; i++) {
             ctx.closure().runLocalSafe(new GridPlainRunnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     arrive.countDown();
 
                     try {

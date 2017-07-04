@@ -73,7 +73,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
         LruEvictionPolicy evictionPolicy = new LruEvictionPolicy<>();
         evictionPolicy.setMaxSize(LRU_MAX_SIZE);
 
-        CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(1);
@@ -105,7 +105,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
 
             futs.add(GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ig.cache(null).localLoadCache(null);
+                    ig.cache(DEFAULT_CACHE_NAME).localLoadCache(null);
 
                     return null;
                 }
@@ -119,7 +119,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
             for (int i = 0; i < gridCnt; i++) {
                 IgniteEx grid = grid(i);
 
-                final IgniteCache<Object, Object> cache = grid.cache(null);
+                final IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {

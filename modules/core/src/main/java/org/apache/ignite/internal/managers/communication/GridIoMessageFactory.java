@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
+import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
@@ -33,8 +34,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
@@ -178,6 +177,13 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            // -54 is reserved for SQL.
+            // -46 ... -51 - snapshot messages.
+            case -61:
+                msg = new IgniteDiagnosticMessage();
+
+                break;
+
             case -53:
                 msg = new SchemaOperationStatusMessage();
 
@@ -208,18 +214,8 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case -47:
-                msg = new SnapshotProgressMessage();
-
-                break;
-
-            case -46:
-                msg = new GridChangeGlobalStateMessageResponse();
-
-                break;
-
             case -45:
-                msg = new SnapshotFinishedMessage();
+                msg = new GridChangeGlobalStateMessageResponse();
 
                 break;
 
@@ -873,9 +869,10 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..127] [-23..-27] [-36..-47]- this
+            // [-3..119] [124..127] [-23..-27] [-36..-55]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
+            // [-54..-60] - Snapshots
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

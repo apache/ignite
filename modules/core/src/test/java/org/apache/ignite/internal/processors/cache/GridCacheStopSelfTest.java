@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -73,7 +74,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disc);
 
-        CacheConfiguration ccfg  = new CacheConfiguration();
+        CacheConfiguration ccfg  = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(replicated ? REPLICATED : PARTITIONED);
 
@@ -153,7 +154,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
                         IgniteKernal node = (IgniteKernal)ignite(idx % 3 + 1);
 
-                        IgniteCache<Integer, Integer> cache = node.cache(null);
+                        IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                         while (true) {
                             try {
@@ -173,7 +174,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                     @Override public Void call() throws Exception {
                         IgniteKernal node = (IgniteKernal)ignite(0);
 
-                        IgniteCache<Integer, Integer> cache = node.cache(null);
+                        IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                         while (!fut1.isDone()) {
                             try {
@@ -253,7 +254,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch readyLatch = new CountDownLatch(PUT_THREADS);
 
-            final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache);
 
@@ -313,10 +314,11 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                 cache.put(1, 1);
             }
             catch (IllegalStateException e) {
-                if (!e.getMessage().startsWith(EXPECTED_MSG))
+                if (!X.hasCause(e, CacheStoppedException.class)) {
                     e.printStackTrace();
 
-                assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().startsWith(EXPECTED_MSG));
+                    fail("Unexpected exception: " + e);
+                }
             }
         }
     }

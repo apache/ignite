@@ -27,13 +27,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
-    public class QueryEntity
+    public sealed class QueryEntity : IQueryEntityInternal
     {
         /** */
         private Type _keyType;
@@ -46,6 +47,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /** */
         private string _keyTypeName;
+
+        /** */
+        private Dictionary<string, string> _aliasMap;
+
+        private ICollection<QueryAlias> _aliases;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
@@ -148,6 +154,20 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Gets or sets the name of the field that is used to denote the entire key.
+        /// <para />
+        /// By default, entite key can be accessed with a special "_key" field name.
+        /// </summary>
+        public string KeyFieldName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the field that is used to denote the entire value.
+        /// <para />
+        /// By default, entite value can be accessed with a special "_val" field name.
+        /// </summary>
+        public string ValueFieldName { get; set; }
+
+        /// <summary>
         /// Gets or sets the name of the SQL table.
         /// When not set, value type name is used.
         /// </summary>
@@ -166,13 +186,47 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Example: {"parent.name" -> "parentName"}.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<QueryAlias> Aliases { get; set; }
+        public ICollection<QueryAlias> Aliases
+        {
+            get { return _aliases; }
+            set
+            {
+                _aliases = value;
+                _aliasMap = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the query indexes.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryIndex> Indexes { get; set; }
+
+        /// <summary>
+        /// Gets the alias by field name, or null when no match found.
+        /// This method constructs a dictionary lazily to perform lookups.
+        /// </summary>
+        string IQueryEntityInternal.GetAlias(string fieldName)
+        {
+            if (Aliases == null || Aliases.Count == 0)
+            {
+                return null;
+            }
+
+            // PERF: No ToDictionary.
+            if (_aliasMap == null)
+            {
+                _aliasMap = new Dictionary<string, string>(Aliases.Count, StringComparer.Ordinal);
+
+                foreach (var alias in Aliases)
+                {
+                    _aliasMap[alias.FullName] = alias.Alias;
+                }
+            }
+
+            string res;
+            return _aliasMap.TryGetValue(fieldName, out res) ? res : null;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
@@ -197,6 +251,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             count = reader.ReadInt();
             Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
+
+            KeyFieldName = reader.ReadString();
+            ValueFieldName = reader.ReadString();
         }
 
         /// <summary>
@@ -250,6 +307,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
+
+            writer.WriteString(KeyFieldName);
+            writer.WriteString(ValueFieldName);
         }
 
         /// <summary>
@@ -352,14 +412,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    // No dot notation for indexes
+                    // Dot notation is required for nested SQL fields.
+                    if (parentPropName != null)
+                    {
+                        columnName = parentPropName + "." + columnName;
+                    }
+
                     if (attr.IsIndexed)
+                    {
                         indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
                             attr.IndexGroups));
-
-                    // Dot notation is required for nested SQL fields
-                    if (parentPropName != null)
-                        columnName = parentPropName + "." + columnName;
+                    }
 
                     fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
 
@@ -370,11 +433,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    // No dot notation for FullText index names
-                    indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
-
                     if (parentPropName != null)
+                    {
                         columnName = parentPropName + "." + columnName;
+                    }
+
+                    indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
 
                     fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
 

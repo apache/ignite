@@ -234,7 +234,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
         CacheMode cacheMode,
         int backups,
         CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);

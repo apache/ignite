@@ -1086,6 +1086,10 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 writer.WriteBoolean(qry.EnableDistributedJoins);
                 writer.WriteBoolean(qry.EnforceJoinOrder);
+                writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
+                writer.WriteBoolean(qry.ReplicatedOnly);
+                writer.WriteBoolean(qry.Colocated);
+                writer.WriteString(qry.Schema); // Schema
             });
         
             return new FieldsQueryCursor<T>(cursor, Marshaller, _flagKeepBinary, readerFunc);

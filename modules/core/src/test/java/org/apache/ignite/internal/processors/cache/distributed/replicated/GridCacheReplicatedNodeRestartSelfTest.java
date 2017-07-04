@@ -42,13 +42,16 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setStartSize(20);
-
         cc.setRebalanceMode(SYNC);
 
         cc.setRebalanceBatchSize(20);
 
         return cc;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5515");
     }
 
     /** {@inheritDoc} */

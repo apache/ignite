@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,12 +36,26 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     /** Unique name of MemoryPolicy. */
     private String name;
 
-    /** Page memory size in bytes. */
-    private long size;
+    /** Maximum memory region size defined by this memory policy. */
+    private long maxSize;
+
+    /** Initial memory region size defined by this memory policy. */
+    private long initSize;
 
     /** Path for memory mapped file. */
     private String swapFilePath;
 
+    /** An algorithm for memory pages eviction. */
+    private DataPageEvictionMode pageEvictionMode;
+
+    /**
+     * A threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page
+     * memory will start the eviction only after 90% memory region (defined by this policy) is occupied.
+     */
+    private double evictionThreshold;
+
+    /** Minimum number of empty pages in reuse lists. */
+    private int emptyPagesPoolSize;
 
     /**
      * Default constructor.
@@ -58,8 +73,12 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
         assert plc != null;
 
         name = plc.getName();
-        size = plc.getSize();
+        maxSize = plc.getMaxSize();
+        initSize = plc.getInitialSize();
         swapFilePath = plc.getSwapFilePath();
+        pageEvictionMode = plc.getPageEvictionMode();
+        evictionThreshold = plc.getEvictionThreshold();
+        emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
     }
 
     /**
@@ -70,10 +89,17 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * Page memory size in bytes.
+     * Maximum memory region size defined by this memory policy.
      */
-    public long getSize() {
-        return size;
+    public long getMaxSize() {
+        return maxSize;
+    }
+
+    /**
+     * Initial memory region size defined by this memory policy.
+     */
+    public long getInitSize() {
+        return initSize;
     }
 
     /**
@@ -83,19 +109,54 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
         return swapFilePath;
     }
 
+    /**
+     * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
+     */
+    public DataPageEvictionMode getPageEvictionMode() {
+        return pageEvictionMode;
+    }
+
+    /**
+     * @return Memory pages eviction threshold.
+     */
+    public double getEvictionThreshold() {
+        return evictionThreshold;
+    }
+
+    /**
+     * @return Minimum number of empty pages in reuse list.
+     */
+    public int getEmptyPagesPoolSize() {
+        return emptyPagesPoolSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        out.writeLong(size);
+        out.writeLong(maxSize);
         U.writeString(out, swapFilePath);
+        U.writeEnum(out, pageEvictionMode);
+        out.writeDouble(evictionThreshold);
+        out.writeInt(emptyPagesPoolSize);
+        out.writeLong(initSize);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        size = in.readLong();
+        maxSize = in.readLong();
         swapFilePath = U.readString(in);
+        pageEvictionMode = DataPageEvictionMode.fromOrdinal(in.readByte());
+        evictionThreshold = in.readDouble();
+        emptyPagesPoolSize = in.readInt();
+
+        if (protoVer >= V2)
+            initSize = in.readLong();
     }
 
     /** {@inheritDoc} */

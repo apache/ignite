@@ -57,7 +57,7 @@ public class IgniteWarmupClosureSelfTest extends GridCommonAbstractTest {
 
         cfg.setWarmupClosure(warmupClosure);
 
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);

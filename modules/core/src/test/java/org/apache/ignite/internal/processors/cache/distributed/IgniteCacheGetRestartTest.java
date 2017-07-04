@@ -112,7 +112,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIME + 60_000;
+        return TEST_TIME + 3 * 60_000;
     }
 
     /**
@@ -198,6 +198,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     int nodeIdx = restartNodeIdx.getAndIncrement();
 
+                    Thread.currentThread().setName("restart-thread-" + nodeIdx);
+
                     boolean clientMode = clientNode.compareAndSet(false, true);
 
                     while (U.currentTimeMillis() < stopTime) {
@@ -269,7 +271,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(CacheMode cacheMode, int backups, boolean near) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
 

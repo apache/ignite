@@ -30,15 +30,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 
 import javax.cache.Cache;
 import java.io.Serializable;
@@ -73,20 +73,15 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     /** */
     private static final int QRY_PARALLELISM_LVL = 7;
 
-    /** Binary marshaller flag. */
-    private final boolean binary;
-
     /** Segmented index flag. */
     private final boolean segmented;
 
     /**
      * Constructor.
      *
-     * @param binary Binary marshaller flag.
      * @param segmented Segmented index flag.
      */
-    protected H2IndexingAbstractGeoSelfTest(boolean binary, boolean segmented) {
-        this.binary = binary;
+    protected H2IndexingAbstractGeoSelfTest(boolean segmented) {
         this.segmented = segmented;
     }
 
@@ -98,16 +93,6 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return DUR * 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (binary)
-            cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
     }
 
     /**
@@ -153,11 +138,16 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
 
             entity.setIndexes(null);
 
-            IgniteCache<K, V> cache = grid(0).getOrCreateCache(ccfg);
+            grid(0).context().cache().dynamicStartSqlCache(ccfg).get();
+
+            IgniteCache<K, V> cache = grid(0).cache(name);
 
             // Process indexes dynamically.
-            for (QueryIndex idx : idxs)
-                createDynamicIndex(cache, entity, idx);
+            for (QueryIndex idx : idxs) {
+                QueryEntity normalEntity = QueryUtils.normalizeQueryEntity(entity, ccfg.isSqlEscapeAll());
+
+                createDynamicIndex(cache, normalEntity, idx);
+            }
 
             return cache;
         }
@@ -212,7 +202,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @param valCls Value class.
      * @return Cache configuration.
      */
-    private <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned, Class<?> keyCls,
+    private <K, V> CacheConfiguration<K, V> cacheConfig(@NotNull String name, boolean partitioned, Class<?> keyCls,
         Class<?> valCls) throws Exception {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<K, V>(name)
             .setName(name)
@@ -224,6 +214,20 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             ccfg.setQueryParallelism(partitioned ? QRY_PARALLELISM_LVL : 1);
 
         return ccfg;
+    }
+
+    /**
+     * Destroy cache.
+     *
+     * @param cache Cache.
+     * @param grid Node.
+     * @param dynamic Dynamic flag.
+     */
+    private static void destroy(IgniteCache cache, IgniteEx grid, boolean dynamic) {
+        if (!dynamic)
+            cache.destroy();
+        else
+            grid.context().cache().dynamicDestroyCache(cache.getName(), true, true, false);
     }
 
     /**
@@ -336,7 +340,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
                 cache.query(new SqlFieldsQuery("DROP INDEX \"EnemyCamp_coords_idx\"")).getAll();
         }
         finally {
-            cache.destroy();
+            destroy(cache, grid(0), dynamic);
         }
     }
 
@@ -465,7 +469,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
                 throw err0;
         }
         finally {
-            cache1.destroy();
+            destroy(cache1, grid(0), dynamic);
         }
     }
 
@@ -553,8 +557,8 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             checkLocalQuery();
         }
         finally {
-            c1.destroy();
-            c2.destroy();
+            destroy(c1, grid(0), dynamic);
+            destroy(c2, grid(0), dynamic);
         }
     }
 

@@ -35,7 +35,7 @@ angular
             url: '/resume',
             onEnter: AclRoute.checkAccess('demo'),
             controller: ['$state', ($state) => {
-                $state.go('base.configuration.clusters');
+                $state.go('base.configuration.tabs.advanced.clusters');
             }],
             metaTags: {
                 title: 'Demo resume'
@@ -46,9 +46,9 @@ angular
             onEnter: AclRoute.checkAccess('demo'),
             controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
                 $http.post('/api/v1/demo/reset')
-                    .then(() => $state.go('base.configuration.clusters'))
+                    .then(() => $state.go('base.configuration.tabs.advanced.clusters'))
                     .catch((res) => {
-                        $state.go('base.configuration.clusters');
+                        $state.go('base.configuration.tabs.advanced.clusters');
 
                         Messages.showError(res);
                     });
@@ -117,7 +117,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMonitor) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) => {
     const scope = $rootScope.$new();
 
     let closePromise = null;
@@ -165,7 +165,7 @@ angular
 
             return dialog.$promise
                 .then(dialog.show)
-                .then(() => Promise.race([agentMonitor.awaitAgent(), closePromise.promise]))
+                .then(() => Promise.race([agentMgr.awaitCluster(), closePromise.promise]))
                 .then(() => scope.hasAgents = true);
         }
     };

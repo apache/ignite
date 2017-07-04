@@ -33,7 +33,7 @@ public class VisorBinaryMetadataCollectorTaskResult extends VisorDataTransferObj
     private static final long serialVersionUID = 0L;
 
     /** Last binary metadata update date. */
-    private Long lastUpdate;
+    private long lastUpdate;
 
     /** Remote data center IDs for which full state transfer was requested. */
     private List<VisorBinaryMetadata> binary;
@@ -57,7 +57,7 @@ public class VisorBinaryMetadataCollectorTaskResult extends VisorDataTransferObj
     /**
      * @return Last binary metadata update date.
      */
-    public Long getLastUpdate() {
+    public long getLastUpdate() {
         return lastUpdate;
     }
 

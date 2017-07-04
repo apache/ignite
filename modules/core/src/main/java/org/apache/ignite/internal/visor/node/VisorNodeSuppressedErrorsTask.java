@@ -35,13 +35,13 @@ import org.jetbrains.annotations.Nullable;
  * Task to collect last errors on nodes.
  */
 @GridInternal
-public class VisorNodeSuppressedErrorsTask extends VisorMultiNodeTask<Map<UUID, Long>,
+public class VisorNodeSuppressedErrorsTask extends VisorMultiNodeTask<VisorNodeSuppressedErrorsTaskArg,
     Map<UUID, VisorNodeSuppressedErrors>, VisorNodeSuppressedErrors> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorNodeSuppressedErrorsJob job(Map<UUID, Long> arg) {
+    @Override protected VisorNodeSuppressedErrorsJob job(VisorNodeSuppressedErrorsTaskArg arg) {
         return new VisorNodeSuppressedErrorsJob(arg, debug);
     }
 
@@ -63,7 +63,7 @@ public class VisorNodeSuppressedErrorsTask extends VisorMultiNodeTask<Map<UUID, 
     /**
      * Job to collect last errors on nodes.
      */
-    private static class VisorNodeSuppressedErrorsJob extends VisorJob<Map<UUID, Long>, VisorNodeSuppressedErrors> {
+    private static class VisorNodeSuppressedErrorsJob extends VisorJob<VisorNodeSuppressedErrorsTaskArg, VisorNodeSuppressedErrors> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -73,13 +73,13 @@ public class VisorNodeSuppressedErrorsTask extends VisorMultiNodeTask<Map<UUID, 
          * @param arg Map with last error counter.
          * @param debug Debug flag.
          */
-        private VisorNodeSuppressedErrorsJob(Map<UUID, Long> arg, boolean debug) {
+        private VisorNodeSuppressedErrorsJob(VisorNodeSuppressedErrorsTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorNodeSuppressedErrors run(Map<UUID, Long> arg) {
-            Long lastOrder = arg.get(ignite.localNode().id());
+        @Override protected VisorNodeSuppressedErrors run(VisorNodeSuppressedErrorsTaskArg arg) {
+            Long lastOrder = arg.getOrders().get(ignite.localNode().id());
 
             long order = lastOrder != null ? lastOrder : 0;
 

@@ -48,11 +48,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             var grid1 = Ignition.Start(GetConfig());
             var grid2 = Ignition.Start(GetConfig("grid2"));
 
-            _cache1 = grid1.CreateCache<object, string>(new CacheConfiguration
+            _cache1 = grid1.CreateCache<object, string>(new CacheConfiguration("default")
             {
                 CacheMode = CacheMode.Partitioned
             });
-            _cache2 = grid2.GetCache<object, string>(null);
+            _cache2 = grid2.GetCache<object, string>("default");
         }
 
         /// <summary>

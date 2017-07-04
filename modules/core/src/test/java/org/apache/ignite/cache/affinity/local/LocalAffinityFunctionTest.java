@@ -45,7 +45,7 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(1);
         ccfg.setName(CACHE1);
@@ -56,14 +56,12 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
         startGrids(NODE_CNT);
     }
 
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
         stopAllGrids();
     }

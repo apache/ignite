@@ -46,12 +46,14 @@ namespace ignite
                             NAME_LABEL,
                             ADDRESS_EDIT,
                             ADDRESS_LABEL,
-                            CACHE_EDIT,
-                            CACHE_LABEL,
+                            SCHEMA_EDIT,
+                            SCHEMA_LABEL,
                             PAGE_SIZE_EDIT,
                             PAGE_SIZE_LABEL,
                             DISTRIBUTED_JOINS_CHECK_BOX,
                             ENFORCE_JOIN_ORDER_CHECK_BOX,
+                            REPLICATED_ONLY_CHECK_BOX,
+                            COLLOCATED_CHECK_BOX,
                             PROTOCOL_VERSION_LABEL,
                             PROTOCOL_VERSION_COMBO_BOX,
                             OK_BUTTON,
@@ -119,11 +121,11 @@ namespace ignite
                     /** DSN address edit field. */
                     std::auto_ptr<Window> addressEdit;
 
-                    /** DSN cache edit field label. */
-                    std::auto_ptr<Window> cacheLabel;
+                    /** DSN schema edit field label. */
+                    std::auto_ptr<Window> schemaLabel;
 
-                    /** DSN cache edit field. */
-                    std::auto_ptr<Window> cacheEdit;
+                    /** DSN schema edit field. */
+                    std::auto_ptr<Window> schemaEdit;
 
                     /** DSN fetch page size edit field label. */
                     std::auto_ptr<Window> pageSizeLabel;
@@ -136,6 +138,12 @@ namespace ignite
 
                     /** Enforce join order CheckBox. */
                     std::auto_ptr<Window> enforceJoinOrderCheckBox;
+
+                    /** Replicated only CheckBox. */
+                    std::auto_ptr<Window> replicatedOnlyCheckBox;
+
+                    /** Collocated CheckBox. */
+                    std::auto_ptr<Window> collocatedCheckBox;
 
                     /** Protocol version edit field. */
                     std::auto_ptr<Window> protocolVersionLabel;

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.odbc.escape.OdbcEscapeUtils;
+import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 

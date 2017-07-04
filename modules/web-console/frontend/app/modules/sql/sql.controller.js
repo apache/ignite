@@ -57,25 +57,6 @@ class Paragraph {
 
         _.assign(this, paragraph);
 
-        const _enableColumns = (categories, visible) => {
-            _.forEach(categories, (cat) => {
-                cat.visible = visible;
-
-                _.forEach(this.gridOptions.columnDefs, (col) => {
-                    if (col.displayName === cat.name)
-                        col.visible = visible;
-                });
-            });
-
-            this.gridOptions.api.grid.refresh();
-        };
-
-        const _selectableColumns = () => _.filter(this.gridOptions.categories, (cat) => cat.selectable);
-
-        this.toggleColumns = (category, visible) => _enableColumns([category], visible);
-        this.selectAllColumns = () => _enableColumns(_selectableColumns(), true);
-        this.clearAllColumns = () => _enableColumns(_selectableColumns(), false);
-
         Object.defineProperty(this, 'gridOptions', {value: {
             enableGridMenu: false,
             enableColumnMenus: false,
@@ -101,7 +82,7 @@ class Paragraph {
                     this.categories.push({
                         name: col.fieldName,
                         visible: self.columnFilter(col),
-                        selectable: true
+                        enableHiding: true
                     });
 
                     return cols;
@@ -887,7 +868,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .catch((err) => Messages.showError(err));
 
         const _startWatch = () =>
-            agentMgr.startWatch('Back to Configuration', 'base.configuration.clusters')
+            agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters')
                 .then(() => Loading.start('sqlLoading'))
                 .then(_refreshFn)
                 .then(() => Loading.finish('sqlLoading'))
@@ -1303,7 +1284,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         const _closeOldQuery = (paragraph) => {
             const nid = paragraph.resNodeId;
 
-            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.includes(nodes, nid)))
+            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.find(nodes, {nid: nid.toUpperCase()})))
                 return agentMgr.queryClose(nid, paragraph.queryId);
 
             return $q.when();
@@ -1336,19 +1317,19 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         const _executeRefresh = (paragraph) => {
             const args = paragraph.queryArgs;
 
-            agentMgr.awaitAgent()
+            agentMgr.awaitCluster()
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
                     args.enforceJoinOrder, false, !!args.localNid, args.pageSize))
-                .then(_processQueryResult.bind(this, paragraph, false))
+                .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
 
         const _tryStartRefresh = function(paragraph) {
             _tryStopRefresh(paragraph);
 
-            if (paragraph.rate && paragraph.rate.installed && paragraph.queryArgs) {
+            if (_.get(paragraph, 'rate.installed') && paragraph.queryExecuted()) {
                 $scope.chartAcceptKeyColumn(paragraph, TIME_LINE);
 
                 _executeRefresh(paragraph);
@@ -1377,7 +1358,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const cache = _.find($scope.caches, {name: paragraph.cacheName});
 
             if (cache)
-                return !!_.find(cache.nodes, (node) => Version.includes(node.version, ...ENFORCE_JOIN_VERS));
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...ENFORCE_JOIN_VERS));
 
             return false;
         };
@@ -1467,7 +1448,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                     return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize);
                 })
-                .then(_processQueryResult.bind(this, paragraph, true))
+                .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
                     paragraph.setError(err);
 
@@ -1478,8 +1459,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         $scope.scan = (paragraph, local = false) => {
             const cacheName = paragraph.cacheName;
-            const filter = paragraph.filter;
             const caseSensitive = !!paragraph.caseSensitive;
+            const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
             $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)
@@ -1628,7 +1609,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
-                    ? agentMgr.queryScanGetAll(nid, args.cacheName, args.filter, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
+                    ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
                     : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid))
                 .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
@@ -1663,7 +1644,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             paragraph.rate.unit = unit;
             paragraph.rate.installed = true;
 
-            if (paragraph.queryExecuted())
+            if (paragraph.queryExecuted() && !paragraph.scanExplain())
                 _tryStartRefresh(paragraph);
         };
 
@@ -1774,17 +1755,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 scope.title = 'Error details';
                 scope.content = [];
 
-                let cause = paragraph.error.root;
-
                 const tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
 
-                while (_.nonNil(cause)) {
-                    const clsName = _.isEmpty(cause.className) ? '' : '[' + JavaTypes.shortClassName(cause.className) + '] ';
+                const addToTrace = (item) => {
+                    if (_.nonNil(item)) {
+                        const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
-                    scope.content.push((scope.content.length > 0 ? tab : '') + clsName + cause.message);
+                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + item.message);
 
-                    cause = cause.cause;
-                }
+                        addToTrace(item.cause);
+
+                        _.forEach(item.suppressed, (sup) => addToTrace(sup));
+                    }
+                };
+
+                addToTrace(paragraph.error.root);
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});

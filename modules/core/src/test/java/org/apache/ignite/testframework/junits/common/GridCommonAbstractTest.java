@@ -65,6 +65,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
@@ -100,6 +102,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -133,7 +136,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).cache(null);
+        return grid(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -176,7 +179,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected <K, V> IgniteCache<K, V> jcache(Ignite ig,
         CacheConfiguration ccfg,
-        String name,
+        @NotNull String name,
         Class<K> clsK,
         Class<V> clsV) {
         CacheConfiguration<K, V> cc = new CacheConfiguration<>(ccfg);
@@ -198,7 +201,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected <K, V> IgniteCache<K, V> jcache(Ignite ig,
         CacheConfiguration ccfg,
-        String name) {
+        @NotNull String name) {
         CacheConfiguration<K, V> cc = new CacheConfiguration<>(ccfg);
         cc.setName(name);
 
@@ -219,7 +222,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> internalCache(int idx) {
-        return ((IgniteKernal)grid(idx)).internalCache(null);
+        return ((IgniteKernal)grid(idx)).internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -264,7 +267,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().cache(null);
+        return grid().cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -285,7 +288,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridLocalCache<K, V> local() {
-        return (GridLocalCache<K, V>)((IgniteKernal)grid()).<K, V>internalCache();
+        return (GridLocalCache<K, V>)((IgniteKernal)grid()).<K, V>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -432,7 +435,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected <K, V> GridNearCacheAdapter<K, V> near() {
-        return ((IgniteKernal)grid()).<K, V>internalCache().context().near();
+        return ((IgniteKernal)grid()).<K, V>internalCache(DEFAULT_CACHE_NAME).context().near();
     }
 
     /**
@@ -440,7 +443,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected <K, V> GridNearCacheAdapter<K, V> near(int idx) {
-        return ((IgniteKernal)grid(idx)).<K, V>internalCache().context().near();
+        return ((IgniteKernal)grid(idx)).<K, V>internalCache(DEFAULT_CACHE_NAME).context().near();
     }
 
     /**
@@ -448,7 +451,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Colocated cache.
      */
     protected <K, V> GridDhtColocatedCache<K, V> colocated(int idx) {
-        return (GridDhtColocatedCache<K, V>)((IgniteKernal)grid(idx)).<K, V>internalCache();
+        return (GridDhtColocatedCache<K, V>)((IgniteKernal)grid(idx)).<K, V>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -530,6 +533,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @return Maximum time of awaiting PartitionMapExchange operation (in milliseconds)
+     */
+    protected long getPartitionMapExchangeTimeout() {
+        return 30_000;
+    }
+
+    /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
      * @param nodes Optional nodes.
@@ -543,7 +553,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         @Nullable Collection<ClusterNode> nodes,
         boolean printPartState
     ) throws InterruptedException {
-        long timeout = 30_000;
+        long timeout = getPartitionMapExchangeTimeout();
 
         long startTime = -1;
 
@@ -632,7 +642,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
                                 Collection<ClusterNode> owners = (topFut != null && topFut.isDone()) ?
-                                    top.nodes(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
+                                    top.owners(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
 
                                 int ownerNodesCnt = owners.size();
 
@@ -1409,13 +1419,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
 
-        Affinity<Integer> aff = allGrids.get(0).affinity(null);
+        Affinity<Integer> aff = allGrids.get(0).affinity(DEFAULT_CACHE_NAME);
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
         for (Ignite ignite : allGrids) {
             if (!nodes.contains(ignite.cluster().localNode()))
-                return ignite.cache(null);
+                return ignite.cache(DEFAULT_CACHE_NAME);
         }
 
         fail();
@@ -1612,8 +1622,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             ok = false;
         }
 
-        if (ok)
-            info("Deleted OK: " + file.getAbsolutePath() +
+        if (ok && log().isDebugEnabled()) // too much logging on real data
+            log().debug("Deleted OK: " + file.getAbsolutePath() +
                 (size >= 0 ? "(" + IgniteUtils.readableSize(size, false) + ")" : ""));
 
         return ok;
@@ -1729,5 +1739,67 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         IgniteTxManager tm = ((IgniteKernal)ignite).context().cache().context().tm();
 
         return U.field(tm, "completedVersHashMap");
+    }
+
+    /**
+     *
+     */
+    protected final void checkCacheDiscoveryDataConsistent() {
+        Map<Integer, CacheGroupDescriptor> cacheGrps = null;
+        Map<String, DynamicCacheDescriptor> caches = null;
+
+        for (Ignite node : G.allGrids()) {
+            Map<Integer, CacheGroupDescriptor> cacheGrps0 =
+                ((IgniteKernal)node).context().cache().cacheGroupDescriptors();
+            Map<String, DynamicCacheDescriptor> caches0 =
+                ((IgniteKernal)node).context().cache().cacheDescriptors();
+
+            assertNotNull(cacheGrps0);
+            assertNotNull(caches0);
+
+            if (cacheGrps == null) {
+                cacheGrps = cacheGrps0;
+                caches = caches0;
+            }
+            else {
+                assertEquals(cacheGrps.size(), cacheGrps0.size());
+
+                for (Map.Entry<Integer, CacheGroupDescriptor> e : cacheGrps.entrySet()) {
+                    CacheGroupDescriptor desc = e.getValue();
+                    CacheGroupDescriptor desc0 = cacheGrps0.get(e.getKey());
+
+                    assertNotNull(desc0);
+                    checkGroupDescriptorsData(desc, desc0);
+                }
+
+                for (Map.Entry<String, DynamicCacheDescriptor> e : caches.entrySet()) {
+                    DynamicCacheDescriptor desc = e.getValue();
+                    DynamicCacheDescriptor desc0 = caches.get(e.getKey());
+
+                    assertNotNull(desc0);
+                    assertEquals(desc.deploymentId(), desc0.deploymentId());
+                    assertEquals(desc.receivedFrom(), desc0.receivedFrom());
+                    assertEquals(desc.startTopologyVersion(), desc0.startTopologyVersion());
+                    assertEquals(desc.cacheConfiguration().getName(), desc0.cacheConfiguration().getName());
+                    assertEquals(desc.cacheConfiguration().getGroupName(), desc0.cacheConfiguration().getGroupName());
+                    checkGroupDescriptorsData(desc.groupDescriptor(), desc0.groupDescriptor());
+                }
+            }
+        }
+    }
+
+    /**
+     * @param desc First descriptor.
+     * @param desc0 Second descriptor.
+     */
+    private void checkGroupDescriptorsData(CacheGroupDescriptor desc, CacheGroupDescriptor desc0) {
+        assertEquals(desc.groupName(), desc0.groupName());
+        assertEquals(desc.sharedGroup(), desc0.sharedGroup());
+        assertEquals(desc.deploymentId(), desc0.deploymentId());
+        assertEquals(desc.receivedFrom(), desc0.receivedFrom());
+        assertEquals(desc.startTopologyVersion(), desc0.startTopologyVersion());
+        assertEquals(desc.config().getName(), desc0.config().getName());
+        assertEquals(desc.config().getGroupName(), desc0.config().getGroupName());
+        assertEquals(desc.caches(), desc0.caches());
     }
 }

@@ -110,17 +110,7 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
             }
         }, IllegalStateException.class, null);
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ignite.cache(CU.ATOMICS_CACHE_NAME);
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
         checkCache(ignite, CU.UTILITY_CACHE_NAME, UTILITY_CACHE_POOL, false, true);
-
-        checkCache(ignite, CU.ATOMICS_CACHE_NAME, SYSTEM_POOL, false, true);
 
         for (String cache : userCaches)
             checkCache(ignite, cache, SYSTEM_POOL, true, false);

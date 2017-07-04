@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -65,6 +66,7 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -122,9 +124,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
 
-    /** Initial default cache size. */
-    public static final int DFLT_START_SIZE = 1500000;
-
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
 
@@ -132,7 +131,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
 
     /** Initial default near cache size. */
-    public static final int DFLT_NEAR_START_SIZE = DFLT_START_SIZE / 4;
+    public static final int DFLT_NEAR_START_SIZE = 1500000 / 4;
 
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
@@ -183,6 +182,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgniteAllNodesPredicate();
 
     /** Default timeout after which long query warning will be printed. */
+    @Deprecated
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
     /** Default number of queries detail metrics to collect. */
@@ -203,6 +203,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Cache name. */
     private String name;
+
+    /** Cache group name. */
+    private String grpName;
 
     /** Name of {@link MemoryPolicyConfiguration} for this cache */
     private String memPlcName;
@@ -231,9 +234,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default lock timeout. */
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
-
-    /** Default cache start size. */
-    private int startSize = DFLT_START_SIZE;
 
     /** Near cache configuration. */
     private NearCacheConfiguration<K, V> nearCfg;
@@ -326,6 +326,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Class<?>[] sqlFuncCls;
 
     /** */
+    @Deprecated
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** */
@@ -370,6 +371,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
 
+    /** Cache key configuration. */
+    private CacheKeyConfiguration[] keyCfg;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -412,27 +416,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
+        grpName = cc.getGroupName();
         indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
-        qryParallelism = cc.getQueryParallelism();
         isWriteThrough = cc.isWriteThrough();
-        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
+        keyCfg = cc.getKeyConfiguration();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         memPlcName = cc.getMemoryPolicyName();
-        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
         partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
-        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
+        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
+        qryParallelism = cc.getQueryParallelism();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCnt = cc.getRebalanceBatchesPrefetchCount();
@@ -445,8 +449,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
-        startSize = cc.getStartSize();
+        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         storeFactory = cc.getCacheStoreFactory();
+        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
@@ -457,6 +462,47 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+    }
+
+    /**
+     * Gets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setMemoryPolicyName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
+     * @return Cache group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * Sets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setMemoryPolicyName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
+     * @param grpName Cache group name.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setGroupName(String grpName) {
+        this.grpName = grpName;
+
+        return this;
     }
 
     /**
@@ -473,12 +519,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache name.
      *
-     * @param name Cache name. May be <tt>null</tt>, but may not be empty string.
+     * @param name Cache name. Can not be <tt>null</tt> or empty.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
-
         this.name = name;
 
         return this;
@@ -499,7 +543,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
 
         this.memPlcName = memPlcName;
 
@@ -670,28 +714,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setEagerTtl(boolean eagerTtl) {
         this.eagerTtl = eagerTtl;
-
-        return this;
-    }
-
-    /**
-     * Gets initial cache size which will be used to pre-create internal
-     * hash table after start. Default value is defined by {@link #DFLT_START_SIZE}.
-     *
-     * @return Initial cache size.
-     */
-    public int getStartSize() {
-        return startSize;
-    }
-
-    /**
-     * Initial size for internal hash map.
-     *
-     * @param startSize Cache start size.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setStartSize(int startSize) {
-        this.startSize = startSize;
 
         return this;
     }
@@ -1581,7 +1603,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets timeout in milliseconds after which long query warning will be printed.
      *
      * @return Timeout in milliseconds.
+     * @deprecated Use {@link IgniteConfiguration#getLongQueryWarningTimeout()} instead.
      */
+    @Deprecated
     public long getLongQueryWarningTimeout() {
         return longQryWarnTimeout;
     }
@@ -1591,7 +1615,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setLongQueryWarningTimeout(long)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
 
@@ -1749,7 +1775,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                if (F.eq(entity.findValueType(), converted.findValueType())) {
                     dup = true;
 
                     break;
@@ -1758,6 +1784,37 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             if (!dup)
                 qryEntities.add(converted);
+
+            // Set key configuration if needed.
+            String affFieldName = desc.affinityFieldName();
+
+            if (affFieldName != null) {
+                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(converted.getKeyType(), affFieldName);
+
+                if (F.isEmpty(keyCfg))
+                    keyCfg = new CacheKeyConfiguration[] { newKeyCfg };
+                else {
+                    boolean keyCfgDup = false;
+
+                    for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
+                        if (F.eq(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                            keyCfgDup = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!keyCfgDup) {
+                        CacheKeyConfiguration[] keyCfg0 = new CacheKeyConfiguration[keyCfg.length + 1];
+
+                        System.arraycopy(keyCfg, 0, keyCfg0, 0, keyCfg.length);
+
+                        keyCfg0[keyCfg0.length - 1] = newKeyCfg;
+
+                        keyCfg = keyCfg0;
+                    }
+                }
+            }
         }
 
         return this;
@@ -1825,14 +1882,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
-        if (this.qryEntities == null)
+        if (this.qryEntities == null) {
             this.qryEntities = new ArrayList<>(qryEntities);
+
+            return this;
+        }
 
         for (QueryEntity entity : qryEntities) {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                if (F.eq(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;
@@ -1842,6 +1902,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (!found)
                 this.qryEntities.add(entity);
         }
+
+        return this;
+    }
+
+    /**
+     * Clear query entities.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> clearQueryEntities() {
+        this.qryEntities = null;
 
         return this;
     }
@@ -2032,10 +2103,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(QueryUtils._VAL), true);
+                txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
             }
             else
-                txtIdx.getFields().put(QueryUtils._VAL, true);
+                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
         }
 
         if (txtIdx != null)
@@ -2071,6 +2142,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         d.keyClass(keyCls);
         d.valueClass(valCls);
 
+        d.affinityFieldName(BinaryContext.affinityFieldName(keyCls));
+
         processAnnotationsInClass(true, d.keyCls, d, null);
         processAnnotationsInClass(false, d.valCls, d, null);
 
@@ -2089,12 +2162,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         @Nullable ClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = cls.getSimpleName() + "_" + QueryUtils._VAL + "_idx";
+                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
-                type.addFieldToIndex(idxName, QueryUtils._VAL, 0, false);
+                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
             }
 
             return;
@@ -2255,6 +2328,26 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return this;
     }
 
+    /**
+     * Gets cache key configuration.
+     *
+     * @return Cache key configuration.
+     */
+    public CacheKeyConfiguration[] getKeyConfiguration() {
+        return keyCfg;
+    }
+
+    /**
+     * Sets cache key configuration.
+     *
+     * @param cacheKeyCfg Cache key configuration.
+     */
+    public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
+        this.keyCfg = cacheKeyCfg;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
@@ -2314,6 +2407,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         /** */
         private boolean valTextIdx;
+
+        /** Affinity field name. */
+        private String affFieldName;
 
         /**
          * @return Indexes.
@@ -2413,6 +2509,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         void keyClass(Class<?> keyCls) {
             this.keyCls = keyCls;
+        }
+
+        /**
+         * @return Affinity field name.
+         */
+        @Nullable public String affinityFieldName() {
+            return affFieldName;
+        }
+
+        /**
+         * @param affFieldName Affinity field name.
+         */
+        private void affinityFieldName(@Nullable String affFieldName) {
+            this.affFieldName = affFieldName;
         }
 
         /**

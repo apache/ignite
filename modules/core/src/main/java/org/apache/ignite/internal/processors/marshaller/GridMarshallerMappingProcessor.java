@@ -30,6 +30,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -100,7 +101,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         GridDiscoveryManager discoMgr = ctx.discovery();
         GridIoManager ioMgr = ctx.io();
 
@@ -167,7 +168,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingRequestMessage : msg;
 
             MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage) msg;
@@ -184,6 +185,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                         new MissingMappingResponseMessage(platformId, typeId, resolvedClsName),
                         SYSTEM_POOL);
             }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send missing mapping response, node failed: " + nodeId);
+            }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send missing mapping response.", e);
             }
@@ -195,7 +200,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      */
     private final class MissingMappingResponseListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingResponseMessage : msg;
 
             MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage) msg;

@@ -821,15 +821,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         int typeId = val.typeId();
 
-        out.unsafeEnsure(1 + 4);
+        if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            out.unsafeEnsure(1 + 4 + 4);
 
-        out.unsafeWriteByte(GridBinaryMarshaller.ENUM);
-        out.unsafeWriteInt(typeId);
+            out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
+            out.unsafeWriteInt(typeId);
+            out.unsafeWriteInt(val.enumOrdinal());
+        }
+        else {
+            out.unsafeEnsure(1 + 4);
 
-        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
+            out.unsafeWriteInt(typeId);
+
             doWriteString(val.className());
 
-        out.writeInt(val.enumOrdinal());
+            out.writeInt(val.enumOrdinal());
+        }
     }
 
     /**
@@ -940,7 +948,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeByteFieldPrimitive(byte val) {
+    public void writeByteFieldPrimitive(byte val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE);
@@ -966,7 +974,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeShortFieldPrimitive(short val) {
+    public void writeShortFieldPrimitive(short val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.SHORT);
@@ -985,7 +993,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeIntFieldPrimitive(int val) {
+    public void writeIntFieldPrimitive(int val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.INT);
@@ -1004,7 +1012,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeLongFieldPrimitive(long val) {
+    public void writeLongFieldPrimitive(long val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.LONG);
@@ -1023,7 +1031,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeFloatFieldPrimitive(float val) {
+    public void writeFloatFieldPrimitive(float val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.FLOAT);
@@ -1042,7 +1050,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeDoubleFieldPrimitive(double val) {
+    public void writeDoubleFieldPrimitive(double val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE);
@@ -1061,7 +1069,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeCharFieldPrimitive(char val) {
+    public void writeCharFieldPrimitive(char val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.CHAR);
@@ -1080,7 +1088,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeBooleanFieldPrimitive(boolean val) {
+    public void writeBooleanFieldPrimitive(boolean val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN);

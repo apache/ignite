@@ -125,7 +125,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         }
 
         for (int i = 0; i < PERM_NODES_CNT + TMP_NODES_CNT; i++)
-            F.rand(alive).cache(null).put(i, String.valueOf(i));
+            F.rand(alive).cache(DEFAULT_CACHE_NAME).put(i, String.valueOf(i));
     }
 
     /** {@inheritDoc} */
@@ -169,8 +169,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testAlivesClient() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1583");
-
         clientMode = true;
 
         doTestAlive();
