@@ -471,9 +471,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Try to register Metrics MBean.
      * @throws IgniteCheckedException If failed.
      */
     private void registrateMetricsMBean() throws IgniteCheckedException {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
         try {
             persistenceMetricsMbeanName = U.registerMBean(
                 cctx.kernalContext().config().getMBeanServer(),
@@ -489,19 +493,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * Unregister metrics MBean.
      */
     private void unRegistrateMetricsMBean() {
-        if (persistenceMetricsMbeanName != null) {
-            try {
-                cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
-            }
-            catch (InstanceNotFoundException ignore) {
-                // No-op, nothing to unregister.
-            }
-            catch (MBeanRegistrationException e) {
-                U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
-            }
+        if (persistenceMetricsMbeanName == null)
+            return;
+
+        assert !U.IGNITE_MBEANS_DISABLED;
+
+        try {
+            cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
+        }
+        catch (InstanceNotFoundException ignore) {
+            if(!log.isDebugEnabled())
+                U.warn(log, "Failed to unregister non-existed " + MBEAN_NAME + " MBean.", ignore);
+        }
+        catch (MBeanRegistrationException e) {
+            U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
         }
     }
 
