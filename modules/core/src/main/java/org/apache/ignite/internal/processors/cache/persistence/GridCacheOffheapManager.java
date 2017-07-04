@@ -314,9 +314,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                     long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
 
                                     try {
-                                        long nextSnapshotTag = io.getNextSnapshotTag(metaPageAddr);
+                                        PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
-                                        io.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
+                                        long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
+
+                                        metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
 
                                         if (log != null && log.isDebugEnabled())
                                             log.debug("Save next snapshot before checkpoint start for grId = " + grpId
@@ -328,7 +330,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                                 nextSnapshotTag + 1));
 
                                         if (state == GridDhtPartitionState.OWNING)
-                                            addPartition(ctx.partitionStatMap(), metaPageAddr, io, grpId, PageIdAllocator.INDEX_PARTITION,
+                                            addPartition(ctx.partitionStatMap(), metaPageAddr, metaIo, grpId, PageIdAllocator.INDEX_PARTITION,
                                                     this.ctx.kernalContext().cache().context().pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
                                     }
                                     finally {
@@ -407,7 +409,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     private static void addPartition(
         Map<T2<Integer, Integer>, T2<Integer, Integer>> map,
         long pageAddr,
-        PagePartitionMetaIO io,
+        PageMetaIO io,
         int cacheId,
         int partition,
         int pages
