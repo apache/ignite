@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -47,7 +48,10 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         randomAccessFile = new RandomAccessFile(file, "rw");
 
-        fileInput = new FileInput(randomAccessFile.getChannel(), ByteBuffer.allocate(1024));
+        fileInput = new FileInput(
+                new RandomAccessFileIO(randomAccessFile),
+                ByteBuffer.allocate(1024)
+        );
 
         PureJavaCrc32 pureJavaCrc32 = new PureJavaCrc32();
 

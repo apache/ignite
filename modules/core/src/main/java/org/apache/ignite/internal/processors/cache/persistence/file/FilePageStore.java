@@ -61,11 +61,11 @@ public class FilePageStore implements PageStore {
     /** Database configuration. */
     private final MemoryConfiguration dbCfg;
 
-    /** */
-    private RandomAccessFile file;
+    /** File I/O factory. */
+    private final FileIOFactory ioFactory;
 
-    /** */
-    private FileChannel ch;
+    /** File I/O */
+    private FileIO fileIO;
 
     /** */
     private final AtomicLong allocated;
@@ -91,11 +91,12 @@ public class FilePageStore implements PageStore {
     /**
      * @param file File.
      */
-    public FilePageStore(byte type, File file, MemoryConfiguration cfg) {
+    public FilePageStore(byte type, File file, FileIOFactory factory, MemoryConfiguration cfg) {
         this.type = type;
 
         cfgFile = file;
         dbCfg = cfg;
+        ioFactory = factory;
 
         allocated = new AtomicLong();
 
@@ -136,7 +137,7 @@ public class FilePageStore implements PageStore {
             ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
             while (hdr.remaining() > 0)
-                ch.write(hdr);
+                fileIO.write(hdr);
         }
         catch (IOException e) {
             throw new IgniteException("Check file failed.", e);
@@ -154,7 +155,7 @@ public class FilePageStore implements PageStore {
             ByteBuffer hdr = ByteBuffer.allocate(HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
 
             while (hdr.remaining() > 0)
-                ch.read(hdr);
+                fileIO.read(hdr);
 
             hdr.rewind();
 
@@ -186,7 +187,7 @@ public class FilePageStore implements PageStore {
                     " [expectedPageSize=" + dbCfg.getPageSize() +
                     ", filePageSize=" + pageSize + "]");
 
-            long fileSize = file.length();
+            long fileSize = cfgFile.length();
 
             if (fileSize == HEADER_SIZE) // Every file has a special meta page.
                 fileSize = pageSize + HEADER_SIZE;
@@ -214,9 +215,9 @@ public class FilePageStore implements PageStore {
             if (!inited)
                 return;
 
-            ch.force(false);
+            fileIO.force();
 
-            file.close();
+            fileIO.close();
 
             if (cleanFile)
                 cfgFile.delete();
@@ -241,9 +242,7 @@ public class FilePageStore implements PageStore {
 
             this.tag = tag;
 
-            ch.position(0);
-
-            file.setLength(0);
+            fileIO.clear();
 
             allocated.set(initFile());
         }
@@ -277,7 +276,7 @@ public class FilePageStore implements PageStore {
 
         try {
             if (inited)
-                allocated.set(ch.size());
+                allocated.set(fileIO.size());
 
             recover = false;
         }
@@ -303,7 +302,7 @@ public class FilePageStore implements PageStore {
             int len = pageSize;
 
             do {
-                int n = ch.read(pageBuf, off);
+                int n = fileIO.read(pageBuf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0) {
@@ -330,7 +329,7 @@ public class FilePageStore implements PageStore {
                 if ((savedCrc32 ^ curCrc32) != 0)
                     throw new IgniteDataIntegrityViolationException("Failed to read page (CRC validation failed) " +
                         "[id=" + U.hexLong(pageId) + ", off=" + (off - pageSize) +
-                        ", file=" + cfgFile.getAbsolutePath() + ", fileSize=" + ch.size() +
+                        ", file=" + cfgFile.getAbsolutePath() + ", fileSize=" + fileIO.size() +
                         ", savedCrc=" + U.hexInt(savedCrc32) + ", curCrc=" + U.hexInt(curCrc32) + "]");
             }
 
@@ -356,7 +355,7 @@ public class FilePageStore implements PageStore {
             long off = 0;
 
             do {
-                int n = ch.read(buf, off);
+                int n = fileIO.read(buf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0)
@@ -382,16 +381,14 @@ public class FilePageStore implements PageStore {
 
             try {
                 if (!inited) {
-                    RandomAccessFile rndFile = null;
+                    FileIO fileIO = null;
 
                     IgniteCheckedException err = null;
 
                     try {
-                        file = rndFile = new RandomAccessFile(cfgFile, "rw");
+                        this.fileIO = fileIO = ioFactory.create(cfgFile, "rw");
 
-                        ch = file.getChannel();
-
-                        if (file.length() == 0)
+                        if (cfgFile.length() == 0)
                             allocated.set(initFile());
                         else
                             allocated.set(checkFile());
@@ -402,9 +399,9 @@ public class FilePageStore implements PageStore {
                         throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
                     }
                     finally {
-                        if (err != null && rndFile != null)
+                        if (err != null && fileIO != null)
                             try {
-                                rndFile.close();
+                                fileIO.close();
                             }
                             catch (IOException e) {
                                 err.addSuppressed(e);
@@ -447,7 +444,7 @@ public class FilePageStore implements PageStore {
             int len = pageSize;
 
             do {
-                int n = ch.write(pageBuf, off);
+                int n = fileIO.write(pageBuf, off);
 
                 off += n;
 
@@ -478,7 +475,7 @@ public class FilePageStore implements PageStore {
         try {
             init();
 
-            ch.force(false);
+            fileIO.force();
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Sync error", e);

@@ -9,7 +9,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.lang.reflect.Field;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -21,7 +23,10 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -29,7 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import sun.nio.ch.FileChannelImpl;
 
 /**
  *
@@ -53,8 +57,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected long getTestTimeout() {
+    @Override protected long getTestTimeout() {
         return 30_000L;
     }
 
@@ -78,6 +81,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         cfg.setMemoryConfiguration(memCfg);
 
         PersistentStoreConfiguration storeCfg = new PersistentStoreConfiguration()
+                .setFileIOFactory(new FailingFileIOFactory())
                 .setWalMode(WALMode.BACKGROUND)
                 // Setting WAL Segment size to high values forces flushing by QueueFlusher.
                 .setWalSegmentSize(errorOnQueueFlusher ? 500_000 : 50_000);
@@ -128,13 +132,9 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
                 Thread.sleep(100L);
 
                 tx.commitAsync().get();
-
-                // Corrupt WAL after some iterations.
-                if (i > 15)
-                    corruptWalLogFile(grid);
             }
         }
-        catch (Throwable expected) {
+        catch (Exception expected) {
             // There can be any exception. Do nothing.
         }
 
@@ -155,29 +155,32 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * This holy shit is needed to corrupt current WAL file to ensure
-     * that RuntimeException is thrown during WAL flush operation.
-     *
-     * @param grid Node
+     * Create File I/O which fails after second attempt to write to File
      */
-    private void corruptWalLogFile(IgniteEx grid) {
-        FileWriteAheadLogManager wal = ((FileWriteAheadLogManager) grid.context().cache().context().wal());
-        try {
-            Field handleField = FileWriteAheadLogManager.class.getDeclaredField("currentHnd");
-            handleField.setAccessible(true);
-            FileWriteAheadLogManager.FileWriteHandle handle = (FileWriteAheadLogManager.FileWriteHandle) handleField.get(wal);
+    private static class FailingFileIOFactory implements FileIOFactory {
 
-            Field fileChannelField = FileWriteAheadLogManager.FileHandle.class.getDeclaredField("ch");
-            fileChannelField.setAccessible(true);
-            FileChannelImpl fileChannel = (FileChannelImpl) fileChannelField.get(handle);
+        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
-            Field writableField = FileChannelImpl.class.getDeclaredField("writable");
-            writableField.setAccessible(true);
+        @Override
+        public FileIO create(File file) throws IOException {
+            return create(file, "rw");
+        }
 
-            writableField.set(fileChannel, false);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to corrupt WAL log file", e);
+        @Override
+        public FileIO create(File file, String mode) throws IOException {
+            FileIO delegate = delegateFactory.create(file, mode);
+
+            return new FileIODecorator(delegate) {
+                int writeAttempts = 2;
+
+                @Override
+                public int write(ByteBuffer sourceBuffer) throws IOException {
+                    if (--writeAttempts == 0)
+                        throw new RuntimeException("Test exception. Unable to write to file.");
+
+                    return super.write(sourceBuffer);
+                }
+            };
         }
     }
-
 }

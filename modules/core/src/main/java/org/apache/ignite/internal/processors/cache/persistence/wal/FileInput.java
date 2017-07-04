@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.jetbrains.annotations.NotNull;
@@ -33,22 +34,22 @@ public final class FileInput implements ByteBufferBackedDataInput {
     private ByteBuffer buf;
 
     /** */
-    private FileChannel ch;
+    private FileIO io;
 
     /** */
     private long pos;
 
     /**
-     * @param ch  Channel.
+     * @param io FileIO.
      * @param buf Buffer.
      */
-    public FileInput(FileChannel ch, ByteBuffer buf) throws IOException {
-        assert ch != null;
+    public FileInput(FileIO io, ByteBuffer buf) throws IOException {
+        assert io != null;
 
-        this.ch = ch;
+        this.io = io;
         this.buf = buf;
 
-        pos = ch.position();
+        pos = io.position();
 
         clearBuffer();
     }
@@ -67,10 +68,10 @@ public final class FileInput implements ByteBufferBackedDataInput {
      * @param pos Position in bytes from file begin.
      */
     public void seek(long pos) throws IOException {
-        if (pos > ch.size())
+        if (pos > io.size())
             throw new EOFException();
 
-        ch.position(pos);
+        io.position(pos);
 
         this.pos = pos;
 
@@ -98,7 +99,7 @@ public final class FileInput implements ByteBufferBackedDataInput {
         buf.compact();
 
         do {
-            int read = ch.read(buf);
+            int read = io.read(buf);
 
             if (read == -1)
                 throw new EOFException();

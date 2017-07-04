@@ -22,10 +22,8 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,6 +56,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -144,6 +144,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private volatile long oldestArchiveSegmentIdx;
 
+    /** */
+    private final FileIOFactory ioFactory;
+
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
         AtomicReferenceFieldUpdater.newUpdater(FileWriteAheadLogManager.class, FileWriteHandle.class, "currentHnd");
@@ -196,6 +199,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         flushFreq = psCfg.getWalFlushFrequency();
         fsyncDelay = psCfg.getWalFsyncDelay();
         alwaysWriteFullPages = psCfg.isAlwaysWriteFullPages();
+        ioFactory = psCfg.getFileIOFactory();
     }
 
     /** {@inheritDoc} */
@@ -293,7 +297,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 archiver.shutdown();
         }
         catch (Exception e) {
-            U.error(log, "Failed to gracefully close WAL segment: " + currentHnd.file, e);
+            U.error(log, "Failed to gracefully close WAL segment: " + currentHnd.fileIO, e);
         }
     }
 
@@ -447,6 +451,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             end,
             psCfg,
             serializer,
+            ioFactory,
             archiver,
             log,
             tlbSize
@@ -695,13 +700,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         int len = lastReadPtr == null ? 0 : lastReadPtr.length();
 
         try {
-            RandomAccessFile file = new RandomAccessFile(curFile, "rw");
+            FileIO fileIO = ioFactory.create(curFile);
 
             try {
                 // readSerializerVersion will change the channel position.
                 // This is fine because the FileWriteHandle consitructor will move it
                 // to offset + len anyways.
-                int serVer = readSerializerVersion(file, curFile, absIdx);
+                int serVer = readSerializerVersion(fileIO, curFile, absIdx);
 
                 RecordSerializer ser = forVersion(cctx, serVer);
 
@@ -710,7 +715,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         ", offset=" + offset + ", ver=" + serVer + ']');
 
                 FileWriteHandle hnd = new FileWriteHandle(
-                    file,
+                    fileIO,
                     absIdx,
                     cctx.igniteInstanceName(),
                     offset + len,
@@ -730,7 +735,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 return hnd;
             }
             catch (IgniteCheckedException | IOException e) {
-                file.close();
+                fileIO.close();
 
                 throw e;
             }
@@ -757,10 +762,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (log.isDebugEnabled())
                 log.debug("Switching to a new WAL segment: " + nextFile.getAbsolutePath());
 
-            RandomAccessFile file = new RandomAccessFile(nextFile, "rw");
+            FileIO fileIO = ioFactory.create(nextFile);
 
             FileWriteHandle hnd = new FileWriteHandle(
-                file,
+                fileIO,
                 curIdx + 1,
                 cctx.igniteInstanceName(),
                 0,
@@ -824,22 +829,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
-        try (RandomAccessFile rnd = new RandomAccessFile(file, "rw")) {
+        try (FileIO fileIO = ioFactory.create(file, "rw")) {
             int left = psCfg.getWalSegmentSize();
 
             if (mode == WALMode.DEFAULT) {
                 while (left > 0) {
                     int toWrite = Math.min(FILL_BUF.length, left);
 
-                    rnd.write(FILL_BUF, 0, toWrite);
+                    fileIO.write(FILL_BUF, 0, toWrite);
 
                     left -= toWrite;
                 }
 
-                rnd.getChannel().force(false);
+                fileIO.force();
             }
             else
-                rnd.setLength(0);
+                fileIO.clear();
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to format WAL segment file: " + file.getAbsolutePath(), e);
@@ -1234,8 +1239,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
                 if (mode == WALMode.DEFAULT) {
-                    try (RandomAccessFile f0 = new RandomAccessFile(dstFile, "rw")) {
-                        f0.getChannel().force(false);
+                    try (FileIO f0 = ioFactory.create(dstFile, "rw")) {
+                        f0.force();
                     }
                 }
             }
@@ -1299,20 +1304,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * @param rf Random access file.
+     * @param io I/O interface for file.
      * @param file File object.
      * @param idx File index to read.
      * @return Serializer version stored in the file.
      * @throws IOException If failed to read serializer version.
      * @throws IgniteCheckedException If failed to read serializer version.
      */
-    private int readSerializerVersion(RandomAccessFile rf, File file, long idx)
+    private int readSerializerVersion(FileIO io, File file, long idx)
         throws IOException, IgniteCheckedException {
         try {
             ByteBuffer buf = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
             buf.order(ByteOrder.nativeOrder());
 
-            FileInput in = new FileInput(rf.getChannel(), buf);
+            FileInput in = new FileInput(io, buf);
 
             // Header record must be agnostic to the serializer version.
             WALRecord rec = serializer.readRecord(in, new FileWALPointer(idx, 0, 0));
@@ -1423,10 +1428,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     public abstract static class FileHandle {
         /** */
-        protected RandomAccessFile file;
-
-        /** */
-        protected FileChannel ch;
+        protected FileIO fileIO;
 
         /** Absolute WAL segment file index (incremental counter) */
         protected final long idx;
@@ -1435,17 +1437,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         protected String gridName;
 
         /**
-         * @param file File.
+         * @param fileIO I/O interface for read/write operations of FileHandle.
          * @param idx Absolute WAL segment file index (incremental counter).
          */
-        private FileHandle(RandomAccessFile file, long idx, String gridName) {
-            this.file = file;
+        private FileHandle(FileIO fileIO, long idx, String gridName) {
+            this.fileIO = fileIO;
             this.idx = idx;
             this.gridName = gridName;
-
-            ch = file.getChannel();
-
-            assert ch != null;
         }
     }
 
@@ -1463,19 +1461,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private boolean workDir;
 
         /**
-         * @param file File to read.
+         * @param fileIO I/O interface for read/write operations of FileHandle.
          * @param idx Absolute WAL segment file index (incremental counter).
          * @param ser Entry serializer.
          * @param in File input.
          */
         private ReadFileHandle(
-            RandomAccessFile file,
+            FileIO fileIO,
             long idx,
             String gridName,
             RecordSerializer ser,
             FileInput in
         ) {
-            super(file, idx, gridName);
+            super(fileIO, idx, gridName);
 
             this.ser = ser;
             this.in = in;
@@ -1486,7 +1484,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         public void close() throws IgniteCheckedException {
             try {
-                file.close();
+                fileIO.close();
             }
             catch (IOException e) {
                 throw new IgniteCheckedException(e);
@@ -1533,12 +1531,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * Next segment available condition.
-         * Protection from "spurious wakeup" is provided by predicate {@link #ch}=<code>null</code>
+         * Protection from "spurious wakeup" is provided by predicate {@link #fileIO}=<code>null</code>
          */
         private final Condition nextSegment = lock.newCondition();
 
         /**
-         * @param file Mapped file to use.
+         * @param fileIO I/O file interface to use
          * @param idx Absolute WAL segment file index for easy access.
          * @param pos Position.
          * @param maxSegmentSize Max segment size.
@@ -1546,18 +1544,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws IOException If failed.
          */
         private FileWriteHandle(
-            RandomAccessFile file,
+            FileIO fileIO,
             long idx,
             String gridName,
             long pos,
             long maxSegmentSize,
             RecordSerializer serializer
         ) throws IOException {
-            super(file, idx, gridName);
+            super(fileIO, idx, gridName);
 
             assert serializer != null;
 
-            ch.position(pos);
+            fileIO.position(pos);
 
             this.maxSegmentSize = maxSegmentSize;
             this.serializer = serializer;
@@ -1864,7 +1862,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long start = metricsEnabled ? System.nanoTime() : 0;
 
                     try {
-                        ch.force(false);
+                        fileIO.force();
                     }
                     catch (IOException e) {
                         throw new StorageException(e);
@@ -1904,13 +1902,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         ByteBuffer allocate = ByteBuffer.allocate(1);
                         allocate.put((byte) WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal());
 
-                        ch.write(allocate, written);
+                        fileIO.write(allocate, written);
 
                         if (mode == WALMode.DEFAULT)
-                            ch.force(false);
+                            fileIO.force();
                     }
 
-                    ch.close();
+                    fileIO.close();
                 }
                 catch (IOException e) {
                     throw new IgniteCheckedException(e);
@@ -1938,7 +1936,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ']';
                 }
 
-                ch = null;
+                fileIO = null;
 
                 nextSegment.signalAll();
             }
@@ -1954,7 +1952,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                while (ch != null)
+                while (fileIO != null)
                     U.await(nextSegment);
             }
             finally {
@@ -1976,7 +1974,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert ch != null : "Writing to a closed segment.";
+                assert fileIO != null : "Writing to a closed segment.";
 
                 checkEnvironment();
 
@@ -2019,10 +2017,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert size > 0 : size;
 
                 try {
-                    assert written == ch.position();
+                    assert written == fileIO.position();
 
                     do {
-                        ch.write(buf);
+                        fileIO.write(buf);
                     }
                     while (buf.hasRemaining());
 
@@ -2030,7 +2028,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     metrics.onWalBytesWritten(size);
 
-                    assert written == ch.position();
+                    assert written == fileIO.position();
                 }
                 catch (IOException e) {
                     invalidateEnvironmentLocked(e);
@@ -2086,13 +2084,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @return Safely reads current position of the file channel as String. Will return "null" if channel is null.
          */
         private String safePosition() {
-            FileChannel ch = this.ch;
+            FileIO io = this.fileIO;
 
-            if (ch == null)
+            if (io == null)
                 return "null";
 
             try {
-                return String.valueOf(ch.position());
+                return String.valueOf(io.position());
             }
             catch (IOException e) {
                 return "{Failed to read channel position: " + e.getMessage() + "}";
@@ -2147,6 +2145,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final File walArchiveDir;
 
         /** */
+        private final FileIOFactory ioFactory;
+
+        /** */
         private final FileArchiver archiver;
 
         /** */
@@ -2198,6 +2199,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileWALPointer end,
             PersistentStoreConfiguration psCfg,
             RecordSerializer serializer,
+            FileIOFactory ioFactory,
             FileArchiver archiver,
             IgniteLogger log,
             int tlbSize
@@ -2207,6 +2209,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;
             this.serializer = serializer;
+            this.ioFactory = ioFactory;
             this.archiver = archiver;
             this.start = start;
             this.end = end;
@@ -2418,15 +2421,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private ReadFileHandle initReadHandle(FileDescriptor desc, FileWALPointer start)
             throws IgniteCheckedException, FileNotFoundException {
             try {
-                RandomAccessFile rf = new RandomAccessFile(desc.file, "r");
+                FileIO fileIO = ioFactory.create(desc.file, "r");
 
                 try {
-                    FileChannel channel = rf.getChannel();
-                    FileInput in = new FileInput(channel, buf);
+                    FileInput in = new FileInput(fileIO, buf);
 
                     // Header record must be agnostic to the serializer version.
                     WALRecord rec = serializer.readRecord(in,
-                        new FileWALPointer(desc.idx, (int)channel.position(), 0));
+                        new FileWALPointer(desc.idx, (int)fileIO.position(), 0));
 
                     if (rec == null)
                         return null;
@@ -2441,11 +2443,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (start != null && desc.idx == start.index())
                         in.seek(start.fileOffset());
 
-                    return new ReadFileHandle(rf, desc.idx, cctx.igniteInstanceName(), ser, in);
+                    return new ReadFileHandle(fileIO, desc.idx, cctx.igniteInstanceName(), ser, in);
                 }
                 catch (SegmentEofException | EOFException ignore) {
                     try {
-                        rf.close();
+                        fileIO.close();
                     }
                     catch (IOException ce) {
                         throw new IgniteCheckedException(ce);
@@ -2455,7 +2457,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
                 catch (IOException | IgniteCheckedException e) {
                     try {
-                        rf.close();
+                        fileIO.close();
                     }
                     catch (IOException ce) {
                         e.addSuppressed(ce);
