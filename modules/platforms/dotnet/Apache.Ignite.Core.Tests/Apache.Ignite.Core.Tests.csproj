@@ -76,6 +76,7 @@
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
     <Compile Include="Binary\EnumsTestOnline.cs" />
+    <Compile Include="Cache\PersistentStoreTest.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingVersioningTest.cs" />

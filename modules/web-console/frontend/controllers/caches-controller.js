@@ -320,7 +320,7 @@ export default ['$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'I
                 filterModel();
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.caches');
+                    $state.go('base.configuration.tabs.advanced.caches');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);

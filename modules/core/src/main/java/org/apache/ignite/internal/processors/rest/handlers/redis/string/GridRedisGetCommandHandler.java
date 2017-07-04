@@ -78,7 +78,7 @@ public class GridRedisGetCommandHandler extends GridRedisRestCommandHandler {
         restReq.key(msg.key());
 
         restReq.command(CACHE_GET);
-        restReq.cacheName(CACHE_NAME);
+        restReq.cacheName(msg.cacheName());
 
         return restReq;
     }

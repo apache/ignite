@@ -20,71 +20,78 @@
 .ui-grid-settings {
     color: #393939;
 
-    ul.select.dropdown-menu {
-        padding: 0;
+    .grid-settings {
+        ul.dropdown-menu {
+            padding: 0;
+            min-width: auto;
 
-        & > li {
-            & > a {
-                padding: 3px 12px;
+            & > li {
+                & > a {
+                    padding: 3px 12px;
 
-                & > span {
-                    line-height: 26px;
-                    padding-left: 10px;
-                    padding-right: 8px;
-                    cursor: pointer;
+                    & > span {
+                        line-height: 26px;
+                        padding-left: 10px;
+                        padding-right: 8px;
+                        cursor: pointer;
+                    }
+
+                    & > i {
+                        position: relative;
+                        
+                        width: 12px;
+                        height: 12px;
+                        margin-top: 7px;
+                        margin-left: 0;
+
+                        color: inherit;
+                        line-height: 26px;
+
+                        border: 1px solid #afafaf;
+                        border-radius: 2px;
+                        background-color: #FFF;
+
+                        box-shadow: inset 0 1px 1px #ccc;
+
+                        &.fa-square-o:before,
+                        &.fa-check-square-o:before {
+                            content: '';
+                        }
+
+                        &.fa-check-square-o {
+                            border-color: #0067b9;
+                            background-color: #0067b9;
+
+                            box-shadow: none;
+                        }
+
+                        &.fa-check-square-o:before {
+                            content: '';
+
+                            position: absolute;
+                            top: 0;
+                            left: 3px;
+
+                            width: 4px;
+                            height: 8px;
+
+                            border: solid #FFF;
+                            border-width: 0 2px 2px 0;
+
+                            transform: rotate(35deg);
+                        }
+                    }
                 }
 
-                & > i {
-                    position: relative;
-                    
-                    width: 12px;
-                    height: 12px;
-                    margin-top: 7px;
-                    margin-left: 0;
-
-                    color: inherit;
-                    line-height: 26px;
-
-                    border: 1px solid #afafaf;
-                    border-radius: 2px;
-                    background-color: #FFF;
-
-                    box-shadow: inset 0 1px 1px #ccc;
-
-                    &.fa-square-o:before,
-                    &.fa-check-square-o:before {
-                        content: '';
-                    }
-
-                    &.fa-check-square-o {
-                        border-color: #0067b9;
-                        background-color: #0067b9;
-
-                        box-shadow: none;
-                    }
-
-                    &.fa-check-square-o:before {
-                        content: '';
-
-                        position: absolute;
-                        top: 0;
-                        left: 3px;
-
-                        width: 4px;
-                        height: 8px;
-
-                        border: solid #FFF;
-                        border-width: 0 2px 2px 0;
-
-                        transform: rotate(35deg);
-                    }
+                &:not(:last-child) {
+                    border-bottom: 1px solid #dddddd;
                 }
-            }
-
-            &:not(:last-child) {
-                border-bottom: 1px solid #dddddd;
             }
         }
+    }
+
+    &--heading {
+        cursor: default;
     }
 
     &--heading > span {
@@ -157,6 +164,62 @@
     &-dateperiod {
         display: block;
         margin-right: 35px;
+
+        .ignite-form-field {
+            $height: 36px;
+
+            display: inline-block;
+            width: auto;
+
+            font-size: 14px;
+
+            label.ignite-form-field__label {
+                width: auto;
+                max-width: initial;
+
+                font-size: inherit;
+                line-height: $height;
+            }
+
+            .ignite-form-field__control {
+                width: auto;
+
+                .input-tip {
+                    overflow: visible;
+                }
+
+                button {
+                    overflow: visible;
+
+                    width: auto;
+                    height: $height;
+                    min-width: 70px;
+                    max-width: 70px;
+                    padding: 0;
+                    padding-left: 5px;
+
+                    cursor: pointer;
+                    color: transparent;
+                    font-size: inherit;
+                    line-height: $height;
+                    text-align: left;
+                    text-shadow: 0 0 0 #ee2b27;
+
+                    border: none;
+                    box-shadow: none;
+
+                    &:hover, &:focus {
+                        text-shadow: 0 0 0 #a8110f;
+                    }
+                }
+
+                ul.dropdown-menu {
+                    span {
+                        text-shadow: none;
+                    }
+                }
+            }
+        }
     }
 
     .btn-ignite,
@@ -167,6 +230,10 @@
 
         margin-left: 20px;
         margin-right: 0;
+
+        .timepicker--ignite {
+            width: 45px;
+        }
     }
 
     &-dateperiod {

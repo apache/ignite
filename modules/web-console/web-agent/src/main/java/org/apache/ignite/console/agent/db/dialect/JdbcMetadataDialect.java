@@ -140,7 +140,7 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     if (sys.contains(schema))
                         continue;
 
-                    Collection<String> pkCols = new LinkedHashSet<>();
+                    Set<String> pkCols = new LinkedHashSet<>();
 
                     try (ResultSet pkRs = dbMeta.getPrimaryKeys(tblCatalog, tblSchema, tblName)) {
                         while (pkRs.next())
@@ -220,6 +220,19 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                             Boolean asc = askOrDesc == null || "A".equals(askOrDesc);
 
                             idx.getFields().put(colName, asc);
+                        }
+                    }
+
+                    // Remove index that is equals to primary key.
+                    if (!pkCols.isEmpty()) {
+                        for (Map.Entry<String, QueryIndex> entry : idxs.entrySet()) {
+                            QueryIndex idx = entry.getValue();
+
+                            if (pkCols.equals(idx.getFields().keySet())) {
+                                idxs.remove(entry.getKey());
+
+                                break;
+                            }
                         }
                     }
 

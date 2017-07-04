@@ -103,6 +103,15 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="walMode" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Defauls" />
+            <xs:enumeration value="LogOnly" />
+            <xs:enumeration value="Background" />
+            <xs:enumeration value="None" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -1300,6 +1309,93 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="persistentStoreConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Persistent store configuration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="persistentStorePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path where data and indexes will be persisted.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Checkpointing frequency which is a minimal interval when the dirty pages will be written to the Persistent Store.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingPageBufferSize" type="xs:long">
+                            <xs:annotation>
+                                <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingThreads" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of threads for checkpointing.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="lockWaitTime" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Persistent manager file lock wait time.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walHistorySize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of checkpoints to store in WAL (Write Ahead Log) history.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegments" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of WAL (Write Ahead Log) segments to work with.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegmentSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) segment.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walStorePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walArchivePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) archive is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walMode" type="walMode">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) mode.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tlbSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the TLB (Thread-Local Buffer), in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFlushFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) flush frequency.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFsyncDelayNanos" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) fsync (disk sync) delay, in nanoseconds.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walRecordIteratorBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) record iterator buffer, in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="alwaysWriteFullPages" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Whether full pages should always be written.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Plugin configurations.</xs:documentation>
@@ -1535,6 +1631,11 @@
             <xs:attribute name="queryThreadPoolSize" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Size of the query thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="isActiveOnStart" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether grid should be active on start.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>

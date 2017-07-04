@@ -165,8 +165,80 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    public void _testMergeJoin() {
+        IgniteCache<Integer, Org> c = ignite(CLIENT).getOrCreateCache(cacheConfig("org", true,
+            Integer.class, Org.class));
+
+        try {
+            String qry = "select o1.* from Org o1, " +
+                "(select max(o.name) as name, o.id from Org o group by o.id) o2 " +
+                "where o1.id = o2.id";
+
+            List<List<?>> plan = c.query(new SqlFieldsQuery("explain " + qry)
+                .setEnforceJoinOrder(true)).getAll();
+
+            X.println("Plan: " + plan);
+
+            String map0 = (String)plan.get(0).get(0);
+            String map1 = (String)plan.get(1).get(0);
+            String rdc = (String)plan.get(2).get(0);
+
+            assertTrue(map0.contains("ORDER BY"));
+            assertTrue(map1.contains("ORDER BY"));
+            assertEquals(3, rdc.split("merge_sorted").length);
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    public void testPushDownSubquery() {
+        IgniteCache<Integer, Person> c = ignite(CLIENT).getOrCreateCache(cacheConfig("ps", true,
+            Integer.class, Person.class));
+
+        try {
+            String subqry = "(select max(p.id) as id, p.depId from Person p group by p.depId)";
+
+            // Subquery in where clause.
+            String qry = "select 1 from Person p0 join " + subqry + " p1 on p0.id = p1.id where p0.id = " +
+                " (select p.id from Person p where p.id = p0.id)";
+
+            assertEquals(0, c.query(new SqlFieldsQuery(qry)).getAll().size());
+
+            List<List<?>> plan = c.query(new SqlFieldsQuery("explain " + qry)).getAll();
+
+            X.println(" Plan: " + plan);
+
+            assertEquals(3, plan.size());
+
+            String rdc = (String)plan.get(2).get(0);
+
+            assertFalse(rdc.contains("PERSON"));
+
+            qry = "select (select p.id from Person p where p.id = p0.id) from Person p0 join " +
+                subqry + " p1 on p0.id = p1.id";
+
+            assertEquals(0, c.query(new SqlFieldsQuery(qry)).getAll().size());
+
+            plan = c.query(new SqlFieldsQuery("explain " + qry)).getAll();
+
+            X.println(" Plan: " + plan);
+
+            assertEquals(3, plan.size());
+
+            rdc = (String)plan.get(2).get(0);
+
+            assertFalse(rdc.contains("PERSON"));
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     */
     public void testPushDown() {
-        IgniteCache<Integer, Person> c = ignite(0).getOrCreateCache(cacheConfig("ps", true,
+        IgniteCache<Integer, Person> c = ignite(CLIENT).getOrCreateCache(cacheConfig("ps", true,
             Integer.class, Person.class));
 
         try {

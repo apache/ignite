@@ -69,7 +69,7 @@ public class PartitionMetaStateRecord extends WALRecord {
     /**
      *
      */
-    public int partId() {
+    public int partitionId() {
         return partId;
     }
 

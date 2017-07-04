@@ -75,7 +75,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -90,18 +90,15 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @param name Atomic stamped name.
      * @param key Atomic stamped key.
      * @param atomicView Atomic projection.
-     * @param ctx Cache context.
      */
     public GridCacheAtomicStampedImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView) {
         assert key != null;
         assert atomicView != null;
-        assert ctx != null;
         assert name != null;
 
-        this.ctx = ctx;
+        this.ctx = atomicView.context();
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;
@@ -270,7 +267,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicStamped(name);
+            ctx.kernalContext().dataStructures().removeAtomicStamped(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -302,7 +299,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().atomicStamped(t.get2(), null, null, false);
+            return t.get1().dataStructures().atomicStamped(t.get2(), null, null, null, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -341,8 +338,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.atomicView = kctx.cache().atomicsCache();
-        this.ctx = atomicView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>>context().cacheContext(ctx.cacheId());
+        this.atomicView = ctx.cache();
     }
 
     /** {@inheritDoc} */

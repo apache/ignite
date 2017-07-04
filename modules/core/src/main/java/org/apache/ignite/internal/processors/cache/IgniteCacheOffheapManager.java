@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
-import org.apache.ignite.internal.processors.cache.database.RowStore;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -126,11 +127,10 @@ public interface IgniteCacheOffheapManager {
     public CacheDataStore dataStore(GridDhtLocalPartition part);
 
     /**
-     * @param p Partition ID.
      * @param store Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException;
+    public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException;
 
     /**
      * TODO: GG-10884, used on only from initialValue.
@@ -169,7 +169,6 @@ public interface IgniteCacheOffheapManager {
      * @param val  Value.
      * @param ver  Version.
      * @param expireTime Expire time.
-     * @param partId Partition number.
      * @param oldRow Old row if available.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
@@ -180,9 +179,20 @@ public interface IgniteCacheOffheapManager {
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        int partId,
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow
+    ) throws IgniteCheckedException;
+
+    /**
+     * @param cctx Cache context.
+     * @param key Key.
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void updateIndexes(
+        GridCacheContext cctx,
+        KeyCacheObject key,
+        GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
     /**
@@ -306,17 +316,19 @@ public interface IgniteCacheOffheapManager {
     public GridAtomicLong globalRemoveId();
 
     /**
+     * @param cacheId Cache ID.
      * @param idxName Index name.
      * @return Root page for index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public RootPage rootPageForIndex(String idxName) throws IgniteCheckedException;
+    public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
 
     /**
+     * @param cacheId Cache ID.
      * @param idxName Index name.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(String idxName) throws IgniteCheckedException;
+    public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
 
     /**
      * @param idxName Index name.
@@ -330,6 +342,12 @@ public interface IgniteCacheOffheapManager {
      * @return Number of entries.
      */
     public long cacheEntriesCount(int cacheId);
+
+    /**
+     * @param part Partition.
+     * @return Number of entries.
+     */
+    public int totalPartitionEntriesCount(int part);
 
     /**
      *
@@ -358,14 +376,20 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param size Size to init.
          * @param updCntr Update counter to init.
+         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
          */
-        void init(long size, long updCntr);
+        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes);
 
         /**
          * @param cacheId Cache ID.
          * @return Size.
          */
         int cacheSize(int cacheId);
+
+        /**
+         * @return Cache sizes if store belongs to group containing multiple caches.
+         */
+        Map<Integer, Long> cacheSizes();
 
         /**
          * @return Total size.
@@ -413,7 +437,6 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cctx Cache context.
          * @param key Key.
-         * @param part Partition.
          * @param val Value.
          * @param ver Version.
          * @param expireTime Expire time.
@@ -423,11 +446,17 @@ public interface IgniteCacheOffheapManager {
         void update(
             GridCacheContext cctx,
             KeyCacheObject key,
-            int part,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @throws IgniteCheckedException If failed.
+         */
+        void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

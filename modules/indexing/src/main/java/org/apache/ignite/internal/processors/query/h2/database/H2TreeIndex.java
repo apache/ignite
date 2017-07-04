@@ -24,10 +24,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -95,7 +94,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = tbl.rowDescriptor() == null ? "_" + name : tbl.rowDescriptor().type().typeId() + "_" + name;
+        name = (tbl.rowDescriptor() == null ? "" : tbl.rowDescriptor().type().typeId() + "_") + name;
 
         name = BPlusTree.treeName(name, "H2Tree");
 
@@ -325,10 +324,14 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy() {
         try {
             if (cctx.affinityNode()) {
-                for (H2Tree tree : segments) {
-                    tree.destroy();
+                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()) {
+                    for (int i = 0; i < segments.length; i++) {
+                        H2Tree tree = segments[i];
 
-                    cctx.offheap().dropRootPageForIndex(tree.getName());
+                        tree.destroy();
+
+                        dropMetaPage(tree.getName(), i);
+                    }
                 }
             }
         }
@@ -412,10 +415,20 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param name Name.
+     * @param segIdx Segment index.
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
      */
     private RootPage getMetaPage(String name, int segIdx) throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(name + "%" + segIdx);
+        return cctx.offheap().rootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
+    }
+
+    /**
+     * @param name Name.
+     * @param segIdx Segment index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void dropMetaPage(String name, int segIdx) throws IgniteCheckedException {
+        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
     }
 }
