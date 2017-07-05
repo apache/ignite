@@ -21,16 +21,16 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -72,6 +72,9 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     /** Serializer of current version to read headers. */
     @NotNull private final RecordSerializer serializer;
 
+    /** Factory to provide file I/O interfaces */
+    @NotNull protected final FileIOFactory ioFactory;
+
     /** Utility buffer for reading records */
     private final ByteBuffer buf;
 
@@ -85,10 +88,12 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializer serializer,
+        @NotNull final FileIOFactory ioFactory,
         final int bufSize) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializer = serializer;
+        this.ioFactory = ioFactory;
 
         // Do not allocate direct buffer for iterator.
         buf = ByteBuffer.allocate(bufSize);
@@ -231,15 +236,14 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
         @Nullable final FileWALPointer start)
         throws IgniteCheckedException, FileNotFoundException {
         try {
-            RandomAccessFile rf = new RandomAccessFile(desc.file, "r");
+            FileIO fileIO = ioFactory.create(desc.file, "r");
 
             try {
-                FileChannel ch = rf.getChannel();
-                FileInput in = new FileInput(ch, buf);
+                FileInput in = new FileInput(fileIO, buf);
 
                 // Header record must be agnostic to the serializer version.
                 WALRecord rec = serializer.readRecord(in,
-                    new FileWALPointer(desc.idx, (int)ch.position(), 0));
+                    new FileWALPointer(desc.idx, (int)fileIO.position(), 0));
 
                 if (rec == null)
                     return null;
@@ -254,11 +258,11 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
                 if (start != null && desc.idx == start.index())
                     in.seek(start.fileOffset());
 
-                return new FileWriteAheadLogManager.ReadFileHandle(rf, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
+                return new FileWriteAheadLogManager.ReadFileHandle(fileIO, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
-                    rf.close();
+                    fileIO.close();
                 }
                 catch (IOException ce) {
                     throw new IgniteCheckedException(ce);
@@ -268,7 +272,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
             }
             catch (IOException | IgniteCheckedException e) {
                 try {
-                    rf.close();
+                    fileIO.close();
                 }
                 catch (IOException ce) {
                     e.addSuppressed(ce);

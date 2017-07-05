@@ -52,7 +52,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     private static final String TEST_CACHE = "testCache";
 
     /** */
-    private boolean errorOnQueueFlusher;
+    private boolean flushByTimeout;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -91,8 +91,8 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         PersistentStoreConfiguration storeCfg = new PersistentStoreConfiguration()
                 .setFileIOFactory(new FailingFileIOFactory())
                 .setWalMode(WALMode.BACKGROUND)
-                // Setting WAL Segment size to high values forces flushing by QueueFlusher.
-                .setWalSegmentSize(errorOnQueueFlusher ? 500_000 : 50_000);
+                // Setting WAL Segment size to high values forces flushing by timeout.
+                .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
 
         cfg.setPersistentStoreConfiguration(storeCfg);
 
@@ -100,12 +100,12 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test flushing error recovery when flush is triggered asynchronously by QueueFlusher
+     * Test flushing error recovery when flush is triggered asynchronously by timeout
      *
      * @throws Exception In case of fail
      */
-    public void testErrorOnQueueFlusher() throws Exception {
-        errorOnQueueFlusher = true;
+    public void testErrorOnFlushByTimeout() throws Exception {
+        flushByTimeout = true;
         flushingErrorTest();
     }
 
@@ -115,7 +115,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      * @throws Exception In case of fail
      */
     public void testErrorOnDirectFlush() throws Exception {
-        errorOnQueueFlusher = false;
+        flushByTimeout = false;
         flushingErrorTest();
     }
 

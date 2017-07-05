@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -34,15 +35,18 @@ public class IgniteWalIteratorFactory {
     private final IgniteLogger log;
     /** Page size, in standalone iterator mode this value can't be taken from memory configuration */
     private final int pageSize;
+    /** Factory to provide I/O operations with files */
+    private final FileIOFactory ioFactory;
 
     /**
      * Creates WAL files iterator factory
      * @param log Logger.
      * @param pageSize Page size, size is validated
      */
-    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, final int pageSize) {
+    public IgniteWalIteratorFactory(@NotNull IgniteLogger log, @NotNull FileIOFactory ioFactory, int pageSize) {
         this.log = log;
         this.pageSize = pageSize;
+        this.ioFactory = ioFactory;
         new MemoryConfiguration().setPageSize(pageSize); // just for validate
     }
 
@@ -57,7 +61,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read folder
      */
     public WALIterator iteratorArchiveDirectory(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx());
+        return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx(), ioFactory);
     }
 
     /**
@@ -69,7 +73,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iteratorArchiveFiles(@NotNull final File ...files) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), false, files);
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, false, files);
     }
 
     /**
@@ -81,7 +85,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iteratorWorkFiles(@NotNull final File ...files) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), true, files);
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, true, files);
     }
 
     /**

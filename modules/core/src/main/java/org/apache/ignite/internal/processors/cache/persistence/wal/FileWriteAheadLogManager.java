@@ -46,6 +46,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -61,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -1602,12 +1602,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param ser Entry serializer.
          * @param in File input.
          */
-        private ReadFileHandle(
-            FileIO fileIO,
-            long idx,
-            String gridName,
-            RecordSerializer ser,
-            FileInput in
+        ReadFileHandle(
+                FileIO fileIO,
+                long idx,
+                String gridName,
+                RecordSerializer ser,
+                FileInput in
         ) {
             super(fileIO, idx, gridName);
 
@@ -2038,20 +2038,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     flushOrWait(null);
 
                 try {
-                    if (rollOver && written < (maxSegmentSize - 1)) {
-                        ByteBuffer allocate = ByteBuffer.allocate(1);
-                        allocate.put((byte) WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal());
-
-                        fileIO.write(allocate, written);
                     int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE;
+
                     if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
                         //it is expected there is sufficient space for this record because rollover should run early
                         final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
                         buf.put((byte)(WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal() + 1));
-                        final FileWALPointer pointer = new FileWALPointer(idx, (int)ch.position(), -1);
+
+                        final FileWALPointer pointer = new FileWALPointer(idx, (int)fileIO.position(), -1);
                         RecordV1Serializer.putPosition(buf, pointer);
+
                         buf.rewind();
-                        ch.write(buf, written);
+
+                        fileIO.write(buf, written);
 
                         if (mode == WALMode.DEFAULT)
                             fileIO.force();
@@ -2297,9 +2296,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final File walArchiveDir;
 
         /** */
-        private final FileIOFactory ioFactory;
-
-        /** */
         private final FileArchiver archiver;
 
         /** */
@@ -2341,11 +2337,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             super(log,
                 cctx,
                 serializer,
+                ioFactory,
                 Math.min(16 * tlbSize, psCfg.getWalRecordIteratorBufferSize()));
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;
-            this.ioFactory = ioFactory;
             this.archiver = archiver;
             this.start = start;
             this.end = end;
