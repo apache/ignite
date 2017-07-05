@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -214,11 +215,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             
             var ex = Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail"));
 
-            Assert.IsTrue(ex.ToString().Contains("JavaException"));  // Check Java exception presence.
             Assert.IsTrue(ex.ToString().Contains(
                 "at Apache.Ignite.Core.Tests.Cache.Store.CacheTestStore.ThrowIfNeeded"));  // Check proper stack trace.
 
-            CheckCustomStoreError(ex.InnerException);
+            Assert.IsNotNull(ex.InnerException);  // RollbackException.
+
+            var javaEx = ex.InnerException.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+
+            CheckCustomStoreError(javaEx.InnerException);
 
             // TODO: IGNITE-4535
             //cache.LocalEvict(new[] {1});
