@@ -1097,30 +1097,28 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi0 =
                 (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
-//        if (delayToNewCrd)
-//            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
-//        else
-//            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
+        if (delayToNewCrd)
+            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
+        else
+            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
         stopNode(3, ord);
 
-        LockSupport.park();
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
 
-//        AffinityTopologyVersion topVer = topVer(ord++, 0);
-//
-//        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-//        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-//        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-//
-//        U.sleep(1_000);
-//
-//        assertTrue(fut0.isDone());
-//        assertTrue(delayToNewCrd ? !fut1.isDone() : fut1.isDone());
-//        assertTrue(delayToNewCrd ? fut2.isDone() : !fut2.isDone());
-//
-//        stopNode(0, ord);
-//
-//        checkAffinity(1 + cnt, topVer(ord, 0), true);
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+
+        U.sleep(1_000);
+
+        assertTrue(fut0.isDone());
+        assertFalse(fut1.isDone()); // New coord can't complete exchange without all nodes.
+        assertTrue(delayToNewCrd ? fut2.isDone() : !fut2.isDone());
+
+        stopNode(0, ord);
+
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
     }
 
     public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished5() throws Exception {
@@ -1170,7 +1168,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 (TestRecordingCommunicationSpi) ignite2.configuration().getCommunicationSpi();
 
         spi2.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage msg) {
+            @Override
+            public boolean apply(GridIoMessage msg) {
                 Message msg0 = msg.message();
 
                 return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class);
@@ -1245,6 +1244,47 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         stopNode(0, ord);
 
         spi2.stopBlock();
+
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
+    }
+
+    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished7() throws Exception {
+        int ord = 1;
+
+        Ignite ignite0 = startServer(ord - 1, ord++);
+
+        Ignite ignite1 = startServer(ord - 1, ord++);
+
+        Ignite ignite2 = startServer(ord - 1, ord++);
+
+        int cnt = 1;
+
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
+
+        TestRecordingCommunicationSpi spi0 =
+                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+
+//        if (delayToNewCrd)
+//            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
+//        else
+        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
+
+        stopNode(3, ord);
+
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
+
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+
+        U.sleep(1_000);
+
+        assertTrue(fut0.isDone());
+        assertFalse(fut1.isDone()); // New coord can't complete exchange without all nodes.
+        assertFalse(fut2.isDone());
+
+        stopNode(0, ord);
 
         checkAffinity(1 + cnt, topVer(ord, 0), true);
     }

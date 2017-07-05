@@ -1411,7 +1411,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
 
         try {
-            exchangeFuture(msg.exchangeId(), null, null, null, null).onFinishExchangeMessage(node, msg);
+            exchangeFuture(msg.exchangeId(), null, null, null, null).onFinishExchangeMessage(node, msg, true);
         }
         finally {
             leaveBusy();
