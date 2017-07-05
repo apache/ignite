@@ -90,10 +90,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Exceptions. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<UUID, Exception> exs;
+    private Map<UUID, Exception> errs;
 
     /**  */
-    private byte[] exsBytes;
+    private byte[] errsBytes;
 
     /** */
     @GridDirectTransient
@@ -224,17 +224,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     *
+     * @return Errors map.
      */
-    public Map<UUID, Exception> getExceptionsMap() {
-        return exs;
+    @Nullable Map<UUID, Exception> getErrorsMap() {
+        return errs;
     }
 
     /**
-     * @param exs Exs.
+     * @param errs Errors map.
      */
-    public void setExceptionsMap(Map<UUID, Exception> exs) {
-        this.exs = new HashMap<>(exs);
+    void setErrorsMap(Map<UUID, Exception> errs) {
+        this.errs = new HashMap<>(errs);
     }
 
     /** {@inheritDoc} */
@@ -245,14 +245,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             (partCntrs != null && partCntrsBytes == null) ||
             (partHistSuppliers != null && partHistSuppliersBytes == null) ||
             (partsToReload != null && partsToReloadBytes == null) ||
-            (exs != null && exsBytes == null);
+            (errs != null && errsBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
             byte[] partHistSuppliersBytes0 = null;
             byte[] partsToReloadBytes0 = null;
-            byte[] exsBytes0 = null;
+            byte[] errsBytes0 = null;
 
             if (parts != null && partsBytes == null)
                 partsBytes0 = U.marshal(ctx, parts);
@@ -266,8 +266,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             if (partsToReload != null && partsToReloadBytes == null)
                 partsToReloadBytes0 = U.marshal(ctx, partsToReload);
 
-            if (exs != null && exsBytes == null)
-                exsBytes0 = U.marshal(ctx, exs);
+            if (errs != null && errsBytes == null)
+                errsBytes0 = U.marshal(ctx, errs);
 
             if (compress) {
                 assert !compressed();
@@ -277,13 +277,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
                     byte[] partHistSuppliersBytesZip = U.zip(partHistSuppliersBytes0);
                     byte[] partsToReloadBytesZip = U.zip(partsToReloadBytes0);
-                    byte[] exsBytesZip = U.zip(exsBytes0);
+                    byte[] exsBytesZip = U.zip(errsBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
                     partHistSuppliersBytes0 = partHistSuppliersBytesZip;
                     partsToReloadBytes0 = partsToReloadBytesZip;
-                    exsBytes0 = exsBytesZip;
+                    errsBytes0 = exsBytesZip;
 
                     compressed(true);
                 }
@@ -296,7 +296,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             partCntrsBytes = partCntrsBytes0;
             partHistSuppliersBytes = partHistSuppliersBytes0;
             partsToReloadBytes = partsToReloadBytes0;
-            exsBytes = exsBytes0;
+            errsBytes = errsBytes0;
         }
     }
 
@@ -379,15 +379,15 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partCntrs == null)
             partCntrs = new IgniteDhtPartitionCountersMap();
 
-        if (exsBytes != null && exs == null) {
+        if (errsBytes != null && errs == null) {
             if (compressed())
-                exs = U.unmarshalZip(ctx.marshaller(), exsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+                errs = U.unmarshalZip(ctx.marshaller(), errsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
             else
-                exs = U.unmarshal(ctx, exsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+                errs = U.unmarshal(ctx, errsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
-        if (exs == null)
-            exs = new HashMap<>();
+        if (errs == null)
+            errs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -412,7 +412,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByteArray("exsBytes", exsBytes))
+                if (!writer.writeByteArray("errsBytes", errsBytes))
                     return false;
 
                 writer.incrementState();
@@ -472,7 +472,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 6:
-                exsBytes = reader.readByteArray("exsBytes");
+                errsBytes = reader.readByteArray("errsBytes");
 
                 if (!reader.isLastRead())
                     return false;

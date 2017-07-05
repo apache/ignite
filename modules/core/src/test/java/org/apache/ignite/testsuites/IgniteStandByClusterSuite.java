@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStreamerTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStructureTest;
@@ -41,10 +42,12 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.re
  */
 public class IgniteStandByClusterSuite extends TestSuite {
     /**
-     *
+     * @return Test suite.
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suit");
+
+        suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
 
         suite.addTestSuite(IgniteStandByClusterTest.class);
         suite.addTestSuite(IgniteStandByClientReconnectTest.class);

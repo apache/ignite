@@ -288,14 +288,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
-        super.onKernalStart0(reconnect);
-
-        if (!cctx.kernalContext().clientNode() && cctx.kernalContext().state().active())
-            archiver.start();
-    }
-
     /**
      * @return Consistent ID.
      */

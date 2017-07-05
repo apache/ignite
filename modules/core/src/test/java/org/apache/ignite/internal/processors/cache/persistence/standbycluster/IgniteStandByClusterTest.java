@@ -60,7 +60,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
-    public void testNotStartDynamicCachesOnClientAfterActivation() throws Exception {
+    public void testStartDynamicCachesAfterActivation() throws Exception {
         final String cacheName0 = "cache0";
         final String cacheName = "cache";
 
@@ -114,13 +114,10 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         Map<String, GridCacheAdapter<?, ?>> caches = U.field(ig3.context().cache(), "caches");
 
         // Only system cache and cache0
-        assertTrue(caches.size() == 2);
+        assertEquals("Unexpected caches: " + caches.keySet(), 3, caches.size());
         assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
         assertTrue(caches.containsKey(cacheName0));
-
-        assertNull(caches.get(cacheName));
-
-        assertNotNull(caches.get(cacheName0));
+        assertTrue(caches.containsKey(cacheName));
 
         assertNotNull(ig3.cache(cacheName));
     }
@@ -155,12 +152,6 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         assertTrue(!ig1.active());
         assertTrue(!ig2.active());
         assertTrue(!ig3.active());
-
-        for (IgniteEx ig : Arrays.asList(ig1, ig2, ig3)) {
-            Map<String, DynamicCacheDescriptor> desc = U.field(U.field(ig.context().cache(), "cachesInfo"), "registeredCaches");
-
-            assertEquals(0, desc.size());
-        }
 
         ig3.active(true);
 
@@ -286,7 +277,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         private final String name;
 
         /**
-         * @param name
+         * @param name Node name.
          */
         private NodeFilterIgnoreByName(String name) {
             this.name = name;

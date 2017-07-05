@@ -128,74 +128,65 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         stopAllPrimary();
 
-        final AtomicInteger exCnt = new AtomicInteger();
-
         final CyclicBarrier barrier = new CyclicBarrier(backUpNodes() + backUpClientNodes());
 
         IgniteInternalFuture<Void> f1 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                try {
-                    barrier.await();
-                    ig1B.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+                barrier.await();
+
+                ig1B.active(true);
+
                 return null;
             }
         });
 
-        IgniteInternalFuture<Void> f2 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig2B.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> f2 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig2B.active(true);
+
+                return null;
             }
         });
 
-        IgniteInternalFuture<Void> f3 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig3B.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> f3 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig3B.active(true);
+
+                return null;
             }
         });
 
-        IgniteInternalFuture<Void> f4 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig1C.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> f4 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig1C.active(true);
+
+                return null;
             }
         });
 
-        IgniteInternalFuture<Void> f5 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig2C.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> f5 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig2C.active(true);
+
+                return null;
             }
         });
 
-        IgniteInternalFuture<Void> f6 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig3C.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> f6 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig3C.active(true);
+
+                return null;
             }
         });
 
@@ -206,8 +197,6 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         f4.get();
         f5.get();
         f6.get();
-
-        assertTrue(exCnt.get() > 0);
 
         assertTrue(ig1B.active());
         assertTrue(ig2B.active());
@@ -232,40 +221,35 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         stopAllPrimary();
 
-        final AtomicInteger exCnt = new AtomicInteger();
-
         final CyclicBarrier barrier = new CyclicBarrier(3);
 
-        IgniteInternalFuture<Void> act1 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig1B.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> act1 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig1B.active(true);
+
+                return null;
             }
         });
 
-        IgniteInternalFuture<Void> act2 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig2B.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> act2 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig2B.active(true);
+
+                return null;
             }
         });
 
-        IgniteInternalFuture<Void> act3 = runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                    ig3B.active(true);
-                }catch (Exception e){
-                    exCnt.incrementAndGet();
-                }
+        IgniteInternalFuture<?> act3 = runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                barrier.await();
+
+                ig3B.active(true);
+
+                return null;
             }
         });
 
@@ -273,15 +257,13 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         act2.get();
         act3.get();
 
-        assertEquals(2, exCnt.get());
-
         assertTrue(ig1B.active());
         assertTrue(ig2B.active());
         assertTrue(ig3B.active());
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testActiveAndInActiveAtTheSameTimeCluster() throws Exception {
         Ignite ig1P = primary(0);
@@ -318,7 +300,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testActivateOnAlreadyActivatedCluster() throws Exception {
         Ignite ig1P = primary(0);
@@ -375,7 +357,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testTryUseCacheInActiveCluster() throws Exception {
         Ignite ig1B = backUp(0);
@@ -410,13 +392,14 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
         assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 IgniteCache cache = ig.cache("cache");
+
                 return null;
             }
         }, IgniteException.class, "Can not perform the operation because the cluster is inactive.");
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testTryUseServiceInActiveCluster() throws Exception {
         Ignite ig1B = backUp(0);
@@ -445,7 +428,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     }
 
     /**
-     *
+     * @param ig Node to check.
      */
     private void checkExceptionTryUseService(final Ignite ig) {
         assertThrows(log, new Callable<Void>() {
@@ -458,7 +441,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testTryUseDataStructureInActiveCluster() throws Exception {
         Ignite ig1B = backUp(0);
@@ -487,19 +470,20 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     }
 
     /**
-     *
+     * @param ig Node.
      */
     private void checkExceptionTryUseDataStructure(final Ignite ig){
         assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 IgniteAtomicSequence seq = ig.atomicSequence("seq", 0, true);
+
                 return null;
             }
         }, IgniteException.class, "Can not perform the operation because the cluster is inactive.");
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testFailGetLock() throws Exception {
         Ignite ig1P = primary(0);
@@ -556,7 +540,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testActivateAfterFailGetLock() throws Exception {
         Ignite ig1P = primary(0);

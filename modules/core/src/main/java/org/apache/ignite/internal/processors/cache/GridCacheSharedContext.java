@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -156,6 +157,9 @@ public class GridCacheSharedContext<K, V> {
     /** Concurrent DHT atomic updates counters. */
     private AtomicIntegerArray dhtAtomicUpdCnt;
 
+    /** */
+    private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -207,6 +211,49 @@ public class GridCacheSharedContext<K, V> {
         txFinishMsgLog = kernalCtx.log(CU.TX_MSG_FINISH_LOG_CATEGORY);
         txLockMsgLog = kernalCtx.log(CU.TX_MSG_LOCK_LOG_CATEGORY);
         txRecoveryMsgLog = kernalCtx.log(CU.TX_MSG_RECOVERY_LOG_CATEGORY);
+
+        stateAwareMgrs = new ArrayList<>();
+
+        if (pageStoreMgr != null)
+            stateAwareMgrs.add(pageStoreMgr);
+
+        if (walMgr != null)
+            stateAwareMgrs.add(walMgr);
+
+        stateAwareMgrs.add(dbMgr);
+
+        stateAwareMgrs.add(snpMgr);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void activate() throws IgniteCheckedException {
+        if (!kernalCtx.clientNode())
+            dbMgr.lock();
+
+        boolean success = false;
+
+        try {
+            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
+                mgr.onActivate(kernalCtx);
+
+            success = true;
+        }
+        finally {
+            if (!success) {
+                if (!kernalCtx.clientNode())
+                    dbMgr.unLock();
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public void deactivate() {
+        for (int i = stateAwareMgrs.size() - 1; i >= 0; i--)
+            stateAwareMgrs.get(i).onDeActivate(kernalCtx);
     }
 
     /**
@@ -272,12 +319,15 @@ public class GridCacheSharedContext<K, V> {
             if (restartOnDisconnect(mgr))
                 mgr.stop(true);
         }
+
+        deactivate();
     }
 
     /**
+     * @param active Active flag.
      * @throws IgniteCheckedException If failed.
      */
-    void onReconnected() throws IgniteCheckedException {
+    void onReconnected(boolean active) throws IgniteCheckedException {
         List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
         setManagers(mgrs, txMgr,
@@ -303,8 +353,10 @@ public class GridCacheSharedContext<K, V> {
 
         kernalCtx.query().onCacheReconnect();
 
-        for (GridCacheSharedManager<?, ?> mgr : mgrs)
-            mgr.onKernalStart(true);
+        if (!active)
+            affinity().removeAllCacheInfo();
+
+        exchMgr.onKernalStart(active, true);
     }
 
     /**
