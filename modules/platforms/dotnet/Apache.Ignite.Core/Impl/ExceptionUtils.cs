@@ -122,8 +122,11 @@ namespace Apache.Ignite.Core.Impl
             BinaryReader reader = null, Exception innerException = null)
         {
             // Set JavaException as inner only if there is no InnerException.
+            // TODO: Set inner to JavaException maybe?
             if (innerException == null)
+            {
                 innerException = new JavaException(clsName, msg, stackTrace);
+            }
 
             ExceptionFactory ctor;
 
