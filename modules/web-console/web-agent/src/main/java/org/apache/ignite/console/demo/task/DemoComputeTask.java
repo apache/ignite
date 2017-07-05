@@ -86,15 +86,15 @@ public class DemoComputeTask implements ComputeTask<Void, Integer>{
         @Override public Object execute() throws IgniteException {
             try {
                 Thread.sleep(rnd.nextInt(50));
+
+                return rnd.nextInt(10000);
             }
             catch (InterruptedException e) {
                 // Restore interrupt status
                 Thread.currentThread().interrupt();
-
-                throw new IgniteInterruptedException(e);
             }
 
-            return rnd.nextInt(10000);
+            return null;
         }
 
         /** {@inheritDoc} */

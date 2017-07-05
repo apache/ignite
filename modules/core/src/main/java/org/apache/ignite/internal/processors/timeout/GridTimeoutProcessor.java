@@ -67,7 +67,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) {
+    @Override public void start() {
         timeoutWorker.start();
 
         if (log.isDebugEnabled())

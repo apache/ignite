@@ -44,7 +44,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
-     * @see GridComponent#onKernalStart(boolean)
      * @throws IgniteCheckedException If failed.
      */
     public void onUtilityCacheStarted() throws IgniteCheckedException;
@@ -211,10 +210,4 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Ignite binary interface.
      */
     public IgniteBinary binary();
-
-    /**
-     * @param keyType Key type name.
-     * @return Affinity filed name or {@code null}.
-     */
-    public String affinityField(String keyType);
 }

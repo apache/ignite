@@ -661,9 +661,6 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                 }
 
                 if (!_.isEmpty($scope.caches)) {
-                    if (item.cachesOrTemplates.length > 0)
-                        item.cachesOrTemplates.push(null);
-
                     _.forEach($scope.caches, function(cache) {
                         item.cachesOrTemplates.push(cache);
                     });
@@ -1304,7 +1301,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     $scope.selectedItem.queryMetadata = 'Configuration';
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.domains');
+                    $state.go('base.configuration.tabs.advanced.domains');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);

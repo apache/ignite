@@ -71,7 +71,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
@@ -2052,8 +2052,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 },
                 new P1<IgniteInternalCache<?, ?>>() {
                     @Override public boolean apply(IgniteInternalCache<?, ?> c) {
-                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
-                            !CU.ATOMICS_CACHE_NAME.equals(c.name());
+                        return !CU.UTILITY_CACHE_NAME.equals(c.name());
                     }
                 }
             );

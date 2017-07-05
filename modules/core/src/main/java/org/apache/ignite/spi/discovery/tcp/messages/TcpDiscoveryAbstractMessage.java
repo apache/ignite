@@ -57,7 +57,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** Message ID. */
     private IgniteUuid id;
 
-    /** Verifier node ID. */
+    /**
+     * Verifier node ID.
+     * Node can mark the messages as verified for rest of nodes to apply the
+     * changes this message is issued for, i.e. node added message, node failed or
+     * left message are processed by other nodes only after coordinator
+     * verification.
+     */
     private UUID verifierNodeId;
 
     /** Topology version. */

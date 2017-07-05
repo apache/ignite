@@ -552,7 +552,18 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         atomicConfiguration: {
             backups: Number,
             cacheMode: {type: String, enum: ['LOCAL', 'REPLICATED', 'PARTITIONED']},
-            atomicSequenceReserveSize: Number
+            atomicSequenceReserveSize: Number,
+            affinity: {
+                kind: {type: String, enum: ['Default', 'Rendezvous', 'Custom']},
+                Rendezvous: {
+                    affinityBackupFilter: String,
+                    partitions: Number,
+                    excludeNeighbors: Boolean
+                },
+                Custom: {
+                    className: String
+                }
+            }
         },
         binaryConfiguration: {
             idMapper: String,
@@ -690,7 +701,10 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         odbc: {
             odbcEnabled: Boolean,
             endpointAddress: String,
-            maxOpenCursors: Number
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            maxOpenCursors: Number,
+            threadPoolSize: Number
         },
         attributes: [{name: String, value: String}],
         collision: {
@@ -958,7 +972,9 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
                 evictionThreshold: Number,
                 emptyPagesPoolSize: Number,
-                metricsEnabled: Boolean
+                metricsEnabled: Boolean,
+                subIntervals: Number,
+                rateTimeInterval: Number
             }]
         },
         longQueryWarningTimeout: Number,
@@ -972,6 +988,28 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             tcpNoDelay: {type: Boolean, default: true},
             maxOpenCursorsPerConnection: Number,
             threadPoolSize: Number
+        },
+        persistenceStoreConfiguration: {
+            enabled: Boolean,
+            persistentStorePath: String,
+            metricsEnabled: Boolean,
+            alwaysWriteFullPages: Boolean,
+            checkpointingFrequency: Number,
+            checkpointingPageBufferSize: Number,
+            checkpointingThreads: Number,
+            walStorePath: String,
+            walArchivePath: String,
+            walMode: {type: String, enum: ['DEFAULT', 'LOG_ONLY', 'BACKGROUND', 'NONE']},
+            walSegments: Number,
+            walSegmentSize: Number,
+            walHistorySize: Number,
+            walFlushFrequency: Number,
+            walFsyncDelay: Number,
+            walRecordIteratorBufferSize: Number,
+            lockWaitTime: Number,
+            rateTimeInterval: Number,
+            tlbSize: Number,
+            subIntervals: Number
         }
     });
 
@@ -1009,11 +1047,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     // Define Notebook model.
     result.Notebook = mongoose.model('Notebook', NotebookSchema);
 
-    result.handleError = function(res, err) {
-        // TODO IGNITE-843 Send error to admin
-        res.status(err.code || 500).send(err.message);
-    };
-
     // Define Activities schema.
     const ActivitiesSchema = new Schema({
         owner: {type: ObjectId, ref: 'Account'},
@@ -1028,11 +1061,26 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     // Define Activities model.
     result.Activities = mongoose.model('Activities', ActivitiesSchema);
 
+    // Define Notifications schema.
+    const NotificationsSchema = new Schema({
+        owner: {type: ObjectId, ref: 'Account'},
+        date: Date,
+        message: String
+    });
+
+    // Define Notifications model.
+    result.Notifications = mongoose.model('Notifications', NotificationsSchema);
+
     // Registering the routes of all plugin modules
     for (const name in pluginMongo) {
         if (pluginMongo.hasOwnProperty(name))
             pluginMongo[name].register(mongoose, result);
     }
+
+    result.handleError = function(res, err) {
+        // TODO IGNITE-843 Send error to admin
+        res.status(err.code || 500).send(err.message);
+    };
 
     return result;
 };
