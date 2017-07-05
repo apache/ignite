@@ -51,8 +51,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1969,7 +1969,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             asyncRunner == null ? 1 : chp.cpPages.collectionsSize());
 
                         tracker.onPagesWriteStart();
-                        final AtomicLong writtenPagesCtr = new AtomicLong();
+                        final AtomicInteger writtenPagesCtr = new AtomicInteger();
+                        final int totalPagesToWriteCnt = chp.cpPages.size();
 
                         if (asyncRunner != null) {
                             for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
@@ -1978,7 +1979,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     chp.cpPages.innerCollection(i),
                                     updStores,
                                     doneWriteFut,
-                                    writtenPagesCtr
+                                    writtenPagesCtr,
+                                    totalPagesToWriteCnt
                                 );
 
                                 try {
@@ -1996,7 +1998,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 chp.cpPages,
                                 updStores,
                                 doneWriteFut,
-                                writtenPagesCtr);
+                                writtenPagesCtr,
+                                totalPagesToWriteCnt);
 
                             write.run();
                         }
@@ -2337,7 +2340,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private CheckpointMetricsTracker tracker;
 
-        /** */
+        /** Collection of page IDs to write under this task. Overall pages to write may be greater than this collection*/
         private Collection<FullPageId> writePageIds;
 
         /** */
@@ -2347,23 +2350,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private CountDownFuture doneFut;
 
         /** Counter for all written pages. May be shared between several workers */
-        private AtomicLong writtenPagesCtr;
+        private AtomicInteger writtenPagesCtr;
+
+        /** Total pages to write, counter may be greater than {@link #writePageIds} size*/
+        private final int totalPagesToWrite;
 
         /**
-         * @param writePageIds Write page IDs.
+         * Creates task for write pages
+         * @param tracker
+         * @param writePageIds Collection of page IDs to write.
+         * @param updStores
+         * @param doneFut
          * @param writtenPagesCtr all written pages counter, may be shared between several write tasks
+         * @param totalPagesToWrite total pages to be written under this checkpoint
          */
         private WriteCheckpointPages(
-            CheckpointMetricsTracker tracker,
-            Collection<FullPageId> writePageIds,
-            GridConcurrentHashSet<PageStore> updStores,
-            CountDownFuture doneFut,
-            @NotNull final AtomicLong writtenPagesCtr) {
+            final CheckpointMetricsTracker tracker,
+            final Collection<FullPageId> writePageIds,
+            final GridConcurrentHashSet<PageStore> updStores,
+            final CountDownFuture doneFut,
+            @NotNull final AtomicInteger writtenPagesCtr,
+            final int totalPagesToWrite) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
             this.writtenPagesCtr = writtenPagesCtr;
+            this.totalPagesToWrite = totalPagesToWrite;
         }
 
         /** {@inheritDoc} */
@@ -2411,9 +2424,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tmpWriteBuf.rewind();
                         }
 
-                        long curWrittenPages = writtenPagesCtr.incrementAndGet();
+                        int curWrittenPages = writtenPagesCtr.incrementAndGet();
 
-                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages);
+                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages, totalPagesToWrite);
 
                         tmpWriteBuf.rewind();
 

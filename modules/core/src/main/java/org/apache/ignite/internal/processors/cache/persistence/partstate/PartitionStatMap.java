@@ -97,18 +97,17 @@ public class PartitionStatMap {
     public static class Value {
         /**
          * Last Allocated Page Index (count) from PageMetaIO.
-         * Used only in incremental shapshots
-         * (previousSnapshotPageCount
+         * Used to separate newly allocated pages with previously observed state
          */
-        private final int lastAllocatedIndex;
+        private final int lastAllocatedIdx;
 
         /**
          * Total number of pages allocated for partition <code>[partition, cacheId]</code>
          */
         private final int count;
 
-        public Value(int lastAllocatedIndex, int count) {
-            this.lastAllocatedIndex = lastAllocatedIndex;
+        public Value(int lastAllocatedIdx, int count) {
+            this.lastAllocatedIdx = lastAllocatedIdx;
             this.count = count;
         }
 
@@ -121,19 +120,19 @@ public class PartitionStatMap {
             return getCount();
         }
 
-        public int getLastAllocatedIndex() {
-            return lastAllocatedIndex;
+        public int getLastAllocatedIdx() {
+            return lastAllocatedIdx;
         }
 
         /** Tmp method for compatibility with tuple */
         public int get1() {
-            return getLastAllocatedIndex();
+            return getLastAllocatedIdx();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return "Value{" +
-                "lastAllocatedIndex=" + lastAllocatedIndex +
+                "lastAllocatedIndex=" + lastAllocatedIdx +
                 ", count=" + count +
                 '}';
         }
