@@ -42,6 +42,9 @@ public final class FileInput implements ByteBufferBackedDataInput {
     /** */
     private long pos;
 
+    /** */
+    private ByteBufferExpander expBuf;
+
     /**
      * @param ch  Channel to read from
      * @param buf Buffer for reading blocks of data into
@@ -55,6 +58,16 @@ public final class FileInput implements ByteBufferBackedDataInput {
         pos = ch.position();
 
         clearBuffer();
+    }
+
+    /**
+     * @param ch Channel to read from
+     * @param expBuf ByteBufferWrapper with ability expand buffer dynamically.
+     */
+    public FileInput(FileChannel ch, ByteBufferExpander expBuf) throws IOException {
+        this(ch, expBuf.buffer());
+
+        this.expBuf = expBuf;
     }
 
     /**
@@ -96,8 +109,11 @@ public final class FileInput implements ByteBufferBackedDataInput {
         if (available >= requested)
             return;
 
-        if (buf.capacity() < requested)
-            throw new IOException("Requested size is greater than buffer: " + requested);
+        if (buf.capacity() < requested) {
+            buf = expBuf.expand(requested);
+
+            assert available == buf.remaining();
+        }
 
         buf.compact();
 
