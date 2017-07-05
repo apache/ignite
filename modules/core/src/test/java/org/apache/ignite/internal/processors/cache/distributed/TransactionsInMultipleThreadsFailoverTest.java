@@ -22,14 +22,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -40,13 +35,6 @@ import org.junit.Assert;
  *
  */
 public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransactionsInMultipleThreadsTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrid(getTestIgniteInstanceName(2), getConfiguration().setClientMode(true));
-    }
-
     /**
      * Starts transaction, breaks node and then resuming it in another thread.
      *
@@ -57,30 +45,30 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
      */
     private void performTransactionFailover(String key,
         int breakNodeIdx, int initiatingNodeIdx) throws IgniteCheckedException {
-        IgniteTransactions ts = grid(initiatingNodeIdx).transactions();
+        IgniteTransactions transactions = grid(initiatingNodeIdx).transactions();
 
         IgniteCache<String, Integer> cache = jcache(initiatingNodeIdx);
 
-        Transaction localTx = ts.txStart(transactionConcurrency, transactionIsolation);
+        Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
         cache.put(key, 1);
 
-        localTx.suspend();
+        tx.suspend();
 
         G.stop(ignite(breakNodeIdx).name(), true);
 
-        Assert.assertNull(ts.tx());
+        Assert.assertNull(transactions.tx());
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(ts.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, localTx.state());
+                Assert.assertNull(transactions.tx());
+                Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
 
-                localTx.resume();
+                tx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, localTx.state());
+                Assert.assertEquals(TransactionState.ACTIVE, tx.state());
 
-                localTx.commit();
+                tx.commit();
 
                 return true;
             }
@@ -92,20 +80,18 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
     /**
      * Starts tx locally with remote residing keys and then remote node fails.
      */
-    public void testTxRemoteNodeFailover() {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    txRemoteNodeFailover();
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Unexpected exception.");
-                }
+    public void testTxRemoteNodeFailover() throws Exception {
+        startGrid(getTestIgniteInstanceName(0));
+
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                txRemoteNodeFailover();
 
                 return null;
             }
         });
+
+        stopAllGrids();
     }
 
     /**
@@ -132,49 +118,33 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
             // ignoring node breakage exception
         }
 
-        boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                GridCacheAdapter<?, ?> cache = ((IgniteKernal)ignite(0)).internalCache(DEFAULT_CACHE_NAME);
+        awaitAllTransactionsHasFinished();
 
-                IgniteTxManager txMgr = cache.isNear() ?
-                    ((GridNearCacheAdapter)cache).dht().context().tm() :
-                    cache.context().tm();
-
-                int txNum = txMgr.idMapSize();
-
-                return txNum == 0;
-            }
-        }, 10000);
-
-        assertTrue(txFinished);
-
-        IgniteCache<String, Integer> localCache = jcache();
+        IgniteCache<String, Integer> clientCache = jcache(0);
 
         if (transactionConcurrency.equals(TransactionConcurrency.OPTIMISTIC))
-            Assert.assertEquals(1, (long)localCache.get(remotePrimaryKey));
+            Assert.assertEquals(1, (long)clientCache.get(remotePrimaryKey));
         else
-            Assert.assertNull(localCache.get(remotePrimaryKey));
+            Assert.assertNull(clientCache.get(remotePrimaryKey));
 
-        localCache.removeAll();
+        clientCache.removeAll();
     }
 
     /**
      * Starts tx locally with locally residing keys and then local node fails.
      */
-    public void testTxLocalNodeFailover() {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    txLocalNodeFailover();
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Unexpected exception.");
-                }
+    public void testTxLocalNodeFailover() throws Exception {
+        startGrid(getTestIgniteInstanceName(0));
+
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                txLocalNodeFailover();
 
                 return null;
             }
         });
+
+        stopAllGrids();
     }
 
     /**
@@ -206,20 +176,20 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
     /**
      * Starts tx locally on client, and break remote primary node.
      */
-    public void testTxOnClientBreakRemote() {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    txOnClientBreakRemote();
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Unexpected exception.");
-                }
+    public void testTxOnClientBreakRemote() throws Exception {
+        startGrid(2);
+
+        startGrid(getTestIgniteInstanceName(0), getConfiguration().setClientMode(true));
+
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                txOnClientBreakRemote();
 
                 return null;
             }
         });
+
+        stopAllGrids();
     }
 
     /**
@@ -237,7 +207,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
         assert remotePrimaryKey != null;
 
         try {
-            performTransactionFailover(remotePrimaryKey, 1, 2);
+            performTransactionFailover(remotePrimaryKey, 1, 0);
 
             if (transactionConcurrency.equals(TransactionConcurrency.PESSIMISTIC))
                 fail("Broken remote node must have caused exception.");
@@ -246,23 +216,9 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
             // ignoring node breakage exception
         }
 
-        boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                GridCacheAdapter<?, ?> cache = ((IgniteKernal)ignite(0)).internalCache(DEFAULT_CACHE_NAME);
+        awaitAllTransactionsHasFinished();
 
-                IgniteTxManager txMgr = cache.isNear() ?
-                    ((GridNearCacheAdapter)cache).dht().context().tm() :
-                    cache.context().tm();
-
-                int txNum = txMgr.idMapSize();
-
-                return txNum == 0;
-            }
-        }, 10000);
-
-        assertTrue(txFinished);
-
-        IgniteCache<String, Integer> clientCache = jcache(2);
+        IgniteCache<String, Integer> clientCache = jcache(0);
 
         if (transactionConcurrency.equals(TransactionConcurrency.OPTIMISTIC))
             Assert.assertEquals(1, (long)clientCache.get(remotePrimaryKey));

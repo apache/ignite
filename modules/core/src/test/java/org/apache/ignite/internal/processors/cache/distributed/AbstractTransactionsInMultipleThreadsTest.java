@@ -17,17 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Assert;
 
 /**
  *
  */
-public abstract class AbstractTransactionsInMultipleThreadsTest extends GridCacheAbstractSelfTest {
+public abstract class AbstractTransactionsInMultipleThreadsTest extends GridCommonAbstractTest {
     /** Transaction concurrency control. */
     protected TransactionConcurrency transactionConcurrency;
 
@@ -37,45 +54,82 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridCach
     /** Id of node, started transaction. */
     protected int txInitiatorNodeId = 0;
 
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+    protected CacheConfiguration getCacheConfiguration(){
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+
+        return cacheCfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cfg.setClientMode(false);
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+        cfg.setCacheConfiguration(getCacheConfiguration());
+
+        return  cfg;
     }
 
     /**
-     * Starts test scenario for all transaction controls, and isolation levels.
+     * Called after execution of every test method in class or
+     * if {@link #beforeTest()} failed without test method execution.
      *
-     * @param testScenario Scenario.
+     * @throws Exception If failed.
      */
-    protected void withAllIsolationsAndConcurrencies(IgniteClosure<Object, Void> testScenario) {
-        withAllIsolationsAndConcurrencies(testScenario, null);
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        checkAllTransactionsHasEnded();
     }
 
+    private void checkAllTransactionsHasEnded() {
+        for (Ignite ignite : G.allGrids()) {
+            GridCacheSharedContext<Object, Object> cctx = ((IgniteKernal)ignite).context().cache().context();
+
+            IgniteTxManager txMgr = cctx.tm();
+
+            Assert.assertTrue(txMgr.activeTransactions().isEmpty());
+        }
+    }
     /**
      * Starts test scenario for all transaction controls, and isolation levels.
      *
-     * @param testScenario Scenario.
-     * @param arg Argument.
+     * @param testScenario Test scenario.
      */
-    protected void withAllIsolationsAndConcurrencies(IgniteClosure<Object, Void> testScenario, Object arg) {
+    protected void runWithAllIsolationsAndConcurrencies(IgniteCallable<Void> testScenario) throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             this.transactionConcurrency = concurrency;
 
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 this.transactionIsolation = isolation;
 
-                testScenario.apply(arg);
+                try {
+                    testScenario.call();
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
             }
         }
+    }
+
+    protected void awaitAllTransactionsHasFinished() throws IgniteInterruptedCheckedException {
+        boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                GridCacheAdapter<?, ?> cache = ((IgniteKernal)ignite(0)).internalCache(DEFAULT_CACHE_NAME);
+
+                IgniteTxManager txMgr = cache.isNear() ?
+                    ((GridNearCacheAdapter)cache).dht().context().tm() :
+                    cache.context().tm();
+
+                int txNum = txMgr.idMapSize();
+
+                return txNum == 0;
+            }
+        }, 10000);
+
+        assertTrue(txFinished);
     }
 }

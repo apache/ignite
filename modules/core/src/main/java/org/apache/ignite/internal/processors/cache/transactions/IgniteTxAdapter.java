@@ -1034,7 +1034,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 case ROLLING_BACK: {
                     valid =
                         prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
-                            prev == PREPARED || (prev == COMMITTING && local() && !dht());
+                            prev == PREPARED || (prev == COMMITTING && local() && !dht()) || prev == SUSPENDED;
 
                     break;
                 }

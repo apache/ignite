@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.junit.Assert;
 
@@ -34,18 +39,30 @@ import org.junit.Assert;
  *
  */
 public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMultipleThreadsTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(0);
+        awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids(true);
+    }
+
     /**
+     * Test for transaction starting in one thread, continuing in another.
+     *
      * @throws Exception If failed.
      */
-    public void testSimpleTransactionInAnotherThread() {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    simpleTransactionInAnotherThread();
-                }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
+    public void testSimpleTransactionInAnotherThread() throws Exception {
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                simpleTransactionInAnotherThread();
 
                 return null;
             }
@@ -56,6 +73,10 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     private void simpleTransactionInAnotherThread() throws IgniteCheckedException {
+        // TODO: убрать когда проверишь!
+        Assert.assertTrue(ignite(0).configuration().getCacheConfiguration()[2].getAtomicityMode().equals(CacheAtomicityMode.TRANSACTIONAL));
+        Assert.assertTrue(ignite(0).configuration().getCacheConfiguration()[2].getCacheMode().equals(CacheMode.PARTITIONED));
+
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
 
@@ -99,17 +120,14 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     }
 
     /**
+     * Test for transaction starting in one thread, continuing in another, and resuming in initiating thread.
+     *
      * @throws IgniteCheckedException If failed.
      */
     public void testSimpleTransactionInAnotherThreadContinued() throws Exception {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    simpleTransactionInAnotherThreadContinued();
-                }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                simpleTransactionInAnotherThreadContinued();
 
                 return null;
             }
@@ -123,6 +141,8 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
 
+        assertNull(cache.get("key1"));
+
         final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
         cache.put("key1", 1);
@@ -130,6 +150,8 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         cache.put("key1'", 1);
 
         tx.suspend();
+
+        assertNull(cache.get("key1"));
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -177,17 +199,15 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     }
 
     /**
+     * Test for transaction starting in one thread, continuing in another. Cache operations performed for a couple of
+     * caches.
+     *
      * @throws Exception If failed.
      */
     public void testCrossCacheTransactionInAnotherThread() throws Exception {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    crossCacheTransactionInAnotherThread();
-                }
-                catch (Exception e) {
-                    fail("Unexpected exception: " + e);
-                }
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                crossCacheTransactionInAnotherThread();
 
                 return null;
             }
@@ -201,8 +221,8 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         Ignite ignite1 = ignite(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite1.transactions();
 
-        final IgniteCache<String, Integer> cache = ignite1.getOrCreateCache(cacheConfiguration(null).setName("testCache"));
-        final IgniteCache<String, Integer> cache2 = ignite1.getOrCreateCache(cacheConfiguration(null).setName("testCache2"));
+        final IgniteCache<String, Integer> cache = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache"));
+        final IgniteCache<String, Integer> cache2 = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache2"));
 
         final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
@@ -241,17 +261,15 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     }
 
     /**
+     * Test for transaction starting in one thread, continuing in another, and resuming in initiating thread.
+     * Cache operations performed for a couple of caches.
+     *
      * @throws Exception If failed.
      */
     public void testCrossCacheTransactionInAnotherThreadContinued() throws Exception {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    crossCacheTransactionInAnotherThreadContinued();
-                }
-                catch (Exception e) {
-                    fail("Unexpected exception: " + e);
-                }
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                crossCacheTransactionInAnotherThreadContinued();
 
                 return null;
             }
@@ -265,8 +283,8 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         Ignite ignite1 = ignite(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite1.transactions();
 
-        final IgniteCache<String, Integer> cache = ignite1.getOrCreateCache(cacheConfiguration(null).setName("testCache"));
-        final IgniteCache<String, Integer> cache2 = ignite1.getOrCreateCache(cacheConfiguration(null).setName("testCache2"));
+        final IgniteCache<String, Integer> cache = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache"));
+        final IgniteCache<String, Integer> cache2 = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache2"));
 
         final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
@@ -323,17 +341,15 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     }
 
     /**
+     * Test for transaction rollback.
+     *
      * @throws Exception If failed.
      */
     public void testTransactionRollback() throws Exception {
-        withAllIsolationsAndConcurrencies(new IgniteClosure<Object, Void>() {
-            @Override public Void apply(Object o) {
-                try {
-                    transactionRollback();
-                }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
+        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                transactionRollback();
+
                 return null;
             }
         });
@@ -344,8 +360,8 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      */
     private void transactionRollback() throws IgniteCheckedException {
         final IgniteCache<String, Integer> cache1 = jcache(txInitiatorNodeId);
-
-        final Transaction tx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
         cache1.put("key1", 1);
         cache1.put("key2", 2);
@@ -354,7 +370,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions().tx());
+                Assert.assertNull(transactions.tx());
                 Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
@@ -379,5 +395,66 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         Assert.assertFalse(cache1.containsKey("key3"));
 
         cache1.removeAll();
+    }
+
+    /**
+     * Test for starting and suspending transactions, and then resuming and committing in another thread.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleTransactionsSuspendResume() throws Exception {
+        transactionConcurrency = TransactionConcurrency.OPTIMISTIC;
+
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            transactionIsolation = isolation;
+
+            multipleTransactionsSuspendResume();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void multipleTransactionsSuspendResume() throws Exception {
+        List<Transaction> transactions = new ArrayList<>();
+        IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
+        Ignite clientNode = ignite(txInitiatorNodeId);
+        Transaction clientTx;
+
+        for (int i = 0; i < 10; i++) {
+            clientTx = clientNode.transactions().txStart(transactionConcurrency, transactionIsolation);
+
+            clientCache.put("1", i);
+
+            clientTx.suspend();
+
+            transactions.add(clientTx);
+        }
+
+        final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                Assert.assertNull(ignite(txInitiatorNodeId).transactions().tx());
+
+                for (int i = 0; i < 10; i++) {
+                    Transaction clientTx = transactions.get(i);
+
+                    Assert.assertEquals(TransactionState.SUSPENDED, clientTx.state());
+
+                    clientTx.resume();
+
+                    Assert.assertEquals(TransactionState.ACTIVE, clientTx.state());
+
+                    clientTx.commit();
+                }
+
+                return true;
+            }
+        });
+
+        fut.get(5000);
+
+        Assert.assertEquals(9, jcache(0).get("1"));
+
+        clientCache.removeAll();
     }
 }

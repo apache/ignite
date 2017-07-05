@@ -2240,11 +2240,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Attaches current thread to transaction.
      *
      * @param tx Transaction to be attached.
+     * @throws IgniteCheckedException If transaction has already got an owner.
      */
-    public void attachThread(IgniteInternalTx tx) {
+    public synchronized void attachThread(IgniteInternalTx tx) throws IgniteCheckedException {
         assert tx != null;
         assert !threadMap.containsKey(tx.threadId());
-        assert !threadMap.containsValue(tx);
+
+        if (threadMap.containsValue(tx))
+            throw new IgniteCheckedException("Transaction already is attached to thread.");
 
         threadMap.put(Thread.currentThread().getId(), tx);
     }

@@ -864,7 +864,10 @@ public class GridCacheSharedContext<K, V> {
      * @return Commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
+    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
+        if(Thread.currentThread().getId() != tx.threadId())
+            throw new IgniteCheckedException("Only thread owning transaction is permitted to commit it.");
+
         GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
         if (ctx == null) {
