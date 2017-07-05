@@ -1932,12 +1932,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ClusterNode loc = ctx.localNode();
 
         if (node2part != null) {
-            if (loc.equals(oldest) && !node2part.nodeId().equals(loc.id())) {
-                updateSeq.setIfGreater(node2part.updateSequence());
+            updateSeq.setIfGreater(node2part.updateSequence());
 
+            if (loc.equals(oldest) && !node2part.nodeId().equals(loc.id()))
                 node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq.incrementAndGet(),
                     node2part, false);
-            }
             else
                 node2part = new GridDhtPartitionFullMap(node2part, node2part.updateSequence());
 

@@ -47,6 +47,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -56,9 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -166,7 +166,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean beforeDestroy) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
 
-        boolean beforeSnapshot = ctx != null && ctx.nextSnapshot();
+        boolean needSnapshot = ctx != null && ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
         boolean wasSaveToMeta = false;
 
@@ -183,22 +183,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             IgniteWriteAheadLogManager wal = this.ctx.wal();
 
             if (size > 0 || updCntr > 0) {
-                int state = -1;
+                GridDhtPartitionState state = null;
 
                 if (!grp.isLocal()) {
                     if (beforeDestroy)
-                        state = GridDhtPartitionState.EVICTED.ordinal();
+                        state = GridDhtPartitionState.EVICTED;
                     else {
                         // localPartition will not acquire writeLock here because create=false.
                         GridDhtLocalPartition part = grp.topology().localPartition(store.partId(),
                             AffinityTopologyVersion.NONE, false);
 
                         if (part != null && part.state() != GridDhtPartitionState.EVICTED)
-                            state = part.state().ordinal();
+                            state = part.state();
                     }
 
                     // Do not save meta for evicted partitions on next checkpoints.
-                    if (state == -1)
+                    if (state == null)
                         return false;
                 }
 
@@ -226,8 +226,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         changed |= io.setGlobalRemoveId(pageAddr, rmvId);
                         changed |= io.setSize(pageAddr, size);
 
-                        if (state != -1)
-                            changed |= io.setPartitionState(pageAddr, (byte)state);
+                        if (state != null)
+                            changed |= io.setPartitionState(pageAddr, (byte)state.ordinal());
                         else
                             assert grp.isLocal() : grp.cacheOrGroupName();
 
@@ -299,7 +299,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         int pageCnt;
 
-                        if (beforeSnapshot) {
+                        if (needSnapshot) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
                             io.setCandidatePageCount(pageAddr, pageCnt);
 
@@ -311,17 +311,24 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                     long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
 
                                     try {
-                                        long nextSnapshotTag = io.getNextSnapshotTag(metaPageAddr);
+                                        PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
-                                        io.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
+                                        long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
+
+                                        metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
+
+                                        if (log != null && log.isDebugEnabled())
+                                            log.debug("Save next snapshot before checkpoint start for grId = " + grpId
+                                                + ", nextSnapshotTag = " + nextSnapshotTag);
 
                                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
                                             metaPage, wal, null))
                                             wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
                                                 nextSnapshotTag + 1));
 
-                                        addPartition(ctx.partitionStatMap(), metaPageAddr, io, grpId, PageIdAllocator.INDEX_PARTITION,
-                                            this.ctx.kernalContext().cache().context().pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
+                                        if (state == GridDhtPartitionState.OWNING)
+                                            addPartition(ctx.partitionStatMap(), metaPageAddr, metaIo, grpId, PageIdAllocator.INDEX_PARTITION,
+                                                    this.ctx.kernalContext().cache().context().pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
                                     }
                                     finally {
                                         pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
@@ -354,7 +361,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 rmvId,
                                 size,
                                 cntrsPageId,
-                                (byte)state,
+                                (byte)state.ordinal(),
                                 pageCnt
                             ));
                     }
@@ -399,7 +406,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     private static void addPartition(
         Map<T2<Integer, Integer>, T2<Integer, Integer>> map,
         long pageAddr,
-        PagePartitionMetaIO io,
+        PageMetaIO io,
         int cacheId,
         int partition,
         int pages

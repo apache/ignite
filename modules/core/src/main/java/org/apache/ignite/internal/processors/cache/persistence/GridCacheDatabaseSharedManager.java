@@ -2102,6 +2102,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     @Override public Map<T2<Integer, Integer>, T2<Integer, Integer>> partitionStatMap() {
                         return map;
                     }
+
+                    @Override public boolean needToSnapshot(String cacheOrGrpName) {
+                        return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
+                    }
                 };
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
