@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -201,7 +202,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         int entryCnt = 10_000;
 
-        Ignite ig0 = startGrids(2);
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
 
         ig0.active(true);
 
@@ -219,7 +220,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Ignite ig1 = startGrid(1);
+        IgniteEx ig1 = startGrid(1);
 
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
@@ -236,6 +237,16 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache1.get(k));
             }
         }
+
+        cache.rebalance().get();
+
+        for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
+            GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
+            GridDhtLocalPartition p1 = ig1.context().cache().cache("cache1").context().topology().localPartition(p);
+
+            assertTrue(p0.updateCounter() > 0);
+            assertEquals(p0.updateCounter(), p1.updateCounter());
+        }
     }
 
     /**
@@ -244,7 +255,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
         int entryCnt = 10_000;
 
-        Ignite ig0 = startGrids(2);
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
 
         ig0.active(true);
 
@@ -269,7 +280,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache.get(k));
         }
 
-        Ignite ig1 = startGrid(1);
+        IgniteEx ig1 = startGrid(1);
 
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
@@ -285,6 +296,16 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache.get(k));
                 assertEquals("k=" + k, k, cache1.get(k));
             }
+        }
+
+        cache.rebalance().get();
+
+        for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
+            GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
+            GridDhtLocalPartition p1 = ig1.context().cache().cache("cache1").context().topology().localPartition(p);
+
+            assertTrue(p0.updateCounter() > 0);
+            assertEquals(p0.updateCounter(), p1.updateCounter());
         }
     }
 
