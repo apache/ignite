@@ -63,7 +63,6 @@
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>2.9.1</curator.version>
         <easymock.version>3.4</easymock.version>
-        <jmockit.version>1.33</jmockit.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
         <flume.ng.version>1.7.0</flume.ng.version>

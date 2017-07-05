@@ -23,33 +23,33 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
-import mockit.Invocation;
-import mockit.Mock;
-import mockit.MockUp;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.log4j.Appender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
-import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -73,6 +73,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** No nodes filter. */
     private static volatile boolean noNodesFilter;
 
+    /** Indicates whether we need to make the topology stale */
+    private static boolean needStaleTop = false;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -88,6 +91,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        cfg.setCommunicationSpi(new StaleTopologyCommunicationSpi());
 
         if (cnt < MAX_CACHE_COUNT)
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -256,52 +261,26 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     public void testRetryWhenTopologyMismatch() throws Exception {
         final int KEY = 1;
         final String VAL = "1";
-        final AtomicReference<Throwable> testFailure = new AtomicReference<>(null);
-        final AtomicLong firstReqId = new AtomicLong(Long.MIN_VALUE);
 
         StringWriter logWriter = new StringWriter();
-        Logger.getRootLogger().addAppender(new WriterAppender(new SimpleLayout(), logWriter));
+        Appender logAppender = new WriterAppender(new SimpleLayout(), logWriter);
+
+        Logger.getRootLogger().addAppender(logAppender);
 
         startGrids(MAX_CACHE_COUNT - 1); // cache-enabled nodes
 
         try (Ignite ignite = startGrid(MAX_CACHE_COUNT);
              IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
-            final GridCacheContext gridCacheCtx = ((IgniteKernal)ignite).internalCache().context();
-            final AffinityTopologyVersion validTop = gridCacheCtx.topology().topologyVersion();
 
-            new MockUp<DataStreamerRequest>() {
-                @Mock AffinityTopologyVersion topologyVersion(Invocation invocation) {
-                    try {
-                        DataStreamerRequest req = invocation.getInvokedInstance();
-
-                        assertTrue(req.entries().size() > 0);
-
-                        // Simulate situation when this client node have not received the last "node joined" topology
-                        // update causing topology mismatch
-                        AffinityTopologyVersion staleTop = new AffinityTopologyVersion(
-                            validTop.topologyVersion() - 1,
-                            validTop.minorTopologyVersion());
-
-                        // Analyze request ID: we expect DataStreamer to retry updating cache and look for the request
-                        // ID increment. Thus, we return stale topology on the first request making the server fail
-                        // and then return valid topology on retry.
-                        if (firstReqId.get() == Long.MIN_VALUE)
-                            firstReqId.set(req.requestId());
-
-                        return firstReqId.get() != req.requestId() ? validTop : staleTop;
-                    }
-                    catch (Throwable e) {
-                        testFailure.set(e);
-                        return validTop;
-                    }
-                }
-            };
+            needStaleTop = true; // simulate stale topology for the next action
 
             streamer.addData(KEY, VAL);
+        } finally {
+            needStaleTop = false;
+            logWriter.flush();
+            Logger.getRootLogger().removeAppender(logAppender);
+            logAppender.close();
         }
-
-        if (testFailure.get() != null)
-            Assert.fail(testFailure.get().getMessage());
 
         assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));
     }
@@ -356,6 +335,64 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
             return obj instanceof TestObject && ((TestObject)obj).val == val;
+        }
+    }
+
+    /**
+     * Simulate stale (not up-to-date) topology
+     */
+    private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            // Send stale topology only in the first request to avoid indefinitely getting failures.
+            if (needStaleTop) {
+                if (msg instanceof GridIoMessage) {
+                    GridIoMessage ioMsg = (GridIoMessage)msg;
+                    Message appMsg = ioMsg.message();
+
+                    if (appMsg != null && appMsg instanceof DataStreamerRequest) {
+                        DataStreamerRequest req = (DataStreamerRequest)appMsg;
+                        AffinityTopologyVersion validTop = req.topologyVersion();
+
+                        // Simulate situation when a node did not receive the latest "node joined" topology update causing
+                        // topology mismatch
+                        AffinityTopologyVersion staleTop = new AffinityTopologyVersion(
+                            validTop.topologyVersion() - 1,
+                            validTop.minorTopologyVersion());
+
+                        appMsg = new DataStreamerRequest(
+                            req.requestId(),
+                            req.responseTopicBytes(),
+                            req.cacheName(),
+                            req.updaterBytes(),
+                            req.entries(),
+                            req.ignoreDeploymentOwnership(),
+                            req.skipStore(),
+                            req.keepBinary(),
+                            req.deploymentMode(),
+                            req.sampleClassName(),
+                            req.userVersion(),
+                            req.participants(),
+                            req.classLoaderId(),
+                            req.forceLocalDeployment(),
+                            staleTop);
+
+                        msg = new GridIoMessage(
+                            GridTestUtils.<Byte>getFieldValue(ioMsg, "plc"),
+                            GridTestUtils.getFieldValue(ioMsg, "topic"),
+                            GridTestUtils.<Integer>getFieldValue(ioMsg, "topicOrd"),
+                            appMsg,
+                            GridTestUtils.<Boolean>getFieldValue(ioMsg, "ordered"),
+                            ioMsg.timeout(),
+                            ioMsg.skipOnTimeout());
+
+                        needStaleTop = false;
+                    }
+                }
+            }
+
+            super.sendMessage(node, msg, ackC);
         }
     }
 }
