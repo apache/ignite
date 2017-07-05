@@ -532,6 +532,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 if (locPart != null && (!cctx.rebalanceEnabled() || locPart.state() == MOVING) && locPart.reserve()) {
                     GridCacheEntryEx entry = cctx.dht().entryEx(info.key());
 
+                    cctx.shared().database().checkpointReadLock();
+
                     try {
                         if (entry.initialValue(
                             info.value(),
@@ -560,6 +562,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                                 cctx.name() + ", entry=" + entry + ']');
                     }
                     finally {
+                        cctx.shared().database().checkpointReadUnlock();
+
                         locPart.release();
                     }
                 }

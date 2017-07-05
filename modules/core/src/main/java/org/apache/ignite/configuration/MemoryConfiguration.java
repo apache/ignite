@@ -102,7 +102,7 @@ public class MemoryConfiguration implements Serializable {
     private String dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
     /** Size of memory (in bytes) to use for default MemoryPolicy. */
-    private Long dfltMemPlcSize;
+    private long dfltMemPlcSize = DFLT_MEMORY_POLICY_MAX_SIZE;
 
     /** Memory policies. */
     private MemoryPolicyConfiguration[] memPlcs;
@@ -126,6 +126,8 @@ public class MemoryConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public MemoryConfiguration setSystemCacheInitialSize(long sysCacheInitSize) {
+        A.ensure(sysCacheMaxSize > 0, "System cache initial size can not be less zero.");
+
         this.sysCacheInitSize = sysCacheInitSize;
 
         return this;
@@ -149,6 +151,8 @@ public class MemoryConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public MemoryConfiguration setSystemCacheMaxSize(long sysCacheMaxSize) {
+        A.ensure(sysCacheMaxSize > 0, "System cache max size can not be less zero.");
+
         this.sysCacheMaxSize = sysCacheMaxSize;
 
         return this;
@@ -214,7 +218,7 @@ public class MemoryConfiguration implements Serializable {
     public MemoryPolicyConfiguration createDefaultPolicyConfig() {
         MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
 
-        long maxSize = (dfltMemPlcSize != null) ? dfltMemPlcSize : DFLT_MEMORY_POLICY_MAX_SIZE;
+        long maxSize = dfltMemPlcSize;
 
         if (maxSize < DFLT_MEMORY_POLICY_INITIAL_SIZE)
             memPlc.setInitialSize(maxSize);
@@ -237,7 +241,7 @@ public class MemoryConfiguration implements Serializable {
     /**
      * Sets the number of concurrent segments in Ignite internal page mapping tables.
      *
-     * @param concLvl Mapping table oncurrency level.
+     * @param concLvl Mapping table concurrency level.
      */
     public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
@@ -248,10 +252,10 @@ public class MemoryConfiguration implements Serializable {
     /**
      * Gets a size for default memory policy overridden by user.
      *
-     * @return default memory policy size overridden by user or -1 if nothing was specified.
+     * @return Default memory policy size overridden by user or {@link #DFLT_MEMORY_POLICY_MAX_SIZE} if nothing was specified.
      */
     public long getDefaultMemoryPolicySize() {
-        return (dfltMemPlcSize != null) ? dfltMemPlcSize : -1;
+        return dfltMemPlcSize;
     }
 
     /**

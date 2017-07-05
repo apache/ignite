@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.visor.node;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -33,9 +35,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.internal.visor.cache.VisorMemoryMetrics;
 import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
+import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isIgfsCache;
@@ -115,8 +119,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
             events0(res, arg.getEventsOrderKey(), arg.getEventsThrottleCounterKey(), arg.isTaskMonitoringEnabled());
         }
-        catch (Exception eventsEx) {
-            res.setEventsEx(eventsEx);
+        catch (Exception e) {
+            res.setEventsEx(new VisorExceptionWrapper(e));
         }
     }
 
@@ -145,6 +149,23 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /**
+     * Collect memory metrics.
+     *
+     * @param res Job result.
+     */
+    protected void memoryMetrics(VisorNodeDataCollectorJobResult res) {
+        try {
+            List<VisorMemoryMetrics> memoryMetrics = res.getMemoryMetrics();
+
+            for (MemoryMetrics m : ignite.memoryMetrics())
+                memoryMetrics.add(new VisorMemoryMetrics(m));
+        }
+        catch (Exception e) {
+            res.setMemoryMetricsEx(new VisorExceptionWrapper(e));
+        }
+    }
+
+    /**
      * Collect caches.
      *
      * @param res Job result.
@@ -155,6 +176,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             IgniteConfiguration cfg = ignite.configuration();
 
             GridCacheProcessor cacheProc = ignite.context().cache();
+
+            List<VisorCache> resCaches = res.getCaches();
 
             for (String cacheName : cacheProc.cacheNames()) {
                 if (proxyCache(cacheName))
@@ -169,7 +192,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                         if (ca == null || !ca.context().started())
                             continue;
 
-                        res.getCaches().add(new VisorCache(ignite, ca, arg.getSample()));
+                        resCaches.add(new VisorCache(ignite, ca));
                     }
                     catch(IllegalStateException | IllegalArgumentException e) {
                         if (debug && ignite.log() != null)
@@ -182,8 +205,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
         }
-        catch (Exception cachesEx) {
-            res.setCachesEx(cachesEx);
+        catch (Exception e) {
+            res.setCachesEx(new VisorExceptionWrapper(e));
         }
     }
 
@@ -222,8 +245,22 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
         }
-        catch (Exception igfssEx) {
-            res.setIgfssEx(igfssEx);
+        catch (Exception e) {
+            res.setIgfssEx(new VisorExceptionWrapper(e));
+        }
+    }
+
+    /**
+     * Collect persistence metrics.
+     *
+     * @param res Job result.
+     */
+    protected void persistenceMetrics(VisorNodeDataCollectorJobResult res) {
+        try {
+            res.setPersistenceMetrics(new VisorPersistenceMetrics(ignite.persistentStoreMetrics()));
+        }
+        catch (Exception e) {
+            res.setPersistenceMetricsEx(new VisorExceptionWrapper(e));
         }
     }
 
@@ -257,6 +294,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         if (debug)
             start0 = log(ignite.log(), "Collected events", getClass(), start0);
 
+        memoryMetrics(res);
+
+        if (debug)
+            start0 = log(ignite.log(), "Collected memory metrics", getClass(), start0);
+
         caches(res, arg);
 
         if (debug)
@@ -265,7 +307,12 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         igfs(res);
 
         if (debug)
-            log(ignite.log(), "Collected igfs", getClass(), start0);
+            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
+
+        persistenceMetrics(res);
+
+        if (debug)
+            log(ignite.log(), "Collected persistence metrics", getClass(), start0);
 
         res.setErrorCount(ignite.context().exceptionRegistry().errorCount());
 

@@ -35,7 +35,7 @@ angular
             url: '/resume',
             onEnter: AclRoute.checkAccess('demo'),
             controller: ['$state', ($state) => {
-                $state.go('base.configuration.clusters');
+                $state.go('base.configuration.tabs.advanced.clusters');
             }],
             metaTags: {
                 title: 'Demo resume'
@@ -46,9 +46,9 @@ angular
             onEnter: AclRoute.checkAccess('demo'),
             controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
                 $http.post('/api/v1/demo/reset')
-                    .then(() => $state.go('base.configuration.clusters'))
+                    .then(() => $state.go('base.configuration.tabs.advanced.clusters'))
                     .catch((res) => {
-                        $state.go('base.configuration.clusters');
+                        $state.go('base.configuration.tabs.advanced.clusters');
 
                         Messages.showError(res);
                     });

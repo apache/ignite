@@ -295,15 +295,15 @@ public final class IgniteSystemProperties {
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
+    /** Ttl of removed cache entries (ms). */
+    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
+
     /** Maximum amount of concurrent updates per system thread in atomic caches in case of PRIMARY_SYNC or FULL_ASYNC
      * write synchronization mode. If this limit is exceeded then update will be performed with FULL_SYNC
      * synchronization mode. If value is {@code 0} then limit is unbounded.
      */
     public static final String IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES =
         "IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES";
-
-    /** Ttl of removed cache entries (ms). */
-    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
@@ -594,6 +594,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
     /**
+     * Time interval for calculating rebalance rate statistics, in milliseconds. Defaults to 60000.
+     */
+    public static final String IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL = "IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL";
+
+    /**
      * Indexing discovery history size. Protects from duplicate messages maintaining the list of IDs of recently
      * arrived discovery messages.
      * <p>
@@ -606,6 +611,25 @@ public final class IgniteSystemProperties {
 
     /** */
     public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
+
+    /**
+     * Skip CRC calculation flag.
+     */
+    public static final String IGNITE_PDS_SKIP_CRC = "IGNITE_PDS_SKIP_CRC";
+
+    /**
+     * WAL rebalance threshold.
+     */
+    public static final String IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY =
+        "IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY";
+
+    /**
+     * WAL rebalance threshold.
+     */
+     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
+
+    /** Ignite page memory concurrency level. */
+    public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
 
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
@@ -625,6 +649,13 @@ public final class IgniteSystemProperties {
      * </p>
      */
     public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
+
+    /**
+     * Ignite cluster name.
+     * <p>
+     * Defaults to utility cache deployment ID..
+     */
+    public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
 
     /**
      * When client cache is started or closed special discovery message is sent to notify cluster (for example this is

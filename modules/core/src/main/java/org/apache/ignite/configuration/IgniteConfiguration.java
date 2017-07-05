@@ -458,6 +458,9 @@ public class IgniteConfiguration {
     /** Page memory configuration. */
     private MemoryConfiguration memCfg;
 
+    /** Persistence store configuration. */
+    private PersistentStoreConfiguration pstCfg;
+
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
 
@@ -503,6 +506,7 @@ public class IgniteConfiguration {
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
         memCfg = cfg.getMemoryConfiguration();
+        pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -2156,6 +2160,34 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
         this.memCfg = memCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets persistence configuration used by Apache Ignite Persistent Store.
+     *
+     * @return Persistence configuration.
+     */
+    public PersistentStoreConfiguration getPersistentStoreConfiguration() {
+        return pstCfg;
+    }
+
+    /**
+     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     */
+    public boolean isPersistentStoreEnabled() {
+        return pstCfg != null;
+    }
+
+    /**
+     * Sets persistence configuration activating Apache Ignite Persistent Store.
+     *
+     * @param pstCfg Persistence configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
+        this.pstCfg = pstCfg;
 
         return this;
     }

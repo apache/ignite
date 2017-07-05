@@ -57,25 +57,6 @@ class Paragraph {
 
         _.assign(this, paragraph);
 
-        const _enableColumns = (categories, visible) => {
-            _.forEach(categories, (cat) => {
-                cat.visible = visible;
-
-                _.forEach(this.gridOptions.columnDefs, (col) => {
-                    if (col.displayName === cat.name)
-                        col.visible = visible;
-                });
-            });
-
-            this.gridOptions.api.grid.refresh();
-        };
-
-        const _selectableColumns = () => _.filter(this.gridOptions.categories, (cat) => cat.selectable);
-
-        this.toggleColumns = (category, visible) => _enableColumns([category], visible);
-        this.selectAllColumns = () => _enableColumns(_selectableColumns(), true);
-        this.clearAllColumns = () => _enableColumns(_selectableColumns(), false);
-
         Object.defineProperty(this, 'gridOptions', {value: {
             enableGridMenu: false,
             enableColumnMenus: false,
@@ -101,7 +82,7 @@ class Paragraph {
                     this.categories.push({
                         name: col.fieldName,
                         visible: self.columnFilter(col),
-                        selectable: true
+                        enableHiding: true
                     });
 
                     return cols;
@@ -887,7 +868,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .catch((err) => Messages.showError(err));
 
         const _startWatch = () =>
-            agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.clusters')
+            agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters')
                 .then(() => Loading.start('sqlLoading'))
                 .then(_refreshFn)
                 .then(() => Loading.finish('sqlLoading'))
@@ -1774,17 +1755,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 scope.title = 'Error details';
                 scope.content = [];
 
-                let cause = paragraph.error.root;
-
                 const tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
 
-                while (_.nonNil(cause)) {
-                    const clsName = _.isEmpty(cause.className) ? '' : '[' + JavaTypes.shortClassName(cause.className) + '] ';
+                const addToTrace = (item) => {
+                    if (_.nonNil(item)) {
+                        const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
-                    scope.content.push((scope.content.length > 0 ? tab : '') + clsName + cause.message);
+                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + item.message);
 
-                    cause = cause.cause;
-                }
+                        addToTrace(item.cause);
+
+                        _.forEach(item.suppressed, (sup) => addToTrace(sup));
+                    }
+                };
+
+                addToTrace(paragraph.error.root);
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
