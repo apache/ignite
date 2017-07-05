@@ -20,17 +20,20 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * File input.
+ * File input, backed by byte buffer file input.
+ * This class allows to read data by chunks from file and then read primitives
  */
 public final class FileInput implements ByteBufferBackedDataInput {
-    /** */
+    /**
+     * Buffer for reading blocks of data into.
+     * <b>Note:</b> biggest block requested from this input can't be longer than buffer capacity
+     */
     private ByteBuffer buf;
 
     /** */
@@ -40,8 +43,8 @@ public final class FileInput implements ByteBufferBackedDataInput {
     private long pos;
 
     /**
-     * @param io FileIO.
-     * @param buf Buffer.
+     * @param io FileIO to read from.
+     * @param buf Buffer for reading blocks of data into.
      */
     public FileInput(FileIO io, ByteBuffer buf) throws IOException {
         assert io != null;
@@ -102,7 +105,7 @@ public final class FileInput implements ByteBufferBackedDataInput {
             int read = io.read(buf);
 
             if (read == -1)
-                throw new EOFException();
+                throw new EOFException("EOF at position [" + io.position() + "] expected to read [" + requested + "] bytes");
 
             available += read;
 

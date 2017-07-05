@@ -161,6 +161,8 @@ public class GridDhtPartitionDemander {
         lastExchangeFut = null;
 
         lastTimeoutObj.set(null);
+
+        syncFut.onDone();
     }
 
     /**

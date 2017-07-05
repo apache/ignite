@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -53,7 +56,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
  *
  */
 public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentityFuture<IgniteInternalTx>
-    implements GridCacheFuture<IgniteInternalTx> {
+    implements GridCacheFuture<IgniteInternalTx>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -551,6 +554,34 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         }
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
+        if (!isDone()) {
+            for (IgniteInternalFuture fut : futures()) {
+                if (!fut.isDone()) {
+                    MiniFuture f = (MiniFuture)fut;
+
+                    if (!f.node().isLocal()) {
+                        GridCacheVersion dhtVer = tx.xidVersion();
+                        GridCacheVersion nearVer = tx.nearXidVersion();
+
+                        ctx.remoteTxInfo(f.node().id(), dhtVer, nearVer, "GridDhtTxFinishFuture " +
+                            "waiting for response [node=" + f.node().id() +
+                            ", topVer=" + tx.topologyVersion() +
+                            ", dhtVer=" + dhtVer +
+                            ", nearVer=" + nearVer +
+                            ", futId=" + futId +
+                            ", miniId=" + f.futId +
+                            ", tx=" + tx + ']');
+
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

@@ -162,7 +162,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) {
         if (log.isDebugEnabled())
             log.debug("DeActivate page store manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
@@ -208,18 +208,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void storeCacheData(
-        CacheGroupDescriptor grpDesc,
         StoredCacheData cacheData
     ) throws IgniteCheckedException {
 
-        File cacheWorkDir = cacheWorkDirectory(grpDesc, cacheData.config());
+        File cacheWorkDir = cacheWorkDirectory(cacheData.config());
         File file;
 
         checkAndInitCacheWorkDir(cacheWorkDir);
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
-        if (grpDesc.sharedGroup())
+        if (cacheData.config().getGroupName() != null)
             file = new File(cacheWorkDir, cacheData.config().getName() + CACHE_DATA_FILENAME);
         else
             file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
@@ -333,14 +332,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param grpDesc Cache group descriptor.
      * @param ccfg Cache configuration.
      * @return Cache work directory.
      */
-    private File cacheWorkDirectory(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) {
+    private File cacheWorkDirectory(CacheConfiguration ccfg) {
         String dirName;
 
-        if (grpDesc.sharedGroup())
+        if (ccfg.getGroupName() != null)
             dirName = CACHE_GRP_DIR_PREFIX + ccfg.getGroupName();
         else
             dirName = CACHE_DIR_PREFIX + ccfg.getName();
@@ -357,7 +355,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
-        File cacheWorkDir = cacheWorkDirectory(grpDesc, ccfg);
+        File cacheWorkDir = cacheWorkDirectory(ccfg);
 
         boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
 
