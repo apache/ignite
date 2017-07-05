@@ -281,7 +281,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             logWriter.flush();
 
             Logger.getRootLogger().removeAppender(logAppender);
-            
+
             logAppender.close();
         }
 
