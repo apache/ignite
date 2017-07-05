@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeMessage;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -234,6 +235,7 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2RowMessage.class);
 
 //        gen.generateAndWrite(GridDhtFinishExchangeMessage.class);
+//        gen.generateAndWrite(GridDhtFinishExchangeAckMessage.class);
     }
 
     /**

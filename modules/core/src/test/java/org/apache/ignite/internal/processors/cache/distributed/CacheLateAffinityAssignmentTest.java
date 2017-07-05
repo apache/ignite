@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -1096,28 +1097,30 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi0 =
                 (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
-        if (delayToNewCrd)
-            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
-        else
-            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
+//        if (delayToNewCrd)
+//            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
+//        else
+//            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
         stopNode(3, ord);
 
-        AffinityTopologyVersion topVer = topVer(ord++, 0);
+        LockSupport.park();
 
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(1_000);
-
-        assertTrue(fut0.isDone());
-        assertTrue(delayToNewCrd ? !fut1.isDone() : fut1.isDone());
-        assertTrue(delayToNewCrd ? fut2.isDone() : !fut2.isDone());
-
-        stopNode(0, ord);
-
-        checkAffinity(1 + cnt, topVer(ord, 0), true);
+//        AffinityTopologyVersion topVer = topVer(ord++, 0);
+//
+//        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+//        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+//        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+//
+//        U.sleep(1_000);
+//
+//        assertTrue(fut0.isDone());
+//        assertTrue(delayToNewCrd ? !fut1.isDone() : fut1.isDone());
+//        assertTrue(delayToNewCrd ? fut2.isDone() : !fut2.isDone());
+//
+//        stopNode(0, ord);
+//
+//        checkAffinity(1 + cnt, topVer(ord, 0), true);
     }
 
     public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished5() throws Exception {
@@ -1127,9 +1130,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startServer(ord - 1, ord++);
 
+        checkAffinity(ord - 1, topVer(ord - 1, 0), false);
+
+        checkAffinity(ord - 1, topVer(ord - 1, 1), true);
+
         Ignite ignite2 = startServer(ord - 1, ord++);
 
-        int cnt = 1;
+        int cnt = 2;
 
         for (int i = 0; i < cnt; i++)
             startServer(ord - 1, ord++);
@@ -1184,9 +1191,17 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startServer(ord - 1, ord++);
 
+        checkAffinity(ord - 1, topVer(ord - 1, 0), false);
+
+        checkAffinity(ord - 1, topVer(ord - 1, 1), true);
+
         Ignite ignite2 = startServer(ord - 1, ord++);
 
-        int cnt = 1;
+        checkAffinity(ord - 1, topVer(ord - 1, 0), false);
+
+        checkAffinity(ord - 1, topVer(ord - 1, 1), true);
+
+        int cnt = 2;
 
         for (int i = 0; i < cnt; i++)
             startServer(ord - 1, ord++);

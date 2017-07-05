@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtFinishExchangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -119,7 +120,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
  * Partition exchange manager.
  */
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
-
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, 1_000);
@@ -339,11 +339,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             });
 
         cctx.io().addHandler(0, GridDhtFinishExchangeMessage.class,
-            new MessageHandler<GridDhtFinishExchangeMessage>() {
-                @Override public void onMessage(ClusterNode node, GridDhtFinishExchangeMessage msg) {
-                    processFinishExchangeMessage(node, msg);
-                }
-            });
+                new MessageHandler<GridDhtFinishExchangeMessage>() {
+                    @Override public void onMessage(ClusterNode node, GridDhtFinishExchangeMessage msg) {
+                        processFinishExchangeMessage(node, msg);
+                    }
+                });
+
+        cctx.io().addHandler(0, GridDhtFinishExchangeAckMessage.class,
+                new MessageHandler<GridDhtFinishExchangeAckMessage>() {
+                    @Override public void onMessage(ClusterNode node, GridDhtFinishExchangeAckMessage msg) {
+                        processFinishExchangeAckMessage(node, msg);
+                    }
+                });
     }
 
     /**
@@ -506,6 +513,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().removeHandler(0, GridDhtPartitionsFullMessage.class);
         cctx.io().removeHandler(0, GridDhtPartitionsSingleRequest.class);
         cctx.io().removeHandler(0, GridDhtFinishExchangeMessage.class);
+        cctx.io().removeHandler(0, GridDhtFinishExchangeAckMessage.class);
 
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
@@ -767,7 +775,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public void forceDummyExchange(boolean reassign,
         GridDhtPartitionsExchangeFuture exchFut) {
         exchWorker.addFuture(
-            new GridDhtPartitionsExchangeFuture(cctx, reassign, exchFut.discoveryEvent(), exchFut.exchangeId()));
+                new GridDhtPartitionsExchangeFuture(cctx, reassign, exchFut.discoveryEvent(), exchFut.exchangeId()));
     }
 
     /**
@@ -1404,6 +1412,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             exchangeFuture(msg.exchangeId(), null, null, null, null).onFinishExchangeMessage(node, msg);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param node Node ID.
+     * @param msg Message.
+     */
+    private void processFinishExchangeAckMessage(ClusterNode node, GridDhtFinishExchangeAckMessage msg) {
+        if (!enterBusy())
+            return;
+
+        try {
+            exchangeFuture(msg.exchangeId(), null, null, null, null).onFinishExchangeAckMessage(node);
         }
         finally {
             leaveBusy();
