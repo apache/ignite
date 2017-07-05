@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             CacheTestStore.ThrowError = true;
             
             var ex = Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail"));
-            Assert.IsTrue(ex.ToString().Contains("org.apache.ignite"));  // Check Java exception presence.
+            Assert.IsTrue(ex.ToString().Contains("JavaException"));  // Check Java exception presence.
             CheckCustomStoreError(ex.InnerException);
 
             // TODO: IGNITE-4535
