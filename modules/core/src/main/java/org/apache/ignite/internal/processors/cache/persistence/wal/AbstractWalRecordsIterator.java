@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,8 +40,8 @@ import org.jetbrains.annotations.Nullable;
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log.
  * Subclasses are to override segment switching functionality
  */
-public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>>
-    implements WALIterator {
+public abstract class AbstractWalRecordsIterator
+    extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>> implements WALIterator {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,7 +72,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     @NotNull private final RecordSerializer serializer;
 
     /** Utility buffer for reading records */
-    private final ByteBuffer buf;
+    private final ByteBufferExpander buf;
 
     /**
      * @param log Logger
@@ -85,15 +84,14 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializer serializer,
-        final int bufSize) {
+        final int bufSize
+    ) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializer = serializer;
 
         // Do not allocate direct buffer for iterator.
-        buf = ByteBuffer.allocate(bufSize);
-        buf.order(ByteOrder.nativeOrder());
-
+        buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
     }
 
     /**
