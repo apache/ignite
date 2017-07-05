@@ -59,10 +59,10 @@ public class FilePageStore implements PageStore {
     /** Database configuration. */
     private final MemoryConfiguration dbCfg;
 
-    /** File I/O factory. */
+    /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
 
-    /** File I/O */
+    /** I/O interface for read/write operations with file */
     private FileIO fileIO;
 
     /** */

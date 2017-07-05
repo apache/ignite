@@ -36,7 +36,7 @@ public final class FileInput implements ByteBufferBackedDataInput {
      */
     private ByteBuffer buf;
 
-    /** */
+    /** I/O interface for read/write operations with file */
     private FileIO io;
 
     /** */

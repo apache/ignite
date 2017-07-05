@@ -35,7 +35,7 @@ public class IgniteWalIteratorFactory {
     private final IgniteLogger log;
     /** Page size, in standalone iterator mode this value can't be taken from memory configuration */
     private final int pageSize;
-    /** Factory to provide I/O operations with files */
+    /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
 
     /**

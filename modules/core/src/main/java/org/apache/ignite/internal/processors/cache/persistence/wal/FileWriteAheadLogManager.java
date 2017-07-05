@@ -153,7 +153,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private volatile long oldestArchiveSegmentIdx;
 
-    /** */
+    /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
 
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
@@ -1560,7 +1560,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      */
     private abstract static class FileHandle {
-        /** */
+        /** I/O interface for read/write operations with file */
         protected FileIO fileIO;
 
         /** Absolute WAL segment file index (incremental counter) */

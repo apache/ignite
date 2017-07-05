@@ -72,7 +72,7 @@ public abstract class AbstractWalRecordsIterator extends GridCloseableIteratorAd
     /** Serializer of current version to read headers. */
     @NotNull private final RecordSerializer serializer;
 
-    /** Factory to provide file I/O interfaces */
+    /** Factory to provide I/O interfaces for read/write operations with files */
     @NotNull protected final FileIOFactory ioFactory;
 
     /** Utility buffer for reading records */
