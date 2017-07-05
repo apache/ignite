@@ -41,6 +41,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -52,6 +53,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -108,6 +111,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /** */
     private final ThreadLocal<ClientCacheChangeDiscoveryMessage> clientCacheChanges = new ThreadLocal<>();
 
+    /** Caches initialized flag (initialized when join activate cluster or after activation. */
+    private boolean cachesInitialized;
+
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -140,10 +146,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * Callback invoked from discovery thread when discovery message is received.
      *
      * @param type Event type.
+     * @param customMsg Custom message instance.
      * @param node Event node.
      * @param topVer Topology version.
+     * @param state Cluster state.
      */
-    void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
+    void onDiscoveryEvent(int type,
+        @Nullable DiscoveryCustomMessage customMsg,
+        ClusterNode node,
+        AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState state) {
+        if (state.transition() || !state.active())
+            return;
+
         if (type == EVT_NODE_JOINED && node.isLocal()) {
             // Clean-up in case of client reconnect.
             caches.clear();
@@ -153,6 +168,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             lastAffVer = null;
 
             caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
+
+            cachesInitialized = true;
+        }
+        else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
+            if (!cachesInitialized && ((ChangeGlobalStateFinishMessage)customMsg).clusterActive()) {
+                caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
+
+                cachesInitialized = true;
+            }
         }
 
         if (!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) {
@@ -404,7 +428,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 DynamicCacheChangeRequest startReq = startReqs.get(desc.cacheName());
 
-                cctx.cache().prepareCacheStart(desc, startReq.nearCacheConfiguration(), topVer);
+                cctx.cache().prepareCacheStart(desc.cacheConfiguration(),
+                    desc,
+                    startReq.nearCacheConfiguration(),
+                    topVer);
 
                 startedInfos.put(desc.cacheId(), startReq.nearCacheConfiguration() != null);
 
@@ -683,19 +710,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             NearCacheConfiguration nearCfg = null;
 
-            if (exchActions.newClusterState() == ClusterState.ACTIVE) {
-                if (CU.isSystemCache(req.cacheName()))
-                    startCache = true;
-                else if (!cctx.localNode().isClient()) {
-                    startCache = cctx.cacheContext(action.descriptor().cacheId()) == null &&
-                        CU.affinityNode(cctx.localNode(), req.startCacheConfiguration().getNodeFilter());
-
-                    nearCfg = req.nearCacheConfiguration();
-                }
-                else // Only static cache configured on client must be started.
-                    startCache = cctx.kernalContext().state().isLocallyConfigured(req.cacheName());
-            }
-            else if (cctx.localNodeId().equals(req.initiatingNodeId())) {
+            if (req.locallyConfigured() || (cctx.localNodeId().equals(req.initiatingNodeId()) && !exchActions.activate())) {
                 startCache = true;
 
                 nearCfg = req.nearCacheConfiguration();
@@ -703,7 +718,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             else {
                 // Cache should not be started
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
-                        : "Starting cache has not null context: " + cacheDesc.cacheName();
+                    : "Starting cache has not null context: " + cacheDesc.cacheName();
 
                 IgniteCacheProxy cacheProxy = cctx.cache().jcacheProxy(req.cacheName());
 
@@ -711,27 +726,29 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (cacheProxy != null) {
                     // Cache should be in restarting mode
                     assert cacheProxy.isRestarting()
-                            : "Cache has non restarting proxy " + cacheProxy;
+                        : "Cache has non restarting proxy " + cacheProxy;
 
                     startCache = true;
                 }
-                else
-                    startCache = CU.affinityNode(cctx.localNode(), cacheDesc.groupDescriptor().config().getNodeFilter());
+                else {
+                    startCache = CU.affinityNode(cctx.localNode(),
+                        cacheDesc.groupDescriptor().config().getNodeFilter());
+                }
             }
 
             try {
                 // Save configuration before cache started.
-                if (cctx.pageStore() != null && !cctx.localNode().isClient())
+                if (cctx.pageStore() != null && !cctx.kernalContext().clientNode()) {
                     cctx.pageStore().storeCacheData(
-                        cacheDesc.groupDescriptor(),
                         new StoredCacheData(req.startCacheConfiguration())
                     );
+                }
 
                 if (startCache) {
-                    cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
-
-                    if (exchActions.newClusterState() == null)
-                        cctx.kernalContext().state().onCacheStart(req);
+                    cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
+                        cacheDesc,
+                        nearCfg,
+                        fut.topologyVersion());
 
                     if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                         if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())

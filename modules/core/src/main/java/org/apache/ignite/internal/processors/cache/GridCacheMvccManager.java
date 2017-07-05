@@ -274,10 +274,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         pendingExplicit = GridConcurrentFactory.newMap();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
-        if (!reconnect)
-            cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
+    /**
+     * Cache futures listener must be registered after communication listener.
+     */
+    public void registerEventListener() {
+        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */

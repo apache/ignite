@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.management.JMException;
@@ -41,8 +42,10 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
@@ -51,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPa
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -92,7 +94,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** */
     private FreeListImpl dfltFreeList;
 
-    /** */
+    /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
 
     /** {@inheritDoc} */
@@ -100,13 +102,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getMemoryConfiguration() == null)
             return;
 
-        init();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void init() throws IgniteCheckedException {
         MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
         assert memCfg != null;
@@ -114,14 +109,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         validateConfiguration(memCfg);
 
         pageSize = memCfg.getPageSize();
-
-        initPageMemoryPolicies(memCfg);
-
-        registerMetricsMBeans();
-
-        startMemoryPolicies();
-
-        initPageMemoryDataStructures(memCfg);
     }
 
     /**
@@ -149,12 +136,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) {
         try {
             U.registerMBean(
-                    cfg.getMBeanServer(),
-                    cfg.getIgniteInstanceName(),
-                    "MemoryMetrics",
-                    memPlcCfg.getName(),
-                    new MemoryMetricsMXBeanImpl(memMetrics, memPlcCfg),
-                    MemoryMetricsMXBean.class);
+                cfg.getMBeanServer(),
+                cfg.getIgniteInstanceName(),
+                "MemoryMetrics",
+                memPlcCfg.getName(),
+                new MemoryMetricsMXBeanImpl(memMetrics, memPlcCfg),
+                MemoryMetricsMXBean.class);
         }
         catch (JMException e) {
             U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
@@ -163,6 +150,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param dbCfg Database config.
+     * @throws IgniteCheckedException If failed.
      */
     protected void initPageMemoryDataStructures(MemoryConfiguration dbCfg) throws IgniteCheckedException {
         freeListMap = U.newHashMap(memPlcMap.size());
@@ -554,13 +542,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void initDataBase() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
      * @return collection of all configured {@link MemoryPolicy policies}.
      */
     public Collection<MemoryPolicy> memoryPolicies() {
@@ -589,6 +570,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public PersistenceMetrics persistentStoreMetrics() {
         return null;
+    }
+
+    /**
+     * @param cachesToStart Started caches.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
+        // No-op.
     }
 
     /**
@@ -947,11 +936,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        start0();
+        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getMemoryConfiguration() == null)
+            return;
+
+        MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+
+        assert memCfg != null;
+
+        initPageMemoryPolicies(memCfg);
+
+        registerMetricsMBeans();
+
+        startMemoryPolicies();
+
+        initPageMemoryDataStructures(memCfg);
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) {
         stop0(false);
     }
 
@@ -960,5 +962,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public String systemMemoryPolicyName() {
         return SYSTEM_MEMORY_POLICY_NAME;
+    }
+
+    /**
+     * Method for fake (standalone) context initialization. Not to be called in production code
+     * @param pageSize configured page size
+     */
+    protected void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 }

@@ -183,7 +183,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
-        if (!grp.rebalanceEnabled() || !grp.shared().kernalContext().state().active())
+        if (!grp.rebalanceEnabled())
             return new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 
         int partCnt = grp.affinity().partitions();

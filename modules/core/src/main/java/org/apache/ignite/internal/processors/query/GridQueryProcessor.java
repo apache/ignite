@@ -512,10 +512,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     cacheData.queryEntities(cacheDesc.schema().entities());
 
-                    CacheGroupDescriptor grpDesc = ctx.cache().cacheDescriptors().get(cacheData.config().getName()).groupDescriptor();
-
                     try {
-                        ctx.cache().context().pageStore().storeCacheData(grpDesc, cacheData);
+                        ctx.cache().context().pageStore().storeCacheData(cacheData);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IllegalStateException("Failed to persist cache data: " + cacheData.config().getName(), e);

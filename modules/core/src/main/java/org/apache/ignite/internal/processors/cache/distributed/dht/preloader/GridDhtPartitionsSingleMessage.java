@@ -76,10 +76,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Exception. */
     @GridToStringInclude
     @GridDirectTransient
-    private Exception ex;
+    private Exception err;
 
     /** */
-    private byte[] exBytes;
+    private byte[] errBytes;
 
     /** */
     private boolean client;
@@ -220,15 +220,15 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /**
      * @param ex Exception.
      */
-    public void setException(Exception ex) {
-        this.ex = ex;
+    public void setError(Exception ex) {
+        this.err = ex;
     }
 
     /**
-     *
+     * @return Not null exception if exchange processing failed.
      */
-    public Exception getException() {
-        return ex;
+    @Nullable public Exception getError() {
+        return err;
     }
 
     /** {@inheritDoc}
@@ -239,13 +239,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         boolean marshal = (parts != null && partsBytes == null) ||
             (partCntrs != null && partCntrsBytes == null) ||
             (partHistCntrs != null && partHistCntrsBytes == null) ||
-            (ex != null && exBytes == null);
+            (err != null && errBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
             byte[] partHistCntrsBytes0 = null;
-            byte[] exBytes0 = null;
+            byte[] errBytes0 = null;
 
             if (parts != null && partsBytes == null)
                 partsBytes0 = U.marshal(ctx, parts);
@@ -256,8 +256,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (partHistCntrs != null && partHistCntrsBytes == null)
                 partHistCntrsBytes0 = U.marshal(ctx, partHistCntrs);
 
-            if (ex != null && exBytes == null)
-                exBytes0 = U.marshal(ctx, ex);
+            if (err != null && errBytes == null)
+                errBytes0 = U.marshal(ctx, err);
 
             if (compress) {
                 assert !compressed();
@@ -266,12 +266,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
                     byte[] partHistCntrsBytesZip = U.zip(partHistCntrsBytes0);
-                    byte[] exBytesZip = U.zip(exBytes0);
+                    byte[] exBytesZip = U.zip(errBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
                     partHistCntrsBytes0 = partHistCntrsBytesZip;
-                    exBytes0 = exBytesZip;
+                    errBytes0 = exBytesZip;
 
                     compressed(true);
                 }
@@ -283,7 +283,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partsBytes = partsBytes0;
             partCntrsBytes = partCntrsBytes0;
             partHistCntrsBytes = partHistCntrsBytes0;
-            exBytes = exBytes0;
+            errBytes = errBytes0;
         }
     }
 
@@ -312,11 +312,11 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 partHistCntrs = U.unmarshal(ctx, partHistCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
-        if (exBytes != null && ex == null) {
+        if (errBytes != null && err == null) {
             if (compressed())
-                ex = U.unmarshalZip(ctx.marshaller(), exBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+                err = U.unmarshalZip(ctx.marshaller(), errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
             else
-                ex = U.unmarshal(ctx, exBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+                err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
         if (dupPartsData != null) {
@@ -368,7 +368,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeByteArray("exBytes", exBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
@@ -424,7 +424,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 7:
-                exBytes = reader.readByteArray("exBytes");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;

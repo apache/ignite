@@ -103,21 +103,37 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
 /**
  * Record V1 serializer.
+ * Stores records in following format:
+ * <ul>
+ *     <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
+ *     <li>WAL pointer to double check consistency</li>
+ *     <li>Data</li>
+ *     <li>CRC or zero padding</li>
+ * </ul>
  */
 public class RecordV1Serializer implements RecordSerializer {
-    /** */
-    public static final int HEADER_RECORD_SIZE = /*Type*/1 + /*Pointer */12 + /*Magic*/8 + /*Version*/4 + /*CRC*/4;
+    /** Length of Type */
+    public static final int REC_TYPE_SIZE = 1;
+
+    /** Length of WAL Pointer */
+    public static final int FILE_WAL_POINTER_SIZE = 12;
+
+    /** Length of CRC value */
+    private static final int CRC_SIZE = 4;
 
     /** */
+    public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + /*Magic*/8 + /*Version*/4 + CRC_SIZE;
+
+    /** Cache shared context */
     private GridCacheSharedContext cctx;
 
-    /** */
+    /** Size of page used for PageMemory regions */
     private int pageSize;
 
-    /** */
+    /** Cache object processor to reading {@link DataEntry DataEntries} */
     private IgniteCacheObjectProcessor co;
 
-    /** */
+    /** Skip CRC calculation/check flag */
     private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
     /**
@@ -658,7 +674,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             assert res != null;
 
-            res.size((int)(in0.position() - startPos + 4)); // Account for CRC which will be read afterwards.
+            res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
 
             return res;
         }
@@ -671,12 +687,16 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
-     * @param in In.
+     * Loads record from input, does not read CRC value
+     *
+     * @param in Input to read record from
+     * @param expPtr expected WAL pointer for record. Used to validate actual position against expected from the file
+     * @throws SegmentEofException if end of WAL segment reached
      */
     private WALRecord readRecord(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
         int type = in.readUnsignedByte();
 
-        if (type == 0)
+        if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
             throw new SegmentEofException("Reached logical end of the segment", null);
 
         FileWALPointer ptr = readPosition(in);
@@ -1212,7 +1232,7 @@ public class RecordV1Serializer implements RecordSerializer {
     /** {@inheritDoc} */
     @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public int size(WALRecord record) throws IgniteCheckedException {
-        int commonFields = /* Type */1 + /* Pointer */12 + /*CRC*/4;
+        int commonFields = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
 
         switch (record.type()) {
             case PAGE_RECORD:
@@ -1371,7 +1391,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 return commonFields + /*cacheId*/ 4 + /*pageId*/ 8;
 
             case SWITCH_SEGMENT_RECORD:
-                return commonFields;
+                return commonFields - CRC_SIZE; //CRC is not loaded for switch segment, exception is thrown instead
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1379,10 +1399,11 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
+     * Saves position, WAL pointer (requires {@link #FILE_WAL_POINTER_SIZE} bytes)
      * @param buf Byte buffer to serialize version to.
      * @param ptr File WAL pointer to write.
      */
-    private void putPosition(ByteBuffer buf, FileWALPointer ptr) {
+    public static void putPosition(ByteBuffer buf, FileWALPointer ptr) {
         buf.putLong(ptr.index());
         buf.putInt(ptr.fileOffset());
     }
@@ -1392,7 +1413,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
-    private FileWALPointer readPosition(DataInput in) throws IOException {
+    public static FileWALPointer readPosition(DataInput in) throws IOException {
         long idx = in.readLong();
         int fileOffset = in.readInt();
 

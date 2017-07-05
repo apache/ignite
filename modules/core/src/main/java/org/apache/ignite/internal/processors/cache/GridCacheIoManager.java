@@ -1405,30 +1405,33 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cctx Context.
      * @param topic Topic.
      * @param c Handler.
      */
-    public void addOrderedCacheHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheIdMessage> c) {
-        addOrderedHandler(false, topic, c);
+    public void addOrderedCacheHandler(GridCacheSharedContext cctx, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheIdMessage> c) {
+        addOrderedHandler(cctx, false, topic, c);
     }
 
     /**
+     * @param cctx Context.
      * @param topic Topic.
      * @param c Handler.
      */
-    public void addOrderedCacheGroupHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
-        addOrderedHandler(true, topic, c);
+    public void addOrderedCacheGroupHandler(GridCacheSharedContext cctx, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
+        addOrderedHandler(cctx, true, topic, c);
     }
 
     /**
      * Adds ordered message handler.
      *
+     * @param cctx Context.
      * @param cacheGrp {@code True} if cache group message, {@code false} if cache message.
      * @param topic Topic.
      * @param c Handler.
      */
     @SuppressWarnings({"unchecked"})
-    private void addOrderedHandler(boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+    private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 
         IgniteLogger log0 = log;
