@@ -314,13 +314,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void rebuildIndexesFromHash(GridCacheContext cctx, String schemaName,
-            String typeName) throws IgniteCheckedException {
+        @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void markForRebuildFromHash(String cacheName, String typeName) {
+        @Override public void markForRebuildFromHash(String cacheName) {
             // No-op
         }
 

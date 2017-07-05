@@ -14,22 +14,26 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-ul.nav(ng-switch='ctrl.clusters.length')
-    li.disabled(ng-switch-when='0')
-        a
+ul.nav
+    li.disabled(ng-if='ctrl.clusters.length === 0')
+        a(ng-if='!ctrl.cluster')
             i.icon-cluster
             label.padding-left-dflt(bs-tooltip='' data-placement='bottom' data-title='Check that Web Agent(s) started and connected to cluster(s)') No clusters available
+        a(ng-if='ctrl.cluster')
+            i.icon-danger
+            label.padding-left-dflt(bs-tooltip='' data-placement='bottom' data-title='Connection to cluster was lost') {{ctrl.cluster.name}}
 
-    li.disabled(ng-switch-when='1')
+    li(ng-if='ctrl.clusters.length === 1 && ctrl.cluster.connected')
         a
             i.icon-cluster
             label.padding-left-dflt {{ctrl.cluster.name}}
 
-    li(ng-switch-default)
+    li(ng-if='ctrl.clusters.length > 1 || ctrl.clusters.length === 1 && !ctrl.cluster.connected')
         a.dropdown-toggle(bs-dropdown='' data-placement='bottom-left' data-trigger='hover focus' data-container='self' ng-click='$event.stopPropagation()' aria-haspopup='true' aria-expanded='expanded')
-            i.icon-cluster
+            i(ng-class='{"icon-cluster": ctrl.cluster.connected, "icon-danger": !ctrl.cluster.connected}')
             label.padding-left-dflt {{ctrl.cluster.name}}
             span.caret
+            
         ul.dropdown-menu(role='menu')
             li(ng-repeat='item in ctrl.clusters' ng-class='{active: ctrl.cluster === item}')
                 div(ng-click='item.click()')

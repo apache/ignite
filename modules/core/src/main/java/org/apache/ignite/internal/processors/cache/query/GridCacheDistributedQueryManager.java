@@ -560,7 +560,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             final Object topic = topic(cctx.nodeId(), req.id());
 
-            cctx.io().addOrderedCacheHandler(topic, resHnd);
+            cctx.io().addOrderedCacheHandler(cctx.shared(), topic, resHnd);
 
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
@@ -744,7 +744,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             final Object topic = topic(cctx.nodeId(), req.id());
 
-            cctx.io().addOrderedCacheHandler(topic, resHnd);
+            cctx.io().addOrderedCacheHandler(cctx.shared(), topic, resHnd);
 
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {

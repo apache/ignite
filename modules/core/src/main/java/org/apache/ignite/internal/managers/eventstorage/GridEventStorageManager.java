@@ -85,6 +85,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** Local event listeners. */
     private final ConcurrentMap<Integer, Set<EventListener>> lsnrs = new ConcurrentHashMap8<>();
 
+    /** Internal discovery listeners. */
+    private final ConcurrentMap<Integer, Set<DiscoveryEventListener>> discoLsnrs = new ConcurrentHashMap8<>();
+
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
@@ -271,7 +274,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
@@ -714,7 +717,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
     }
 
-
     /**
      * @param lsnrs Listeners map.
      * @param type Event type.
@@ -903,6 +905,41 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
+     * @param evt Discovery event
+     * @param cache Discovery cache.
+     */
+    private void notifyDiscoveryListeners(DiscoveryEvent evt, DiscoCache cache) {
+        assert evt != null;
+
+        notifyDiscoveryListeners(discoLsnrs.get(evt.type()), evt, cache);
+    }
+
+    /**
+     * @param set Set of listeners.
+     * @param evt Discovery event.
+     * @param cache Discovery cache.
+     */
+    private void notifyDiscoveryListeners(@Nullable Collection<DiscoveryEventListener> set, DiscoveryEvent evt, DiscoCache cache) {
+        assert evt != null;
+
+        if (!F.isEmpty(set)) {
+            assert set != null;
+
+            for (DiscoveryEventListener lsnr : set) {
+                try {
+                    lsnr.onEvent(evt, cache);
+                }
+                catch (Throwable e) {
+                    U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+                }
+            }
+        }
+    }
+
+    /**
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
@@ -1008,7 +1045,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
         GridMessageListener resLsnr = new GridMessageListener() {
             @SuppressWarnings("deprecation")
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert nodeId != null;
                 assert msg != null;
 
@@ -1185,7 +1222,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     private class RequestListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 

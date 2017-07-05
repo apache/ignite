@@ -122,8 +122,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
@@ -1119,7 +1121,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void dumpStack(String msg) {
-        new Exception(debugPrefix() + msg).printStackTrace(System.out);
+        new Exception(debugPrefix() + msg).printStackTrace(System.err);
     }
 
     /**
@@ -3438,22 +3440,25 @@ public abstract class IgniteUtils {
         if (file.isDirectory()) {
             File[] files = file.listFiles();
 
-            if (files != null && files.length > 0)
-                for (File file1 : files)
+            if (files != null && files.length > 0) {
+                for (File file1 : files) {
                     if (file1.isDirectory())
                         res &= delete(file1);
-                    else if (file1.getName().endsWith("jar"))
+                    else if (file1.getName().endsWith("jar")) {
                         try {
                             // Why do we do this?
                             new JarFile(file1, false).close();
-
-                            res &= file1.delete();
                         }
                         catch (IOException ignore) {
                             // Ignore it here...
                         }
+
+                        res &= file1.delete();
+                    }
                     else
                         res &= file1.delete();
+                }
+            }
 
             res &= file.delete();
         }
@@ -8061,7 +8066,7 @@ public abstract class IgniteUtils {
      * @param paramTypes Parameter types.
      * @param params Parameters.
      * @return Field value.
-     * @throws IgniteCheckedException If static field with given name cannot be retreived.
+     * @throws IgniteCheckedException If static field with given name cannot be retrieved.
      */
     public static <T> T invoke(@Nullable Class<?> cls, @Nullable Object obj, String mtdName,
         Class[] paramTypes, Object... params) throws IgniteCheckedException {
@@ -8522,6 +8527,18 @@ public abstract class IgniteUtils {
      */
     public static int hash(Object key) {
         return hash(key.hashCode());
+    }
+
+    /**
+     * A primitive override of {@link #hash(Object)} to avoid unnecessary boxing.
+     *
+     * @param key Value to hash.
+     * @return Hash value.
+     */
+    public static int hash(long key) {
+        int val = (int)(key ^ (key >>> 32));
+
+        return hash(val);
     }
 
     /**
@@ -9094,6 +9111,32 @@ public abstract class IgniteUtils {
 
         if (log != null && log.isInfoEnabled())
             log.info("Resolved " + msg + ": " + dir.getAbsolutePath());
+    }
+
+    /**
+     * Checks if the given directory exists and attempts to create one if not.
+     *
+     * @param dir Directory to check.
+     * @param msg Directory name for the messages.
+     * @param log Optional logger to log a message that the directory has been resolved.
+     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with
+     *      the same name already exists.
+     */
+    public static void ensureDirectory(Path dir, String msg, IgniteLogger log) throws IgniteCheckedException {
+        if (!Files.exists(dir)) {
+            try {
+                Files.createDirectories(dir);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to create " + msg + ": " + dir.toAbsolutePath(), e);
+            }
+        }
+        else if (!Files.isDirectory(dir))
+            throw new IgniteCheckedException("Failed to initialize " + msg +
+                " (a file with the same name already exists): " + dir.toAbsolutePath());
+
+        if (log != null && log.isInfoEnabled())
+            log.info("Resolved " + msg + ": " + dir.toAbsolutePath());
     }
 
     /**
@@ -9935,5 +9978,206 @@ public abstract class IgniteUtils {
                 return start + c++;
             }
         };
+    }
+
+    /**
+     * @param x X.
+     */
+    public static int nearestPow2(int x) {
+        return nearestPow2(x, true);
+    }
+
+    /**
+     * @param x X.
+     * @param less Less.
+     */
+    public static int nearestPow2(int x, boolean less) {
+        assert x > 0 : "can not calculate for less zero";
+
+        long y = 1;
+
+        while (y < x){
+            if (y * 2 > Integer.MAX_VALUE)
+                return (int)y;
+
+            y *= 2;
+        }
+
+        if (less)
+            y /= 2;
+
+        return (int)y;
+    }
+
+    /**
+     * @param lock Lock.
+     */
+    public static ReentrantReadWriteLockTracer lockTracer(ReadWriteLock lock) {
+        return new ReentrantReadWriteLockTracer(lock);
+    }
+
+    /**
+     * @param lock Lock.
+     */
+    public static LockTracer lockTracer(Lock lock) {
+        return new LockTracer(lock);
+    }
+
+    /**
+     *
+     */
+    public static class ReentrantReadWriteLockTracer implements ReadWriteLock {
+        /** Read lock. */
+        private final LockTracer readLock;
+
+        /** Write lock. */
+        private final LockTracer writeLock;
+
+        /**
+         * @param delegate Delegate.
+         */
+        public ReentrantReadWriteLockTracer(ReadWriteLock delegate) {
+            readLock = new LockTracer(delegate.readLock());
+            writeLock = new LockTracer(delegate.writeLock());
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Lock readLock() {
+            return readLock;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Lock writeLock() {
+            return writeLock;
+        }
+
+        /**
+         *
+         */
+        public LockTracer getReadLock() {
+            return readLock;
+        }
+
+        /**
+         *
+         */
+        public LockTracer getWriteLock() {
+            return writeLock;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class LockTracer implements Lock {
+        /** Delegate. */
+        private final Lock delegate;
+
+        private final AtomicLong cnt = new AtomicLong();
+
+        /** Count. */
+        private final ConcurrentMap<String, AtomicLong> cntMap = new ConcurrentHashMap8<>();
+
+        /**
+         * @param delegate Delegate.
+         */
+        public LockTracer(Lock delegate) {
+            this.delegate = delegate;
+        }
+
+        /**
+         *
+         */
+        private void inc(){
+            cnt.incrementAndGet();
+
+            String name = Thread.currentThread().getName();
+
+            AtomicLong cnt = cntMap.get(name);
+
+            if (cnt == null) {
+                AtomicLong cnt0 = cntMap.putIfAbsent(name, cnt = new AtomicLong());
+
+                if (cnt0 != null)
+                    cnt = cnt0;
+            }
+
+            cnt.incrementAndGet();
+        }
+
+        /**
+         *
+         */
+        private void dec(){
+            cnt.decrementAndGet();
+
+            String name = Thread.currentThread().getName();
+
+            AtomicLong cnt = cntMap.get(name);
+
+            cnt.decrementAndGet();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void lock() {
+            delegate.lock();
+
+            inc();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void lockInterruptibly() throws InterruptedException {
+            delegate.lockInterruptibly();
+
+            inc();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryLock() {
+            if (delegate.tryLock()) {
+                inc();
+
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
+            if (delegate.tryLock(time, unit)) {
+                inc();
+
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unlock() {
+            delegate.unlock();
+
+            dec();
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Condition newCondition() {
+            return delegate.newCondition();
+        }
+
+        /**
+         *
+         */
+        public Map<String, AtomicLong> getLockUnlockCounters() {
+            return new HashMap<>(cntMap);
+        }
+
+        /**
+         *
+         */
+        public long getLockUnlockCounter() {
+            return cnt.get();
+        }
     }
 }

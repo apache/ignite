@@ -118,14 +118,15 @@ export default class IgniteVersion {
     }
 
     /**
-     * @return {String} Target Ignite version.
+     * @return {String} Current Ignite version.
      */
     get current() {
         return this.currentSbj.getValue().ignite;
     }
 
     /**
-     * Check if version in range
+     * Check if version in range.
+     *
      * @param {String} target Target version.
      * @param {String | Array.<String>} ranges Version ranges to compare with.
      * @returns {Boolean} `True` if version is equal or greater than specified range.
@@ -147,6 +148,7 @@ export default class IgniteVersion {
 
     /**
      * Check whether version before than specified version.
+     *
      * @param {String} target Target version.
      * @param {String} ranges Version ranges to compare with.
      * @return {Boolean} `True` if version before than specified version.
@@ -156,7 +158,8 @@ export default class IgniteVersion {
     }
 
     /**
-     * Check if configuration version in range
+     * Check if current version in specified range.
+     *
      * @param {String|Array.<String>} ranges Version ranges to compare with.
      * @returns {Boolean} `True` if configuration version is equal or greater than specified range.
      */

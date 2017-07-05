@@ -116,6 +116,12 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_MEMORY_METRICS_BY_NAME = 27;
 
+    /** */
+    private static final int OP_SET_ACTIVE = 28;
+
+    /** */
+    private static final int OP_IS_ACTIVE = 29;
+
     /** Projection. */
     private final ClusterGroupEx prj;
 
@@ -376,6 +382,16 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 ((IgniteCluster)prj).resetMetrics();
 
                 return TRUE;
+            }
+
+            case OP_SET_ACTIVE: {
+                prj.ignite().active(val == TRUE);
+
+                return TRUE;
+            }
+
+            case OP_IS_ACTIVE: {
+                return prj.ignite().active() ? TRUE : FALSE;
             }
         }
 
