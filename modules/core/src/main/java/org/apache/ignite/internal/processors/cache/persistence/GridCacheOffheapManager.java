@@ -135,10 +135,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** {@inheritDoc} */
     @Override protected CacheDataStore createCacheDataStore0(final int p)
         throws IgniteCheckedException {
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ctx.database();
-
-        boolean exists = ctx.pageStore() != null
-            && ctx.pageStore().exists(grp.groupId(), p);
+        boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
         return new GridCacheDataStore(p, exists);
     }

@@ -124,7 +124,7 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
         FullPageId fullId,
         PageMemory pageMem
     ) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /**
@@ -135,14 +135,16 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
         ByteBuffer pageBuf,
         Integer tag
     ) throws IgniteCheckedException {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-
+        // No-op.
     }
 
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
-
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op.
     }
 }
