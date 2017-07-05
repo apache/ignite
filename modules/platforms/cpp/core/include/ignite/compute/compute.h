@@ -94,7 +94,7 @@ namespace ignite
              * @tparam R Call return type. BinaryType should be specialized for
              *  the type if it is not primitive. Should not be void. For
              *  non-returning methods see Compute::Run().
-             * @tparam F Compute function type. Should implement ComputeFunc
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
              *  class.
              * @param func Compute function to call.
              * @return Computation result.
@@ -113,7 +113,7 @@ namespace ignite
              * @tparam R Call return type. BinaryType should be specialized for
              *  the type if it is not primitive. Should not be void. For
              *  non-returning methods see Compute::Run().
-             * @tparam F Compute function type. Should implement ComputeFunc
+             * @tparam F Compute function type. Should implement ComputeFunc<R>
              *  class.
              * @param func Compute function to call.
              * @return Future that can be used to access computation result once
@@ -124,6 +124,37 @@ namespace ignite
             Future<R> CallAsync(const F& func)
             {
                 return impl.Get()->CallAsync<R, F>(func);
+            }
+
+            /**
+             * Runs provided ComputeFunc on a node within the underlying cluster
+             * group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc<void>
+             *  class.
+             * @param action Compute function to call.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            void Run(const F& action)
+            {
+                return impl.Get()->RunAsync<F>(action).GetValue();
+            }
+
+            /**
+             * Asyncronuously runs provided ComputeFunc on a node within the
+             * underlying cluster group.
+             *
+             * @tparam F Compute function type. Should implement ComputeFunc<void>
+             *  class.
+             * @param action Compute function to call.
+             * @return Future that can be used to wait for action to complete.
+             * @throw IgniteError in case of error.
+             */
+            template<typename F>
+            Future<void> RunAsync(const F& action)
+            {
+                return impl.Get()->RunAsync<F>(action);
             }
 
         private:
