@@ -2350,7 +2350,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private CountDownFuture doneFut;
 
         /** Counter for all written pages. May be shared between several workers */
-        private AtomicInteger writtenPagesCtr;
+        private AtomicInteger writtenPagesCntr;
 
         /** Total pages to write, counter may be greater than {@link #writePageIds} size*/
         private final int totalPagesToWrite;
@@ -2361,7 +2361,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param writePageIds Collection of page IDs to write.
          * @param updStores
          * @param doneFut
-         * @param writtenPagesCtr all written pages counter, may be shared between several write tasks
+         * @param writtenPagesCntr all written pages counter, may be shared between several write tasks
          * @param totalPagesToWrite total pages to be written under this checkpoint
          */
         private WriteCheckpointPages(
@@ -2369,13 +2369,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             final Collection<FullPageId> writePageIds,
             final GridConcurrentHashSet<PageStore> updStores,
             final CountDownFuture doneFut,
-            @NotNull final AtomicInteger writtenPagesCtr,
+            @NotNull final AtomicInteger writtenPagesCntr,
             final int totalPagesToWrite) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
-            this.writtenPagesCtr = writtenPagesCtr;
+            this.writtenPagesCntr = writtenPagesCntr;
             this.totalPagesToWrite = totalPagesToWrite;
         }
 
@@ -2424,7 +2424,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tmpWriteBuf.rewind();
                         }
 
-                        int curWrittenPages = writtenPagesCtr.incrementAndGet();
+                        int curWrittenPages = writtenPagesCntr.incrementAndGet();
 
                         snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages, totalPagesToWrite);
 
