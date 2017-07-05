@@ -3505,6 +3505,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** Internal exception class for proper timeout handling. */
+    private static class HandshakeException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param msg Error message.
+         */
+        HandshakeException(String msg) {
+            super(msg);
+        }
+    }
+
+    /** Internal exception class for proper timeout handling. */
     private static class HandshakeTimeoutException extends IgniteCheckedException {
         /** */
         private static final long serialVersionUID = 0L;
