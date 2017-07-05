@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -494,7 +493,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             assignments.add(partAssignment);
         }
 
-	    List<List<Integer>> dist = freqDistribution(assignments, nodes);
+        List<List<Integer>> dist = freqDistribution(assignments, nodes);
 
         printDistribution(dist);
 
@@ -514,63 +513,60 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * @param nodes Topology.
      * @return Frequency distribution: counts of partitions on node.
      */
-	private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> lst, Collection<ClusterNode> nodes) {
-		List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
+    private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> lst, Collection<ClusterNode> nodes) {
+        List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
 
-		int backups = lst.get(0).size();
+        int backups = lst.get(0).size();
 
-		for (int i = 0; i < backups; ++i) {
-			Map<ClusterNode, AtomicInteger> map = new HashMap<>();
+        for (int i = 0; i < backups; ++i) {
+            Map<ClusterNode, AtomicInteger> map = new HashMap<>();
 
-			for (List<ClusterNode> l : lst) {
-				ClusterNode node = l.get(i);
+            for (List<ClusterNode> l : lst) {
+                ClusterNode node = l.get(i);
 
-				if (!map.containsKey(node))
-					map.put(node, new AtomicInteger(1));
-				else
-					map.get(node).incrementAndGet();
-			}
+                if (!map.containsKey(node))
+                    map.put(node, new AtomicInteger(1));
+                else
+                    map.get(node).incrementAndGet();
+            }
 
-			nodeMaps.add(map);
-		}
+            nodeMaps.add(map);
+        }
 
-		List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
-		for (ClusterNode node : nodes) {
-			List<Integer> byBackups = new ArrayList<>(backups);
+        List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
+        for (ClusterNode node : nodes) {
+            List<Integer> byBackups = new ArrayList<>(backups);
 
-			for (int j = 0; j < backups; ++j) {
-				if (nodeMaps.get(j).get(node) == null)
-					byBackups.add(0);
-				else
-					byBackups.add(nodeMaps.get(j).get(node).get());
-			}
+            for (int j = 0; j < backups; ++j) {
+                if (nodeMaps.get(j).get(node) == null)
+                    byBackups.add(0);
+                else
+                    byBackups.add(nodeMaps.get(j).get(node).get());
+            }
 
-			byNodes.add(byBackups);
-		}
-		return byNodes;
-	}
+            byNodes.add(byBackups);
+        }
+        return byNodes;
+    }
 
     /**
-     * @param byNodes Frequency distribution.
-     * @throws IOException On error.
+     * @param nodesParts Frequency distribution.
      */
-    private void printDistribution(Collection<List<Integer>> byNodes) {
-        int nodes = byNodes.size();
-        int nr = 0;
-        int node = 0;
+    private void printDistribution(Collection<List<Integer>> nodesParts) {
+        log.info("#### NODES COUNT:" + nodesParts.size());
 
-        log.info("#### NODES COUNT:" + nodes);
+        int nodeNum = 0;
 
-        for (List<Integer> byNode : byNodes) {
-            log.info("## Node " + node++ + ":");
+        for (List<Integer> part : nodesParts) {
+            log.info("## Node " + nodeNum++ + ":");
 
-            nr = 0;
+            int nr = 0;
 
-            for (int partCount : byNode) {
-                int percentage = (int)Math.round((double) partCount / this.getPartitions() * 100);
+            for (int cnt : part) {
+                int percentage = (int)Math.round((double)cnt / getPartitions() * 100);
 
                 log.info((nr == 0 ? "Primary" : "Backup" + nr) + " node: " +
-                    "partitions count=" + partCount + " percentage of parts count=" + percentage + "% ");
+                    "partitions count=" + cnt + " percentage of parts count=" + percentage + "% ");
 
                 nr++;
             }
