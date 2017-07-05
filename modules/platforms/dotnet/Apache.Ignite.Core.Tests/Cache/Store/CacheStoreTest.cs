@@ -211,7 +211,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cache.Put(1, "val");
 
             CacheTestStore.ThrowError = true;
-            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
+            
+            var ex = Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail"));
+            Assert.IsTrue(ex.ToString().Contains("org.apache.ignite"));  // Check Java exception presence.
+            CheckCustomStoreError(ex.InnerException);
 
             // TODO: IGNITE-4535
             //cache.LocalEvict(new[] {1});
