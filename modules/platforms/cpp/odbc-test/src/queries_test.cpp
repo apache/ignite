@@ -1761,7 +1761,7 @@ BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
 
     cache1.Put(1, in);
 
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
 
     int64_t key = 0;
     char strField[1024] = { 0 };
