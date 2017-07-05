@@ -64,17 +64,17 @@ export default class IgniteConfigurationGenerator {
      * Function to generate ignite configuration.
      *
      * @param {Object} cluster Cluster to process.
-     * @param {String} version Target version of configuration.
+     * @param {Object} targetVer Target version of configuration.
      * @param {Boolean} client Is client configuration.
      * @return {Bean} Generated ignite configuration.
      */
-    static igniteConfiguration(cluster, version, client) {
-        const available = versionService.since.bind(versionService, version);
+    static igniteConfiguration(cluster, targetVer, client) {
+        const available = versionService.since.bind(versionService, targetVer.ignite);
 
         const cfg = this.igniteConfigurationBean(cluster);
 
         this.clusterGeneral(cluster, available, cfg, client);
-        this.clusterAtomics(cluster.atomicConfiguration, cfg);
+        this.clusterAtomics(cluster.atomicConfiguration, available, cfg);
         this.clusterBinary(cluster.binaryConfiguration, cfg);
         this.clusterCacheKeyConfiguration(cluster.cacheKeyConfiguration, cfg);
         this.clusterCheckpoint(cluster, cluster.caches, cfg);
@@ -96,6 +96,7 @@ export default class IgniteConfigurationGenerator {
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
         this.clusterODBC(cluster.odbc, available, cfg);
+        this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
         this.clusterQuery(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
@@ -404,7 +405,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate atomics group.
-    static clusterAtomics(atomics, cfg = this.igniteConfigurationBean()) {
+    static clusterAtomics(atomics, available, cfg = this.igniteConfigurationBean()) {
         const acfg = new Bean('org.apache.ignite.configuration.AtomicConfiguration', 'atomicCfg',
             atomics, clusterDflts.atomics);
 
@@ -413,6 +414,9 @@ export default class IgniteConfigurationGenerator {
 
         if (acfg.valueOf('cacheMode') === 'PARTITIONED')
             acfg.intProperty('backups');
+
+        if (available('2.1.0') && _.nonNil(atomics))
+            this.affinity(atomics.affinity, acfg);
 
         if (acfg.isEmpty())
             return cfg;
@@ -1297,19 +1301,23 @@ export default class IgniteConfigurationGenerator {
             const plcBean = new Bean('org.apache.ignite.configuration.MemoryPolicyConfiguration', 'policy', plc, clusterDflts.memoryConfiguration.memoryPolicies);
 
             plcBean.stringProperty('name')
-                .intProperty('initialSize')
-                .intProperty('maxSize')
+                .longProperty('initialSize')
+                .longProperty('maxSize')
                 .stringProperty('swapFilePath')
                 .enumProperty('pageEvictionMode')
-                .intProperty('evictionThreshold')
+                .doubleProperty('evictionThreshold')
                 .intProperty('emptyPagesPoolSize')
+                .intProperty('subIntervals')
+                .longProperty('rateTimeInterval')
                 .boolProperty('metricsEnabled');
+
+            if (plcBean.isEmpty()) return;
 
             policies.push(plcBean);
         });
 
         if (!_.isEmpty(policies))
-            memoryBean.arrayProperty('memoryPolicies', 'memoryPolicies', policies, 'org.apache.ignite.configuration.MemoryPolicyConfiguration');
+            memoryBean.varArgProperty('memoryPolicies', 'memoryPolicies', policies, 'org.apache.ignite.configuration.MemoryPolicyConfiguration');
 
         if (memoryBean.isEmpty())
             return cfg;
@@ -1420,7 +1428,10 @@ export default class IgniteConfigurationGenerator {
             odbc, clusterDflts.odbcConfiguration);
 
         bean.stringProperty('endpointAddress')
-            .intProperty('maxOpenCursors');
+            .intProperty('socketSendBufferSize')
+            .intProperty('socketReceiveBufferSize')
+            .intProperty('maxOpenCursors')
+            .intProperty('threadPoolSize');
 
         cfg.beanProperty('odbcConfiguration', bean);
 
@@ -1429,7 +1440,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate cluster query group.
     static clusterQuery(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        if (available(['1.0.0', '2.1.0']))
+        if (!available('2.1.0'))
             return cfg;
 
         cfg.intProperty('longQueryWarningTimeout');
@@ -1450,6 +1461,38 @@ export default class IgniteConfigurationGenerator {
             .boolProperty('tcpNoDelay');
 
         cfg.beanProperty('sqlConnectorConfiguration', bean);
+
+        return cfg;
+    }
+
+    // Generate cluster query group.
+    static clusterPersistence(persistence, available, cfg = this.igniteConfigurationBean()) {
+        if (!available('2.1.0') || _.get(persistence, 'enabled') !== true)
+            return cfg;
+
+        const bean = new Bean('org.apache.ignite.configuration.PersistentStoreConfiguration', 'PersistenceCfg',
+            persistence, clusterDflts.persistenceStoreConfiguration);
+
+        bean.stringProperty('persistentStorePath')
+            .boolProperty('metricsEnabled')
+            .boolProperty('alwaysWriteFullPages')
+            .intProperty('checkpointingFrequency')
+            .intProperty('checkpointingPageBufferSize')
+            .intProperty('checkpointingThreads')
+            .stringProperty('walStorePath')
+            .stringProperty('walArchivePath')
+            .intProperty('walSegments')
+            .intProperty('walSegmentSize')
+            .intProperty('walHistorySize')
+            .intProperty('walFlushFrequency')
+            .intProperty('walFsyncDelay')
+            .intProperty('walRecordIteratorBufferSize')
+            .intProperty('lockWaitTime')
+            .intProperty('rateTimeInterval')
+            .intProperty('tlbSize')
+            .intProperty('subIntervals');
+
+        cfg.beanProperty('persistentStoreConfiguration', bean);
 
         return cfg;
     }
@@ -1610,8 +1653,11 @@ export default class IgniteConfigurationGenerator {
     static domainModelGeneral(domain, cfg = this.domainConfigurationBean(domain)) {
         switch (cfg.valueOf('queryMetadata')) {
             case 'Annotations':
-                if (_.nonNil(domain.keyType) && _.nonNil(domain.valueType))
-                    cfg.varArgProperty('indexedTypes', 'indexedTypes', [domain.keyType, domain.valueType], 'java.lang.Class');
+                if (_.nonNil(domain.keyType) && _.nonNil(domain.valueType)) {
+                    cfg.varArgProperty('indexedTypes', 'indexedTypes',
+                        [javaTypes.fullClassName(domain.keyType), javaTypes.fullClassName(domain.valueType)],
+                        'java.lang.Class');
+                }
 
                 break;
             case 'Configuration':
@@ -1743,7 +1789,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generation of constructor for affinity function.
-    static cacheAffinityFunction(cls, func) {
+    static affinityFunction(cls, func) {
         const affBean = new Bean(cls, 'affinityFunction', func);
 
         affBean.boolConstructorArgument('excludeNeighbors')
@@ -1753,24 +1799,29 @@ export default class IgniteConfigurationGenerator {
         return affBean;
     }
 
-    // Generate cache memory group.
-    static cacheAffinity(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
-        switch (_.get(cache, 'affinity.kind')) {
+    // Generate affinity function.
+    static affinity(affinity, cfg) {
+        switch (_.get(affinity, 'kind')) {
             case 'Rendezvous':
-                ccfg.beanProperty('affinity', this.cacheAffinityFunction('org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction', cache.affinity.Rendezvous));
+                cfg.beanProperty('affinity', this.affinityFunction('org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction', affinity.Rendezvous));
 
                 break;
             case 'Fair':
-                ccfg.beanProperty('affinity', this.cacheAffinityFunction('org.apache.ignite.cache.affinity.fair.FairAffinityFunction', cache.affinity.Fair));
+                cfg.beanProperty('affinity', this.affinityFunction('org.apache.ignite.cache.affinity.fair.FairAffinityFunction', affinity.Fair));
 
                 break;
             case 'Custom':
-                ccfg.emptyBeanProperty('affinity.Custom.className', 'affinity');
+                cfg.emptyBeanProperty('affinity.Custom.className', 'affinity');
 
                 break;
             default:
-                // No-op.
+            // No-op.
         }
+    }
+
+    // Generate cache memory group.
+    static cacheAffinity(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
+        this.affinity(cache.affinity, ccfg);
 
         ccfg.emptyBeanProperty('affinityMapper');
 
@@ -1816,7 +1867,7 @@ export default class IgniteConfigurationGenerator {
     static cacheQuery(cache, domains, available, ccfg = this.cacheConfigurationBean(cache)) {
         const indexedTypes = _.reduce(domains, (acc, domain) => {
             if (domain.queryMetadata === 'Annotations')
-                acc.push(domain.keyType, domain.valueType);
+                acc.push(javaTypes.fullClassName(domain.keyType), javaTypes.fullClassName(domain.valueType));
 
             return acc;
         }, []);

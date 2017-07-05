@@ -67,7 +67,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
 
         SqlConnectorConfiguration sqlCfg = prepareConfiguration(cfg);

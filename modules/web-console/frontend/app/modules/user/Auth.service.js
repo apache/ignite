@@ -33,7 +33,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', 'IgniteErro
                             .then((user) => {
                                 $root.$broadcast('user', user);
 
-                                $state.go('base.configuration.clusters');
+                                $state.go('base.configuration.tabs');
 
                                 $root.gettingStarted.tryShow();
                             });

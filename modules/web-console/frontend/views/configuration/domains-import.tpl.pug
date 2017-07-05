@@ -66,7 +66,6 @@ mixin td-ellipses-lbl(w, lbl)
                                 'Choose JDBC driver', '', 'jdbcDriverJars',
                                 'Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information'
                             )(
-                                data-container='.modal-domain-import'
                                 data-ignite-form-field-input-autofocus='true'
                             )
                         .settings-row.settings-row_small-label
@@ -137,8 +136,8 @@ mixin td-ellipses-lbl(w, lbl)
                                                         div.td-ellipsis
                                                             a(ng-if='!table.edit' ng-click='startEditDbTableCache(table)') {{tableActionView(table)}}
                                                             div(style='display: flex' ng-if='table.edit')
-                                                                button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' data-container='.modal-domain-import' bs-options='item.value as item.shortLabel for item in importActions')
-                                                                button.select-toggle.form-control(style='width: 65%; margin-right: 0' bs-select ng-model='table.cacheOrTemplate' data-container='.modal-domain-import' bs-options='item.value as item.label for item in table.cachesOrTemplates')
+                                                                button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' bs-options='item.value as item.shortLabel for item in importActions')
+                                                                button.select-toggle.form-control(style='width: 65%; margin-right: 0' bs-select ng-model='table.cacheOrTemplate'  bs-options='item.value as item.label for item in table.cachesOrTemplates')
                                                     td
                     .settings-row
                         label Defaults to be applied for filtered tables
@@ -146,9 +145,9 @@ mixin td-ellipses-lbl(w, lbl)
                     .settings-row
                         .col-sm-11
                             .col-sm-6(style='padding-right: 5px')
-                                button.select-toggle.form-control(bs-select ng-model='importCommon.action' data-container='.modal-domain-import' bs-options='item.value as item.label for item in importActions')
+                                button.select-toggle.form-control(bs-select ng-model='importCommon.action' bs-options='item.value as item.label for item in importActions')
                             .col-sm-6(style='padding-left: 5px; padding-right: 5px')
-                                button.select-toggle.form-control(bs-select ng-model='importCommon.cacheOrTemplate' data-container='.modal-domain-import' bs-options='item.value as item.label for item in importCommon.cachesOrTemplates')
+                                button.select-toggle.form-control(bs-select ng-model='importCommon.cacheOrTemplate' bs-options='item.value as item.label for item in importCommon.cachesOrTemplates')
                         .col-sm-1(style='padding-left: 5px')
                             button.btn.btn-primary(ng-click='applyDefaults()') Apply
                 .import-domain-model-wizard-page(ng-show='importDomain.action == "options"')
@@ -167,12 +166,12 @@ mixin td-ellipses-lbl(w, lbl)
                         .settings-row(ng-show=generatePojo)
                             +checkbox('Generate aliases for query fields', 'ui.generateFieldAliases', '"domainGenerateFieldAliases"', 'Generate aliases for query fields with database field names when database field name differ from Java field name')
                         .settings-row.settings-row_small-label(ng-show=generatePojo)
-                            +java-package('Package:', 'ui.packageName', '"domainPackageName"', true, true, 'Package that will be used for POJOs generation')(data-container='.modal-domain-import')
+                            +java-package('Package:', 'ui.packageName', '"domainPackageName"', true, true, 'Package that will be used for POJOs generation')
                         .settings-row.settings-row_small-label
                             +ignite-form-field-dropdown('Clusters:', 'ui.generatedCachesClusters', '"generatedCachesClusters"', false, false, true,
                                 'Choose clusters for generated caches', '', 'clusters',
                                 'Choose clusters that will be associated with generated caches'
-                            )(data-container='.modal-domain-import')
+                            )
             .modal-footer
                 label(ng-hide='importDomain.action == "drivers" || (importDomain.action == "connect" && importDomain.demo)').labelField {{importDomain.info}}
                 a.btn.btn-primary(ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev

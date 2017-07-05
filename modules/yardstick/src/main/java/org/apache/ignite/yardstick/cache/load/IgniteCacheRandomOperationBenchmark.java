@@ -270,7 +270,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                                     keys.add(keyCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getKeyType() + ']');
                             }
 
                             if (queryEntity.getValueType() != null) {
@@ -280,7 +280,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                                     values.add(valCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getValueType() + ']');
 
                                 configureCacheSqlDescriptor(cacheName, queryEntity, valCls);
                             }

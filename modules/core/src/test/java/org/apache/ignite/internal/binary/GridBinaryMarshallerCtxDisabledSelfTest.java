@@ -98,6 +98,11 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public Class getClass(
                 int typeId,
                 ClassLoader ldr

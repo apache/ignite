@@ -76,7 +76,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView;
 
     /** Cache context. */
-    private GridCacheContext ctx;
+    private GridCacheContext<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -91,18 +91,15 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param name Atomic reference name.
      * @param key Atomic reference key.
      * @param atomicView Atomic projection.
-     * @param ctx Cache context.
      */
     public GridCacheAtomicReferenceImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView) {
         assert key != null;
         assert atomicView != null;
-        assert ctx != null;
         assert name != null;
 
-        this.ctx = ctx;
+        this.ctx = atomicView.context();
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;
@@ -288,7 +285,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicReference(name);
+            ctx.kernalContext().dataStructures().removeAtomicReference(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -297,8 +294,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.atomicView = kctx.cache().atomicsCache();
-        this.ctx = atomicView.context();
+        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>>context().cacheContext(ctx.cacheId());
+        this.atomicView = ctx.cache();
     }
 
     /** {@inheritDoc} */
@@ -365,7 +362,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().atomicReference(t.get2(), null, false);
+            return t.get1().dataStructures().atomicReference(t.get2(), null, null, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
