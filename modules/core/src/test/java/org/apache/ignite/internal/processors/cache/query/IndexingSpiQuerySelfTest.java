@@ -17,11 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import javax.cache.Cache;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SpiQuery;
@@ -40,24 +51,41 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import javax.cache.Cache;
-
 /**
- * Indexing Spi query test
+ * Indexing Spi query only test
  */
 public class IndexingSpiQuerySelfTest extends TestCase {
+    public static final String CACHE_NAME = "test-cache";
+
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         Ignition.stopAll(true);
+    }
+
+    /**
+     * @return Configuration.
+     */
+    protected IgniteConfiguration configuration() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
+
+        disco.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(disco);
+
+        return cfg;
+    }
+
+    /** */
+    protected <K,V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
+        return new CacheConfiguration<>(cacheName);
     }
 
     /**
@@ -70,9 +98,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
-
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -88,6 +114,90 @@ public class IndexingSpiQuerySelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    public void testIndexingSpiWithDisabledQueryProcessor() throws Exception {
+        IgniteConfiguration cfg = configuration();
+
+        cfg.setIndexingSpi(new MyIndexingSpi());
+
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
+
+        IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
+
+        for (int i = 0; i < 10; i++)
+            cache.put(i, i);
+
+        QueryCursor<Cache.Entry<Integer, Integer>> cursor = cache.query(new SpiQuery<Integer, Integer>().setArgs(2, 5));
+
+        for (Cache.Entry<Integer, Integer> entry : cursor)
+            System.out.println(entry);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBinaryIndexingSpi() throws Exception {
+        IgniteConfiguration cfg = configuration();
+
+        cfg.setIndexingSpi(new MyBinaryIndexingSpi());
+
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(CACHE_NAME);
+
+        IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
+
+        for (int i = 0; i < 10; i++) {
+            PersonKey key = new PersonKey(i);
+
+            cache.put(key, new Person("John Doe " + i));
+        }
+
+        QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
+            new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
+
+        for (Cache.Entry<PersonKey, Person> entry : cursor)
+            System.out.println(entry);
+
+        cache.remove(new PersonKey(9));
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonBinaryIndexingSpi() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI, "true");
+
+        IgniteConfiguration cfg = configuration();
+
+        cfg.setIndexingSpi(new MyIndexingSpi());
+
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(CACHE_NAME);
+
+        IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
+
+        for (int i = 0; i < 10; i++) {
+            PersonKey key = new PersonKey(i);
+
+            cache.put(key, new Person("John Doe " + i));
+        }
+
+        QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
+            new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
+
+        for (Cache.Entry<PersonKey, Person> entry : cursor)
+            System.out.println(entry);
+
+        cache.remove(new PersonKey(9));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIndexingSpiFailure() throws Exception {
         IgniteConfiguration cfg = configuration();
@@ -96,10 +206,9 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
 
         final IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -125,24 +234,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
                 }, IgniteTxHeuristicCheckedException.class);
             }
         }
-    }
-
-    /**
-     * @return Configuration.
-     */
-    private IgniteConfiguration configuration() {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        return cfg;
     }
 
     /**
@@ -173,6 +264,9 @@ public class IndexingSpiQuerySelfTest extends TestCase {
             Object from = paramsIt.next();
             Object to = paramsIt.next();
 
+            from = from instanceof BinaryObject ? ((BinaryObject)from).deserialize() : from;
+            to = to instanceof BinaryObject ? ((BinaryObject)to).deserialize() : to;
+
             SortedMap<Object, Object> map = idx.subMap(from, to);
 
             Collection<Cache.Entry<?, ?>> res = new ArrayList<>(map.size());
@@ -186,6 +280,9 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         /** {@inheritDoc} */
         @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
+            assertFalse(key instanceof BinaryObject);
+            assertFalse(val instanceof BinaryObject);
+
             idx.put(key, val);
         }
 
@@ -206,13 +303,94 @@ public class IndexingSpiQuerySelfTest extends TestCase {
     }
 
     /**
+     * Indexing Spi implementation for test. Accepts binary objects only
+     */
+    private static class MyBinaryIndexingSpi extends MyIndexingSpi {
+
+        /** {@inheritDoc} */
+        @Override public void store(@Nullable String spaceName, Object key, Object val,
+            long expirationTime) throws IgniteSpiException {
+            assertTrue(key instanceof BinaryObject);
+
+            assertTrue(val instanceof BinaryObject);
+
+            super.store(spaceName, ((BinaryObject)key).deserialize(), ((BinaryObject)val).deserialize(), expirationTime);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
+            assertTrue(key instanceof BinaryObject);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
+            assertTrue(key instanceof BinaryObject);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
+            assertTrue(key instanceof BinaryObject);
+
+            assertTrue(val instanceof BinaryObject);
+        }
+    }
+
+    /**
      * Broken Indexing Spi implementation for test
      */
-    private class MyBrokenIndexingSpi extends MyIndexingSpi {
+    private static class MyBrokenIndexingSpi extends MyIndexingSpi {
         /** {@inheritDoc} */
         @Override public void store(@Nullable String spaceName, Object key, Object val,
             long expirationTime) throws IgniteSpiException {
             throw new IgniteSpiException("Test exception");
+        }
+    }
+
+    /**
+     *
+     */
+     static class PersonKey implements Serializable, Comparable<PersonKey> {
+        /** */
+        private int id;
+
+        /** */
+        public PersonKey(int id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull PersonKey o) {
+            return Integer.compare(id, o.id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            PersonKey key = (PersonKey)o;
+
+            return id == key.id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
+        }
+    }
+
+    /**
+     *
+     */
+    static class Person implements Serializable {
+        /** */
+        private String name;
+
+        /** */
+        Person(String name) {
+            this.name = name;
         }
     }
 }

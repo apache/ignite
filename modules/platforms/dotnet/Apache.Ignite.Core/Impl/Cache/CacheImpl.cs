@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Writes the load cache data to the writer.
         /// </summary>
-        private void WriteLoadCacheData(IBinaryRawWriter writer, ICacheEntryFilter<TK, TV> p, object[] args)
+        private void WriteLoadCacheData(BinaryWriter writer, ICacheEntryFilter<TK, TV> p, object[] args)
         {
             if (p != null)
             {
@@ -237,7 +237,17 @@ namespace Apache.Ignite.Core.Impl.Cache
             else
                 writer.WriteObject<CacheEntryFilterHolder>(null);
 
-            writer.WriteArray(args);
+            if (args != null && args.Length > 0)
+            {
+                writer.WriteInt(args.Length);
+
+                foreach (var o in args)
+                    writer.WriteObject(o);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
 
         /** <inheritDoc /> */
@@ -980,7 +990,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer.WriteString(qry.Sql);
                 writer.WriteInt(qry.PageSize);
 
-                WriteQueryArgs(writer, qry.Arguments);
+                QueryBase.WriteQueryArgs(writer, qry.Arguments);
 
                 writer.WriteBoolean(qry.EnableDistributedJoins);
                 writer.WriteBoolean(qry.EnforceJoinOrder);
@@ -999,33 +1009,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepBinary);
         }
                 
-        /// <summary>
-        /// Write query arguments.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="args">Arguments.</param>
-        private static void WriteQueryArgs(BinaryWriter writer, object[] args)
-        {
-            if (args == null)
-                writer.WriteInt(0);
-            else
-            {
-                writer.WriteInt(args.Length);
-
-                foreach (var arg in args)
-                {
-                    // Write DateTime as TimeStamp always, otherwise it does not make sense
-                    // Wrapped DateTime comparison does not work in SQL
-                    var dt = arg as DateTime?;  // Works with DateTime also
-
-                    if (dt != null)
-                        writer.WriteTimestamp(dt);
-                    else
-                        writer.WriteObject(arg);
-                }
-            }
-        }
-
         /** <inheritdoc /> */
         public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
         {
