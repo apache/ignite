@@ -30,8 +30,6 @@
 #include <ignite/impl/compute/multiple_job_compute_task_holder.h>
 #include <ignite/impl/compute/cancelable_impl.h>
 
-#include <ignite/ignite_error.h>
-
 namespace ignite
 {
     namespace impl
@@ -77,26 +75,14 @@ namespace ignite
                  * @param func Compute function to call.
                  * @return Future that can be used to acess computation result
                  *  once it's ready.
-                 * @throw IgniteError in case of error.
                  */
                 template<typename R, typename F>
                 Future<R> CallAsync(const F& func)
                 {
-                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, R>(func));
+                    typedef ComputeJobHolderImpl<F, R> JobType;
+                    typedef SingleJobComputeTaskHolder<F, R> TaskType;
 
-                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
-
-                    SingleJobComputeTaskHolder<F, R>* taskPtr = new SingleJobComputeTaskHolder<F, R>(jobHandle);
-                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
-
-                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
-
-                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::UNICAST, jobHandle, taskHandle, func);
-
-                    common::Promise<R>& promise = taskPtr->GetPromise();
-                    promise.SetCancelTarget(cancelable);
-
-                    return promise.GetFuture();
+                    return PerformTask<R, F, JobType, TaskType>(Operation::UNICAST, func);
                 }
 
                 /**
@@ -108,26 +94,14 @@ namespace ignite
                  * @param action Compute action to call.
                  * @return Future that can be used to wait for action
                  *  to complete.
-                 * @throw IgniteError in case of error.
                  */
                 template<typename F>
                 Future<void> RunAsync(const F& action)
                 {
-                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, void>(action));
+                    typedef ComputeJobHolderImpl<F, void> JobType;
+                    typedef SingleJobComputeTaskHolder<F, void> TaskType;
 
-                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
-
-                    SingleJobComputeTaskHolder<F, void>* taskPtr = new SingleJobComputeTaskHolder<F, void>(jobHandle);
-                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
-
-                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
-
-                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::UNICAST, jobHandle, taskHandle, action);
-
-                    common::Promise<void>& promise = taskPtr->GetPromise();
-                    promise.SetCancelTarget(cancelable);
-
-                    return promise.GetFuture();
+                    return PerformTask<void, F, JobType, TaskType>(Operation::UNICAST, action);
                 }
 
                 /**
@@ -142,26 +116,14 @@ namespace ignite
                  * @param func Compute function to call.
                  * @return Future that can be used to acess computation result
                  *  once it's ready.
-                 * @throw IgniteError in case of error.
                  */
                 template<typename R, typename F>
                 Future< std::vector<R> > BroadcastAsync(const F& func)
                 {
-                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, R>(func));
+                    typedef ComputeJobHolderImpl<F, R> JobType;
+                    typedef MultipleJobComputeTaskHolder<F, R> TaskType;
 
-                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
-
-                    MultipleJobComputeTaskHolder<F, R>* taskPtr = new MultipleJobComputeTaskHolder<F, R>(jobHandle);
-                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
-
-                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
-
-                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::BROADCAST, jobHandle, taskHandle, func);
-
-                    common::Promise< std::vector<R> >& promise = taskPtr->GetPromise();
-                    promise.SetCancelTarget(cancelable);
-
-                    return promise.GetFuture();
+                    return PerformTask<std::vector<R>, F, JobType, TaskType>(Operation::BROADCAST, func);
                 }
 
                 /**
@@ -173,31 +135,57 @@ namespace ignite
                  * @param func Compute function to call.
                  * @return Future that can be used to acess computation result
                  *  once it's ready.
-                 * @throw IgniteError in case of error.
                  */
                 template<typename F, bool>
                 Future<void> BroadcastAsync(const F& func)
                 {
-                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, void>(func));
+                    typedef ComputeJobHolderImpl<F, void> JobType;
+                    typedef MultipleJobComputeTaskHolder<F, void> TaskType;
 
-                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
-
-                    MultipleJobComputeTaskHolder<F, void>* taskPtr = new MultipleJobComputeTaskHolder<F, void>(jobHandle);
-                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
-
-                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
-
-                    std::auto_ptr<common::Cancelable> cancelable = PerformJob(Operation::BROADCAST, jobHandle, taskHandle, func);
-
-                    common::Promise<void>& promise = taskPtr->GetPromise();
-                    promise.SetCancelTarget(cancelable);
-
-                    return promise.GetFuture();
+                    return PerformTask<void, F, JobType, TaskType>(Operation::BROADCAST, func);
                 }
 
             private:
                 /**
                  * Perform job.
+                 *
+                 * @tparam F Compute function type. Should implement
+                 *  ComputeFunc<R> class.
+                 * @tparam R Call return type. BinaryType should be specialized
+                 *  for the type if it is not primitive.
+                 * @tparam J Job type.
+                 * @tparam T Task type.
+                 *
+                 * @param operation Operation type.
+                 * @param func Function.
+                 * @return Future that can be used to acess computation result
+                 *  once it's ready.
+                 */
+                template<typename R, typename F, typename J, typename T>
+                Future<R> PerformTask(Operation::Type operation, const F& func)
+                {
+                    common::concurrent::SharedPointer<ComputeJobHolder> job(new J(func));
+
+                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
+
+                    T* taskPtr = new T(jobHandle);
+                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
+
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    std::auto_ptr<common::Cancelable> cancelable = PerformTask(operation, jobHandle, taskHandle, func);
+
+                    common::Promise<R>& promise = taskPtr->GetPromise();
+                    promise.SetCancelTarget(cancelable);
+
+                    return promise.GetFuture();
+                }
+
+                /**
+                 * Perform job.
+                 *
+                 * @tparam F Compute function type. Should implement
+                 *  ComputeFunc<R> class.
                  *
                  * @param operation Operation type.
                  * @param jobHandle Job Handle.
@@ -206,7 +194,7 @@ namespace ignite
                  * @return Cancelable auto pointer.
                  */
                 template<typename F>
-                std::auto_ptr<common::Cancelable> PerformJob(Operation::Type operation, int64_t jobHandle,
+                std::auto_ptr<common::Cancelable> PerformTask(Operation::Type operation, int64_t jobHandle,
                     int64_t taskHandle, const F& func)
                 {
                     common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
