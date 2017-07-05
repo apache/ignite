@@ -745,9 +745,6 @@ namespace ignite
 
             SqlResult::Type result = currentQuery->Close();
 
-            if (result == SqlResult::AI_SUCCESS)
-                currentQuery.reset();
-
             return result;
         }
 
