@@ -262,6 +262,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         final int KEY = 1;
         final String VAL = "1";
 
+        cnt = 0;
+
         StringWriter logWriter = new StringWriter();
         Appender logAppender = new WriterAppender(new SimpleLayout(), logWriter);
 
