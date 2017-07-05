@@ -17,24 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
 /**
@@ -270,6 +285,58 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if fail.
+     */
+    public void testActivateDeActivateCallbackForPluginProviders() throws Exception {
+        IgniteEx ig1 = startGrid(getConfiguration("node1"));
+        IgniteEx ig2 = startGrid(getConfiguration("node2"));
+        IgniteEx ig3 = startGrid(getConfiguration("node3"));
+
+        assertTrue(!ig1.active());
+        assertTrue(!ig2.active());
+        assertTrue(!ig3.active());
+
+        ig1.active(true);
+
+        checkPlugin(ig1,1,0);
+        checkPlugin(ig2,1,0);
+        checkPlugin(ig3,1,0);
+
+        ig2.active(false);
+
+        ig3.active(true);
+
+        checkPlugin(ig1,2,1);
+        checkPlugin(ig2,2,1);
+        checkPlugin(ig3,2,1);
+
+        ig1.active(false);
+
+        ig2.active(true);
+
+        checkPlugin(ig1,3,2);
+        checkPlugin(ig2,3,2);
+        checkPlugin(ig3,3,2);
+
+    }
+
+    /**
+     * @param ig ignite.
+     * @param act Expected activation counter.
+     * @param deAct Expected deActivation counter.
+     */
+    private void checkPlugin(Ignite ig, int act, int deAct) {
+        IgnitePlugin pl = ig.plugin(StanByClusterTestProvider.NAME);
+
+        assertNotNull(pl);
+
+        StanByClusterTestProvider plugin = (StanByClusterTestProvider)pl;
+
+        assertEquals(act, plugin.actCnt.get());
+        assertEquals(deAct, plugin.deActCnt.get());
+    }
+
+    /**
      *
      */
     private static class NodeFilterIgnoreByName implements IgnitePredicate<ClusterNode> {
@@ -286,6 +353,103 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         /** */
         @Override public boolean apply(ClusterNode node) {
             return !name.equals(node.consistentId());
+        }
+    }
+
+    /**
+     *
+     */
+    public static class StanByClusterTestProvider implements PluginProvider, IgnitePlugin, IgniteChangeGlobalStateSupport {
+        /** */
+        static final String NAME = "StanByClusterTestProvider";
+
+        /** */
+        final AtomicInteger actCnt = new AtomicInteger();
+
+        /** */
+        final AtomicInteger deActCnt = new AtomicInteger();
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return NAME;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String version() {
+            return "1.0";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String copyright() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(
+            PluginContext ctx,
+            ExtensionRegistry registry
+        ) throws IgniteCheckedException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start(PluginContext ctx) throws IgniteCheckedException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop(boolean cancel) throws IgniteCheckedException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIgniteStart() throws IgniteCheckedException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIgniteStop(boolean cancel) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgnitePlugin plugin() {
+            return this;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+            actCnt.incrementAndGet();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onDeActivate(GridKernalContext kctx) {
+            deActCnt.incrementAndGet();
         }
     }
 
