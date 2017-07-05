@@ -146,6 +146,49 @@ struct Func2 : ComputeFunc<std::string>
     IgniteError err;
 };
 
+struct Func3 : ComputeFunc<void>
+{
+    Func3() :
+        a(), b(), err()
+    {
+        // No-op.
+    }
+
+    Func3(int32_t a, int32_t b) :
+        a(a), b(b), err()
+    {
+        // No-op.
+    }
+
+    Func3(IgniteError err) :
+        a(), b(), err(err)
+    {
+        // No-op.
+    }
+
+    virtual void Call()
+    {
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
+
+        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+            throw err;
+
+        std::stringstream tmp;
+
+        tmp << a << '.' << b;
+
+        res = tmp.str();
+    }
+
+    int32_t a;
+    int32_t b;
+    IgniteError err;
+
+    static std::string res;
+};
+
+std::string Func3::res;
+
 namespace ignite
 {
     namespace binary
@@ -235,6 +278,49 @@ namespace ignite
                 dst.err = reader.ReadObject<IgniteError>("err");
             }
         };
+
+        template<>
+        struct BinaryType<Func3>
+        {
+            static int32_t GetTypeId()
+            {
+                return GetBinaryStringHashCode("Func3");
+            }
+
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "Func3";
+            }
+
+            static int32_t GetFieldId(const char* name)
+            {
+                return GetBinaryStringHashCode(name);
+            }
+
+            static bool IsNull(const Func3& obj)
+            {
+                return false;
+            }
+
+            static void GetNull(Func3& dst)
+            {
+                dst = Func3(0, 0);
+            }
+
+            static void Write(BinaryWriter& writer, const Func3& obj)
+            {
+                writer.WriteInt32("a", obj.a);
+                writer.WriteInt32("b", obj.b);
+                writer.WriteObject<IgniteError>("err", obj.err);
+            }
+
+            static void Read(BinaryReader& reader, Func3& dst)
+            {
+                dst.a = reader.ReadInt32("a");
+                dst.b = reader.ReadInt32("b");
+                dst.err = reader.ReadObject<IgniteError>("err");
+            }
+        };
     }
 }
 
@@ -244,6 +330,7 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit1(IgniteBindingContext& context)
 
     binding.RegisterComputeFunc<Func1>();
     binding.RegisterComputeFunc<Func2>();
+    binding.RegisterComputeFunc<Func3>();
 }
 
 BOOST_FIXTURE_TEST_SUITE(ComputeTestSuite, ComputeTestSuiteFixture)
@@ -333,5 +420,94 @@ BOOST_AUTO_TEST_CASE(IgniteCallTestRemoteError)
 
     BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
 }
+
+BOOST_AUTO_TEST_CASE(IgniteRunSyncLocal)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Running");
+    compute.Run(Func3(8, 5));
+
+    BOOST_CHECK_EQUAL(Func3::res, "8.5");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteRunAsyncLocal)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Running");
+    Future<void> res = compute.RunAsync(Func3(312, 245));
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECKPOINT("Waiting with timeout");
+    res.WaitFor(100);
+
+    BOOST_CHECK(!res.IsReady());
+
+    res.GetValue();
+
+    BOOST_CHECK_EQUAL(Func3::res, "312.245");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteRunSyncLocalError)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Running");
+
+    BOOST_CHECK_EXCEPTION(compute.Run(Func3(MakeTestError())), IgniteError, IsTestError);
+}
+
+BOOST_AUTO_TEST_CASE(IgniteRunAsyncLocalError)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Running");
+    Future<void> res = compute.RunAsync(Func3(MakeTestError()));
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECKPOINT("Waiting with timeout");
+    res.WaitFor(100);
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
+}
+
+BOOST_AUTO_TEST_CASE(IgniteRunTestRemote)
+{
+    Ignite node2 = MakeNode("ComputeNode2");
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Running");
+    compute.CallAsync<std::string>(Func2(8, 5));
+
+    compute.Run(Func3(42, 24));
+
+    BOOST_CHECK_EQUAL(Func3::res, "42.24");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteRunTestRemoteError)
+{
+    Ignite node2 = MakeNode("ComputeNode2");
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Running");
+    compute.CallAsync<std::string>(Func2(8, 5));
+
+    Future<void> res = compute.RunAsync(Func3(MakeTestError()));
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECKPOINT("Waiting with timeout");
+    res.WaitFor(100);
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
