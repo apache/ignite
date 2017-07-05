@@ -204,6 +204,9 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
 
+    /** Default timeout after which long query warning will be printed. */
+    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -416,6 +419,7 @@ public class IgniteConfiguration {
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
     /** ODBC configuration. */
+    @Deprecated
     private OdbcConfiguration odbcCfg;
 
     /** Warmup closure. Will be invoked before actual grid start. */
@@ -454,8 +458,17 @@ public class IgniteConfiguration {
     /** Page memory configuration. */
     private MemoryConfiguration memCfg;
 
+    /** Persistence store configuration. */
+    private PersistentStoreConfiguration pstCfg;
+
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
+
+    /** */
+    private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
+
+    /** SQL connector configuration. */
+    private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -493,6 +506,7 @@ public class IgniteConfiguration {
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
         memCfg = cfg.getMemoryConfiguration();
+        pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -520,6 +534,7 @@ public class IgniteConfiguration {
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
+        longQryWarnTimeout = cfg.getLongQueryWarningTimeout();
         lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
@@ -547,6 +562,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sqlConnCfg = cfg.getSqlConnectorConfiguration();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -1167,7 +1183,10 @@ public class IgniteConfiguration {
      * without deserialization will be used.
      *
      * @return Marshaller to use in grid.
+     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
+     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
      */
+    @Deprecated
     public Marshaller getMarshaller() {
         return marsh;
     }
@@ -1178,7 +1197,10 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      * @return {@code this} for chaining.
+     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
+     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
      */
+    @Deprecated
     public IgniteConfiguration setMarshaller(Marshaller marsh) {
         this.marsh = marsh;
 
@@ -2143,6 +2165,34 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets persistence configuration used by Apache Ignite Persistent Store.
+     *
+     * @return Persistence configuration.
+     */
+    public PersistentStoreConfiguration getPersistentStoreConfiguration() {
+        return pstCfg;
+    }
+
+    /**
+     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     */
+    public boolean isPersistentStoreEnabled() {
+        return pstCfg != null;
+    }
+
+    /**
+     * Sets persistence configuration activating Apache Ignite Persistent Store.
+     *
+     * @param pstCfg Persistence configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
+        this.pstCfg = pstCfg;
+
+        return this;
+    }
+
+    /**
      * Gets flag indicating whether the cluster will be active on start. If cluster is not active on start,
      * there will be no cache partition map exchanges performed until the cluster is activated. This should
      * significantly speed up large topology startup time.
@@ -2431,7 +2481,9 @@ public class IgniteConfiguration {
      * Gets configuration for ODBC.
      *
      * @return ODBC configuration.
+     * @deprecated Use {@link #getSqlConnectorConfiguration()} instead.
      */
+    @Deprecated
     public OdbcConfiguration getOdbcConfiguration() {
         return odbcCfg;
     }
@@ -2441,7 +2493,9 @@ public class IgniteConfiguration {
      *
      * @param odbcCfg ODBC configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setSqlConnectorConfiguration(SqlConnectorConfiguration)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
         this.odbcCfg = odbcCfg;
 
@@ -2712,6 +2766,48 @@ public class IgniteConfiguration {
         this.execCfgs = execCfgs;
 
         return this;
+    }
+
+    /**
+     * Gets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @return Timeout in milliseconds.
+     */
+    public long getLongQueryWarningTimeout() {
+        return longQryWarnTimeout;
+    }
+
+    /**
+     * Sets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @param longQryWarnTimeout Timeout in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
+        this.longQryWarnTimeout = longQryWarnTimeout;
+
+        return this;
+    }
+
+    /**
+     * Sets SQL connector configuration.
+     *
+     * @param sqlConnCfg SQL connector configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
+        this.sqlConnCfg = sqlConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets SQL connector configuration.
+     *
+     * @return SQL connector configuration.
+     */
+    public SqlConnectorConfiguration getSqlConnectorConfiguration() {
+        return sqlConnCfg;
     }
 
     /** {@inheritDoc} */

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearPeekModesTes
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPreloadNoWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
@@ -87,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarl
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDiscoveryDataConcurrentJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheStartOnJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
@@ -227,6 +229,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheStartOnJoinTest.class);
         suite.addTestSuite(IgniteCacheStartTest.class);
         suite.addTestSuite(CacheDiscoveryDataConcurrentJoinTest.class);
+        suite.addTestSuite(IgniteClientCacheInitializationFailTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
@@ -303,6 +306,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(GridCacheDhtTxPreloadSelfTest.class);
         suite.addTestSuite(GridCacheNearTxPreloadSelfTest.class);
         suite.addTestSuite(GridReplicatedTxPreloadTest.class);
+        suite.addTestSuite(CacheGroupsPreloadTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheFilterTest.class);
 

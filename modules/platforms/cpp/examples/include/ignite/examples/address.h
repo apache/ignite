@@ -74,7 +74,7 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            static int32_t GetHashCode(ignite::examples::Address obj)
+            static int32_t GetHashCode(ignite::examples::Address& obj)
             {
                 return 0;
             }

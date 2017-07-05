@@ -65,6 +65,7 @@
     "eslint": "3.19.0",
     "eslint-friendly-formatter": "3.0.0",
     "eslint-loader": "1.7.1",
+    "eslint-plugin-babel": "^4.1.1",
     "expose-loader": "0.7.3",
     "extract-text-webpack-plugin": "2.1.0",
     "file-loader": "0.11.1",
@@ -89,7 +90,7 @@
     "sass-loader": "6.0.5",
     "socket.io-client": "1.7.3",
     "style-loader": "0.18.1",
-    "svg-sprite-loader": "^3.0.2",
+    "svg-sprite-loader": "^3.0.5",
     "ui-router-metatags": "1.0.3",
     "webpack": "2.6.1",
     "webpack-dev-server": "2.4.5",
@@ -97,7 +98,7 @@
     "worker-loader": "0.8.0"
   },
   "devDependencies": {
-    "chai": "3.5.0",
+    "chai": "4.0.2",
     "jasmine-core": "2.6.2",
     "karma": "1.7.0",
     "karma-babel-preprocessor": "6.0.1",
@@ -109,6 +110,7 @@
     "karma-webpack": "2.0.3",
     "mocha": "3.4.2",
     "mocha-teamcity-reporter": "1.1.1",
-    "phantomjs-prebuilt": "2.1.14"
+    "phantomjs-prebuilt": "2.1.14",
+    "sinon": "2.3.4"
   }
 }

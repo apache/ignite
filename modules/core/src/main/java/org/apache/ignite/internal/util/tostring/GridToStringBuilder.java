@@ -153,6 +153,89 @@ public class GridToStringBuilder {
      * @param val3 Additional parameter value.
      * @param name4 Additional parameter name.
      * @param val4 Additional parameter value.
+     * @param name5 Additional parameter name.
+     * @param val5 Additional parameter value.
+     * @return String presentation of the given object.
+     */
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0,
+        String name1, Object val1,
+        String name2, Object val2,
+        String name3, Object val3,
+        String name4, Object val4,
+        String name5, Object val5) {
+        return toString(cls,
+            obj,
+            name0, val0, false,
+            name1, val1, false,
+            name2, val2, false,
+            name3, val3, false,
+            name4, val4, false,
+            name5, val5, false);
+    }
+
+    /**
+     * Produces auto-generated output of string presentation for given object and its declaration class.
+     *
+     * @param <T> Type of the object.
+     * @param cls Declaration class of the object. Note that this should not be a runtime class.
+     * @param obj Object to get a string presentation for.
+     * @param name0 Additional parameter name.
+     * @param val0 Additional parameter value.
+     * @param name1 Additional parameter name.
+     * @param val1 Additional parameter value.
+     * @param name2 Additional parameter name.
+     * @param val2 Additional parameter value.
+     * @param name3 Additional parameter name.
+     * @param val3 Additional parameter value.
+     * @param name4 Additional parameter name.
+     * @param val4 Additional parameter value.
+     * @param name5 Additional parameter name.
+     * @param val5 Additional parameter value.
+     * @param name6 Additional parameter name.
+     * @param val6 Additional parameter value.
+     * @return String presentation of the given object.
+     */
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0,
+        String name1, Object val1,
+        String name2, Object val2,
+        String name3, Object val3,
+        String name4, Object val4,
+        String name5, Object val5,
+        String name6, Object val6) {
+        return toString(cls,
+            obj,
+            name0, val0, false,
+            name1, val1, false,
+            name2, val2, false,
+            name3, val3, false,
+            name4, val4, false,
+            name5, val5, false,
+            name6, val6, false);
+    }
+
+    /**
+     * Produces auto-generated output of string presentation for given object and its declaration class.
+     *
+     * @param <T> Type of the object.
+     * @param cls Declaration class of the object. Note that this should not be a runtime class.
+     * @param obj Object to get a string presentation for.
+     * @param name0 Additional parameter name.
+     * @param val0 Additional parameter value.
+     * @param sens0 Property sensitive flag.
+     * @param name1 Additional parameter name.
+     * @param val1 Additional parameter value.
+     * @param sens1 Property sensitive flag.
+     * @param name2 Additional parameter name.
+     * @param val2 Additional parameter value.
+     * @param sens2 Property sensitive flag.
+     * @param name3 Additional parameter name.
+     * @param val3 Additional parameter value.
+     * @param sens3 Property sensitive flag.
+     * @param name4 Additional parameter name.
+     * @param val4 Additional parameter value.
+     * @param sens4 Property sensitive flag.
      * @return String presentation of the given object.
      */
     public static <T> String toString(Class<T> cls, T obj,
@@ -200,6 +283,178 @@ public class GridToStringBuilder {
 
         try {
             return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 5);
+        }
+        finally {
+            queue.offer(tmp);
+        }
+    }
+
+    /**
+     * Produces auto-generated output of string presentation for given object and its declaration class.
+     *
+     * @param <T> Type of the object.
+     * @param cls Declaration class of the object. Note that this should not be a runtime class.
+     * @param obj Object to get a string presentation for.
+     * @param name0 Additional parameter name.
+     * @param val0 Additional parameter value.
+     * @param sens0 Property sensitive flag.
+     * @param name1 Additional parameter name.
+     * @param val1 Additional parameter value.
+     * @param sens1 Property sensitive flag.
+     * @param name2 Additional parameter name.
+     * @param val2 Additional parameter value.
+     * @param sens2 Property sensitive flag.
+     * @param name3 Additional parameter name.
+     * @param val3 Additional parameter value.
+     * @param sens3 Property sensitive flag.
+     * @param name4 Additional parameter name.
+     * @param val4 Additional parameter value.
+     * @param sens4 Property sensitive flag.
+     * @param name5 Additional parameter name.
+     * @param val5 Additional parameter value.
+     * @param sens5 Property sensitive flag.
+     * @return String presentation of the given object.
+     */
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0, boolean sens0,
+        String name1, Object val1, boolean sens1,
+        String name2, Object val2, boolean sens2,
+        String name3, Object val3, boolean sens3,
+        String name4, Object val4, boolean sens4,
+        String name5, Object val5, boolean sens5) {
+        assert cls != null;
+        assert obj != null;
+        assert name0 != null;
+        assert name1 != null;
+        assert name2 != null;
+        assert name3 != null;
+        assert name4 != null;
+        assert name5 != null;
+
+        Queue<GridToStringThreadLocal> queue = threadCache.get();
+
+        assert queue != null;
+
+        // Since string() methods can be chain-called from the same thread we
+        // have to keep a list of thread-local objects and remove/add them
+        // in each string() apply.
+        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
+
+        Object[] addNames = tmp.getAdditionalNames();
+        Object[] addVals = tmp.getAdditionalValues();
+        boolean[] addSens = tmp.getAdditionalSensitives();
+
+        addNames[0] = name0;
+        addVals[0] = val0;
+        addSens[0] = sens0;
+        addNames[1] = name1;
+        addVals[1] = val1;
+        addSens[1] = sens1;
+        addNames[2] = name2;
+        addVals[2] = val2;
+        addSens[2] = sens2;
+        addNames[3] = name3;
+        addVals[3] = val3;
+        addSens[3] = sens3;
+        addNames[4] = name4;
+        addVals[4] = val4;
+        addSens[4] = sens4;
+        addNames[5] = name5;
+        addVals[5] = val5;
+        addSens[5] = sens5;
+
+        try {
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 6);
+        }
+        finally {
+            queue.offer(tmp);
+        }
+    }
+
+    /**
+     * Produces auto-generated output of string presentation for given object and its declaration class.
+     *
+     * @param <T> Type of the object.
+     * @param cls Declaration class of the object. Note that this should not be a runtime class.
+     * @param obj Object to get a string presentation for.
+     * @param name0 Additional parameter name.
+     * @param val0 Additional parameter value.
+     * @param sens0 Property sensitive flag.
+     * @param name1 Additional parameter name.
+     * @param val1 Additional parameter value.
+     * @param sens1 Property sensitive flag.
+     * @param name2 Additional parameter name.
+     * @param val2 Additional parameter value.
+     * @param sens2 Property sensitive flag.
+     * @param name3 Additional parameter name.
+     * @param val3 Additional parameter value.
+     * @param sens3 Property sensitive flag.
+     * @param name4 Additional parameter name.
+     * @param val4 Additional parameter value.
+     * @param sens4 Property sensitive flag.
+     * @param name5 Additional parameter name.
+     * @param val5 Additional parameter value.
+     * @param sens5 Property sensitive flag.
+     * @param name6 Additional parameter name.
+     * @param val6 Additional parameter value.
+     * @param sens6 Property sensitive flag.
+     * @return String presentation of the given object.
+     */
+    public static <T> String toString(Class<T> cls, T obj,
+        String name0, Object val0, boolean sens0,
+        String name1, Object val1, boolean sens1,
+        String name2, Object val2, boolean sens2,
+        String name3, Object val3, boolean sens3,
+        String name4, Object val4, boolean sens4,
+        String name5, Object val5, boolean sens5,
+        String name6, Object val6, boolean sens6) {
+        assert cls != null;
+        assert obj != null;
+        assert name0 != null;
+        assert name1 != null;
+        assert name2 != null;
+        assert name3 != null;
+        assert name4 != null;
+        assert name5 != null;
+        assert name6 != null;
+
+        Queue<GridToStringThreadLocal> queue = threadCache.get();
+
+        assert queue != null;
+
+        // Since string() methods can be chain-called from the same thread we
+        // have to keep a list of thread-local objects and remove/add them
+        // in each string() apply.
+        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
+
+        Object[] addNames = tmp.getAdditionalNames();
+        Object[] addVals = tmp.getAdditionalValues();
+        boolean[] addSens = tmp.getAdditionalSensitives();
+
+        addNames[0] = name0;
+        addVals[0] = val0;
+        addSens[0] = sens0;
+        addNames[1] = name1;
+        addVals[1] = val1;
+        addSens[1] = sens1;
+        addNames[2] = name2;
+        addVals[2] = val2;
+        addSens[2] = sens2;
+        addNames[3] = name3;
+        addVals[3] = val3;
+        addSens[3] = sens3;
+        addNames[4] = name4;
+        addVals[4] = val4;
+        addSens[4] = sens4;
+        addNames[5] = name5;
+        addVals[5] = val5;
+        addSens[5] = sens5;
+        addNames[6] = name6;
+        addVals[6] = val6;
+        addSens[6] = sens6;
+
+        try {
+            return toStringImpl(cls, tmp.getStringBuilder(), obj, addNames, addVals, addSens, 7);
         }
         finally {
             queue.offer(tmp);
@@ -970,6 +1225,170 @@ public class GridToStringBuilder {
 
         try {
             return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 5);
+        }
+        finally {
+            queue.offer(tmp);
+        }
+    }
+
+    /**
+     * Produces uniformed output of string with context properties
+     *
+     * @param str Output prefix or {@code null} if empty.
+     * @param name0 Property name.
+     * @param val0 Property value.
+     * @param sens0 Property sensitive flag.
+     * @param name1 Property name.
+     * @param val1 Property value.
+     * @param sens1 Property sensitive flag.
+     * @param name2 Property name.
+     * @param val2 Property value.
+     * @param sens2 Property sensitive flag.
+     * @param name3 Property name.
+     * @param val3 Property value.
+     * @param sens3 Property sensitive flag.
+     * @param name4 Property name.
+     * @param val4 Property value.
+     * @param sens4 Property sensitive flag.
+     * @param name5 Property name.
+     * @param val5 Property value.
+     * @param sens5 Property sensitive flag.
+     * @return String presentation.
+     */
+    public static String toString(String str,
+        String name0, @Nullable Object val0, boolean sens0,
+        String name1, @Nullable Object val1, boolean sens1,
+        String name2, @Nullable Object val2, boolean sens2,
+        String name3, @Nullable Object val3, boolean sens3,
+        String name4, @Nullable Object val4, boolean sens4,
+        String name5, @Nullable Object val5, boolean sens5) {
+        assert name0 != null;
+        assert name1 != null;
+        assert name2 != null;
+        assert name3 != null;
+        assert name4 != null;
+        assert name5 != null;
+
+        Queue<GridToStringThreadLocal> queue = threadCache.get();
+
+        assert queue != null;
+
+        // Since string() methods can be chain-called from the same thread we
+        // have to keep a list of thread-local objects and remove/add them
+        // in each string() apply.
+        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
+
+        Object[] propNames = tmp.getAdditionalNames();
+        Object[] propVals = tmp.getAdditionalValues();
+        boolean[] propSens = tmp.getAdditionalSensitives();
+
+        propNames[0] = name0;
+        propVals[0] = val0;
+        propSens[0] = sens0;
+        propNames[1] = name1;
+        propVals[1] = val1;
+        propSens[1] = sens1;
+        propNames[2] = name2;
+        propVals[2] = val2;
+        propSens[2] = sens2;
+        propNames[3] = name3;
+        propVals[3] = val3;
+        propSens[3] = sens3;
+        propNames[4] = name4;
+        propVals[4] = val4;
+        propSens[4] = sens4;
+        propNames[5] = name5;
+        propVals[5] = val5;
+        propSens[5] = sens5;
+
+        try {
+            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 6);
+        }
+        finally {
+            queue.offer(tmp);
+        }
+    }
+
+    /**
+     * Produces uniformed output of string with context properties
+     *
+     * @param str Output prefix or {@code null} if empty.
+     * @param name0 Property name.
+     * @param val0 Property value.
+     * @param sens0 Property sensitive flag.
+     * @param name1 Property name.
+     * @param val1 Property value.
+     * @param sens1 Property sensitive flag.
+     * @param name2 Property name.
+     * @param val2 Property value.
+     * @param sens2 Property sensitive flag.
+     * @param name3 Property name.
+     * @param val3 Property value.
+     * @param sens3 Property sensitive flag.
+     * @param name4 Property name.
+     * @param val4 Property value.
+     * @param sens4 Property sensitive flag.
+     * @param name5 Property name.
+     * @param val5 Property value.
+     * @param sens5 Property sensitive flag.
+     * @param name6 Property name.
+     * @param val6 Property value.
+     * @param sens6 Property sensitive flag.
+     * @return String presentation.
+     */
+    public static String toString(String str,
+        String name0, @Nullable Object val0, boolean sens0,
+        String name1, @Nullable Object val1, boolean sens1,
+        String name2, @Nullable Object val2, boolean sens2,
+        String name3, @Nullable Object val3, boolean sens3,
+        String name4, @Nullable Object val4, boolean sens4,
+        String name5, @Nullable Object val5, boolean sens5,
+        String name6, @Nullable Object val6, boolean sens6) {
+        assert name0 != null;
+        assert name1 != null;
+        assert name2 != null;
+        assert name3 != null;
+        assert name4 != null;
+        assert name5 != null;
+        assert name6 != null;
+
+        Queue<GridToStringThreadLocal> queue = threadCache.get();
+
+        assert queue != null;
+
+        // Since string() methods can be chain-called from the same thread we
+        // have to keep a list of thread-local objects and remove/add them
+        // in each string() apply.
+        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
+
+        Object[] propNames = tmp.getAdditionalNames();
+        Object[] propVals = tmp.getAdditionalValues();
+        boolean[] propSens = tmp.getAdditionalSensitives();
+
+        propNames[0] = name0;
+        propVals[0] = val0;
+        propSens[0] = sens0;
+        propNames[1] = name1;
+        propVals[1] = val1;
+        propSens[1] = sens1;
+        propNames[2] = name2;
+        propVals[2] = val2;
+        propSens[2] = sens2;
+        propNames[3] = name3;
+        propVals[3] = val3;
+        propSens[3] = sens3;
+        propNames[4] = name4;
+        propVals[4] = val4;
+        propSens[4] = sens4;
+        propNames[5] = name5;
+        propVals[5] = val5;
+        propSens[5] = sens5;
+        propNames[6] = name6;
+        propVals[6] = val6;
+        propSens[6] = sens6;
+
+        try {
+            return toStringImpl(str, tmp.getStringBuilder(), propNames, propVals, propSens, 7);
         }
         finally {
             queue.offer(tmp);

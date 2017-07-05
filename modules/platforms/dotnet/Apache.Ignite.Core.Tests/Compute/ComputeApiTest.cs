@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -875,9 +876,29 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskBinarizable()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
+            var values = new[] {int.MinValue, int.MaxValue, 0, 1, -1, byte.MaxValue, byte.MinValue};
+            var cache = _grid1.GetCache<int, int>(DefaultCacheName);
+            var compute = _grid1.GetCompute();
 
-            Assert.AreEqual(1, res.Field);
+            foreach (var val in values)
+            {
+                cache[EchoTypeBinarizable] = val;
+
+                var res = compute.ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
+                Assert.AreEqual(val, res.Field);
+
+                // Binary mode.
+                var binRes = compute.WithKeepBinary().ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinarizable);
+
+                Assert.AreEqual(val, binRes.GetField<long>("Field"));
+
+                var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
+
+                Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
+
+                Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
+                Assert.AreEqual(getData(dotNetBin), getData(binRes));
+            }
         }
 
         /// <summary>
@@ -1285,27 +1306,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExceptions()
         {
-            Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+            Assert.Throws<AggregateException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
 
-            Assert.Throws<BinaryObjectException>(
+            Assert.Throws<AggregateException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
 
             // Local.
-            var ex = Assert.Throws<IgniteException>(() =>
+            var ex = Assert.Throws<AggregateException>(() =>
                 _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
 
-            Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.", ex.Message);
             Assert.IsNotNull(ex.InnerException);
-            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.Message);
+            Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.", 
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
 
             // Remote.
-            ex = Assert.Throws<IgniteException>(() =>
+            ex = Assert.Throws<AggregateException>(() =>
                 _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
 
-            Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.", ex.Message);
             Assert.IsNotNull(ex.InnerException);
-            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.Message);
+            Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
         }
 
         /// <summary>

@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -292,6 +292,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     cache().getDhtAsync(n.id(),
                         -1,
                         mappedKeys,
+                        false,
                         readThrough,
                         topVer,
                         subjId,
@@ -351,6 +352,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                    false,
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery);
@@ -458,7 +460,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 GridCacheVersion ver = null;
 
                 if (readNoEntry) {
-                    CacheDataRow row = cctx.offheap().read(key);
+                    CacheDataRow row = cctx.offheap().read(cctx, key);
 
                     if (row != null) {
                         long expireTime = row.expireTime();
@@ -790,7 +792,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @SuppressWarnings("unchecked")
-                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                    @Override public void applyx(
+                        IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion topVer = fut.get();
 
                         // This will append new futures to compound list.

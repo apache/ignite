@@ -48,6 +48,9 @@ public class DynamicCacheDescriptor {
     /** Statically configured flag. */
     private final boolean staticCfg;
 
+    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
+    private boolean sql;
+
     /** Cache type. */
     private CacheType cacheType;
 
@@ -90,13 +93,18 @@ public class DynamicCacheDescriptor {
     /** Current schema. */
     private QuerySchema schema;
 
+    /** */
+    private final CacheGroupDescriptor grpDesc;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
+     * @param grpDesc Group descriptor.
      * @param template {@code True} if this is template configuration.
      * @param rcvdFrom ID of node provided cache configuration
      * @param staticCfg {@code True} if cache statically configured.
+     * @param sql SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}.
      * @param deploymentId Deployment ID.
      * @param schema Query schema.
      */
@@ -104,12 +112,15 @@ public class DynamicCacheDescriptor {
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
+        CacheGroupDescriptor grpDesc,
         boolean template,
         UUID rcvdFrom,
         boolean staticCfg,
+        boolean sql,
         IgniteUuid deploymentId,
         QuerySchema schema) {
         assert cacheCfg != null;
+        assert grpDesc != null || template;
         assert schema != null;
 
         if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
@@ -120,9 +131,11 @@ public class DynamicCacheDescriptor {
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
+        this.grpDesc = grpDesc;
         this.template = template;
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
+        this.sql = sql;
         this.deploymentId = deploymentId;
 
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
@@ -132,6 +145,24 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             this.schema = schema.copy();
         }
+    }
+
+    /**
+     * @return Cache group ID.
+     */
+    public int groupId() {
+        assert grpDesc != null : this;
+
+        return grpDesc.groupId();
+    }
+
+    /**
+     * @return Cache group descriptor.
+     */
+    public CacheGroupDescriptor groupDescriptor() {
+        assert grpDesc != null : this;
+
+        return grpDesc;
     }
 
     /**
@@ -170,6 +201,13 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * @return SQL flag.
+     */
+    public boolean sql() {
+        return sql;
+    }
+
+    /**
      * @return Cache name.
      */
     public String cacheName() {
@@ -190,6 +228,7 @@ public class DynamicCacheDescriptor {
      *
      * @param proc Object processor.
      * @return Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
     public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
         if (objCtx == null) {

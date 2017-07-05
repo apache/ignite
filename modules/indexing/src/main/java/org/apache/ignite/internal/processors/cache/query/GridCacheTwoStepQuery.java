@@ -62,6 +62,9 @@ public class GridCacheTwoStepQuery {
     /** */
     private boolean local;
 
+    /** */
+    private CacheQueryPartitionInfo[] derivedPartitions;
+
     /**
      * @param originalSql Original query SQL.
      * @param tbls Tables in query.
@@ -210,6 +213,20 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return Query derived partitions info.
+     */
+    public CacheQueryPartitionInfo[] derivedPartitions() {
+        return this.derivedPartitions;
+    }
+
+    /**
+     * @param derivedPartitions Query derived partitions info.
+     */
+    public void derivedPartitions(CacheQueryPartitionInfo[] derivedPartitions) {
+        this.derivedPartitions = derivedPartitions;
+    }
+
+    /**
      * @return Copy.
      */
     public GridCacheTwoStepQuery copy() {
@@ -222,6 +239,8 @@ public class GridCacheTwoStepQuery {
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
+        cp.derivedPartitions = derivedPartitions;
+        cp.local = local;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy());

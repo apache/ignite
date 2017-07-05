@@ -14,17 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-nav-item(ignite-sidebar)
-    div(ng-click='$event.stopPropagation()'
-        ng-class='{active: $state.includes("base.configuration")}'
-        bs-dropdown='sidebar.items'
-        data-placement='bottom-left'
-        data-trigger='hover focus'
-        data-container='self'
-        data-animation=''
-    )
-        span Configure
-            span.caret
+a.wch-nav-item(
+    ui-sref='base.configuration.tabs'
+    ui-sref-active='active'
+)
+    | Configure
 
 .wch-nav-item(ng-controller='notebookController')
     div(ng-if='IgniteDemoMode' ui-sref='base.sql.demo' ng-class='{active: $state.includes("base.sql")}')
@@ -41,7 +35,6 @@
             data-placement='bottom-left'
             data-trigger='hover focus'
             data-container='self'
-            data-animation=''
             aria-haspopup='true'
             aria-expanded='false'
         )
@@ -56,7 +49,6 @@
         data-placement='bottom-left'
         data-trigger='hover focus'
         data-container='self'
-        data-animation=''
         aria-haspopup='true'
         aria-expanded='false'
     )

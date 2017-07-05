@@ -50,9 +50,11 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -261,6 +263,9 @@ public class IgniteProcessProxy implements IgniteEx {
         A.notNull(igniteInstanceName, "igniteInstanceName");
 
         IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+
+        if (proxy == null)
+            return;
 
         if (proxy == null)
             return;
@@ -536,7 +541,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
-        CacheConfiguration<K, V> cacheCfg) {
+        CacheConfiguration<K, V> cacheCfg, boolean sql) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -546,7 +551,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean destroyCache0(String cacheName) throws CacheException {
+    @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -592,7 +597,19 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -603,12 +620,24 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override  public <T, S> IgniteAtomicStamped<T, S> atomicStamped(
         String name,
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create) throws IgniteException
     {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -663,6 +692,11 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

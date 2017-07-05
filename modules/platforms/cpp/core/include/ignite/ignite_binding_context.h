@@ -48,7 +48,7 @@ namespace ignite
          *
          * @return IgniteBinding instance.
          */
-        IgniteBinding GetBingding() const
+        IgniteBinding GetBinding() const
         {
             return binding;
         }

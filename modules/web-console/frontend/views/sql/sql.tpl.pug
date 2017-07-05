@@ -69,7 +69,7 @@ mixin notebook-rename
 mixin notebook-error
     h2 Failed to load notebook
     label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
-    button.h3.btn.btn-primary(ui-sref='base.configuration.clusters') Back to configuration
+    button.h3.btn.btn-primary(ui-sref='base.configuration.tabs.advanced.clusters') Back to configuration
 
 mixin paragraph-rename
     .col-sm-6(ng-hide='paragraph.edit')
@@ -124,7 +124,8 @@ mixin query-actions
 mixin table-result-heading-query
     .total.row
         .col-xs-4
-            +ui-grid-settings
+            grid-column-selector(grid-api='paragraph.gridOptions.api')
+                .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
@@ -133,13 +134,14 @@ mixin table-result-heading-query
                 +result-toolbar
         .col-xs-4
             .pull-right
-                -var actions = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group(actions, '{{ actionTooltip(paragraph, "export", false) }}')(ng-disabled='paragraph.loading')
+                -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
 
 mixin table-result-heading-scan
     .total.row
         .col-xs-4
-            +ui-grid-settings
+            grid-column-selector(grid-api='paragraph.gridOptions.api')
+                .fa.fa-bars.icon
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
@@ -148,8 +150,8 @@ mixin table-result-heading-scan
                 +result-toolbar
         .col-xs-4
             .pull-right
-                -var actions = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group(actions, '{{ actionTooltip(paragraph, "export", false) }}')(ng-disabled='paragraph.loading')
+                -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
 
 mixin table-result-body
     .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter)

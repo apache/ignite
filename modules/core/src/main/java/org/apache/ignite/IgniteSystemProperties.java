@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -156,6 +157,9 @@ public final class IgniteSystemProperties {
      * Set this property to {@code false} if no appenders should be added.
      */
     public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
+
+    /** Maximum size for exchange history. Default value is {@code 1000}.*/
+    public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
 
     /**
      * Name of the system property defining name of command line program.
@@ -291,15 +295,15 @@ public final class IgniteSystemProperties {
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
+    /** Ttl of removed cache entries (ms). */
+    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
+
     /** Maximum amount of concurrent updates per system thread in atomic caches in case of PRIMARY_SYNC or FULL_ASYNC
      * write synchronization mode. If this limit is exceeded then update will be performed with FULL_SYNC
      * synchronization mode. If value is {@code 0} then limit is unbounded.
      */
     public static final String IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES =
         "IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES";
-
-    /** Ttl of removed cache entries (ms). */
-    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
@@ -448,8 +452,17 @@ public final class IgniteSystemProperties {
     /** If this property is set to {@code true} then Ignite will log thread dump in case of partition exchange timeout. */
     public static final String IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT = "IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT";
 
+    /** */
+    public static final String IGNITE_IO_DUMP_ON_TIMEOUT = "IGNITE_IO_DUMP_ON_TIMEOUT";
+
+    /** */
+    public static final String IGNITE_DIAGNOSTIC_ENABLED = "IGNITE_DIAGNOSTIC_ENABLED";
+
     /** Cache operations that take more time than value of this property will be output to log. Set to {@code 0} to disable. */
     public static final String IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT";
+
+    /** Upper time limit between long running/hanging operations debug dumps. */
+    public static final String IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT = "IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT";
 
     /** JDBC driver cursor remove delay. */
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
@@ -553,7 +566,7 @@ public final class IgniteSystemProperties {
     /**
      * Whether Ignite can access unaligned memory addresses.
      * <p>
-     * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
+     * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
      */
     public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
 
@@ -581,6 +594,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
     /**
+     * Time interval for calculating rebalance rate statistics, in milliseconds. Defaults to 60000.
+     */
+    public static final String IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL = "IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL";
+
+    /**
      * Indexing discovery history size. Protects from duplicate messages maintaining the list of IDs of recently
      * arrived discovery messages.
      * <p>
@@ -594,6 +612,25 @@ public final class IgniteSystemProperties {
     /** */
     public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
 
+    /**
+     * Skip CRC calculation flag.
+     */
+    public static final String IGNITE_PDS_SKIP_CRC = "IGNITE_PDS_SKIP_CRC";
+
+    /**
+     * WAL rebalance threshold.
+     */
+    public static final String IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY =
+        "IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY";
+
+    /**
+     * WAL rebalance threshold.
+     */
+     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
+
+    /** Ignite page memory concurrency level. */
+    public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
+
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
         @Override public boolean apply(final Map.Entry<String, String> entry) {
@@ -602,6 +639,34 @@ public final class IgniteSystemProperties {
             return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
         }
     };
+
+     /**
+     * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
+     * support service security permissions. In this case security permissions will be ignored
+     * (if they set).
+     * <p>
+     *     Default is {@code false}, which means that service security permissions will be respected.
+     * </p>
+     */
+    public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
+
+    /**
+     * Ignite cluster name.
+     * <p>
+     * Defaults to utility cache deployment ID..
+     */
+    public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
+
+    /**
+     * When client cache is started or closed special discovery message is sent to notify cluster (for example this is
+     * needed for {@link ClusterGroup#forCacheNodes(String)} API. This timeout specifies how long to wait
+     * after client cache start/close before sending this message. If during this timeout another client
+     * cache changed, these events are combined into single message.
+     * <p>
+     * Default is 10 seconds.
+     */
+    public static final String IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT =
+        "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
 
     /**
      * Enforces singleton.

@@ -78,7 +78,7 @@
             top: -100px;
         }
         .ng-hide + .ui-grid-header-cell-row .ui-grid-column-resizer.right {
-            bottom: -100px;
+            bottom: 0;
         }
 
         &.ui-grid-header-cell .ui-grid-header-cell .ui-grid-column-resizer.right {

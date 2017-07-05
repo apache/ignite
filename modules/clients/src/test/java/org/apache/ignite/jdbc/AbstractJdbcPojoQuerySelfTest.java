@@ -111,8 +111,6 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
         IgniteCache<String, BinaryObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put("0", binObj);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
  * CREATE TABLE statement.
@@ -34,7 +35,16 @@ public class GridSqlCreateTable extends GridSqlStatement {
     private String tblName;
 
     /** Cache name upon which new cache configuration for this table must be based. */
-    private String tplCacheName;
+    private String templateName;
+
+    /** Group to put new cache into. */
+    private String cacheGrp;
+
+    /** Atomicity mode for new cache. */
+    private CacheAtomicityMode atomicityMode;
+
+    /** Backups number for new cache. */
+    private int backups;
 
     /** Quietly ignore this command if table already exists. */
     private boolean ifNotExists;
@@ -45,21 +55,66 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Primary key columns. */
     private LinkedHashSet<String> pkCols;
 
+    /** Name of the column that represents affinity key. */
+    private String affinityKey;
+
     /** Extra WITH-params. */
     private List<String> params;
 
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
      */
-    public String templateCacheName() {
-        return tplCacheName;
+    public String templateName() {
+        return templateName;
     }
 
     /**
-     * @param tplCacheName Cache name upon which new cache configuration for this table must be based.
+     * @param templateName Cache name upon which new cache configuration for this table must be based.
      */
-    public void templateCacheName(String tplCacheName) {
-        this.tplCacheName = tplCacheName;
+    public void templateName(String templateName) {
+        this.templateName = templateName;
+    }
+
+    /**
+     * @return Group to put new cache into.
+     */
+    public String cacheGroup() {
+        return cacheGrp;
+    }
+
+    /**
+     * @param cacheGrp Group to put new cache into.
+     */
+    public void cacheGroup(String cacheGrp) {
+        this.cacheGrp = cacheGrp;
+    }
+
+    /**
+     * @return Atomicity mode for new cache.
+     */
+    public CacheAtomicityMode atomicityMode() {
+        return atomicityMode;
+    }
+
+    /**
+     * @param atomicityMode Atomicity mode for new cache.
+     */
+    public void atomicityMode(CacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
+    }
+
+    /**
+     * @return Backups number for new cache.
+     */
+    public int backups() {
+        return backups;
+    }
+
+    /**
+     * @param backups Backups number for new cache.
+     */
+    public void backups(int backups) {
+        this.backups = backups;
     }
 
     /**
@@ -88,6 +143,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void primaryKeyColumns(LinkedHashSet<String> pkCols) {
         this.pkCols = pkCols;
+    }
+
+    /**
+     * @return Name of the column that represents affinity key.
+     */
+    public String affinityKey() {
+        return affinityKey;
+    }
+
+    /**
+     * @param affinityKey Name of the column that represents affinity key.
+     */
+    public void affinityKey(String affinityKey) {
+        this.affinityKey = affinityKey;
     }
 
     /**

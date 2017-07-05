@@ -593,7 +593,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(marsh.Unmarshal<TestEnum>(data), val);
 
-            var binEnum = marsh.Unmarshal<IBinaryObject>(data, true);
+            var binEnum = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             Assert.AreEqual(val, (TestEnum) binEnum.EnumValue);
         }

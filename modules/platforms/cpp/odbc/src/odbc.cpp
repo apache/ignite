@@ -212,7 +212,7 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLFreeStmt called");
+        LOG_MSG("SQLFreeStmt called [option=" << option << ']');
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -897,7 +897,12 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         if (paramCnt)
-            *paramCnt = static_cast<SQLSMALLINT>(statement->GetParametersNumber());
+        {
+            uint16_t paramNum = 0;
+            statement->GetParametersNumber(paramNum);
+
+            *paramCnt = static_cast<SQLSMALLINT>(paramNum);
+        }
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }

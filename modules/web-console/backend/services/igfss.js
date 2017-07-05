@@ -122,6 +122,11 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
                 return Promise.reject(new errors.IllegalArgumentException('IGFS id can not be undefined or null'));
 
             return mongo.Cluster.update({igfss: {$in: [igfsId]}}, {$pull: {igfss: igfsId}}, {multi: true}).exec()
+                // TODO WC-201 fix clenup on node filter on deletion for cluster serviceConfigurations and caches.
+                // .then(() => mongo.Cluster.update({ 'serviceConfigurations.$.nodeFilter.kind': { $ne: 'IGFS' }, 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
+                //     {$unset: {'serviceConfigurations.$.nodeFilter.IGFS.igfs': ''}}, {multi: true}).exec())
+                // .then(() => mongo.Cluster.update({ 'serviceConfigurations.nodeFilter.kind': 'IGFS', 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
+                //     {$unset: {'serviceConfigurations.$.nodeFilter': ''}}, {multi: true}).exec())
                 .then(() => mongo.Igfs.remove({_id: igfsId}).exec())
                 .then(convertRemoveStatus);
         }

@@ -24,15 +24,13 @@
  */
 module.exports = {
     implements: 'browsers-handler',
-    inject: ['require(lodash)', 'require(socket.io)', 'configure', 'errors']
+    inject: ['require(lodash)', 'require(socket.io)', 'configure', 'errors', 'mongo']
 };
 
-module.exports.factory = (_, socketio, configure, errors) => {
+module.exports.factory = (_, socketio, configure, errors, mongo) => {
     class BrowserSockets {
         constructor() {
             this.sockets = new Map();
-
-            this.agentHnd = null;
         }
 
         /**
@@ -74,7 +72,7 @@ module.exports.factory = (_, socketio, configure, errors) => {
         }
     }
 
-    return class BrowsersHandler {
+    class BrowsersHandler {
         /**
          * @constructor
          */
@@ -126,6 +124,22 @@ module.exports.factory = (_, socketio, configure, errors) => {
                 })
                 .catch(() => ({count: 0, hasDemo: false, clusters: []}))
                 .then((stat) => _.forEach(socks, (sock) => sock.emit('agents:stat', stat)));
+        }
+
+        emitNotification(sock) {
+            sock.emit('user:notifications', this.notification);
+        }
+
+        /**
+         * @param {String} notification Notification message.
+         */
+        updateNotification(notification) {
+            this.notification = notification;
+
+            for (const socks of this._browserSockets.sockets.values()) {
+                for (const sock of socks)
+                    this.emitNotification(sock);
+            }
         }
 
         executeOnAgent(token, demo, event, ...args) {
@@ -256,29 +270,38 @@ module.exports.factory = (_, socketio, configure, errors) => {
             if (this.io)
                 throw 'Browser server already started!';
 
-            const io = socketio(server);
+            mongo.Notifications.findOne().sort('-date').exec()
+                .then((notification) => {
+                    this.notification = notification;
+                })
+                .then(() => {
+                    const io = socketio(server);
 
-            configure.socketio(io);
+                    configure.socketio(io);
 
-            // Handle browser connect event.
-            io.sockets.on('connection', (sock) => {
-                this._browserSockets.add(sock);
+                    // Handle browser connect event.
+                    io.sockets.on('connection', (sock) => {
+                        this._browserSockets.add(sock);
 
-                // Handle browser disconnect event.
-                sock.on('disconnect', () => {
-                    this._browserSockets.remove(sock);
+                        // Handle browser disconnect event.
+                        sock.on('disconnect', () => {
+                            this._browserSockets.remove(sock);
 
-                    const demo = sock.request._query.IgniteDemoMode === 'true';
+                            const demo = sock.request._query.IgniteDemoMode === 'true';
 
-                    // Stop demo if latest demo tab for this token.
-                    demo && agentHnd.tryStopDemo(sock);
+                            // Stop demo if latest demo tab for this token.
+                            demo && agentHnd.tryStopDemo(sock);
+                        });
+
+                        this.agentListeners(sock);
+                        this.nodeListeners(sock);
+
+                        this.agentStats(sock.request.user.token, [sock]);
+                        this.emitNotification(sock);
+                    });
                 });
-
-                this.agentListeners(sock);
-                this.nodeListeners(sock);
-
-                this.agentStats(sock.request.user.token, [sock]);
-            });
         }
-    };
+    }
+
+    return new BrowsersHandler();
 };

@@ -71,20 +71,23 @@ public interface IgniteEx extends Ignite {
      * of the existing cache.
      *
      * @param cacheCfg Cache configuration to use.
+     * @param sql {@code true} if this call is triggered by SQL command {@code CREATE TABLE}, {@code false} otherwise.
      * @return Tuple [Existing or newly created cache; {@code true} if cache was newly crated, {@code false} otherwise]
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg)
-        throws CacheException;
+    public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg,
+        boolean sql) throws CacheException;
 
     /**
      * Stops dynamically started cache.
      *
      * @param cacheName Cache name to stop.
+     * @param sql {@code true} if only cache created with SQL command {@code CREATE TABLE} should be affected,
+     *     {@code false} otherwise.
      * @return {@code true} if cache has been stopped as the result of this call, {@code false} otherwise.
      * @throws CacheException If error occurs.
      */
-    public boolean destroyCache0(String cacheName) throws CacheException;
+    public boolean destroyCache0(String cacheName, boolean sql) throws CacheException;
 
     /**
      * Checks if the event type is user-recordable.

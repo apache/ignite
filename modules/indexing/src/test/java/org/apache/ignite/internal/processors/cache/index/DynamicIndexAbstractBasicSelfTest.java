@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,10 +36,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-
-import javax.cache.CacheException;
-import java.util.Arrays;
-import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -60,6 +65,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     /** Node index for client with near-only cache. */
     protected static final int IDX_CLI_NEAR_ONLY = 4;
 
+    /** Cache. */
+    protected static final String STATIC_CACHE_NAME = "cache_static";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -70,7 +78,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        node().destroyCache(CACHE_NAME);
+        node().context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false).get();
 
         super.afterTest();
     }
@@ -82,8 +90,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param atomicityMode Atomicity mode.
      * @param near Near flag.
      */
-    private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) {
-        node().getOrCreateCache(cacheConfiguration(mode, atomicityMode, near));
+    private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
+        throws IgniteCheckedException {
+        createSqlCache(node(), cacheConfiguration(mode, atomicityMode, near));
 
         grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
 
@@ -868,7 +877,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     public void testFailOnLocalCache() throws Exception {
         for (Ignite node : Ignition.allGrids()) {
             if (!node.configuration().isClientMode())
-                node.getOrCreateCache(cacheConfiguration().setCacheMode(LOCAL));
+                createSqlCache(node, cacheConfiguration().setCacheMode(LOCAL));
         }
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
@@ -886,6 +895,91 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
                 dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
             }
         }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Test that operations work on statically configured cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNonSqlCache() throws Exception {
+        final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1));
+
+        dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
+        assertIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
+
+        dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
+        assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1);
+    }
+
+    /**
+     * Test behavior depending on index name case sensitivity.
+     */
+    public void testIndexNameCaseSensitivity() throws Exception {
+        doTestIndexNameCaseSensitivity("myIdx", false);
+
+        doTestIndexNameCaseSensitivity("myIdx", true);
+    }
+
+    /**
+     * Perform a check on given index name considering case sensitivity.
+     * @param idxName Index name to check.
+     * @param sensitive Whether index should be created w/case sensitive name or not.
+     */
+    private void doTestIndexNameCaseSensitivity(String idxName, boolean sensitive) throws Exception {
+        String idxNameSql = (sensitive ? '"' + idxName + '"' : idxName);
+
+        // This one should always work.
+        assertIndexNameIsValid(idxNameSql, idxNameSql);
+
+        if (sensitive) {
+            assertIndexNameIsNotValid(idxNameSql, idxName.toUpperCase());
+
+            assertIndexNameIsNotValid(idxNameSql, idxName.toLowerCase());
+        }
+        else {
+            assertIndexNameIsValid(idxNameSql, '"' + idxName.toUpperCase() + '"');
+
+            assertIndexNameIsValid(idxNameSql, idxName.toUpperCase());
+
+            assertIndexNameIsValid(idxNameSql, idxName.toLowerCase());
+        }
+    }
+
+    /**
+     * Check that given variant of index name works for DDL context.
+     * @param idxNameToCreate Name of the index to use in {@code CREATE INDEX}.
+     * @param checkedIdxName Index name to use in actual check.
+     */
+    private void assertIndexNameIsValid(String idxNameToCreate, String checkedIdxName) throws Exception {
+        info("Checking index name variant for validity: " + checkedIdxName);
+
+        final QueryIndex idx = index(idxNameToCreate, field(FIELD_NAME_1));
+
+        dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
+
+        dynamicIndexDrop(STATIC_CACHE_NAME, checkedIdxName, false);
+    }
+
+    /**
+     * Check that given variant of index name works for DDL context.
+     * @param idxNameToCreate Name of the index to use in {@code CREATE INDEX}.
+     * @param checkedIdxName Index name to use in actual check.
+     */
+    private void assertIndexNameIsNotValid(String idxNameToCreate, final String checkedIdxName) throws Exception {
+        info("Checking index name variant for invalidity: " + checkedIdxName);
+
+        final QueryIndex idx = index(idxNameToCreate, field(FIELD_NAME_1));
+
+        dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dynamicIndexDrop(STATIC_CACHE_NAME, checkedIdxName, false);
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Index doesn't exist: " + checkedIdxName.toUpperCase());
     }
 
     /**
@@ -918,6 +1012,32 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             serverConfiguration(IDX_SRV_FILTERED, true),
             clientConfiguration(IDX_CLI_NEAR_ONLY)
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        IgniteConfiguration cfg = super.commonConfiguration(idx);
+
+        if (idx != nodeIndex())
+            return cfg;
+
+        CacheConfiguration staticCacheCfg = cacheConfiguration().setName(STATIC_CACHE_NAME);
+
+        ((QueryEntity)staticCacheCfg.getQueryEntities().iterator().next()).setIndexes(Collections.singletonList(index(
+            IDX_NAME_1, field(FIELD_NAME_1)
+        )));
+
+        CacheConfiguration[] newCfgs = new CacheConfiguration[F.isEmpty(cfg.getCacheConfiguration()) ? 1 :
+            cfg.getCacheConfiguration().length + 1];
+
+        if (newCfgs.length > 1)
+            System.arraycopy(cfg.getCacheConfiguration(), 0, newCfgs, 0, newCfgs.length - 1);
+
+        newCfgs[newCfgs.length - 1] = staticCacheCfg;
+
+        cfg.setCacheConfiguration(newCfgs);
+
+        return cfg;
     }
 
     /**
@@ -988,6 +1108,17 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param expCode Error code.
      */
     protected static void assertSchemaException(RunnableX r, int expCode) {
+        assertSchemaException(r, null, expCode);
+    }
+
+    /**
+     * Ensure that schema exception is thrown.
+     *
+     * @param r Runnable.
+     * @param msg Exception message to expect, or {@code null} if it can be waived.
+     * @param expCode Error code.
+     */
+    protected static void assertSchemaException(RunnableX r, String msg, int expCode) {
         try {
             r.run();
         }
@@ -1003,6 +1134,10 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
             assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
                 ", msg=" + cause.getMessage() + ']', expCode, code);
+
+            if (msg != null)
+                assertEquals("Unexpected error message [expected=" + msg + ", actual=" + cause0.getMessage() + ']',
+                    msg, cause0.getMessage());
 
             return;
         }

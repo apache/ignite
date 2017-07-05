@@ -35,15 +35,17 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -105,6 +107,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
+
+    /** Snp manager. */
+    private IgniteCacheSnapshotManager snpMgr;
 
     /** Page store manager. */
     private IgnitePageStoreManager pageStoreMgr;
@@ -172,6 +177,7 @@ public class GridCacheSharedContext<K, V> {
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
+        IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
@@ -182,7 +188,7 @@ public class GridCacheSharedContext<K, V> {
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, snpMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -281,6 +287,7 @@ public class GridCacheSharedContext<K, V> {
             pageStoreMgr,
             walMgr,
             dbMgr,
+            snpMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
@@ -328,6 +335,7 @@ public class GridCacheSharedContext<K, V> {
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
+        IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
@@ -339,6 +347,7 @@ public class GridCacheSharedContext<K, V> {
         this.pageStoreMgr = add(mgrs, pageStoreMgr);
         this.walMgr = add(mgrs, walMgr);
         this.dbMgr = add(mgrs, dbMgr);
+        this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
@@ -407,7 +416,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param cacheCtx Cache context to remove.
      */
-    public void removeCacheContext(GridCacheContext cacheCtx) {
+    void removeCacheContext(GridCacheContext cacheCtx) {
         int cacheId = cacheCtx.cacheId();
 
         ctxMap.remove(cacheId, cacheCtx);
@@ -418,7 +427,7 @@ public class GridCacheSharedContext<K, V> {
             locStoreCnt.decrementAndGet();
 
         // Safely clean up the message listeners.
-        ioMgr.removeHandlers(cacheId);
+        ioMgr.removeCacheHandlers(cacheId);
     }
 
     /**
@@ -574,6 +583,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Snapshot manager.
+     */
+    public IgniteCacheSnapshotManager snapshot() {
+        return snpMgr;
+    }
+
+    /**
      * @return Page store manager.
      */
     public IgnitePageStoreManager pageStore() {
@@ -719,7 +735,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * Captures all ongoing operations that we need to wait before we can proceed to the next topology version.
      * This method must be called only after
-     * {@link GridDhtPartitionTopology#updateTopologyVersion(GridDhtPartitionExchangeId, GridDhtPartitionsExchangeFuture, long, boolean)}
+     * {@link GridDhtPartitionTopology#updateTopologyVersion(GridDhtTopologyFuture, DiscoCache, long, boolean)}
      * method is called so that all new updates will wait to switch to the new version.
      * This method will capture:
      * <ul>

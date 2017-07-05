@@ -17,9 +17,10 @@
 include ./form
 include ../../primitives/btn-group/index
 include ../../primitives/datepicker/index
+include ../../primitives/timepicker/index
 include ../../primitives/dropdown/index
 include ../../primitives/tooltip/index
-include ../../primitives/ui-grid-settings/index
+include ../../primitives/switcher/index
 
 //- Mixin for advanced options toggle.
 mixin advanced-options-toggle(click, cond, showMessage, hideMessage)
@@ -66,9 +67,9 @@ mixin save-remove-clone-undo-buttons(objectName)
         .panel-tip-container(ng-show='backupItem._id')
             a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
 
-        -var actions = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
+        -var options = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
 
-        +btn-group(actions, removeTip)(ng-show='backupItem._id')
+        +btn-group(false, options, removeTip)(ng-show='backupItem._id')
 
         .panel-tip-container(ng-show='backupItem')
             i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
@@ -204,10 +205,10 @@ mixin text(lbl, model, name, required, placeholder, tip)
             block
 
 //- Mixin for url field.
-mixin url(lbl, model, name, required, placeholder, tip)
+mixin url(lbl, model, name, enabled, required, placeholder, tip)
     -var errLbl = lbl.substring(0, lbl.length - 1)
 
-    +ignite-form-field-text(lbl, model, name, 'false', required, placeholder, tip)(type='url')
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(type='url')
         if  block
             block
 
@@ -497,7 +498,7 @@ mixin evictionPolicy(model, name, enabled, required, tip)
             {value: "LRU", label: "LRU"},\
             {value: "FIFO", label: "FIFO"},\
             {value: "SORTED", label: "Sorted"},\
-            {value: undefined, label: "Not set"}\
+            {value: null, label: "Not set"}\
         ]', tip)
     span(ng-show=kind)
         +showHideLink('expanded', 'settings')
@@ -513,12 +514,12 @@ mixin evictionPolicy(model, name, enabled, required, tip)
 
 //- Mixin for clusters dropdown.
 mixin clusters(model, tip)
-    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({linkId: linkId()})"> (add)</a>',
+    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.tabs.advanced.clusters({linkId: linkId()})"> (add)</a>',
         model + '.clusters', '"clusters"', true, 'Choose clusters', 'No clusters configured', 'clusters', tip)
 
 //- Mixin for caches dropdown.
 mixin caches(model, tip)
-    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({linkId: linkId()})"> (add)</a>',
+    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.tabs.advanced.caches({linkId: linkId()})"> (add)</a>',
         model + '.caches', '"caches"', true, 'Choose caches', 'No caches configured', 'caches', tip)
 
 //- Mixin for XML, Java, .Net preview.
