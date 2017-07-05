@@ -46,7 +46,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
-//import org.apache.ignite.logger.log4j.Log4JLogger;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -84,7 +83,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     private int parts;
 
     /** Mask to use in calculation when partitions count is power of 2. */
-    private transient int mask = -1;
+    private int mask = -1;
 
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
@@ -560,26 +559,22 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         int nr = 0;
         int node = 0;
 
-        log.info("#### NODES:" + nodes + " nodes\n");
+        log.info("#### NODES COUNT:" + nodes);
 
         for (List<Integer> byNode : byNodes) {
-
             log.info("## Node " + node++ + ":");
 
             nr = 0;
 
-            for (int w : byNode) {
-                int percentage = (int)Math.round((double)w / this.getPartitions() * 100);
+            for (int partCount : byNode) {
+                int percentage = (int)Math.round((double) partCount / this.getPartitions() * 100);
 
                 log.info((nr == 0 ? "Primary" : "Backup" + nr) + " node: " +
-                    "partitions count=" + w + " percentage of parts count=" + percentage + "% ");
+                    "partitions count=" + partCount + " percentage of parts count=" + percentage + "% ");
 
                 nr++;
             }
-
-            log.info("");
         }
-
     }
 
     /** {@inheritDoc} */
