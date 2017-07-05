@@ -77,9 +77,9 @@ const _onListening = (addr) => {
  * @param settings
  * @param {ApiServer} apiSrv
  * @param {AgentsHandler} agentsHnd
- * @param {BrowsersHandler} BrowsersHandler
+ * @param {BrowsersHandler} browsersHnd
  */
-const init = ([settings, apiSrv, agentsHnd, BrowsersHandler]) => {
+const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
     // Start rest server.
     const srv = settings.server.SSLOptions ? https.createServer(settings.server.SSLOptions) : http.createServer();
 
@@ -89,8 +89,6 @@ const init = ([settings, apiSrv, agentsHnd, BrowsersHandler]) => {
     srv.on('listening', _onListening.bind(null, srv.address()));
 
     apiSrv.attach(srv);
-
-    const browsersHnd = new BrowsersHandler();
 
     agentsHnd.attach(srv, browsersHnd);
     browsersHnd.attach(srv, agentsHnd);

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -33,13 +34,15 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
@@ -143,6 +146,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     private OffheapReadWriteLock rwLock;
 
+    /** Concurrency lvl. */
+    private final int lockConcLvl = IgniteSystemProperties.getInteger(
+        IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL,
+        IgniteUtils.nearestPow2(Runtime.getRuntime().availableProcessors() * 4)
+    );
+
     /** */
     private final int totalPages;
 
@@ -182,8 +191,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         totalPages = (int)(memPlcCfg.getMaxSize() / sysPageSize);
 
-        // TODO configure concurrency level.
-        rwLock = new OffheapReadWriteLock(128);
+        rwLock = new OffheapReadWriteLock(lockConcLvl);
     }
 
     /** {@inheritDoc} */
@@ -287,7 +295,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 ", size=" + U.readableSize(memoryPolicyCfg.getMaxSize(), true) + "]"
             );
 
-        assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0;
+        assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
 
         // Assign page ID according to flags and partition ID.
         long pageId = PageIdUtils.pageId(partId, flags, (int)relPtr);
@@ -516,9 +524,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             if (cmp < 0)
                 high = mid - 1;
-            else if (cmp > 0) {
+            else if (cmp > 0)
                 low = mid + 1;
-            }
             else
                 return seg.pageIndex(seqNo);
         }

@@ -37,9 +37,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -539,7 +540,7 @@ public class CacheGroupContext {
      */
     public GridDhtPartitionTopology topology() {
         if (top == null)
-            throw new IllegalStateException("Topology is not initialized: " + name());
+            throw new IllegalStateException("Topology is not initialized: " + cacheOrGroupName());
 
         return top;
     }
@@ -702,6 +703,13 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return Caches in this group.
+     */
+    public List<GridCacheContext> caches() {
+        return this.caches;
+    }
+
+    /**
      * @return {@code True} if group contains caches.
      */
     boolean hasCaches() {
@@ -844,7 +852,18 @@ public class CacheGroupContext {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        offheapMgr = new IgniteCacheOffheapManagerImpl();
+        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
+            ClassLoader clsLdr = U.gridClassLoader();
+
+            try {
+                offheapMgr = new GridCacheOffheapManager();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to initialize offheap manager", e);
+            }
+        }
+        else
+            offheapMgr = new IgniteCacheOffheapManagerImpl();
 
         offheapMgr.start(ctx, this);
 

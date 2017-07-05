@@ -742,11 +742,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             throw new IgniteCheckedException("Failed to log transaction record " +
                                 "(transaction will be rolled back): " + this, e);
                         }
-                        finally {
-                            cctx.database().checkpointReadUnlock();
-                        }
                     }
                     finally {
+                        cctx.database().checkpointReadUnlock();
+
                         if (wrapper != null)
                             wrapper.initialize(ret);
                     }

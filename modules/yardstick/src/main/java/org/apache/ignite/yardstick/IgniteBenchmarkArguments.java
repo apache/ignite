@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick;
 import com.beust.jcommander.Parameter;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -178,6 +179,14 @@ public class IgniteBenchmarkArguments {
     private boolean keysPerThread;
 
     /** */
+    @Parameter(names = {"-pc", "--partitionedCachesNumber"}, description = "Number of partitioned caches")
+    private int partitionedCachesNumber = 1;
+
+    /** */
+    @Parameter(names = {"-rc", "--replicatedCachesNumber"}, description = "Number of replicated caches")
+    private int replicatedCachesNumber = 1;
+
+    /** */
     @Parameter(names = {"-ac", "--additionalCachesNumber"}, description = "Number of additional caches")
     private int additionalCachesNum;
 
@@ -198,12 +207,27 @@ public class IgniteBenchmarkArguments {
     private int pageSize = MemoryConfiguration.DFLT_PAGE_SIZE;
 
     /** */
+    @Parameter(names = {"-prt", "--partitions"}, description = "Number of cache partitions")
+    private int partitions = 10;
+
+    /** */
     @Parameter(names = {"-cg", "--cacheGrp"}, description = "Cache group for caches")
     private String cacheGrp;
 
     /** */
     @Parameter(names = {"-cc", "--cachesCnt"}, description = "Number of caches to create")
     private int cachesCnt = 1;
+
+    /** */
+    @Parameter(names = {"-pds", "--persistentStore"}, description = "Persistent store flag")
+    private boolean persistentStoreEnabled;
+
+    /**
+     * @return {@code True} if need set {@link PersistentStoreConfiguration}.
+     */
+    public boolean persistentStoreEnabled() {
+        return persistentStoreEnabled;
+    }
 
     /**
      * @return List of enabled load test operations.
@@ -462,6 +486,27 @@ public class IgniteBenchmarkArguments {
      */
     public int getPageSize() {
         return pageSize;
+    }
+
+    /**
+     * @return Number of partitioned caches.
+     */
+    public int partitionedCachesNumber() {
+        return partitionedCachesNumber;
+    }
+
+    /**
+     * @return Number of replicated caches.
+     */
+    public int replicatedCachesNumber() {
+        return replicatedCachesNumber;
+    }
+
+    /**
+     * @return Number of cache partitions.
+     */
+    public int partitions() {
+        return partitions;
     }
 
     /**

@@ -107,6 +107,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private GridBinaryMarshaller binaryMarsh;
 
     /** */
+    private BinaryMetadataFileStore metadataFileStore;
+
+    /** */
     @GridToStringExclude
     private IgniteBinary binaries;
 
@@ -138,12 +141,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (ctx.clientNode())
                 ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
 
-            transport = new BinaryMetadataTransport(metadataLocCache, ctx, log);
+            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log);
+
+            transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
                 @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
@@ -158,7 +163,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
 
                         if (oldMeta != mergedMeta)
-                            metadataLocCache.putIfAbsent(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+                            metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
 
                         return;
                     }
@@ -224,6 +229,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, map);
                 }
             }
+
+            metadataFileStore.restoreMetadata();
         }
     }
 
@@ -251,8 +258,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
-        super.onKernalStart(activeOnStart);
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
 
         discoveryStarted = true;
     }
@@ -386,14 +393,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      */
     public GridBinaryMarshaller marshaller() {
         return binaryMarsh;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String affinityField(String keyType) {
-        if (binaryCtx == null)
-            return null;
-
-        return binaryCtx.affinityKeyFieldName(typeId(keyType));
     }
 
     /** {@inheritDoc} */
@@ -636,54 +635,33 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /**
-     * @param po Binary object.
+     * Get affinity key field.
+     *
+     * @param typeId Binary object type ID.
      * @return Affinity key.
      */
-    public Object affinityKey(BinaryObject po) {
+    public BinaryField affinityKeyField(int typeId) {
         // Fast path for already cached field.
-        if (po instanceof BinaryObjectEx) {
-            int typeId = ((BinaryObjectEx)po).typeId();
+        T1<BinaryField> fieldHolder = affKeyFields.get(typeId);
 
-            T1<BinaryField> fieldHolder = affKeyFields.get(typeId);
-
-            if (fieldHolder != null) {
-                BinaryField field = fieldHolder.get();
-
-                return field != null ? field.value(po) : po;
-            }
-        }
+        if (fieldHolder != null)
+            return fieldHolder.get();
 
         // Slow path if affinity field is not cached yet.
-        try {
-            BinaryType meta = po instanceof BinaryObjectEx ? ((BinaryObjectEx)po).rawType() : po.type();
+        String name = binaryCtx.affinityKeyFieldName(typeId);
 
-            if (meta != null) {
-                String name = meta.affinityKeyFieldName();
+        if (name != null) {
+            BinaryField field = binaryCtx.createField(typeId, name);
 
-                if (name != null) {
-                    BinaryField field = meta.field(name);
+            affKeyFields.putIfAbsent(typeId, new T1<>(field));
 
-                    affKeyFields.putIfAbsent(meta.typeId(), new T1<>(field));
-
-                    return field.value(po);
-                }
-                else
-                    affKeyFields.putIfAbsent(meta.typeId(), new T1<BinaryField>(null));
-            }
-            else if (po instanceof BinaryObjectEx) {
-                int typeId = ((BinaryObjectEx)po).typeId();
-
-                String name = binaryCtx.affinityKeyFieldName(typeId);
-
-                if (name != null)
-                    return po.field(name);
-            }
+            return field;
         }
-        catch (BinaryObjectException e) {
-            U.error(log, "Failed to get affinity field from binary object: " + po, e);
-        }
+        else {
+            affKeyFields.putIfAbsent(typeId, new T1<BinaryField>(null));
 
-        return po;
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -724,7 +702,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 
         CacheObjectContext res = new CacheObjectBinaryContext(ctx,
-            cfg.getName(),
+            cfg,
             ctx0.copyOnGet(),
             ctx0.storeValue(),
             binaryEnabled,
@@ -910,6 +888,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     log.debug("Received metadata on join: " + localHolder);
 
                 metadataLocCache.put(e.getKey(), localHolder);
+
+                if (!ctx.clientNode())
+                    metadataFileStore.saveMetadata(holder.metadata());
             }
         }
     }

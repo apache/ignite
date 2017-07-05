@@ -220,7 +220,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         // Put internal key to test filtering of internal objects.
 
         for (String cacheName : grid(0).cacheNames())
-            ((IgniteKernal)grid(0)).getCache(cacheName).getAndPut(new GridCacheInternalKeyImpl("LONG"), new GridCacheAtomicLongValue(0));
+            ((IgniteKernal)grid(0)).getCache(cacheName).getAndPut(new GridCacheInternalKeyImpl("LONG", ""), new GridCacheAtomicLongValue(0));
 
         try {
             Collection<GridCacheSqlMetadata> metas =
@@ -352,7 +352,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             }
         }
         finally {
-            ((IgniteKernal)grid(0)).getCache(intCache.getName()).remove(new GridCacheInternalKeyImpl("LONG"));
+            ((IgniteKernal)grid(0)).getCache(intCache.getName()).remove(new GridCacheInternalKeyImpl("LONG", ""));
         }
     }
 

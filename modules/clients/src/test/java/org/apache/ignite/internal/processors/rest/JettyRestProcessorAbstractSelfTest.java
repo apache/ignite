@@ -1519,7 +1519,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorComputeCancelSessionsTask.class)
             .argument(VisorComputeCancelSessionsTaskArg.class)
-            .map(UUID.class, Set.class, new HashMap()));
+            .set(IgniteUuid.class, IgniteUuid.randomUuid()));
 
         info("VisorComputeCancelSessionsTask result: " + ret);
 
@@ -1570,7 +1570,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorNodeDataCollectorTask.class)
             .argument(VisorNodeDataCollectorTaskArg.class, false,
-                "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), 10, false));
+                "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), false));
 
         info("VisorNodeDataCollectorTask result: " + ret);
 

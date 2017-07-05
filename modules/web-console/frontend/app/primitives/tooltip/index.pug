@@ -14,12 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin tooltip(title, options)
+mixin tooltip(title, options, tipClass = 'tipField')
     if title
-        i.tipField.icon-help(
+        i.icon-help(
             bs-tooltip=''
 
             data-title=title
             data-container=options && options.container || false
             data-placement=options && options.placement || false
+            class=`${tipClass}`
         )

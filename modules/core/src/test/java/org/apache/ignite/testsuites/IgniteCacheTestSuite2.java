@@ -50,7 +50,8 @@ import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTes
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
-import org.apache.ignite.internal.processors.cache.database.MemoryPolicyInitializationTest;
+import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLockReleaseNodeLeaveTest;
@@ -282,6 +283,8 @@ public class IgniteCacheTestSuite2 extends TestSuite {
 
         suite.addTest(new TestSuite(CacheOptimisticTransactionsWithFilterSingleServerTest.class));
         suite.addTest(new TestSuite(CacheOptimisticTransactionsWithFilterTest.class));
+
+        suite.addTest(new TestSuite(NonAffinityCoordinatorDynamicStartStopTest.class));
 
         suite.addTest(new TestSuite(IgniteCacheClearDuringRebalanceTest.class));
 
