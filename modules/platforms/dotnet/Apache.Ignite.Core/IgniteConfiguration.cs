@@ -48,6 +48,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Transactions;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -242,7 +243,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
         /// <param name="baseConfig">The base configuration.</param>
-        internal IgniteConfiguration(IBinaryRawReader binaryReader, IgniteConfiguration baseConfig)
+        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig)
         {
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
@@ -509,7 +510,7 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(IBinaryRawReader r)
+        private void ReadCore(BinaryReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -630,7 +631,7 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(IBinaryRawReader binaryReader)
+        private void Read(BinaryReader binaryReader)
         {
             ReadCore(binaryReader);
 

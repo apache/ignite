@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cluster;
 
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -34,7 +38,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Request ID */
-    private UUID requestId;
+    private UUID reqId;
 
     /** Initiator node ID. */
     private UUID initiatingNodeId;
@@ -42,32 +46,55 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** If true activate else deactivate. */
     private boolean activate;
 
-    /** Batch contains all requests for start or stop caches. */
-    private DynamicCacheChangeBatch changeGlobalStateBatch;
+    /** Configurations read from persistent store. */
+    private List<StoredCacheData> storedCfgs;
 
-    /** If happened concurrent activate/deactivate then processed only first message, other message must be skip. */
-    private boolean concurrentChangeState;
+    /** */
+    @GridToStringExclude
+    private transient ExchangeActions exchangeActions;
 
     /**
-     *
+     * @param reqId State change request ID.
+     * @param initiatingNodeId Node initiated state change.
+     * @param storedCfgs Configurations read from persistent store.
+     * @param activate New cluster state.
      */
     public ChangeGlobalStateMessage(
-        UUID requestId,
+        UUID reqId,
         UUID initiatingNodeId,
-        boolean activate,
-        DynamicCacheChangeBatch changeGlobalStateBatch
+        @Nullable List<StoredCacheData> storedCfgs,
+        boolean activate
     ) {
-        this.requestId = requestId;
+        assert reqId != null;
+        assert initiatingNodeId != null;
+
+        this.reqId = reqId;
         this.initiatingNodeId = initiatingNodeId;
+        this.storedCfgs = storedCfgs;
         this.activate = activate;
-        this.changeGlobalStateBatch = changeGlobalStateBatch;
     }
 
     /**
-     *
+     * @return Configurations read from persistent store..
      */
-    public DynamicCacheChangeBatch getDynamicCacheChangeBatch() {
-        return changeGlobalStateBatch;
+    @Nullable public List<StoredCacheData> storedCacheConfigurations() {
+        return storedCfgs;
+    }
+
+    /**
+     * @return Cache updates to be executed on exchange. If {@code null} exchange is not needed.
+     */
+    @Nullable public ExchangeActions exchangeActions() {
+        return exchangeActions;
+    }
+
+    /**
+     * @param exchangeActions Cache updates to be executed on exchange.
+     */
+    void exchangeActions(ExchangeActions exchangeActions) {
+        assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
+
+        this.exchangeActions = exchangeActions;
     }
 
     /** {@inheritDoc} */
@@ -77,7 +104,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return !concurrentChangeState ? changeGlobalStateBatch : null;
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -85,32 +112,25 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-    /**
-     *
-     */
+   /**
+    * @return Node initiated state change.
+    */
     public UUID initiatorNodeId() {
         return initiatingNodeId;
     }
 
     /**
-     *
+     * @return New cluster state.
      */
     public boolean activate() {
         return activate;
     }
 
     /**
-     *
+     * @return State change request ID.
      */
     public UUID requestId() {
-        return requestId;
-    }
-
-    /**
-     *
-     */
-    public void concurrentChangeState() {
-        this.concurrentChangeState = true;
+        return reqId;
     }
 
     /** {@inheritDoc} */

@@ -596,6 +596,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             else
                 startTime = g0.context().discovery().gridStartTime();
 
+            if (g.cluster().localNode().isDaemon())
+                continue;
+
             IgniteInternalFuture<?> exchFut =
                 g0.context().cache().context().exchange().affinityReadyFuture(waitTopVer);
 
