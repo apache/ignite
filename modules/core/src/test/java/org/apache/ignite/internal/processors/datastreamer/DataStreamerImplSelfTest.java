@@ -277,8 +277,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             streamer.addData(KEY, VAL);
         } finally {
             needStaleTop = false;
+
             logWriter.flush();
+
             Logger.getRootLogger().removeAppender(logAppender);
+            
             logAppender.close();
         }
 
