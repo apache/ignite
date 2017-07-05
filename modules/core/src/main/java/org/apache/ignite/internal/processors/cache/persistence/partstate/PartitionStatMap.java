@@ -32,9 +32,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PartitionStatMap {
     /** Maps following pairs: (cacheId, partId) -> (lastAllocatedIndex, count) */
-    private final NavigableMap<Key, Value> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
+    private final NavigableMap<CachePartitionId, Value> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
 
-    public Value get(Key key) {
+    public Value get(CachePartitionId key) {
         return map.get(key);
     }
 
@@ -42,8 +42,8 @@ public class PartitionStatMap {
         return get(createKey(fullId));
     }
 
-    @NotNull public static Key createKey(@NotNull final FullPageId fullId) {
-        return new Key(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
+    @NotNull public static CachePartitionId createKey(@NotNull final FullPageId fullId) {
+        return new CachePartitionId(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
     }
 
     public boolean isEmpty() {
@@ -54,7 +54,7 @@ public class PartitionStatMap {
         return map.size();
     }
 
-    public Set<Key> keySet() {
+    public Set<CachePartitionId> keySet() {
         return map.keySet();
     }
 
@@ -62,27 +62,27 @@ public class PartitionStatMap {
         return map.values();
     }
 
-    public Key firstKey() {
+    public CachePartitionId firstKey() {
         return map.firstKey();
     }
 
-    public SortedMap<Key, Value> headMap(Key key) {
+    public SortedMap<CachePartitionId, Value> headMap(CachePartitionId key) {
         return map.headMap(key);
     }
 
-    public SortedMap<Key, Value> headMap(FullPageId fullId) {
+    public SortedMap<CachePartitionId, Value> headMap(FullPageId fullId) {
         return headMap(createKey(fullId));
     }
 
-    public SortedMap<Key, Value> tailMap(Key key, boolean inclusive) {
+    public SortedMap<CachePartitionId, Value> tailMap(CachePartitionId key, boolean inclusive) {
         return map.tailMap(key, inclusive);
     }
 
-    public SortedMap<Key, Value> tailMap(FullPageId fullId, boolean inclusive) {
+    public SortedMap<CachePartitionId, Value> tailMap(FullPageId fullId, boolean inclusive) {
         return tailMap(createKey(fullId), inclusive);
     }
 
-    public Set<Map.Entry<Key, Value>> entrySet() {
+    public Set<Map.Entry<CachePartitionId, Value>> entrySet() {
         return map.entrySet();
     }
 
@@ -90,99 +90,8 @@ public class PartitionStatMap {
         return map.containsKey(createKey(id));
     }
 
-    public Value put(Key key, Value value) {
+    public Value put(CachePartitionId key, Value value) {
         return map.put(key, value);
-    }
-
-    public static class Key implements Comparable<Key> {
-        private final int cacheId;
-        private final int partId;
-
-        public Key(int cacheId, int partId) {
-            this.cacheId = cacheId;
-            this.partId = partId;
-        }
-
-        public int getCacheId() {
-            return cacheId;
-        }
-
-        public int getPartId() {
-            return partId;
-        }
-
-        /** Tmp method for compatibility with tuple */
-        public int get1() {
-            return getCacheId();
-        }
-
-        /** Tmp method for compatibility with tuple */
-        public int get2() {
-            return getPartId();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Key{" +
-                "cacheId=" + cacheId +
-                ", partId=" + partId +
-                '}';
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            Key key = (Key)o;
-
-            if (cacheId != key.cacheId)
-                return false;
-            return partId == key.partId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = cacheId;
-            result = 31 * result + partId;
-            return result;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull Key o) {
-            if (getCacheId() < o.getCacheId())
-                return -1;
-
-            if (getCacheId() > o.getCacheId())
-                return 1;
-
-            if (getPartId() < o.getPartId())
-                return -1;
-
-            if (getPartId() > o.getPartId())
-                return 1;
-            return 0;
-        }
-
-        /**
-         * @param pageIdx  Page Index, monotonically growing number within each partition
-         * @return page ID (64 bits) constructed from partition ID
-         */
-        public long createPageId(final int pageIdx) {
-            return PageIdUtils.pageId( getPartId(), (byte)0, pageIdx);
-        }
-
-        /**
-         * Returns Full page ID
-         *
-         * @param pageIdx Page Index, monotonically growing number within each partition
-         * @return FullPageId consists of cache ID (32 bits) and page ID (64 bits).
-         */
-        @NotNull public FullPageId createFullPageId(final int pageIdx) {
-            return new FullPageId(createPageId(pageIdx), getCacheId());
-        }
     }
 
     public static class Value {

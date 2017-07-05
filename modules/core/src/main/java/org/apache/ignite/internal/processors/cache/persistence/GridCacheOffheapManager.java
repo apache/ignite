@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.CachePartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionStatMap;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
@@ -414,7 +415,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int lastAllocatedIdx = io.getLastPageCount(pageAddr);
         map.put(
-            new PartitionStatMap.Key(cacheId, part),
+            new CachePartitionId(cacheId, part),
             new PartitionStatMap.Value(lastAllocatedIdx, pages));
     }
 

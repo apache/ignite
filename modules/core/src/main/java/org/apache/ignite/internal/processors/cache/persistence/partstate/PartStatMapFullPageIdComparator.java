@@ -23,7 +23,7 @@ import java.util.Comparator;
 /**
  *
  */
-public class PartStatMapFullPageIdComparator implements Comparator<PartitionStatMap.Key>, Serializable {
+public class PartStatMapFullPageIdComparator implements Comparator<CachePartitionId>, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class PartStatMapFullPageIdComparator implements Comparator<PartitionStat
     public static final PartStatMapFullPageIdComparator INSTANCE = new PartStatMapFullPageIdComparator();
 
     /** {@inheritDoc} (cacheId, partition) */
-    @Override public int compare(PartitionStatMap.Key o1, PartitionStatMap.Key o2) {
+    @Override public int compare(CachePartitionId o1, CachePartitionId o2) {
         if (o1.getCacheId() < o2.getCacheId())
             return -1;
 
