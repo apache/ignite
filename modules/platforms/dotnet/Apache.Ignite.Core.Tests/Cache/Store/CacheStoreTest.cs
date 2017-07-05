@@ -611,11 +611,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// </summary>
         private static void CheckCustomStoreError(Exception err)
         {
-            var customErr = err as CacheTestStore.CustomStoreException ??
-                         err.InnerException as CacheTestStore.CustomStoreException;
+            var customErr = err.GetBaseException() as CacheTestStore.CustomStoreException;
 
             Assert.IsNotNull(customErr);
-
             Assert.AreEqual(customErr.Message, customErr.Details);
         }
     }
