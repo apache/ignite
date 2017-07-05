@@ -14,6 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.apache.ignite.internal.pagemem.snapshot;
 
 import java.io.File;
@@ -25,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  * Tuple for passing optional parameters of {@link SnapshotOperationType#CHECK}.
  */
 public class SnapshotCheckParameters implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Optional paths. */
     private final Collection<File> optionalPaths;
 
