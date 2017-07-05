@@ -10,7 +10,9 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
@@ -23,20 +25,45 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 20)
 @Fork(value = 1)
 public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
-    /** Fixed lock key for IgniteCache.lock(). */
-    final static Integer cacheLockKey = new Integer(0);
-    /** Fixed lock key for Ignite.reentrantLock(). */
-    final static String igniteLockKey = "key";
+    /** Fixed lock key for Ignite.reentrantLock() and IgniteCache.lock(). */
+    static final String lockKey = "key0";
+
+    /** Fixed key. */
+    static final String lockKey1 = "key1";
+
     /** Number of locks for randomly tests. */
-    final static int N = 128;
+    static final int N = 128;
+
     /** Parameter for Ignite.reentrantLock(). */
-    final static boolean failoverSafe = false;
+    static final boolean failoverSafe = false;
+
     /** Parameter for Ignite.reentrantLock(). */
-    final static boolean fair = false;
+    static final boolean fair = false;
+
     /** IgniteCache.lock() with a fixed lock key. */
     Lock cacheLock;
+
     /** Ignite.reentrantLock() with a fixed lock key. */
     IgniteLock igniteLock;
+
+    @State(Scope.Benchmark)
+    public static class Key {
+        final String key;
+        public Key() {
+            key = "key"+ThreadLocalRandom.current().nextInt(N);
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class KeyWithOther {
+        final String key;
+        final String otherKey;
+        public KeyWithOther() {
+            final int n = ThreadLocalRandom.current().nextInt(N);
+            key = "key"+n;
+            otherKey = "key"+(n+1);
+        }
+    }
 
     /**
      * Test IgniteCache.lock() with fixed key and increment operation inside.
@@ -44,8 +71,13 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @Benchmark
     public void cacheLocks() {
         cacheLock.lock();
-        cache.put(cacheLockKey, ((Integer)cache.get(cacheLockKey)) + 1);
-        cacheLock.unlock();
+
+        try {
+            cache.put(lockKey, ((Integer)cache.get(lockKey)) + 1);
+        }
+        finally {
+            cacheLock.unlock();
+        }
     }
 
     /**
@@ -54,8 +86,41 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @Benchmark
     public void igniteLocks() {
         igniteLock.lock();
-        cache.put(cacheLockKey, ((Integer)cache.get(cacheLockKey)) + 1);
-        igniteLock.unlock();
+
+        try {
+            cache.put(lockKey, ((Integer)cache.get(lockKey)) + 1);
+        }
+        finally {
+            igniteLock.unlock();
+        }
+    }
+
+    /**
+     * Test IgniteCache.lock() with fixed key and increment operation inside.
+     */
+    @Benchmark
+    public void cacheLocksOtherKey() {
+        cacheLock.lock();
+        try {
+            cache.put(lockKey1, ((Integer)cache.get(lockKey1)) + 1);
+        }
+        finally {
+            cacheLock.unlock();
+        }
+    }
+
+    /**
+     * Test Ignite.reentrantLock() with fixed key and increment operation inside.
+     */
+    @Benchmark
+    public void igniteLocksOtherKey() {
+        igniteLock.lock();
+        try {
+            cache.put(lockKey1, ((Integer)cache.get(lockKey1)) + 1);
+        }
+        finally {
+            igniteLock.unlock();
+        }
     }
 
     /**
@@ -80,24 +145,73 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
      * Test IgniteCache.lock() with randomly keys.
      */
     @Benchmark
-    public void cacheRandomLocks() {
-        final Integer key = ThreadLocalRandom.current().nextInt(N);
-        final Lock lock = cache.lock(key);
+    public void cacheRandomLocks(Key key) {
+        final String k = key.key;
+        final Lock lock = cache.lock(k);
+
         lock.lock();
-        cache.put(key, ((Integer)cache.get(key)) + 1);
-        lock.unlock();
+
+        try {
+            cache.put(k, ((Integer)cache.get(k)) + 1);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
      * Test Ignite.reentrantLock() with randomly keys.
      */
     @Benchmark
-    public void igniteRandomLocks() {
-        final int key = ThreadLocalRandom.current().nextInt(N);
-        final IgniteLock lock = node.reentrantLock(String.valueOf(key), failoverSafe, fair, true);
+    public void igniteRandomLocks(Key key) {
+        final String k = key.key;
+        final IgniteLock lock = node.reentrantLock(k, failoverSafe, fair, true);
+
         lock.lock();
-        cache.put(key, ((Integer)cache.get(key)) + 1);
-        lock.unlock();
+
+        try {
+            cache.put(k, ((Integer)cache.get(k)) + 1);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Test IgniteCache.lock() with randomly keys.
+     */
+    @Benchmark
+    public void cacheRandomLocksOtherKey(KeyWithOther key) {
+        final String k = key.key;
+        final String other = key.otherKey;
+        final Lock lock = cache.lock(k);
+
+        lock.lock();
+
+        try {
+            cache.put(other, ((Integer)cache.get(other)) + 1);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Test Ignite.reentrantLock() with randomly keys.
+     */
+    @Benchmark
+    public void igniteRandomLocksOtherKey(KeyWithOther key) {
+        final String k = key.key;
+        final String other = key.otherKey;
+        final IgniteLock lock = node.reentrantLock(k, failoverSafe, fair, true);
+
+        lock.lock();
+        try {
+            cache.put(other, ((Integer)cache.get(other)) + 1);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -105,10 +219,11 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
      */
     @Setup(Level.Trial)
     public void createLock() {
-        for (int i = 0; i < N; i++)
-            cache.put(new Integer(i), new Integer(i));
-        cacheLock = cache.lock(cacheLockKey);
-        igniteLock = node.reentrantLock(igniteLockKey, failoverSafe, fair, true);
+        for (int i = 0; i < 2*N; i++)
+            cache.put("key"+i, new Integer(i));
+
+        cacheLock = cache.lock(lockKey);
+        igniteLock = node.reentrantLock(lockKey, failoverSafe, fair, true);
     }
 
     /**
@@ -124,20 +239,20 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         final CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
         final CacheWriteSynchronizationMode writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
 
-        String output = simpleClsName +
+        final String output = simpleClsName +
             "-" + threads + "-threads" +
             "-" + (client ? "client" : "data") +
             "-" + atomicityMode +
             "-" + writeSyncMode;
 
-        Options opt = new OptionsBuilder()
+        final Options opt = new OptionsBuilder()
             .threads(threads)
             .include(simpleClsName)
             .output(output + ".jmh.log")
             .jvmArgs(
                 "-Xms1g",
                 "-Xmx1g",
-                "-XX:+UnlockCommercialFeatures",
+                //"-XX:+UnlockCommercialFeatures",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 2),
