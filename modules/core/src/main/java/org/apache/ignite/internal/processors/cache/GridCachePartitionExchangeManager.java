@@ -1018,7 +1018,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (locMap != null) {
                     addFullPartitionsMap(m,
                         dupData,
-                        true,
+                        compress,
                         grp.groupId(),
                         locMap,
                         affCache.similarAffinityKey());
@@ -1036,7 +1036,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (map != null) {
                 addFullPartitionsMap(m,
                     dupData,
-                    true,
+                    compress,
                     top.groupId(),
                     map,
                     top.similarAffinityKey());
