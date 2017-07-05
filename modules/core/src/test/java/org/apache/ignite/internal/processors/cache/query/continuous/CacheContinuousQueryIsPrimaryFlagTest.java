@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
@@ -79,16 +80,16 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     private static volatile boolean err;
 
     /** */
-    private CacheMode cacheMode;
-
-    /** */
-    private CacheAtomicityMode atomicityMode;
+    private CacheConfiguration<Object, Object> ccfg;
 
     /** */
     private boolean client;
 
     /** */
-    private int backups = 1;
+    private int backups = 2;
+
+    /** */
+    private boolean async = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -109,13 +110,6 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         evtSpi.setExpireCount(50);
 
         cfg.setEventStorageSpi(evtSpi);
-
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setCacheMode(cacheMode);
-        ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setBackups(backups);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -144,11 +138,30 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     }
 
     /**
+     * @param cacheMode Cache mode.
+     * @param backups Number of backups.
+     * @param atomicityMode Cache atomicity mode.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Object, Object> cacheConfiguration(
+        CacheMode cacheMode,
+        int backups,
+        CacheAtomicityMode atomicityMode) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setBackups(backups);
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        return ccfg;
+    }
+
+    /**
      * @throws Exception If failed.
      */
-    public void testPartitionedAtomic() throws Exception {
-        cacheMode = PARTITIONED;
-        atomicityMode = ATOMIC;
+    public void testReceiveFlagForBackupNodePartitionedAtomic() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, backups, ATOMIC);
 
         leftPrimaryNode();
     }
@@ -156,9 +169,8 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedTx() throws Exception {
-        cacheMode = PARTITIONED;
-        atomicityMode = TRANSACTIONAL;
+    public void testReceiveFlagForBackupNodePartitionedTx() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, backups, TRANSACTIONAL);
 
         leftPrimaryNode();
     }
@@ -166,9 +178,8 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testReplicatedAtomic() throws Exception {
-        cacheMode = REPLICATED;
-        atomicityMode = ATOMIC;
+    public void testReceiveFlagForBackupNodeReplicatedAtomic() throws Exception {
+        ccfg = cacheConfiguration(REPLICATED, backups, ATOMIC);
 
         leftPrimaryNode();
     }
@@ -176,9 +187,8 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testReplicatedTx() throws Exception {
-        cacheMode = REPLICATED;
-        atomicityMode = TRANSACTIONAL;
+    public void testReceiveFlagForBackupNodeReplicatedTx() throws Exception {
+        ccfg = cacheConfiguration(REPLICATED, backups, TRANSACTIONAL);
 
         leftPrimaryNode();
     }
@@ -187,8 +197,6 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
      *
      */
     public void leftPrimaryNode() throws Exception {
-        this.backups = 2;
-
         final int SRV_NODES = 3;
 
         startGridsMultiThreaded(SRV_NODES);
@@ -200,11 +208,6 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         client = false;
 
         IgniteCache<Object, Object> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
-
-        if (cacheMode != REPLICATED)
-            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
-
-        assertNull(qryClientCache.getConfiguration(CacheConfiguration.class).getNearConfiguration());
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -251,14 +254,54 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testPrimaryAndBackupFlags() throws Exception {
-        this.cacheMode = PARTITIONED;
+    public void testReceiveFlagsForAllNodesPartitionedAtomic() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, backups, ATOMIC);
 
-        this.atomicityMode = ATOMIC;
+        receivePrimaryAndBackupFlags();
+    }
 
-        this.backups = 2;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReceiveFlagsForAllNodesPartitionedTx() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, backups, TRANSACTIONAL);
 
-        final int SRV_NODES = 4;
+        receivePrimaryAndBackupFlags();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReceiveFlagsForAllNodesReplicatedAtomic() throws Exception {
+        ccfg = cacheConfiguration(REPLICATED, backups, ATOMIC);
+
+        receivePrimaryAndBackupFlags();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReceiveFlagsForAllNodesReplicatedTx() throws Exception {
+        ccfg = cacheConfiguration(REPLICATED, backups, TRANSACTIONAL);
+
+        receivePrimaryAndBackupFlags();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReceiveFlagsForAllNodesPartitionedAtomicAsync() throws Exception {
+        async = true;
+        ccfg = cacheConfiguration(PARTITIONED, backups, ATOMIC);
+
+        receivePrimaryAndBackupFlags();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void receivePrimaryAndBackupFlags() throws Exception {
+        final int SRV_NODES = 3;
 
         startGridsMultiThreaded(SRV_NODES);
 
@@ -272,7 +315,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final CacheEventListener2 lsnr = new CacheEventListener2();
+        final CacheEventListener lsnr = asyncCallback() ? new CacheEventAsyncListener() : new CacheEventListener();
 
         qry.setLocalListener(lsnr);
 
@@ -288,7 +331,10 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         Affinity<Object> aff = qryClient.affinity(DEFAULT_CACHE_NAME);
 
-        List<Integer> keys = testKeys(SIZE);
+        List<Integer> keys = new ArrayList<>();
+
+        for (int key = 0; key < SIZE; key++)
+            keys.add(key);
 
         final List<T2<Object, Object>> expEvts = new ArrayList<>();
 
@@ -304,27 +350,41 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         boolean check = GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() throws IgniteCheckedException {
-                return expEvts.size() == lsnr.keys.size();
+                return expEvts.size() == lsnr.evts.size();
             }
         }, 5000L);
 
         if (!check) {
             Set<Integer> keys0 = new HashSet<>(keys);
 
-            keys0.removeAll(lsnr.keys);
+            keys0.removeAll(lsnr.evts.keySet());
 
             log.info("Missed events for keys: " + keys0);
 
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + keys0.size() + ']');
         }
 
-        assertEquals(keys.size() * (SRV_NODES - 1 /** client node */), lsnr.evtsFlags.size());
+        if (qryClientCache.getConfiguration(CacheConfiguration.class).getCacheMode() == REPLICATED)
+            assertEquals(keys.size() * SRV_NODES, lsnr.evtsFlags.size());
+        else
+            assertEquals(keys.size() * (this.backups + 1 /** primary node */), lsnr.evtsFlags.size());
 
         checkFlags(keys.size(), lsnr.evtsFlags);
 
-        stopAllGrids();
+        expEvts.clear();
+        lsnr.evtsFlags.clear();
+        lsnr.evts.clear();
 
         cur.close();
+
+        stopAllGrids();
+    }
+
+    /**
+     *
+     */
+    private boolean asyncCallback() {
+        return async;
     }
 
     /**
@@ -348,43 +408,24 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      *
      */
-    public static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object> {
-        /** Keys. */
-        private final GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
-
-        /** Events. */
-        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
-
-        /** Flag backup node. */
-        private volatile static AtomicBoolean isBackup = new AtomicBoolean(false);
-
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
-            for (CacheEntryEvent<?, ?> e : evts) {
-                Integer key = (Integer)e.getKey();
-
-                keys.add(key);
-
-                isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
-
-                assert this.evts.put(key, e) == null;
-            }
-        }
+    @IgniteAsyncCallback
+    public static class CacheEventAsyncListener extends CacheEventListener {
+        // No-op.
     }
 
     /**
      *
      */
-    public static class CacheEventListener2 implements CacheEntryUpdatedListener<Object, Object>,
+    public static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object>,
         CacheEntryEventSerializableFilter<Object, Object> {
-        /** Keys. */
-        private final GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
-
         /** Events. */
         private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
         /** Filtred events. */
         private final static GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags = new GridConcurrentHashSet<>();
+
+        /** Flag backups node. */
+        private volatile static AtomicBoolean isBackup = new AtomicBoolean(false);
 
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
@@ -398,9 +439,9 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
             for (CacheEntryEvent<?, ?> e : evts) {
                 Integer key = (Integer)e.getKey();
 
-                keys.add(key);
+                isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
 
-                assert this.evts.put(key, e) == null;
+                assertNull(this.evts.put(key, e));
             }
         }
     }
@@ -448,18 +489,5 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
             super.sendMessage(node, msg, ackC);
         }
-    }
-
-    /**
-     *
-     */
-    private List<Integer> testKeys(int size) throws Exception {
-        List<Integer> res = new ArrayList<>();
-
-        for (int key = 0; key < size; key++) {
-            res.add(key);
-        }
-
-        return res;
     }
 }
