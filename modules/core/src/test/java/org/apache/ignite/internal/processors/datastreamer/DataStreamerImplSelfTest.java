@@ -342,17 +342,18 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * Simulate stale (not up-to-date) topology
      */
     private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
-
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             // Send stale topology only in the first request to avoid indefinitely getting failures.
             if (needStaleTop) {
                 if (msg instanceof GridIoMessage) {
                     GridIoMessage ioMsg = (GridIoMessage)msg;
+
                     Message appMsg = ioMsg.message();
 
                     if (appMsg != null && appMsg instanceof DataStreamerRequest) {
                         DataStreamerRequest req = (DataStreamerRequest)appMsg;
+
                         AffinityTopologyVersion validTop = req.topologyVersion();
 
                         // Simulate situation when a node did not receive the latest "node joined" topology update causing
