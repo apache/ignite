@@ -699,28 +699,48 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testTableAndIndexRecreate() {
         execute("drop table if exists \"PUBLIC\".t");
 
+        // First let's check behavior without index name set
         execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
 
-        for (int j = 1; j < 10; j++) {
-            String s = Integer.toString(j);
-            execute("insert into \"PUBLIC\".t (a,b) values (" + s + ", '" + s + "')");
-        }
+        fillRecreatedTable();
 
         execute("create index on \"PUBLIC\".t (b desc)");
         execute("drop table \"PUBLIC\".t");
 
         assertNull(client().cache("t"));
 
-        execute("drop table if exists \"PUBLIC\".t");
         execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
 
+        fillRecreatedTable();
+
+        execute("create index on \"PUBLIC\".t (b desc)");
+        execute("drop table \"PUBLIC\".t");
+
+        assertNull(client().cache("t"));
+
+        // And now let's do the same for the named index
+        execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
+
+        fillRecreatedTable();
+
+        execute("create index namedIdx on \"PUBLIC\".t (b desc)");
+        execute("drop table \"PUBLIC\".t");
+
+        assertNull(client().cache("t"));
+
+        execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
+
+        fillRecreatedTable();
+
+        execute("create index on \"PUBLIC\".t (b desc)");
+        execute("drop table \"PUBLIC\".t");
+    }
+
+    private void fillRecreatedTable() {
         for (int j = 1; j < 10; j++) {
             String s = Integer.toString(j);
             execute("insert into \"PUBLIC\".t (a,b) values (" + s + ", '" + s + "')");
         }
-
-        execute("create index on \"PUBLIC\".t (b desc)");
-        execute("drop table \"PUBLIC\".t");
     }
 
     /**
