@@ -57,16 +57,16 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
 
         G.stop(ignite(breakNodeIdx).name(), true);
 
-        Assert.assertNull(transactions.tx());
+        assertNull(transactions.tx());
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+                assertEquals(TransactionState.ACTIVE, tx.state());
 
                 tx.commit();
 
@@ -123,9 +123,9 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
         IgniteCache<String, Integer> clientCache = jcache(0);
 
         if (transactionConcurrency.equals(TransactionConcurrency.OPTIMISTIC))
-            Assert.assertEquals(1, (long)clientCache.get(remotePrimaryKey));
+            assertEquals(1, (long)clientCache.get(remotePrimaryKey));
         else
-            Assert.assertNull(clientCache.get(remotePrimaryKey));
+            assertNull(clientCache.get(remotePrimaryKey));
 
         clientCache.removeAll();
     }
@@ -170,7 +170,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
 
         IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        Assert.assertFalse(remoteCache.containsKey(localPrimaryKey));
+        assertFalse(remoteCache.containsKey(localPrimaryKey));
     }
 
     /**
@@ -221,9 +221,9 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
         IgniteCache<String, Integer> clientCache = jcache(0);
 
         if (transactionConcurrency.equals(TransactionConcurrency.OPTIMISTIC))
-            Assert.assertEquals(1, (long)clientCache.get(remotePrimaryKey));
+            assertEquals(1, (long)clientCache.get(remotePrimaryKey));
         else
-            Assert.assertNull(clientCache.get(remotePrimaryKey));
+            assertNull(clientCache.get(remotePrimaryKey));
 
         clientCache.removeAll();
     }

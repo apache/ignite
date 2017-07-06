@@ -90,12 +90,12 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+                assertEquals(TransactionState.ACTIVE, tx.state());
 
                 cache.put("key3", 3);
                 cache.remove("key2");
@@ -108,10 +108,10 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         fut.get(5000);
 
-        Assert.assertEquals(TransactionState.COMMITTED, tx.state());
-        Assert.assertEquals((long)1, (long)cache.get("key1"));
-        Assert.assertEquals((long)3, (long)cache.get("key3"));
-        Assert.assertFalse(cache.containsKey("key2"));
+        assertEquals(TransactionState.COMMITTED, tx.state());
+        assertEquals((long)1, (long)cache.get("key1"));
+        assertEquals((long)3, (long)cache.get("key3"));
+        assertFalse(cache.containsKey("key2"));
 
         cache.removeAll();
     }
@@ -152,12 +152,12 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+                assertEquals(TransactionState.ACTIVE, tx.state());
 
                 cache.put("key3", 3);
                 cache.put("key2'", 2);
@@ -171,12 +171,12 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         fut.get(5000);
 
-        Assert.assertNull(transactions.tx());
-        Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+        assertNull(transactions.tx());
+        assertEquals(TransactionState.SUSPENDED, tx.state());
 
         tx.resume();
 
-        Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+        assertEquals(TransactionState.ACTIVE, tx.state());
 
         cache.remove("key1'", 1);
         cache.remove("key2'", 2);
@@ -184,13 +184,13 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         tx.commit();
 
-        Assert.assertEquals(TransactionState.COMMITTED, tx.state());
-        Assert.assertEquals((long)1, (long)cache.get("key1"));
-        Assert.assertEquals((long)3, (long)cache.get("key3"));
-        Assert.assertEquals((long)3, (long)cache.get("key3'"));
-        Assert.assertFalse(cache.containsKey("key2"));
-        Assert.assertFalse(cache.containsKey("key1'"));
-        Assert.assertFalse(cache.containsKey("key2'"));
+        assertEquals(TransactionState.COMMITTED, tx.state());
+        assertEquals((long)1, (long)cache.get("key1"));
+        assertEquals((long)3, (long)cache.get("key3"));
+        assertEquals((long)3, (long)cache.get("key3'"));
+        assertFalse(cache.containsKey("key2"));
+        assertFalse(cache.containsKey("key1'"));
+        assertFalse(cache.containsKey("key2'"));
 
         cache.removeAll();
     }
@@ -230,12 +230,12 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+                assertEquals(TransactionState.ACTIVE, tx.state());
 
                 cache.put("key3", 3);
                 cache2.remove("key2");
@@ -248,10 +248,10 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         fut.get(5000);
 
-        Assert.assertEquals(TransactionState.COMMITTED, tx.state());
-        Assert.assertEquals((long)1, (long)cache.get("key1"));
-        Assert.assertEquals((long)3, (long)cache.get("key3"));
-        Assert.assertFalse(cache2.containsKey("key2"));
+        assertEquals(TransactionState.COMMITTED, tx.state());
+        assertEquals((long)1, (long)cache.get("key1"));
+        assertEquals((long)3, (long)cache.get("key3"));
+        assertFalse(cache2.containsKey("key2"));
 
         cache2.removeAll();
         cache.removeAll();
@@ -293,12 +293,12 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+                assertEquals(TransactionState.ACTIVE, tx.state());
 
                 cache.put("key3", 3);
                 cache2.put("key2'", 2);
@@ -312,12 +312,12 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         fut.get(5000);
 
-        Assert.assertNull(transactions.tx());
-        Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+        assertNull(transactions.tx());
+        assertEquals(TransactionState.SUSPENDED, tx.state());
 
         tx.resume();
 
-        Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+        assertEquals(TransactionState.ACTIVE, tx.state());
 
         cache.remove("key1'", 1);
         cache2.remove("key2'", 2);
@@ -325,13 +325,13 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         tx.commit();
 
-        Assert.assertEquals(TransactionState.COMMITTED, tx.state());
-        Assert.assertEquals((long)1, (long)cache.get("key1"));
-        Assert.assertEquals((long)3, (long)cache.get("key3"));
-        Assert.assertEquals((long)3, (long)cache.get("key3'"));
-        Assert.assertFalse(cache2.containsKey("key2"));
-        Assert.assertFalse(cache2.containsKey("key2'"));
-        Assert.assertFalse(cache.containsKey("key1'"));
+        assertEquals(TransactionState.COMMITTED, tx.state());
+        assertEquals((long)1, (long)cache.get("key1"));
+        assertEquals((long)3, (long)cache.get("key3"));
+        assertEquals((long)3, (long)cache.get("key3'"));
+        assertFalse(cache2.containsKey("key2"));
+        assertFalse(cache2.containsKey("key2'"));
+        assertFalse(cache.containsKey("key1'"));
 
         cache.removeAll();
         cache2.removeAll();
@@ -367,16 +367,16 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, tx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, tx.state());
+                assertEquals(TransactionState.ACTIVE, tx.state());
 
                 cache1.put("key3", 3);
 
-                Assert.assertTrue(cache1.remove("key2"));
+                assertTrue(cache1.remove("key2"));
 
                 tx.rollback();
 
@@ -386,10 +386,10 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         fut.get(5000);
 
-        Assert.assertEquals(TransactionState.ROLLED_BACK, tx.state());
-        Assert.assertFalse(cache1.containsKey("key1"));
-        Assert.assertFalse(cache1.containsKey("key2"));
-        Assert.assertFalse(cache1.containsKey("key3"));
+        assertEquals(TransactionState.ROLLED_BACK, tx.state());
+        assertFalse(cache1.containsKey("key1"));
+        assertFalse(cache1.containsKey("key2"));
+        assertFalse(cache1.containsKey("key3"));
 
         cache1.removeAll();
     }
@@ -430,16 +430,16 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(ignite(txInitiatorNodeId).transactions().tx());
+                assertNull(ignite(txInitiatorNodeId).transactions().tx());
 
                 for (int i = 0; i < 10; i++) {
                     Transaction clientTx = transactions.get(i);
 
-                    Assert.assertEquals(TransactionState.SUSPENDED, clientTx.state());
+                    assertEquals(TransactionState.SUSPENDED, clientTx.state());
 
                     clientTx.resume();
 
-                    Assert.assertEquals(TransactionState.ACTIVE, clientTx.state());
+                    assertEquals(TransactionState.ACTIVE, clientTx.state());
 
                     clientTx.commit();
                 }
@@ -450,7 +450,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         fut.get(5000);
 
-        Assert.assertEquals(9, jcache(0).get("1"));
+        assertEquals(9, jcache(0).get("1"));
 
         clientCache.removeAll();
     }

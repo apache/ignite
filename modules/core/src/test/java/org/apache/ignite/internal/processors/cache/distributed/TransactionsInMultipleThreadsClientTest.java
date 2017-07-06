@@ -84,12 +84,12 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, clientTx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, clientTx.state());
 
                 clientTx.resume();
 
-                Assert.assertEquals(TransactionState.ACTIVE, clientTx.state());
+                assertEquals(TransactionState.ACTIVE, clientTx.state());
 
                 Integer val = clientCache.get(remotePrimaryKey);
 
@@ -103,8 +103,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         fut.get(5000);
 
-        Assert.assertEquals(TransactionState.COMMITTED, clientTx.state());
-        Assert.assertEquals(2, jcache(0).get(remotePrimaryKey));
+        assertEquals(TransactionState.COMMITTED, clientTx.state());
+        assertEquals(2, jcache(0).get(remotePrimaryKey));
 
         clientCache.removeAll();
     }
@@ -149,8 +149,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                Assert.assertNull(transactions.tx());
-                Assert.assertEquals(TransactionState.SUSPENDED, clientTx.state());
+                assertNull(transactions.tx());
+                assertEquals(TransactionState.SUSPENDED, clientTx.state());
 
                 clientTx.resume();
 
@@ -179,7 +179,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         fut.get(5000);
 
-        Assert.assertEquals(2, jcache(0).get(remotePrimaryKey));
+        assertEquals(2, jcache(0).get(remotePrimaryKey));
 
         jcache(0).removeAll();
     }
@@ -225,7 +225,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         clientTx2.commit();
 
-        Assert.assertEquals(2, jcache(0).get(remotePrimaryKey));
+        assertEquals(2, jcache(0).get(remotePrimaryKey));
 
         clientTx.close();
 
@@ -283,9 +283,9 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         if(successfulResume.get() == 0)
             clientTx.close();
 
-        Assert.assertTrue(successfulResume.get() < 2);
-        Assert.assertEquals(25, failedTxNumber.intValue() + successfulResume.intValue());
-        Assert.assertNull(remoteCache.get(remotePrimaryKey));
+        assertTrue(successfulResume.get() < 2);
+        assertEquals(25, failedTxNumber.intValue() + successfulResume.intValue());
+        assertNull(remoteCache.get(remotePrimaryKey));
     }
 
     /**
@@ -331,9 +331,9 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
             }
         }, 25);
 
-        Assert.assertEquals(1, successfulResume.get());
-        Assert.assertEquals(24, failNumber.intValue());
-        Assert.assertNull(remoteCache.get(remotePrimaryKey));
+        assertEquals(1, successfulResume.get());
+        assertEquals(24, failNumber.intValue());
+        assertNull(remoteCache.get(remotePrimaryKey));
     }
 
     /**
@@ -393,9 +393,9 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
             }
         }, 1);
 
-        Assert.assertEquals(0, successfulResume.get());
-        Assert.assertEquals(25, failNumber.intValue());
-        Assert.assertEquals(1, jcache(0).get(remotePrimaryKey));
+        assertEquals(0, successfulResume.get());
+        assertEquals(25, failNumber.intValue());
+        assertEquals(1, jcache(0).get(remotePrimaryKey));
     }
 
     /**
@@ -456,9 +456,9 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
             }
         }, 1);
 
-        Assert.assertEquals(0, successfulResume.get());
-        Assert.assertEquals(25, failNumber.intValue());
-        Assert.assertNull(jcache(0).get(remotePrimaryKey));
+        assertEquals(0, successfulResume.get());
+        assertEquals(25, failNumber.intValue());
+        assertNull(jcache(0).get(remotePrimaryKey));
     }
 
 
@@ -519,9 +519,9 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
             }
         }, 1);
 
-        Assert.assertEquals(0, successfulResume.get());
-        Assert.assertEquals(25, failNumber.intValue());
-        Assert.assertNull(jcache(0).get(remotePrimaryKey));
+        assertEquals(0, successfulResume.get());
+        assertEquals(25, failNumber.intValue());
+        assertNull(jcache(0).get(remotePrimaryKey));
     }
 
     /**

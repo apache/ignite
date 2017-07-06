@@ -90,7 +90,7 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
 
             IgniteTxManager txMgr = cctx.tm();
 
-            Assert.assertTrue(txMgr.activeTransactions().isEmpty());
+            assertTrue(txMgr.activeTransactions().isEmpty());
         }
     }
     /**

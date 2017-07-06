@@ -476,7 +476,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                     candidate = cached.localCandidate(oldThreadId);
                 }
                 catch (GridCacheEntryRemovedException e) {
-                    assert false; // impossible situation.
+                    assert false; // impossible situation, because non-obsolete entry cannot throw this exception.
                 }
 
                 if (candidate != null)
