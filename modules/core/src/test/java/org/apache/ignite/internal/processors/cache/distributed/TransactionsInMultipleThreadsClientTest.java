@@ -267,8 +267,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                if (waitAndPerformOperation(threadCnt, barrier, clientTx, successfulResume, failedTxNumber))
-                    return null;
+                waitAndPerformOperation(threadCnt, barrier, clientTx, successfulResume, failedTxNumber);
 
                 return null;
             }
@@ -332,7 +331,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
             }
         }, 25);
 
-        Assert.assertEquals(0, successfulResume.get());
+        Assert.assertEquals(1, successfulResume.get());
         Assert.assertEquals(24, failNumber.intValue());
         Assert.assertNull(remoteCache.get(remotePrimaryKey));
     }
@@ -355,7 +354,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
     /**
      * @throws Exception If failed.
      */
-    public void txConcurrentCommit() throws Exception {
+    private void txConcurrentCommit() throws Exception {
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
@@ -417,7 +416,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
     /**
      * @throws Exception If failed.
      */
-    public void txConcurrentRollback() throws Exception {
+    private void txConcurrentRollback() throws Exception {
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
@@ -481,7 +480,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
     /**
      * @throws Exception If failed.
      */
-    public void txConcurrentClose() throws Exception {
+    private void txConcurrentClose() throws Exception {
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
@@ -525,9 +524,18 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         Assert.assertNull(jcache(0).get(remotePrimaryKey));
     }
 
-
-    private boolean waitAndPerformOperation(AtomicInteger threadCnt, CyclicBarrier barrier, Transaction clientTx,
-        AtomicInteger successfulResume, LongAdder8 failedTxNumber) throws InterruptedException, BrokenBarrierException {
+    /**
+     * Thread begin waiting on barrier and then performs some operation.
+     *
+     * @param threadCnt Common counter for threads.
+     * @param barrier Barrier, all threads are waiting on.
+     * @param clientTx Transaction instance that we test.
+     * @param successfulResume Counter for successful resume operations.
+     * @param failedTxNumber Counter for failed operations.
+     * @throws Exception If failed.
+     */
+    private void waitAndPerformOperation(AtomicInteger threadCnt, CyclicBarrier barrier, Transaction clientTx,
+        AtomicInteger successfulResume, LongAdder8 failedTxNumber) throws Exception {
         try {
             int threadNum = threadCnt.incrementAndGet();
 
@@ -548,7 +556,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
                     clientTx.close();
 
-                    return true;
+                    return;
 
                 case 2:
                     barrier.await();
@@ -581,6 +589,5 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         catch (IgniteException e) {
             failedTxNumber.increment();
         }
-        return false;
     }
 }
