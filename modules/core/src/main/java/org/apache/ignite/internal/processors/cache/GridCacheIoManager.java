@@ -244,11 +244,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
 
-                synchronized (pendingMsgs) {
-                    if (pendingMsgs.size() < 100)
-                        pendingMsgs.add(cacheMsg);
-                }
-
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         Runnable c = new Runnable() {
