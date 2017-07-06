@@ -40,10 +40,10 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    protected static final String PERSON_CLS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
+    private static final String PERSON_CLS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
 
     /** */
-    protected static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
+    private static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
 
     /** */
     private static ClassLoader ldr;
