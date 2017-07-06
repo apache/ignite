@@ -460,6 +460,14 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /**
+     * @param sb String builder.
+     * @param ctx Context.
+     */
+    static void dumpPendingCacheMessages(StringBuilder sb, GridKernalContext ctx) {
+        ctx.cache().context().io().dumpPendingMessages(sb);
+    }
+
+    /**
      * @param ctx Context.
      * @param nodeId Target node ID.
      * @return Communication information future.
