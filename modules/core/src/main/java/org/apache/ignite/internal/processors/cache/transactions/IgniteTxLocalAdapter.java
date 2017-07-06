@@ -37,6 +37,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -956,11 +957,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             throw ex;
                         }
                         else {
+                            boolean nodeStopping = X.hasCause(ex, NodeStoppingException.class);
+
                             IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
-                            U.error(log, "Heuristic transaction failure.", err);
+                            if (nodeStopping) {
+                                U.warn(log, "Failed to commit transaction, node is stopping " +
+                                    "[tx=" + this + ", err=" + ex + ']');
+                            }
+                            else
+                                U.error(log, "Heuristic transaction failure.", err);
 
                             COMMIT_ERR_UPD.compareAndSet(this, null, err);
 
@@ -968,7 +976,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                             try {
                                 // Courtesy to minimize damage.
-                                uncommit();
+                                uncommit(nodeStopping);
                             }
                             catch (Throwable ex1) {
                                 U.error(log, "Failed to uncommit transaction: " + this, ex1);
