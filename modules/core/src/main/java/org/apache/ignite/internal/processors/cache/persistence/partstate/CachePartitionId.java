@@ -22,23 +22,34 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Pair of cache ID with partition ID.
+ * Pair of cache ID with partition ID. Immutable class, may be used as key in maps
  */
 public class CachePartitionId implements Comparable<CachePartitionId> {
-    /** Cache id. */
+    /** Cache ID. */
     private final int cacheId;
-    /** Partition id. */
+    /** Partition ID. */
     private final int partId;
 
-    public CachePartitionId(int cacheId, int partId) {
+    /**
+     * Creates cache partition
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     */
+    public CachePartitionId(final int cacheId, final int partId) {
         this.cacheId = cacheId;
         this.partId = partId;
     }
 
+    /**
+     * @return cache ID
+     */
     public int getCacheId() {
         return cacheId;
     }
 
+    /**
+     * @return Partition ID
+     */
     public int getPartId() {
         return partId;
     }

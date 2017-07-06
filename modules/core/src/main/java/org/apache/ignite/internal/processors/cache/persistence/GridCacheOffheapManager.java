@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.CachePartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionStatMap;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
@@ -211,9 +212,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
 
                 try {
-                    long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
+                    long partMetaPageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
 
-                    if (pageAddr == 0L) {
+                    if (partMetaPageAddr == 0L) {
                         U.warn(log, "Failed to acquire write lock for meta page [metaPage=" + partMetaPage +
                             ", saveMeta=" + saveMeta + ", beforeDestroy=" + beforeDestroy + ", size=" + size +
                             ", updCntr=" + updCntr + ", state=" + state + ']');
@@ -224,21 +225,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     boolean changed = false;
 
                     try {
-                        PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
+                        PagePartitionMetaIO io = PageIO.getPageIO(partMetaPageAddr);
 
-                        changed |= io.setUpdateCounter(pageAddr, updCntr);
-                        changed |= io.setGlobalRemoveId(pageAddr, rmvId);
-                        changed |= io.setSize(pageAddr, size);
+                        changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
+                        changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
+                        changed |= io.setSize(partMetaPageAddr, size);
 
                         if (state != -1)
-                            changed |= io.setPartitionState(pageAddr, (byte)state);
+                            changed |= io.setPartitionState(partMetaPageAddr, (byte)state);
                         else
                             assert grp.isLocal() : grp.cacheOrGroupName();
 
                         long cntrsPageId;
 
                         if (grp.sharedGroup()) {
-                            cntrsPageId = io.getCountersPageId(pageAddr);
+                            cntrsPageId = io.getCountersPageId(partMetaPageAddr);
 
                             byte[] data = serializeCacheSizes(store.cacheSizes());
 
@@ -251,7 +252,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             if (init && items > 0) {
                                 cntrsPageId = pageMem.allocatePage(grpId, store.partId(), PageIdAllocator.FLAG_DATA);
 
-                                io.setCountersPageId(pageAddr, cntrsPageId);
+                                io.setCountersPageId(partMetaPageAddr, cntrsPageId);
 
                                 changed = true;
                             }
@@ -305,7 +306,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         if (beforeSnapshot) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
-                            io.setCandidatePageCount(pageAddr, pageCnt);
+                            io.setCandidatePageCount(partMetaPageAddr, pageCnt);
 
                             if (saveMeta) {
                                 long metaPageId = pageMem.metaPageId(grpId);
@@ -342,13 +343,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (partMap.containsKey(store.partId()) &&
                                 partMap.get(store.partId()) == GridDhtPartitionState.OWNING)
-                                addPartition(ctx.partitionStatMap(), pageAddr, io, grpId, store.partId(),
+                                addPartition(ctx.partitionStatMap(), partMetaPageAddr, io, grpId, store.partId(),
                                     this.ctx.pageStore().pages(grpId, store.partId()));
 
                             changed = true;
                         }
                         else
-                            pageCnt = io.getCandidatePageCount(pageAddr);
+                            pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageUpdatePartitionDataRecord(
@@ -394,29 +395,29 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /**
      * @param map Map to add values to.
-     * @param pageAddr page address
+     * @param metaPageAddr Meta page address
      * @param io Page Meta IO
      * @param cacheId Cache ID.
-     * @param part Partition ID.
-     * @param pages Number of pages to add - total page allocated for partition <code>[partition, cacheId]</code>
+     * @param partId Partition ID. Or {@link PageIdAllocator#INDEX_PARTITION} for index partition
+     * @param pages total number of pages allocated for partition <code>[partition, cacheId]</code>
      */
     private static void addPartition(
-        PartitionStatMap map,
-        long pageAddr,
-        PagePartitionMetaIO io,
-        int cacheId,
-        int part,
-        int pages
+        final PartitionStatMap map,
+        final long metaPageAddr,
+        final PagePartitionMetaIO io,
+        final int cacheId,
+        final int partId,
+        final int pages
     ) {
         if (pages <= 1)
             return;
 
-        assert PageIO.getPageId(pageAddr) != 0;
+        assert PageIO.getPageId(metaPageAddr) != 0;
 
-        int lastAllocatedIdx = io.getLastPageCount(pageAddr);
+        int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
         map.put(
-            new CachePartitionId(cacheId, part),
-            new PartitionStatMap.Value(lastAllocatedIdx, pages));
+            new CachePartitionId(cacheId, partId),
+            new PagesAllocationRange(lastAllocatedPageCnt, pages));
     }
 
     /** {@inheritDoc} */

@@ -31,14 +31,14 @@ import org.jetbrains.annotations.NotNull;
  * Page counts map.
  */
 public class PartitionStatMap {
-    /** Maps following pairs: (cacheId, partId) -> (lastAllocatedIndex, count) */
-    private final NavigableMap<CachePartitionId, Value> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
+    /** Maps following pairs: (cacheId, partId) -> (lastAllocatedCount, allocatedCount) */
+    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
 
-    public Value get(CachePartitionId key) {
+    public PagesAllocationRange get(CachePartitionId key) {
         return map.get(key);
     }
 
-    public Value get(FullPageId fullId) {
+    public PagesAllocationRange get(FullPageId fullId) {
         return get(createKey(fullId));
     }
 
@@ -58,7 +58,7 @@ public class PartitionStatMap {
         return map.keySet();
     }
 
-    public Iterable<Value> values() {
+    public Iterable<PagesAllocationRange> values() {
         return map.values();
     }
 
@@ -66,23 +66,23 @@ public class PartitionStatMap {
         return map.firstKey();
     }
 
-    public SortedMap<CachePartitionId, Value> headMap(CachePartitionId key) {
+    public SortedMap<CachePartitionId, PagesAllocationRange> headMap(CachePartitionId key) {
         return map.headMap(key);
     }
 
-    public SortedMap<CachePartitionId, Value> headMap(FullPageId fullId) {
+    public SortedMap<CachePartitionId, PagesAllocationRange> headMap(FullPageId fullId) {
         return headMap(createKey(fullId));
     }
 
-    public SortedMap<CachePartitionId, Value> tailMap(CachePartitionId key, boolean inclusive) {
+    public SortedMap<CachePartitionId, PagesAllocationRange> tailMap(CachePartitionId key, boolean inclusive) {
         return map.tailMap(key, inclusive);
     }
 
-    public SortedMap<CachePartitionId, Value> tailMap(FullPageId fullId, boolean inclusive) {
+    public SortedMap<CachePartitionId, PagesAllocationRange> tailMap(FullPageId fullId, boolean inclusive) {
         return tailMap(createKey(fullId), inclusive);
     }
 
-    public Set<Map.Entry<CachePartitionId, Value>> entrySet() {
+    public Set<Map.Entry<CachePartitionId, PagesAllocationRange>> entrySet() {
         return map.entrySet();
     }
 
@@ -90,51 +90,8 @@ public class PartitionStatMap {
         return map.containsKey(createKey(id));
     }
 
-    public Value put(CachePartitionId key, Value val) {
+    public PagesAllocationRange put(CachePartitionId key, PagesAllocationRange val) {
         return map.put(key, val);
     }
 
-    public static class Value {
-        /**
-         * Last Allocated Page Index (count) from PageMetaIO.
-         * Used to separate newly allocated pages with previously observed state
-         */
-        private final int lastAllocatedIdx;
-
-        /**
-         * Total number of pages allocated for partition <code>[partition, cacheId]</code>
-         */
-        private final int count;
-
-        public Value(int lastAllocatedIdx, int count) {
-            this.lastAllocatedIdx = lastAllocatedIdx;
-            this.count = count;
-        }
-
-        public int getCount() {
-            return count;
-        }
-
-        /** Tmp method for compatibility with tuple */
-        public int get2() {
-            return getCount();
-        }
-
-        public int getLastAllocatedIdx() {
-            return lastAllocatedIdx;
-        }
-
-        /** Tmp method for compatibility with tuple */
-        public int get1() {
-            return getLastAllocatedIdx();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Value{" +
-                "lastAllocatedIndex=" + lastAllocatedIdx +
-                ", count=" + count +
-                '}';
-        }
-    }
 }

@@ -44,7 +44,7 @@ public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
 
         PageMetaIO io = PageMetaIO.VERSIONS.forVersion(PageIO.getVersion(pageAddr));
 
-        io.setLastPageCount(pageAddr, lastAllocatedIdx);
+        io.setLastAllocatedPageCount(pageAddr, lastAllocatedIdx);
     }
 
     /** {@inheritDoc} */

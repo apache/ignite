@@ -43,10 +43,10 @@ public class PageMetaIO extends PageIO {
     /** Last successful full snapshot tag offset. */
     private static final int LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF = NEXT_SNAPSHOT_TAG_OFF + 8;
 
-    /** Last allocated index offset. */
+    /** Last allocated pages count offset. */
     private static final int LAST_PAGE_COUNT_OFF = LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF + 8;
 
-    /** Candidate allocated index offset. */
+    /** Candidate allocated page count offset. */
     private static final int CANDIDATE_PAGE_COUNT_OFF = LAST_PAGE_COUNT_OFF + 4;
 
     /** End of page meta. */
@@ -82,7 +82,7 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulSnapshotId(pageAddr, 0);
         setNextSnapshotTag(pageAddr, 1);
         setLastSuccessfulSnapshotTag(pageAddr, 0);
-        setLastPageCount(pageAddr, 0);
+        setLastAllocatedPageCount(pageAddr, 0);
         setCandidatePageCount(pageAddr, 0);
     }
 
@@ -179,25 +179,31 @@ public class PageMetaIO extends PageIO {
     }
 
     /**
-     * @param pageAddr Page address.
-     * @param pageCnt Last allocated index.
+     * Sets last allocated pages count, used to save and observe previous allocated count
+     *
+     * @param pageAddr Meta Page address.
+     * @param pageCnt Last allocated pages count to set
      */
-    public void setLastPageCount(long pageAddr, int pageCnt) {
+    public void setLastAllocatedPageCount(final long pageAddr, final int pageCnt) {
         PageUtils.putInt(pageAddr, LAST_PAGE_COUNT_OFF, pageCnt);
     }
 
     /**
-     * @param buf Buffer.
+     * Gets last allocated pages count from given buffer
+     *
+     * @param buf Buffer to read data from.
      */
-    public int getLastPageCount(@NotNull ByteBuffer buf) {
+    public int getLastAllocatedPageCount(@NotNull final ByteBuffer buf) {
         return buf.getInt(LAST_PAGE_COUNT_OFF);
     }
 
     /**
-     * @param pageAddr Page address.
-     * @return Last allocated index
+     * Gets last allocated pages count by provided address
+     *
+     * @param pageAddr Meta page address.
+     * @return Last allocated page count
      */
-    public int getLastPageCount(long pageAddr) {
+    public int getLastAllocatedPageCount(final long pageAddr) {
         return PageUtils.getInt(pageAddr, LAST_PAGE_COUNT_OFF);
     }
 
