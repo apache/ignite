@@ -159,8 +159,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected boolean needRetVal;
 
     /**
-     * End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     * assigned to this transaction at the end of write phase.
+     * End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>) assigned to this transaction at the
+     * end of write phase.
      */
     @GridToStringInclude
     protected GridCacheVersion endVer;
@@ -218,9 +218,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private Map<Integer, Set<Integer>> invalidParts;
 
     /**
-     * Transaction state. Note that state is not protected, as we want to
-     * always use {@link #state()} and {@link #state(TransactionState)}
-     * methods.
+     * Transaction state. Note that state is not protected, as we want to always use {@link #state()} and {@link
+     * #state(TransactionState)} methods.
      */
     @GridToStringInclude
     private volatile TransactionState state = ACTIVE;
@@ -429,27 +428,36 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
+     *
+     * @param nodeStopping {@code True} if tx was cancelled during node stop.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void uncommit() {
-        for (IgniteTxEntry e : writeMap().values()) {
-            try {
-                GridCacheEntryEx Entry = e.cached();
+    protected void uncommit(boolean nodeStopping) {
+        try {
+            if (!nodeStopping) {
+                for (IgniteTxEntry e : writeMap().values()) {
+                    try {
+                        GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP)
-                    Entry.invalidate(null, xidVer);
-            }
-            catch (Throwable t) {
-                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+                        if (e.op() != NOOP)
+                            entry.invalidate(xidVer);
+                    }
+                    catch (Throwable t) {
+                        U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                if (t instanceof Error)
-                    throw (Error)t;
+                        if (t instanceof Error)
+                            throw (Error)t;
 
-                break;
+                        break;
+                    }
+                }
+
+                cctx.tm().uncommitTx(this);
             }
         }
-
-        cctx.tm().uncommitTx(this);
+        catch (Exception ex) {
+            U.error(log, "Failed to do uncommit.", ex);
+        }
     }
 
     /** {@inheritDoc} */
@@ -585,6 +593,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Finalization status.
      */
+
     protected FinalizationStatus finalizationStatus() {
         return finalizing;
     }
@@ -1047,7 +1056,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     *
      * @param state State to set.
      * @param timedOut Timeout flag.
      * @return {@code True} if state changed.
@@ -1241,7 +1249,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param commit Commit flag.
      * @throws IgniteCheckedException In case of error.
      */
-    protected void sessionEnd(final Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
+    protected void sessionEnd(final Collection<CacheStoreManager> stores,
+        boolean commit) throws IgniteCheckedException {
         Iterator<CacheStoreManager> it = stores.iterator();
 
         Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
@@ -1254,9 +1263,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     * Performs batch database operations. This commit must be called
-     * before cache update. This way if there is a DB failure,
-     * cache transaction can still be rolled back.
+     * Performs batch database operations. This commit must be called before cache update. This way if there is a DB
+     * failure, cache transaction can still be rolled back.
      *
      * @param writeEntries Transaction write set.
      * @throws IgniteCheckedException If batch update failed.
@@ -1703,7 +1711,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         // Try to take either entry-recorded primary node ID,
         // or transaction node ID from near-local transactions.
-        UUID nodeId = e.nodeId() == null ? local() ? this.nodeId :  null : e.nodeId();
+        UUID nodeId = e.nodeId() == null ? local() ? this.nodeId : null : e.nodeId();
 
         if (nodeId != null && nodeId.equals(cctx.localNodeId()))
             return true;

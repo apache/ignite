@@ -3068,17 +3068,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer)
+    @Override public synchronized boolean invalidate(GridCacheVersion newVer)
         throws IgniteCheckedException {
         assert newVer != null;
 
-        if (curVer == null || ver.equals(curVer)) {
-            CacheObject val = saveValueForIndexUnlocked();
+        value(null);
 
-            value(null);
-
-            ver = newVer;
-            flags &= ~IS_EVICT_DISABLED;
+        ver = newVer;
+        flags &= ~IS_EVICT_DISABLED;
 
             if (log.isTraceEnabled()) {
                 log.trace("invalidate releaseSwap [key=" + key +
@@ -3092,8 +3089,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             clearIndex(val);
 
-            onInvalidate();
-        }
+        onInvalidate();
 
         return obsoleteVersionExtras() != null;
     }
@@ -3103,46 +3099,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected void onInvalidate() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean invalidate(@Nullable CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
-        if (F.isEmptyOrNulls(filter)) {
-            synchronized (this) {
-                checkObsolete();
-
-                invalidate(null, nextVersion());
-
-                return true;
-            }
-        }
-        else {
-            // For optimistic checking.
-            GridCacheVersion startVer;
-
-            synchronized (this) {
-                checkObsolete();
-
-                startVer = ver;
-            }
-
-            if (!cctx.isAll(this, filter))
-                return false;
-
-            synchronized (this) {
-                checkObsolete();
-
-                if (startVer.equals(ver)) {
-                    invalidate(null, nextVersion());
-
-                    return true;
-                }
-            }
-
-            // If version has changed then repeat the process.
-            return invalidate(filter);
-        }
     }
 
     /**
