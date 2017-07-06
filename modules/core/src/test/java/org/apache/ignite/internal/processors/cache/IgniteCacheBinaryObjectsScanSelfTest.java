@@ -40,10 +40,10 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String PERSON_CLS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
+    protected static final String PERSON_CLS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
 
     /** */
-    private static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
+    protected static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
 
     /** */
     private static ClassLoader ldr;
@@ -75,7 +75,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setIncludeEventTypes(new int[0]);
+        cfg.setIncludeEventTypes(getIncludeEventTypes());
 
         cfg.setMarshaller(null);
         cfg.setPeerClassLoadingEnabled(false);
@@ -87,6 +87,13 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
         }
 
         return cfg;
+    }
+
+    /**
+     * @return EventTypes to record
+     */
+    protected int[] getIncludeEventTypes() {
+        return new int[0];
     }
 
     /**
