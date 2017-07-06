@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -169,7 +168,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         setPartitions(parts);
 
         this.backupFilter = backupFilter;
-        this.log = new Log4JLogger().getLogger(RendezvousAffinityFunction.class);
+//        this.log = new Log4JLogger().getLogger(RendezvousAffinityFunction.class);
     }
 
     /**
