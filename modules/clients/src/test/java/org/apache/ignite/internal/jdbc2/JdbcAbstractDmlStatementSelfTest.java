@@ -145,7 +145,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     }
 
     /**
-     *
+     * Clean up working directory.
      */
     private void cleanUpWorkingDir() throws Exception {
         String workDir = U.defaultWorkDirectory();
