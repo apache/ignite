@@ -1710,7 +1710,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
-            nearEntry.invalidate(null, ver);
+            nearEntry.invalidate(ver);
     }
 
     /**
