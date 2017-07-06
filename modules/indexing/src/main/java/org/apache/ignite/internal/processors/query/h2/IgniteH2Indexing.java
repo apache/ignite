@@ -1708,7 +1708,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (s == null)
             return Collections.emptySet();
 
-        return s.tables();
+        List<H2TableDescriptor> tables = new ArrayList<>();
+
+        for (H2TableDescriptor tbl: s.tables()) {
+            if (F.eq(tbl.cache().name(), cacheName))
+                tables.add(tbl);
+        }
+
+        return tables;
     }
 
     /** {@inheritDoc} */
