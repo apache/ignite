@@ -179,11 +179,6 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtFinishExchangeMessage.class, this);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -271,5 +266,10 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
         }
 
         return reader.afterMessageRead(GridDhtFinishExchangeMessage.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtFinishExchangeMessage.class, this);
     }
 }

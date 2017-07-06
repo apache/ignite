@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -1048,7 +1049,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(1);
+        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(2);
     }
 
     /**
@@ -1056,7 +1057,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(1);
+        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(2);
     }
 
     /**
@@ -1147,7 +1148,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
         IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
 
-        U.sleep(1_000);
+        U.sleep(2_000);
 
         assertTrue(fut0.isDone());
         assertTrue(fut1.isDone()); // New coord can't complete exchange without all nodes.
@@ -1157,9 +1158,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         GridFutureAdapter<Boolean> ackFut = U.field(fut1, "ackFut");
         assertTrue(ackFut.isDone());
 
-        stopNode(0, ord);
-
-        checkAffinity(1 + cnt, topVer(ord, 0), true);
+//        stopNode(0, ord);
+//
+//        checkAffinity(1 + cnt, topVer(ord, 0), true);
     }
 
     private void doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2(int cnt) throws Exception {
