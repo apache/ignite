@@ -64,6 +64,10 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     @GridToStringInclude
     private GridDhtPartitionsFullMessage partFullMsg;
 
+    /** */
+    @GridToStringInclude
+    private UUID ackUuid;
+
     /**
      * Default constructor.
      */
@@ -79,10 +83,12 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     public GridDhtFinishExchangeMessage(
         GridDhtPartitionExchangeId exchId,
         Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
-        GridDhtPartitionsFullMessage partFullMsg) {
+        GridDhtPartitionsFullMessage partFullMsg,
+        UUID ackUuid) {
         this.exchId = exchId;
         this.assignmentChange = assignmentChange;
         this.partFullMsg = partFullMsg;
+        this.ackUuid = ackUuid;
     }
 
     /**
@@ -141,7 +147,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /**
@@ -156,6 +162,25 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
      */
     public void partitionFullMessage(GridDhtPartitionsFullMessage partFullMsg) {
         this.partFullMsg = partFullMsg;
+    }
+
+    /**
+     * @param ackUuid New ack uuid.
+     */
+    public void ackUuid(UUID ackUuid) {
+        this.ackUuid = ackUuid;
+    }
+
+    /**
+     * @return Ack uuid.
+     */
+    public UUID ackUuid() {
+        return ackUuid;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtFinishExchangeMessage.class, this);
     }
 
     /** {@inheritDoc} */
@@ -191,6 +216,11 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
                 writer.incrementState();
 
+            case 6:
+                if (!writer.writeUuid("ackUuid", ackUuid))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -231,13 +261,15 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
+            case 6:
+                ackUuid = reader.readUuid("ackUuid");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtFinishExchangeMessage.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtFinishExchangeMessage.class, this);
     }
 }

@@ -33,7 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -73,6 +72,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -1046,8 +1047,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(1, false);
+    public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange() throws Exception {
+        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(1);
     }
 
     /**
@@ -1055,34 +1056,17 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished2() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(2, false);
+    public void testCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange() throws Exception {
+        doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(1);
     }
+
 
     /**
      * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
      *
      * @throws Exception
      */
-    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished3() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(1, true);
-    }
-
-    /**
-     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
-     *
-     * @throws Exception
-     */
-    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished4() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(2, true);
-    }
-
-    /**
-     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
-     *
-     * @throws Exception
-     */
-    private void doTestCoordinatorLeaveAfterNodeLeavesExchangeFinished(int cnt, boolean delayToNewCrd) throws Exception {
+    private void doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(int cnt) throws Exception {
         int ord = 1;
 
         Ignite ignite0 = startServer(ord - 1, ord++);
@@ -1097,10 +1081,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi0 =
                 (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
-        if (delayToNewCrd)
-            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
-        else
-            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
+        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
 
         stopNode(3, ord);
 
@@ -1114,7 +1095,48 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertTrue(fut0.isDone());
         assertFalse(fut1.isDone()); // New coord can't complete exchange without all nodes.
-        assertTrue(delayToNewCrd ? fut2.isDone() : !fut2.isDone());
+        assertTrue(fut2.isDone());
+
+        // Must be acked.
+        GridFutureAdapter<Boolean> ackFut = U.field(fut1, "ackFut");
+        assertTrue(ackFut.isDone());
+
+        stopNode(0, ord);
+
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
+    }
+
+    private void doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(int cnt) throws Exception {
+        int ord = 1;
+
+        Ignite ignite0 = startServer(ord - 1, ord++);
+
+        Ignite ignite1 = startServer(ord - 1, ord++);
+
+        Ignite ignite2 = startServer(ord - 1, ord++);
+
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
+
+        TestRecordingCommunicationSpi spi0 =
+            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+
+        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
+        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
+
+        stopNode(3, ord);
+
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
+
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+
+        U.sleep(1_000);
+
+        assertTrue(fut0.isDone());
+        assertFalse(fut1.isDone()); // New coord can't complete exchange without all nodes.
+        assertFalse(fut2.isDone());
 
         stopNode(0, ord);
 
@@ -1269,6 +1291,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 //            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
 //        else
         spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
+
+        TestRecordingCommunicationSpi spi1 =
+            (TestRecordingCommunicationSpi) ignite1.configuration().getCommunicationSpi();
+
+        spi1.blockMessages(new IgnitePredicate<GridIoMessage>() {
+            @Override public boolean apply(GridIoMessage message) {
+                return message.message() instanceof GridDhtPartitionsSingleRequest;
+            }
+        });
 
         stopNode(3, ord);
 

@@ -934,7 +934,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
-        assert !node.isLocal();
+        assert !node.isLocal() : node;
 
         if (!onSend(msg, node.id()))
             return;

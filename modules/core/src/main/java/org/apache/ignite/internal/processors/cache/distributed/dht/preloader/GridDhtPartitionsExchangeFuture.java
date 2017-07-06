@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -53,7 +52,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -76,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridAtomicLong;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -165,6 +162,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private AtomicBoolean added = new AtomicBoolean(false);
+
+    /** */
+    private AtomicBoolean waitAck = new AtomicBoolean(false);
 
     /** Event latch. */
     @GridToStringExclude
@@ -1244,7 +1244,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** */
-    private void sendAck(ClusterNode node) throws IgniteCheckedException {
+    private void sendAck(UUID uuid) throws IgniteCheckedException {
+        if (uuid == null)
+            return;
+
+        ClusterNode node = discoCache.node(uuid);
+
+        if (node == null)
+            return;
+
+        boolean alive = cctx.discovery().alive(node);
+
+        if (!alive)
+            return;
+
+        // Local not may become next coordinator.
+        if (node.isLocal())
+            return;
+
         exchLog.info("Send ack from " + cctx.localNode() + " to " + node);
 
         GridDhtFinishExchangeAckMessage m = new GridDhtFinishExchangeAckMessage(exchangeId());
@@ -1634,7 +1651,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
 
-            GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m);
+            ClusterNode n = crd2 == null ? null : crd2;
+
+            GridDhtFinishExchangeMessage msg = new GridDhtFinishExchangeMessage(exchId, assignmentChange, m,
+                n == null ? null : n.id());
 
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
@@ -2081,10 +2101,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param node Message sender node.
      * @param msg Message.
      */
-    public void onFinishExchangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg, final boolean sendAck) {
+    public void onFinishExchangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg, final boolean sndAck) {
         assert exchId.equals(msg.exchangeId()) : msg;
 
-        if (isDone())
+        assert crd != null;
+
+        if (waitAck.get()) // Prevent double completion.
             return;
 
         onDiscoveryEvent(new IgniteRunnable() {
@@ -2096,13 +2118,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert centralizedAff;
 
                     if (crd.equals(node)) {
-                        // Waiting acks from other nodes before completing exchange on next coord.
+                        // Delay processing until all acks are received.
+                        boolean needWait = crd2 != null && crd2.isLocal() && !crd2.equals(crd) && !acked.isEmpty() &&
+                            discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED;
 
-                        if (crd2 != null && crd2.isLocal() && !acked.isEmpty() &&
-                                discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
+                        boolean changed = waitAck.compareAndSet(false, true);
 
-                            ClusterNode tmp = crd2;
+                        assert changed;
 
+                        if (needWait) {
                             while (true) {
                                 try {
                                     ackFut.get(10, TimeUnit.SECONDS);
@@ -2119,9 +2143,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                     return;
                                 }
                             }
-
-                            if (tmp.equals(crd2)) // Coordinator changes, exchange will be completed from another thread.
-                                return;
                         }
 
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
@@ -2139,9 +2160,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         onDone(topologyVersion());
 
-                        if (sendAck)
+                        if (sndAck && !needWait)
                             try {
-                                sendAck(node);
+                                sendAck(msg.ackUuid());
                             } catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to acknowledge exchange completion", e);
                             }
@@ -2270,7 +2291,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                                 crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
-                                crd2 = srvNodes.size() <= 1 ? null : srvNodes.get(1);
+                                // Update next coordinator only on non-coordinator nodes.
+                                if (crd != null && !crd.isLocal())
+                                    crd2 = srvNodes.size() <= 1 ? null : srvNodes.get(1);
                             }
 
                             if (crd != null && crd.isLocal()) {
