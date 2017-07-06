@@ -869,9 +869,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.TypeDecimal:
                     TransferBytes(inStream, outStream, 4); // Transfer scale
 
-                    int magLen = BinaryUtils.ReadUvarint(inStream); // Transfer magnitude length.
+                    int magLen = BinaryUtils.ReadArrayLength(inStream); // Transfer magnitude length.
 
-                    BinaryUtils.WriteUvarint(magLen, outStream);
+                    BinaryUtils.WriteArrayLength(magLen, outStream);
 
                     TransferBytes(inStream, outStream, magLen); // Transfer magnitude.
 
@@ -936,9 +936,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.TypeArrayString:
                 case BinaryUtils.TypeArrayGuid:
                 case BinaryUtils.TypeArrayTimestamp:
-                    int arrLen = BinaryUtils.ReadUvarint(inStream);
+                    int arrLen = BinaryUtils.ReadArrayLength(inStream);
 
-                    BinaryUtils.WriteUvarint(arrLen, outStream);
+                    BinaryUtils.WriteArrayLength(arrLen, outStream);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, null);
@@ -958,9 +958,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);  // String data.
                     }
 
-                    arrLen = BinaryUtils.ReadUvarint(inStream);
+                    arrLen = BinaryUtils.ReadArrayLength(inStream);
 
-                    BinaryUtils.WriteUvarint(arrLen, outStream);
+                    BinaryUtils.WriteArrayLength(arrLen, outStream);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, EmptyVals);
@@ -1038,9 +1038,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void TransferArray(BinaryHeapStream inStream, IBinaryStream outStream,
             int elemSize)
         {
-            int len = BinaryUtils.ReadUvarint(inStream);
+            int len = BinaryUtils.ReadArrayLength(inStream);
 
-            BinaryUtils.WriteUvarint(len, outStream);
+            BinaryUtils.WriteArrayLength(len, outStream);
 
             TransferBytes(inStream, outStream, elemSize * len);
         }

@@ -252,6 +252,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static readonly bool UseStringSerializationVer2 =
             (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
 
+        /** Length of arrays format environment variable. */
+        public const string IgniteNoVarintArrayLength = "IGNITE_NO_VARINT_ARRAY_LENGTH";
+
+        /** Length of arrays writing mode. */
+        public static readonly bool UseVarintArrayLenght =
+            (Environment.GetEnvironmentVariable(IgniteNoVarintArrayLength) ?? "false") == "true";
+
         /// <summary>
         /// Default marshaller.
         /// </summary>
@@ -267,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteBooleanArray(bool[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteBoolArray(vals);
         }
@@ -279,7 +286,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static bool[] ReadBooleanArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadBoolArray(len);
         }
@@ -292,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteByteArray(byte[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteByteArray(vals);
         }
@@ -304,7 +311,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static byte[] ReadByteArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadByteArray(len);
         }
@@ -316,7 +323,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static unsafe sbyte[] ReadSbyteArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             sbyte[] res = new sbyte[len];
 
@@ -335,7 +342,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteShortArray(short[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteShortArray(vals);
         }
@@ -347,7 +354,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static unsafe ushort[] ReadUshortArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             ushort[] res = new ushort[len];
 
@@ -366,7 +373,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static short[] ReadShortArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadShortArray(len);
         }
@@ -378,7 +385,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteIntArray(int[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteIntArray(vals);
         }
@@ -390,7 +397,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static int[] ReadIntArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadIntArray(len);
         }
@@ -402,7 +409,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static unsafe uint[] ReadUintArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             uint[] res = new uint[len];
 
@@ -421,7 +428,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteLongArray(long[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteLongArray(vals);
         }
@@ -433,7 +440,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static long[] ReadLongArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadLongArray(len);
         }
@@ -445,7 +452,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static unsafe ulong[] ReadUlongArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             ulong[] res = new ulong[len];
 
@@ -464,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteCharArray(char[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteCharArray(vals);
         }
@@ -476,7 +483,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static char[] ReadCharArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadCharArray(len);
         }
@@ -488,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteFloatArray(float[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteFloatArray(vals);
         }
@@ -500,7 +507,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static float[] ReadFloatArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadFloatArray(len);
         }
@@ -512,7 +519,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteDoubleArray(double[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             stream.WriteDoubleArray(vals);
         }
@@ -524,7 +531,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static double[] ReadDoubleArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             return stream.ReadDoubleArray(len);
         }
@@ -565,7 +572,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">Stream.</param>
         public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             foreach (DateTime? val in vals)
             {
@@ -593,7 +600,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 int byteCnt = GetUtf8ByteCount(chars, charCnt);
 
-                WriteUvarint(byteCnt, stream);
+                WriteArrayLength(byteCnt, stream);
 
                 stream.WriteString(chars, charCnt, byteCnt, Utf8);
             }
@@ -783,7 +790,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteStringArray(string[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             foreach (string val in vals)
             {
@@ -795,6 +802,37 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                     stream.WriteByte(HdrNull);
             }
+        }
+
+        /**
+         * <summary>
+         * Writes value of length of an array, which can be written in default format or varint encoding.
+         * Writing method depends on the constant <see cref="UseVarintArrayLenght"/>.
+         * </summary>
+         * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+         * <param name="val">Integer value.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteArrayLength(int val, IBinaryStream stream)
+        {
+            if (!UseVarintArrayLenght)
+                stream.WriteInt(val);
+            else
+                WriteUvarint(val, stream);
+        }
+
+        /**
+         * <summary>
+         * Reads value of length of an array, which can be presented in default format or varint encoding.
+         * Reading method depends on the constant <see cref="UseVarintArrayLenght"/>.
+         * </summary>
+         * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+         * <param name="stream">Stream.</param>
+         * <returns>Integer value.</returns>
+         */
+        public static int ReadArrayLength(IBinaryStream stream)
+        {
+            return !UseVarintArrayLenght ? stream.ReadInt() : ReadUvarint(stream);
         }
 
         /**
@@ -865,7 +903,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (idx == -1)
             {
                 // Writing zero.
-                WriteUvarint(1, stream);
+                WriteArrayLength(1, stream);
                 stream.WriteByte(0);
             }
             else
@@ -889,14 +927,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part24 & 0x80) == 0x80)
                             {
-                                WriteUvarint(len + 1, stream);
+                                WriteArrayLength(len + 1, stream);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                WriteUvarint(len, stream);
+                                WriteArrayLength(len, stream);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part24 | -0x80) : part24));
                             stream.WriteByte((byte)part16);
@@ -907,14 +945,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part16 & 0x80) == 0x80)
                             {
-                                WriteUvarint(len, stream);
+                                WriteArrayLength(len, stream);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                WriteUvarint(len - 1, stream);
+                                WriteArrayLength(len - 1, stream);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part16 | -0x80) : part16));
                             stream.WriteByte((byte)part8);
@@ -924,14 +962,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part8 & 0x80) == 0x80)
                             {
-                                WriteUvarint(len - 1, stream);
+                                WriteArrayLength(len - 1, stream);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                WriteUvarint(len - 2, stream);
+                                WriteArrayLength(len - 2, stream);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part8 | -0x80) : part8));
                             stream.WriteByte((byte)part0);
@@ -940,14 +978,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part0 & 0x80) == 0x80)
                             {
-                                WriteUvarint(len - 2, stream);
+                                WriteArrayLength(len - 2, stream);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                WriteUvarint(len - 3, stream);
+                                WriteArrayLength(len - 3, stream);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part0 | -0x80) : part0));
                         }
@@ -1028,7 +1066,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteDecimalArray(decimal?[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             foreach (var val in vals)
             {
@@ -1050,7 +1088,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static decimal?[] ReadDecimalArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             var vals = new decimal?[len];
 
@@ -1190,7 +1228,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">Stream.</param>
         public static void WriteGuidArray(Guid?[] vals, IBinaryStream stream)
         {
-            WriteUvarint(vals.Length, stream);
+            WriteArrayLength(vals.Length, stream);
 
             foreach (Guid? val in vals)
             {
@@ -1236,7 +1274,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ctx.WriteString(elemType.FullName);
             }
 
-            WriteUvarint(val.Length, stream);
+            WriteArrayLength(val.Length, stream);
 
             for (int i = 0; i < val.Length; i++)
                 ctx.Write(val.GetValue(i));
@@ -1282,7 +1320,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ctx.ReadString();
             }
 
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             var vals = new T[len];
 
@@ -1301,7 +1339,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Timestamp array.</returns>
         public static DateTime?[] ReadTimestampArray(IBinaryStream stream)
         {
-            int len = ReadUvarint(stream);
+            int len = ReadArrayLength(stream);
 
             DateTime?[] vals = new DateTime?[len];
 
