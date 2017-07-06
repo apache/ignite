@@ -51,7 +51,6 @@ public class GridJtaTransactionManagerSelfTest extends GridCacheAbstractSelfTest
             private static final long serialVersionUID = 0L;
 
             @Override public TransactionManager create() {
-
                 return jotm.getTransactionManager();
             }
         });
@@ -62,6 +61,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCacheAbstractSelfTest
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         jotm = new Jotm(true, false);
+
         Current.setAppServer(false);
 
         super.beforeTestsStarted();
@@ -83,7 +83,6 @@ public class GridJtaTransactionManagerSelfTest extends GridCacheAbstractSelfTest
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
-
 
     /**
      * Test for switching tx context by JTA Manager.

@@ -257,7 +257,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final CyclicBarrier barrier = new CyclicBarrier(concurrentThreadsNum + 1);
         final LongAdder8 failedTxNumber = new LongAdder8();
         final AtomicInteger threadCnt = new AtomicInteger();
         final AtomicInteger successfulResume = new AtomicInteger();
@@ -274,7 +274,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
                 return null;
             }
-        }, 25, "th-suspend");
+        }, concurrentThreadsNum, "th-suspend");
 
         barrier.await();
 
@@ -287,7 +287,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
             clientTx.close();
 
         assertTrue(successfulResume.get() < 2);
-        assertEquals(25, failedTxNumber.intValue() + successfulResume.intValue());
+        assertEquals(concurrentThreadsNum, failedTxNumber.intValue() + successfulResume.intValue());
         assertNull(remoteCache.get(remotePrimaryKey));
     }
 
@@ -313,7 +313,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        final CyclicBarrier barrier = new CyclicBarrier(25);
+        final CyclicBarrier barrier = new CyclicBarrier(concurrentThreadsNum);
         final LongAdder8 failNumber = new LongAdder8();
         final AtomicInteger threadCnt = new AtomicInteger();
         final AtomicInteger successfulResume = new AtomicInteger();
@@ -332,10 +332,10 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
                 return null;
             }
-        }, 25);
+        }, concurrentThreadsNum);
 
         assertEquals(1, successfulResume.get());
-        assertEquals(24, failNumber.intValue());
+        assertEquals(concurrentThreadsNum - 1, failNumber.intValue());
         assertNull(remoteCache.get(remotePrimaryKey));
     }
 
@@ -361,7 +361,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final CyclicBarrier barrier = new CyclicBarrier(concurrentThreadsNum + 1);
         final LongAdder8 failNumber = new LongAdder8();
         final AtomicInteger threadCnt = new AtomicInteger();
         final AtomicInteger successfulResume = new AtomicInteger();
@@ -384,7 +384,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
                         return null;
                     }
-                }, 25, "th-commit");
+                }, concurrentThreadsNum, "th-commit");
 
                 barrier.await();
 
@@ -397,7 +397,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         }, 1);
 
         assertEquals(0, successfulResume.get());
-        assertEquals(25, failNumber.intValue());
+        assertEquals(concurrentThreadsNum, failNumber.intValue());
         assertEquals(1, jcache(0).get(remotePrimaryKey));
     }
 
@@ -423,7 +423,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final CyclicBarrier barrier = new CyclicBarrier(concurrentThreadsNum + 1);
         final LongAdder8 failNumber = new LongAdder8();
         final AtomicInteger threadCnt = new AtomicInteger();
         final AtomicInteger successfulResume = new AtomicInteger();
@@ -446,7 +446,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
                         return null;
                     }
-                }, 25, "th-rollback");
+                }, concurrentThreadsNum, "th-rollback");
 
                 barrier.await();
 
@@ -459,7 +459,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         }, 1);
 
         assertEquals(0, successfulResume.get());
-        assertEquals(25, failNumber.intValue());
+        assertEquals(concurrentThreadsNum, failNumber.intValue());
         assertNull(jcache(0).get(remotePrimaryKey));
     }
 
@@ -485,7 +485,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final CyclicBarrier barrier = new CyclicBarrier(concurrentThreadsNum + 1);
         final LongAdder8 failNumber = new LongAdder8();
         final AtomicInteger threadCnt = new AtomicInteger();
         final AtomicInteger successfulResume = new AtomicInteger();
@@ -508,7 +508,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
                         return null;
                     }
-                }, 25, "th-close");
+                }, concurrentThreadsNum, "th-close");
 
                 barrier.await();
 
@@ -521,7 +521,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         }, 1);
 
         assertEquals(0, successfulResume.get());
-        assertEquals(25, failNumber.intValue());
+        assertEquals(concurrentThreadsNum, failNumber.intValue());
         assertNull(jcache(0).get(remotePrimaryKey));
     }
 
@@ -582,7 +582,6 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
                 default:
                     assert false;
-
             }
 
             fail("Concurrent operation must failed, because it doesn't own transaction.");

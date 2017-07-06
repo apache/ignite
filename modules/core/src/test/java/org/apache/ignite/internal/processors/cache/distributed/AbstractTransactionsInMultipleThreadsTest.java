@@ -93,6 +93,7 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
             assertTrue(txMgr.activeTransactions().isEmpty());
         }
     }
+
     /**
      * Starts test scenario for all transaction controls, and isolation levels.
      *
