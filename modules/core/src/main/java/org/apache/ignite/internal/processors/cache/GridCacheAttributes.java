@@ -266,6 +266,13 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Write coalescing flag.
+     */
+    public boolean writeBehindCoalescing() {
+        return ccfg.getWriteBehindCoalescing();
+    }
+
+    /**
      * @return Interceptor class name.
      */
     public String interceptorClassName() {
