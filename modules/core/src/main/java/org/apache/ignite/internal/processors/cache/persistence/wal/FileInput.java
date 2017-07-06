@@ -26,21 +26,28 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaC
 import org.jetbrains.annotations.NotNull;
 
 /**
- * File input.
+ * File input, backed by byte buffer file input.
+ * This class allows to read data by chunks from file and then read primitives
  */
 public final class FileInput implements ByteBufferBackedDataInput {
-    /** */
+    /**
+     * Buffer for reading blocks of data into.
+     * <b>Note:</b> biggest block requested from this input can't be longer than buffer capacity
+     */
     private ByteBuffer buf;
 
-    /** */
+    /** File channel to read chunks from */
     private FileChannel ch;
 
     /** */
     private long pos;
 
+    /** */
+    private ByteBufferExpander expBuf;
+
     /**
-     * @param ch  Channel.
-     * @param buf Buffer.
+     * @param ch  Channel to read from
+     * @param buf Buffer for reading blocks of data into
      */
     public FileInput(FileChannel ch, ByteBuffer buf) throws IOException {
         assert ch != null;
@@ -51,6 +58,16 @@ public final class FileInput implements ByteBufferBackedDataInput {
         pos = ch.position();
 
         clearBuffer();
+    }
+
+    /**
+     * @param ch Channel to read from
+     * @param expBuf ByteBufferWrapper with ability expand buffer dynamically.
+     */
+    public FileInput(FileChannel ch, ByteBufferExpander expBuf) throws IOException {
+        this(ch, expBuf.buffer());
+
+        this.expBuf = expBuf;
     }
 
     /**
@@ -92,8 +109,11 @@ public final class FileInput implements ByteBufferBackedDataInput {
         if (available >= requested)
             return;
 
-        if (buf.capacity() < requested)
-            throw new IOException("Requested size is greater than buffer: " + requested);
+        if (buf.capacity() < requested) {
+            buf = expBuf.expand(requested);
+
+            assert available == buf.remaining();
+        }
 
         buf.compact();
 
@@ -101,7 +121,7 @@ public final class FileInput implements ByteBufferBackedDataInput {
             int read = ch.read(buf);
 
             if (read == -1)
-                throw new EOFException();
+                throw new EOFException("EOF at position [" + ch.position() + "] expected to read [" + requested + "] bytes");
 
             available += read;
 

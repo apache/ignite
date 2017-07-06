@@ -211,8 +211,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.isDaemon() || !ctx.state().active())
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (ctx.isDaemon() || !active)
             return;
 
         onKernalStart0();
@@ -224,7 +224,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @throws IgniteCheckedException If failed.
      */
     private void onKernalStart0() throws IgniteCheckedException {
-        cache = ctx.cache().utilityCache();
+        updateUtilityCache();
 
         if (!ctx.clientNode())
             ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
@@ -283,6 +283,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
+    }
+
+    /**
+     *
+     */
+    public void updateUtilityCache() {
+        cache = ctx.cache().utilityCache();
     }
 
     /** {@inheritDoc} */
@@ -363,7 +370,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) {
         if (log.isDebugEnabled())
             log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
