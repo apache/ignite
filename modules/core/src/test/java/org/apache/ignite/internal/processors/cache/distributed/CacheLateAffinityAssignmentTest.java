@@ -1047,8 +1047,24 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange() throws Exception {
+    public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1() throws Exception {
         doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(1);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2() throws Exception {
+        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(1);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange3() throws Exception {
+        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2(1);
     }
 
     /**
@@ -1106,7 +1122,47 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         checkAffinity(1 + cnt, topVer(ord, 0), true);
     }
 
-    private void doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(int cnt) throws Exception {
+    /**
+     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
+     *
+     * @throws Exception
+     */
+    private void doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(int cnt) throws Exception {
+        int ord = 1;
+
+        Ignite ignite0 = startServer(ord - 1, ord++);
+
+        Ignite ignite1 = startServer(ord - 1, ord++);
+
+        Ignite ignite2 = startServer(ord - 1, ord++);
+
+        for (int i = 0; i < cnt; i++)
+            startServer(ord - 1, ord++);
+
+        stopNode(3, ord);
+
+        AffinityTopologyVersion topVer = topVer(ord++, 0);
+
+        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
+        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
+        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+
+        U.sleep(1_000);
+
+        assertTrue(fut0.isDone());
+        assertTrue(fut1.isDone()); // New coord can't complete exchange without all nodes.
+        assertTrue(fut2.isDone());
+
+        // Must be acked.
+        GridFutureAdapter<Boolean> ackFut = U.field(fut1, "ackFut");
+        assertTrue(ackFut.isDone());
+
+        stopNode(0, ord);
+
+        checkAffinity(1 + cnt, topVer(ord, 0), true);
+    }
+
+    private void doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2(int cnt) throws Exception {
         int ord = 1;
 
         Ignite ignite0 = startServer(ord - 1, ord++);
@@ -1121,7 +1177,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi0 =
             (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
-        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
         spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
         stopNode(3, ord);
@@ -1143,134 +1198,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         checkAffinity(1 + cnt, topVer(ord, 0), true);
     }
 
-    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished5() throws Exception {
-        int ord = 1;
-
-        Ignite ignite0 = startServer(ord - 1, ord++);
-
-        Ignite ignite1 = startServer(ord - 1, ord++);
-
-        checkAffinity(ord - 1, topVer(ord - 1, 0), false);
-
-        checkAffinity(ord - 1, topVer(ord - 1, 1), true);
-
-        Ignite ignite2 = startServer(ord - 1, ord++);
-
-        int cnt = 2;
-
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
-
-        TestRecordingCommunicationSpi spi0 =
-                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
-
-        spi0.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage msg) {
-                Message msg0 = msg.message();
-
-                return msg0.getClass().equals(GridDhtFinishExchangeMessage.class);
-            }
-        });
-
-        stopNode(3, ord);
-
-        AffinityTopologyVersion topVer = topVer(ord++, 0);
-
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(1_000);
-
-        assertTrue(fut0.isDone());
-        assertFalse(fut1.isDone());
-        assertFalse(fut2.isDone());
-
-        TestRecordingCommunicationSpi spi2 =
-                (TestRecordingCommunicationSpi) ignite2.configuration().getCommunicationSpi();
-
-        spi2.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override
-            public boolean apply(GridIoMessage msg) {
-                Message msg0 = msg.message();
-
-                return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class);
-            }
-        });
-
-        stopNode(0, ord);
-
-        spi2.stopBlock();
-
-        checkAffinity(1 + cnt, topVer(ord, 0), true);
-    }
-
-    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished6() throws Exception {
-        int ord = 1;
-
-        Ignite ignite0 = startServer(ord - 1, ord++);
-
-        Ignite ignite1 = startServer(ord - 1, ord++);
-
-        checkAffinity(ord - 1, topVer(ord - 1, 0), false);
-
-        checkAffinity(ord - 1, topVer(ord - 1, 1), true);
-
-        Ignite ignite2 = startServer(ord - 1, ord++);
-
-        checkAffinity(ord - 1, topVer(ord - 1, 0), false);
-
-        checkAffinity(ord - 1, topVer(ord - 1, 1), true);
-
-        int cnt = 2;
-
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
-
-        TestRecordingCommunicationSpi spi0 =
-                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
-
-        spi0.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage msg) {
-                Message msg0 = msg.message();
-
-                return msg0.getClass().equals(GridDhtFinishExchangeMessage.class);
-            }
-        });
-
-        TestRecordingCommunicationSpi spi2 =
-                (TestRecordingCommunicationSpi) ignite2.configuration().getCommunicationSpi();
-
-        spi2.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage msg) {
-                Message msg0 = msg.message();
-
-                return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class);
-            }
-        });
-
-        stopNode(3, ord);
-
-        AffinityTopologyVersion topVer = topVer(ord++, 0);
-
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(1_000);
-
-        assertFalse(fut0.isDone());
-        assertFalse(fut1.isDone());
-        assertFalse(fut2.isDone());
-
-        stopNode(0, ord);
-
-        spi2.stopBlock();
-
-        checkAffinity(1 + cnt, topVer(ord, 0), true);
-    }
-
-    public void testCoordinatorLeaveAfterNodeLeavesExchangeFinished7() throws Exception {
+    private void doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(int cnt) throws Exception {
         int ord = 1;
 
         Ignite ignite0 = startServer(ord - 1, ord++);
@@ -1279,27 +1207,14 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startServer(ord - 1, ord++);
 
-        int cnt = 1;
-
         for (int i = 0; i < cnt; i++)
             startServer(ord - 1, ord++);
 
         TestRecordingCommunicationSpi spi0 =
-                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
 
-//        if (delayToNewCrd)
-//            spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
-//        else
+        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
         spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
-
-        TestRecordingCommunicationSpi spi1 =
-            (TestRecordingCommunicationSpi) ignite1.configuration().getCommunicationSpi();
-
-        spi1.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage message) {
-                return message.message() instanceof GridDhtPartitionsSingleRequest;
-            }
-        });
 
         stopNode(3, ord);
 
