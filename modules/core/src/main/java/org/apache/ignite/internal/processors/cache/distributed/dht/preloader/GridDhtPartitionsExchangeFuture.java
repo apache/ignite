@@ -52,8 +52,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
-import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -66,11 +64,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -581,7 +580,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof StartSnapshotOperationAckDiscoveryMessage) {
+                else if (msg instanceof SnapshotDiscoveryMessage) {
                     exchange = CU.clientNode(discoEvt.eventNode()) ?
                         onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
@@ -658,7 +657,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             if (cctx.localNode().isClient())
-                startLocalSnasphotOperation();
+                tryToPerformLocalSnapshotOperation();
 
             exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
@@ -1007,26 +1006,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-
+     * Try to start local snapshot operation if it is needed by discovery event
      */
-    private void startLocalSnasphotOperation() {
-        StartSnapshotOperationAckDiscoveryMessage snapOpMsg= getSnapshotOperationMessage();
+    private void tryToPerformLocalSnapshotOperation() {
+        try {
+            IgniteInternalFuture fut = cctx.snapshot()
+                .tryStartLocalSnapshotOperation(discoEvt);
 
-        if (snapOpMsg != null) {
-            SnapshotOperation op = snapOpMsg.snapshotOperation();
-
-            assert snapOpMsg.needExchange();
-
-            try {
-                IgniteInternalFuture fut = cctx.snapshot()
-                    .startLocalSnapshotOperation(snapOpMsg.initiatorNodeId(), snapOpMsg.snapshotOperation());
-
-                if (fut != null)
-                    fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Error while starting snapshot operation", e);
-            }
+            if (fut != null)
+                fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Error while starting snapshot operation", e);
         }
     }
 
@@ -1395,7 +1386,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        startLocalSnasphotOperation();
+        tryToPerformLocalSnapshotOperation();
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), exchActions, err);
 
@@ -1453,21 +1444,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return dummy;
-    }
-
-    /**
-     *
-     */
-    private StartSnapshotOperationAckDiscoveryMessage getSnapshotOperationMessage() {
-        // If it's a snapshot operation request, synchronously wait for backup start.
-        if (discoEvt != null && discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-            DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
-
-            if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage)
-                return  (StartSnapshotOperationAckDiscoveryMessage)customMsg;
-        }
-
-        return null;
     }
 
     /**

@@ -15,35 +15,19 @@
  * limitations under the License.
  *
  */
-package org.apache.ignite.internal.pagemem.snapshot;
 
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-/** */
-public enum SnapshotOperationType {
-    /** Create. */
-    CREATE,
-    /** Restore. */
-    RESTORE,
-    /** Restore 2. */
-    RESTORE_2_PHASE,
-    /** Move. */
-    MOVE,
-    /** Delete. */
-    DELETE,
-    /** Check. */
-    CHECK;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 
-    /** Enumerated values. */
-    private static final SnapshotOperationType[] VALS = values();
-
+/**
+ * Initial snapshot discovery message with possibility to trigger exchange.
+ */
+public interface SnapshotDiscoveryMessage extends DiscoveryCustomMessage {
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Is exchange needed after receiving this message.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * @return True if exchange is needed, false in other case.
      */
-    @Nullable public static SnapshotOperationType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    boolean needExchange();
 }
