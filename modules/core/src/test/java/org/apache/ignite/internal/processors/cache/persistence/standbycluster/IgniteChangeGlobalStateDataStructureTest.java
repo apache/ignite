@@ -35,9 +35,9 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobalStateAbstractTest {
     /**
-     *
+     * @throws Exception If failed.
      */
-    public void testDeActivateAndActivateAtomicLong() throws Exception{
+    public void testDeActivateAndActivateAtomicLong() throws Exception {
         String lName = "myLong";
 
         Ignite ig1 = primary(0);
@@ -106,7 +106,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testDeActivateAndActivateCountDownLatch() throws Exception {
         final AtomicInteger cnt = new AtomicInteger();

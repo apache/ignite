@@ -98,7 +98,7 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     /**
      * Initial memory region size defined by this memory policy.
      */
-    public long getInitSize() {
+    public long getInitialSize() {
         return initSize;
     }
 
