@@ -79,7 +79,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
         //skipping component type id
         reader.readInt();
 
-        int size = BinaryUtils.doReadUnsignedVarint(reader);
+        int size = BinaryUtils.doReadArrayLength(reader);
 
         BinaryBuilderEnum[] res = new BinaryBuilderEnum[size];
 

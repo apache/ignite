@@ -136,6 +136,10 @@ public class BinaryUtils {
     public static final boolean FIELDS_SORTED_ORDER =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
+    /** Whether to write arrays lengths in varint encoding. */
+    public static final boolean VARINT_ARRAYS_LENGTH =
+        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_VARINT_ARRAY_LENGTH);
+
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
 
@@ -1152,7 +1156,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static byte[] doReadByteArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readByteArray(len);
     }
@@ -1161,7 +1165,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static boolean[] doReadBooleanArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readBooleanArray(len);
     }
@@ -1170,7 +1174,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static short[] doReadShortArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readShortArray(len);
     }
@@ -1179,7 +1183,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static char[] doReadCharArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readCharArray(len);
     }
@@ -1188,7 +1192,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static int[] doReadIntArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readIntArray(len);
     }
@@ -1197,7 +1201,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static long[] doReadLongArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readLongArray(len);
     }
@@ -1206,7 +1210,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static float[] doReadFloatArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readFloatArray(len);
     }
@@ -1215,7 +1219,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static double[] doReadDoubleArray(BinaryInputStream in) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         return in.readDoubleArray(len);
     }
@@ -1225,7 +1229,7 @@ public class BinaryUtils {
      */
     public static BigDecimal doReadDecimal(BinaryInputStream in) {
         int scale = in.readInt();
-        int magLen = doReadUnsignedVarint(in);
+        int magLen = doReadArrayLength(in);
         byte[] mag = in.readByteArray(magLen);
 
         boolean negative = mag[0] < 0;
@@ -1246,7 +1250,7 @@ public class BinaryUtils {
      */
     public static String doReadString(BinaryInputStream in) {
         if (!in.hasArray()) {
-            int len = doReadUnsignedVarint(in);
+            int len = doReadArrayLength(in);
             byte[] arr = in.readByteArray(len);
 
             if (USE_STR_SERIALIZATION_VER_2)
@@ -1255,7 +1259,7 @@ public class BinaryUtils {
                 return new String(arr, UTF_8);
         }
 
-        int strLen = doReadUnsignedVarint(in);
+        int strLen = doReadArrayLength(in);
 
         int pos = in.position();
 
@@ -1318,7 +1322,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         BigDecimal[] arr = new BigDecimal[len];
 
@@ -1343,7 +1347,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static String[] doReadStringArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         String[] arr = new String[len];
 
@@ -1368,7 +1372,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static UUID[] doReadUuidArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         UUID[] arr = new UUID[len];
 
@@ -1393,7 +1397,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static Date[] doReadDateArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         Date[] arr = new Date[len];
 
@@ -1418,7 +1422,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static Timestamp[] doReadTimestampArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         Timestamp[] arr = new Timestamp[len];
 
@@ -1443,7 +1447,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         Time[] arr = new Time[len];
 
@@ -1672,7 +1676,7 @@ public class BinaryUtils {
      * @return Enum array.
      */
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         Object[] arr = (Object[])Array.newInstance(BinaryObject.class, len);
 
@@ -1711,7 +1715,7 @@ public class BinaryUtils {
      */
     public static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
         throws BinaryObjectException {
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         Object[] arr = (Object[])Array.newInstance(cls, len);
 
@@ -1969,7 +1973,7 @@ public class BinaryUtils {
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
 
-        int len = doReadUnsignedVarint(in);
+        int len = doReadArrayLength(in);
 
         Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
 
@@ -2462,6 +2466,119 @@ public class BinaryUtils {
         }
 
         return mergedMap;
+    }
+
+    /**
+     * Reads from {@link BinaryInputStream} value of length of an array,
+     * which can be presented in default format or varint encoding.
+     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know number of bytes which were used for storage of the read value,
+     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     *
+     * @param in BinaryInputStream.
+     * @return Length of an array.
+     */
+    public static int doReadArrayLength(BinaryInputStream in) {
+        if (!VARINT_ARRAYS_LENGTH)
+            return in.readInt();
+
+        return doReadUnsignedVarint(in);
+    }
+
+    /**
+     * Reads from {@link BinaryBuilderReader} value of length of an array,
+     * which can be presented in default format or varint encoding.
+     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know number of bytes which were used for storage of the read value,
+     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     *
+     * @param in BinaryBuilderReader.
+     * @return Length of an array.
+     */
+    public static int doReadArrayLength(BinaryBuilderReader in) {
+        if (!VARINT_ARRAYS_LENGTH)
+            return in.readInt();
+
+        return doReadUnsignedVarint(in);
+    }
+
+    /**
+     * Reads from {@link ByteBuffer} value of length of an array,
+     * which can be presented in default format or varint encoding.
+     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know number of bytes which were used for storage of the read value,
+     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     *
+     * @param buf ByteBuffer.
+     * @return Length of an array.
+     */
+    public static int doReadArrayLength(ByteBuffer buf) {
+        if (!VARINT_ARRAYS_LENGTH)
+            return buf.getInt();
+
+        return doReadUnsignedVarint(buf);
+    }
+
+    /**
+     * Reads value of length of an array, which can be presented in default format or varint encoding.
+     * Starts reading from given offset.
+     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know number of bytes which were used for storage of the read value,
+     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     *
+     * @param arr Bytes array.
+     * @param off Offset.
+     * @return Length of an array.
+     */
+    public static int doReadArrayLength(byte[] arr, int off) {
+        if (!VARINT_ARRAYS_LENGTH)
+            return BinaryPrimitives.readInt(arr, off);
+
+        return doReadUnsignedVarint(arr, off);
+    }
+
+    /**
+     * Reads value of length of an array, which can be presented in default format or varint encoding.
+     * Starts reading from given offset.
+     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know number of bytes which were used for storage of the read value,
+     * use the method {@link #sizeOfArrayLengthValue(int)}.
+     *
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @return Length of an array.
+     */
+    public static int doReadArrayLength(long ptr, int off) {
+        if (!VARINT_ARRAYS_LENGTH)
+            return BinaryPrimitives.readInt(ptr, off);
+
+        return doReadUnsignedVarint(ptr, off);
+    }
+
+    /**
+     * Returns the amount of bytes required to write length of an array,
+     * which can be presented in default format or varint encoding.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     * It depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     *
+     * @param len Array length.
+     * @return Amount of bytes.
+     */
+    public static int sizeOfArrayLengthValue(int len) {
+        if (!VARINT_ARRAYS_LENGTH)
+            return 4;
+
+        return sizeInUnsignedVarint(len);
     }
 
     /**

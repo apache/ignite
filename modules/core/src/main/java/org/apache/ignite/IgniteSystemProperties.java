@@ -669,6 +669,15 @@ public final class IgniteSystemProperties {
         "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
 
     /**
+     * When set to {@code true}, Ignite switches to compatibility mode with versions that writing
+     * length of arrays in default format.
+     *
+     * Default is {@code false}, which means that length of arrays will be written in varint encoding.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     */
+    public static final String IGNITE_NO_VARINT_ARRAY_LENGTH = "IGNITE_NO_VARINT_ARRAY_LENGTH";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

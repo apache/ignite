@@ -63,7 +63,7 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
             clsName = null;
         }
 
-        int size = BinaryUtils.doReadUnsignedVarint(reader);
+        int size = BinaryUtils.doReadArrayLength(reader);
 
         lazyValsArr = new Object[size];
 
