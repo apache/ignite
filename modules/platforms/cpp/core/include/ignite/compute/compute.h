@@ -180,13 +180,12 @@ namespace ignite
              * @tparam F Compute function type. Should implement ComputeFunc<R>
              *  class.
              * @param func Compute function to call.
-             * @return Vector containing computation results.
              * @throw IgniteError in case of error.
              */
             template<typename F>
             void Broadcast(const F& func)
             {
-                return impl.Get()->BroadcastAsync<F, false>(func).GetValue();
+                impl.Get()->BroadcastAsync<F, false>(func).GetValue();
             }
 
             /**
@@ -198,7 +197,6 @@ namespace ignite
              * @tparam F Compute function type. Should implement ComputeFunc<R>
              *  class.
              * @param func Compute function to call.
-             * @return Vector containing computation results.
              * @return Future that can be used to access computation results once
              *  they are ready.
              * @throw IgniteError in case of error.
@@ -216,9 +214,7 @@ namespace ignite
              * @tparam F Compute function type. Should implement ComputeFunc<R>
              *  class.
              * @param func Compute function to call.
-             * @return Vector containing computation results.
-             * @return Future that can be used to access computation results once
-             *  they are ready.
+             * @return Future that can be used to wait for action to complete.
              * @throw IgniteError in case of error.
              */
             template<typename F>
