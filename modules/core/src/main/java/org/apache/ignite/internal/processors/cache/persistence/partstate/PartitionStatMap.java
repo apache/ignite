@@ -90,8 +90,8 @@ public class PartitionStatMap {
         return map.containsKey(createKey(id));
     }
 
-    public Value put(CachePartitionId key, Value value) {
-        return map.put(key, value);
+    public Value put(CachePartitionId key, Value val) {
+        return map.put(key, val);
     }
 
     public static class Value {
