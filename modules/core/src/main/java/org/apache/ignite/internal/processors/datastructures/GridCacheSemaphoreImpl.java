@@ -968,7 +968,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
     }
 

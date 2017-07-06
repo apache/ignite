@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -37,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class DiscoCache {
+    /** */
+    private final DiscoveryDataClusterState state;
+
     /** Local node. */
     private final ClusterNode loc;
 
@@ -78,6 +82,7 @@ public class DiscoCache {
     private final Set<UUID> alives = new GridConcurrentHashSet<>();
 
     /**
+     * @param state Current cluster state.
      * @param loc Local node.
      * @param rmtNodes Remote nodes.
      * @param allNodes All nodes.
@@ -91,7 +96,9 @@ public class DiscoCache {
      * @param nodeMap Node map.
      * @param alives Alive nodes.
      */
-    DiscoCache(ClusterNode loc,
+    DiscoCache(
+        DiscoveryDataClusterState state,
+        ClusterNode loc,
         List<ClusterNode> rmtNodes,
         List<ClusterNode> allNodes,
         List<ClusterNode> srvNodes,
@@ -103,6 +110,7 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
         Set<UUID> alives) {
+        this.state = state;
         this.loc = loc;
         this.rmtNodes = rmtNodes;
         this.allNodes = allNodes;
@@ -115,6 +123,13 @@ public class DiscoCache {
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
         this.alives.addAll(alives);
+    }
+
+    /**
+     * @return Current cluster state.
+     */
+    public DiscoveryDataClusterState state() {
+        return state;
     }
 
     /** @return Local node. */
