@@ -217,6 +217,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 DFLT_MEM_PLC_DEFAULT_NAME
             );
 
+            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " no memoryPolicy configured");
+
             U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
         }
         else {
