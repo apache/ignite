@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.PersistentStore;
@@ -35,7 +36,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                PersistentStoreConfiguration = new PersistentStoreConfiguration()
+                PersistentStoreConfiguration = new PersistentStoreConfiguration(),
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            InitialSize = 512 * 1024 * 1024,
+                            MaxSize = 512 * 1024 * 1024,
+                            Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName
+                        }
+                    }
+                }
             };
 
             using (var ignite = Ignition.Start(cfg))
