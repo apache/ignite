@@ -301,7 +301,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void receivePrimaryAndBackupFlags() throws Exception {
-        final int SRV_NODES = 3;
+        final int SRV_NODES = 5;
 
         startGridsMultiThreaded(SRV_NODES);
 
@@ -364,12 +364,14 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + keys0.size() + ']');
         }
 
-        if (qryClientCache.getConfiguration(CacheConfiguration.class).getCacheMode() == REPLICATED)
+        final CacheConfiguration ccfg = qryClientCache.getConfiguration(CacheConfiguration.class);
+
+        if (ccfg.getCacheMode() == REPLICATED)
             assertEquals(keys.size() * SRV_NODES, lsnr.evtsFlags.size());
         else
             assertEquals(keys.size() * (this.backups + 1 /** primary node */), lsnr.evtsFlags.size());
 
-        checkFlags(keys.size(), lsnr.evtsFlags);
+        checkFlags(keys.size(), lsnr.evtsFlags, SRV_NODES, ccfg);
 
         expEvts.clear();
         lsnr.evtsFlags.clear();
@@ -390,7 +392,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      *
      */
-    private void checkFlags(int size, GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags) {
+    private void checkFlags(int size, GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags, int nodes, CacheConfiguration ccfg) {
         int backup = 0;
         int primary = 0;
 
@@ -402,7 +404,11 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         }
 
         assertEquals(size, primary);
-        assertEquals(size * this.backups, backup);
+
+        if (ccfg.getCacheMode() == REPLICATED)
+            assertEquals(size * (nodes - 1 /** primary node */), backup);
+        else
+            assertEquals(size * this.backups, backup);
     }
 
     /**
