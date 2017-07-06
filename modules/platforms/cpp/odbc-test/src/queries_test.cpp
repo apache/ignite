@@ -33,8 +33,10 @@
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
+#include "ignite/common/fixed_size_array.h"
 #include "ignite/ignition.h"
 #include "ignite/impl/binary/binary_utils.h"
+#include "ignite/binary/binary_object.h"
 
 #include "test_type.h"
 #include "complex_type.h"
@@ -45,6 +47,9 @@ using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::common;
 using namespace ignite_test;
+using namespace ignite::binary;
+using namespace ignite::impl::binary;
+using namespace ignite::impl::interop;
 
 using namespace boost::unit_test;
 
@@ -116,7 +121,11 @@ struct QueriesTestSuiteFixture
 
     static Ignite StartAdditionalNode(const char* name)
     {
+#ifdef IGNITE_TESTS_32
+        return StartNode("queries-test-noodbc-32.xml", name);
+#else
         return StartNode("queries-test-noodbc.xml", name);
+#endif
     }
 
     /**
@@ -129,7 +138,11 @@ struct QueriesTestSuiteFixture
         dbc(NULL),
         stmt(NULL)
     {
+#ifdef IGNITE_TESTS_32
+        grid = StartNode("queries-test-32.xml", "NodeMain");
+#else
         grid = StartNode("queries-test.xml", "NodeMain");
+#endif
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
@@ -148,20 +161,20 @@ struct QueriesTestSuiteFixture
     template<typename T>
     void CheckTwoRowsInt(SQLSMALLINT type)
     {
-        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
         SQLRETURN ret;
 
-        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
-            common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDateGmt(1987, 6, 5),
+            MakeTimeGmt(12, 48, 12), MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
-            common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
+        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDateGmt(1976, 1, 12),
+            MakeTimeGmt(0, 8, 59), MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
 
         cache1.Put(1, in1);
         cache1.Put(2, in2);
 
-        const size_t columnsCnt = 11;
+        const size_t columnsCnt = 12;
 
         T columns[columnsCnt] = { 0 };
 
@@ -174,8 +187,8 @@ struct QueriesTestSuiteFixture
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
         }
 
-        char request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-            "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
+        char request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+            "doubleField, boolField, guidField, dateField, timeField, timestampField FROM TestType";
 
         ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(request), SQL_NTS);
         if (!SQL_SUCCEEDED(ret))
@@ -200,6 +213,7 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columns[8], 0);
         BOOST_CHECK_EQUAL(columns[9], 0);
         BOOST_CHECK_EQUAL(columns[10], 0);
+        BOOST_CHECK_EQUAL(columns[11], 0);
 
         SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -227,6 +241,7 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columns[8], 0);
         BOOST_CHECK_EQUAL(columns[9], 0);
         BOOST_CHECK_EQUAL(columns[10], 0);
+        BOOST_CHECK_EQUAL(columns[11], 0);
 
         BOOST_CHECK_EQUAL(columnLens[0], static_cast<SQLLEN>(sizeof(T)));
         BOOST_CHECK_EQUAL(columnLens[1], static_cast<SQLLEN>(sizeof(T)));
@@ -239,9 +254,29 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columnLens[8], SQL_NO_TOTAL);
         BOOST_CHECK_EQUAL(columnLens[9], SQL_NO_TOTAL);
         BOOST_CHECK_EQUAL(columnLens[10], SQL_NO_TOTAL);
+        BOOST_CHECK_EQUAL(columnLens[11], SQL_NO_TOTAL);
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
+    }
+
+    void CheckParamsNum(const std::string& req, SQLSMALLINT expectedParamsNum)
+    {
+        std::vector<SQLCHAR> req0(req.begin(), req.end());
+
+        SQLRETURN ret = SQLPrepare(stmt, &req0[0], static_cast<SQLINTEGER>(req0.size()));
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        SQLSMALLINT paramsNum = -1;
+
+        ret = SQLNumParams(stmt, &paramsNum);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(paramsNum, expectedParamsNum);
     }
 
     int CountRows(SQLHSTMT stmt)
@@ -276,10 +311,10 @@ struct QueriesTestSuiteFixture
     }
 
     /**
-     * Insert requested number of TestType vlaues with all defaults except
+     * Insert requested number of TestType values with all defaults except
      * for the strFields, which are generated using getTestString().
      *
-     * @param num Number of records to insert.
+     * @param recordsNum Number of records to insert.
      * @param merge Set to true to use merge instead.
      */
     void InsertTestStrings(int recordsNum, bool merge = false)
@@ -337,6 +372,335 @@ struct QueriesTestSuiteFixture
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
+    /**
+     * Insert requested number of TestType values in a batch.
+     *
+     * @param from Index to start from.
+     * @param to Index to stop.
+     * @param expectedToAffect Expected number of affected records.
+     * @param merge Set to true to use merge instead of insert.
+     * @return Records inserted.
+     */
+    int InsertTestBatch(int from, int to, int expectedToAffect, bool merge = false)
+    {
+        SQLCHAR insertReq[] = "INSERT "
+            "INTO TestType(_key, i8Field, i16Field, i32Field, strField, floatField, doubleField, boolField, dateField, "
+            "timeField, timestampField, i8ArrayField) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        SQLCHAR mergeReq[] = "MERGE "
+            "INTO TestType(_key, i8Field, i16Field, i32Field, strField, floatField, doubleField, boolField, dateField, "
+            "timeField, timestampField, i8ArrayField) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        SQLRETURN ret;
+
+        int recordsNum = to - from;
+
+        ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        FixedSizeArray<int64_t> keys(recordsNum);
+        FixedSizeArray<int8_t> i8Fields(recordsNum);
+        FixedSizeArray<int16_t> i16Fields(recordsNum);
+        FixedSizeArray<int32_t> i32Fields(recordsNum);
+        FixedSizeArray<char> strFields(recordsNum * 1024);
+        FixedSizeArray<float> floatFields(recordsNum);
+        FixedSizeArray<double> doubleFields(recordsNum);
+        FixedSizeArray<bool> boolFields(recordsNum);
+        FixedSizeArray<SQL_DATE_STRUCT> dateFields(recordsNum);
+        FixedSizeArray<SQL_TIME_STRUCT> timeFields(recordsNum);
+        FixedSizeArray<SQL_TIMESTAMP_STRUCT> timestampFields(recordsNum);
+        FixedSizeArray<int8_t> i8ArrayFields(recordsNum * 42);
+
+        FixedSizeArray<SQLLEN> strFieldsLen(recordsNum);
+        FixedSizeArray<SQLLEN> i8ArrayFieldsLen(recordsNum);
+
+        BOOST_CHECKPOINT("Filling param data");
+
+        for (int i = 0; i < recordsNum; ++i)
+        {
+            int seed = from + i;
+
+            keys[i] = seed;
+            i8Fields[i] = seed * 8;
+            i16Fields[i] = seed * 16;
+            i32Fields[i] = seed * 32;
+
+            std::string val = getTestString(seed);
+            strncpy(strFields.GetData() + 1024 * i, val.c_str(), 1023);
+            strFieldsLen[i] = val.size();
+
+            floatFields[i] = seed * 0.5f;
+            doubleFields[i] = seed * 0.25f;
+            boolFields[i] = seed % 2 == 0;
+
+            dateFields[i].year = 2017 + seed / 365;
+            dateFields[i].month = ((seed / 28) % 12) + 1;
+            dateFields[i].day = (seed % 28) + 1;
+
+            timeFields[i].hour = (seed / 3600) % 24;
+            timeFields[i].minute = (seed / 60) % 60;
+            timeFields[i].second = seed % 60;
+
+            timestampFields[i].year = dateFields[i].year;
+            timestampFields[i].month = dateFields[i].month;
+            timestampFields[i].day = dateFields[i].day;
+            timestampFields[i].hour = timeFields[i].hour;
+            timestampFields[i].minute = timeFields[i].minute;
+            timestampFields[i].second = timeFields[i].second;
+            timestampFields[i].fraction = std::abs(seed * 914873) % 1000000000;
+
+            for (int j = 0; j < 42; ++j)
+                i8ArrayFields[i * 42 + j] = seed * 42 + j;
+            i8ArrayFieldsLen[i] = 42;
+        }
+
+        SQLULEN setsProcessed = 0;
+
+        BOOST_CHECKPOINT("Setting processed pointer");
+        ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMS_PROCESSED_PTR, &setsProcessed, SQL_IS_POINTER);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding keys");
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, keys.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i8Fields");
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_STINYINT, SQL_TINYINT, 0, 0, i8Fields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i16Fields");
+        ret = SQLBindParameter(stmt, 3, SQL_PARAM_INPUT, SQL_C_SSHORT, SQL_SMALLINT, 0, 0, i16Fields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i32Fields");
+        ret = SQLBindParameter(stmt, 4, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, i32Fields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding strFields");
+        ret = SQLBindParameter(stmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, strFields.GetData(), 1024, strFieldsLen.GetData());
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding floatFields");
+        ret = SQLBindParameter(stmt, 6, SQL_PARAM_INPUT, SQL_C_FLOAT, SQL_FLOAT, 0, 0, floatFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding doubleFields");
+        ret = SQLBindParameter(stmt, 7, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, doubleFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding boolFields");
+        ret = SQLBindParameter(stmt, 8, SQL_PARAM_INPUT, SQL_C_BIT, SQL_BIT, 0, 0, boolFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding dateFields");
+        ret = SQLBindParameter(stmt, 9, SQL_PARAM_INPUT, SQL_C_DATE, SQL_DATE, 0, 0, dateFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding timeFields");
+        ret = SQLBindParameter(stmt, 10, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, 0, 0, timeFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding timestampFields");
+        ret = SQLBindParameter(stmt, 11, SQL_PARAM_INPUT, SQL_C_TIMESTAMP, SQL_TIMESTAMP, 0, 0, timestampFields.GetData(), 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Binding i8ArrayFields");
+        ret = SQLBindParameter(stmt, 12, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_BINARY, 42, 0, i8ArrayFields.GetData(), 42, i8ArrayFieldsLen.GetData());
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Setting paramset size");
+        ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(recordsNum), 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Executing query");
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        SQLLEN affected = 0;
+        ret = SQLRowCount(stmt, &affected);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(affected, expectedToAffect);
+
+        BOOST_CHECKPOINT("Getting next result set");
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Resetting parameters.");
+        ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECKPOINT("Setting paramset size");
+        ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAMSET_SIZE, reinterpret_cast<SQLPOINTER>(1), 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        return static_cast<int>(setsProcessed);
+    }
+
+    void InsertBatchSelect(int recordsNum)
+    {
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+        // Inserting values.
+        int inserted = InsertTestBatch(0, recordsNum, recordsNum);
+
+        BOOST_REQUIRE_EQUAL(inserted, recordsNum);
+
+        int64_t key = 0;
+        char strField[1024] = { 0 };
+        SQLLEN strFieldLen = 0;
+
+        // Binding columns.
+        SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Binding columns.
+        ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Just selecting everything to make sure everything is OK
+        SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+        ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int selectedRecordsNum = 0;
+
+        ret = SQL_SUCCESS;
+
+        while (ret == SQL_SUCCESS)
+        {
+            ret = SQLFetch(stmt);
+
+            if (ret == SQL_NO_DATA)
+                break;
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+            std::string expectedStr = getTestString(selectedRecordsNum);
+            int64_t expectedKey = selectedRecordsNum;
+
+            BOOST_CHECK_EQUAL(key, expectedKey);
+
+            BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+            ++selectedRecordsNum;
+        }
+
+        BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
+    }
+
+    void InsertNonFullBatchSelect(int recordsNum, int splitAt)
+    {
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+        // Inserting values.
+        int inserted = InsertTestBatch(splitAt, recordsNum, recordsNum - splitAt);
+
+        BOOST_REQUIRE_EQUAL(inserted, recordsNum - splitAt);
+
+        inserted = InsertTestBatch(0, recordsNum, splitAt);
+
+        BOOST_REQUIRE_EQUAL(inserted, splitAt);
+
+        int64_t key = 0;
+        char strField[1024] = { 0 };
+        SQLLEN strFieldLen = 0;
+
+        // Binding columns.
+        SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Binding columns.
+        ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Just selecting everything to make sure everything is OK
+        SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType ORDER BY _key";
+
+        ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int selectedRecordsNum = 0;
+
+        ret = SQL_SUCCESS;
+
+        while (ret == SQL_SUCCESS)
+        {
+            ret = SQLFetch(stmt);
+
+            if (ret == SQL_NO_DATA)
+                break;
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+            std::string expectedStr = getTestString(selectedRecordsNum);
+            int64_t expectedKey = selectedRecordsNum;
+
+            BOOST_CHECK_EQUAL(key, expectedKey);
+
+            BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
+
+            ++selectedRecordsNum;
+        }
+
+        BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
+    }
+
     /** Node started during the test. */
     Ignite grid;
 
@@ -360,17 +724,12 @@ BOOST_FIXTURE_TEST_SUITE(QueriesTestSuite, QueriesTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestLegacyConnection)
 {
-    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 }
 
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_6_0)
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_1_0)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.6.0");
-}
-
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_8_0)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.8.0");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.1.0");
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
@@ -415,20 +774,20 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsUint64)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
-        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDateGmt(1987, 6, 5),
+        MakeTimeGmt(12, 48, 12), MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
-        common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDateGmt(1976, 1, 12),
+        MakeTimeGmt(0, 8, 59), MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     cache1.Put(1, in1);
     cache1.Put(2, in2);
 
-    const size_t columnsCnt = 11;
+    const size_t columnsCnt = 12;
 
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
@@ -441,8 +800,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
-    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+        "doubleField, boolField, guidField, dateField, timeField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
     if (!SQL_SUCCEEDED(ret))
@@ -467,7 +826,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
     // Such format is used because Date returned as Timestamp.
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05 00:00:00");
-    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "12:48:12");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[11])), "1998-12-27 01:02:03");
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -495,7 +855,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0001-0000-000000000000");
     // Such format is used because Date returned as Timestamp.
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1976-01-12 00:00:00");
-    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1978-08-21 23:13:45");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "00:08:59");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[11])), "1978-08-21 23:13:45");
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
     BOOST_CHECK_EQUAL(columnLens[1], 1);
@@ -507,7 +868,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
     BOOST_CHECK_EQUAL(columnLens[9], 19);
-    BOOST_CHECK_EQUAL(columnLens[10], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 8);
+    BOOST_CHECK_EQUAL(columnLens[11], 19);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -515,16 +877,16 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowString)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
-        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDateGmt(1987, 6, 5),
+        MakeTimeGmt(12, 48, 12), MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     cache1.Put(1, in);
 
-    const size_t columnsCnt = 11;
+    const size_t columnsCnt = 12;
 
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
@@ -539,8 +901,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
-    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+        "doubleField, boolField, guidField, dateField, CAST('12:48:12' AS TIME), timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
     if (!SQL_SUCCEEDED(ret))
@@ -561,7 +923,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
     // Such format is used because Date returned as Timestamp.
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05 00:00:00");
-    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "12:48:12");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[11])), "1998-12-27 01:02:03");
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
     BOOST_CHECK_EQUAL(columnLens[1], 1);
@@ -573,7 +936,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
     BOOST_CHECK_EQUAL(columnLens[9], 19);
-    BOOST_CHECK_EQUAL(columnLens[10], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 8);
+    BOOST_CHECK_EQUAL(columnLens[11], 19);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -581,16 +945,16 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
 BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
-        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDateGmt(1987, 6, 5),
+        MakeTimeGmt(12, 48, 12), MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     cache1.Put(1, in);
 
-    const size_t columnsCnt = 11;
+    const size_t columnsCnt = 12;
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -603,8 +967,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
-    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+        "doubleField, boolField, guidField, dateField, timeField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
     if (!SQL_SUCCEEDED(ret))
@@ -624,7 +988,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
     BOOST_CHECK_EQUAL(columnLens[9], 19);
-    BOOST_CHECK_EQUAL(columnLens[10], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 8);
+    BOOST_CHECK_EQUAL(columnLens[11], 19);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -632,7 +997,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
 BOOST_AUTO_TEST_CASE(TestOneRowObject)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache2");
 
     SQLRETURN ret;
 
@@ -689,20 +1054,20 @@ BOOST_AUTO_TEST_CASE(TestOneRowObject)
 
 BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
-        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDateGmt(1987, 6, 5),
+        MakeTimeGmt(12, 48, 12), MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
-        common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDateGmt(1976, 1, 12),
+        MakeTimeGmt(0, 8, 59), MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     cache1.Put(1, in1);
     cache1.Put(2, in2);
 
-    const size_t columnsCnt = 11;
+    const size_t columnsCnt = 12;
 
     SQLLEN columnLens[columnsCnt] = { 0 };
     SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
@@ -716,8 +1081,8 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
-    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType "
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+        "doubleField, boolField, guidField, dateField, timeField, timestampField FROM TestType "
         "WHERE i32Field = ? AND strField = ?";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
@@ -792,7 +1157,8 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
     // Such format is used because Date returned as Timestamp.
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05 00:00:00");
-    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "12:48:12");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[11])), "1998-12-27 01:02:03");
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
     BOOST_CHECK_EQUAL(columnLens[1], 1);
@@ -804,7 +1170,8 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
     BOOST_CHECK_EQUAL(columnLens[9], 19);
-    BOOST_CHECK_EQUAL(columnLens[10], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 8);
+    BOOST_CHECK_EQUAL(columnLens[11], 19);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -812,12 +1179,12 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 
 BOOST_AUTO_TEST_CASE(TestNullFields)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
-        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDateGmt(1987, 6, 5),
+        MakeTimeGmt(12, 48, 12), MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     TestType inNull;
 
@@ -827,7 +1194,7 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     cache1.Put(2, inNull);
     cache1.Put(3, in);
 
-    const size_t columnsCnt = 10;
+    const size_t columnsCnt = 11;
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -840,6 +1207,7 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     double doubleColumn;
     bool boolColumn;
     SQL_DATE_STRUCT dateColumn;
+    SQL_TIME_STRUCT timeColumn;
     SQL_TIMESTAMP_STRUCT timestampColumn;
 
     // Binding columns.
@@ -879,12 +1247,17 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindCol(stmt, 10, SQL_C_TIMESTAMP, &timestampColumn, 0, &columnLens[9]);
+    ret = SQLBindCol(stmt, 10, SQL_C_TIME, &timeColumn, 0, &columnLens[9]);
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-        "floatField, doubleField, boolField, dateField, timestampField FROM TestType ORDER BY _key";
+    ret = SQLBindCol(stmt, 11, SQL_C_TIMESTAMP, &timestampColumn, 0, &columnLens[10]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, floatField, "
+        "doubleField, boolField, dateField, timeField, timestampField FROM TestType "
+        "ORDER BY _key";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
     if (!SQL_SUCCEEDED(ret))
@@ -921,7 +1294,6 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
 
-
 BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 {
     // Starting additional node.
@@ -941,7 +1313,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
         cache1.Put(i, entry);
     }
 
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret;
 
@@ -975,7 +1347,7 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 
     Disconnect();
 
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;DISTRIBUTED_JOINS=true;");
 
     // Binding colums.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -996,61 +1368,9 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
     BOOST_CHECK_EQUAL(rowsNum, entriesNum);
 }
 
-BOOST_AUTO_TEST_CASE(TestDistributedJoinsWithOldVersion)
-{
-    // Starting additional node.
-    Ignite node1 = StartAdditionalNode("Node1");
-    Ignite node2 = StartAdditionalNode("Node2");
-
-    const int entriesNum = 1000;
-
-    // Filling cache with data.
-    for (int i = 0; i < entriesNum; ++i)
-    {
-        TestType entry;
-
-        entry.i32Field = i;
-        entry.i64Field = entriesNum - i - 1;
-
-        cache1.Put(i, entry);
-    }
-
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;PROTOCOL_VERSION=1.6.0");
-
-    SQLRETURN ret;
-
-    const size_t columnsCnt = 2;
-
-    SQLBIGINT columns[columnsCnt] = { 0 };
-
-    // Binding colums.
-    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
-    {
-        ret = SQLBindCol(stmt, i + 1, SQL_C_SLONG, &columns[i], 0, 0);
-
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-    }
-
-    SQLCHAR request[] =
-        "SELECT T0.i32Field, T1.i64Field FROM TestType AS T0 "
-        "INNER JOIN TestType AS T1 "
-        "ON (T0.i32Field = T1.i64Field)";
-
-    ret = SQLExecDirect(stmt, request, SQL_NTS);
-
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-    int rowsNum = CountRows(stmt);
-
-    BOOST_CHECK_GT(rowsNum, 0);
-    BOOST_CHECK_LT(rowsNum, entriesNum);
-}
-
 BOOST_AUTO_TEST_CASE(TestInsertSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1110,7 +1430,7 @@ BOOST_AUTO_TEST_CASE(TestInsertSelect)
 
 BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1184,7 +1504,7 @@ BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
 
 BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1252,7 +1572,7 @@ BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
 
 BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     const int recordsNum = 100;
 
@@ -1313,6 +1633,76 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
     BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
 }
 
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2)
+{
+    InsertBatchSelect(2);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect100)
+{
+    InsertBatchSelect(100);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1000)
+{
+    InsertBatchSelect(1000);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1023)
+{
+    InsertBatchSelect(1024);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1024)
+{
+    InsertBatchSelect(1024);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect1025)
+{
+    InsertBatchSelect(1025);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2000)
+{
+    InsertBatchSelect(2000);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2047)
+{
+    InsertBatchSelect(2048);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2048)
+{
+    InsertBatchSelect(2048);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertBatchSelect2049)
+{
+    InsertBatchSelect(2049);
+}
+
+BOOST_AUTO_TEST_CASE(TestNotFullInsertBatchSelect900)
+{
+    InsertNonFullBatchSelect(900, 42);
+}
+
+BOOST_AUTO_TEST_CASE(TestNotFullInsertBatchSelect1500)
+{
+    InsertNonFullBatchSelect(1500, 100);
+}
+
+BOOST_AUTO_TEST_CASE(TestNotFullInsertBatchSelect4500)
+{
+    InsertNonFullBatchSelect(4500, 1500);
+}
+
+BOOST_AUTO_TEST_CASE(TestNotFullInsertBatchSelect4096)
+{
+    InsertNonFullBatchSelect(4096, 1024);
+}
+
 template<size_t n, size_t k>
 void CheckMeta(char columns[n][k], SQLLEN columnsLen[n])
 {
@@ -1341,7 +1731,7 @@ void CheckMeta(char columns[n][k], SQLLEN columnsLen[n])
 
 BOOST_AUTO_TEST_CASE(TestTablesMeta)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache2");
 
     SQLRETURN ret;
 
@@ -1387,6 +1777,223 @@ BOOST_AUTO_TEST_CASE(TestTablesMeta)
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
+template<typename T>
+void CheckObjectData(int8_t* data, int32_t len, T const& value)
+{
+    InteropUnpooledMemory mem(len);
+    mem.Length(len);
+    memcpy(mem.Data(), data, len);
+
+    BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0, 0));
+
+    T actual = obj.Deserialize<T>();
+    
+    BOOST_CHECK_EQUAL(value, actual);
+}
+
+BOOST_AUTO_TEST_CASE(TestKeyVal)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache2");
+
+    SQLRETURN ret;
+
+    ComplexType obj;
+
+    obj.i32Field = 123;
+    obj.strField = "Some string";
+
+    obj.objField.f1 = 54321;
+    obj.objField.f2 = "Hello Ignite";
+
+    cache2.Put(1, obj);
+
+    //_key
+    int64_t column1 = 0;
+    //_val
+    int8_t column2[ODBC_BUFFER_SIZE] = { 0 };
+    //k
+    int64_t column3 = 0;
+    //v
+    int8_t column4[ODBC_BUFFER_SIZE] = { 0 };
+    //i32Field
+    int64_t column5 = 0;
+    //objField
+    int8_t column6[ODBC_BUFFER_SIZE] = { 0 };
+    //strField
+    char column7[ODBC_BUFFER_SIZE] = { 0 };
+    
+    SQLLEN column1Len = sizeof(column1);
+    SQLLEN column2Len = sizeof(column2);
+    SQLLEN column3Len = sizeof(column3);
+    SQLLEN column4Len = sizeof(column4);
+    SQLLEN column5Len = sizeof(column5);
+    SQLLEN column6Len = sizeof(column6);
+    SQLLEN column7Len = sizeof(column7);
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &column1, column1Len, &column1Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 2, SQL_C_BINARY, &column2, column2Len, &column2Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 3, SQL_C_SLONG, &column3, column3Len, &column3Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 4, SQL_C_BINARY, &column4, column4Len, &column4Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 5, SQL_C_SLONG, &column5, column5Len, &column5Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 6, SQL_C_BINARY, &column6, column6Len, &column6Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 7, SQL_C_CHAR, &column7, column7Len, &column7Len);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT _key, _val, k, v, i32Field, objField, strField FROM ComplexType";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(column1, 1);
+
+    CheckObjectData(column2, static_cast<int32_t>(column2Len), obj);
+
+    BOOST_CHECK_EQUAL(column3, 1);
+
+    CheckObjectData(column4, static_cast<int32_t>(column4Len), obj);
+
+    BOOST_CHECK_EQUAL(column5, obj.i32Field);
+    
+    CheckObjectData(column6, static_cast<int32_t>(column6Len), obj.objField);
+
+    BOOST_CHECK_EQUAL(column7, obj.strField);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+
+    SQLCHAR requestStar[] = "SELECT _key, _val, * FROM ComplexType";
+
+    ret = SQLExecDirect(stmt, requestStar, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(column1, 1);
+
+    CheckObjectData(column2, static_cast<int32_t>(column2Len), obj);
+
+    BOOST_CHECK_EQUAL(column3, 1);
+
+    CheckObjectData(column4, static_cast<int32_t>(column4Len), obj);
+
+    BOOST_CHECK_EQUAL(column5, obj.i32Field);
+
+    CheckObjectData(column6, static_cast<int32_t>(column6Len), obj.objField);
+
+    BOOST_CHECK_EQUAL(column7, obj.strField);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestParamsNum)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    CheckParamsNum("SELECT * FROM TestType", 0);
+    CheckParamsNum("SELECT * FROM TestType WHERE _key=?", 1);
+    CheckParamsNum("SELECT * FROM TestType WHERE _key=? AND _val=?", 2);
+    CheckParamsNum("INSERT INTO TestType(_key, strField) VALUES(1, 'some')", 0);
+    CheckParamsNum("INSERT INTO TestType(_key, strField) VALUES(?, ?)", 2);
+}
+
+BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
+{
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDateGmt(1987, 6, 5),
+        MakeTimeGmt(12, 48, 12), MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+
+    cache1.Put(1, in);
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    int64_t key = 0;
+    char strField[1024] = { 0 };
+    SQLLEN strFieldLen = 0;
+
+    // Binding columns.
+    SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Just selecting everything to make sure everything is OK
+    SQLCHAR selectReq[] = "SELECT _key, strField FROM TestType";
+
+    ret = SQLPrepare(stmt, selectReq, sizeof(selectReq));
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(key, 1);
+
+    BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), "5");
+
+    ret = SQLFetch(stmt);
+
+    BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

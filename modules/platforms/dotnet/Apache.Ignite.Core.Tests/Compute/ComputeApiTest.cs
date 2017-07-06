@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -118,6 +119,15 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Type: enum array from cache. */
         private const int EchoTypeEnumArrayFromCache = 21;
+                
+        /** Echo type: IgniteUuid. */
+        private const int EchoTypeIgniteUuid = 22;
+
+        /** Echo type: binary enum (created with builder). */
+        private const int EchoTypeBinaryEnum = 23;
+
+        /** */
+        private const string DefaultCacheName = "default";
 
         /** First node. */
         private IIgnite _grid1;
@@ -166,14 +176,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (_grid1 != null)
-                Ignition.Stop(_grid1.Name, true);
-
-            if (_grid2 != null)
-                Ignition.Stop(_grid2.Name, true);
-
-            if (_grid3 != null)
-                Ignition.Stop(_grid3.Name, true);
+            Ignition.StopAll(true);
         }
 
         [TearDown]
@@ -196,21 +199,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             // Check that default Compute projection excludes client nodes.
             CollectionAssert.AreEquivalent(prj.ForServers().GetNodes(), prj.GetCompute().ClusterGroup.GetNodes());
-        }
-
-        /// <summary>
-        /// Test getting cache with default (null) name.
-        /// </summary>
-        [Test]
-        public void TestCacheDefaultName()
-        {
-            var cache = _grid1.GetCache<int, int>(null);
-
-            Assert.IsNotNull(cache);
-
-            cache.GetAndPut(1, 1);
-
-            Assert.AreEqual(1, cache.Get(1));
         }
 
         /// <summary>
@@ -542,7 +530,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     SpringConfigUrl = GetConfigs().Item1,
-                    GridName = "daemonGrid",
+                    IgniteInstanceName = "daemonGrid",
                     IsDaemon = true
                 })
             )
@@ -823,16 +811,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(val = decimal.Parse("-11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
 
             // Test echo with overflow.
-            try
-            {
-                _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { null, decimal.MaxValue.ToString() + 1 });
+            var ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, decimal.MaxValue.ToString() + 1}));
 
-                Assert.Fail();
-            }
-            catch (IgniteException)
-            {
-                // No-op.
-            }
+            Assert.AreEqual("Decimal magnitude overflow (must be less than 96 bits): 104", ex.Message);
+
+            // Negative scale. 1E+1 parses to "1 scale -1" on Java side.
+            ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, "1E+1"}));
+
+            Assert.AreEqual("Decimal value scale overflow (must be between 0 and 28): -1", ex.Message);
         }
 
         /// <summary>
@@ -888,9 +876,29 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskBinarizable()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
+            var values = new[] {int.MinValue, int.MaxValue, 0, 1, -1, byte.MaxValue, byte.MinValue};
+            var cache = _grid1.GetCache<int, int>(DefaultCacheName);
+            var compute = _grid1.GetCompute();
 
-            Assert.AreEqual(1, res.Field);
+            foreach (var val in values)
+            {
+                cache[EchoTypeBinarizable] = val;
+
+                var res = compute.ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
+                Assert.AreEqual(val, res.Field);
+
+                // Binary mode.
+                var binRes = compute.WithKeepBinary().ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinarizable);
+
+                Assert.AreEqual(val, binRes.GetField<long>("Field"));
+
+                var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
+
+                Assert.AreEqual(dotNetBin.Header.HashCode, binRes.Header.HashCode);
+
+                Func<BinaryObject, byte[]> getData = bo => bo.Data.Skip(bo.Offset).Take(bo.Header.Length).ToArray();
+                Assert.AreEqual(getData(dotNetBin), getData(binRes));
+            }
         }
 
         /// <summary>
@@ -908,10 +916,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepBinary" flag is reset.
-            Assert.Catch(typeof(BinaryObjectException), () =>
+            var ex = Assert.Throws<BinaryObjectException>(() =>
             {
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
+
+            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>
@@ -954,9 +964,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Tests the echo task returning enum.
         /// </summary>
         [Test]
+        public void TestEchoTaskBinaryEnum()
+        {
+            var res = _grid1.GetCompute().WithKeepBinary()
+                .ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinaryEnum);
+
+            Assert.AreEqual("JavaFoo", res.EnumName);
+            Assert.AreEqual(1, res.EnumValue);
+
+            var binType = res.GetBinaryType();
+
+            Assert.IsTrue(binType.IsEnum);
+            Assert.AreEqual("JavaDynEnum", binType.TypeName);
+
+            var vals = binType.GetEnumValues().OrderBy(x => x.EnumValue).ToArray();
+            Assert.AreEqual(new[] {1, 2}, vals.Select(x => x.EnumValue));
+            Assert.AreEqual(new[] {"JavaFoo", "JavaBar"}, vals.Select(x => x.EnumName));
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
         public void TestEchoTaskEnumFromCache()
         {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum>(null);
+            var cache = _grid1.GetCache<int, PlatformComputeEnum>(DefaultCacheName);
 
             foreach (PlatformComputeEnum val in Enum.GetValues(typeof(PlatformComputeEnum)))
             {
@@ -990,7 +1022,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumArrayFromCache()
         {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(null);
+            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(DefaultCacheName);
 
             foreach (var val in new[]
             {
@@ -1017,7 +1049,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var enumVal = PlatformComputeEnum.Baz;
 
-            _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
+            _grid1.GetCache<int, InteropComputeEnumFieldTest>(DefaultCacheName)
                 .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
 
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
@@ -1029,6 +1061,22 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(0, enumMeta.Fields.Count);
 
             Assert.AreEqual(enumVal, res);
+        }
+
+        /// <summary>
+        /// Tests that IgniteGuid in .NET maps to IgniteUuid in Java.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskIgniteUuid()
+        {
+            var guid = Guid.NewGuid();
+
+            _grid1.GetCache<int, object>(DefaultCacheName)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
+
+            var res = _grid1.GetCompute().ExecuteJavaTask<IgniteGuid>(EchoTask, EchoTypeIgniteUuid);
+
+            Assert.AreEqual(guid, res.GlobalId);
+            Assert.AreEqual(25, res.LocalId);
         }
 
         /// <summary>
@@ -1147,7 +1195,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAffinityRun()
         {
-            const string cacheName = null;
+            const string cacheName = DefaultCacheName;
 
             // Test keys for non-client nodes
             var nodes = new[] {_grid1, _grid2}.Select(x => x.GetCluster().GetLocalNode());
@@ -1156,9 +1204,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
@@ -1174,7 +1222,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAffinityCall()
         {
-            const string cacheName = null;
+            const string cacheName = DefaultCacheName;
 
             // Test keys for non-client nodes
             var nodes = new[] { _grid1, _grid2 }.Select(x => x.GetCluster().GetLocalNode());
@@ -1183,9 +1231,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
 
@@ -1258,11 +1306,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExceptions()
         {
-            Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+            Assert.Throws<AggregateException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
 
-            Assert.Throws<BinaryObjectException>(
+            Assert.Throws<AggregateException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+
+            // Local.
+            var ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.", 
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
+
+            // Remote.
+            ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
         }
 
         /// <summary>
@@ -1294,7 +1362,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(JavaBinaryCls),
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
-                    }
+                    },
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 },
                 SpringConfigUrl = path
             };
@@ -1367,9 +1436,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidNetSimpleJob : NetSimpleJob
+    class InvalidNetSimpleJob : NetSimpleJob, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 
     [Serializable]
@@ -1441,9 +1518,27 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidComputeAction : ComputeAction
+    class InvalidComputeAction : ComputeAction, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+    }
+
+    class ExceptionalComputeAction : IComputeAction
+    {
+        public const string ErrorText = "Expected user exception";
+
+        public void Invoke()
+        {
+            throw new OverflowException(ErrorText);
+        }
     }
 
     interface IUserInterface<out T>
@@ -1487,7 +1582,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum PlatformComputeEnum
+    public enum PlatformComputeEnum : ushort
     {
         Foo,
         Bar,

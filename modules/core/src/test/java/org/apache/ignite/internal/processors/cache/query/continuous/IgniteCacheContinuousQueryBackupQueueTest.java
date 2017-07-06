@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
@@ -73,8 +74,8 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     private static final int BACKUP_ACK_THRESHOLD = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -88,6 +89,11 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         cfg.setClientMode(client);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        MemoryConfiguration memCfg = new MemoryConfiguration();
+        memCfg.setPageSize(16 * 1024);
+
+        cfg.setMemoryConfiguration(memCfg);
 
         return cfg;
     }
@@ -256,11 +262,16 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
             GridContinuousHandler hnd = GridTestUtils.getFieldValue(info, "hnd");
 
             if (hnd.isQuery() && hnd.cacheName().equals(CACHE_NAME)) {
-                Collection<Object> q = GridTestUtils.getFieldValue(hnd,
-                    CacheContinuousQueryHandler.class, "backupQueue");
+                Map<Integer, CacheContinuousQueryEventBuffer> map = GridTestUtils.getFieldValue(hnd,
+                    CacheContinuousQueryHandler.class, "entryBufs");
 
-                if (q != null)
-                    backupQueues.add(q);
+                for (CacheContinuousQueryEventBuffer buf : map.values()) {
+                    Collection<Object> q = GridTestUtils.getFieldValue(buf,
+                        CacheContinuousQueryEventBuffer.class, "backupQ");
+
+                    if (q != null)
+                        backupQueues.add(q);
+                }
             }
         }
 

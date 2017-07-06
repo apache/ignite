@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteCache;
  * <li>{@link javax.cache.Cache#invoke(Object, EntryProcessor, Object...)}</li>
  * <li>{@link javax.cache.Cache#invokeAll(Set, EntryProcessor, Object...)}</li>
  * <li>invoke and invokeAll methods of {@link IgniteCache}</li>
- * <li>{@link IgniteCache#randomEntry()}</li>
  * </ul>
  * <p>
  * To get an instance of {@code CacheEntry} directly use {@link IgniteCache#getEntry(Object)} or
@@ -82,15 +81,4 @@ public interface CacheEntry<K, V> extends Cache.Entry<K, V> {
      * @return Version of this cache entry.
      */
     public Comparable version();
-
-    /**
-     * Returns the time when the cache entry for the given key has been updated or initially created.
-     * <p>
-     * It is valid to compare cache entries' update time for the same key. In this case the latter update will
-     * be represented by higher update time. The result of update time comparison of cache entries of different keys is
-     * undefined.
-     *
-     * @return Time in milliseconds.
-     */
-    public long updateTime();
 }

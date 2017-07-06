@@ -1,5 +1,8 @@
 parser: "babel-eslint"
 
+plugins:
+    - babel
+
 env:
     es6: true
     browser: true
@@ -32,6 +35,7 @@ globals:
     $generatorOptional: true
     saveAs: true
     process: true
+    require: true
 
 rules:
     arrow-parens: [1, "always"]
@@ -116,7 +120,7 @@ rules:
     no-loop-func: 2
     no-mixed-requires: [0, false]
     no-mixed-spaces-and-tabs: [2, true]
-    no-multi-spaces: 2
+    no-multi-spaces: ["error", {"exceptions": { "VariableDeclarator": true }}]
     no-multi-str: 2
     no-multiple-empty-lines: [0, {"max": 2}]
     no-native-reassign: 2
@@ -142,7 +146,7 @@ rules:
     no-script-url: 0
     no-self-compare: 2
     no-sequences: 2
-    no-shadow: 2
+    no-shadow: 0
     no-shadow-restricted-names: 2
     no-spaced-func: 2
     no-sparse-arrays: 1
@@ -174,7 +178,7 @@ rules:
     prefer-const: 1
     prefer-spread: 2
     quote-props: [2, "as-needed"]
-    quotes: [2, "single"]
+    quotes: [2, "single", {"allowTemplateLiterals": true}]
     radix: 1
     semi: [2, "always"]
     semi-spacing: [2, {"before": false, "after": true}]
@@ -193,6 +197,7 @@ rules:
     wrap-iife: 0
     wrap-regex: 0
     yoda: [2, "never"]
+    babel/semi: 2
 
 parserOptions:
     sourceType: module

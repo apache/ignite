@@ -49,7 +49,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      */
     @SuppressWarnings({"deprecation"})
     public void testDifferentListeners() {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         for (int i = 0; i < 2000; i++) {
             P2<UUID, Object> l = new P2<UUID, Object>() {
@@ -78,7 +78,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      */
     @SuppressWarnings({"deprecation"})
     public void testOneListener() {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -113,7 +113,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
             MessageListeningTask t = new MessageListeningTask();
 
             try {
-                G.ignite(getTestGridName()).compute().execute(t.getClass(), null);
+                G.ignite(getTestIgniteInstanceName()).compute().execute(t.getClass(), null);
             }
             catch (IgniteException e) {
                 assert false : "Failed to execute task [iteration=" + i + ", err=" + e.getMessage() + ']';
@@ -159,7 +159,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             // No-op.
         }
     }

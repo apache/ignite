@@ -33,8 +33,8 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         assertTrue(ccfg.isCopyOnRead());
 
@@ -47,7 +47,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
      * @throws Exception If failed.
      */
     public void testCopyOnReadDisabled() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(null);
+        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++) {
             TestKey key = new TestKey(i);

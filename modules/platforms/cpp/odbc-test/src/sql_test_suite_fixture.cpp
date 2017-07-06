@@ -29,7 +29,11 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
+#ifdef IGNITE_TESTS_32
+        grid = StartNode("queries-test-32.xml");
+#else
         grid = StartNode("queries-test.xml");
+#endif
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -47,7 +51,7 @@ namespace ignite
         BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache";
+        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache";
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
@@ -261,6 +265,14 @@ namespace ignite
     }
 
     template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request)
+    {
+        SQL_TIME_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+    }
+
+    template<>
     void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected)
     {
         SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
@@ -300,18 +312,6 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<SQL_TIME_STRUCT>(const char* request, const SQL_TIME_STRUCT& expected)
-    {
-        SQL_TIME_STRUCT res;
-
-        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
-
-        BOOST_REQUIRE_EQUAL(res.hour, expected.hour);
-        BOOST_REQUIRE_EQUAL(res.minute, expected.minute);
-        BOOST_REQUIRE_EQUAL(res.second, expected.second);
-    }
-
-    template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected)
     {
         SQL_TIMESTAMP_STRUCT res;
@@ -323,5 +323,18 @@ namespace ignite
 
         BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
         BOOST_REQUIRE_EQUAL(actual.GetSecondFraction(), expected.GetSecondFraction());
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request, const Time& expected)
+    {
+        SQL_TIME_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+
+        using ignite::impl::binary::BinaryUtils;
+        Time actual = common::MakeTimeGmt(res.hour, res.minute, res.second);
+
+        BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
     }
 }

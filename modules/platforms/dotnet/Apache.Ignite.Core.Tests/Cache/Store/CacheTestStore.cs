@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -29,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using Apache.Ignite.Core.Resource;
 
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
-    public class CacheTestStore : ICacheStore
+    public class CacheTestStore : ICacheStore<object, object>
     {
         public static readonly IDictionary Map = new ConcurrentDictionary<object, object>();
 
@@ -115,13 +116,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             return Map[key];
         }
 
-        public IDictionary LoadAll(ICollection keys)
+        public IEnumerable<KeyValuePair<object, object>> LoadAll(IEnumerable<object> keys)
         {
             ThrowIfNeeded();
 
             Debug.Assert(_grid != null);
 
-            return keys.OfType<object>().ToDictionary(key => key, key => "val_" + key);
+            return keys.ToDictionary(key => key, key =>(object)( "val_" + key));
         }
 
         public void Write(object key, object val)
@@ -133,13 +134,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Map[key] = val;
         }
 
-        public void WriteAll(IDictionary map)
+        public void WriteAll(IEnumerable<KeyValuePair<object, object>> map)
         {
             ThrowIfNeeded();
 
             Debug.Assert(_grid != null);
 
-            foreach (DictionaryEntry e in map)
+            foreach (var e in map)
                 Map[e.Key] = e.Value;
         }
 
@@ -152,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Map.Remove(key);
         }
 
-        public void DeleteAll(ICollection keys)
+        public void DeleteAll(IEnumerable<object> keys)
         {
             ThrowIfNeeded();
 

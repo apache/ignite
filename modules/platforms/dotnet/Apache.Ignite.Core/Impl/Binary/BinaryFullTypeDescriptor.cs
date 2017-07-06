@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.Structure;
 
     /// <summary>
@@ -62,13 +61,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         private volatile BinaryStructure _readerTypeStructure = BinaryStructure.CreateEmpty();
         
         /** Type schema. */
-        private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
+        private readonly BinaryObjectSchema _schema;
 
         /** Enum flag. */
         private readonly bool _isEnum;
 
-        /** Comparer. */
-        private readonly IBinaryEqualityComparer _equalityComparer;
+        /** Register flag. */
+        private readonly bool _isRegistered;
 
         /// <summary>
         /// Constructor.
@@ -83,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        /// <param name="comparer">Equality comparer.</param>
+        /// <param name="isRegistered">Registered flag.</param>
         public BinaryFullTypeDescriptor(
             Type type, 
             int typeId, 
@@ -94,8 +93,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinarySerializerInternal serializer, 
             bool keepDeserialized, 
             string affKeyFieldName,
-            bool isEnum, 
-            IEqualityComparer<IBinaryObject> comparer)
+            bool isEnum,
+            bool isRegistered = true)
         {
             _type = type;
             _typeId = typeId;
@@ -108,12 +107,36 @@ namespace Apache.Ignite.Core.Impl.Binary
             _affKeyFieldName = affKeyFieldName;
             _isEnum = isEnum;
 
-            _equalityComparer = comparer as IBinaryEqualityComparer;
+            _isRegistered = isRegistered;
+            _schema = new BinaryObjectSchema();
+        }
 
-            if (comparer != null && _equalityComparer == null)
-                throw new IgniteException(string.Format("Unsupported IEqualityComparer<IBinaryObject> " +
-                                                        "implementation: {0}. Only predefined implementations " +
-                                                        "are supported.", comparer.GetType()));
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryFullTypeDescriptor"/> class,
+        /// copying values from specified descriptor.
+        /// </summary>
+        /// <param name="desc">The descriptor to copy from.</param>
+        /// <param name="type">Type.</param>
+        /// <param name="serializer">Serializer.</param>
+        /// <param name="isRegistered">Registered flag.</param>
+        public BinaryFullTypeDescriptor(BinaryFullTypeDescriptor desc, Type type,
+            IBinarySerializerInternal serializer, bool isRegistered)
+        {
+            _type = type;
+            _typeId = desc._typeId;
+            _typeName = desc._typeName;
+            _userType = desc._userType;
+            _nameMapper = desc._nameMapper;
+            _idMapper = desc._idMapper;
+            _serializer = serializer;
+            _keepDeserialized = desc._keepDeserialized;
+            _affKeyFieldName = desc._affKeyFieldName;
+            _isEnum = desc._isEnum;
+            _isRegistered = isRegistered;
+
+            _schema = desc._schema;
+            _writerTypeStruct = desc._writerTypeStruct;
+            _readerTypeStructure = desc._readerTypeStructure;
         }
 
         /// <summary>
@@ -194,12 +217,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return _isEnum; }
         }
 
-        /** <inheritdoc/> */
-        public IBinaryEqualityComparer EqualityComparer
-        {
-            get { return _equalityComparer; }
-        }
-
         /** <inheritDoc /> */
         public BinaryStructure WriterTypeStructure
         {
@@ -236,6 +253,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryObjectSchema Schema
         {
             get { return _schema; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsRegistered
+        {
+            get { return _isRegistered; }
         }
     }
 }

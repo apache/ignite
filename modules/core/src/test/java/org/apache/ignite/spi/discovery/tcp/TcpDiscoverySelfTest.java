@@ -78,7 +78,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -134,35 +134,33 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         TcpDiscoverySpi spi = nodeSpi.get();
 
         if (spi == null) {
-            spi = gridName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
+            spi = igniteInstanceName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
                 new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
         }
         else
             nodeSpi.set(null);
 
-        discoMap.put(gridName, spi);
+        discoMap.put(igniteInstanceName, spi);
 
         spi.setIpFinder(ipFinder);
 
         spi.setNetworkTimeout(2500);
-
-        spi.setHeartbeatFrequency(1000);
-
-        spi.setMaxMissedHeartbeats(3);
 
         spi.setIpFinderCleanFrequency(5000);
 
         spi.setJoinTimeout(5000);
 
         cfg.setDiscoverySpi(spi);
+
+        cfg.setFailureDetectionTimeout(7500);
 
         if (ccfgs != null)
             cfg.setCacheConfiguration(ccfgs);
@@ -173,12 +171,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
-        if (!gridName.contains("LoopbackProblemTest"))
+        cfg.setMetricsUpdateFrequency(1000);
+
+        if (!igniteInstanceName.contains("LoopbackProblemTest"))
             cfg.setLocalHost("127.0.0.1");
 
-        if (gridName.contains("testFailureDetectionOnNodePing")) {
+        if (igniteInstanceName.contains("testFailureDetectionOnNodePing")) {
             spi.setReconnectCount(1); // To make test faster: on Windows 1 connect takes 1 second.
-            spi.setHeartbeatFrequency(40000);
+
+            cfg.setMetricsUpdateFrequency(40000);
+            cfg.setClientFailureDetectionTimeout(41000);
         }
 
         cfg.setConnectorConfiguration(null);
@@ -186,14 +188,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         if (nodeId != null)
             cfg.setNodeId(nodeId);
 
-        if (gridName.contains("NonSharedIpFinder")) {
+        if (igniteInstanceName.contains("NonSharedIpFinder")) {
             TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
 
             finder.setAddresses(Arrays.asList("127.0.0.1:47501"));
 
             spi.setIpFinder(finder);
         }
-        else if (gridName.contains("MulticastIpFinder")) {
+        else if (igniteInstanceName.contains("MulticastIpFinder")) {
             TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
 
             finder.setAddressRequestAttempts(5);
@@ -207,16 +209,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (U.isMacOs())
                 spi.setLocalAddress(F.first(U.allLocalIps()));
         }
-        else if (gridName.contains("testPingInterruptedOnNodeFailedPingingNode"))
+        else if (igniteInstanceName.contains("testPingInterruptedOnNodeFailedPingingNode"))
             cfg.setFailureDetectionTimeout(30_000);
-        else if (gridName.contains("testNoRingMessageWorkerAbnormalFailureNormalNode"))
+        else if (igniteInstanceName.contains("testNoRingMessageWorkerAbnormalFailureNormalNode"))
             cfg.setFailureDetectionTimeout(3_000);
-        else if (gridName.contains("testNoRingMessageWorkerAbnormalFailureSegmentedNode")) {
+        else if (igniteInstanceName.contains("testNoRingMessageWorkerAbnormalFailureSegmentedNode")) {
             cfg.setFailureDetectionTimeout(6_000);
 
             cfg.setGridLogger(strLog = new GridStringLogger());
         }
-        else if (gridName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
+        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
             cfg.setGridLogger(strLog = new GridStringLogger());
 
         cfg.setClientMode(client);
@@ -302,11 +304,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             Ignite g1 = startGrid(1);
 
-            final AtomicInteger gridNameIdx = new AtomicInteger(1);
+            final AtomicInteger igniteInstanceNameIdx = new AtomicInteger(1);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    startGrid(gridNameIdx.incrementAndGet());
+                    startGrid(igniteInstanceNameIdx.incrementAndGet());
 
                     return null;
                 }
@@ -433,7 +435,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertFalse("Ping is ok for node " + failedNodeId + ", but had to fail.", res);
 
-        // Heartbeat interval is 40 seconds, but we should detect node failure faster.
+        // Metrics update interval is 40 seconds, but we should detect node failure faster.
         assert cnt.await(7, SECONDS);
     }
 
@@ -1344,7 +1346,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setName(CACHE_NAME);
 
@@ -1614,7 +1616,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 log.info("Create test cache");
 
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setName(CACHE_NAME);
 
@@ -1751,7 +1753,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             waitNodeStop(ignite0.name());
 
-            ignite1.getOrCreateCache(new CacheConfiguration<>()).put(1, 1);
+            ignite1.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)).put(1, 1);
 
             startGrid(2);
 
@@ -1907,9 +1909,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            ignite0.createCache(new CacheConfiguration<>()); // Send custom message.
+            ignite0.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)); // Send custom message.
 
-            ignite0.destroyCache(null); // Send custom message.
+            ignite0.destroyCache(DEFAULT_CACHE_NAME); // Send custom message.
 
             stopGrid(1);
 
@@ -2023,7 +2025,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < ccfgs.length; i++) {
                 CacheConfiguration ccfg = new CacheConfiguration();
 
-                ccfg.setName(i == 0 ? null : ("static-cache-" + i));
+                ccfg.setName(i == 0 ? DEFAULT_CACHE_NAME : ("static-cache-" + i));
 
                 ccfgs[i] = ccfg;
             }
@@ -2046,7 +2048,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             assertTrue(clientNode.configuration().isClientMode());
 
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName("c1");
 
             clientNode.createCache(ccfg);
@@ -2101,7 +2103,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         int cntr = 0;
 
         for (Ignite ignite : allNodes) {
-            CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-" + cntr++);
 
@@ -2130,8 +2132,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         static volatile int marshalledItems;
 
         /** {@inheritDoc} */
-        @Override public TcpDiscoverySpi setDataExchange(final DiscoverySpiDataExchange exchange) {
-            return super.setDataExchange(new DiscoverySpiDataExchange() {
+        @Override public void setDataExchange(final DiscoverySpiDataExchange exchange) {
+            super.setDataExchange(new DiscoverySpiDataExchange() {
                 @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
                     DiscoveryDataBag bag = exchange.collect(dataBag);
 
@@ -2252,7 +2254,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             boolean add = msgIds.add(msg.id());
 
-            if (checkDuplicates && !add && !(msg instanceof TcpDiscoveryHeartbeatMessage)) {
+            if (checkDuplicates && !add && !(msg instanceof TcpDiscoveryMetricsUpdateMessage)) {
                 log.error("Send duplicated message: " + msg);
 
                 failed = true;
@@ -2534,17 +2536,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If anything failed.
      */
     private Ignite startGridNoOptimize(int idx) throws Exception {
-        return startGridNoOptimize(getTestGridName(idx));
+        return startGridNoOptimize(getTestIgniteInstanceName(idx));
     }
 
     /**
      * Starts new grid with given name. Method optimize is not invoked.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    private Ignite startGridNoOptimize(String gridName) throws Exception {
-        return G.start(getConfiguration(gridName));
+    private Ignite startGridNoOptimize(String igniteInstanceName) throws Exception {
+        return G.start(getConfiguration(igniteInstanceName));
     }
 }

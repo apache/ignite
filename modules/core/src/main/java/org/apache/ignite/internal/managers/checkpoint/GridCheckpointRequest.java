@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.checkpoint;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -36,6 +37,7 @@ public class GridCheckpointRequest implements Message {
     private IgniteUuid sesId;
 
     /** */
+    @GridToStringInclude(sensitive = true)
     private String key;
 
     /** */
@@ -162,7 +164,7 @@ public class GridCheckpointRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 7;
     }
 

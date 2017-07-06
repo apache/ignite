@@ -224,10 +224,10 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
         /**
          * Constructor.
          *
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          */
-        private DefaultConverter(@Nullable String gridName) {
-            marsh = MarshallerUtils.jdkMarshaller(gridName);
+        private DefaultConverter(@Nullable String igniteInstanceName) {
+            marsh = MarshallerUtils.jdkMarshaller(igniteInstanceName);
         }
 
         /** {@inheritDoc} */

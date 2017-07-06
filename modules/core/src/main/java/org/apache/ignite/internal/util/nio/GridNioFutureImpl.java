@@ -27,13 +27,17 @@ import org.apache.ignite.lang.IgniteInClosure;
  */
 public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNioFuture<R> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private boolean msgThread;
 
     /** */
-    protected boolean msgThread;
+    protected final IgniteInClosure<IgniteException> ackC;
 
-    /** */
-    protected IgniteInClosure<IgniteException> ackClosure;
+    /**
+     * @param ackC Ack closure.
+     */
+    public GridNioFutureImpl(IgniteInClosure<IgniteException> ackC) {
+        this.ackC = ackC;
+    }
 
     /** {@inheritDoc} */
     @Override public void messageThread(boolean msgThread) {
@@ -51,18 +55,13 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
     }
 
     /** {@inheritDoc} */
-    @Override public void ackClosure(IgniteInClosure<IgniteException> closure) {
-        ackClosure = closure;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInClosure<IgniteException> ackClosure() {
-        return ackClosure;
+        return ackC;
     }
 
     /** {@inheritDoc} */

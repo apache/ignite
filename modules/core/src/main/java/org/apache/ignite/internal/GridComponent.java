@@ -42,6 +42,9 @@ public interface GridComponent {
         /** */
         CACHE_PROC,
 
+        /** State process. */
+        STATE_PROC,
+
         /** */
         PLUGIN,
 
@@ -49,7 +52,16 @@ public interface GridComponent {
         CLUSTER_PROC,
 
         /** */
-        MARSHALLER_PROC
+        DISCOVERY_PROC,
+
+        /** */
+        MARSHALLER_PROC,
+
+        /** */
+        BINARY_PROC,
+
+        /** Query processor. */
+        QUERY_PROC
     }
 
     /**

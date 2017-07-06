@@ -97,8 +97,8 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         // Discovery.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -113,7 +113,6 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         cc.setName(CACHE_NAME);
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setStartSize(20);
         cc.setRebalanceMode(preloadMode);
         cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
@@ -212,11 +211,13 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @param c Cache projection.
      */
     private void affinityBeforeStop(IgniteCache<Integer, String> c) {
-        for (int key = 0; key < keyCnt; key++) {
-            int part = affinity(c).partition(key);
+        if (DEBUG) {
+            for (int key = 0; key < keyCnt; key++) {
+                int part = affinity(c).partition(key);
 
-            info("Affinity nodes before stop [key=" + key + ", partition" + part + ", nodes=" +
-                U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+                info("Affinity nodes before stop [key=" + key + ", partition" + part + ", nodes=" +
+                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+            }
         }
     }
 
@@ -228,7 +229,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
             for (int key = 0; key < keyCnt; key++) {
                 int part = affinity(c).partition(key);
 
-                info("Affinity odes after start [key=" + key + ", partition" + part + ", nodes=" +
+                info("Affinity nodes after start [key=" + key + ", partition" + part + ", nodes=" +
                     U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
             }
         }

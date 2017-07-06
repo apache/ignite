@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -37,6 +40,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -47,17 +51,25 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final String REPLICATED_TEST_CACHE = "REPLICATED_TEST_CACHE";
+
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(ccfg);
+        CacheConfiguration ccfg1 = new CacheConfiguration(REPLICATED_TEST_CACHE)
+            .setCacheMode(REPLICATED)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setReadFromBackup(false);
+
+        cfg.setCacheConfiguration(ccfg, ccfg1);
 
         return cfg;
     }
@@ -78,11 +90,11 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         final Ignite ignite0 = ignite(0);
         final Ignite ignite1 = ignite(1);
 
-        final Integer key = primaryKey(ignite1.cache(null));
+        final Integer key = primaryKey(ignite1.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Lock lock = ignite0.cache(null).lock(key);
+                Lock lock = ignite0.cache(DEFAULT_CACHE_NAME).lock(key);
 
                 lock.lock();
 
@@ -94,7 +106,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Lock lock = ignite1.cache(null).lock(key);
+                Lock lock = ignite1.cache(DEFAULT_CACHE_NAME).lock(key);
 
                 log.info("Start lock.");
 
@@ -118,19 +130,69 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testLockTopologyChange() throws Exception {
+        final int nodeCnt = 5;
+        int threadCnt = 8;
+        final int keys = 100;
+
+        try {
+            final AtomicBoolean stop = new AtomicBoolean(false);
+
+            Queue<IgniteInternalFuture<Long>> q = new ArrayDeque<>(nodeCnt);
+
+            for (int i = 0; i < nodeCnt; i++) {
+                final Ignite ignite = startGrid(i);
+
+                IgniteInternalFuture<Long> f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                    @Override public void run() {
+                        while (!Thread.currentThread().isInterrupted() && !stop.get()) {
+                            IgniteCache<Integer, Integer> cache = ignite.cache(REPLICATED_TEST_CACHE);
+
+                            for (int i = 0; i < keys; i++) {
+                                Lock lock = cache.lock(i);
+                                lock.lock();
+
+                                cache.put(i, i);
+
+                                lock.unlock();
+                            }
+                        }
+                    }
+                }, threadCnt, "test-lock-thread");
+
+                q.add(f);
+
+                U.sleep(1_000);
+            }
+
+            stop.set(true);
+
+            IgniteInternalFuture<Long> f;
+
+            while ((f = q.poll()) != null)
+                f.get(2_000);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testTxLockRelease() throws Exception {
         startGrids(2);
 
         final Ignite ignite0 = ignite(0);
         final Ignite ignite1 = ignite(1);
 
-        final Integer key = primaryKey(ignite1.cache(null));
+        final Integer key = primaryKey(ignite1.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-                ignite0.cache(null).get(key);
+                ignite0.cache(DEFAULT_CACHE_NAME).get(key);
 
                 return null;
             }
@@ -143,7 +205,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
                 try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     log.info("Start tx lock.");
 
-                    ignite1.cache(null).get(key);
+                    ignite1.cache(DEFAULT_CACHE_NAME).get(key);
 
                     log.info("Tx locked key.");
 
@@ -171,7 +233,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        Lock lock = ignite1.cache(null).lock("key");
+        Lock lock = ignite1.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -204,7 +266,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = ignite(2);
 
-        lock = ignite2.cache(null).lock("key");
+        lock = ignite2.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
         lock.unlock();
     }
@@ -219,7 +281,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Lock lock = ignite1.cache(null).lock("key");
+        Lock lock = ignite1.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
@@ -238,7 +300,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = ignite(2);
 
-        lock = ignite2.cache(null).lock("key");
+        lock = ignite2.cache(DEFAULT_CACHE_NAME).lock("key");
         lock.lock();
         lock.unlock();
     }
@@ -251,7 +313,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache cache = ignite1.cache(null);
+        IgniteCache cache = ignite1.cache(DEFAULT_CACHE_NAME);
         ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         cache.get(1);
 
@@ -285,7 +347,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = ignite(2);
 
-        cache = ignite2.cache(null);
+        cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.get(1);

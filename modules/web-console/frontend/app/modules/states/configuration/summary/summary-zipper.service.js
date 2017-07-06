@@ -18,11 +18,11 @@
 import Worker from 'worker?inline=true!./summary.worker';
 
 export default ['$q', function($q) {
-    return function({ cluster, data }) {
+    return function(message) {
         const defer = $q.defer();
         const worker = new Worker();
 
-        worker.postMessage({ cluster, data });
+        worker.postMessage(message);
 
         worker.onmessage = (e) => {
             defer.resolve(e.data);

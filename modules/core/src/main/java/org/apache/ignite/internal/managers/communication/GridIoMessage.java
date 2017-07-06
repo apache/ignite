@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+
+import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -26,11 +28,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
  */
 public class GridIoMessage implements Message {
+    /** */
+    public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -313,7 +319,7 @@ public class GridIoMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 8;
     }
 
@@ -331,7 +337,17 @@ public class GridIoMessage implements Message {
         if (msg instanceof GridCacheMessage)
             return ((GridCacheMessage)msg).partition();
         else
-            return Integer.MIN_VALUE;
+            return STRIPE_DISABLED_PART;
+    }
+
+    /**
+     * @return Executor name (if available).
+     */
+    @Nullable public String executorName() {
+        if (msg instanceof ExecutorAwareMessage)
+            return ((ExecutorAwareMessage)msg).executorName();
+
+        return null;
     }
 
     /** {@inheritDoc} */

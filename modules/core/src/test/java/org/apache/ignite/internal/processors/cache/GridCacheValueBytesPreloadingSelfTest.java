@@ -18,17 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
-import java.util.Collections;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -36,33 +31,28 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTest {
-    /** Memory mode. */
-    private CacheMemoryMode memMode;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      * @throws Exception If failed.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setNearConfiguration(null);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setMemoryMode(memMode);
-        ccfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return ccfg;
@@ -72,8 +62,6 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testOnHeapTiered() throws Exception {
-        memMode = ONHEAP_TIERED;
-
         startGrids(1);
 
         try {
@@ -87,64 +75,33 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testOffHeapTiered() throws Exception {
-        memMode = OFFHEAP_TIERED;
-
-        startGrids(1);
-
-        try {
-            checkByteArrays();
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOffHeapValuesOnly() throws Exception {
-        memMode = OFFHEAP_VALUES;
-
-        startGrids(1);
-
-        try {
-            checkByteArrays();
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void checkByteArrays() throws Exception {
+    private void checkByteArrays() throws Exception {
         int keyCnt = 1000;
 
         byte[] val = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
 
         for (int i = 0; i < keyCnt; i++)
-            grid(0).cache(null).put(String.valueOf(i), val);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(String.valueOf(i), val);
 
         for (int i = 0; i < keyCnt; i++)
-            grid(0).cache(null).get(String.valueOf(i));
+            grid(0).cache(DEFAULT_CACHE_NAME).get(String.valueOf(i));
 
         startGrid(1);
 
-        if (memMode == ONHEAP_TIERED) {
-            for (int i = 0; i < keyCnt; i++)
-                grid(0).cache(null).localEvict(Collections.<Object>singleton(String.valueOf(i)));
-
-            for (int i = 0; i < keyCnt; i++)
-                grid(0).cache(null).localPromote(Collections.singleton(String.valueOf(i)));
-        }
+// TODO: GG-11148 check if evict/promote make sense.
+//        if (memMode == ONHEAP_TIERED) {
+//            for (int i = 0; i < keyCnt; i++)
+//                grid(0).cache(DEFAULT_CACHE_NAME).localEvict(Collections.<Object>singleton(String.valueOf(i)));
+//
+//            for (int i = 0; i < keyCnt; i++)
+//                grid(0).cache(DEFAULT_CACHE_NAME).localPromote(Collections.singleton(String.valueOf(i)));
+//        }
 
         startGrid(2);
 
         for (int g = 0; g < 3; g++) {
             for (int i = 0; i < keyCnt; i++) {
-                byte[] o = (byte[])grid(g).cache(null).get(String.valueOf(i));
+                byte[] o = (byte[])grid(g).cache(DEFAULT_CACHE_NAME).get(String.valueOf(i));
 
                 assertTrue("Got invalid value [val=" + Arrays.toString(val) + ", actual=" + Arrays.toString(o) + ']',
                     Arrays.equals(val, o));

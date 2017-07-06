@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-import templateUrl from './list-of-registered-users.jade';
+import './list-of-registered-users.scss';
+
+import templateUrl from './list-of-registered-users.tpl.pug';
 import controller from './list-of-registered-users.controller';
 
 export default [() => {

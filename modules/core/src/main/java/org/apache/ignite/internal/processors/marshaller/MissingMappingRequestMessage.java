@@ -83,6 +83,7 @@ public class MissingMappingRequestMessage implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -109,14 +110,17 @@ public class MissingMappingRequestMessage implements Message {
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(MissingMappingRequestMessage.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 120;
+    @Override public short directType() {
+        return 78;
     }
 
     /** {@inheritDoc} */

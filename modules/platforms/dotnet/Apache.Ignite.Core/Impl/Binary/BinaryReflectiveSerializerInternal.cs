@@ -20,19 +20,17 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Internal reflective serializer.
     /// </summary>
     internal sealed class BinaryReflectiveSerializerInternal : IBinarySerializerInternal
     {
-        /** Cached binding flags. */
-        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
-                                           BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-
         /** Raw mode flag. */
         private readonly bool _rawMode;
 
@@ -41,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Read actions to be performed. */
         private readonly BinaryReflectiveReadAction[] _rActions;
+
+        /** Callback type descriptor. */
+        private readonly SerializableTypeDescriptor _serializableDescriptor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
@@ -53,36 +54,68 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
         /// </summary>
-        private BinaryReflectiveSerializerInternal(BinaryReflectiveWriteAction[] wActions, BinaryReflectiveReadAction[] rActions, bool raw)
+        private BinaryReflectiveSerializerInternal(BinaryReflectiveWriteAction[] wActions, 
+            BinaryReflectiveReadAction[] rActions, bool raw, SerializableTypeDescriptor serializableDescriptor)
         {
             Debug.Assert(wActions != null);
             Debug.Assert(rActions != null);
+            Debug.Assert(serializableDescriptor != null);
 
             _wActions = wActions;
             _rActions = rActions;
             _rawMode = raw;
+            _serializableDescriptor = serializableDescriptor;
         }
 
         /** <inheritdoc /> */
         void IBinarySerializerInternal.WriteBinary<T>(T obj, BinaryWriter writer)
         {
             Debug.Assert(_wActions != null);
+            Debug.Assert(writer != null);
+
+            var ctx = GetStreamingContext(writer);
+
+            _serializableDescriptor.OnSerializing(obj, ctx);
 
             foreach (var action in _wActions)
                 action(obj, writer);
+
+            _serializableDescriptor.OnSerialized(obj, ctx);
         }
 
         /** <inheritdoc /> */
-        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, Type type, int pos)
+        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos,
+            Type typeOverride)
         {
             Debug.Assert(_rActions != null);
+            Debug.Assert(reader != null);
+            Debug.Assert(desc != null);
 
-            var obj = FormatterServices.GetUninitializedObject(type);
+            var obj = FormatterServices.GetUninitializedObject(typeOverride ?? desc.Type);
 
-            reader.AddHandle(pos, obj);
+            var ctx = GetStreamingContext(reader);
 
-            foreach (var action in _rActions)
-                action(obj, reader);
+            _serializableDescriptor.OnDeserializing(obj, ctx);
+
+            DeserializationCallbackProcessor.Push(obj);
+
+            try
+            {
+                reader.AddHandle(pos, obj);
+
+                foreach (var action in _rActions)
+                    action(obj, reader);
+
+                _serializableDescriptor.OnDeserialized(obj, ctx);
+                
+                DeserializationCallbackProcessor.Pop();
+            }
+            catch (Exception)
+            {
+                // Clear callbacks on exception to avoid dangling objects.
+                DeserializationCallbackProcessor.Clear();
+                throw;
+            }
 
             return (T) obj;
         }
@@ -93,30 +126,21 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return true; }
         }
 
-        /// <summary>Register type.</summary>
+        /// <summary>
+        /// Register type.
+        /// </summary>
         /// <param name="type">Type.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
+        /// <param name="forceTimestamp">Force timestamp serialization for DateTime fields..</param>
+        /// <returns>Resulting serializer.</returns>
         internal BinaryReflectiveSerializerInternal Register(Type type, int typeId, IBinaryNameMapper converter,
-            IBinaryIdMapper idMapper)
+            IBinaryIdMapper idMapper, bool forceTimestamp)
         {
             Debug.Assert(_wActions == null && _rActions == null);
 
-            List<FieldInfo> fields = new List<FieldInfo>();
-
-            Type curType = type;
-
-            while (curType != null)
-            {
-                foreach (FieldInfo field in curType.GetFields(Flags))
-                {
-                    if (!field.IsNotSerialized)
-                        fields.Add(field);
-                }
-
-                curType = curType.BaseType;
-            }
+            var fields = ReflectionUtils.GetAllFields(type).Where(x => !x.IsNotSerialized).ToList();
 
             IDictionary<int, string> idMap = new Dictionary<int, string>();
 
@@ -146,13 +170,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryReflectiveWriteAction writeAction;
                 BinaryReflectiveReadAction readAction;
 
-                BinaryReflectiveActions.GetTypeActions(fields[i], out writeAction, out readAction, _rawMode);
+                BinaryReflectiveActions.GetTypeActions(fields[i], out writeAction, out readAction, _rawMode, forceTimestamp);
 
                 wActions[i] = writeAction;
                 rActions[i] = readAction;
             }
 
-            return new BinaryReflectiveSerializerInternal(wActions, rActions, _rawMode);
+            var serDesc = SerializableTypeDescriptor.Get(type);
+
+            return new BinaryReflectiveSerializerInternal(wActions, rActions, _rawMode, serDesc);
         }
 
         /// <summary>
@@ -164,6 +190,22 @@ namespace Apache.Ignite.Core.Impl.Binary
             string name2 = BinaryUtils.CleanFieldName(info2.Name);
 
             return string.Compare(name1, name2, StringComparison.OrdinalIgnoreCase);
+        }
+                
+        /// <summary>
+        /// Gets the streaming context.
+        /// </summary>
+        private static StreamingContext GetStreamingContext(IBinaryReader reader)
+        {
+            return new StreamingContext(StreamingContextStates.All, reader);
+        }
+
+        /// <summary>
+        /// Gets the streaming context.
+        /// </summary>
+        private static StreamingContext GetStreamingContext(IBinaryWriter writer)
+        {
+            return new StreamingContext(StreamingContextStates.All, writer);
         }
     }
 }

@@ -43,7 +43,7 @@ import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
 
 import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.visor.node._
 import org.apache.ignite.internal.visor.util.VisorEventMapper
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
@@ -152,16 +152,16 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: IgnitePredicate[Event] = null
+    private var nodeLeftLsnr: IgnitePredicate[Event] = _
 
     /** Node join listener. */
-    private var nodeJoinLsnr: IgnitePredicate[Event] = null
+    private var nodeJoinLsnr: IgnitePredicate[Event] = _
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: IgnitePredicate[Event] = null
+    private var nodeSegLsnr: IgnitePredicate[Event] = _
 
     /** Node stop listener. */
-    private var nodeStopLsnr: IgnitionListener = null
+    private var nodeStopLsnr: IgnitionListener = _
 
     /** */
     @volatile private var isCon: Boolean = false
@@ -209,13 +209,13 @@ object visor extends VisorTag {
     private final val DFLT_LOG_PATH = "visor/visor-log"
 
     /** Log file. */
-    private var logFile: File = null
+    private var logFile: File = _
 
     /** Log timer. */
-    private var logTimer: Timer = null
+    private var logTimer: Timer = _
 
     /** Topology log timer. */
-    private var topTimer: Timer = null
+    private var topTimer: Timer = _
 
     /** Log started flag. */
     @volatile private var logStarted = false
@@ -224,15 +224,15 @@ object visor extends VisorTag {
     @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor()
 
     /** Configuration file path, if any. */
-    @volatile var cfgPath: String = null
+    @volatile var cfgPath: String = _
 
     /** */
-    @volatile var ignite: IgniteEx = null
+    @volatile var ignite: IgniteEx = _
 
     /** */
     @volatile var prevIgnite: Option[IgniteEx] = None
 
-    private var reader: ConsoleReader = null
+    private var reader: ConsoleReader = _
 
     var batchMode: Boolean = false
 
@@ -272,7 +272,8 @@ object visor extends VisorTag {
     def groupForDataNode(node: Option[ClusterNode], cacheName: String) = {
         val grp = node match {
             case Some(n) => ignite.cluster.forNode(n)
-            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
+            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask],
+                new VisorCacheNodesTaskArg(cacheName)))
         }
 
         if (grp.nodes().isEmpty)
@@ -1334,7 +1335,7 @@ object visor extends VisorTag {
         val t = VisorTextTable()
 
         t += ("Status", if (isCon) "Connected" else "Disconnected")
-        t += ("Grid name",
+        t += ("Ignite instance name",
             if (ignite == null)
                 NA
             else {
@@ -1495,20 +1496,20 @@ object visor extends VisorTag {
     /**
      * Connects Visor console to configuration with path.
      *
-     * @param gridName Name of grid instance.
+     * @param igniteInstanceName Name of Ignite instance.
      * @param cfgPath Configuration path.
      */
-    def open(gridName: String, cfgPath: String) {
+    def open(igniteInstanceName: String, cfgPath: String) {
         this.cfgPath = cfgPath
 
         ignite =
             try
-                Ignition.ignite(gridName).asInstanceOf[IgniteEx]
+                Ignition.ignite(igniteInstanceName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteException("Named grid unavailable: " + gridName)
+                    throw new IgniteException("Named Ignite instance unavailable: " + igniteInstanceName)
             }
 
         assert(cfgPath != null)
@@ -1674,7 +1675,7 @@ object visor extends VisorTag {
             val id8 = nid8(id)
             var v = mfindHead(id8)
 
-            if(!v.isDefined){
+            if(v.isEmpty){
                v = assignNodeValue(n)
             }
 
@@ -1832,7 +1833,7 @@ object visor extends VisorTag {
     @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
         executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
-            null.asInstanceOf[JavaCollection[IgniteUuid]]).values()
+            new VisorCacheConfigurationCollectorTaskArg(null.asInstanceOf[JavaCollection[String]])).values()
 
     /**
      * Asks user to select a node from the list.
@@ -2454,15 +2455,15 @@ object visor extends VisorTag {
                             try {
                                 out = new FileWriter(logFile, true)
 
-                                evts.toList.sortBy(_.timestamp).foreach(e => {
+                                evts.toList.sortBy(_.getTimestamp).foreach(e => {
                                     logImpl(
                                         out,
-                                        formatDateTime(e.timestamp),
-                                        nodeId8Addr(e.nid()),
-                                        U.compact(e.shortDisplay())
+                                        formatDateTime(e.getTimestamp),
+                                        nodeId8Addr(e.getNid),
+                                        U.compact(e.getShortDisplay)
                                     )
 
-                                    if (EVTS_DISCOVERY.contains(e.typeId()))
+                                    if (EVTS_DISCOVERY.contains(e.getTypeId))
                                         snapshot()
                                 })
                             }

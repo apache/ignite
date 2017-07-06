@@ -92,6 +92,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     /** */
     private final Map<IgniteSpi, Boolean> spiMap = new IdentityHashMap<>();
 
+    /** */
+    @GridToStringExclude
+    private boolean injected;
+
     /**
      * @param ctx Kernal context.
      * @param spis Specific SPI instance.
@@ -209,6 +213,26 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /**
+     * Injects resources to SPI.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void inject() throws IgniteCheckedException {
+        if (injected)
+            return;
+
+        for (T spi : spis) {
+            // Inject all spi resources.
+            ctx.resource().inject(spi);
+
+            // Inject SPI internal objects.
+            inject(spi);
+        }
+
+        injected = true;
+    }
+
+    /**
      * Starts wrapped SPI.
      *
      * @throws IgniteCheckedException If wrapped SPI could not be started.
@@ -225,11 +249,13 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
             assert res == null;
 
-            // Inject all spi resources.
-            ctx.resource().inject(spi);
+            if (!injected) {
+                // Inject all spi resources.
+                ctx.resource().inject(spi);
 
-            // Inject SPI internal objects.
-            inject(spi);
+                // Inject SPI internal objects.
+                inject(spi);
+            }
 
             try {
                 Map<String, Object> retval = spi.getNodeAttributes();
@@ -268,7 +294,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             onBeforeSpiStart();
 
             try {
-                spi.spiStart(ctx.gridName());
+                spi.spiStart(ctx.igniteInstanceName());
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to start SPI: " + spi, e);
@@ -279,6 +305,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             if (log.isDebugEnabled())
                 log.debug("SPI module started OK: " + spi.getClass().getName());
         }
+
+        injected = true;
     }
 
     /**
@@ -391,9 +419,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                         try {
                             if (msg instanceof Message)
-                                ctx.io().send(node, topic, (Message)msg, SYSTEM_POOL);
+                                ctx.io().sendToCustomTopic(node, topic, (Message)msg, SYSTEM_POOL);
                             else
-                                ctx.io().sendUserMessage(Collections.singletonList(node), msg, topic, false, 0);
+                                ctx.io().sendUserMessage(Collections.singletonList(node), msg, topic, false, 0, false);
                         }
                         catch (IgniteCheckedException e) {
                             throw unwrapException(e);
@@ -570,6 +598,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
                         ctx.timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+                    }
+
+                    @Override public Map<String, Object> nodeAttributes() {
+                        return ctx.nodeAttributes();
                     }
 
                     /**

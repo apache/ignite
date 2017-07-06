@@ -23,7 +23,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Grid cache semaphore state.
  */
-public class GridCacheSemaphoreState implements GridCacheInternal, Externalizable, Cloneable {
+public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,17 +45,25 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /** FailoverSafe flag. */
     private boolean failoverSafe;
 
+    /** Flag indicating that semaphore is no longer safe to use. */
+    private boolean broken;
+
+    /** */
+    private long gridStartTime;
+
     /**
      * Constructor.
      *
      * @param cnt Number of permissions.
      * @param waiters Waiters map.
      * @param failoverSafe Failover safe flag.
+     * @param gridStartTime Cluster start time.
      */
-    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe) {
+    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe, long gridStartTime) {
         this.cnt = cnt;
         this.waiters = waiters;
         this.failoverSafe = failoverSafe;
+        this.gridStartTime = gridStartTime;
     }
 
     /**
@@ -64,6 +71,16 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
      */
     public GridCacheSemaphoreState() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.SEMAPHORE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long gridStartTime() {
+        return gridStartTime;
     }
 
     /**
@@ -101,6 +118,21 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
         return failoverSafe;
     }
 
+    /**
+     * @return broken flag.
+     */
+    public boolean isBroken() {
+        return broken;
+    }
+
+    /**
+     *
+     * @param broken Flag indicating that this semaphore should be no longer used.
+     */
+    public void setBroken(boolean broken) {
+        this.broken = broken;
+    }
+
     /** {@inheritDoc} */
     @Override public Object clone() throws CloneNotSupportedException {
         return super.clone();
@@ -110,6 +142,7 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(cnt);
         out.writeBoolean(failoverSafe);
+        out.writeLong(gridStartTime);
         out.writeBoolean(waiters != null);
 
         if (waiters != null) {
@@ -120,12 +153,15 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
                 out.writeInt(e.getValue());
             }
         }
+
+        out.writeBoolean(broken);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         cnt = in.readInt();
         failoverSafe = in.readBoolean();
+        gridStartTime = in.readLong();
 
         if (in.readBoolean()) {
             int size = in.readInt();
@@ -135,6 +171,8 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
             for (int i = 0; i < size; i++)
                 waiters.put(U.readUuid(in), in.readInt());
         }
+
+        broken = in.readBoolean();
     }
 
     /** {@inheritDoc} */

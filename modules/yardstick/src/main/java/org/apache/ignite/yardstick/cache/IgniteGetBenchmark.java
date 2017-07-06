@@ -19,14 +19,33 @@ package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs get operations.
  */
 public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        if (args.preloadAmount() > args.range())
+            throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") " +
+                "must by less then the range (\"-r\", \"--range\").");
+
+        loadCachesData();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void loadCacheData(String cacheName) {
+        loadSampleValues(cacheName, args.preloadAmount());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.get(key);
 

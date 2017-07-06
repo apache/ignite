@@ -21,20 +21,15 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using System.Text.RegularExpressions;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Resolves types by name.
     /// </summary>
     internal class TypeResolver
     {
-        /** Regex to parse generic types from binary configuration. Allows nested generics in type arguments. */
-        private static readonly Regex GenericTypeRegex =
-            new Regex(@"([^`,\[\]]*)(?:`[0-9]+)?(?:\[((?:(?<br>\[)|(?<-br>\])|[^\[\]]*)+)\])?", RegexOptions.Compiled);
-
         /** Assemblies loaded in ReflectionOnly mode. */
         private readonly Dictionary<string, Assembly> _reflectionOnlyAssemblies = new Dictionary<string, Assembly>();
 
@@ -43,15 +38,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="typeName">Name of the type.</param>
         /// <param name="assemblyName">Optional, name of the assembly.</param>
+        /// <param name="nameMapper">The name mapper.</param>
         /// <returns>
         /// Resolved type.
         /// </returns>
-        public Type ResolveType(string typeName, string assemblyName = null)
+        public Type ResolveType(string typeName, string assemblyName = null, IBinaryNameMapper nameMapper = null)
         {
             Debug.Assert(!string.IsNullOrEmpty(typeName));
 
-            return ResolveType(assemblyName, typeName, AppDomain.CurrentDomain.GetAssemblies())
-                ?? ResolveTypeInReferencedAssemblies(assemblyName, typeName);
+            // Fully-qualified name can be resolved with system mechanism.
+            var type = Type.GetType(typeName, false);
+
+            if (type != null)
+            {
+                return type;
+            }
+
+            var parsedType = TypeNameParser.Parse(typeName);
+
+            // Partial names should be resolved by scanning assemblies.
+            return ResolveType(assemblyName, parsedType, AppDomain.CurrentDomain.GetAssemblies(), nameMapper)
+                ?? ResolveTypeInReferencedAssemblies(assemblyName, parsedType, nameMapper);
         }
 
         /// <summary>
@@ -60,13 +67,73 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="assemblyName">Name of the assembly.</param>
         /// <param name="typeName">Name of the type.</param>
         /// <param name="assemblies">Assemblies to look in.</param>
-        /// <returns> 
+        /// <param name="nameMapper">The name mapper.</param>
+        /// <returns>
         /// Resolved type. 
         /// </returns>
-        private static Type ResolveType(string assemblyName, string typeName, ICollection<Assembly> assemblies)
+        private static Type ResolveType(string assemblyName, TypeNameParser typeName, ICollection<Assembly> assemblies,
+            IBinaryNameMapper nameMapper)
         {
-            return ResolveGenericType(assemblyName, typeName, assemblies) ??
-                   ResolveNonGenericType(assemblyName, typeName, assemblies);
+            var type = ResolveNonGenericType(assemblyName, typeName.GetNameWithNamespace(), assemblies, nameMapper);
+
+            if (type == null)
+            {
+                return null;
+            }
+
+            if (type.IsGenericTypeDefinition && typeName.Generics != null)
+            {
+                var genArgs = typeName.Generics
+                    .Select(x => ResolveType(assemblyName, x, assemblies, nameMapper)).ToArray();
+
+                if (genArgs.Any(x => x == null))
+                {
+                    return null;
+                }
+
+                type = type.MakeGenericType(genArgs);
+            }
+
+            return MakeArrayType(type, typeName.GetArray());
+        }
+
+        /// <summary>
+        /// Makes the array type according to spec, e.g. "[,][]".
+        /// </summary>
+        private static Type MakeArrayType(Type type, string arraySpec)
+        {
+            if (arraySpec == null)
+            {
+                return type;
+            }
+
+            int? rank = null;
+
+            foreach (var c in arraySpec)
+            {
+                switch (c)
+                {
+                    case '[':
+                        rank = null;
+                        break;
+
+                    case ',':
+                        rank = rank == null ? 2 : rank + 1;
+                        break;
+
+                    case '*':
+                        rank = 1;
+                        break;
+
+                    case ']':
+                        type = rank == null
+                            ? type.MakeArrayType()
+                            : type.MakeArrayType(rank.Value);
+                        break;
+                }
+            }
+
+            return type;
         }
 
         /// <summary>
@@ -75,67 +142,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="assemblyName">Name of the assembly.</param>
         /// <param name="typeName">Name of the type.</param>
         /// <param name="assemblies">The assemblies.</param>
+        /// <param name="nameMapper">The name mapper.</param>
         /// <returns>Resolved type, or null.</returns>
-        private static Type ResolveNonGenericType(string assemblyName, string typeName, ICollection<Assembly> assemblies)
+        private static Type ResolveNonGenericType(string assemblyName, string typeName,
+            ICollection<Assembly> assemblies, IBinaryNameMapper nameMapper)
         {
+            // Fully-qualified name can be resolved with system mechanism.
+            var type = Type.GetType(typeName, false);
+
+            if (type != null)
+            {
+                return type;
+            }
+
             if (!string.IsNullOrEmpty(assemblyName))
+            {
                 assemblies = assemblies
                     .Where(x => x.FullName == assemblyName || x.GetName().Name == assemblyName).ToArray();
+            }
 
             if (!assemblies.Any())
+            {
                 return null;
+            }
 
-            // Trim assembly qualification
-            var commaIdx = typeName.IndexOf(',');
-
-            if (commaIdx > 0)
-                typeName = typeName.Substring(0, commaIdx);
-
-            return assemblies.Select(a => a.GetType(typeName, false, false)).FirstOrDefault(type => type != null);
-        }
-
-        /// <summary>
-        /// Resolves the name of the generic type by resolving each generic arg separately 
-        /// and substituting it's fully qualified name.
-        /// (Assembly.GetType finds generic types only when arguments are fully qualified).
-        /// </summary>
-        /// <param name="assemblyName">Name of the assembly.</param>
-        /// <param name="typeName">Name of the type.</param>
-        /// <param name="assemblies">Assemblies</param>
-        /// <returns>Fully qualified generic type name, or null if argument(s) could not be resolved.</returns>
-        private static Type ResolveGenericType(string assemblyName, string typeName, ICollection<Assembly> assemblies)
-        {
-            var match = GenericTypeRegex.Match(typeName);
-
-            if (!match.Success || !match.Groups[2].Success)
-                return null;
-
-            // Try to construct generic type; each generic arg can also be a generic type.
-            var genericArgs = GenericTypeRegex.Matches(match.Groups[2].Value)
-                .OfType<Match>().Select(m => m.Value).Where(v => !string.IsNullOrWhiteSpace(v))
-                .Select(v => ResolveType(null, TrimBrackets(v), assemblies)).ToArray();
-
-            if (genericArgs.Any(x => x == null))
-                return null;
-
-            var genericType = ResolveNonGenericType(assemblyName,
-                string.Format(CultureInfo.InvariantCulture, "{0}`{1}", match.Groups[1].Value, genericArgs.Length),
-                assemblies);
-
-            if (genericType == null)
-                return null;
-
-            return genericType.MakeGenericType(genericArgs);
-        }
-
-        /// <summary>
-        /// Trims the brackets from generic type arg.
-        /// </summary>
-        private static string TrimBrackets(string s)
-        {
-            return s.StartsWith("[", StringComparison.Ordinal) && s.EndsWith("]", StringComparison.Ordinal) 
-                ? s.Substring(1, s.Length - 2) 
-                : s;
+            return assemblies.Select(a => FindType(a, typeName, nameMapper)).FirstOrDefault(x => x != null);
         }
 
         /// <summary>
@@ -143,10 +174,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="assemblyName">Name of the assembly.</param>
         /// <param name="typeName">Name of the type.</param>
+        /// <param name="nameMapper">The name mapper.</param>
         /// <returns>
         /// Resolved type.
         /// </returns>
-        private Type ResolveTypeInReferencedAssemblies(string assemblyName, string typeName)
+        private Type ResolveTypeInReferencedAssemblies(string assemblyName, TypeNameParser typeName,
+            IBinaryNameMapper nameMapper)
         {
             ResolveEventHandler resolver = (sender, args) => GetReflectionOnlyAssembly(args.Name);
 
@@ -154,7 +187,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             try
             {
-                var result = ResolveType(assemblyName, typeName, GetNotLoadedReferencedAssemblies().ToArray());
+                var result = ResolveType(assemblyName, typeName, GetNotLoadedReferencedAssemblies().ToArray(),
+                    nameMapper);
 
                 if (result == null)
                     return null;
@@ -162,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // result is from ReflectionOnly assembly, load it properly into current domain
                 var asm = AppDomain.CurrentDomain.Load(result.Assembly.GetName());
 
-                return asm.GetType(result.FullName);
+                return FindType(asm, result.FullName, nameMapper);
             }
             finally
             {
@@ -225,6 +259,35 @@ namespace Apache.Ignite.Core.Impl.Binary
                     .Select(x => GetReflectionOnlyAssembly(x.FullName))
                     .Where(x => x != null))
                     roots.Push(refAsm);
+            }
+        }
+
+        /// <summary>
+        /// Finds the type within assembly.
+        /// </summary>
+        private static Type FindType(Assembly asm, string typeName, IBinaryNameMapper mapper)
+        {
+            if (mapper == null)
+            {
+                return asm.GetType(typeName);
+            }
+
+            return GetAssemblyTypesSafe(asm).FirstOrDefault(x => mapper.GetTypeName(x.FullName) == typeName);
+        }
+
+        /// <summary>
+        /// Safely gets all assembly types.
+        /// </summary>
+        private static IEnumerable<Type> GetAssemblyTypesSafe(Assembly asm)
+        {
+            try
+            {
+                return asm.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                // Handle the situation where some assembly dependencies are not available.
+                return ex.Types.Where(x => x != null);
             }
         }
     }

@@ -55,6 +55,9 @@
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/</outputDirectory>
+                        <excludes>
+                            <exclude>hadoop*.jar</exclude>
+                        </excludes>
                     </fileSet>
                     <fileSet>
                         <directory>target</directory>

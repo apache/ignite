@@ -61,8 +61,8 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
     private static final int ENTRIES_CNT = 10000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -73,14 +73,13 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
         LruEvictionPolicy evictionPolicy = new LruEvictionPolicy<>();
         evictionPolicy.setMaxSize(LRU_MAX_SIZE);
 
-        CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cacheCfg.setEvictSynchronized(false);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setReadFromBackup(true);
         cacheCfg.setEvictionPolicy(evictionPolicy);
-        cacheCfg.setOffHeapMaxMemory(1024 * 1024 * 1024L);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setStatisticsEnabled(true);
 
         cacheCfg.setWriteThrough(false);
@@ -106,7 +105,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
 
             futs.add(GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ig.cache(null).localLoadCache(null);
+                    ig.cache(DEFAULT_CACHE_NAME).localLoadCache(null);
 
                     return null;
                 }
@@ -120,7 +119,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
             for (int i = 0; i < gridCnt; i++) {
                 IgniteEx grid = grid(i);
 
-                final IgniteCache<Object, Object> cache = grid.cache(null);
+                final IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {

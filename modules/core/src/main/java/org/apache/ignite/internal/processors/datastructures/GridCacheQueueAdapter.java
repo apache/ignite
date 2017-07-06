@@ -101,9 +101,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** Access to affinityRun() and affinityCall() functions. */
     private final IgniteCompute compute;
 
-    /** */
-    private final boolean binaryMarsh;
-
     /**
      * @param queueName Queue name.
      * @param hdr Queue hdr.
@@ -118,7 +115,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         collocated = hdr.collocated();
         queueKey = new GridCacheQueueHeaderKey(queueName);
         cache = cctx.kernalContext().cache().internalCache(cctx.name());
-        binaryMarsh = cctx.binaryMarshaller();
         this.compute = cctx.kernalContext().grid().compute();
 
         log = cctx.logger(getClass());
@@ -377,7 +373,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             checkRemoved(t.get1());
 
-            removeKeys(cache, id, queueName, collocated, binaryMarsh, t.get1(), t.get2(), batchSize);
+            removeKeys(cache, id, queueName, collocated, t.get1(), t.get2(), batchSize);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -433,7 +429,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param id Queue unique ID.
      * @param name Queue name.
      * @param collocated Collocation flag.
-     * @param binaryMarsh {@code True} if binary marshaller is configured.
      * @param startIdx Start item index.
      * @param endIdx End item index.
      * @param batchSize Batch size.
@@ -445,7 +440,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         IgniteUuid id,
         String name,
         boolean collocated,
-        boolean binaryMarsh,
         long startIdx,
         long endIdx,
         int batchSize)
@@ -453,7 +447,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         Set<QueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
-            keys.add(itemKey(id, name, collocated, binaryMarsh, idx));
+            keys.add(itemKey(id, name, collocated, idx));
 
             if (batchSize > 0 && keys.size() == batchSize) {
                 cache.removeAll(keys);
@@ -565,7 +559,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @return Item key.
      */
     protected QueueItemKey itemKey(Long idx) {
-        return itemKey(id, queueName, collocated(), binaryMarsh, idx);
+        return itemKey(id, queueName, collocated(), idx);
     }
 
     /** {@inheritDoc} */
@@ -586,18 +580,15 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param id Queue unique ID.
      * @param queueName Queue name.
      * @param collocated Collocation flag.
-     * @param binaryMarsh {@code True} if binary marshaller is configured.
      * @param idx Item index.
      * @return Item key.
      */
     private static QueueItemKey itemKey(IgniteUuid id,
         String queueName,
         boolean collocated,
-        boolean binaryMarsh,
         long idx) {
         return collocated ?
-            (binaryMarsh ? new CollocatedQueueItemKey(id, queueName, idx) : new CollocatedItemKey(id, queueName, idx)) :
-            new GridCacheQueueItemKey(id, queueName, idx);
+            new CollocatedQueueItemKey(id, queueName, idx) : new GridCacheQueueItemKey(id, queueName, idx);
     }
 
     /**
@@ -691,38 +682,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
-        }
-    }
-
-    /**
-     * Item key for collocated queue.
-     */
-    private static class CollocatedItemKey extends GridCacheQueueItemKey {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public CollocatedItemKey() {
-            // No-op.
-        }
-
-        /**
-         * @param id Queue unique ID.
-         * @param queueName Queue name.
-         * @param idx Item index.
-         */
-        private CollocatedItemKey(IgniteUuid id, String queueName, long idx) {
-            super(id, queueName, idx);
-        }
-
-        /**
-         * @return Item affinity key.
-         */
-        @AffinityKeyMapped
-        public Object affinityKey() {
-            return queueName();
         }
     }
 

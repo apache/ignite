@@ -25,14 +25,14 @@ import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
@@ -57,8 +57,7 @@ import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
@@ -80,7 +79,7 @@ public final class UpdatePlanBuilder {
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
         assert !prepared.isQuery();
 
-        GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt);
@@ -144,7 +143,7 @@ public final class UpdatePlanBuilder {
             // not for updates, and hence will allow putting new pairs only.
             // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || !IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
+            if (keys.length != 1 || !desc.isKeyColumn(tbl.dataTable().getColumn(keys[0].columnName()).getColumnId()))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
@@ -199,6 +198,8 @@ public final class UpdatePlanBuilder {
 
         String[] colNames = new String[cols.length];
 
+        int[] colTypes = new int[cols.length];
+
         for (int i = 0; i < cols.length; i++) {
             GridSqlColumn col = cols[i];
 
@@ -206,12 +207,15 @@ public final class UpdatePlanBuilder {
 
             colNames[i] = colName;
 
-            if (KEY_FIELD_NAME.equals(colName)) {
+            colTypes[i] = col.resultType().type();
+
+            int colId = col.column().getColumnId();
+            if (desc.isKeyColumn(colId)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (VAL_FIELD_NAME.equals(colName)) {
+            if (desc.isValueColumn(colId)) {
                 valColIdx = i;
                 continue;
             }
@@ -230,10 +234,10 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
         if (stmt instanceof GridSqlMerge)
-            return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx,
+            return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
                 valColIdx, sel != null ? sel.getSQL() : null, !isTwoStepSubqry, rows, rowsNum);
         else
-            return UpdatePlan.forInsert(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx,
+            return UpdatePlan.forInsert(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
                 valColIdx, sel != null ? sel.getSQL() : null, !isTwoStepSubqry, rows, rowsNum);
     }
 
@@ -293,10 +297,15 @@ public final class UpdatePlanBuilder {
 
                 String[] colNames = new String[updatedCols.size()];
 
+                int[] colTypes = new int[updatedCols.size()];
+
                 for (int i = 0; i < updatedCols.size(); i++) {
                     colNames[i] = updatedCols.get(i).columnName();
 
-                    if (VAL_FIELD_NAME.equals(colNames[i]))
+                    colTypes[i] = updatedCols.get(i).resultType().type();
+
+                    Column col = updatedCols.get(i).column();
+                    if (desc.isValueColumn(col.getColumnId()))
                         valColIdx = i;
                 }
 
@@ -317,7 +326,7 @@ public final class UpdatePlanBuilder {
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
-                return UpdatePlan.forUpdate(gridTbl, colNames, newValSupplier, valColIdx, sel.getSQL());
+                return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, sel.getSQL());
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
@@ -348,7 +357,7 @@ public final class UpdatePlanBuilder {
         final Class<?> cls = key ? U.firstNotNull(U.classForName(desc.keyTypeName(), null), desc.keyClass())
             : desc.valueClass();
 
-        boolean isSqlType = GridQueryProcessor.isSqlType(cls);
+        boolean isSqlType = QueryUtils.isSqlType(cls);
 
         // If we don't need to construct anything from scratch, just return value from given list.
         if (isSqlType || !hasProps) {
@@ -372,7 +381,11 @@ public final class UpdatePlanBuilder {
 
                         BinaryObject bin = cctx.grid().binary().toBinary(obj);
 
-                        return cctx.grid().binary().builder(bin);
+                        BinaryObjectBuilder builder = cctx.grid().binary().builder(bin);
+
+                        cctx.prepareAffinityField(builder);
+
+                        return builder;
                     }
                 };
             }
@@ -381,7 +394,11 @@ public final class UpdatePlanBuilder {
                 return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                        return cctx.grid().binary().builder(typeName);
+                        BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
+
+                        cctx.prepareAffinityField(builder);
+
+                        return builder;
                     }
                 };
             }
@@ -514,17 +531,19 @@ public final class UpdatePlanBuilder {
     private static boolean updateAffectsKeyColumns(GridH2Table gridTbl, Set<String> affectedColNames) {
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
-        Column[] cols = gridTbl.getColumns();
+        for (String colName : affectedColNames) {
+            int colId = gridTbl.getColumn(colName).getColumnId();
 
-        // Check "_key" column itself - always has index of 0.
-        if (affectedColNames.contains(cols[0].getName()))
-            return true;
-
-        // Start off from i = 2 to skip indices of 0 an 1 corresponding to key and value respectively.
-        for (int i = 2; i < cols.length; i++)
-            if (affectedColNames.contains(cols[i].getName()) && desc.isColumnKeyProperty(i - 2))
+            // Check "_key" column and alias key column
+            if (desc.isKeyColumn(colId))
                 return true;
 
+            // column ids 0..2 are _key, _val, _ver
+            if (colId >= DEFAULT_COLUMNS_COUNT) {
+                if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+                    return true;
+            }
+        }
         return false;
     }
 

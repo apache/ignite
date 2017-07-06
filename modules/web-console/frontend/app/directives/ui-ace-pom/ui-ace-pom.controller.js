@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteMavenGenerator', 'IgniteVersion', function($scope, maven, Version) {
+export default ['$scope', 'IgniteVersion', 'IgniteMavenGenerator', function($scope, Version, maven) {
     const ctrl = this;
 
     // Watchers definition.
@@ -25,9 +25,13 @@ export default ['$scope', 'IgniteMavenGenerator', 'IgniteVersion', function($sco
         if (!value)
             return;
 
-        ctrl.data = maven.generate($scope.cluster, Version.productVersion().ignite).asString();
+        ctrl.data = maven.generate($scope.cluster, Version.currentSbj.getValue());
     };
 
     // Setup watchers.
+    Version.currentSbj.subscribe({
+        next: clusterWatcher
+    });
+
     $scope.$watch('cluster', clusterWatcher);
 }];

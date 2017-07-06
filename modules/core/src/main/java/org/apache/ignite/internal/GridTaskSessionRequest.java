@@ -176,7 +176,7 @@ public class GridTaskSessionRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 6;
     }
 

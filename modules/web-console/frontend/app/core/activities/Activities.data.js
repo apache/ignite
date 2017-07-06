@@ -31,9 +31,4 @@ export default class ActivitiesData {
 
         return this.$http.post('/api/v1/activities/page', { group, action });
     }
-
-    listByUser(userId, params) {
-        return this.$http.get(`/api/v1/activities/user/${userId}`, { params })
-            .then(({ data }) => data);
-    }
 }

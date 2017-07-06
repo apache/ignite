@@ -18,33 +18,28 @@
 namespace Apache.Ignite.Core.Plugin.Cache
 {
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Cache plugin configuration marker interface. Starting point to extend <see cref="CacheConfiguration"/>
     /// and extend existing cache functionality.
-    /// <para />
-    /// Implementations should be linked to corresponding <see cref="ICachePluginProvider{TConfig}"/>
-    /// via <see cref="CachePluginProviderTypeAttribute"/>.
-    /// <example>
-    /// Example plugin implementation:
-    /// <code>
-    /// [CachePluginProviderType(typeof(MyCachePluginProvider))]
-    /// class MyCachePluginConfig : ICachePluginConfiguration
-    /// {
-    ///     int CustomProperty { get; set; }
-    /// }
-    /// 
-    /// class MyCachePluginProvider : ICachePluginProvider&lt;MyCachePluginConfig&gt;
-    /// {
-    ///     ...
-    /// }
-    /// </code>
-    /// </example>
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface ICachePluginConfiguration
     {
-        // No-op.
+        /// <summary>
+        /// Gets the id to locate PlatformCachePluginConfigurationClosureFactory on Java side
+        /// and read the data written by <see cref="WriteBinary"/> method.
+        /// </summary>
+        int? CachePluginConfigurationClosureFactoryId { get; }
+
+        /// <summary>
+        /// Writes this instance to a raw writer.
+        /// This method will be called when <see cref="CachePluginConfigurationClosureFactoryId"/> 
+        /// is not null to propagate configuration to the Java side.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        void WriteBinary(IBinaryRawWriter writer);
     }
 }

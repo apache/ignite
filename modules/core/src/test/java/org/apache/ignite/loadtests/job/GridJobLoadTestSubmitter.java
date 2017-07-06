@@ -22,7 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
@@ -68,8 +67,6 @@ public class GridJobLoadTestSubmitter implements Runnable {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void run() {
-        IgniteCompute comp = ignite.compute().withAsync();
-
         while (true) {
             checkCompletion();
 
@@ -83,9 +80,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
             }
 
             try {
-                comp.withTimeout(TIMEOUT).execute(GridJobLoadTestTask.class, params);
-
-                futures.add(comp.<Integer>future());
+                futures.add(ignite.compute().withTimeout(TIMEOUT).executeAsync(GridJobLoadTestTask.class, params));
             }
             catch (IgniteException e) {
                 // Should not be thrown since uses asynchronous execution.

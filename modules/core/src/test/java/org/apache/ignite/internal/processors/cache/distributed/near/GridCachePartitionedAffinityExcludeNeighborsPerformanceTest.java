@@ -57,8 +57,8 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
     private static Collection<String> msgs = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -93,7 +93,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @return Affinity.
      */
     static Affinity<Object> affinity(Ignite ignite) {
-        return ignite.affinity(null);
+        return ignite.affinity(DEFAULT_CACHE_NAME);
     }
 
     /**

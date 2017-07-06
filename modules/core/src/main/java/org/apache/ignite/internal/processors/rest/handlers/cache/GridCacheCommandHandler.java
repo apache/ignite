@@ -35,7 +35,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -300,7 +299,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return col;
         }
 
-        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal + ", old=" + origVal + ']');
+        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal +
+            ",type=" + (appendVal != null ? appendVal.getClass().getSimpleName() : "NULL") + ", old=" + origVal +
+            ",type= " + (origVal != null ? origVal.getClass().getSimpleName() : "NULL") + ']');
     }
 
     /**
@@ -359,7 +360,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestCacheRequest req0 = (GridRestCacheRequest)req;
 
-        final String cacheName = req0.cacheName();
+        final String cacheName = req0.cacheName() == null ? DFLT_CACHE_NAME: req0.cacheName();
 
         final Object key = req0.key();
 
@@ -378,11 +379,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             switch (cmd) {
                 case DESTROY_CACHE: {
                     // Do not check thread tx here since there can be active system cache txs.
-                    fut = ((IgniteKernal)ctx.grid()).destroyCacheAsync(cacheName, false).chain(
+                    fut = ((IgniteKernal)ctx.grid()).destroyCacheAsync(cacheName, false, false).chain(
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
-                                return new GridRestResponse(f.get());
+                                f.get();
+
+                                return new GridRestResponse(null);
                             }
                         });
 
@@ -395,7 +398,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
-                                return new GridRestResponse(f.get());
+                                f.get();
+
+                                return new GridRestResponse(null);
                             }
                         });
 
@@ -452,7 +457,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                 case CACHE_PUT_IF_ABSENT: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
-                        new PutIfAbsentCommand(key, getValue(req0)));
+                        new PutIfAbsentCommand(key, ttl, getValue(req0)));
 
                     break;
                 }
@@ -938,10 +943,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             boolean sameCaches = true;
 
-            int hash = discovery.nodeCaches(F.first(subgrid)).hashCode();
+            Set<String> caches = discovery.nodePublicCaches(F.first(subgrid)).keySet();
 
             for (int i = 1; i < subgrid.size(); i++) {
-                if (hash != discovery.nodeCaches(subgrid.get(i)).hashCode()) {
+                if (!caches.equals(discovery.nodePublicCaches(subgrid.get(i)).keySet())) {
                     sameCaches = false;
 
                     break;
@@ -1148,20 +1153,38 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** */
-    private static class PutIfAbsentCommand extends GetAndPutCommand {
+    private static class PutIfAbsentCommand extends CacheProjectionCommand {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private final Object key;
+
+        /** */
+        private final Long ttl;
+
+        /** */
+        private final Object val;
+
         /**
          * @param key Key.
+         * @param ttl TTL.
          * @param val Value.
          */
-        PutIfAbsentCommand(Object key, Object val) {
-            super(key, val);
+        PutIfAbsentCommand(Object key, Long ttl, Object val) {
+            this.val = val;
+            this.ttl = ttl;
+            this.key = key;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            if (ttl != null && ttl > 0) {
+                Duration duration = new Duration(MILLISECONDS, ttl);
+
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+            }
+
             return c.putIfAbsentAsync(key, val);
         }
     }

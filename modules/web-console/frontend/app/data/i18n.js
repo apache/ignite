@@ -23,6 +23,7 @@ export default {
     '/configuration/domains': 'Configure domain model',
     '/configuration/igfs': 'Configure IGFS',
     '/configuration/summary': 'Configurations summary',
+    '/configuration/download': 'Download project',
     '/demo/resume': 'Demo resume',
     '/demo/reset': 'Demo reset',
     '/queries/execute': 'Query execute',

@@ -40,8 +40,8 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
  * Abstract test for Hadoop 1.0 file system stack.
  */
 public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
-    /** Secondary grid name */
-    private static final String GRID_NAME = "grid_secondary";
+    /** Secondary Ignite instance name */
+    private static final String IGNITE_INSTANCE_NAME = "grid_secondary";
 
     /** Secondary file system name */
     private static final String IGFS_NAME = "igfs_secondary";
@@ -115,7 +115,7 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
      * @throws IOException On failure.
      */
     protected void startUnderlying() throws Exception {
-        startGridWithIgfs(GRID_NAME, IGFS_NAME, PRIMARY, null, SECONDARY_REST_CFG, secondaryIpFinder);
+        startGridWithIgfs(IGNITE_INSTANCE_NAME, IGFS_NAME, PRIMARY, null, SECONDARY_REST_CFG, secondaryIpFinder);
     }
 
     /**

@@ -366,13 +366,15 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         Map<String, String> props = LocalFileSystemUtils.posixAttributesToMap(attrs);
 
+        BasicFileAttributes basicAttrs = LocalFileSystemUtils.basicAttributes(file);
+
         if (isDir) {
             return new LocalFileSystemIgfsFile(path, false, true, 0,
-                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), 0, props);
+                basicAttrs.lastAccessTime().toMillis(), basicAttrs.lastModifiedTime().toMillis(), 0, props);
         }
         else {
             return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0,
-                attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis(), file.length(), props);
+                basicAttrs.lastAccessTime().toMillis(), basicAttrs.lastModifiedTime().toMillis(), file.length(), props);
         }
     }
 
@@ -393,7 +395,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
         Path p = fileForPath(path).toPath();
 
         if (!Files.exists(p))

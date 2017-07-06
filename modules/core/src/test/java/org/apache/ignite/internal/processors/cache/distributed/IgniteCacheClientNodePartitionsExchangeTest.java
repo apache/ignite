@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -69,21 +68,15 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /** */
     private boolean client;
 
-    /** */
-    private boolean fairAffinity;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        if (fairAffinity)
-            ccfg.setAffinity(new FairAffinityFunction());
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -121,7 +114,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite1.cache(null).get(1);
+                ignite1.cache(DEFAULT_CACHE_NAME).get(1);
 
                 return null;
             }
@@ -129,7 +122,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite2.cache(null).get(1);
+                ignite2.cache(DEFAULT_CACHE_NAME).get(1);
 
                 return null;
             }
@@ -141,7 +134,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite2.cache(null).get(1);
+                ignite2.cache(DEFAULT_CACHE_NAME).get(1);
 
                 return null;
             }
@@ -204,15 +197,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPartitionsExchange() throws Exception {
-        partitionsExchange();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionsExchangeFairAffinity() throws Exception {
-        fairAffinity = true;
-
         partitionsExchange();
     }
 
@@ -327,7 +311,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         if (lateAff) {
             // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
-            boolean exchangeAfterRebalance = fairAffinity;
+            boolean exchangeAfterRebalance = false;
 
             waitForTopologyUpdate(4,
                 exchangeAfterRebalance ? new AffinityTopologyVersion(6, 1) : new AffinityTopologyVersion(6, 0));
@@ -443,12 +427,12 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         Ignite ignite0 = it.next();
 
-        Affinity<Integer> aff0 = ignite0.affinity(null);
+        Affinity<Integer> aff0 = ignite0.affinity(DEFAULT_CACHE_NAME);
 
         while (it.hasNext()) {
             Ignite ignite = it.next();
 
-            Affinity<Integer> aff = ignite.affinity(null);
+            Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
             assertEquals(aff0.partitions(), aff.partitions());
 
@@ -514,12 +498,12 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         final String CACHE_NAME1 = "cache1";
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME1);
 
         if (srvNode)
-            ccfg.setNodeFilter(new TestFilter(getTestGridName(2)));
+            ccfg.setNodeFilter(new TestFilter(getTestIgniteInstanceName(2)));
 
         ignite0.createCache(ccfg);
 
@@ -546,26 +530,31 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         else
             ignite2.cache(CACHE_NAME1);
 
-        waitForTopologyUpdate(3, new AffinityTopologyVersion(3, ++minorVer));
-
         GridCacheAdapter cache = ((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1);
 
         assertNotNull(cache);
         assertEquals(nearCache, cache.context().isNear());
 
         assertEquals(0, spi0.partitionsSingleMessages());
-        assertEquals(1, spi0.partitionsFullMessages());
+        assertEquals(0, spi0.partitionsFullMessages());
         assertEquals(0, spi1.partitionsSingleMessages());
         assertEquals(0, spi1.partitionsFullMessages());
-        assertEquals(1, spi2.partitionsSingleMessages());
+        assertEquals(0, spi2.partitionsSingleMessages());
         assertEquals(0, spi2.partitionsFullMessages());
 
-        ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
+        final ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
 
         for (Ignite ignite : Ignition.allGrids()) {
-            GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+            final GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return disco.cacheNode(clientNode, CACHE_NAME1);
+                }
+            }, 5000);
 
             assertTrue(disco.cacheNode(clientNode, CACHE_NAME1));
+
             assertFalse(disco.cacheAffinityNode(clientNode, CACHE_NAME1));
             assertEquals(nearCache, disco.cacheNearNode(clientNode, CACHE_NAME1));
         }
@@ -581,8 +570,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
             assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1));
 
-            waitForTopologyUpdate(3, new AffinityTopologyVersion(3, ++minorVer));
-
             assertEquals(0, spi0.partitionsSingleMessages());
             assertEquals(0, spi0.partitionsFullMessages());
             assertEquals(0, spi1.partitionsSingleMessages());
@@ -593,9 +580,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         final String CACHE_NAME2 = "cache2";
 
-        ccfg = new CacheConfiguration();
-
-        ccfg.setName(CACHE_NAME2);
+        ccfg = new CacheConfiguration(CACHE_NAME2);
 
         log.info("Create new cache: " + CACHE_NAME2);
 
@@ -627,7 +612,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            return !exclNodeName.equals(clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
+            return !exclNodeName.equals(clusterNode.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME));
         }
     }
 

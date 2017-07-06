@@ -27,8 +27,12 @@ import org.jetbrains.annotations.Nullable;
  * Future that delegates to some other future.
  */
 public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
-    /** */
-    private static final long serialVersionUID = 0L;
+    /**
+     *
+     */
+    public GridNioEmbeddedFuture() {
+        super(null);
+    }
 
     /**
      * Callback to notify that future is finished.

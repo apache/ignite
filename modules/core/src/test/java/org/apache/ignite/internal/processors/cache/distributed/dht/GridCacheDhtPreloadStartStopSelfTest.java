@@ -90,8 +90,8 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration[] cacheCfgs = new CacheConfiguration[cacheCnt];
 
@@ -185,7 +185,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         try {
             Ignite g1 = startGrid(0);
 
-            IgniteCache<Integer, String> c1 = g1.cache(null);
+            IgniteCache<Integer, String> c1 = g1.cache(DEFAULT_CACHE_NAME);
 
             putKeys(c1, keyCnt);
             checkKeys(c1, keyCnt);
@@ -196,7 +196,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
                 checkKeys(c, keyCnt);
             }
@@ -256,8 +256,8 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(ignite.cluster().localNode())) {
                 String val = sync ? c.localPeek(i, CachePeekMode.ONHEAP) : c.get(i);
 
-                assertEquals("Key check failed [grid=" + ignite.name() + ", cache=" + c.getName() + ", key=" + i + ']',
-                    Integer.toString(i), val);
+                assertEquals("Key check failed [igniteInstanceName=" + ignite.name() + ", cache=" + c.getName() +
+                        ", key=" + i + ']', Integer.toString(i), val);
             }
         }
     }

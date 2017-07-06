@@ -432,8 +432,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If failed.
      */
     protected void spiStart(IgniteSpi spi) throws Exception {
-        // Start SPI with unique grid name.
-        spi.spiStart(getTestGridName());
+        // Start SPI with unique Ignite instance name.
+        spi.spiStart(getTestIgniteInstanceName());
 
         info("SPI started [spi=" + spi.getClass() + ']');
     }
@@ -717,6 +717,11 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         /** {@inheritDoc} */
         @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
             return Collections.emptyMap();
         }
 

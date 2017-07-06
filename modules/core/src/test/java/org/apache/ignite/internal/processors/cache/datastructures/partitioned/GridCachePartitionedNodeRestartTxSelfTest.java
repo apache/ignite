@@ -59,8 +59,8 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -81,6 +81,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
         AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setCacheMode(PARTITIONED);
+        atomicCfg.setGroupName("testGroup");
         atomicCfg.setBackups(1);
 
         cfg.setAtomicConfiguration(atomicCfg);
@@ -160,14 +161,14 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
         for (int i = INIT_GRID_NUM; i < MAX_GRID_NUM; i++) {
             startGrid(i);
 
-            assert PARTITIONED == grid(i).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
+            assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
             try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Integer val = (Integer) grid(i).cache(null).get(key);
+                Integer val = (Integer) grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
                 assertEquals("Simple check failed for node: " + i, (Integer) i, val);
 
-                grid(i).cache(null).put(key, i + 1);
+                grid(i).cache(DEFAULT_CACHE_NAME).put(key, i + 1);
 
                 tx.commit();
             }
@@ -185,12 +186,12 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
         for (int i = INIT_GRID_NUM; i < 20; i++) {
             startGrid(i);
 
-            assert PARTITIONED == grid(i).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
+            assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
             try (Transaction tx = grid(i).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, "testGroup");
 
-                GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue) grid(i).cache(null).get(key));
+                GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue) grid(i).cache(DEFAULT_CACHE_NAME).get(key));
 
                 assertNotNull(atomicVal);
 
@@ -198,7 +199,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
                 atomicVal.set(i + 1);
 
-                grid(i).cache(null).put(key, atomicVal);
+                grid(i).cache(DEFAULT_CACHE_NAME).put(key, atomicVal);
 
                 tx.commit();
             }
@@ -216,7 +217,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
         for (int i = INIT_GRID_NUM; i < 20; i++) {
             startGrid(i);
 
-            assert PARTITIONED == grid(i).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
+            assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
             IgniteAtomicLong atomic = grid(i).atomicLong(name, 0, true);
 
@@ -241,13 +242,13 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert startGrid(i) != null;
 
         for (int i = 0; i < INIT_GRID_NUM; i++)
-            assert PARTITIONED == grid(i).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
+            assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
         // Init cache data.
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put simple value.
-            grid(0).cache(null).put(key, INIT_GRID_NUM);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(key, INIT_GRID_NUM);
 
             tx.commit();
         }
@@ -264,13 +265,13 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert startGrid(i) != null;
 
         for (int i = 0; i < INIT_GRID_NUM; i++)
-            assert PARTITIONED == grid(i).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
+            assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
         // Init cache data.
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put custom data
-            grid(0).cache(null).put(new GridCacheInternalKeyImpl(key), new GridCacheAtomicLongValue(INIT_GRID_NUM));
+            grid(0).cache(DEFAULT_CACHE_NAME).put(new GridCacheInternalKeyImpl(key, "testGroup"), new GridCacheAtomicLongValue(INIT_GRID_NUM));
 
             tx.commit();
         }
@@ -289,7 +290,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert startGrid(i) != null;
 
         for (int i = 0; i < INIT_GRID_NUM; i++)
-            assert PARTITIONED == grid(i).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode();
+            assert PARTITIONED == grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode();
 
         // Init cache data.
         grid(0).atomicLong(key, 0, true).getAndSet(INIT_GRID_NUM);

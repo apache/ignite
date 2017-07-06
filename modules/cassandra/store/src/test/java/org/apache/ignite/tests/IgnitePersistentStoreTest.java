@@ -17,6 +17,7 @@
 
 package org.apache.ignite.tests;
 
+import com.datastax.driver.core.SimpleStatement;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -24,15 +25,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.tests.pojos.Person;
-import org.apache.ignite.tests.pojos.PersonId;
-import org.apache.ignite.tests.pojos.Product;
-import org.apache.ignite.tests.pojos.ProductOrder;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
@@ -41,9 +40,17 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
+
+import org.apache.ignite.tests.pojos.Product;
+import org.apache.ignite.tests.pojos.ProductOrder;
+import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.tests.pojos.SimplePerson;
+import org.apache.ignite.tests.pojos.PersonId;
+import org.apache.ignite.tests.pojos.SimplePersonId;
 
 /**
  * Unit tests for Ignite caches which utilizing {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
@@ -245,6 +252,34 @@ public class IgnitePersistentStoreTest {
 
     /** */
     @Test
+    public void blobBinaryLoadCacheTest() {
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
+            IgniteCache<Long, PojoPerson> personCache = ignite.getOrCreateCache("cache2");
+
+            assert ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
+
+            personCache.put(1L, new PojoPerson(1, "name"));
+
+            assert personCache.withKeepBinary().get(1L) instanceof BinaryObject;
+        }
+
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
+            IgniteCache<Long, PojoPerson> personCache = ignite.getOrCreateCache("cache2");
+
+            personCache.loadCache(null, null);
+
+            PojoPerson person = personCache.get(1L);
+
+            LOGGER.info("loadCache tests passed");
+        }
+    }
+
+    /** */
+    @Test
     public void pojoStrategyTest() {
         Ignition.stopAll(true);
 
@@ -391,6 +426,86 @@ public class IgnitePersistentStoreTest {
 
     /** */
     @Test
+    public void pojoStrategySimpleObjectsTest() {
+        Ignition.stopAll(true);
+
+        LOGGER.info("Running POJO strategy write tests for simple objects");
+
+        Map<SimplePersonId, SimplePerson> personMap5 = TestsHelper.generateSimplePersonIdsPersonsMap();
+        Map<SimplePersonId, SimplePerson> personMap6 = TestsHelper.generateSimplePersonIdsPersonsMap();
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
+            IgniteCache<SimplePersonId, SimplePerson> personCache5 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache6 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
+
+            LOGGER.info("Running single operation write tests");
+
+            SimplePersonId id = TestsHelper.generateRandomSimplePersonId();
+            personCache5.put(id, TestsHelper.generateRandomSimplePerson(id.personNum));
+            personCache6.put(id, TestsHelper.generateRandomSimplePerson(id.personNum));
+
+            LOGGER.info("Single operation write tests passed");
+
+            LOGGER.info("Running bulk operation write tests");
+            personCache5.putAll(personMap5);
+            personCache6.putAll(personMap6);
+            LOGGER.info("Bulk operation write tests passed");
+        }
+
+        LOGGER.info("POJO strategy write tests for simple objects passed");
+
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
+            LOGGER.info("Running POJO strategy read tests for simple objects");
+
+            IgniteCache<SimplePersonId, SimplePerson> personCache5 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache6 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
+
+            LOGGER.info("Running single operation read tests");
+
+            SimplePersonId id = personMap5.keySet().iterator().next();
+
+            SimplePerson person = personCache5.get(id);
+            if (!person.equalsPrimitiveFields(personMap5.get(id)))
+                throw new RuntimeException("SimplePerson value was incorrectly deserialized from Cassandra");
+
+            id = personMap6.keySet().iterator().next();
+
+            person = personCache6.get(id);
+            if (!person.equals(personMap6.get(id)))
+                throw new RuntimeException("SimplePerson value was incorrectly deserialized from Cassandra");
+
+            LOGGER.info("Single operation read tests passed");
+
+            LOGGER.info("Running bulk operation read tests");
+
+            Map<SimplePersonId, SimplePerson> persons5 = personCache5.getAll(personMap5.keySet());
+            if (!TestsHelper.checkSimplePersonMapsEqual(persons5, personMap5, true))
+                throw new RuntimeException("SimplePerson values batch was incorrectly deserialized from Cassandra");
+
+            Map<SimplePersonId, SimplePerson> persons6 = personCache6.getAll(personMap6.keySet());
+            if (!TestsHelper.checkSimplePersonMapsEqual(persons6, personMap6, false))
+                throw new RuntimeException("SimplePerson values batch was incorrectly deserialized from Cassandra");
+
+            LOGGER.info("Bulk operation read tests passed");
+
+            LOGGER.info("POJO strategy read tests for simple objects passed");
+
+            LOGGER.info("Running POJO strategy delete tests for simple objects");
+
+            personCache5.remove(id);
+            personCache5.removeAll(personMap5.keySet());
+
+            personCache6.remove(id);
+            personCache6.removeAll(personMap6.keySet());
+
+            LOGGER.info("POJO strategy delete tests for simple objects passed");
+        }
+    }
+
+    /** */
+    @Test
     public void pojoStrategyTransactionTest() {
         CassandraHelper.dropTestKeyspaces();
 
@@ -429,31 +544,39 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Running loadCache test");
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
-            IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
+            CacheConfiguration<PersonId, Person> ccfg = new CacheConfiguration<>("cache3");
+
+            IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(ccfg);
+
             int size = personCache3.size(CachePeekMode.ALL);
 
             LOGGER.info("Initial cache size " + size);
 
             LOGGER.info("Loading cache data from Cassandra table");
 
-            personCache3.loadCache(null, new String[] {"select * from test1.pojo_test3 limit 3"});
+            String qry = "select * from test1.pojo_test3 limit 3";
+
+            personCache3.loadCache(null, qry);
 
             size = personCache3.size(CachePeekMode.ALL);
-            if (size != 3) {
-                throw new RuntimeException("Cache data was incorrectly loaded from Cassandra. " +
-                    "Expected number of records is 3, but loaded number of records is " + size);
-            }
+            Assert.assertEquals("Cache data was incorrectly loaded from Cassandra table by '" + qry + "'", 3, size);
+
+            personCache3.clear();
+
+            personCache3.loadCache(null, new SimpleStatement(qry));
+
+            size = personCache3.size(CachePeekMode.ALL);
+            Assert.assertEquals("Cache data was incorrectly loaded from Cassandra table by statement", 3, size);
 
             personCache3.clear();
 
             personCache3.loadCache(null);
 
             size = personCache3.size(CachePeekMode.ALL);
-            if (size != TestsHelper.getBulkOperationSize()) {
-                throw new RuntimeException("Cache data was incorrectly loaded from Cassandra. " +
+            Assert.assertEquals("Cache data was incorrectly loaded from Cassandra. " +
                     "Expected number of records is " + TestsHelper.getBulkOperationSize() +
-                    ", but loaded number of records is " + size);
-            }
+                    ", but loaded number of records is " + size,
+                TestsHelper.getBulkOperationSize(), size);
 
             LOGGER.info("Cache data loaded from Cassandra table");
         }
@@ -662,5 +785,35 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Passed POJO transaction tests for " + concurrency +
                 " concurrency and " + isolation + " isolation level");
         LOGGER.info("-----------------------------------------------------------------------------------");
+    }
+
+    /** */
+    public static class PojoPerson {
+        /** */
+        private int id;
+
+        /** */
+        private String name;
+
+        /** */
+        public PojoPerson() {
+            // No-op.
+        }
+
+        /** */
+        public PojoPerson(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /** */
+        public int getId() {
+            return id;
+        }
+
+        /** */
+        public String getName() {
+            return name;
+        }
     }
 }

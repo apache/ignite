@@ -45,14 +45,14 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "distributedJoins=true@modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default:distributedJoins=true@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Statement. */
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -79,22 +79,20 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(3);
 
-        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<String, Person> personCache = grid(0).cache(null);
+        IgniteCache<String, Person> personCache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert personCache != null;
 
         personCache.put("p1", new Person(1, "John White", 25, 1));
         personCache.put("p2", new Person(2, "Joe Black", 35, 1));
         personCache.put("p3", new Person(3, "Mike Green", 40, 2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

@@ -24,9 +24,11 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -43,7 +45,7 @@ namespace Apache.Ignite.Core.Tests
         public const string CategoryExamples = "EXAMPLES_TEST";
 
         /** */
-        public const int DfltBusywaitSleepInterval = 200;
+        private const int DfltBusywaitSleepInterval = 200;
 
         /** */
 
@@ -284,7 +286,7 @@ namespace Apache.Ignite.Core.Tests
             if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
                 return;
 
-            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleBeanHolder)).ToList();
+            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
 
             if (items.Any())
                 Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'", 
@@ -334,14 +336,15 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null)
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
         {
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
                 JvmOptions = TestJavaOptions(jvmDebug),
-                JvmClasspath = CreateTestClasspath()
+                JvmClasspath = CreateTestClasspath(),
+                IgniteInstanceName = name
             };
         }
 
@@ -369,6 +372,36 @@ namespace Apache.Ignite.Core.Tests
             Console.WriteLine(proc.StandardError.ReadToEnd());
             Assert.IsTrue(proc.WaitForExit(15000));
             Assert.AreEqual(0, proc.ExitCode);
+        }
+
+        /// <summary>
+        /// Serializes and deserializes back an object.
+        /// </summary>
+        public static T SerializeDeserialize<T>(T obj)
+        {
+            var marsh = new Marshaller(null) {CompactFooter = false};
+
+            return marsh.Unmarshal<T>(marsh.Marshal(obj));
+        }
+
+        /// <summary>
+        /// Gets the primary keys.
+        /// </summary>
+        public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName,
+            IClusterNode node = null)
+        {
+            var aff = ignite.GetAffinity(cacheName);
+            node = node ?? ignite.GetCluster().GetLocalNode();
+
+            return Enumerable.Range(1, int.MaxValue).Where(x => aff.IsPrimary(node, x));
+        }
+
+        /// <summary>
+        /// Gets the primary key.
+        /// </summary>
+        public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
+        {
+            return GetPrimaryKeys(ignite, cacheName, node).First();
         }
     }
 }

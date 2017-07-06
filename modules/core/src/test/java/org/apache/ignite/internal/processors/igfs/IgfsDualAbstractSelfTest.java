@@ -51,39 +51,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         super(mode);
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean initializeDefaultPathModes() {
-        // Enable default modes in order to test various modes.
-        return true;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDefaultDirectories() throws Exception {
-        IgfsPath gg = new IgfsPath("/ignite");
-        IgfsPath[] paths = paths(
-            gg, new IgfsPath(gg, "sync"), new IgfsPath(gg, "async"), new IgfsPath(gg, "primary"));
-
-        create(igfs, paths, null);
-
-        for (IgfsPath p : paths)
-            assert igfs.exists(p);
-
-        assert igfs.modeResolver().resolveMode(gg) == mode;
-
-        if (mode != PROXY) {
-            assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "sync")) == IgfsMode.DUAL_SYNC;
-            assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "async")) == IgfsMode.DUAL_ASYNC;
-            assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "primary")) == IgfsMode.PRIMARY;
-            assert !igfsSecondary.exists("/ignite/primary"); // PRIMARY mode path must exist in upper level fs only.
-        }
-
-        // All the child paths of "/ignite/" must be visible in listings:
-        assert igfs.listFiles(gg).size() == 3;
-        assert igfs.listPaths(gg).size() == 3;
-    }
-
     /**
      * Test existence check when the path exists only remotely.
      *
@@ -1595,7 +1562,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         final long MAX_ALIGN_ON_SECOND = (long)Integer.MAX_VALUE * 1000;
 
-        igfs.setTimes(FILE, MAX_ALIGN_ON_SECOND - 1000, MAX_ALIGN_ON_SECOND);
+        igfs.setTimes(FILE, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND - 1000);
 
         IgfsFile info = igfs.info(FILE);
 
@@ -1606,8 +1573,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
 
-        assertEquals(info.accessTime(), (long) secondaryTimes.get1());
-        assertEquals(info.modificationTime(), (long) secondaryTimes.get2());
+        assertEquals(info.modificationTime(), (long) secondaryTimes.get1());
+        assertEquals(info.accessTime(), (long) secondaryTimes.get2());
 
         try {
             igfs.setTimes(FILE2, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND);

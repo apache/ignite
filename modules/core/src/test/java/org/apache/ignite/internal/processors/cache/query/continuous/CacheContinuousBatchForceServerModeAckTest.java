@@ -32,10 +32,10 @@ public class CacheContinuousBatchForceServerModeAckTest extends CacheContinuousB
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.endsWith(CLIENT)) {
+        if (igniteInstanceName.endsWith(CLIENT)) {
             cfg.setClientMode(true);
 
             FailedTcpCommunicationSpi spi = new FailedTcpCommunicationSpi(true, false);
@@ -50,7 +50,7 @@ public class CacheContinuousBatchForceServerModeAckTest extends CacheContinuousB
 
             cfg.setDiscoverySpi(disco);
         }
-        else if (gridName.endsWith(SERVER2)) {
+        else if (igniteInstanceName.endsWith(SERVER2)) {
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, true));
 
             TcpDiscoverySpi disco = new TcpDiscoverySpi();

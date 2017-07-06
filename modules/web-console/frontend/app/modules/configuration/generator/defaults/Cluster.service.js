@@ -17,6 +17,8 @@
 
 const DFLT_CLUSTER = {
     localHost: '0.0.0.0',
+    activeOnStart: true,
+    cacheSanityCheckEnabled: true,
     discovery: {
         localPort: 47500,
         localPortRange: 100,
@@ -75,6 +77,12 @@ const DFLT_CLUSTER = {
             Forever: {
                 retryIntervalMs: 1000
             }
+        },
+        Kubernetes: {
+            serviceName: 'ignite',
+            namespace: 'default',
+            masterUrl: 'https://kubernetes.default.svc.cluster.local:443',
+            accountToken: '/var/run/secrets/kubernetes.io/serviceaccount/token'
         }
     },
     atomics: {
@@ -164,6 +172,8 @@ const DFLT_CLUSTER = {
             maximumFailoverAttempts: 5
         }
     },
+    failureDetectionTimeout: 10000,
+    clientFailureDetectionTimeout: 30000,
     logger: {
         Log4j: {
             level: {
@@ -204,6 +214,8 @@ const DFLT_CLUSTER = {
     },
     odbcConfiguration: {
         endpointAddress: '0.0.0.0:10800..10810',
+        socketSendBufferSize: 0,
+        socketReceiveBufferSize: 0,
         maxOpenCursors: 128
     },
     eventStorage: {
@@ -279,6 +291,69 @@ const DFLT_CLUSTER = {
             nodeWeight: 10,
             useWeights: false
         }
+    },
+    memoryConfiguration: {
+        systemCacheInitialSize: 41943040,
+        systemCacheMaxSize: 104857600,
+        pageSize: 2048,
+        defaultMemoryPolicyName: 'default',
+        memoryPolicies: {
+            name: 'default',
+            initialSize: 268435456,
+            pageEvictionMode: {
+                clsName: 'org.apache.ignite.configuration.DataPageEvictionMode',
+                value: 'DISABLED'
+            },
+            evictionThreshold: 0.9,
+            emptyPagesPoolSize: 100,
+            metricsEnabled: false,
+            subIntervals: 5,
+            rateTimeInterval: 60000
+        }
+    },
+    utilityCacheKeepAliveTime: 60000,
+    hadoopConfiguration: {
+        mapReducePlanner: {
+            Weighted: {
+                localMapperWeight: 100,
+                remoteMapperWeight: 100,
+                localReducerWeight: 100,
+                remoteReducerWeight: 100,
+                preferLocalReducerThresholdWeight: 200
+            }
+        },
+        finishedJobInfoTtl: 30000,
+        maxTaskQueueSize: 8192
+    },
+    serviceConfigurations: {
+        maxPerNodeCount: 0,
+        totalCount: 0
+    },
+    longQueryWarningTimeout: 3000,
+    persistenceStoreConfiguration: {
+        metricsEnabled: false,
+        alwaysWriteFullPages: false,
+        checkpointingFrequency: 180000,
+        checkpointingPageBufferSize: 268435456,
+        checkpointingThreads: 1,
+        walSegments: 10,
+        walSegmentSize: 67108864,
+        walHistorySize: 20,
+        walFlushFrequency: 2000,
+        walFsyncDelay: 1,
+        walRecordIteratorBufferSize: 67108864,
+        lockWaitTime: 10000,
+        rateTimeInterval: 60000,
+        tlbSize: 131072,
+        subIntervals: 5
+    },
+    sqlConnectorConfiguration: {
+        port: 10800,
+        portRange: 100,
+        socketSendBufferSize: 0,
+        socketReceiveBufferSize: 0,
+        tcpNoDelay: true,
+        maxOpenCursorsPerConnection: 128
     }
 };
 

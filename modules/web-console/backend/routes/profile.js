@@ -50,7 +50,7 @@ module.exports.factory = function(_, express, mongo, usersService) {
                     if (becomeUsed) {
                         req.session.viewedUser = user;
 
-                        return user;
+                        return req.user;
                     }
 
                     return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ module.exports.factory = function(_, express, mongo, usersService) {
                         });
                     });
                 })
-                .then(() => usersService.get(req.user, req.session.viewedUser))
+                .then((user) => usersService.get(user, req.session.viewedUser))
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

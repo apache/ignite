@@ -1,7 +1,9 @@
 *.idea
 *.log
+*.log.*
 .npmrc
 build/*
 node_modules
-ignite_modules_temp/*
 public/stylesheets/*.css
+yarn.lock
+package-lock.json

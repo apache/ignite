@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -42,6 +45,16 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
      */
     GridDhtPartitionsSingleRequest(GridDhtPartitionExchangeId id) {
         super(id, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId) {
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -75,13 +88,13 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 48;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 5;
     }
 
     /** {@inheritDoc} */

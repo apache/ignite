@@ -32,22 +32,30 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(new CacheConfiguration());
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRebalanceFuture() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ig0 = startGrid(0);
+
         startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite0.cache(null);
+        IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
 
         IgniteFuture fut1 = cache.rebalance();
 
@@ -63,13 +71,12 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param future Future.
+     * @param fut Future.
      * @return Internal future.
      */
-    private static IgniteInternalFuture internalFuture(IgniteFuture future) {
-        assert future instanceof IgniteFutureImpl;
+    private static IgniteInternalFuture internalFuture(IgniteFuture fut) {
+        assert fut instanceof IgniteFutureImpl : fut;
 
-        return ((IgniteFutureImpl)future).internalFuture();
+        return ((IgniteFutureImpl) fut).internalFuture();
     }
-
 }

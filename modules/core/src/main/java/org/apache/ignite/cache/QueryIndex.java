@@ -20,6 +20,10 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Objects;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Contains list of fields to be indexed. It is possible to provide field name
@@ -31,14 +35,21 @@ public class QueryIndex implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
+
     /** Index name. */
     private String name;
 
     /** */
+    @GridToStringInclude
     private LinkedHashMap<String, Boolean> fields;
 
     /** */
-    private QueryIndexType type;
+    private QueryIndexType type = DFLT_IDX_TYP;
+
+    /** */
+    private int inlineSize = -1;
 
     /**
      * Creates an empty index. Should be populated via setters.
@@ -163,9 +174,12 @@ public class QueryIndex implements Serializable {
      * Sets index name.
      *
      * @param name Index name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public QueryIndex setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -181,9 +195,12 @@ public class QueryIndex implements Serializable {
      * Sets fields included in the index.
      *
      * @param fields Collection of index fields.
+     * @return {@code this} for chaining.
      */
-    public void setFields(LinkedHashMap<String, Boolean> fields) {
+    public QueryIndex setFields(LinkedHashMap<String, Boolean> fields) {
         this.fields = fields;
+
+        return this;
     }
 
     /**
@@ -199,12 +216,15 @@ public class QueryIndex implements Serializable {
      *
      * @param fields Collection of fields.
      * @param asc Ascending flag.
+     * @return {@code this} for chaining.
      */
-    public void setFieldNames(Collection<String> fields, boolean asc) {
+    public QueryIndex setFieldNames(Collection<String> fields, boolean asc) {
         this.fields = new LinkedHashMap<>();
 
         for (String field : fields)
             this.fields.put(field, asc);
+
+        return this;
     }
 
     /**
@@ -220,8 +240,55 @@ public class QueryIndex implements Serializable {
      * Sets index type.
      *
      * @param type Index type.
+     * @return {@code this} for chaining.
      */
-    public void setIndexType(QueryIndexType type) {
+    public QueryIndex setIndexType(QueryIndexType type) {
         this.type = type;
+
+        return this;
+    }
+
+    /**
+     * Gets inline size.
+     *
+     * @return inline size.
+     */
+    public int getInlineSize() {
+        return inlineSize;
+    }
+
+    /**
+     * Sets inline size.
+     *
+     * @param inlineSize Inline size.
+     */
+    public void setInlineSize(int inlineSize) {
+        this.inlineSize = inlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        QueryIndex index = (QueryIndex)o;
+
+        return inlineSize == index.inlineSize &&
+            F.eq(name, index.name) &&
+            F.eq(fields, index.fields) &&
+            type == index.type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(name, fields, type, inlineSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryIndex.class, this);
     }
 }

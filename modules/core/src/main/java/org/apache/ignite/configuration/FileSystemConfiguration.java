@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 /**
  * {@code IGFS} configuration. More than one file system can be configured within grid.
@@ -46,9 +45,6 @@ public class FileSystemConfiguration {
 
     /** Default fragmentizer concurrent files. */
     public static final int DFLT_FRAGMENTIZER_CONCURRENT_FILES = 0;
-
-    /** Default fragmentizer local writes ratio. */
-    public static final float DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO = 0.8f;
 
     /** Fragmentizer enabled property. */
     public static final boolean DFLT_FRAGMENTIZER_ENABLED = true;
@@ -74,17 +70,11 @@ public class FileSystemConfiguration {
     /** Default read/write buffers size (bytes). */
     public static final int DFLT_BUF_SIZE = 1 << 16;
 
-    /** Default trash directory purge await timeout in case data cache oversize is detected. */
-    public static final long DFLT_TRASH_PURGE_TIMEOUT = 1000;
-
     /** Default management port. */
     public static final int DFLT_MGMT_PORT = 11400;
 
     /** Default IPC endpoint enabled flag. */
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
-
-    /** Default value of whether to initialize default path modes. */
-    public static final boolean DFLT_INIT_DFLT_PATH_MODES = false;
 
     /** Default value of metadata co-location flag. */
     public static final boolean DFLT_COLOCATE_META = true;
@@ -97,12 +87,6 @@ public class FileSystemConfiguration {
 
     /** IGFS instance name. */
     private String name;
-
-    /** Cache name to store IGFS meta information. */
-    private String metaCacheName;
-
-    /** Cache name to store file's data blocks. */
-    private String dataCacheName;
 
     /** File's data block size (bytes). */
     private int blockSize = DFLT_BLOCK_SIZE;
@@ -146,35 +130,14 @@ public class FileSystemConfiguration {
     /** Fragmentizer concurrent files. */
     private int fragmentizerConcurrentFiles = DFLT_FRAGMENTIZER_CONCURRENT_FILES;
 
-    /** Fragmentizer local writes ratio. */
-    private float fragmentizerLocWritesRatio = DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO;
-
     /** Fragmentizer enabled flag. */
     private boolean fragmentizerEnabled = DFLT_FRAGMENTIZER_ENABLED;
 
     /** Path modes. */
     private Map<String, IgfsMode> pathModes;
 
-    /** Maximum space. */
-    private long maxSpace;
-
-    /** Trash purge await timeout. */
-    private long trashPurgeTimeout = DFLT_TRASH_PURGE_TIMEOUT;
-
-    /** Dual mode PUT operations executor service. */
-    private ExecutorService dualModePutExec;
-
-    /** Dual mode PUT operations executor service shutdown flag. */
-    private boolean dualModePutExecShutdown;
-
-    /** Maximum amount of data in pending puts. */
-    private long dualModeMaxPendingPutsSize;
-
     /** Maximum range length. */
     private long maxTaskRangeLen;
-
-    /** Whether to initialize default path modes. */
-    private boolean initDfltPathModes = DFLT_INIT_DFLT_PATH_MODES;
 
     /** Metadata co-location flag. */
     private boolean colocateMeta = DFLT_COLOCATE_META;
@@ -184,6 +147,12 @@ public class FileSystemConfiguration {
 
     /** Update file length on flush flag. */
     private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
+
+    /** Meta cache config. */
+    private CacheConfiguration metaCacheCfg;
+
+    /** Data cache config. */
+    private CacheConfiguration dataCacheCfg;
 
     /**
      * Constructs default configuration.
@@ -204,25 +173,19 @@ public class FileSystemConfiguration {
          * Must preserve alphabetical order!
          */
         blockSize = cfg.getBlockSize();
-        bufSize = cfg.getStreamBufferSize();
+        bufSize = cfg.getBufferSize();
         colocateMeta = cfg.isColocateMetadata();
-        dataCacheName = cfg.getDataCacheName();
+        dataCacheCfg = cfg.getDataCacheConfiguration();
         dfltMode = cfg.getDefaultMode();
-        dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
-        dualModePutExec = cfg.getDualModePutExecutorService();
-        dualModePutExecShutdown = cfg.getDualModePutExecutorServiceShutdown();
         fragmentizerConcurrentFiles = cfg.getFragmentizerConcurrentFiles();
-        fragmentizerLocWritesRatio = cfg.getFragmentizerLocalWritesRatio();
         fragmentizerEnabled = cfg.isFragmentizerEnabled();
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();
         secondaryFs = cfg.getSecondaryFileSystem();
-        initDfltPathModes = cfg.isInitializeDefaultPathModes();
         ipcEndpointCfg = cfg.getIpcEndpointConfiguration();
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
-        maxSpace = cfg.getMaxSpaceSize();
         maxTaskRangeLen = cfg.getMaximumTaskRangeLength();
-        metaCacheName = cfg.getMetaCacheName();
+        metaCacheCfg = cfg.getMetaCacheConfiguration();
         mgmtPort = cfg.getManagementPort();
         name = cfg.getName();
         pathModes = cfg.getPathModes();
@@ -231,17 +194,15 @@ public class FileSystemConfiguration {
         prefetchBlocks = cfg.getPrefetchBlocks();
         relaxedConsistency = cfg.isRelaxedConsistency();
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
-        trashPurgeTimeout = cfg.getTrashPurgeTimeout();
         updateFileLenOnFlush = cfg.isUpdateFileLengthOnFlush();
     }
 
     /**
-     * Gets IGFS instance name. If {@code null}, then instance with default
-     * name will be used.
+     * Gets IGFS instance name.
      *
      * @return IGFS instance name.
      */
-    @Nullable public String getName() {
+    public String getName() {
         return name;
     }
 
@@ -249,46 +210,73 @@ public class FileSystemConfiguration {
      * Sets IGFS instance name.
      *
      * @param name IGFS instance name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public FileSystemConfiguration setName(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
         this.name = name;
+
+        return this;
     }
 
     /**
-     * Cache name to store IGFS meta information. If {@code null}, then instance
-     * with default meta-cache name will be used.
+     * Cache config to store IGFS meta information.
      *
-     * @return Cache name to store IGFS meta information.
+     * @return Cache configuration object.
      */
-    @Nullable public String getMetaCacheName() {
-        return metaCacheName;
+    @Nullable public CacheConfiguration getMetaCacheConfiguration() {
+        return metaCacheCfg;
     }
 
     /**
-     * Sets cache name to store IGFS meta information.
+     * Cache config to store IGFS meta information. If {@code null}, then default config for
+     * meta-cache will be used.
      *
-     * @param metaCacheName Cache name to store IGFS meta information.
+     * Default configuration for the meta cache is:
+     * <ul>
+     *     <li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 1</li>
+     * </ul>
+     *
+     * @param metaCacheCfg Cache configuration object.
+     * @return {@code this} for chaining.
      */
-    public void setMetaCacheName(String metaCacheName) {
-        this.metaCacheName = metaCacheName;
+    public FileSystemConfiguration setMetaCacheConfiguration(CacheConfiguration metaCacheCfg) {
+        this.metaCacheCfg = metaCacheCfg;
+
+        return this;
     }
 
     /**
-     * Cache name to store IGFS data.
+     * Cache config to store IGFS data.
      *
-     * @return Cache name to store IGFS data.
+     * @return Cache configuration object.
      */
-    @Nullable public String getDataCacheName() {
-        return dataCacheName;
+    @Nullable public CacheConfiguration getDataCacheConfiguration() {
+        return dataCacheCfg;
     }
 
     /**
-     * Sets cache name to store IGFS data.
+     * Cache config to store IGFS data. If {@code null}, then default config for
+     * data cache will be used.
      *
-     * @param dataCacheName Cache name to store IGFS data.
+     * Default configuration for the data cache is:
+     * <ul>
+     *     <<li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 0</li>
+     * </ul>
+     *
+     * @param dataCacheCfg Cache configuration object.
+     * @return {@code this} for chaining.
      */
-    public void setDataCacheName(String dataCacheName) {
-        this.dataCacheName = dataCacheName;
+    public FileSystemConfiguration setDataCacheConfiguration(CacheConfiguration dataCacheCfg) {
+        this.dataCacheCfg = dataCacheCfg;
+
+        return this;
     }
 
     /**
@@ -304,11 +292,14 @@ public class FileSystemConfiguration {
      * Sets file's data block size.
      *
      * @param blockSize File's data block size (bytes) or {@code 0} to reset default value.
+     * @return {@code this} for chaining.
      */
-    public void setBlockSize(int blockSize) {
+    public FileSystemConfiguration setBlockSize(int blockSize) {
         A.ensure(blockSize >= 0, "blockSize >= 0");
 
         this.blockSize = blockSize == 0 ? DFLT_BLOCK_SIZE : blockSize;
+
+        return this;
     }
 
     /**
@@ -324,11 +315,14 @@ public class FileSystemConfiguration {
      * Sets the number of pre-fetched blocks if specific file's chunk is requested.
      *
      * @param prefetchBlocks New number of pre-fetched blocks.
+     * @return {@code this} for chaining.
      */
-    public void setPrefetchBlocks(int prefetchBlocks) {
+    public FileSystemConfiguration setPrefetchBlocks(int prefetchBlocks) {
         A.ensure(prefetchBlocks >= 0, "prefetchBlocks >= 0");
 
         this.prefetchBlocks = prefetchBlocks;
+
+        return this;
     }
 
     /**
@@ -366,11 +360,14 @@ public class FileSystemConfiguration {
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
      *
      * @param seqReadsBeforePrefetch Amount of sequential block reads before prefetch is triggered.
+     * @return {@code this} for chaining.
      */
-    public void setSequentialReadsBeforePrefetch(int seqReadsBeforePrefetch) {
+    public FileSystemConfiguration setSequentialReadsBeforePrefetch(int seqReadsBeforePrefetch) {
         A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
         this.seqReadsBeforePrefetch = seqReadsBeforePrefetch;
+
+        return this;
     }
 
     /**
@@ -378,7 +375,7 @@ public class FileSystemConfiguration {
      *
      * @return Read/write buffers size (bytes).
      */
-    public int getStreamBufferSize() {
+    public int getBufferSize() {
         return bufSize;
     }
 
@@ -386,11 +383,14 @@ public class FileSystemConfiguration {
      * Sets read/write buffers size for {@code IGFS} stream operations (bytes).
      *
      * @param bufSize Read/write buffers size for stream operations (bytes) or {@code 0} to reset default value.
+     * @return {@code this} for chaining.
      */
-    public void setStreamBufferSize(int bufSize) {
+    public FileSystemConfiguration setBufferSize(int bufSize) {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         this.bufSize = bufSize == 0 ? DFLT_BUF_SIZE : bufSize;
+
+        return this;
     }
 
     /**
@@ -406,9 +406,12 @@ public class FileSystemConfiguration {
      * Sets number of file blocks collected on local node before sending batch to remote node.
      *
      * @param perNodeBatchSize Per node buffer size.
+     * @return {@code this} for chaining.
      */
-    public void setPerNodeBatchSize(int perNodeBatchSize) {
+    public FileSystemConfiguration setPerNodeBatchSize(int perNodeBatchSize) {
         this.perNodeBatchSize = perNodeBatchSize;
+
+        return this;
     }
 
     /**
@@ -424,9 +427,12 @@ public class FileSystemConfiguration {
      * Sets number of file block batches that can be concurrently sent to remote node.
      *
      * @param perNodeParallelBatchCnt Per node parallel load operations.
+     * @return {@code this} for chaining.
      */
-    public void setPerNodeParallelBatchCount(int perNodeParallelBatchCnt) {
+    public FileSystemConfiguration setPerNodeParallelBatchCount(int perNodeParallelBatchCnt) {
         this.perNodeParallelBatchCnt = perNodeParallelBatchCnt;
+
+        return this;
     }
 
     /**
@@ -448,9 +454,12 @@ public class FileSystemConfiguration {
      * Hadoop Accelerator</b>.
      *
      * @param ipcEndpointCfg IPC endpoint configuration.
+     * @return {@code this} for chaining.
      */
-    public void setIpcEndpointConfiguration(@Nullable IgfsIpcEndpointConfiguration ipcEndpointCfg) {
+    public FileSystemConfiguration setIpcEndpointConfiguration(@Nullable IgfsIpcEndpointConfiguration ipcEndpointCfg) {
         this.ipcEndpointCfg = ipcEndpointCfg;
+
+        return this;
     }
 
     /**
@@ -473,9 +482,12 @@ public class FileSystemConfiguration {
      * Hadoop Accelerator</b>.
      *
      * @param ipcEndpointEnabled IPC endpoint enabled flag.
+     * @return {@code this} for chaining.
      */
-    public void setIpcEndpointEnabled(boolean ipcEndpointEnabled) {
+    public FileSystemConfiguration setIpcEndpointEnabled(boolean ipcEndpointEnabled) {
         this.ipcEndpointEnabled = ipcEndpointEnabled;
+
+        return this;
     }
 
     /**
@@ -494,9 +506,12 @@ public class FileSystemConfiguration {
      * Sets management endpoint port.
      *
      * @param mgmtPort port number or {@code -1} to disable management endpoint.
+     * @return {@code this} for chaining.
      */
-    public void setManagementPort(int mgmtPort) {
+    public FileSystemConfiguration setManagementPort(int mgmtPort) {
         this.mgmtPort = mgmtPort;
+
+        return this;
     }
 
     /**
@@ -519,9 +534,12 @@ public class FileSystemConfiguration {
      * for pass-through, write-through, and read-through purposes.
      *
      * @param dfltMode {@code IGFS} mode.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultMode(IgfsMode dfltMode) {
+    public FileSystemConfiguration setDefaultMode(IgfsMode dfltMode) {
         this.dfltMode = dfltMode;
+
+        return this;
     }
 
     /**
@@ -539,9 +557,12 @@ public class FileSystemConfiguration {
      * and read-through purposes.
      *
      * @param fileSystem Secondary file system.
+     * @return {@code this} for chaining.
      */
-    public void setSecondaryFileSystem(IgfsSecondaryFileSystem fileSystem) {
+    public FileSystemConfiguration setSecondaryFileSystem(IgfsSecondaryFileSystem fileSystem) {
         secondaryFs = fileSystem;
+
+        return this;
     }
 
     /**
@@ -549,15 +570,6 @@ public class FileSystemConfiguration {
      * <p>
      * If path doesn't correspond to any specified prefix or mappings are not provided, then
      * {@link #getDefaultMode()} is used.
-     * <p>
-     * If {@link #isInitializeDefaultPathModes()} is set to {@code true}, the following path modes will be created
-     * by default:
-     * <li>{@code /ignite/primary} and all it's sub-folders will always work in {@code PRIMARY} mode.</li>
-     * <p>
-     * And in case secondary file system URI is provided:
-     * <li>{@code /ignite/proxy} and all it's sub-folders will always work in {@code PROXY} mode.</li>
-     * <li>{@code /ignite/sync} and all it's sub-folders will always work in {@code DUAL_SYNC} mode.</li>
-     * <li>{@code /ignite/async} and all it's sub-folders will always work in {@code DUAL_ASYNC} mode.</li>
      *
      * @return Map of paths to {@code IGFS} modes.
      */
@@ -572,9 +584,12 @@ public class FileSystemConfiguration {
      * {@link #getDefaultMode()} is used.
      *
      * @param pathModes Map of paths to {@code IGFS} modes.
+     * @return {@code this} for chaining.
      */
-    public void setPathModes(Map<String, IgfsMode> pathModes) {
+    public FileSystemConfiguration setPathModes(Map<String, IgfsMode> pathModes) {
         this.pathModes = pathModes;
+
+        return this;
     }
 
     /**
@@ -590,9 +605,12 @@ public class FileSystemConfiguration {
      * Sets length of file chunk to transmit before throttling is delayed.
      *
      * @param fragmentizerThrottlingBlockLen Block length in bytes.
+     * @return {@code this} for chaining.
      */
-    public void setFragmentizerThrottlingBlockLength(long fragmentizerThrottlingBlockLen) {
+    public FileSystemConfiguration setFragmentizerThrottlingBlockLength(long fragmentizerThrottlingBlockLen) {
         this.fragmentizerThrottlingBlockLen = fragmentizerThrottlingBlockLen;
+
+        return this;
     }
 
     /**
@@ -608,9 +626,12 @@ public class FileSystemConfiguration {
      * Sets delay in milliseconds for which fragmentizer is paused.
      *
      * @param fragmentizerThrottlingDelay Delay in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setFragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
+    public FileSystemConfiguration setFragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
         this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
+
+        return this;
     }
 
     /**
@@ -626,41 +647,12 @@ public class FileSystemConfiguration {
      * Sets number of files to process concurrently by fragmentizer.
      *
      * @param fragmentizerConcurrentFiles Number of files to process concurrently.
+     * @return {@code this} for chaining.
      */
-    public void setFragmentizerConcurrentFiles(int fragmentizerConcurrentFiles) {
+    public FileSystemConfiguration setFragmentizerConcurrentFiles(int fragmentizerConcurrentFiles) {
         this.fragmentizerConcurrentFiles = fragmentizerConcurrentFiles;
-    }
 
-    /**
-     * Gets amount of local memory (in % of local IGFS max space size) available for local writes
-     * during file creation.
-     * <p>
-     * If current IGFS space size is less than {@code fragmentizerLocalWritesRatio * maxSpaceSize},
-     * then file blocks will be written to the local node first and then asynchronously distributed
-     * among cluster nodes (fragmentized).
-     * <p>
-     * Default value is {@link #DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO}.
-     *
-     * @return Ratio for local writes space.
-     *
-     * @deprecated Parameter is no longer used.
-     */
-    @Deprecated
-    public float getFragmentizerLocalWritesRatio() {
-        return fragmentizerLocWritesRatio;
-    }
-
-    /**
-     * Sets ratio for space available for local file writes.
-     *
-     * @param fragmentizerLocWritesRatio Ratio for local file writes.
-     * @see #getFragmentizerLocalWritesRatio()
-     *
-     * @deprecated Parameter is no longer used.
-     */
-    @Deprecated
-    public void setFragmentizerLocalWritesRatio(float fragmentizerLocWritesRatio) {
-        this.fragmentizerLocWritesRatio = fragmentizerLocWritesRatio;
+        return this;
     }
 
     /**
@@ -677,123 +669,12 @@ public class FileSystemConfiguration {
      * Sets property indicating whether fragmentizer is enabled.
      *
      * @param fragmentizerEnabled {@code True} if fragmentizer is enabled.
+     * @return {@code this} for chaining.
      */
-    public void setFragmentizerEnabled(boolean fragmentizerEnabled) {
+    public FileSystemConfiguration setFragmentizerEnabled(boolean fragmentizerEnabled) {
         this.fragmentizerEnabled = fragmentizerEnabled;
-    }
 
-    /**
-     * Get maximum space available for data cache to store file system entries.
-     *
-     * @return Maximum space available for data cache.
-     */
-    public long getMaxSpaceSize() {
-        return maxSpace;
-    }
-
-    /**
-     * Set maximum space in bytes available in data cache.
-     *
-     * @param maxSpace Maximum space available in data cache.
-     */
-    public void setMaxSpaceSize(long maxSpace) {
-        this.maxSpace = maxSpace;
-    }
-
-    /**
-     * Gets maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     *
-     * @return Maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public long getTrashPurgeTimeout() {
-        return trashPurgeTimeout;
-    }
-
-    /**
-     * Sets maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     *
-     * @param trashPurgeTimeout Maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public void setTrashPurgeTimeout(long trashPurgeTimeout) {
-        this.trashPurgeTimeout = trashPurgeTimeout;
-    }
-
-    /**
-     * Get DUAL mode put operation executor service. This executor service will process cache PUT requests for
-     * data which came from the secondary file system and about to be written to IGFS data cache.
-     * In case no executor service is provided, default one will be created with maximum amount of threads equals
-     * to amount of processor cores.
-     *
-     * @return Get DUAL mode put operation executor service.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    @Nullable public ExecutorService getDualModePutExecutorService() {
-        return dualModePutExec;
-    }
-
-    /**
-     * Set DUAL mode put operations executor service.
-     *
-     * @param dualModePutExec Dual mode put operations executor service.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public void setDualModePutExecutorService(ExecutorService dualModePutExec) {
-        this.dualModePutExec = dualModePutExec;
-    }
-
-    /**
-     * Get DUAL mode put operation executor service shutdown flag.
-     *
-     * @return DUAL mode put operation executor service shutdown flag.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public boolean getDualModePutExecutorServiceShutdown() {
-        return dualModePutExecShutdown;
-    }
-
-    /**
-     * Set DUAL mode put operations executor service shutdown flag.
-     *
-     * @param dualModePutExecShutdown Dual mode put operations executor service shutdown flag.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public void setDualModePutExecutorServiceShutdown(boolean dualModePutExecShutdown) {
-        this.dualModePutExecShutdown = dualModePutExecShutdown;
-    }
-
-    /**
-     * Get maximum amount of pending data read from the secondary file system and waiting to be written to data
-     * cache. {@code 0} or negative value stands for unlimited size.
-     * <p>
-     * By default this value is set to {@code 0}. It is recommended to set positive value in case your
-     * application performs frequent reads of large amount of data from the secondary file system in order to
-     * avoid issues with increasing GC pauses or out-of-memory error.
-     *
-     * @return Maximum amount of pending data read from the secondary file system
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public long getDualModeMaxPendingPutsSize() {
-        return dualModeMaxPendingPutsSize;
-    }
-
-    /**
-     * Set maximum amount of data in pending put operations.
-     *
-     * @param dualModeMaxPendingPutsSize Maximum amount of data in pending put operations.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public void setDualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
-        this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
+        return this;
     }
 
     /**
@@ -831,43 +712,12 @@ public class FileSystemConfiguration {
      * See {@link #getMaximumTaskRangeLength()} for more details.
      *
      * @param maxTaskRangeLen Set maximum default range size of a file being split during IGFS task execution.
+     * @return {@code this} for chaining.
      */
-    public void setMaximumTaskRangeLength(long maxTaskRangeLen) {
+    public FileSystemConfiguration setMaximumTaskRangeLength(long maxTaskRangeLen) {
         this.maxTaskRangeLen = maxTaskRangeLen;
-    }
 
-    /**
-     * Get whether to initialize default path modes.
-     * <p>
-     * When set to {@code true} Ignite will automatically create the following path modes:
-     * <ul>
-     *     <li>{@code /ignite/primary} - will work in {@link IgfsMode#PRIMARY} mode;</li>
-     *     <li>{@code /ignite/sync} - will work in {@link IgfsMode#DUAL_SYNC} mode (only if secondary file system
-     *         is set);</li>
-     *     <li>{@code /ignite/async} - will work in {@link IgfsMode#DUAL_ASYNC} mode (only if secondary file system
-     *         is set);</li>
-     *     <li>{@code /ignite/proxy} - will work in {@link IgfsMode#PROXY} mode (only if secondary file system
-     *         is set).</li>
-     * </ul>
-     * See {@link #getPathModes()} for more information about path modes.
-     * <p>
-     * Defaults to {@link #DFLT_INIT_DFLT_PATH_MODES}.
-     *
-     * @return {@code True} if default path modes will be initialized.
-     */
-    public boolean isInitializeDefaultPathModes() {
-        return initDfltPathModes;
-    }
-
-    /**
-     * Set whether to initialize default path modes.
-     * <p>
-     * See {@link #isInitializeDefaultPathModes()} for more information.
-     *
-     * @param initDfltPathModes Whether to initialize default path modes.
-     */
-    public void setInitializeDefaultPathModes(boolean initDfltPathModes) {
-        this.initDfltPathModes = initDfltPathModes;
+        return this;
     }
 
     /**
@@ -878,11 +728,11 @@ public class FileSystemConfiguration {
      * transaction with keys owned only by a single node.
      * <p>
      * IGFS stores information about file system structure (metadata) inside a transactional cache configured through
-     * {@link #getMetaCacheName()} property. Metadata updates caused by operations on IGFS usually require several
-     * internal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
-     * meaning that all nodes have all metadata locally, it makes sense to give a hint to Ignite to co-locate
-     * ownership of all metadata keys on a single node. This will decrease amount of network trips required to update
-     * metadata and hence could improve performance.
+     * {@link #getMetaCacheConfiguration()} property. Metadata updates caused by operations on IGFS usually require
+     * several internal keys to be updated. As IGFS metadata cache usually operates
+     * in {@link CacheMode#REPLICATED} mode, meaning that all nodes have all metadata locally, it makes sense to give
+     * a hint to Ignite to co-locate ownership of all metadata keys on a single node.
+     * This will decrease amount of network trips required to update metadata and hence could improve performance.
      * <p>
      * This property should be disabled if you see excessive CPU and network load on a single node, which
      * degrades performance and cannot be explained by business logic of your application.
@@ -904,9 +754,12 @@ public class FileSystemConfiguration {
      * See {@link #isColocateMetadata()} for more information.
      *
      * @param colocateMeta Whether metadata co-location is enabled.
+     * @return {@code this} for chaining.
      */
-    public void setColocateMetadata(boolean colocateMeta) {
+    public FileSystemConfiguration setColocateMetadata(boolean colocateMeta) {
         this.colocateMeta = colocateMeta;
+
+        return this;
     }
 
     /**
@@ -941,9 +794,12 @@ public class FileSystemConfiguration {
      * See {@link #isColocateMetadata()} for more information.
      *
      * @param relaxedConsistency Whether to use relaxed consistency optimization.
+     * @return {@code this} for chaining.
      */
-    public void setRelaxedConsistency(boolean relaxedConsistency) {
+    public FileSystemConfiguration setRelaxedConsistency(boolean relaxedConsistency) {
         this.relaxedConsistency = relaxedConsistency;
+
+        return this;
     }
 
     /**
@@ -967,9 +823,12 @@ public class FileSystemConfiguration {
      * Set {@link #isUpdateFileLengthOnFlush()} for more information.
      *
      * @param updateFileLenOnFlush Whether to update file length on flush.
+     * @return {@code this} for chaining.
      */
-    public void setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
+    public FileSystemConfiguration setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
         this.updateFileLenOnFlush = updateFileLenOnFlush;
+
+        return this;
     }
 
     /** {@inheritDoc} */

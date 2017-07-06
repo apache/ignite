@@ -39,7 +39,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -268,21 +267,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         if (cacheCtx.isNear())
             cacheCtx.near().dht().clearLocally(keys, true);
 
-        GridCacheQueryManager<K, V> qryMgr = cacheCtx.queries();
-
-        if (qryMgr != null)
-            qryMgr.onUndeploy(ldr);
-
         // Examine swap for entries to undeploy.
-        int swapUndeployCnt = cacheCtx.isNear() ?
-            cacheCtx.near().dht().context().swap().onUndeploy(ldr) :
-            cacheCtx.swap().onUndeploy(ldr);
+        int swapUndeployCnt = cacheCtx.offheap().onUndeploy(ldr);
 
         if (cacheCtx.userCache() && (!keys.isEmpty() || swapUndeployCnt != 0)) {
             U.quietAndWarn(log, "");
             U.quietAndWarn(
                 log,
-                "Cleared all cache entries for undeployed class loader [cacheName=" + cacheCtx.namexx() +
+                "Cleared all cache entries for undeployed class loader [cacheName=" + cacheCtx.name() +
                     ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt +
                     ", clsLdr=" + ldr.getClass().getName() + ']');
             U.quietAndWarn(
@@ -332,7 +324,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         Object val0;
 
         try {
-            CacheObject v = entry.peek(true, false, false, null);
+            CacheObject v = entry.peek(null);
 
             key0 = key.value(cache.context().cacheObjectContext(), false);
 
@@ -359,10 +351,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
 
         if (log.isDebugEnabled())
-            log.debug("Finished examining entry [entryCls=" + e.getClass() +
-                ", key=" + key0 + ", keyCls=" + key0.getClass() +
-                ", valCls=" + (val0 != null ? val0.getClass() : "null") +
-                ", keyLdr=" + keyLdr + ", valLdr=" + valLdr + ", res=" + res + ']');
+            log.debug(S.toString("Finished examining entry",
+                "entryCls", e.getClass(), true,
+                "key", key0, true,
+                "keyCls", key0.getClass(), true,
+                "valCls", (val0 != null ? val0.getClass() : "null"), true,
+                "keyLdr", keyLdr, false,
+                "valLdr", valLdr, false,
+                "res", res, false));
 
         return res;
     }
@@ -746,7 +742,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache deployment manager memory stats [grid=" + cctx.gridName() + ']');
+        X.println(">>> Cache deployment manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
         X.println(">>>   Undeploys: " + undeploys.size());
         X.println(">>>   Cached deployments: " + deps.size());
         X.println(">>>   All participants: " + allParticipants.size());

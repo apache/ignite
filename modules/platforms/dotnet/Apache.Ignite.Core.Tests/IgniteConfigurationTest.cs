@@ -22,20 +22,19 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.SwapSpace.File;
+    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -61,6 +60,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestDefaultConfigurationProperties()
         {
             CheckDefaultProperties(new IgniteConfiguration());
+            CheckDefaultProperties(new PersistentStoreConfiguration());
         }
 
         /// <summary>
@@ -76,13 +76,16 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
             CheckDefaultValueAttributes(new RendezvousAffinityFunction());
-            CheckDefaultValueAttributes(new FairAffinityFunction());
             CheckDefaultValueAttributes(new NearCacheConfiguration());
             CheckDefaultValueAttributes(new FifoEvictionPolicy());
             CheckDefaultValueAttributes(new LruEvictionPolicy());
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
-            CheckDefaultValueAttributes(new FileSwapSpaceSpi());
+            CheckDefaultValueAttributes(new MemoryEventStorageSpi());
+            CheckDefaultValueAttributes(new MemoryConfiguration());
+            CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
+            CheckDefaultValueAttributes(new SqlConnectorConfiguration());
+            CheckDefaultValueAttributes(new PersistentStoreConfiguration());
         }
 
         /// <summary>
@@ -109,8 +112,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.LocalAddress, resDisco.LocalAddress);
                 Assert.AreEqual(disco.LocalPort, resDisco.LocalPort);
                 Assert.AreEqual(disco.LocalPortRange, resDisco.LocalPortRange);
-                Assert.AreEqual(disco.MaxMissedClientHeartbeats, resDisco.MaxMissedClientHeartbeats);
-                Assert.AreEqual(disco.MaxMissedHeartbeats, resDisco.MaxMissedHeartbeats);
                 Assert.AreEqual(disco.ReconnectCount, resDisco.ReconnectCount);
                 Assert.AreEqual(disco.StatisticsPrintFrequency, resDisco.StatisticsPrintFrequency);
                 Assert.AreEqual(disco.ThreadPriority, resDisco.ThreadPriority);
@@ -122,7 +123,7 @@ namespace Apache.Ignite.Core.Tests
                 // There can be extra IPv6 endpoints
                 Assert.AreEqual(ip.Endpoints, resIp.Endpoints.Take(2).Select(x => x.Trim('/')).ToArray());
 
-                Assert.AreEqual(cfg.GridName, resCfg.GridName);
+                Assert.AreEqual(cfg.IgniteInstanceName, resCfg.IgniteInstanceName);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
                 Assert.AreEqual(cfg.MetricsExpireTime, resCfg.MetricsExpireTime);
                 Assert.AreEqual(cfg.MetricsHistorySize, resCfg.MetricsHistorySize);
@@ -175,14 +176,18 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
+                Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
+                Assert.AreEqual(cfg.LongQueryWarningTimeout, resCfg.LongQueryWarningTimeout);
 
-                var swap = (FileSwapSpaceSpi) cfg.SwapSpaceSpi;
-                var resSwap = (FileSwapSpaceSpi) resCfg.SwapSpaceSpi;
-                Assert.AreEqual(swap.MaximumSparsity, resSwap.MaximumSparsity);
-                Assert.AreEqual(swap.BaseDirectory, resSwap.BaseDirectory);
-                Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
-                Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
-                Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
+                Assert.AreEqual(cfg.PublicThreadPoolSize, resCfg.PublicThreadPoolSize);
+                Assert.AreEqual(cfg.StripedThreadPoolSize, resCfg.StripedThreadPoolSize);
+                Assert.AreEqual(cfg.ServiceThreadPoolSize, resCfg.ServiceThreadPoolSize);
+                Assert.AreEqual(cfg.SystemThreadPoolSize, resCfg.SystemThreadPoolSize);
+                Assert.AreEqual(cfg.AsyncCallbackThreadPoolSize, resCfg.AsyncCallbackThreadPoolSize);
+                Assert.AreEqual(cfg.ManagementThreadPoolSize, resCfg.ManagementThreadPoolSize);
+                Assert.AreEqual(cfg.DataStreamerThreadPoolSize, resCfg.DataStreamerThreadPoolSize);
+                Assert.AreEqual(cfg.UtilityCacheThreadPoolSize, resCfg.UtilityCacheThreadPoolSize);
+                Assert.AreEqual(cfg.QueryThreadPoolSize, resCfg.QueryThreadPoolSize);
 
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
@@ -193,11 +198,74 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("affKey", typ.AffinityKeyFieldName);
                 Assert.AreEqual(false, typ.KeepDeserialized);
 
-                CollectionAssert.AreEqual(new[] {"fld1", "fld2"},
-                    ((BinaryFieldEqualityComparer)typ.EqualityComparer).FieldNames);
-
                 Assert.IsNotNull(resCfg.PluginConfigurations);
                 Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
+
+                var eventCfg = cfg.EventStorageSpi as MemoryEventStorageSpi;
+                var resEventCfg = resCfg.EventStorageSpi as MemoryEventStorageSpi;
+                Assert.IsNotNull(eventCfg);
+                Assert.IsNotNull(resEventCfg);
+                Assert.AreEqual(eventCfg.ExpirationTimeout, resEventCfg.ExpirationTimeout);
+                Assert.AreEqual(eventCfg.MaxEventCount, resEventCfg.MaxEventCount);
+
+                var memCfg = cfg.MemoryConfiguration;
+                var resMemCfg = resCfg.MemoryConfiguration;
+                Assert.IsNotNull(memCfg);
+                Assert.IsNotNull(resMemCfg);
+                Assert.AreEqual(memCfg.PageSize, resMemCfg.PageSize);
+                Assert.AreEqual(memCfg.ConcurrencyLevel, resMemCfg.ConcurrencyLevel);
+                Assert.AreEqual(memCfg.DefaultMemoryPolicyName, resMemCfg.DefaultMemoryPolicyName);
+                Assert.AreEqual(memCfg.SystemCacheInitialSize, resMemCfg.SystemCacheInitialSize);
+                Assert.AreEqual(memCfg.SystemCacheMaxSize, resMemCfg.SystemCacheMaxSize);
+                Assert.IsNotNull(memCfg.MemoryPolicies);
+                Assert.IsNotNull(resMemCfg.MemoryPolicies);
+                Assert.AreEqual(2, memCfg.MemoryPolicies.Count);
+                Assert.AreEqual(2, resMemCfg.MemoryPolicies.Count);
+
+                for (var i = 0; i < memCfg.MemoryPolicies.Count; i++)
+                {
+                    var plc = memCfg.MemoryPolicies.Skip(i).First();
+                    var resPlc = resMemCfg.MemoryPolicies.Skip(i).First();
+
+                    Assert.AreEqual(plc.PageEvictionMode, resPlc.PageEvictionMode);
+                    Assert.AreEqual(plc.MaxSize, resPlc.MaxSize);
+                    Assert.AreEqual(plc.EmptyPagesPoolSize, resPlc.EmptyPagesPoolSize);
+                    Assert.AreEqual(plc.EvictionThreshold, resPlc.EvictionThreshold);
+                    Assert.AreEqual(plc.Name, resPlc.Name);
+                    Assert.AreEqual(plc.SwapFilePath, resPlc.SwapFilePath);
+                }
+
+                var sql = cfg.SqlConnectorConfiguration;
+                var resSql = resCfg.SqlConnectorConfiguration;
+
+                Assert.AreEqual(sql.Host, resSql.Host);
+                Assert.AreEqual(sql.Port, resSql.Port);
+                Assert.AreEqual(sql.PortRange, resSql.PortRange);
+                Assert.AreEqual(sql.MaxOpenCursorsPerConnection, resSql.MaxOpenCursorsPerConnection);
+                Assert.AreEqual(sql.SocketReceiveBufferSize, resSql.SocketReceiveBufferSize);
+                Assert.AreEqual(sql.SocketSendBufferSize, resSql.SocketSendBufferSize);
+                Assert.AreEqual(sql.TcpNoDelay, resSql.TcpNoDelay);
+                Assert.AreEqual(sql.ThreadPoolSize, resSql.ThreadPoolSize);
+
+                var pers = cfg.PersistentStoreConfiguration;
+                var resPers = resCfg.PersistentStoreConfiguration;
+
+                Assert.AreEqual(pers.AlwaysWriteFullPages, resPers.AlwaysWriteFullPages);
+                Assert.AreEqual(pers.CheckpointingFrequency, resPers.CheckpointingFrequency);
+                Assert.AreEqual(pers.CheckpointingPageBufferSize, resPers.CheckpointingPageBufferSize);
+                Assert.AreEqual(pers.CheckpointingThreads, resPers.CheckpointingThreads);
+                Assert.AreEqual(pers.LockWaitTime, resPers.LockWaitTime);
+                Assert.AreEqual(pers.PersistentStorePath, resPers.PersistentStorePath);
+                Assert.AreEqual(pers.TlbSize, resPers.TlbSize);
+                Assert.AreEqual(pers.WalArchivePath, resPers.WalArchivePath);
+                Assert.AreEqual(pers.WalFlushFrequency, resPers.WalFlushFrequency);
+                Assert.AreEqual(pers.WalFsyncDelayNanos, resPers.WalFsyncDelayNanos);
+                Assert.AreEqual(pers.WalHistorySize, resPers.WalHistorySize);
+                Assert.AreEqual(pers.WalMode, resPers.WalMode);
+                Assert.AreEqual(pers.WalRecordIteratorBufferSize, resPers.WalRecordIteratorBufferSize);
+                Assert.AreEqual(pers.WalSegments, resPers.WalSegments);
+                Assert.AreEqual(pers.WalSegmentSize, resPers.WalSegmentSize);
+                Assert.AreEqual(pers.WalStorePath, resPers.WalStorePath);
             }
         }
 
@@ -226,6 +294,24 @@ namespace Apache.Ignite.Core.Tests
                 var disco = resCfg.DiscoverySpi as TcpDiscoverySpi;
                 Assert.IsNotNull(disco);
                 Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
+
+                // Check memory configuration defaults.
+                var mem = resCfg.MemoryConfiguration;
+
+                Assert.IsNotNull(mem);
+                Assert.AreEqual("dfltPlc", mem.DefaultMemoryPolicyName);
+                Assert.AreEqual(MemoryConfiguration.DefaultPageSize, mem.PageSize);
+                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheInitialSize, mem.SystemCacheInitialSize);
+                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheMaxSize, mem.SystemCacheMaxSize);
+
+                var plc = mem.MemoryPolicies.Single();
+                Assert.AreEqual("dfltPlc", plc.Name);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEmptyPagesPoolSize, plc.EmptyPagesPoolSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEvictionThreshold, plc.EvictionThreshold);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultInitialSize, plc.InitialSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultSubIntervals, plc.SubIntervals);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultRateTimeInterval, plc.RateTimeInterval);
             }
         }
 
@@ -244,7 +330,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 Localhost = "127.0.0.1",
                 DiscoverySpi = TestUtils.GetStaticDiscovery(),
-                GridName = "client",
+                IgniteInstanceName = "client",
                 ClientMode = true
             }))
             {
@@ -284,7 +370,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.Start(cfg))
             {
-                cfg.GridName = "ignite2";
+                cfg.IgniteInstanceName = "ignite2";
                 using (var ignite2 = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
@@ -383,7 +469,7 @@ namespace Apache.Ignite.Core.Tests
             using (var ignite = Ignition.Start(cfg))
             {
                 // Start with the same endpoint
-                cfg.GridName = "ignite2";
+                cfg.IgniteInstanceName = "ignite2";
                 using (var ignite2 = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
@@ -415,6 +501,44 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
             Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultClientFailureDetectionTimeout,
+                cfg.ClientFailureDetectionTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, cfg.IsLateAffinityAssignment);
+            Assert.AreEqual(IgniteConfiguration.DefaultIsActiveOnStart, cfg.IsActiveOnStart);
+
+            // Thread pools.
+            Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.PublicThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.StripedThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.ServiceThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.SystemThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.AsyncCallbackThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.DataStreamerThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.UtilityCacheThreadPoolSize);
+            Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.QueryThreadPoolSize);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">Config.</param>
+        private static void CheckDefaultProperties(PersistentStoreConfiguration cfg)
+        {
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultTlbSize, cfg.TlbSize);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingFrequency, cfg.CheckpointingFrequency);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingThreads, cfg.CheckpointingThreads);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingPageBufferSize, 
+                cfg.CheckpointingPageBufferSize);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultLockWaitTime, cfg.LockWaitTime);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFlushFrequency, cfg.WalFlushFrequency);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFsyncDelayNanos, cfg.WalFsyncDelayNanos);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalHistorySize, cfg.WalHistorySize);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalRecordIteratorBufferSize,
+                cfg.WalRecordIteratorBufferSize);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalSegmentSize, cfg.WalSegmentSize);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalSegments, cfg.WalSegments);
+            Assert.AreEqual(WalMode.Default, cfg.WalMode);
         }
 
         /// <summary>
@@ -425,7 +549,10 @@ namespace Apache.Ignite.Core.Tests
         {
             var props = obj.GetType().GetProperties();
 
-            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber"))
+            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
+                                                  !p.Name.Contains("ThreadPoolSize") &&
+                                                  !(p.Name == "MaxSize" &&
+                                                    p.DeclaringType == typeof(MemoryPolicyConfiguration))))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -460,20 +587,17 @@ namespace Apache.Ignite.Core.Tests
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
-                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
                     LocalPort = 49900,
                     LocalPortRange = 13,
-                    MaxMissedClientHeartbeats = 9,
-                    MaxMissedHeartbeats = 7,
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
                     TopologyHistorySize = 1234567
                 },
-                GridName = "gridName1",
-                IncludedEventTypes = EventType.SwapspaceAll,
+                IgniteInstanceName = "gridName1",
+                IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
                 MetricsLogFrequency = TimeSpan.FromMinutes(8),
@@ -523,14 +647,9 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
-                SwapSpaceSpi = new FileSwapSpaceSpi
-                {
-                    ReadStripesNumber = 64,
-                    MaximumWriteQueueSize = 8,
-                    WriteBufferSize = 9,
-                    BaseDirectory = Path.GetTempPath(),
-                    MaximumSparsity = 0.123f
-                },
+                ClientFailureDetectionTimeout = TimeSpan.FromMinutes(12.3),
+                LongQueryWarningTimeout = TimeSpan.FromMinutes(1.23),
+                IsActiveOnStart = true,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,
@@ -541,12 +660,89 @@ namespace Apache.Ignite.Core.Tests
                             TypeName = "myType",
                             IsEnum = true,
                             AffinityKeyFieldName = "affKey",
-                            KeepDeserialized = false,
-                            EqualityComparer = new BinaryFieldEqualityComparer("fld1", "fld2")
+                            KeepDeserialized = false
                         }
                     }
                 },
-                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() }
+                // Skip cache check because with persistence the grid is not active by default.
+                PluginConfigurations = new[] { new TestIgnitePluginConfiguration{ SkipCacheCheck = true } },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromSeconds(5),
+                    MaxEventCount = 10
+                },
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    ConcurrencyLevel = 3,
+                    DefaultMemoryPolicyName = "myDefaultPlc",
+                    PageSize = 2048,
+                    SystemCacheInitialSize = 13 * 1024 * 1024,
+                    SystemCacheMaxSize = 15 * 1024 * 1024,
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myDefaultPlc",
+                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            InitialSize = 340 * 1024 * 1024,
+                            MaxSize = 345 * 1024 * 1024,
+                            EvictionThreshold = 0.88,
+                            EmptyPagesPoolSize = 77,
+                            SwapFilePath = "myPath1",
+                            RateTimeInterval = TimeSpan.FromSeconds(35),
+                            SubIntervals = 7
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "customPlc",
+                            PageEvictionMode = DataPageEvictionMode.RandomLru,
+                            MaxSize = 456 * 1024 * 1024,
+                            EvictionThreshold = 0.77,
+                            EmptyPagesPoolSize = 66,
+                            SwapFilePath = "somePath2",
+                            MetricsEnabled = true
+                        } 
+                    }
+                },
+                PublicThreadPoolSize = 3,
+                StripedThreadPoolSize = 5,
+                ServiceThreadPoolSize = 6,
+                SystemThreadPoolSize = 7,
+                AsyncCallbackThreadPoolSize = 8,
+                ManagementThreadPoolSize = 9,
+                DataStreamerThreadPoolSize = 10,
+                UtilityCacheThreadPoolSize = 11,
+                QueryThreadPoolSize = 12,
+                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                {
+                    Host = "127.0.0.2",
+                    Port = 1081,
+                    PortRange = 3,
+                    SocketReceiveBufferSize = 2048,
+                    MaxOpenCursorsPerConnection = 5,
+                    ThreadPoolSize = 4,
+                    TcpNoDelay = false,
+                    SocketSendBufferSize = 4096
+                },
+                PersistentStoreConfiguration = new PersistentStoreConfiguration
+                {
+                    AlwaysWriteFullPages = true,
+                    CheckpointingFrequency = TimeSpan.FromSeconds(25),
+                    CheckpointingPageBufferSize = 28 * 1024 * 1024,
+                    CheckpointingThreads = 2,
+                    LockWaitTime = TimeSpan.FromSeconds(5),
+                    PersistentStorePath = Path.GetTempPath(),
+                    TlbSize = 64 * 1024,
+                    WalArchivePath = Path.GetTempPath(),
+                    WalFlushFrequency = TimeSpan.FromSeconds(3),
+                    WalFsyncDelayNanos = 3,
+                    WalHistorySize = 10,
+                    WalMode = WalMode.LogOnly,
+                    WalRecordIteratorBufferSize = 32 * 1024 * 1024,
+                    WalSegments = 6,
+                    WalSegmentSize = 5 * 1024 * 1024,
+                    WalStorePath = Path.GetTempPath()
+                }
             };
         }
     }

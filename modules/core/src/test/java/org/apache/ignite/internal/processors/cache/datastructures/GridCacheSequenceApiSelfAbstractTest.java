@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,7 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -76,10 +77,10 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TRANSACTIONAL_CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);
@@ -344,20 +345,77 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         seq.incrementAndGet();
 
-        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
+        final String cacheName = DataStructuresProcessor.ATOMICS_CACHE_NAME + "@default-ds-group";
+
+        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(cacheName);
 
         assertNotNull(cache);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid().cache(GridCacheUtils.ATOMICS_CACHE_NAME);
+                grid().cache(cacheName);
 
                 return null;
             }
         }, IllegalStateException.class, null);
 
         for (String seqName : seqNames)
-            assert null != cache.get(new GridCacheInternalKeyImpl(seqName));
+            assert null != cache.get(new GridCacheInternalKeyImpl(seqName, "default-ds-group"));
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        AtomicConfiguration cfg = new AtomicConfiguration().setGroupName("grp1");
+
+        IgniteAtomicSequence seq1 = ignite.atomicSequence("seq1", 1, true);
+        IgniteAtomicSequence seq2 = ignite.atomicSequence("seq2", 2, true);
+        IgniteAtomicSequence seq3 = ignite.atomicSequence("seq3", cfg, 3, true);
+        IgniteAtomicSequence seq4 = ignite.atomicSequence("seq4", cfg, 4, true);
+
+        assertNull(ignite.atomicSequence("seq1", cfg, 1, false));
+        assertNull(ignite.atomicSequence("seq2", cfg, 1, false));
+        assertNull(ignite.atomicSequence("seq3", 1, false));
+        assertNull(ignite.atomicSequence("seq4", 1, false));
+
+        assertEquals(11, seq1.addAndGet(10));
+        assertEquals(12, seq2.addAndGet(10));
+        assertEquals(13, seq3.addAndGet(10));
+        assertEquals(14, seq4.addAndGet(10));
+
+        seq2.close();
+        seq4.close();
+
+        assertTrue(seq2.removed());
+        assertTrue(seq4.removed());
+
+        assertNull(ignite.atomicSequence("seq2", 2, false));
+        assertNull(ignite.atomicSequence("seq4", cfg, 4, false));
+
+        assertFalse(seq1.removed());
+        assertFalse(seq3.removed());
+
+        assertNotNull(ignite.atomicSequence("seq1", 1, false));
+        assertNotNull(ignite.atomicSequence("seq3", cfg, 3, false));
+    }
+
+    /**
+     * Tests that reserveSize value from explicit configuration takes preference.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSequenceReserveSizeFromExplicitConfiguration() throws Exception {
+        Ignite ignite = grid(0);
+
+        IgniteAtomicSequence seq = ignite.atomicSequence("seq",
+            new AtomicConfiguration().setAtomicSequenceReserveSize(BATCH_SIZE + 1), 0, true);
+
+        assertEquals(BATCH_SIZE + 1, seq.batchSize());
     }
 
     /**

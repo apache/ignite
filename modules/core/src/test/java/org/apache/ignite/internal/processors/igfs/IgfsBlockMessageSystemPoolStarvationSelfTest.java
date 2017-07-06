@@ -34,7 +34,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -57,11 +57,8 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
     /** Second node name. */
     private static final String NODE_2_NAME = "node2";
 
-    /** Data cache name. */
-    private static final String DATA_CACHE_NAME = "data";
-
-    /** Meta cache name. */
-    private static final String META_CACHE_NAME = "meta";
+    /** IGFS name. */
+    private static final String IGFS_NAME = "test";
 
     /** Key in data caceh we will use to reproduce the issue. */
     private static final Integer DATA_KEY = 1;
@@ -124,7 +121,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
             @Override public Void call() throws Exception {
                 GridCacheAdapter dataCache = dataCache(attacker);
 
-                try (IgniteInternalTx tx = dataCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = dataCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     dataCache.put(DATA_KEY, 0);
 
                     txStartLatch.countDown();
@@ -189,7 +186,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
     private IgniteInternalFuture<Void> createFileAsync(final IgfsPath path, final CountDownLatch writeStartLatch) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                IgniteFileSystem igfs = attacker.fileSystem(null);
+                IgniteFileSystem igfs = attacker.fileSystem(IGFS_NAME);
 
                 try (IgfsOutputStream out = igfs.create(path, true)) {
                     writeStartLatch.await();
@@ -212,21 +209,22 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      * @throws Exception If failed.
      */
     private GridCacheAdapter dataCache(Ignite node) throws Exception  {
-        return ((IgniteKernal)node).internalCache(DATA_CACHE_NAME);
+        return ((IgniteKernal)node).internalCache(((IgniteKernal)node).igfsx(IGFS_NAME).configuration()
+            .getDataCacheConfiguration().getName());
     }
 
     /**
      * Create node configuration.
      *
      * @param name Node name.
+     * @param ipFinder IpFinder.
      * @return Configuration.
      * @throws Exception If failed.
      */
     private IgniteConfiguration config(String name, TcpDiscoveryVmIpFinder ipFinder) throws Exception {
         // Data cache configuration.
-        CacheConfiguration dataCcfg = new CacheConfiguration();
+        CacheConfiguration dataCcfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        dataCcfg.setName(DATA_CACHE_NAME);
         dataCcfg.setCacheMode(CacheMode.REPLICATED);
         dataCcfg.setAtomicityMode(TRANSACTIONAL);
         dataCcfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -234,9 +232,8 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         dataCcfg.setMaxConcurrentAsyncOperations(1);
 
         // Meta cache configuration.
-        CacheConfiguration metaCcfg = new CacheConfiguration();
+        CacheConfiguration metaCcfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        metaCcfg.setName(META_CACHE_NAME);
         metaCcfg.setCacheMode(CacheMode.REPLICATED);
         metaCcfg.setAtomicityMode(TRANSACTIONAL);
         metaCcfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -245,10 +242,11 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setFragmentizerEnabled(false);
         igfsCfg.setBlockSize(1024);
+        igfsCfg.setDataCacheConfiguration(dataCcfg);
+        igfsCfg.setMetaCacheConfiguration(metaCcfg);
+        igfsCfg.setName(IGFS_NAME);
 
         // Ignite configuration.
         IgniteConfiguration cfg = getConfiguration(name);
@@ -258,13 +256,12 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCcfg, metaCcfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
-        cfg.setStripedPoolSize(0);
+        cfg.setStripedPoolSize(2);
         cfg.setSystemThreadPoolSize(2);
         cfg.setRebalanceThreadPoolSize(1);
         cfg.setPublicThreadPoolSize(1);

@@ -24,7 +24,7 @@ import java.util.Collections;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -37,7 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Base for all messages in replicated cache.
  */
-public abstract class GridDistributedBaseMessage extends GridCacheMessage implements GridCacheDeployable,
+public abstract class GridDistributedBaseMessage extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -142,7 +142,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     /**
      * @return Count of keys referenced in candidates array (needed only locally for optimization).
      */
-    public int keysCount() {
+    int keysCount() {
         return cnt;
     }
 

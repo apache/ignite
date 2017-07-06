@@ -50,8 +50,8 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     private static int idx;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
@@ -64,7 +64,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -150,22 +150,6 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
             else
                 assert false : meta.typeName();
         }
-
-        grid().cache(null).put(new AffinityKey<>(1, 1), 1);
-
-        metas = binaries().types();
-
-        assertEquals(3, metas.size());
-
-        for (BinaryType meta : metas) {
-            if (AffinityKey.class.getSimpleName().equals(meta.typeName())) {
-                assertEquals("affKey", meta.affinityKeyFieldName());
-
-                return;
-            }
-        }
-
-        fail("Failed to find metadata for AffinityKey");
     }
 
     /**

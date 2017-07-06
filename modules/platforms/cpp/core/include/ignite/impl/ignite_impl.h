@@ -22,9 +22,11 @@
 #include <ignite/jni/java.h>
 #include <ignite/common/utils.h>
 
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/transactions/transactions_impl.h"
-#include "ignite/impl/ignite_environment.h"
+#include <ignite/impl/ignite_environment.h>
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/transactions/transactions_impl.h>
+#include <ignite/impl/cluster/cluster_group_impl.h>
+#include <ignite/impl/compute/compute_impl.h>
 
 namespace ignite 
 {
@@ -35,8 +37,10 @@ namespace ignite
          */
         class IGNITE_FRIEND_EXPORT IgniteImpl
         {
-            typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
-            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> SP_TransactionsImpl;
+            typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
+            typedef common::concurrent::SharedPointer<transactions::TransactionsImpl> SP_TransactionsImpl;
+            typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
+            typedef common::concurrent::SharedPointer<IgniteBindingImpl> SP_IgniteBindingImpl;
         public:
             /**
              * Constructor used to create new instance.
@@ -54,9 +58,16 @@ namespace ignite
             /**
              * Get name of the Ignite.
              *
-             * @param Name.
+             * @return Name.
              */
             const char* GetName() const;
+
+            /**
+             * Get node configuration.
+             *
+             * @return Node configuration.
+             */
+            const IgniteConfiguration& GetConfiguration() const;
 
             /**
              * Get JNI context associated with this instance.
@@ -80,7 +91,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     return NULL;
                 }
@@ -105,7 +116,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     return NULL;
                 }
@@ -130,7 +141,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     return NULL;
                 }
@@ -139,6 +150,13 @@ namespace ignite
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
+
+            /**
+             * Get ignite binding.
+             *
+             * @return IgniteBinding class instance.
+             */
+            SP_IgniteBindingImpl GetBinding();
 
             /**
              * Get instance of the implementation from the proxy class.
@@ -154,6 +172,17 @@ namespace ignite
             }
 
             /**
+             * Get environment.
+             * Internal method. Should not be used by user.
+             *
+             * @return Environment pointer.
+             */
+            IgniteEnvironment* GetEnvironment()
+            {
+                return env.Get();
+            }
+
+            /**
              * Get transactions.
              *
              * @return TransactionsImpl instance.
@@ -163,6 +192,23 @@ namespace ignite
                 return txImpl;
             }
 
+            /**
+             * Get projection.
+             *
+             * @return ClusterGroupImpl instance.
+             */
+            cluster::SP_ClusterGroupImpl GetProjection()
+            {
+                return prjImpl;
+            }
+
+            /**
+             * Get compute.
+             *
+             * @return ComputeImpl instance.
+             */
+            SP_ComputeImpl GetCompute();
+
         private:
             /**
              * Get transactions internal call.
@@ -170,6 +216,13 @@ namespace ignite
              * @return TransactionsImpl instance.
              */
             SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
+
+            /**
+             * Get current projection internal call.
+             *
+             * @return ClusterGroupImpl instance.
+             */
+            cluster::SP_ClusterGroupImpl InternalGetProjection(IgniteError &err);
 
             /** Environment. */
             SP_IgniteEnvironment env;
@@ -179,6 +232,9 @@ namespace ignite
 
             /** Transactions implementaion. */
             SP_TransactionsImpl txImpl;
+
+            /** Projection implementation. */
+            cluster::SP_ClusterGroupImpl prjImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };

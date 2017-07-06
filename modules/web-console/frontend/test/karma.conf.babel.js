@@ -15,22 +15,23 @@
  * limitations under the License.
  */
 
-import webpackConfig from '../gulpfile.babel.js/webpack';
 import path from 'path';
 
-const basePath = path.resolve('./');
+import testCfg from '../webpack/webpack.test';
 
 export default (config) => {
     config.set({
         // Base path that will be used to resolve all patterns (eg. files, exclude).
-        basePath: basePath,
+        basePath: path.resolve('./'),
 
         // Frameworks to use available frameworks: https://npmjs.org/browse/keyword/karma-adapter
         frameworks: ['mocha'],
 
         // List of files / patterns to load in the browser.
         files: [
-            'test/**/*.test.js'
+            'node_modules/babel-polyfill/dist/polyfill.js',
+            'test/**/*.test.js',
+            'app/**/*.spec.js'
         ],
 
         plugins: [
@@ -44,9 +45,10 @@ export default (config) => {
         // Preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor.
         preprocessors: {
-            'test/**/*.js': ['webpack']
+            '{app,test}/**/*.js': ['webpack']
         },
-        webpack: webpackConfig,
+
+        webpack: testCfg,
 
         webpackMiddleware: {
             noInfo: true
@@ -56,6 +58,10 @@ export default (config) => {
         // possible values: 'dots', 'progress'
         // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
         reporters: ['mocha'],
+
+        mochaReporter: {
+            showDiff: true
+        },
 
         // web server port
         port: 9876,

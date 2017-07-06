@@ -32,18 +32,26 @@ export default class IgniteMavenGenerator {
     }
 
     addProperty(sb, tag, val) {
-        sb.append('<' + tag + '>' + val + '</' + tag + '>');
+        sb.append(`<${tag}>${val}</${tag}>`);
     }
 
     addDependency(deps, groupId, artifactId, version, jar) {
-        if (!_.find(deps, (dep) => dep.groupId === groupId && dep.artifactId === artifactId))
-            deps.push({groupId, artifactId, version, jar});
+        deps.add({groupId, artifactId, version, jar});
+    }
+
+    pickDependency(deps, key, dfltVer) {
+        if (!_.has(POM_DEPENDENCIES, key))
+            return;
+
+        const {groupId, artifactId, version, jar} = POM_DEPENDENCIES[key];
+
+        this.addDependency(deps, groupId || 'org.apache.ignite', artifactId, version || dfltVer, jar);
     }
 
     addResource(sb, dir, exclude) {
         sb.startBlock('<resource>');
-        if (dir)
-            this.addProperty(sb, 'directory', dir);
+
+        this.addProperty(sb, 'directory', dir);
 
         if (exclude) {
             sb.startBlock('<excludes>');
@@ -54,18 +62,16 @@ export default class IgniteMavenGenerator {
         sb.endBlock('</resource>');
     }
 
-    artifact(sb, cluster, version) {
+    artifactSection(sb, cluster, targetVer) {
         this.addProperty(sb, 'groupId', 'org.apache.ignite');
         this.addProperty(sb, 'artifactId', this.escapeId(cluster.name) + '-project');
-        this.addProperty(sb, 'version', version);
-
-        sb.emptyLine();
+        this.addProperty(sb, 'version', targetVer.ignite);
     }
 
-    dependencies(sb, cluster, deps) {
+    dependenciesSection(sb, deps) {
         sb.startBlock('<dependencies>');
 
-        _.forEach(deps, (dep) => {
+        deps.forEach((dep) => {
             sb.startBlock('<dependency>');
 
             this.addProperty(sb, 'groupId', dep.groupId);
@@ -85,14 +91,16 @@ export default class IgniteMavenGenerator {
         return sb;
     }
 
-    build(sb = new StringBuilder(), cluster, excludeGroupIds) {
+    buildSection(sb = new StringBuilder(), excludeGroupIds) {
         sb.startBlock('<build>');
+
         sb.startBlock('<resources>');
         this.addResource(sb, 'src/main/java', '**/*.java');
         this.addResource(sb, 'src/main/resources');
         sb.endBlock('</resources>');
 
         sb.startBlock('<plugins>');
+
         sb.startBlock('<plugin>');
         this.addProperty(sb, 'artifactId', 'maven-dependency-plugin');
         sb.startBlock('<executions>');
@@ -111,6 +119,7 @@ export default class IgniteMavenGenerator {
         sb.endBlock('</execution>');
         sb.endBlock('</executions>');
         sb.endBlock('</plugin>');
+
         sb.startBlock('<plugin>');
         this.addProperty(sb, 'artifactId', 'maven-compiler-plugin');
         this.addProperty(sb, 'version', '3.1');
@@ -119,38 +128,40 @@ export default class IgniteMavenGenerator {
         this.addProperty(sb, 'target', '1.7');
         sb.endBlock('</configuration>');
         sb.endBlock('</plugin>');
-        sb.endBlock('</plugins>');
-        sb.endBlock('</build>');
 
-        sb.endBlock('</project>');
+        sb.endBlock('</plugins>');
+
+        sb.endBlock('</build>');
     }
 
     /**
      * Add dependency for specified store factory if not exist.
-     * @param storeDeps Already added dependencies.
+     * @param deps Already added dependencies.
      * @param storeFactory Store factory to add dependency.
      */
-    storeFactoryDependency(storeDeps, storeFactory) {
-        if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource')) {
-            const dep = POM_DEPENDENCIES[storeFactory.dialect];
-
-            this.addDependency(storeDeps, dep.groupId, dep.artifactId, dep.version, dep.jar);
-        }
+    storeFactoryDependency(deps, storeFactory) {
+        if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource'))
+            this.pickDependency(deps, storeFactory.dialect);
     }
 
-    /**
-     * Generate pom.xml.
-     *
-     * @param cluster Cluster  to take info about dependencies.
-     * @param version Ignite version for Ignite dependencies.
-     * @param sb Resulting output with generated pom.
-     * @returns {string} Generated content.
-     */
-    generate(cluster, version, sb = new StringBuilder()) {
+    collectDependencies(cluster, targetVer) {
+        const igniteVer = targetVer.ignite;
+
+        const deps = new Set();
+        const storeDeps = new Set();
+
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-core', igniteVer);
+
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-spring', igniteVer);
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-indexing', igniteVer);
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-rest-http', igniteVer);
+
+        if (_.get(cluster, 'deploymentSpi.kind') === 'URI')
+            this.addDependency(deps, 'org.apache.ignite', 'ignite-urideploy', igniteVer);
+
+        this.pickDependency(deps, cluster.discovery.kind, igniteVer);
+
         const caches = cluster.caches;
-        const deps = [];
-        const storeDeps = [];
-        const excludeGroupIds = ['org.apache.ignite'];
 
         const blobStoreFactory = {cacheStoreFactory: {kind: 'CacheHibernateBlobStoreFactory'}};
 
@@ -159,8 +170,45 @@ export default class IgniteMavenGenerator {
                 this.storeFactoryDependency(storeDeps, cache.cacheStoreFactory[cache.cacheStoreFactory.kind]);
 
             if (_.get(cache, 'nodeFilter.kind') === 'Exclude')
-                this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', version);
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', igniteVer);
         });
+
+        if (cluster.discovery.kind === 'Jdbc') {
+            const store = cluster.discovery.Jdbc;
+
+            if (store.dataSourceBean && store.dialect)
+                this.storeFactoryDependency(storeDeps, cluster.discovery.Jdbc);
+        }
+
+        _.forEach(cluster.checkpointSpi, (spi) => {
+            if (spi.kind === 'S3')
+                this.pickDependency(deps, spi.kind, igniteVer);
+            else if (spi.kind === 'JDBC')
+                this.storeFactoryDependency(storeDeps, spi.JDBC);
+        });
+
+        if (_.get(cluster, 'hadoopConfiguration.mapReducePlanner.kind') === 'Weighted' ||
+            _.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
+            this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', igniteVer);
+
+        if (_.find(caches, blobStoreFactory))
+            this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', igniteVer);
+
+        if (cluster.logger && cluster.logger.kind)
+            this.pickDependency(deps, cluster.logger.kind, igniteVer);
+
+        return new Set([...deps, ...storeDeps]);
+    }
+
+    /**
+     * Generate pom.xml.
+     *
+     * @param {Object} cluster Cluster  to take info about dependencies.
+     * @param {Object} targetVer Target version for dependencies.
+     * @returns {String} Generated content.
+     */
+    generate(cluster, targetVer) {
+        const sb = new StringBuilder();
 
         sb.append('<?xml version="1.0" encoding="UTF-8"?>');
 
@@ -176,59 +224,20 @@ export default class IgniteMavenGenerator {
 
         sb.emptyLine();
 
-        this.artifact(sb, cluster, version);
-
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-core', version);
-
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-spring', version);
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-indexing', version);
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-rest-http', version);
-
-        if (_.get(cluster, 'deploymentSpi.kind') === 'URI')
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-urideploy', version);
-
-        let dep = POM_DEPENDENCIES[cluster.discovery.kind];
-
-        if (dep)
-            this.addDependency(deps, 'org.apache.ignite', dep.artifactId, version);
-
-        if (cluster.discovery.kind === 'Jdbc') {
-            const store = cluster.discovery.Jdbc;
-
-            if (store.dataSourceBean && store.dialect)
-                this.storeFactoryDependency(storeDeps, cluster.discovery.Jdbc);
-        }
-
-        _.forEach(cluster.checkpointSpi, (spi) => {
-            if (spi.kind === 'S3') {
-                dep = POM_DEPENDENCIES.S3;
-
-                if (dep)
-                    this.addDependency(deps, 'org.apache.ignite', dep.artifactId, version);
-            }
-            else if (spi.kind === 'JDBC')
-                this.storeFactoryDependency(storeDeps, spi.JDBC);
-        });
-
-        if (_.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', version);
-
-        if (_.find(caches, blobStoreFactory))
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', version);
-
-        if (cluster.logger && cluster.logger.kind) {
-            dep = POM_DEPENDENCIES[cluster.logger.kind];
-
-            if (dep)
-                this.addDependency(deps, 'org.apache.ignite', dep.artifactId, version);
-        }
-
-        this.dependencies(sb, cluster, deps.concat(storeDeps));
+        this.artifactSection(sb, cluster, targetVer);
 
         sb.emptyLine();
 
-        this.build(sb, cluster, excludeGroupIds);
+        const deps = this.collectDependencies(cluster, targetVer);
 
-        return sb;
+        this.dependenciesSection(sb, deps);
+
+        sb.emptyLine();
+
+        this.buildSection(sb, ['org.apache.ignite']);
+
+        sb.endBlock('</project>');
+
+        return sb.asString();
     }
 }

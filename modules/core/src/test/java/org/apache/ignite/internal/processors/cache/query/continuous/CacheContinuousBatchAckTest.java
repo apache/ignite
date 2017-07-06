@@ -24,7 +24,6 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -45,12 +44,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  * Continuous queries tests.
@@ -76,15 +73,15 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.endsWith(CLIENT)) {
+        if (igniteInstanceName.endsWith(CLIENT)) {
             cfg.setClientMode(true);
 
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(true, false));
         }
-        else if (gridName.endsWith(SERVER2))
+        else if (igniteInstanceName.endsWith(SERVER2))
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, true));
         else
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, false));
@@ -128,7 +125,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      * @throws Exception If failed.
      */
     public void testPartition() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, ONHEAP_TIERED, false));
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, false));
     }
 
     /**
@@ -137,21 +134,21 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     public void testPartitionWithFilter() throws Exception {
         filterOn.set(true);
 
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, ONHEAP_TIERED, true));
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionNoBackups() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, ATOMIC, ONHEAP_TIERED, false));
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, ATOMIC, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionTx() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, ONHEAP_TIERED, false));
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, false));
     }
 
     /**
@@ -160,14 +157,14 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     public void testPartitionTxWithFilter() throws Exception {
         filterOn.set(true);
 
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, ONHEAP_TIERED, true));
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionTxNoBackup() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, ONHEAP_TIERED, false));
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, false));
     }
 
     /**
@@ -176,44 +173,21 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     public void testPartitionTxNoBackupWithFilter() throws Exception {
         filterOn.set(true);
 
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, ONHEAP_TIERED, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionOffheapWithFilter() throws Exception {
-        filterOn.set(true);
-
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionTxOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, OFFHEAP_TIERED, false));
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplicated() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, ATOMIC, ONHEAP_TIERED, false));
+        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, ATOMIC, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplicatedTx() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, ONHEAP_TIERED, false));
+        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, false));
     }
 
     /**
@@ -222,30 +196,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     public void testReplicatedTxWithFilter() throws Exception {
         filterOn.set(true);
 
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, ONHEAP_TIERED, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, ATOMIC, OFFHEAP_TIERED, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedTxOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, OFFHEAP_TIERED, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedTxOffheapWithFilter() throws Exception {
-        filterOn.set(true);
-
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, OFFHEAP_TIERED, true));
+        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, true));
     }
 
     /**
@@ -293,7 +244,6 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param filter Filter enabled.
      * @return Cache configuration.
      */
@@ -301,12 +251,11 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         CacheMode cacheMode,
         int backups,
         CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode, boolean filter) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        boolean filter) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         if (cacheMode == PARTITIONED)
@@ -315,7 +264,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         if (filter)
             ccfg.setNodeFilter(new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
-                    return !node.attributes().get(ATTR_GRID_NAME).equals(SERVER2);
+                    return !node.attributes().get(ATTR_IGNITE_INSTANCE_NAME).equals(SERVER2);
                 }
             });
 

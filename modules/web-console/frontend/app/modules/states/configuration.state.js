@@ -26,6 +26,20 @@ import ConfigurationResource from './configuration/Configuration.resource';
 import summaryTabs from './configuration/summary/summary-tabs.directive';
 import IgniteSummaryZipper from './configuration/summary/summary-zipper.service';
 
+import clustersTpl from 'views/configuration/clusters.tpl.pug';
+import cachesTpl from 'views/configuration/caches.tpl.pug';
+import domainsTpl from 'views/configuration/domains.tpl.pug';
+import igfsTpl from 'views/configuration/igfs.tpl.pug';
+import summaryTpl from 'views/configuration/summary.tpl.pug';
+import summaryTabsTemplateUrl from 'views/configuration/summary-tabs.pug';
+
+import clustersCtrl from 'Controllers/clusters-controller';
+import domainsCtrl from 'Controllers/domains-controller';
+import cachesCtrl from 'Controllers/caches-controller';
+import igfsCtrl from 'Controllers/igfs-controller';
+
+import base2 from 'views/base2.pug';
+
 angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...previewPanel)
     // Summary screen
@@ -33,62 +47,92 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
     // Services.
     .service('IgniteSummaryZipper', IgniteSummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)
+    .run(['$templateCache', ($templateCache) => {
+        $templateCache.put('summary-tabs.html', summaryTabsTemplateUrl);
+    }])
     // Configure state provider.
     .config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
         // Setup the states.
         $stateProvider
             .state('base.configuration', {
-                url: '/configuration',
-                templateUrl: '/configuration/sidebar.html',
-                abstract: true
+                abstract: true,
+                views: {
+                    '@': {
+                        template: base2
+                    }
+                }
             })
-            .state('base.configuration.clusters', {
-                url: '/clusters',
-                templateUrl: '/configuration/clusters.html',
-                onEnter: AclRoute.checkAccess('configuration'),
-                params: {
-                    linkId: null
+            .state('base.configuration.tabs', {
+                url: '/configuration',
+                template: '<page-configure></page-configure>',
+                metaTags: {
+                    title: 'Configuration'
+                }
+            })
+            .state('base.configuration.tabs.basic', {
+                url: '/basic',
+                template: '<page-configure-basic></page-configure-basic>',
+                metaTags: {
+                    title: 'Basic Configuration'
                 },
+                resolve: {
+                    list: ['IgniteConfigurationResource', 'PageConfigure', (configuration, pageConfigure) => {
+                        // TODO IGNITE-5271: remove when advanced config is hooked into ConfigureState too.
+                        // This resolve ensures that basic always has fresh data, i.e. after going back from advanced
+                        // after adding a cluster.
+                        return configuration.read().then((data) => {
+                            pageConfigure.loadList(data);
+                        });
+                    }]
+                }
+            })
+            .state('base.configuration.tabs.advanced', {
+                url: '/advanced',
+                template: '<page-configure-advanced></page-configure-advanced>'
+            })
+            .state('base.configuration.tabs.advanced.clusters', {
+                url: '/clusters',
+                templateUrl: clustersTpl,
+                onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Clusters'
-                }
-            })
-            .state('base.configuration.caches', {
-                url: '/caches',
-                templateUrl: '/configuration/caches.html',
-                onEnter: AclRoute.checkAccess('configuration'),
-                params: {
-                    linkId: null
                 },
+                controller: clustersCtrl,
+                controllerAs: '$ctrl'
+            })
+            .state('base.configuration.tabs.advanced.caches', {
+                url: '/caches',
+                templateUrl: cachesTpl,
+                onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Caches'
-                }
-            })
-            .state('base.configuration.domains', {
-                url: '/domains',
-                templateUrl: '/configuration/domains.html',
-                onEnter: AclRoute.checkAccess('configuration'),
-                params: {
-                    linkId: null
                 },
+                controller: cachesCtrl,
+                controllerAs: '$ctrl'
+            })
+            .state('base.configuration.tabs.advanced.domains', {
+                url: '/domains',
+                templateUrl: domainsTpl,
+                onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure Domain Model'
-                }
-            })
-            .state('base.configuration.igfs', {
-                url: '/igfs',
-                templateUrl: '/configuration/igfs.html',
-                onEnter: AclRoute.checkAccess('configuration'),
-                params: {
-                    linkId: null
                 },
+                controller: domainsCtrl,
+                controllerAs: '$ctrl'
+            })
+            .state('base.configuration.tabs.advanced.igfs', {
+                url: '/igfs',
+                templateUrl: igfsTpl,
+                onEnter: AclRoute.checkAccess('configuration'),
                 metaTags: {
                     title: 'Configure IGFS'
-                }
+                },
+                controller: igfsCtrl,
+                controllerAs: '$ctrl'
             })
-            .state('base.configuration.summary', {
+            .state('base.configuration.tabs.advanced.summary', {
                 url: '/summary',
-                templateUrl: '/configuration/summary.html',
+                templateUrl: summaryTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 controller: ConfigurationSummaryCtrl,
                 controllerAs: 'ctrl',

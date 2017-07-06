@@ -36,6 +36,14 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_QUIET=false");
         cfg.jvmOpts.push_back("-DIGNITE_CONSOLE_APPENDER=false");
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
+        cfg.jvmOpts.push_back("-Duser.language=en");
+
+        std::string home;
+        bool homeFound = jni::ResolveIgniteHome("", home);
+
+        assert(homeFound);
+
+        cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(home, true);
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -76,4 +84,13 @@ namespace ignite_test
         return Ignition::Start(cfg, name);
     }
 
+    bool IsGenericError(const ignite::IgniteError& err)
+    {
+        return err.GetCode() == ignite::IgniteError::IGNITE_ERR_GENERIC;
+    }
+
+    bool IsTestError(const ignite::IgniteError& err)
+    {
+        return err.GetCode() == TEST_ERROR;
+    }
 }

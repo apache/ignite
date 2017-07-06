@@ -67,9 +67,9 @@ public final class FastUpdateArguments {
         }
     }
 
-    /** Simple constant value based operand. */
+    /** User given param value operand. */
     public final static class ParamArgument implements FastUpdateArgument {
-        /** Value to return. */
+        /** Index of param to take. */
         private final int paramIdx;
 
         /** */

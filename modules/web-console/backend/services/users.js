@@ -21,21 +21,21 @@
 
 module.exports = {
     implements: 'services/users',
-    inject: ['require(lodash)', 'mongo', 'settings', 'services/spaces', 'services/mails', 'services/activities', 'agent-manager', 'errors']
+    inject: ['require(lodash)', 'errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'agents-handler']
 };
 
 /**
  * @param _
  * @param mongo
+ * @param errors
  * @param settings
  * @param {SpacesService} spacesService
  * @param {MailsService} mailsService
  * @param {ActivitiesService} activitiesService
- * @param agentMgr
- * @param errors
+ * @param {AgentsHandler} agentHnd
  * @returns {UsersService}
  */
-module.exports.factory = (_, mongo, settings, spacesService, mailsService, activitiesService, agentMgr, errors) => {
+module.exports.factory = (_, errors, settings, mongo, spacesService, mailsService, activitiesService, agentHnd) => {
     const _randomString = () => {
         const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const possibleLen = possible.length;
@@ -132,7 +132,7 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, activ
                 })
                 .then((user) => {
                     if (changed.token && user.token !== changed.token)
-                        agentMgr.close(user._id, user.token);
+                        agentHnd.onTokenReset(user);
 
                     _.extend(user, changed);
 
@@ -146,31 +146,57 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, activ
          */
         static list(params) {
             return Promise.all([
-                mongo.Space.aggregate([
-                    {$match: {demo: false}},
-                    {$lookup: {from: 'clusters', localField: '_id', foreignField: 'space', as: 'clusters'}},
-                    {$lookup: {from: 'caches', localField: '_id', foreignField: 'space', as: 'caches'}},
-                    {$lookup: {from: 'domainmodels', localField: '_id', foreignField: 'space', as: 'domainmodels'}},
-                    {$lookup: {from: 'igfs', localField: '_id', foreignField: 'space', as: 'igfs'}},
-                    {
-                        $project: {
-                            owner: 1,
-                            clusters: {$size: '$clusters'},
-                            models: {$size: '$domainmodels'},
-                            caches: {$size: '$caches'},
-                            igfs: {$size: '$igfs'}
-                        }
-                    }
-                ]).exec(),
-                activitiesService.total(params),
-                activitiesService.detail(params),
-                mongo.Account.find({}).sort('firstName lastName').lean().exec()
-            ])
-                .then(([counters, activitiesTotal, activitiesDetail, users]) => {
-                    const countersMap = _.keyBy(counters, 'owner');
+                Promise.all([
+                    mongo.Account.aggregate([
+                        {$lookup: {from: 'spaces', localField: '_id', foreignField: 'owner', as: 'spaces'}},
+                        {$project: {
+                            _id: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            admin: 1,
+                            email: 1,
+                            company: 1,
+                            country: 1,
+                            lastLogin: 1,
+                            lastActivity: 1,
+                            spaces: {
+                                $filter: {
+                                    input: '$spaces',
+                                    as: 'space',
+                                    cond: {$eq: ['$$space.demo', false]}
+                                }
+                            }
+                        }},
+                        { $sort: {firstName: 1, lastName: 1}}
+                    ]).exec(),
+                    mongo.Cluster.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.Cache.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.DomainModel.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.Igfs.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec()
+                ]).then(([users, clusters, caches, models, igfs]) => {
+                    const clustersMap = _.mapValues(_.keyBy(clusters, '_id'), 'count');
+                    const cachesMap = _.mapValues(_.keyBy(caches, '_id'), 'count');
+                    const modelsMap = _.mapValues(_.keyBy(models, '_id'), 'count');
+                    const igfsMap = _.mapValues(_.keyBy(igfs, '_id'), 'count');
 
                     _.forEach(users, (user) => {
-                        user.counters = _.omit(countersMap[user._id], '_id', 'owner');
+                        const counters = user.counters = {};
+
+                        counters.clusters = _.sumBy(user.spaces, ({_id}) => clustersMap[_id]) || 0;
+                        counters.caches = _.sumBy(user.spaces, ({_id}) => cachesMap[_id]) || 0;
+                        counters.models = _.sumBy(user.spaces, ({_id}) => modelsMap[_id]) || 0;
+                        counters.igfs = _.sumBy(user.spaces, ({_id}) => igfsMap[_id]) || 0;
+
+                        delete user.spaces;
+                    });
+
+                    return users;
+                }),
+                activitiesService.total(params),
+                activitiesService.detail(params)
+            ])
+                .then(([users, activitiesTotal, activitiesDetail]) => {
+                    _.forEach(users, (user) => {
                         user.activitiesTotal = activitiesTotal[user._id];
                         user.activitiesDetail = activitiesDetail[user._id];
                     });
@@ -212,11 +238,8 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, activ
 
             const becomeUsed = viewedUser && user.admin;
 
-            if (becomeUsed) {
-                user = viewedUser;
-
-                user.becomeUsed = true;
-            }
+            if (becomeUsed)
+                user = _.extend({}, viewedUser, {becomeUsed: true, becameToken: user.token});
             else
                 user = user.toJSON();
 

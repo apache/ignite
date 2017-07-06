@@ -17,26 +17,38 @@
 
 package org.apache.ignite.internal.visor;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Visor tasks argument.
  */
-public class VisorTaskArgument<A> implements Serializable {
+public class VisorTaskArgument<A> extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Node IDs task should be mapped to. */
-    private final Collection<UUID> nodes;
+    private List<UUID> nodes;
 
     /** Task argument. */
-    private final A arg;
+    private A arg;
 
     /** Debug flag. */
-    private final boolean debug;
+    private boolean debug;
+
+    /**
+     * Default constructor.
+     */
+    public VisorTaskArgument() {
+        // No-op.
+    }
 
     /**
      * Create Visor task argument.
@@ -49,7 +61,7 @@ public class VisorTaskArgument<A> implements Serializable {
         assert nodes != null;
         assert !nodes.isEmpty();
 
-        this.nodes = nodes;
+        this.nodes = toList(nodes);
         this.arg = arg;
         this.debug = debug;
     }
@@ -72,7 +84,7 @@ public class VisorTaskArgument<A> implements Serializable {
      * @param debug Debug flag.
      */
     public VisorTaskArgument(UUID node, A arg, boolean debug) {
-        this(Collections.singleton(node), arg, debug);
+        this(Collections.singletonList(node), arg, debug);
     }
 
     /**
@@ -88,21 +100,40 @@ public class VisorTaskArgument<A> implements Serializable {
     /**
      * @return Node IDs task should be mapped to.
      */
-    public Collection<UUID> nodes() {
+    public List<UUID> getNodes() {
         return nodes;
     }
 
     /**
      * @return Task argument.
      */
-    public A argument() {
+    public A getArgument() {
         return arg;
     }
 
     /**
      * @return Debug flag.
      */
-    public boolean debug() {
+    public boolean isDebug() {
         return debug;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeCollection(out, nodes);
+        out.writeObject(arg);
+        out.writeBoolean(debug);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        nodes = U.readList(in);
+        arg = (A)in.readObject();
+        debug = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorTaskArgument.class, this);
     }
 }

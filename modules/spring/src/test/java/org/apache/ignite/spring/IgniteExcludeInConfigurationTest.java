@@ -19,9 +19,10 @@ package org.apache.ignite.spring;
 
 import java.net.URL;
 import java.util.Collection;
-import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,7 +41,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
          IgniteSpringHelper spring = SPRING.create(false);
 
         Collection<IgniteConfiguration> cfgs = spring.loadConfigurations(cfgLocation, "fileSystemConfiguration",
-            "typeMetadata").get1();
+            "queryEntities").get1();
 
         assertNotNull(cfgs);
         assertEquals(1, cfgs.size());
@@ -48,7 +49,8 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = cfgs.iterator().next();
 
         assertEquals(1, cfg.getCacheConfiguration().length);
-        assertNull(cfg.getCacheConfiguration()[0].getTypeMetadata());
+
+        assertTrue(F.isEmpty(cfg.getCacheConfiguration()[0].getQueryEntities()));
 
         assertNull(cfg.getFileSystemConfiguration());
 
@@ -61,10 +63,10 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
 
         assertEquals(1, cfg.getCacheConfiguration().length);
 
-        Collection<CacheTypeMetadata> typeMetadatas = cfg.getCacheConfiguration()[0].getTypeMetadata();
+        Collection<QueryEntity> queryEntities = cfg.getCacheConfiguration()[0].getQueryEntities();
 
-        assertEquals(1, typeMetadatas.size());
-        assertNull(typeMetadatas.iterator().next().getKeyType());
+        assertEquals(1, queryEntities.size());
+        assertNull(queryEntities.iterator().next().getKeyType());
     }
 
     /** Spring should fail if bean class not exist in classpath. */

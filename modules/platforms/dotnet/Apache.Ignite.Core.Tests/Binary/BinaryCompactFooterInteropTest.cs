@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryCompactFooterInteropTest
     {
         /** */
-        private const string PlatformSqlQueryTask = "org.apache.ignite.platform.PlatformSqlQueryTask";
+        public const string PlatformSqlQueryTask = "org.apache.ignite.platform.PlatformSqlQueryTask";
 
         /** */
         private IIgnite _grid;
@@ -71,10 +71,12 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 try
                 {
-                    var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
-                        ComputeApiTest.EchoTypeBinarizable);
+                    grid.GetOrCreateCache<int, int>("default").Put(ComputeApiTest.EchoTypeBinarizable, i * 99);
 
-                    Assert.AreEqual(1, fromJava.Field);
+                    var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(
+                        ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizable);
+
+                    Assert.AreEqual(i * 99, fromJava.Field);
 
                     return;
                 }
@@ -115,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var grid = client ? _clientGrid : _grid;
 
-            var cache = grid.GetCache<int, PlatformComputeBinarizable>(null);
+            var cache = grid.GetCache<int, PlatformComputeBinarizable>("default");
 
             // Populate cache in .NET
             for (var i = 0; i < 100; i++)
@@ -133,14 +135,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static IgniteConfiguration Config(string springUrl)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springUrl,
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (PlatformComputeBinarizable),
                     typeof (PlatformComputeNetBinarizable))
+                {
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                }
             };
         }
     }

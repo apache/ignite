@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
@@ -44,10 +45,10 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TRANSACTIONAL_CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -264,5 +265,78 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
             assert curAtomicVal == atomic.getAndSet(newVal);
             assert newVal == atomic.get();
         }
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure that
+     * transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        IgniteCache<Object, Object> cache = ignite.cache(TRANSACTIONAL_CACHE_NAME);
+
+        IgniteAtomicLong atomic = ignite.atomicLong("atomic", 0, true);
+
+        long curAtomicVal = atomic.get();
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            atomic.getAndIncrement();
+
+            cache.put(1, 1);
+
+            tx.rollback();
+        }
+
+        assertEquals(0, cache.size());
+        assertEquals(curAtomicVal + 1, atomic.get());
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        AtomicConfiguration cfg = new AtomicConfiguration().setGroupName("grp1");
+
+        IgniteAtomicLong atomic1 = ignite.atomicLong("atomic1", 1, true);
+        IgniteAtomicLong atomic2 = ignite.atomicLong("atomic2", 2, true);
+        IgniteAtomicLong atomic3 = ignite.atomicLong("atomic3", cfg, 3, true);
+        IgniteAtomicLong atomic4 = ignite.atomicLong("atomic4", cfg, 4, true);
+
+        assertNull(ignite.atomicLong("atomic1", cfg, 1, false));
+        assertNull(ignite.atomicLong("atomic2", cfg, 2, false));
+        assertNull(ignite.atomicLong("atomic3", 3, false));
+        assertNull(ignite.atomicLong("atomic4", 4, false));
+
+        assertTrue(atomic1.compareAndSet(1, 11));
+        assertTrue(atomic2.compareAndSet(2, 12));
+        assertTrue(atomic3.compareAndSet(3, 13));
+        assertTrue(atomic4.compareAndSet(4, 14));
+
+        assertFalse(atomic1.compareAndSet(1, 0));
+        assertFalse(atomic2.compareAndSet(2, 0));
+        assertFalse(atomic3.compareAndSet(3, 0));
+        assertFalse(atomic4.compareAndSet(4, 0));
+
+        atomic2.close();
+        atomic4.close();
+
+        assertTrue(atomic2.removed());
+        assertTrue(atomic4.removed());
+
+        assertNull(ignite.atomicLong("atomic2", 2, false));
+        assertNull(ignite.atomicLong("atomic4", cfg, 4, false));
+
+        assertFalse(atomic1.removed());
+        assertFalse(atomic3.removed());
+
+        assertNotNull(ignite.atomicLong("atomic1", 1, false));
+        assertNotNull(ignite.atomicLong("atomic3", cfg, 3, false));
     }
 }

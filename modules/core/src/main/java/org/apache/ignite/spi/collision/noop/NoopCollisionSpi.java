@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiMultipleInstancesSupport(true)
 public class NoopCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         // No-op.
     }
 
@@ -56,6 +56,13 @@ public class NoopCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /** {@inheritDoc} */
     @Override public void setExternalCollisionListener(@Nullable CollisionExternalListener lsnr) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoopCollisionSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */

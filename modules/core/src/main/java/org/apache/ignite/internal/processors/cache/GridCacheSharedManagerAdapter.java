@@ -27,11 +27,17 @@ import org.apache.ignite.lang.IgniteFuture;
  * Convenience adapter for cache managers.
  */
 public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManager<K, V> {
+    /** */
+    private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
+
     /** Context. */
     protected GridCacheSharedContext<K, V> cctx;
 
     /** Logger. */
     protected IgniteLogger log;
+
+    /** Diagnostic logger. */
+    protected IgniteLogger diagnosticLog;
 
     /** Starting flag. */
     private final AtomicBoolean starting = new AtomicBoolean(false);
@@ -49,6 +55,8 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
+
+        diagnosticLog = cctx.logger(DIAGNOSTIC_LOG_CATEGORY);
 
         start0();
 
@@ -87,6 +95,13 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
         if (log != null && log.isDebugEnabled())
             log.debug(stopInfo());
+    }
+
+    /**
+     * @return {@code true} If this component is stopping.
+     */
+    protected final boolean isStopping() {
+        return stop.get();
     }
 
     /**

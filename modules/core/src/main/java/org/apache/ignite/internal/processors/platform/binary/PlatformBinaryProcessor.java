@@ -18,10 +18,16 @@
 package org.apache.ignite.internal.processors.platform.binary;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Platform binary processor.
@@ -39,6 +45,15 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
     /** */
     private static final int OP_GET_SCHEMA = 4;
 
+    /** */
+    private static final int OP_REGISTER_TYPE = 5;
+
+    /** */
+    private static final int OP_GET_TYPE = 6;
+
+    /** */
+    private static final int OP_REGISTER_ENUM = 7;
+
     /**
      * Constructor.
      *
@@ -50,10 +65,20 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
-        if (type == OP_PUT_META) {
-            platformCtx.processMetadata(reader);
+        switch (type) {
+            case OP_PUT_META:
+                platformCtx.processMetadata(reader);
 
-            return TRUE;
+                return TRUE;
+
+            case OP_REGISTER_TYPE: {
+                int typeId = reader.readInt();
+                String typeName = reader.readString();
+
+                return platformContext().kernalContext().marshallerContext()
+                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName)
+                    ? TRUE : FALSE;
+            }
         }
 
         return super.processInStreamOutLong(type, reader);
@@ -84,6 +109,40 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                 int schemaId = reader.readInt();
 
                 platformCtx.writeSchema(writer, typeId, schemaId);
+
+                break;
+            }
+
+            case OP_GET_TYPE: {
+                int typeId = reader.readInt();
+
+                try {
+                    String typeName = platformContext().kernalContext().marshallerContext()
+                        .getClassName(MarshallerPlatformIds.DOTNET_ID, typeId);
+
+                    writer.writeString(typeName);
+                }
+                catch (ClassNotFoundException e) {
+                    throw new BinaryObjectException(e);
+                }
+
+                break;
+            }
+
+            case OP_REGISTER_ENUM: {
+                String name = reader.readString();
+
+                int cnt = reader.readInt();
+
+                Map<String, Integer> vals = new HashMap<>(cnt);
+
+                for (int i = 0; i< cnt; i++) {
+                    vals.put(reader.readString(), reader.readInt());
+                }
+
+                BinaryType binaryType = platformCtx.kernalContext().grid().binary().registerEnum(name, vals);
+
+                platformCtx.writeMetadata(writer, binaryType.typeId());
 
                 break;
             }

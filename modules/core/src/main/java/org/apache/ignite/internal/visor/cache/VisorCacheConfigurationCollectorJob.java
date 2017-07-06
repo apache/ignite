@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -30,7 +31,7 @@ import org.apache.ignite.lang.IgniteUuid;
  * Job that collect cache metrics from node.
  */
 public class VisorCacheConfigurationCollectorJob
-    extends VisorJob<Collection<IgniteUuid>, Map<IgniteUuid, VisorCacheConfiguration>> {
+    extends VisorJob<VisorCacheConfigurationCollectorTaskArg, Map<String, VisorCacheConfiguration>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,23 +41,27 @@ public class VisorCacheConfigurationCollectorJob
      * @param arg Whether to collect metrics for all caches or for specified cache name only.
      * @param debug Debug flag.
      */
-    public VisorCacheConfigurationCollectorJob(Collection<IgniteUuid> arg, boolean debug) {
+    public VisorCacheConfigurationCollectorJob(VisorCacheConfigurationCollectorTaskArg arg, boolean debug) {
         super(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<IgniteUuid, VisorCacheConfiguration> run(Collection<IgniteUuid> arg) {
+    @Override protected Map<String, VisorCacheConfiguration> run(VisorCacheConfigurationCollectorTaskArg arg) {
         Collection<IgniteCacheProxy<?, ?>> caches = ignite.context().cache().jcaches();
 
-        boolean all = arg == null || arg.isEmpty();
+        Collection<String> cacheNames = arg.getCacheNames();
 
-        Map<IgniteUuid, VisorCacheConfiguration> res = U.newHashMap(caches.size());
+        boolean all = F.isEmpty(cacheNames);
+
+        Map<String, VisorCacheConfiguration> res = U.newHashMap(all ? caches.size() : cacheNames.size());
 
         for (IgniteCacheProxy<?, ?> cache : caches) {
-            IgniteUuid deploymentId = cache.context().dynamicDeploymentId();
+            String cacheName = cache.getName();
 
-            if (all || arg.contains(deploymentId))
-                res.put(deploymentId, config(cache.getConfiguration(CacheConfiguration.class)));
+            if (all || cacheNames.contains(cacheName)) {
+                res.put(cacheName, config(cache.getConfiguration(CacheConfiguration.class),
+                    cache.context().dynamicDeploymentId()));
+            }
         }
 
         return res;
@@ -66,8 +71,8 @@ public class VisorCacheConfigurationCollectorJob
      * @param ccfg Cache configuration.
      * @return Data transfer object to send it to Visor.
      */
-    protected VisorCacheConfiguration config(CacheConfiguration ccfg) {
-        return new VisorCacheConfiguration().from(ignite, ccfg);
+    protected VisorCacheConfiguration config(CacheConfiguration ccfg, IgniteUuid dynamicDeploymentId) {
+        return new VisorCacheConfiguration(ignite, ccfg, dynamicDeploymentId);
     }
 
     /** {@inheritDoc} */

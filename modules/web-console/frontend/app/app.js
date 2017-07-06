@@ -16,10 +16,7 @@
  */
 
 import '../public/stylesheets/style.scss';
-import '../app/components/ui-grid-header/ui-grid-header.scss';
-import '../app/components/ui-grid-settings/ui-grid-settings.scss';
-import '../app/components/form-field-datepicker/form-field-datepicker.scss';
-import './helpers/jade/mixins.jade';
+import '../app/primitives';
 
 import './app.config';
 
@@ -78,10 +75,10 @@ import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteRetainSelection from './directives/retain-selection.directive';
+import btnIgniteLink from './directives/btn-ignite-link';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import Clone from './services/Clone.service.js';
 import Confirm from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
@@ -97,6 +94,8 @@ import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
+import Clusters from './services/Clusters';
+import Caches from './services/Caches';
 
 // Filters.
 import byName from './filters/byName.filter';
@@ -107,22 +106,31 @@ import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 
 // Controllers
-import caches from 'controllers/caches-controller';
-import clusters from 'controllers/clusters-controller';
-import domains from 'controllers/domains-controller';
-import igfs from 'controllers/igfs-controller';
-import profile from 'controllers/profile-controller';
+import profile from 'Controllers/profile-controller';
 import auth from './controllers/auth.controller';
 import resetPassword from './controllers/reset-password.controller';
 
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
+import clusterSelect from './components/cluster-select';
+import './components/input-dialog';
+import webConsoleHeader from './components/web-console-header';
+import webConsoleFooter from './components/web-console-footer';
+import igniteIcon from './components/ignite-icon';
+import versionPicker from './components/version-picker';
+import userNotifications from './components/user-notifications';
+import pageConfigure from './components/page-configure';
+import pageConfigureBasic from './components/page-configure-basic';
+import pageConfigureAdvanced from './components/page-configure-advanced';
+import gridColumnSelector from './components/grid-column-selector';
+import bsSelectMenu from './components/bs-select-menu';
+import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 
 // Inject external modules.
-import 'ignite_modules_temp/index';
+import IgniteModules from 'IgniteModules/index';
 
-import baseTemplate from '../views/base.jade';
+import baseTemplate from 'views/base.pug';
 
 angular
 .module('ignite-console', [
@@ -150,6 +158,7 @@ angular
     'ignite-console.core',
     'ignite-console.ace',
     'ignite-console.Form',
+    'ignite-console.input-dialog',
     'ignite-console.user',
     'ignite-console.branding',
     'ignite-console.socket',
@@ -173,8 +182,20 @@ angular
     'ignite-console.loading',
     // Ignite configuration module.
     'ignite-console.config',
+    // Components
+    webConsoleHeader.name,
+    webConsoleFooter.name,
+    igniteIcon.name,
+    versionPicker.name,
+    userNotifications.name,
+    pageConfigure.name,
+    pageConfigureBasic.name,
+    pageConfigureAdvanced.name,
+    gridColumnSelector.name,
+    bsSelectMenu.name,
+    protectFromBsSelectRender.name,
     // Ignite modules.
-    'ignite-console.modules'
+    IgniteModules.name
 ])
 // Directives.
 .directive(...igniteAutoFocus)
@@ -199,12 +220,14 @@ angular
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
+.directive('igniteClusterSelect', clusterSelect)
+.directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
+.directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.
 .service('IgniteErrorPopover', ErrorPopover)
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
-.service(...Clone)
 .service(...Confirm)
 .service(...ConfirmBatch)
 .service(...CopyToClipboard)
@@ -218,20 +241,18 @@ angular
 .service(...LegacyUtils)
 .service(...UnsavedChangesGuard)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
+.service('Clusters', Clusters)
+.service('Caches', Caches)
 // Controllers.
 .controller(...auth)
 .controller(...resetPassword)
-.controller(...caches)
-.controller(...clusters)
-.controller(...domains)
-.controller(...igfs)
 .controller(...profile)
 // Filters.
-.filter(...byName)
+.filter('byName', byName)
 .filter('defaultName', defaultName)
-.filter(...domainsValidation)
-.filter(...duration)
-.filter(...hasPojo)
+.filter('domainsValidation', domainsValidation)
+.filter('duration', duration)
+.filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
 .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
     $translateProvider.translations('en', i18n);
@@ -242,12 +263,12 @@ angular
         .state('base', {
             url: '',
             abstract: true,
-            templateUrl: baseTemplate
+            template: baseTemplate
         })
-        .state('settings', {
+        .state('base.settings', {
             url: '/settings',
             abstract: true,
-            templateUrl: baseTemplate
+            template: '<ui-view></ui-view>'
         });
 
     $urlRouterProvider.otherwise('/404');
@@ -259,8 +280,8 @@ angular
     $root.$meta = $meta;
     $root.gettingStarted = gettingStarted;
 }])
-.run(['$rootScope', 'IgniteAgentMonitor', ($root, agentMonitor) => {
-    $root.$on('user', () => agentMonitor.init());
+.run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
+    $root.$on('user', () => agentMgr.connect());
 }])
 .run(['$rootScope', ($root) => {
     $root.$on('$stateChangeStart', () => {
@@ -275,7 +296,7 @@ angular
                 .then((user) => {
                     $root.$broadcast('user', user);
 
-                    $state.go('settings.admin');
+                    $state.go('base.settings.admin');
                 })
                 .then(() => Notebook.load())
                 .catch(Messages.showError);

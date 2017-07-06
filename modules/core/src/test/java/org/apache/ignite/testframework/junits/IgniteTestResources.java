@@ -27,16 +27,16 @@ import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -58,34 +58,47 @@ public class IgniteTestResources {
     private final IgniteLogger log;
 
     /** Local host. */
-    private final String locHost;
+    private final String locHost = localHost();
 
     /** */
-    private final UUID nodeId;
+    private final UUID nodeId = UUID.randomUUID();
 
     /** */
     private final MBeanServer jmx;
 
     /** */
-    private final String home;
+    private final String home = U.getIgniteHome();
 
     /** */
     private ThreadPoolExecutor execSvc;
 
     /** */
-    private GridResourceProcessor rsrcProc;
+    private IgniteConfiguration cfg;
 
     /** */
+    private GridResourceProcessor rsrcProc;
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public IgniteTestResources() throws IgniteCheckedException {
-        log = rootLog.getLogger(getClass());
-        nodeId = UUID.randomUUID();
-        jmx = ManagementFactory.getPlatformMBeanServer();
-        home = U.getIgniteHome();
-        locHost = localHost();
+        if (SensitiveInfoTestLoggerProxy.TEST_SENSITIVE)
+            log = new SensitiveInfoTestLoggerProxy(rootLog.getLogger(getClass()), null, null, null);
+        else
+            log = rootLog.getLogger(getClass());
 
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
+        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+    }
 
-        rsrcProc = new GridResourceProcessor(ctx);
+    /**
+     * @param cfg Ignite configuration
+     */
+    public IgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+        this.cfg = cfg;
+        this.log = rootLog.getLogger(getClass());
+        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log, this.cfg));
     }
 
     /**
@@ -95,16 +108,8 @@ public class IgniteTestResources {
         assert jmx != null;
 
         this.jmx = jmx;
-
-        log = rootLog.getLogger(getClass());
-
-        nodeId = UUID.randomUUID();
-        home = U.getIgniteHome();
-        locHost = localHost();
-
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.log = rootLog.getLogger(getClass());
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 
     /**
@@ -114,15 +119,8 @@ public class IgniteTestResources {
         assert log != null;
 
         this.log = log.getLogger(getClass());
-
-        nodeId = UUID.randomUUID();
-        jmx = ManagementFactory.getPlatformMBeanServer();
-        home = U.getIgniteHome();
-        locHost = localHost();
-
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 
     /**
@@ -179,7 +177,7 @@ public class IgniteTestResources {
 
         rsrcProc.injectBasicResource(target, LoggerResource.class, getLogger().getLogger(target.getClass()));
         rsrcProc.injectBasicResource(target, IgniteInstanceResource.class,
-            new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home));
+            new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home, cfg));
     }
 
     /**
@@ -244,7 +242,7 @@ public class IgniteTestResources {
         Marshaller marsh;
 
         if (marshallerName == null)
-            marsh = new OptimizedMarshaller();
+            marsh = new BinaryMarshaller();
         else {
             try {
                 Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
@@ -256,9 +254,6 @@ public class IgniteTestResources {
                     marshallerName + ']', e);
             }
         }
-
-        if (marsh instanceof OptimizedMarshaller)
-            ((OptimizedMarshaller)marsh).setRequireSerializable(false);
 
         marsh.setContext(new MarshallerContextTestImpl());
 

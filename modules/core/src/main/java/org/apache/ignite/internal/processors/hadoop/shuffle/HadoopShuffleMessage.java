@@ -213,7 +213,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("msgId", msgId))
+                if (!writer.writeByteArray("buf", this.buf))
                     return false;
 
                 writer.incrementState();
@@ -225,19 +225,19 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("reducer", reducer))
+                if (!writer.writeLong("msgId", msgId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("buf", this.buf))
+                if (!writer.writeInt("off", off))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeInt("off", off))
+                if (!writer.writeInt("reducer", reducer))
                     return false;
 
                 writer.incrementState();
@@ -256,7 +256,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
 
         switch (reader.state()) {
             case 0:
-                msgId = reader.readLong("msgId");
+                this.buf = reader.readByteArray("buf");
 
                 if (!reader.isLastRead())
                     return false;
@@ -272,7 +272,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 reader.incrementState();
 
             case 2:
-                reducer = reader.readInt("reducer");
+                msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -280,7 +280,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 reader.incrementState();
 
             case 3:
-                this.buf = reader.readByteArray("buf");
+                off = reader.readInt("off");
 
                 if (!reader.isLastRead())
                     return false;
@@ -288,7 +288,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 reader.incrementState();
 
             case 4:
-                off = reader.readInt("off");
+                reducer = reader.readInt("reducer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -301,7 +301,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -37;
     }
 

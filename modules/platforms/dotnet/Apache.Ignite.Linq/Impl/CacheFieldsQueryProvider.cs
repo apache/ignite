@@ -168,7 +168,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void ValidateTableName()
         {
-            var validTableNames = GetValidTableNames();
+            var validTableNames = GetValidTableNames().Select(x => EscapeTableName(x)).ToArray();
 
             if (!validTableNames.Contains(_tableName, StringComparer.OrdinalIgnoreCase))
             {
@@ -187,13 +187,21 @@ namespace Apache.Ignite.Linq.Impl
             // Split on '.' to throw away Java type namespace
             var validTableNames = _cacheConfiguration.QueryEntities == null
                 ? null
-                : _cacheConfiguration.QueryEntities.Select(e => e.ValueTypeName.Split('.').Last()).ToArray();
+                : _cacheConfiguration.QueryEntities.Select(GetTableName).ToArray();
 
             if (validTableNames == null || !validTableNames.Any())
                 throw new CacheException(string.Format("Queries are not configured for cache '{0}'",
                     _cacheConfiguration.Name ?? "null"));
 
             return validTableNames;
+        }
+
+        /// <summary>
+        /// Gets the name of the SQL table.
+        /// </summary>
+        private static string GetTableName(QueryEntity e)
+        {
+            return e.TableName ?? e.ValueTypeName;
         }
 
         /// <summary>
@@ -205,17 +213,40 @@ namespace Apache.Ignite.Linq.Impl
             var validTableNames = GetValidTableNames();
 
             if (validTableNames.Length == 1)
-                return validTableNames[0];
+            {
+                return EscapeTableName(validTableNames[0]);
+            }
 
-            var valueTypeName = cacheValueType.Name;
+            // Try with full type name (this works when TableName is not set).
+            var valueTypeName = cacheValueType.FullName;
 
             if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+            {
+                return EscapeTableName(valueTypeName);
+            }
+
+            // Remove namespace and nested class qualification and try again.
+            valueTypeName = EscapeTableName(valueTypeName);
+
+            if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+            {
                 return valueTypeName;
+            }
 
             throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +
                                                    "please use AsCacheQueryable overload with tableName parameter. " +
                                                    "Valid table names: {1}", _cacheConfiguration.Name ?? "null",
                                                     validTableNames.Aggregate((x, y) => x + ", " + y)));
+        }
+
+        /// <summary>
+        /// Escapes the name of the table: strips namespace and nested class qualifiers.
+        /// </summary>
+        private static string EscapeTableName(string valueTypeName)
+        {
+            var nsIndex = Math.Max(valueTypeName.LastIndexOf('.'), valueTypeName.LastIndexOf('+'));
+
+            return nsIndex > 0 ? valueTypeName.Substring(nsIndex + 1) : valueTypeName;
         }
 
         /// <summary>

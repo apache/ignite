@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Datastream
     /// <para />
     /// Also note that <c>IDataStreamer</c> is not the only way to load data into cache.
     /// Alternatively you can use 
-    /// <see cref="ICacheStore.LoadCache(Action{object, object}, object[])"/>
+    /// <see cref="ICacheStore{K, V}.LoadCache(Action{K, V}, object[])"/>
     /// method to load data from underlying data store. You can also use standard cache
     /// <c>put</c> and <c>putAll</c> operations as well, but they most likely will not perform 
     /// as well as this class for loading data. And finally, data can be loaded from underlying 
@@ -86,7 +86,11 @@ namespace Apache.Ignite.Core.Datastream
         string CacheName { get; }
 
         /// <summary>
-        /// Flag value indicating that this data streamer assumes that there could be concurrent updates to the cache. 
+        /// Gets or sets a value indicating whether existing values can be overwritten by the data streamer.
+        /// Performance is better when this flag is false.
+        /// <para />
+        /// NOTE: When false, cache updates won't be propagated to cache store
+        /// (even if <see cref="SkipStore"/> is false).
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>
@@ -94,6 +98,8 @@ namespace Apache.Ignite.Core.Datastream
 
         /// <summary>
         /// Flag indicating that write-through behavior should be disabled for data loading.
+        /// <para />
+        /// <see cref="AllowOverwrite"/> must be true for write-through to work.
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>

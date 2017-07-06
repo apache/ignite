@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -30,6 +30,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -38,10 +39,9 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -77,6 +77,12 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     private final MarshallerContextImpl marshallerCtx;
 
     /** */
+    private final GridClosureProcessor closProc;
+
+    /** */
+    private final List<MappingUpdatedListener> mappingUpdatedLsnrs = new CopyOnWriteArrayList<>();
+
+    /** */
     private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchangeSyncMap
             = new ConcurrentHashMap8<>();
 
@@ -90,6 +96,8 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         super(ctx);
 
         marshallerCtx = ctx.marshallerContext();
+
+        closProc = ctx.closure();
     }
 
     /** {@inheritDoc} */
@@ -102,16 +110,17 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                 mappingExchangeSyncMap,
                 clientReqSyncMap
         );
+
         marshallerCtx.onMarshallerProcessorStarted(ctx, transport);
 
         discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
 
         discoMgr.setCustomEventListener(MappingAcceptedMessage.class, new MappingAcceptedListener());
 
-        if (!ctx.clientNode())
-            ioMgr.addMessageListener(TOPIC_MAPPING_MARSH, new MissingMappingRequestListener(ioMgr));
-        else
+        if (ctx.clientNode())
             ioMgr.addMessageListener(TOPIC_MAPPING_MARSH, new MissingMappingResponseListener());
+        else
+            ioMgr.addMessageListener(TOPIC_MAPPING_MARSH, new MissingMappingRequestListener(ioMgr));
 
         if (ctx.clientNode())
             ctx.event().addLocalEventListener(new GridLocalEventListener() {
@@ -129,10 +138,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /**
      * Adds a listener to be notified when mapping changes.
      *
-     * @param mappingUpdatedListener Mapping updated listener.
+     * @param lsnr listener for mapping updated events.
      */
-    public void addMappingUpdatedListener(IgniteBiInClosure<Integer, String> mappingUpdatedListener) {
-
+    public void addMappingUpdatedListener(MappingUpdatedListener lsnr) {
+        mappingUpdatedLsnrs.add(lsnr);
     }
 
     /**
@@ -140,8 +149,8 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      *
      * @return Iterator over current mappings.
      */
-    public Iterator<IgniteBiTuple<Integer, String>> currentMappings() {
-        return Collections.emptyListIterator();
+    public Iterator<Map.Entry<Byte, Map<Integer, String>>> currentMappings() {
+        return marshallerCtx.currentMappings();
     }
 
     /**
@@ -159,7 +168,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingRequestMessage : msg;
 
             MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage) msg;
@@ -170,11 +179,15 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             String resolvedClsName = marshallerCtx.resolveMissedMapping(platformId, typeId);
 
             try {
-                ioMgr.send(
+                ioMgr.sendToGridTopic(
                         nodeId,
                         TOPIC_MAPPING_MARSH,
                         new MissingMappingResponseMessage(platformId, typeId, resolvedClsName),
                         SYSTEM_POOL);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send missing mapping response, node failed: " + nodeId);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send missing mapping response.", e);
@@ -187,7 +200,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      */
     private final class MissingMappingResponseListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingResponseMessage : msg;
 
             MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage) msg;
@@ -286,8 +299,15 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                 ClusterNode snd,
                 MappingAcceptedMessage msg
         ) {
-            MarshallerMappingItem item = msg.getMappingItem();
+            final MarshallerMappingItem item = msg.getMappingItem();
             marshallerCtx.onMappingAccepted(item);
+
+            closProc.runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    for (MappingUpdatedListener lsnr : mappingUpdatedLsnrs)
+                        lsnr.mappingUpdated(item.platformId(), item.typeId(), item.className());
+                }
+            });
 
             GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
 

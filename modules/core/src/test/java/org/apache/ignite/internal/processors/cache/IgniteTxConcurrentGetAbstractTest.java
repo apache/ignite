@@ -55,8 +55,8 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -72,7 +72,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
      * @return Near cache.
      */
     GridNearCacheAdapter<String, Integer> near(Ignite g) {
-        return (GridNearCacheAdapter<String, Integer>)((IgniteKernal)g).<String, Integer>internalCache();
+        return (GridNearCacheAdapter<String, Integer>)((IgniteKernal)g).<String, Integer>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -94,7 +94,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
 
         final Ignite ignite = grid();
 
-        ignite.cache(null).put(key, "val");
+        ignite.cache(DEFAULT_CACHE_NAME).put(key, "val");
 
         GridCacheEntryEx dhtEntry = dht(ignite).peekEx(key);
 
@@ -128,7 +128,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
                 info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", xid=" + tx.xid() +
                     ", entry=" + dhtEntry + ']');
 
-            String val = ignite.<String, String>cache(null).get(key);
+            String val = ignite.<String, String>cache(DEFAULT_CACHE_NAME).get(key);
 
             assertNotNull(val);
             assertEquals("val", val);

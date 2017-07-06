@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
 
@@ -65,9 +66,24 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** <inheritdoc /> */
         public void Start(IPluginContext<TestIgnitePluginConfiguration> context)
         {
+            context.RegisterExceptionMapping("org.apache.ignite.platform.plugin.PlatformTestPluginException",
+                (className, message, inner, ignite) =>
+                    new TestIgnitePluginException(className, message, ignite, inner));
+
+            context.RegisterCallback(1, (input, output) =>
+            {
+                CallbackResult = input.ReadString();
+                output.WriteString(CallbackResult.ToUpper());
+
+                return CallbackResult.Length;
+            });
+
+            var ex = Assert.Throws<IgniteException>(() => context.RegisterCallback(1, (input, output) => 0));
+            Assert.AreEqual("Plugin callback with id 1 is already registered", ex.Message);
+
             Context = context;
 
-            EnsureIgniteWorks();
+            EnsureIgniteWorks(false);
         }
 
         /** <inheritdoc /> */
@@ -75,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             Stopped = cancel;
 
-            EnsureIgniteWorks();
+            EnsureIgniteWorks(false);
         }
 
         /** <inheritdoc /> */
@@ -83,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             Started = true;
 
-            EnsureIgniteWorks();
+            EnsureIgniteWorks(!Context.PluginConfiguration.SkipCacheCheck);
         }
 
         /** <inheritdoc /> */
@@ -109,6 +125,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// </summary>
         public bool? IgniteStopped { get; set; }
 
+        public string CallbackResult { get; private set; }
+
         /// <summary>
         /// Gets the context.
         /// </summary>
@@ -117,16 +135,19 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// <summary>
         /// Ensures that Ignite instance is functional.
         /// </summary>
-        private void EnsureIgniteWorks()
+        private void EnsureIgniteWorks(bool checkCache = true)
         {
             Assert.NotNull(Context);
             Assert.NotNull(Context.Ignite);
             Assert.NotNull(Context.IgniteConfiguration);
             Assert.NotNull(Context.PluginConfiguration);
 
-            var cache = Context.Ignite.GetOrCreateCache<int, int>("pluginCache");
+            if (checkCache)
+            {
+                var cache = Context.Ignite.GetOrCreateCache<int, int>("pluginCache");
 
-            Assert.AreEqual(0, cache.GetSize());
+                Assert.AreEqual(0, cache.GetSize());
+            }
         }
     }
 }

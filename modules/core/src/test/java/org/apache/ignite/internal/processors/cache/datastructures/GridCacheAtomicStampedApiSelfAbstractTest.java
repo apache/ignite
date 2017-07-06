@@ -18,8 +18,16 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Basic tests for atomic stamped.
@@ -119,5 +127,103 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends IgniteAt
 
         assertEquals(null, atomic.value());
         assertEquals(null, atomic.stamp());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        cfg.setName("MyCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            String atomicName = UUID.randomUUID().toString();
+
+            String initVal = "qwerty";
+            String initStamp = "asdf";
+
+            IgniteAtomicStamped<String, String> atomicStamped = ignite.atomicStamped(atomicName,
+                initVal,
+                initStamp,
+                true);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1,1);
+
+                assertEquals(initVal, atomicStamped.value());
+                assertEquals(initStamp, atomicStamped.stamp());
+                assertEquals(initVal, atomicStamped.get().get1());
+                assertEquals(initStamp, atomicStamped.get().get2());
+
+                assertTrue(atomicStamped.compareAndSet(initVal, "b", initStamp, "d"));
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertEquals("b", atomicStamped.value());
+            assertEquals("d", atomicStamped.stamp());
+
+            atomicStamped.close();
+
+            assertTrue(atomicStamped.removed());
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
+        }
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        AtomicConfiguration cfg = new AtomicConfiguration().setGroupName("grp1");
+
+        IgniteAtomicStamped<String, Integer> atomic1 = ignite.atomicStamped("atomic1", "a", 1, true);
+        IgniteAtomicStamped<String, Integer> atomic2 = ignite.atomicStamped("atomic2", "b", 2, true);
+        IgniteAtomicStamped<String, Integer> atomic3 = ignite.atomicStamped("atomic3", cfg, "c", 3, true);
+        IgniteAtomicStamped<String, Integer> atomic4 = ignite.atomicStamped("atomic4", cfg, "d", 4, true);
+
+        assertNull(ignite.atomicStamped("atomic1", cfg, "a", 1, false));
+        assertNull(ignite.atomicStamped("atomic2", cfg, "a", 1, false));
+        assertNull(ignite.atomicStamped("atomic3", "a", 1, false));
+        assertNull(ignite.atomicStamped("atomic4", "a", 1, false));
+
+        assertTrue(atomic1.compareAndSet("a", "A", 1, 11));
+        assertTrue(atomic2.compareAndSet("b", "B", 2, 12));
+        assertTrue(atomic3.compareAndSet("c", "C", 3, 13));
+        assertTrue(atomic4.compareAndSet("d", "D", 4, 14));
+
+        assertFalse(atomic1.compareAndSet("a", "Z", 1, 0));
+        assertFalse(atomic1.compareAndSet("b", "Z", 2, 0));
+        assertFalse(atomic1.compareAndSet("c", "Z", 3, 0));
+        assertFalse(atomic1.compareAndSet("d", "Z", 4, 0));
+
+        atomic2.close();
+        atomic4.close();
+
+        assertTrue(atomic2.removed());
+        assertTrue(atomic4.removed());
+
+        assertNull(ignite.atomicStamped("atomic2", "b", 2, false));
+        assertNull(ignite.atomicStamped("atomic4", cfg, "d", 4, false));
+
+        assertFalse(atomic1.removed());
+        assertFalse(atomic3.removed());
+
+        assertNotNull(ignite.atomicStamped("atomic1", "a", 1, false));
+        assertNotNull(ignite.atomicStamped("atomic3", cfg, "c", 3, false));
     }
 }

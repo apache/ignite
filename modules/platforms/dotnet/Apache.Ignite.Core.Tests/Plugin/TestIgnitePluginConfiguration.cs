@@ -17,7 +17,9 @@
 
  namespace Apache.Ignite.Core.Tests.Plugin
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Examples.Datagrid;
 
     /// <summary>
     /// Plugin configuration.
@@ -29,5 +31,29 @@
         /// Custom plugin property.
         /// </summary>
         public string PluginProperty { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether plugin should check cache operations.
+        /// </summary>
+        public bool SkipCacheCheck { get; set; }
+
+        /** <inheritdoc /> */
+        public int? PluginConfigurationClosureFactoryId
+        {
+            get { return 0; }
+            // ReSharper disable once ValueParameterNotUsed
+            // ReSharper disable once UnusedMember.Global
+            set
+            {
+                // No-op.
+                // Needed to test configuration serialization.
+            }
+        }
+
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryRawWriter writer)
+        {
+            writer.WriteString(PluginProperty);
+        }
     }
 }

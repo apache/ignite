@@ -58,12 +58,12 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     private boolean nearCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -144,7 +144,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     private void fastFinishTx(Ignite ignite) {
         IgniteTransactions txs = ignite.transactions();
 
-        IgniteCache cache = ignite.cache(null);
+        IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (boolean commit : new boolean[]{true, false}) {
             for (TransactionConcurrency c : TransactionConcurrency.values()) {
@@ -173,7 +173,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                     cache.get(i);
 
-                    checkFastTxFinish(tx, commit);
+                    checkNormalTxFinish(tx, commit);
                 }
 
                 try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {

@@ -19,8 +19,10 @@ package org.apache.ignite.cache.spring;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -103,7 +105,7 @@ import org.springframework.context.ApplicationContextAware;
  * and results in {@link IllegalArgumentException}.
  * <p>
  * If you already have Ignite node running within your application,
- * simply provide correct Grid name, like below (if there is no Grid
+ * simply provide correct Ignite instance name, like below (if there is no Grid
  * instance with such name, exception will be thrown):
  * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
@@ -112,9 +114,9 @@ import org.springframework.context.ApplicationContextAware;
  *        xsi:schemaLocation="
  *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
- *     &lt;-- Provide Grid name. --&gt;
+ *     &lt;-- Provide Ignite instance name. --&gt;
  *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="igniteInstanceName" value="myGrid"/&gt;
  *     &lt;/bean>
  *
  *     &lt;-- Use annotation-driven caching configuration. --&gt;
@@ -127,7 +129,7 @@ import org.springframework.context.ApplicationContextAware;
  * <p>
  * If neither {@link #setConfigurationPath(String) configurationPath},
  * {@link #setConfiguration(IgniteConfiguration) configuration}, nor
- * {@link #setGridName(String) gridName} are provided, cache manager
+ * {@link #setIgniteInstanceName(String) igniteInstanceName} are provided, cache manager
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.
  * <h1>Starting Remote Nodes</h1>
@@ -138,6 +140,12 @@ import org.springframework.context.ApplicationContextAware;
  * in caching the data.
  */
 public class SpringCacheManager implements CacheManager, InitializingBean, ApplicationContextAware {
+    /** Default locks count. */
+    private static final int DEFAULT_LOCKS_COUNT = 512;
+
+    /** IgniteLock name prefix. */
+    private static final String SPRING_LOCK_NAME_PREFIX = "springSync";
+
     /** Caches map. */
     private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap8<>();
 
@@ -147,8 +155,11 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     /** Ignite configuration. */
     private IgniteConfiguration cfg;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
+
+    /** Count of IgniteLocks are used for sync get */
+    private int locksCnt = DEFAULT_LOCKS_COUNT;
 
     /** Dynamic cache configuration template. */
     private CacheConfiguration<Object, Object> dynamicCacheCfg;
@@ -161,6 +172,9 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
 
     /** Spring context. */
     private ApplicationContext springCtx;
+
+    /** Locks for value loading to support sync option. */
+    private ConcurrentHashMap8<Integer, IgniteLock> locks = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext ctx) {
@@ -207,18 +221,56 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
      * Gets grid name.
      *
      * @return Grid name.
+     * @deprecated Use {@link #getIgniteInstanceName()}.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return getIgniteInstanceName();
     }
 
     /**
      * Sets grid name.
      *
      * @param gridName Grid name.
+     * @deprecated Use {@link #setIgniteInstanceName(String)}.
      */
+    @Deprecated
     public void setGridName(String gridName) {
-        this.gridName = gridName;
+        setIgniteInstanceName(gridName);
+    }
+
+    /**
+     * Gets Ignite instance name.
+     *
+     * @return Ignite instance name.
+     */
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
+    }
+
+    /**
+     * Sets Ignite instance name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     */
+    public void setIgniteInstanceName(String igniteInstanceName) {
+        this.igniteInstanceName = igniteInstanceName;
+    }
+
+    /**
+     * Gets locks count.
+     *
+     * @return locks count.
+     */
+    public int getLocksCount() {
+        return locksCnt;
+    }
+
+    /**
+     * @param locksCnt locks count.
+     */
+    public void setLocksCount(int locksCnt) {
+        this.locksCnt = locksCnt;
     }
 
     /**
@@ -265,7 +317,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                 "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                 "SpringCacheManager. If you already have a node running, omit both of them and set" +
-                "'gridName' property.");
+                "'igniteInstanceName' property.");
         }
 
         if (cfgPath != null)
@@ -273,7 +325,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
         else if (cfg != null)
             ignite = IgniteSpring.start(cfg, springCtx);
         else
-            ignite = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -292,7 +344,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
             cacheCfg.setName(name);
 
             cache = new SpringCache(nearCacheCfg != null ? ignite.getOrCreateCache(cacheCfg, nearCacheCfg) :
-                ignite.getOrCreateCache(cacheCfg));
+                ignite.getOrCreateCache(cacheCfg), this);
 
             SpringCache old = caches.putIfAbsent(name, cache);
 
@@ -308,5 +360,24 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
         assert ignite != null;
 
         return new ArrayList<>(caches.keySet());
+    }
+
+    /**
+     * Provides {@link org.apache.ignite.IgniteLock} for specified cache name and key.
+     *
+     * @param name cache name
+     * @param key  key
+     * @return {@link org.apache.ignite.IgniteLock}
+     */
+    IgniteLock getSyncLock(String name, Object key) {
+        int hash = Objects.hash(name, key);
+
+        final int idx = hash % getLocksCount();
+
+        return locks.computeIfAbsent(idx, new ConcurrentHashMap8.Fun<Integer, IgniteLock>() {
+            @Override public IgniteLock apply(Integer integer) {
+                return ignite.reentrantLock(SPRING_LOCK_NAME_PREFIX + idx, true, false, true);
+            }
+        });
     }
 }

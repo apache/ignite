@@ -101,10 +101,11 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Domain model schema.
     const DomainModelSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
+        tableName: String,
         databaseSchema: String,
         databaseTable: String,
         keyType: String,
@@ -138,12 +139,14 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Cache schema.
     const CacheSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: {type: String},
+        groupName: {type: String},
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
         atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
+        partitionLossPolicy: {type: String, enum: ['READ_ONLY_SAFE', 'READ_ONLY_ALL', 'READ_WRITE_SAFE', 'READ_WRITE_ALL', 'IGNORE']},
 
         affinity: {
             kind: {type: String, enum: ['Default', 'Rendezvous', 'Fair', 'Custom']},
@@ -182,6 +185,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         offHeapMaxMemory: Number,
         startSize: Number,
         swapEnabled: Boolean,
+
+        onheapCacheEnabled: Boolean,
 
         evictionPolicy: {
             kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
@@ -259,6 +264,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         writeBehindFlushSize: Number,
         writeBehindFlushFrequency: Number,
         writeBehindFlushThreadCount: Number,
+        writeBehindCoalescing: {type: Boolean, default: true},
 
         invalidate: Boolean,
         defaultLockTimeout: Number,
@@ -272,6 +278,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         sqlFunctionClasses: [String],
         snapshotableIndex: Boolean,
         queryDetailMetricsSize: Number,
+        queryParallelism: Number,
         statisticsEnabled: Boolean,
         managementEnabled: Boolean,
         readFromBackup: Boolean,
@@ -320,7 +327,11 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                     maxSize: Number
                 }
             }
-        }
+        },
+        evictionFilter: String,
+        memoryPolicyName: String,
+        sqlIndexMaxInlineSize: Number,
+        topologyValidator: String
     });
 
     CacheSchema.index({name: 1, space: 1}, {unique: true});
@@ -329,7 +340,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     result.Cache = mongoose.model('Cache', CacheSchema);
 
     const IgfsSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: {type: String},
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         affinnityGroupSize: Number,
@@ -370,7 +381,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             userName: String
         },
         colocateMetadata: Boolean,
-        relaxedConsistency: Boolean
+        relaxedConsistency: Boolean,
+        updateFileLengthOnFlush: Boolean
     });
 
     IgfsSchema.index({name: 1, space: 1}, {unique: true});
@@ -380,8 +392,9 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Cluster schema.
     const ClusterSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: {type: String},
+        activeOnStart: {type: Boolean, default: true},
         localHost: String,
         discovery: {
             localAddress: String,
@@ -407,7 +420,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             authenticator: String,
             forceServerMode: Boolean,
             clientReconnectDisabled: Boolean,
-            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper']},
+            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper', 'Kubernetes']},
             Vm: {
                 addresses: [String]
             },
@@ -528,12 +541,29 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 basePath: String,
                 serviceName: String,
                 allowDuplicateRegistrations: Boolean
+            },
+            Kubernetes: {
+                serviceName: String,
+                namespace: String,
+                masterUrl: String,
+                accountToken: String
             }
         },
         atomicConfiguration: {
             backups: Number,
             cacheMode: {type: String, enum: ['LOCAL', 'REPLICATED', 'PARTITIONED']},
-            atomicSequenceReserveSize: Number
+            atomicSequenceReserveSize: Number,
+            affinity: {
+                kind: {type: String, enum: ['Default', 'Rendezvous', 'Custom']},
+                Rendezvous: {
+                    affinityBackupFilter: String,
+                    partitions: Number,
+                    excludeNeighbors: Boolean
+                },
+                Custom: {
+                    className: String
+                }
+            }
         },
         binaryConfiguration: {
             idMapper: String,
@@ -671,7 +701,10 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         odbc: {
             odbcEnabled: Boolean,
             endpointAddress: String,
-            maxOpenCursors: Number
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            maxOpenCursors: Number,
+            threadPoolSize: Number
         },
         attributes: [{name: String, value: String}],
         collision: {
@@ -865,6 +898,118 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             Custom: {
                 className: String
             }
+        },
+        warmupClosure: String,
+        hadoopConfiguration: {
+            mapReducePlanner: {
+                kind: {type: String, enum: ['Weighted', 'Custom']},
+                Weighted: {
+                    localMapperWeight: Number,
+                    remoteMapperWeight: Number,
+                    localReducerWeight: Number,
+                    remoteReducerWeight: Number,
+                    preferLocalReducerThresholdWeight: Number
+                },
+                Custom: {
+                    className: String
+                }
+            },
+            finishedJobInfoTtl: Number,
+            maxParallelTasks: Number,
+            maxTaskQueueSize: Number,
+            nativeLibraryNames: [String]
+        },
+        serviceConfigurations: [{
+            name: String,
+            service: String,
+            maxPerNodeCount: Number,
+            totalCount: Number,
+            nodeFilter: {
+                kind: {type: String, enum: ['Default', 'Exclude', 'IGFS', 'OnNodes', 'Custom']},
+                Exclude: {
+                    nodeId: String
+                },
+                IGFS: {
+                    igfs: {type: ObjectId, ref: 'Igfs'}
+                },
+                Custom: {
+                    className: String
+                }
+            },
+            cache: {type: ObjectId, ref: 'Cache'},
+            affinityKey: String
+        }],
+        cacheSanityCheckEnabled: {type: Boolean, default: true},
+        classLoader: String,
+        consistentId: String,
+        failureDetectionTimeout: Number,
+        clientFailureDetectionTimeout: Number,
+        workDirectory: String,
+        lateAffinityAssignment: Boolean,
+        utilityCacheKeepAliveTime: Number,
+        asyncCallbackPoolSize: Number,
+        dataStreamerThreadPoolSize: Number,
+        queryThreadPoolSize: Number,
+        stripedPoolSize: Number,
+        serviceThreadPoolSize: Number,
+        utilityCacheThreadPoolSize: Number,
+        executorConfiguration: [{
+            name: String,
+            size: Number
+        }],
+        memoryConfiguration: {
+            systemCacheInitialSize: Number,
+            systemCacheMaxSize: Number,
+            pageSize: Number,
+            concurrencyLevel: Number,
+            defaultMemoryPolicyName: String,
+            defaultMemoryPolicySize: Number,
+            memoryPolicies: [{
+                name: String,
+                initialSize: Number,
+                maxSize: Number,
+                swapFilePath: String,
+                pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
+                evictionThreshold: Number,
+                emptyPagesPoolSize: Number,
+                metricsEnabled: Boolean,
+                subIntervals: Number,
+                rateTimeInterval: Number
+            }]
+        },
+        longQueryWarningTimeout: Number,
+        sqlConnectorConfiguration: {
+            enabled: Boolean,
+            host: String,
+            port: Number,
+            portRange: Number,
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            tcpNoDelay: {type: Boolean, default: true},
+            maxOpenCursorsPerConnection: Number,
+            threadPoolSize: Number
+        },
+        persistenceStoreConfiguration: {
+            enabled: Boolean,
+            persistentStorePath: String,
+            metricsEnabled: Boolean,
+            alwaysWriteFullPages: Boolean,
+            checkpointingFrequency: Number,
+            checkpointingPageBufferSize: Number,
+            checkpointingThreads: Number,
+            walStorePath: String,
+            walArchivePath: String,
+            walMode: {type: String, enum: ['DEFAULT', 'LOG_ONLY', 'BACKGROUND', 'NONE']},
+            walSegments: Number,
+            walSegmentSize: Number,
+            walHistorySize: Number,
+            walFlushFrequency: Number,
+            walFsyncDelay: Number,
+            walRecordIteratorBufferSize: Number,
+            lockWaitTime: Number,
+            rateTimeInterval: Number,
+            tlbSize: Number,
+            subIntervals: Number
         }
     });
 
@@ -875,7 +1020,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Notebook schema.
     const NotebookSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: String,
         expandedParagraphs: [Number],
         paragraphs: [{
@@ -902,11 +1047,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     // Define Notebook model.
     result.Notebook = mongoose.model('Notebook', NotebookSchema);
 
-    result.handleError = function(res, err) {
-        // TODO IGNITE-843 Send error to admin
-        res.status(err.code || 500).send(err.message);
-    };
-
     // Define Activities schema.
     const ActivitiesSchema = new Schema({
         owner: {type: ObjectId, ref: 'Account'},
@@ -921,11 +1061,26 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     // Define Activities model.
     result.Activities = mongoose.model('Activities', ActivitiesSchema);
 
+    // Define Notifications schema.
+    const NotificationsSchema = new Schema({
+        owner: {type: ObjectId, ref: 'Account'},
+        date: Date,
+        message: String
+    });
+
+    // Define Notifications model.
+    result.Notifications = mongoose.model('Notifications', NotificationsSchema);
+
     // Registering the routes of all plugin modules
     for (const name in pluginMongo) {
         if (pluginMongo.hasOwnProperty(name))
             pluginMongo[name].register(mongoose, result);
     }
+
+    result.handleError = function(res, err) {
+        // TODO IGNITE-843 Send error to admin
+        res.status(err.code || 500).send(err.message);
+    };
 
     return result;
 };

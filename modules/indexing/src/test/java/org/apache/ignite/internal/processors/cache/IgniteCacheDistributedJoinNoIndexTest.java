@@ -40,7 +40,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -61,8 +60,8 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
 
@@ -109,11 +108,10 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setBackups(0);
 
@@ -181,11 +179,11 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +
-            "from \"org\".Organization o, (select * from \"person\".Person) p " +
+            "from \"org\".Organization o, (select *, _key from \"person\".Person) p " +
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +
-            "from (select * from \"org\".Organization) o, (select * from \"person\".Person) p " +
+            "from (select * from \"org\".Organization) o, (select *, _key from \"person\".Person) p " +
             "where p.orgName = o.name");
 
         checkNoIndexError(personCache, "select o.name, p._key, p.orgName " +

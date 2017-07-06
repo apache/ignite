@@ -54,7 +54,8 @@ const DFLT_IGFS = {
         keyField: 'path',
         valClsName: 'org.apache.ignite.igfs.IgfsMode',
         valField: 'mode'
-    }
+    },
+    updateFileLengthOnFlush: false
 };
 
 export default class IgniteIGFSDefaults {

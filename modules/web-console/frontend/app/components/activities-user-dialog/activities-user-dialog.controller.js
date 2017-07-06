@@ -15,46 +15,13 @@
  * limitations under the License.
  */
 
-const COLUMNS_DEFS = [
-    {displayName: 'Action', field: 'action', minWidth: 65 },
-    {displayName: 'Description', field: 'title', minWidth: 65 },
-    {displayName: 'Visited', field: 'amount', minWidth: 65 }
-];
-
 export default class ActivitiesCtrl {
-    static $inject = ['$state', 'user', 'params', 'IgniteActivitiesData'];
+    static $inject = ['user'];
 
-    constructor($state, user, params, ActivitiesData) {
+    constructor(user) {
         const $ctrl = this;
-        const userId = user._id;
 
         $ctrl.user = user;
-
-        $ctrl.gridOptions = {
-            data: [],
-            columnVirtualizationThreshold: 30,
-            columnDefs: COLUMNS_DEFS,
-            categories: [
-                {name: 'Action', visible: true, selectable: true},
-                {name: 'Description', visible: true, selectable: true},
-                {name: 'Visited', visible: true, selectable: true}
-            ],
-            enableRowSelection: false,
-            enableRowHeaderSelection: false,
-            enableColumnMenus: false,
-            multiSelect: false,
-            modifierKeysToMultiSelect: true,
-            noUnselect: true,
-            flatEntityAccess: true,
-            fastWatch: true,
-            onRegisterApi: (api) => {
-                $ctrl.gridApi = api;
-            }
-        };
-
-        ActivitiesData.listByUser(userId, params)
-            .then((data) => {
-                $ctrl.data = data;
-            });
+        $ctrl.data = _.map(user.activitiesDetail, (amount, action) => ({ action, amount }));
     }
 }

@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/configuration/domains-import.tpl.pug';
+
 // Controller for Domain model screen.
-export default ['domainsController', [
-    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
-    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
+export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'AgentManager', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Input, Loading, ModelNormalizer, UnsavedChangesGuard, agentMgr, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
         UnsavedChangesGuard.install($scope);
 
         const emptyDomain = {empty: true};
@@ -61,7 +62,8 @@ export default ['domainsController', [
         $scope.ui.generatePojo = true;
         $scope.ui.builtinKeys = true;
         $scope.ui.usePrimitives = true;
-        $scope.ui.generateAliases = true;
+        $scope.ui.generateTypeAliases = true;
+        $scope.ui.generateFieldAliases = true;
         $scope.ui.generatedCachesClusters = [];
 
         function _mapCaches(caches) {
@@ -409,12 +411,12 @@ export default ['domainsController', [
         $scope.$watch('importDomain.displayedTables', $scope.selectTable);
 
         // Pre-fetch modal dialogs.
-        const importDomainModal = $modal({scope: $scope, templateUrl: '/configuration/domains-import.html', show: false});
+        const importDomainModal = $modal({scope: $scope, templateUrl, show: false});
 
         const hideImportDomain = importDomainModal.hide;
 
         importDomainModal.hide = function() {
-            IgniteAgentMonitor.stopWatch();
+            agentMgr.stopWatch();
 
             hideImportDomain();
         };
@@ -429,6 +431,62 @@ export default ['domainsController', [
                     (_.isEmpty($scope.caches) ? [] : [$scope.caches[0].value]),
                 queryMetadata: 'Configuration'
             };
+        }
+
+        function isValidJavaIdentifier(s) {
+            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
+                SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
+        }
+
+        function toJavaIdentifier(name) {
+            if (_.isEmpty(name))
+                return 'DB';
+
+            const len = name.length;
+
+            let ident = '';
+
+            let capitalizeNext = true;
+
+            for (let i = 0; i < len; i++) {
+                const ch = name.charAt(i);
+
+                if (ch === ' ' || ch === '_')
+                    capitalizeNext = true;
+                else if (ch === '-') {
+                    ident += '_';
+                    capitalizeNext = true;
+                }
+                else if (capitalizeNext) {
+                    ident += ch.toLocaleUpperCase();
+
+                    capitalizeNext = false;
+                }
+                else
+                    ident += ch.toLocaleLowerCase();
+            }
+
+            return ident;
+        }
+
+        function toJavaClassName(name) {
+            const clazzName = toJavaIdentifier(name);
+
+            if (isValidJavaIdentifier(clazzName))
+                return clazzName;
+
+            return 'Class' + clazzName;
+        }
+
+        function toJavaFieldName(dbName) {
+            const javaName = toJavaIdentifier(dbName);
+
+            const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
+
+            if (isValidJavaIdentifier(fieldName))
+                return fieldName;
+
+            return 'field' + javaName;
         }
 
         /**
@@ -459,7 +517,7 @@ export default ['domainsController', [
 
                 $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
-                IgniteAgentMonitor.startWatch({text: 'Back to Domain models', goal: 'import domain model from database'})
+                agentMgr.startAgentWatch('Back to Domain models')
                     .then(() => {
                         ActivitiesData.post({
                             group: 'configuration',
@@ -484,7 +542,7 @@ export default ['domainsController', [
                         $scope.jdbcDriverJars = [];
                         $scope.ui.selectedJdbcDriverJar = {};
 
-                        return IgniteAgentMonitor.drivers()
+                        return agentMgr.drivers()
                             .then((drivers) => {
                                 $scope.ui.packageName = $scope.ui.packageNameUserInput;
 
@@ -528,31 +586,28 @@ export default ['domainsController', [
          * Load list of database schemas.
          */
         function _loadSchemas() {
-            IgniteAgentMonitor.awaitAgent()
+            agentMgr.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
                     Loading.start('importDomainFromDb');
 
                     if ($root.IgniteDemoMode)
-                        return IgniteAgentMonitor.schemas($scope.demoConnection);
+                        return agentMgr.schemas($scope.demoConnection);
 
                     const preset = $scope.selectedPreset;
 
                     _savePreset(preset);
 
-                    return IgniteAgentMonitor.schemas(preset);
+                    return agentMgr.schemas(preset);
                 })
-                .then(function(schemas) {
-                    $scope.importDomain.schemas = _.map(schemas, function(schema) {
-                        return {use: true, name: schema};
-                    });
-
+                .then((schemaInfo) => {
                     $scope.importDomain.action = 'schemas';
+                    $scope.importDomain.info = INFO_SELECT_SCHEMAS;
+                    $scope.importDomain.catalog = toJavaIdentifier(schemaInfo.catalog);
+                    $scope.importDomain.schemas = _.map(schemaInfo.schemas, (schema) => ({use: true, name: schema}));
 
                     if ($scope.importDomain.schemas.length === 0)
                         $scope.importDomainNext();
-
-                    $scope.importDomain.info = INFO_SELECT_SCHEMAS;
                 })
                 .catch(Messages.showError)
                 .then(() => Loading.finish('importDomainFromDb'));
@@ -593,55 +648,6 @@ export default ['domainsController', [
             return 'Associate with ' + cacheName;
         };
 
-        function isValidJavaIdentifier(s) {
-            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) &&
-                SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
-        }
-
-        function toJavaIdentifier(name) {
-            const len = name.length;
-
-            let ident = '';
-
-            let capitalizeNext = true;
-
-            for (let i = 0; i < len; i++) {
-                const ch = name.charAt(i);
-
-                if (ch === ' ' || ch === '_')
-                    capitalizeNext = true;
-                else if (capitalizeNext) {
-                    ident += ch.toLocaleUpperCase();
-
-                    capitalizeNext = false;
-                }
-                else
-                    ident += ch.toLocaleLowerCase();
-            }
-
-            return ident;
-        }
-
-        function toJavaClassName(name) {
-            const clazzName = toJavaIdentifier(name);
-
-            if (isValidJavaIdentifier(clazzName))
-                return clazzName;
-
-            return 'Class' + clazzName;
-        }
-
-        function toJavaFieldName(dbName) {
-            const javaName = toJavaIdentifier(dbName);
-
-            const fieldName = javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
-
-            if (isValidJavaIdentifier(fieldName))
-                return fieldName;
-
-            return 'field' + javaName;
-        }
-
         function _fillCommonCachesOrTemplates(item) {
             return function(action) {
                 if (item.cachesOrTemplates)
@@ -655,9 +661,6 @@ export default ['domainsController', [
                 }
 
                 if (!_.isEmpty($scope.caches)) {
-                    if (item.cachesOrTemplates.length > 0)
-                        item.cachesOrTemplates.push(null);
-
                     _.forEach($scope.caches, function(cache) {
                         item.cachesOrTemplates.push(cache);
                     });
@@ -672,7 +675,7 @@ export default ['domainsController', [
          * Load list of database tables.
          */
         function _loadTables() {
-            IgniteAgentMonitor.awaitAgent()
+            agentMgr.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_TABLES;
                     Loading.start('importDomainFromDb');
@@ -688,23 +691,21 @@ export default ['domainsController', [
                             preset.schemas.push(schema.name);
                     });
 
-                    return IgniteAgentMonitor.tables(preset);
+                    return agentMgr.tables(preset);
                 })
                 .then(function(tables) {
                     _importCachesOrTemplates = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE].concat($scope.caches);
 
                     _fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
 
-                    _.forEach(tables, function(tbl, idx) {
+                    _.forEach(tables, (tbl, idx) => {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;
-                        tbl.generatedCacheName = toJavaClassName(tbl.tbl) + 'Cache';
+                        tbl.generatedCacheName = toJavaClassName(tbl.table) + 'Cache';
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
-                        tbl.label = tbl.schema + '.' + tbl.tbl;
+                        tbl.label = tbl.schema + '.' + tbl.table;
                         tbl.edit = false;
-                        tbl.use = LegacyUtils.isDefined(_.find(tbl.cols, function(col) {
-                            return col.key;
-                        }));
+                        tbl.use = LegacyUtils.isDefined(_.find(tbl.columns, (col) => col.key));
                     });
 
                     $scope.importDomain.action = 'tables';
@@ -716,7 +717,7 @@ export default ['domainsController', [
         }
 
         $scope.applyDefaults = function() {
-            _.forEach($scope.importDomain.displayedTables, function(table) {
+            _.forEach($scope.importDomain.displayedTables, (table) => {
                 table.edit = false;
                 table.action = $scope.importCommon.action;
                 table.cacheOrTemplate = $scope.importCommon.cacheOrTemplate;
@@ -768,9 +769,7 @@ export default ['domainsController', [
                         let lastItem;
                         const newItems = [];
 
-                        _.forEach(_mapCaches(data.generatedCaches), function(cache) {
-                            $scope.caches.push(cache);
-                        });
+                        _.forEach(_mapCaches(data.generatedCaches), (cache) => $scope.caches.push(cache));
 
                         _.forEach(data.savedDomains, function(savedItem) {
                             const idx = _.findIndex($scope.domains, function(domain) {
@@ -845,28 +844,36 @@ export default ['domainsController', [
                     const valFields = [];
                     const aliases = [];
 
-                    const tableName = table.tbl;
+                    const tableName = table.table;
                     let typeName = toJavaClassName(tableName);
 
                     if (_.find($scope.importDomain.tables,
-                            (tbl, ix) => tbl.use && ix !== curIx && tableName === tbl.tbl)) {
+                            (tbl, ix) => tbl.use && ix !== curIx && tableName === tbl.table)) {
                         typeName = typeName + '_' + toJavaClassName(table.schema);
 
                         containDup = true;
                     }
 
-                    const valType = generatePojo ? _toJavaPackage(packageName) + '.' + typeName : tableName;
+                    let valType = tableName;
+                    let typeAlias;
+
+                    if (generatePojo) {
+                        if ($scope.ui.generateTypeAliases && tableName.toLowerCase() !== typeName.toLowerCase())
+                            typeAlias = tableName;
+
+                        valType = _toJavaPackage(packageName) + '.' + typeName;
+                    }
 
                     let _containKey = false;
 
-                    _.forEach(table.cols, function(col) {
+                    _.forEach(table.columns, function(col) {
                         const fld = dbField(col.name, SqlTypes.findJdbcType(col.type), col.nullable, col.unsigned);
 
                         qryFields.push({name: fld.javaFieldName, className: fld.javaType});
 
                         const dbName = fld.databaseFieldName;
 
-                        if ($scope.ui.generateAliases &&
+                        if (generatePojo && $scope.ui.generateFieldAliases &&
                             SqlTypes.validIdentifier(dbName) && !SqlTypes.isKeyword(dbName) &&
                             !_.find(aliases, {field: fld.javaFieldName}) &&
                             fld.javaFieldName.toUpperCase() !== dbName.toUpperCase())
@@ -882,18 +889,17 @@ export default ['domainsController', [
                     });
 
                     containKey &= _containKey;
-
-                    if (table.idxs) {
-                        _.forEach(table.idxs, function(idx) {
-                            const fields = Object.keys(idx.fields);
+                    if (table.indexes) {
+                        _.forEach(table.indexes, (idx) => {
+                            const idxFields = _.map(idx.fields, (idxFld) => ({
+                                name: toJavaFieldName(idxFld.name),
+                                direction: idxFld.sortOrder
+                            }));
 
                             indexes.push({
-                                name: idx.name, indexType: 'SORTED', fields: _.map(fields, function(fieldName) {
-                                    return {
-                                        name: toJavaFieldName(fieldName),
-                                        direction: idx.fields[fieldName]
-                                    };
-                                })
+                                name: idx.name,
+                                indexType: 'SORTED',
+                                fields: idxFields
                             });
                         });
                     }
@@ -914,6 +920,7 @@ export default ['domainsController', [
                         newDomain.confirm = true;
                     }
 
+                    newDomain.tableName = typeAlias;
                     newDomain.keyType = valType + 'Key';
                     newDomain.valueType = valType;
                     newDomain.queryMetadata = 'Configuration';
@@ -935,10 +942,11 @@ export default ['domainsController', [
 
                         newDomain.keyType = keyField.javaType;
 
-                        // Exclude key column from query fields and indexes.
+                        // Exclude key column from query fields.
                         newDomain.fields = _.filter(newDomain.fields, (field) => field.name !== keyField.javaFieldName);
 
-                        _.forEach(newDomain.indexes, function(index) {
+                        // Exclude key column from indexes.
+                        _.forEach(newDomain.indexes, (index) => {
                             index.fields = _.filter(index.fields, (field) => field.name !== keyField.javaFieldName);
                         });
 
@@ -961,9 +969,14 @@ export default ['domainsController', [
                         if (!newCache.cacheStoreFactory || newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
                             const dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
 
+                            const catalog = $scope.importDomain.catalog;
+
                             newCache.cacheStoreFactory = {
                                 kind: 'CacheJdbcPojoStoreFactory',
-                                CacheJdbcPojoStoreFactory: {dataSourceBean: 'ds' + dialect, dialect},
+                                CacheJdbcPojoStoreFactory: {
+                                    dataSourceBean: 'ds' + dialect + '_' + catalog,
+                                    dialect
+                                },
                                 CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
                             };
                         }
@@ -1022,7 +1035,7 @@ export default ['domainsController', [
             function checkDuplicate() {
                 if (containDup) {
                     Confirm.confirm('Some tables have the same name.<br/>' +
-                            'Name of types for that tables will contain schema name too.')
+                        'Name of types for that tables will contain schema name too.')
                         .then(() => checkOverwrite());
                 }
                 else
@@ -1033,7 +1046,7 @@ export default ['domainsController', [
                 checkDuplicate();
             else {
                 Confirm.confirm('Some tables have no primary key.<br/>' +
-                        'You will need to configure key type and key fields for such tables after import complete.')
+                    'You will need to configure key type and key fields for such tables after import complete.')
                     .then(() => checkDuplicate());
             }
         }
@@ -1288,7 +1301,7 @@ export default ['domainsController', [
                     $scope.selectedItem.queryMetadata = 'Configuration';
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.domains');
+                    $state.go('base.configuration.tabs.advanced.domains');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);
@@ -1427,7 +1440,7 @@ export default ['domainsController', [
 
                 item.cacheStoreChanges = [];
 
-                _.forEach(item.caches, function(cacheId) {
+                _.forEach(item.caches, (cacheId) => {
                     const cache = _.find($scope.caches, {value: cacheId}).cache;
 
                     const change = LegacyUtils.autoCacheStoreConfiguration(cache, [item]);
@@ -1442,9 +1455,7 @@ export default ['domainsController', [
         };
 
         function _domainNames() {
-            return _.map($scope.domains, function(domain) {
-                return domain.valueType;
-            });
+            return _.map($scope.domains, (domain) => domain.valueType);
         }
 
         function _newNameIsValidJavaClass(newName) {
@@ -1455,7 +1466,7 @@ export default ['domainsController', [
         // Save domain model with new name.
         $scope.cloneItem = function() {
             if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function(newName) {
+                Input.clone($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -1816,8 +1827,8 @@ export default ['domainsController', [
                 // Found duplicate.
                 if (idx >= 0 && idx !== curIdx) {
                     return !stopEdit && ErrorPopover.show(LegacyTable.tableFieldId(curIdx,
-                        'FieldName' + indexIdx + (curIdx >= 0 ? '-' : '')),
-                        'Field with such name already exists in index!', $scope.ui, 'query');
+                                'FieldName' + indexIdx + (curIdx >= 0 ? '-' : '')),
+                            'Field with such name already exists in index!', $scope.ui, 'query');
                 }
             }
 
@@ -1865,4 +1876,4 @@ export default ['domainsController', [
                 });
         };
     }
-]];
+];

@@ -21,7 +21,6 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.GridRandom;
-import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Test for {@link GridRandom}.
@@ -50,21 +49,5 @@ public class GridRandomSelfTest extends TestCase {
                 }
             }
         }
-    }
-
-    /**
-     * Test performance difference.
-     */
-    public void testPerformance() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-824");
-
-        Random rnd = new GridRandom(); // new Random();
-
-        long start = System.nanoTime();
-
-        for (int i = 0; i < 2000000000; i++)
-            rnd.nextInt();
-
-        X.println("Time: " + (System.nanoTime() - start) + " ns");
     }
 }

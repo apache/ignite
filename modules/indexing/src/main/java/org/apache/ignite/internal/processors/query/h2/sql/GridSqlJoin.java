@@ -27,6 +27,15 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridSqlJoin extends GridSqlElement {
     /** */
+    public static final int LEFT_TABLE_CHILD = 0;
+
+    /** */
+    public static final int RIGHT_TABLE_CHILD = 1;
+
+    /** */
+    public static final int ON_CHILD = 2;
+
+    /** */
     private boolean leftOuter;
 
     /**
@@ -36,7 +45,7 @@ public class GridSqlJoin extends GridSqlElement {
      * @param on Join condition.
      */
     public GridSqlJoin(GridSqlElement leftTbl, GridSqlElement rightTbl, boolean leftOuter, @Nullable GridSqlElement on) {
-        super(new ArrayList<GridSqlElement>(3));
+        super(new ArrayList<GridSqlAst>(3));
 
         addChild(leftTbl);
         addChild(rightTbl);
@@ -50,24 +59,45 @@ public class GridSqlJoin extends GridSqlElement {
     }
 
     /**
-     * @return Table 1.
+     * @return Left table.
      */
     public GridSqlElement leftTable() {
-        return child(0);
+        return child(LEFT_TABLE_CHILD);
     }
 
     /**
-     * @return Table 2.
+     * @param tbl Right table to set.
+     */
+    public void leftTable(GridSqlElement tbl) {
+        child(LEFT_TABLE_CHILD, tbl);
+    }
+
+    /**
+     * @return Right table.
      */
     public GridSqlElement rightTable() {
-        return child(1);
+        return child(RIGHT_TABLE_CHILD);
+    }
+
+    /**
+     * @param tbl Right table to set.
+     */
+    public void rightTable(GridSqlElement tbl) {
+        child(RIGHT_TABLE_CHILD, tbl);
     }
 
     /**
      * @return {@code JOIN ON} condition.
      */
     public GridSqlElement on() {
-        return child(2);
+        return child(ON_CHILD);
+    }
+
+    /**
+     * @return {@code true} If this is a LEFT OUTER JOIN.
+     */
+    public boolean isLeftOuter() {
+        return leftOuter;
     }
 
     /** {@inheritDoc} */

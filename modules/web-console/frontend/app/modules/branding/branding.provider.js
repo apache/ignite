@@ -18,7 +18,7 @@
 export default ['IgniteBranding', [function() {
     let titleSuffix = ' – Apache Ignite Web Console';
 
-    let headerLogo = '/images/ignite-logo.png';
+    let headerLogo = '/images/ignite-logo.svg';
 
     let headerText = 'Management console for Apache Ignite';
 
@@ -26,7 +26,7 @@ export default ['IgniteBranding', [function() {
 
     let footerHtml = [
         '<p>Apache Ignite Web Console</p>',
-        '<p>© 2016 The Apache Software Foundation.</p>',
+        '<p>© 2017 The Apache Software Foundation.</p>',
         '<p>Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.</p>'
     ];
 

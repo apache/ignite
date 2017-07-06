@@ -111,6 +111,34 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(javaEx);
             Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
+            Assert.AreEqual(name, javaEx.JavaMessage);
+            Assert.IsTrue(javaEx.JavaClassName.EndsWith("." + name));
+
+            // Check serialization.
+            var formatter = new BinaryFormatter();
+            using (var ms = new MemoryStream())
+            {
+                formatter.Serialize(ms, ex);
+
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var res = (T) formatter.Deserialize(ms);
+
+                Assert.AreEqual(ex.Message, res.Message);
+                Assert.AreEqual(ex.Source, res.Source);
+                Assert.AreEqual(ex.StackTrace, res.StackTrace);
+                Assert.AreEqual(ex.HelpLink, res.HelpLink);
+
+                var resJavaEx = res.InnerException as JavaException;
+
+                Assert.IsNotNull(resJavaEx);
+                Assert.AreEqual(javaEx.Message, resJavaEx.Message);
+                Assert.AreEqual(javaEx.JavaClassName, resJavaEx.JavaClassName);
+                Assert.AreEqual(javaEx.JavaMessage, resJavaEx.JavaMessage);
+                Assert.AreEqual(javaEx.StackTrace, resJavaEx.StackTrace);
+                Assert.AreEqual(javaEx.Source, resJavaEx.Source);
+                Assert.AreEqual(javaEx.HelpLink, resJavaEx.HelpLink);
+            }
         }
 
         /// <summary>
@@ -312,7 +340,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (var grid = StartGrid())
             {
-                var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
+                var cache = grid.GetOrCreateCache<TK, int>("partitioned_atomic").WithNoRetries();
 
                 if (typeof (TK) == typeof (IBinaryObject))
                     cache = cache.WithKeepBinary<TK, int>();
@@ -388,12 +416,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IIgnite StartGrid(string gridName = null)
         {
-            return Ignition.Start(new IgniteConfiguration
+            return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = "config\\native-client-test-cache.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                GridName = gridName,
+                IgniteInstanceName = gridName,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
@@ -430,7 +455,8 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is BinarizableEntry && ((BinarizableEntry)obj)._val == _val;
+                var entry = obj as BinarizableEntry;
+                return entry != null && entry._val == _val;
             }
         }
 
@@ -461,7 +487,8 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is SerializableEntry && ((SerializableEntry)obj)._val == _val;
+                var entry = obj as SerializableEntry;
+                return entry != null && entry._val == _val;
             }
         }
     }
