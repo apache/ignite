@@ -204,6 +204,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(1, cache.GetSize());
         }
 
+        /// <summary>
+        /// Tests that exceptions from user code are propagated properly.
+        /// </summary>
         [Test]
         public void TestExceptions()
         {
