@@ -40,6 +40,9 @@ import org.junit.Assert;
  *
  */
 public class TransactionsInMultipleThreadsClientTest extends TransactionsInMultipleThreadsTest {
+    /** Number of concurrently running threads, which tries to perform transaction operations.*/
+    private int concurrentThreadsNum = 25;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -72,9 +75,9 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
+        final String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
 
         final Transaction clientTx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
@@ -116,7 +119,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      * @throws Exception If failed.
      */
     public void testResumeTxWhileStartingAnotherTx() throws Exception {
-        for (TransactionIsolation firstTxIsolation : TransactionIsolation.values())
+        for (final TransactionIsolation firstTxIsolation : TransactionIsolation.values())
             runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
                 @Override public Void call() throws Exception {
                     resumeTxWhileStartingAnotherTx(firstTxIsolation);
@@ -134,11 +137,11 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        CyclicBarrier barrier = new CyclicBarrier(2);
+        final CyclicBarrier barrier = new CyclicBarrier(2);
 
-        String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
+        final String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
 
         final Transaction clientTx = transactions.txStart(TransactionConcurrency.OPTIMISTIC,
             firstTxIsolation);
@@ -191,7 +194,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      * @throws Exception If failed.
      */
     public void testSuspendTxAndStartNewTx() throws Exception {
-        for (TransactionIsolation firstTxIsolation : TransactionIsolation.values())
+        for (final TransactionIsolation firstTxIsolation : TransactionIsolation.values())
             runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
                 @Override public Void call() throws Exception {
                     suspendTxAndStartNewTx(firstTxIsolation);
@@ -254,14 +257,14 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        CyclicBarrier barrier = new CyclicBarrier(26);
-        LongAdder8 failedTxNumber = new LongAdder8();
-        AtomicInteger threadCnt = new AtomicInteger();
-        AtomicInteger successfulResume = new AtomicInteger();
+        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final LongAdder8 failedTxNumber = new LongAdder8();
+        final AtomicInteger threadCnt = new AtomicInteger();
+        final AtomicInteger successfulResume = new AtomicInteger();
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -280,7 +283,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         fut.get();
 
         // if transaction was not closed after resume, then close it now.
-        if(successfulResume.get() == 0)
+        if (successfulResume.get() == 0)
             clientTx.close();
 
         assertTrue(successfulResume.get() < 2);
@@ -310,14 +313,14 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        CyclicBarrier barrier = new CyclicBarrier(25);
-        LongAdder8 failNumber = new LongAdder8();
-        AtomicInteger threadCnt = new AtomicInteger();
-        AtomicInteger successfulResume = new AtomicInteger();
+        final CyclicBarrier barrier = new CyclicBarrier(25);
+        final LongAdder8 failNumber = new LongAdder8();
+        final AtomicInteger threadCnt = new AtomicInteger();
+        final AtomicInteger successfulResume = new AtomicInteger();
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -358,14 +361,14 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        CyclicBarrier barrier = new CyclicBarrier(26);
-        LongAdder8 failNumber = new LongAdder8();
-        AtomicInteger threadCnt = new AtomicInteger();
-        AtomicInteger successfulResume = new AtomicInteger();
+        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final LongAdder8 failNumber = new LongAdder8();
+        final AtomicInteger threadCnt = new AtomicInteger();
+        final AtomicInteger successfulResume = new AtomicInteger();
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -420,14 +423,14 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        CyclicBarrier barrier = new CyclicBarrier(26);
-        LongAdder8 failNumber = new LongAdder8();
-        AtomicInteger threadCnt = new AtomicInteger();
-        AtomicInteger successfulResume = new AtomicInteger();
+        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final LongAdder8 failNumber = new LongAdder8();
+        final AtomicInteger threadCnt = new AtomicInteger();
+        final AtomicInteger successfulResume = new AtomicInteger();
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -441,10 +444,9 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
                     @Override public Object call() throws Exception {
                         waitAndPerformOperation(threadCnt, barrier, clientTx, successfulResume, failNumber);
 
-
                         return null;
                     }
-                }, 25, "th-commit");
+                }, 25, "th-rollback");
 
                 barrier.await();
 
@@ -460,7 +462,6 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         assertEquals(25, failNumber.intValue());
         assertNull(jcache(0).get(remotePrimaryKey));
     }
-
 
     /**
      * Test for concurrent transaction close.
@@ -484,14 +485,14 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
         final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         final IgniteCache<String, Integer> remoteCache = jcache(0);
 
-        CyclicBarrier barrier = new CyclicBarrier(26);
-        LongAdder8 failNumber = new LongAdder8();
-        AtomicInteger threadCnt = new AtomicInteger();
-        AtomicInteger successfulResume = new AtomicInteger();
+        final CyclicBarrier barrier = new CyclicBarrier(26);
+        final LongAdder8 failNumber = new LongAdder8();
+        final AtomicInteger threadCnt = new AtomicInteger();
+        final AtomicInteger successfulResume = new AtomicInteger();
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 

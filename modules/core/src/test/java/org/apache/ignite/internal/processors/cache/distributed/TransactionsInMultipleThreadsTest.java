@@ -71,7 +71,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void simpleTransactionInAnotherThread() throws IgniteCheckedException {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
@@ -119,7 +119,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     /**
      * Test for transaction starting in one thread, continuing in another, and resuming in initiating thread.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws Exception If failed.
      */
     public void testSimpleTransactionInAnotherThreadContinued() throws Exception {
         runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
@@ -132,7 +132,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void simpleTransactionInAnotherThreadContinued() throws IgniteCheckedException {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
@@ -217,7 +217,6 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     private void crossCacheTransactionInAnotherThread() throws Exception {
         Ignite ignite1 = ignite(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite1.transactions();
-
         final IgniteCache<String, Integer> cache = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache"));
         final IgniteCache<String, Integer> cache2 = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache2"));
 
@@ -279,7 +278,6 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     private void crossCacheTransactionInAnotherThreadContinued() throws Exception {
         Ignite ignite1 = ignite(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite1.transactions();
-
         final IgniteCache<String, Integer> cache = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache"));
         final IgniteCache<String, Integer> cache2 = ignite1.getOrCreateCache(getCacheConfiguration().setName("testCache2"));
 
@@ -353,11 +351,12 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void transactionRollback() throws IgniteCheckedException {
         final IgniteCache<String, Integer> cache1 = jcache(txInitiatorNodeId);
-        IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+
         final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
         cache1.put("key1", 1);
@@ -413,7 +412,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     private void multipleTransactionsSuspendResume() throws Exception {
-        List<Transaction> transactions = new ArrayList<>();
+        final List<Transaction> transactions = new ArrayList<>();
         IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         Ignite clientNode = ignite(txInitiatorNodeId);
         Transaction clientTx;

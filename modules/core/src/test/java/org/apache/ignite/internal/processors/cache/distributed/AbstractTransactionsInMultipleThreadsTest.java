@@ -56,8 +56,8 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
      *
      * @return CacheConfiguration New cache configuration.
      */
-    protected CacheConfiguration getCacheConfiguration(){
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration<String, Integer> getCacheConfiguration(){
+        CacheConfiguration<String, Integer> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
 

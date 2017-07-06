@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionState;
-import org.junit.Assert;
 
 /**
  *
@@ -45,11 +44,10 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
      */
     private void performTransactionFailover(String key,
         int breakNodeIdx, int initiatingNodeIdx) throws IgniteCheckedException {
-        IgniteTransactions transactions = grid(initiatingNodeIdx).transactions();
-
+        final IgniteTransactions transactions = grid(initiatingNodeIdx).transactions();
         IgniteCache<String, Integer> cache = jcache(initiatingNodeIdx);
 
-        Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
+        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
 
         cache.put(key, 1);
 
@@ -99,7 +97,6 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
      */
     private void txRemoteNodeFailover() throws Exception {
         startGrid(1);
-
         awaitPartitionMapExchange();
 
         IgniteCache<String, Integer> remoteCache = jcache(1);
@@ -152,7 +149,6 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
      */
     private void txLocalNodeFailover() throws Exception {
         startGrid(1);
-
         awaitPartitionMapExchange();
 
         IgniteCache localCache = jcache(1);
@@ -197,7 +193,6 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
      */
     private void txOnClientBreakRemote() throws Exception {
         startGrid(1);
-
         awaitPartitionMapExchange();
 
         IgniteCache remoteCache = jcache(1);
