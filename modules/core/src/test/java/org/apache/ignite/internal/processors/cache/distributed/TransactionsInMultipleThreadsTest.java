@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -73,10 +74,6 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     private void simpleTransactionInAnotherThread() throws IgniteCheckedException {
-        // TODO: убрать когда проверишь!
-        Assert.assertTrue(ignite(0).configuration().getCacheConfiguration()[2].getAtomicityMode().equals(CacheAtomicityMode.TRANSACTIONAL));
-        Assert.assertTrue(ignite(0).configuration().getCacheConfiguration()[2].getCacheMode().equals(CacheMode.PARTITIONED));
-
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
 

@@ -142,12 +142,12 @@ public class TestTransaction implements Transaction {
     }
 
     /** {@inheritDoc} */
-    @Override public void suspend() {
+    @Override public void suspend() throws IgniteException{
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void resume() {
+    @Override public void resume() throws IgniteException {
         // No-op.
     }
 }

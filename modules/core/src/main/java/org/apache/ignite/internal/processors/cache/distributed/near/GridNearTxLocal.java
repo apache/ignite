@@ -28,10 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
@@ -4007,22 +4004,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * not owning it.
      */
     public void suspend() throws IgniteCheckedException {
-        if(Thread.currentThread().getId() != threadId())
-            throw new IgniteCheckedException("Only thread owning transaction is permitted to suspend it.");
-
         if (!ACTIVE.equals(state()))
             throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
                 + "[expected=" + ACTIVE + ", actual=" + state() + ']');
 
-        state(SUSPENDED);
-
         cctx.tm().detachThread(this);
+
+        state(SUSPENDED);
     }
 
     /**
      * Resumes transaction (possibly in another thread) if it was previously suspended.
      *
-     * @throws IgniteCheckedException If the transaction is in an incorrect state, or it has already got an owner.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state.
      */
     public void resume() throws IgniteCheckedException {
         synchronized (this) {

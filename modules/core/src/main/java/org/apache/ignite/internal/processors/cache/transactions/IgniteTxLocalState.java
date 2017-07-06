@@ -48,7 +48,6 @@ public interface IgniteTxLocalState extends IgniteTxState {
      * Changes local candidate owner's thread id to current thread id, it is used in pessimistic transactions resuming.
      *
      * @param oldThreadId Owner's initial threadId.
-     * @throws IgniteCheckedException If an candidate was removed.
      */
-    public void updateMvccCandidatesWithCurrentThread(long oldThreadId) throws IgniteCheckedException;
+    public void updateMvccCandidatesWithCurrentThread(long oldThreadId);
 }

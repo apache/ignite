@@ -29,8 +29,6 @@ import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -465,24 +463,24 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMvccCandidatesWithCurrentThread(long oldThreadId) throws IgniteCheckedException {
+    @Override public void updateMvccCandidatesWithCurrentThread(long oldThreadId) {
         long curThreadId = Thread.currentThread().getId();
 
         for (IgniteTxEntry entry : txMap.values()) {
             GridCacheEntryEx cached = entry.cached();
 
             if (cached != null && !cached.obsolete()) {
-                GridCacheMvccCandidate candidate;
+                GridCacheMvccCandidate candidate = null;
 
                 try {
                     candidate = cached.localCandidate(oldThreadId);
                 }
                 catch (GridCacheEntryRemovedException e) {
-                    throw new IgniteCheckedException(e);
+                    assert false; // impossible situation.
                 }
 
                 if (candidate != null)
-                    candidate.setThreadId(curThreadId);
+                    candidate.threadId(curThreadId);
             }
         }
     }

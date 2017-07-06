@@ -19,13 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -35,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -54,6 +51,11 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
     /** Id of node, started transaction. */
     protected int txInitiatorNodeId = 0;
 
+    /**
+     * Creates new cache configuration.
+     *
+     * @return CacheConfiguration New cache configuration.
+     */
     protected CacheConfiguration getCacheConfiguration(){
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -65,25 +67,23 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-        cfg.setClientMode(false);
 
+        cfg.setClientMode(false);
         cfg.setCacheConfiguration(getCacheConfiguration());
 
         return  cfg;
     }
 
-    /**
-     * Called after execution of every test method in class or
-     * if {@link #beforeTest()} failed without test method execution.
-     *
-     * @throws Exception If failed.
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         checkAllTransactionsHasEnded();
     }
 
+    /**
+     * Checks whether all transactions has ended.
+     */
     private void checkAllTransactionsHasEnded() {
         for (Ignite ignite : G.allGrids()) {
             GridCacheSharedContext<Object, Object> cctx = ((IgniteKernal)ignite).context().cache().context();
@@ -97,6 +97,7 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
      * Starts test scenario for all transaction controls, and isolation levels.
      *
      * @param testScenario Test scenario.
+     * @throws Exception If scenario failed.
      */
     protected void runWithAllIsolationsAndConcurrencies(IgniteCallable<Void> testScenario) throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
@@ -115,7 +116,12 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
         }
     }
 
-    protected void awaitAllTransactionsHasFinished() throws IgniteInterruptedCheckedException {
+    /**
+     * Waits all transactions to finish.
+     *
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    protected void waitAllTransactionsHasFinished() throws IgniteInterruptedCheckedException {
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 GridCacheAdapter<?, ?> cache = ((IgniteKernal)ignite(0)).internalCache(DEFAULT_CACHE_NAME);
@@ -124,9 +130,7 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
                     ((GridNearCacheAdapter)cache).dht().context().tm() :
                     cache.context().tm();
 
-                int txNum = txMgr.idMapSize();
-
-                return txNum == 0;
+                return txMgr.activeTransactions().isEmpty();
             }
         }, 10000);
 

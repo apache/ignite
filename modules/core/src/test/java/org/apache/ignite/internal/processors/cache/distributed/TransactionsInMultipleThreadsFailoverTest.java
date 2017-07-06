@@ -118,7 +118,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
             // ignoring node breakage exception
         }
 
-        awaitAllTransactionsHasFinished();
+        waitAllTransactionsHasFinished();
 
         IgniteCache<String, Integer> clientCache = jcache(0);
 
@@ -216,7 +216,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
             // ignoring node breakage exception
         }
 
-        awaitAllTransactionsHasFinished();
+        waitAllTransactionsHasFinished();
 
         IgniteCache<String, Integer> clientCache = jcache(0);
 

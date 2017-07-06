@@ -1402,12 +1402,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        @Override public void suspend() {
+        @Override public void suspend() throws IgniteException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void resume() {
+        @Override public void resume() throws IgniteException {
             throw new UnsupportedOperationException();
         }
 

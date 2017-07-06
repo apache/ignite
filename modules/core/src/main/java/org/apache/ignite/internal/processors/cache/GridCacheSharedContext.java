@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -475,6 +474,17 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * Checks whether current thread is permitted to operate transaction.
+     *
+     * @param tx Transaction to be operated.
+     * @throws IgniteCheckedException If operating transaction is forbidden for the thread.
+     */
+    private void checkPermission(GridNearTxLocal tx) throws IgniteCheckedException {
+        if(Thread.currentThread().getId() != tx.threadId())
+            throw new IgniteCheckedException("Only thread owning transaction is permitted to operate it.");
+    }
+
+    /**
      * @return Ignite instance name.
      */
     public String igniteInstanceName() {
@@ -854,6 +864,8 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        checkPermission(tx);
+
         tx.txState().awaitLastFut(this);
 
         tx.close();
@@ -862,11 +874,11 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param tx Transaction to commit.
      * @return Commit future.
+     * @throws IgniteCheckedException If thread, not owning transaction, tried to commit it.
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
-        if(Thread.currentThread().getId() != tx.threadId())
-            throw new IgniteCheckedException("Only thread owning transaction is permitted to commit it.");
+        checkPermission(tx);
 
         GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
@@ -885,6 +897,8 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
+        checkPermission(tx);
+
         tx.txState().awaitLastFut(this);
 
         return tx.rollbackNearTxLocalAsync();
@@ -897,6 +911,8 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If suspension failed.
      */
     public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        checkPermission(tx);
+
         tx.txState().awaitLastFut(this);
 
         tx.suspend();
@@ -905,6 +921,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * Resume transaction if it was previously suspended.
      *
+     * @param tx Transaction to resume.
      * @throws IgniteException If resume failed.
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {

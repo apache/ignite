@@ -284,7 +284,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void updateMvccCandidatesWithCurrentThread(long oldThreadId) {
-        throw new UnsupportedOperationException("Operation doesn't support for implicit transactions.");
+        throw new UnsupportedOperationException("Operation unsupported for implicit transactions.");
     }
 
     /** {@inheritDoc} */

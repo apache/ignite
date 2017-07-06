@@ -135,6 +135,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         atomicCfg.setCacheMode(mode);
 
         c.setAtomicConfiguration(atomicCfg);
+
         if (cacheOn) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
