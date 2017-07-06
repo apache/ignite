@@ -268,12 +268,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " initializing memProv");
         directMemoryProvider.initialize(sizes);
 
         List<DirectMemoryRegion> regions = new ArrayList<>(sizes.length);
 
-        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " allocating regions");
         while (true) {
             DirectMemoryRegion reg = directMemoryProvider.nextRegion();
 
@@ -283,8 +281,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             regions.add(reg);
         }
 
-        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " nio access");
-
         nioAccess = SharedSecrets.getJavaNioAccess();
 
         int regs = regions.size();
@@ -292,8 +288,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         segments = new Segment[regs - 1];
 
         DirectMemoryRegion cpReg = regions.get(regs - 1);
-
-        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " checkpointPool");
 
         checkpointPool = new PagePool(regs - 1, cpReg);
 

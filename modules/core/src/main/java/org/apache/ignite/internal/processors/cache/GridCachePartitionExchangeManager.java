@@ -2112,8 +2112,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
-                    System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " IgniteInterruptedCheckedException " + e);
-
                     throw e;
                 }
                 catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
@@ -2129,13 +2127,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +
                         "(preloading will not start): " + task, e);
-                    System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " IgniteCheckedException " + e);
-                }
-                catch (Exception e) {
-                    System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " exception has been caught: " + e);
-                }
-                catch (Throwable e) {
-                    System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " throwable has been caught: " + e);
                 }
             }
         }

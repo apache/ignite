@@ -191,10 +191,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private void startMemoryPolicies() {
         for (MemoryPolicy memPlc : memPlcMap.values()) {
-            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " starting pageMemory for memoryPolicy: " + memPlc.config().getName());
             memPlc.pageMemory().start();
-
-            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " starting evictionTracker: " + memPlc.evictionTracker());
 
             memPlc.evictionTracker().start();
         }
@@ -216,8 +213,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memCfg.createDefaultPolicyConfig(),
                 DFLT_MEM_PLC_DEFAULT_NAME
             );
-
-            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " no memoryPolicy configured");
 
             U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
         }
