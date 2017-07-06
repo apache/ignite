@@ -191,7 +191,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private void startMemoryPolicies() {
         for (MemoryPolicy memPlc : memPlcMap.values()) {
+            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " starting pageMemory for memoryPolicy: " + memPlc.config().getName());
             memPlc.pageMemory().start();
+
+            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " starting evictionTracker: " + memPlc.evictionTracker());
 
             memPlc.evictionTracker().start();
         }
@@ -202,8 +205,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void initPageMemoryPolicies(MemoryConfiguration memCfg) {
         MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
-
-        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " cfg: " + cctx.kernalContext().config());
 
         if (memPlcsCfgs == null) {
             //reserve place for default and system memory policies
