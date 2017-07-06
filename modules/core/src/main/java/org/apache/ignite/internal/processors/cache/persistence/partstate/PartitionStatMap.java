@@ -19,20 +19,23 @@ package org.apache.ignite.internal.processors.cache.persistence.partstate;
 
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Information structure with partitions state.
  * Page counts map.
  */
 public class PartitionStatMap {
+    private final PartStatMapFullPageIdComparator comparator = PartStatMapFullPageIdComparator.INSTANCE;
     /** Maps following pairs: (cacheId, partId) -> (lastAllocatedCount, allocatedCount) */
-    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
+    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>(comparator);
 
     public PagesAllocationRange get(CachePartitionId key) {
         return map.get(key);
@@ -74,12 +77,34 @@ public class PartitionStatMap {
         return headMap(createKey(fullId));
     }
 
+    /**
+     * Map view with greater key
+     * @param key
+     * @param inclusive
+     * @return Map with greater keys than provided
+     */
     public SortedMap<CachePartitionId, PagesAllocationRange> tailMap(CachePartitionId key, boolean inclusive) {
-        return map.tailMap(key, inclusive);
+        return map.tailMap(key, inclusive); //todo
     }
 
-    public SortedMap<CachePartitionId, PagesAllocationRange> tailMap(FullPageId fullId, boolean inclusive) {
-        return tailMap(createKey(fullId), inclusive);
+    /**
+     *
+     * @param key to search
+     * @return first found key which is greater than provided
+     */
+    @Nullable public CachePartitionId nextKey(@NotNull final CachePartitionId key) {
+        CachePartitionId id = nextKey0(key);
+        assert id==map.navigableKeySet().higher(key);
+        return id;
+    }
+
+    @Nullable private CachePartitionId nextKey0(@NotNull CachePartitionId key) {
+        NavigableSet<CachePartitionId> ids = map.navigableKeySet();
+        for (CachePartitionId next : ids) {
+            if (comparator.compare(next, key) > 0)
+                return next; //observed first key which is greater than provided key
+        }
+        return null;
     }
 
     public Set<Map.Entry<CachePartitionId, PagesAllocationRange>> entrySet() {

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * We use dedicated page for tracking pages updates.
@@ -182,6 +183,7 @@ public class TrackingPageIO extends PageIO {
      * @param buf Buffer.
      * @param pageId Page id.
      * @param curSnapshotTag Snapshot tag.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot id.
      * @param pageSize Page size.
      */
     public boolean wasChanged(ByteBuffer buf, long pageId, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
@@ -265,10 +267,12 @@ public class TrackingPageIO extends PageIO {
      * @param buf Buffer.
      * @param start Start.
      * @param curSnapshotTag Snapshot id.
+     * @param lastSuccessfulSnapshotTag  Last successful snapshot id.
      * @param pageSize Page size.
-     * @return set pageId if it was changed or next closest one, if there is no changed page null will be returned
+     * @return set pageId if it was changed or next closest one, if there is no changed page {@code null} will be returned
      */
-    public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+    @Nullable public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
+        long lastSuccessfulSnapshotTag, int pageSize) {
         validateSnapshotId(buf, curSnapshotTag + 1, lastSuccessfulSnapshotTag, pageSize);
 
         int cntOfPage = countOfPageToTrack(pageSize);

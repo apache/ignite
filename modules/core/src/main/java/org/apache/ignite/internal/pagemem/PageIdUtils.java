@@ -92,10 +92,10 @@ public final class PageIdUtils {
     }
 
     /**
-     * Extracts a page index from the given pageId.
+     * Extracts a page index from the given page ID.
      *
-     * @param pageId Page id.
-     * @return Page ID.
+     * @param pageId Page ID.
+     * @return Page index.
      */
     public static int pageIndex(long pageId) {
         return (int)(pageId & PAGE_IDX_MASK); // 4 bytes
