@@ -38,6 +38,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -732,8 +733,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         try {
             if (cctx.topology().stopping()) {
-                onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
-                    cctx.name()));
+                onDone(new CacheStoppedException(cctx.name()));
 
                 return;
             }
@@ -1409,7 +1409,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                             TxDeadlock deadlock = fut.get();
 
                             if (deadlock != null)
-                                err = new TransactionDeadlockException(deadlock.toString(cctx.shared()));
+                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
                         }
                         catch (IgniteCheckedException e) {
                             err = e;
@@ -1449,6 +1451,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         /** */
         private boolean rcvRes;
+
+        /** Remap topology version for debug purpose. */
+        private AffinityTopologyVersion remapTopVer;
 
         /**
          * @param node Node.
@@ -1524,6 +1529,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     return;
 
                 rcvRes = true;
+
+                remapTopVer = res.clientRemapVersion();
             }
 
             if (res.error() != null) {

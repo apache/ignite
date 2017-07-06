@@ -76,6 +76,9 @@ final class BinaryMetadataTransport {
     private final ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache;
 
     /** */
+    private final BinaryMetadataFileStore metadataFileStore;
+
+    /** */
     private final Queue<MetadataUpdateResultFuture> unlabeledFutures = new ConcurrentLinkedQueue<>();
 
     /** */
@@ -92,11 +95,19 @@ final class BinaryMetadataTransport {
 
     /**
      * @param metaLocCache Metadata locale cache.
+     * @param metadataFileStore File store for binary metadata.
      * @param ctx Context.
      * @param log Logger.
      */
-    BinaryMetadataTransport(ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache, final GridKernalContext ctx, IgniteLogger log) {
+    BinaryMetadataTransport(
+        ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache,
+        BinaryMetadataFileStore metadataFileStore,
+        final GridKernalContext ctx,
+        IgniteLogger log
+    ) {
         this.metaLocCache = metaLocCache;
+
+        this.metadataFileStore = metadataFileStore;
 
         this.ctx = ctx;
 
@@ -442,6 +453,8 @@ final class BinaryMetadataTransport {
                 }
 
                 metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
+
+                metadataFileStore.saveMetadata(holder.metadata());
             }
 
             for (BinaryMetadataUpdatedListener lsnr : binaryUpdatedLsnrs)
@@ -561,7 +574,7 @@ final class BinaryMetadataTransport {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataRequestMessage : msg;
 
             MetadataRequestMessage msg0 = (MetadataRequestMessage) msg;
@@ -606,7 +619,7 @@ final class BinaryMetadataTransport {
     private final class MetadataResponseListener implements GridMessageListener {
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataResponseMessage : msg;
 
             MetadataResponseMessage msg0 = (MetadataResponseMessage) msg;

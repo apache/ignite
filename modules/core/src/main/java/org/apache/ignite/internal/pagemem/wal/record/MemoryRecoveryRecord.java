@@ -21,13 +21,12 @@ package org.apache.ignite.internal.pagemem.wal.record;
  * Marker that we start memory recovering
  */
 public class MemoryRecoveryRecord extends WALRecord {
-    /** Time. */
+    /** Create timestamp, millis */
     private long time;
-
 
     /**
      * Default constructor.
-     * @param time
+     * @param time current timestamp, millis
      */
     public MemoryRecoveryRecord(long time) {
         this.time = time;
@@ -38,6 +37,9 @@ public class MemoryRecoveryRecord extends WALRecord {
         return RecordType.MEMORY_RECOVERY;
     }
 
+    /**
+     * @return memory recovery start timestamp, millis
+     */
     public long time() {
         return time;
     }

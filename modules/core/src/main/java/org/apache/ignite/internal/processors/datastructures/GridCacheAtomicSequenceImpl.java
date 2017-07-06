@@ -80,7 +80,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context. */
-    private volatile GridCacheContext ctx;
+    private volatile GridCacheContext<GridCacheInternalKey, GridCacheAtomicSequenceValue> ctx;
 
     /** Local value of sequence. */
     @GridToStringInclude(sensitive = true)
@@ -120,7 +120,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param name Sequence name.
      * @param key Sequence key.
      * @param seqView Sequence projection.
-     * @param ctx CacheContext.
      * @param batchSize Sequence batch size.
      * @param locVal Local counter.
      * @param upBound Upper bound.
@@ -128,18 +127,16 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     public GridCacheAtomicSequenceImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
-        GridCacheContext ctx,
         int batchSize,
         long locVal,
         long upBound)
     {
         assert key != null;
         assert seqView != null;
-        assert ctx != null;
         assert locVal <= upBound;
 
         this.batchSize = batchSize;
-        this.ctx = ctx;
+        this.ctx = seqView.context();
         this.key = key;
         this.seqView = seqView;
         this.upBound = upBound;
@@ -354,7 +351,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
             if (rmvd)
                 return;
 
-            ctx.kernalContext().dataStructures().removeSequence(name);
+            ctx.kernalContext().dataStructures().removeSequence(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -385,39 +382,48 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                     long newUpBound;
 
-                    curLocVal = locVal;
+                    // Even though we hold a transaction lock here, we must hold the local update lock here as well
+                    // because we mutate multipe variables (locVal and upBound).
+                    localUpdate.lock();
 
-                    // If local range was already reserved in another thread.
-                    if (curLocVal + l <= upBound) {
-                        locVal = curLocVal + l;
+                    try {
+                        curLocVal = locVal;
 
-                        return updated ? curLocVal + l : curLocVal;
+                        // If local range was already reserved in another thread.
+                        if (curLocVal + l <= upBound) {
+                            locVal = curLocVal + l;
+
+                            return updated ? curLocVal + l : curLocVal;
+                        }
+
+                        long curGlobalVal = seq.get();
+
+                        long newLocVal;
+
+                        /* We should use offset because we already reserved left side of range.*/
+                        long off = batchSize > 1 ? batchSize - 1 : 1;
+
+                        // Calculate new values for local counter, global counter and upper bound.
+                        if (curLocVal + l >= curGlobalVal) {
+                            newLocVal = curLocVal + l;
+
+                            newUpBound = newLocVal + off;
+                        }
+                        else {
+                            newLocVal = curGlobalVal;
+
+                            newUpBound = newLocVal + off;
+                        }
+
+                        locVal = newLocVal;
+                        upBound = newUpBound;
+
+                        if (updated)
+                            curLocVal = newLocVal;
                     }
-
-                    long curGlobalVal = seq.get();
-
-                    long newLocVal;
-
-                    /* We should use offset because we already reserved left side of range.*/
-                    long off = batchSize > 1 ? batchSize - 1 : 1;
-
-                    // Calculate new values for local counter, global counter and upper bound.
-                    if (curLocVal + l >= curGlobalVal) {
-                        newLocVal = curLocVal + l;
-
-                        newUpBound = newLocVal + off;
+                    finally {
+                        localUpdate.unlock();
                     }
-                    else {
-                        newLocVal = curGlobalVal;
-
-                        newUpBound = newLocVal + off;
-                    }
-
-                    locVal = newLocVal;
-                    upBound = newUpBound;
-
-                    if (updated)
-                        curLocVal = newLocVal;
 
                     // Global counter must be more than reserved upper bound.
                     seq.set(newUpBound + 1);
@@ -439,13 +445,13 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
-        seqView = kctx.cache().atomicsCache();
-        ctx = seqView.context();
+        ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>context().cacheContext(ctx.cacheId());
+        seqView = ctx.cache();
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -472,7 +478,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().sequence(t.get2(), 0L, false);
+            return t.get1().dataStructures().sequence(t.get2(), null, 0L, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

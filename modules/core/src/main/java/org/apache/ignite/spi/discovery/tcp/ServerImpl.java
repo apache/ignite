@@ -846,8 +846,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         // Marshal credentials for backward compatibility and security.
         marshalCredentials(locNode, locCred);
 
+        DiscoveryDataPacket discoveryData = spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId()));
+
         while (true) {
-            if (!sendJoinRequestMessage()) {
+            if (!sendJoinRequestMessage(discoveryData)) {
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
@@ -973,13 +975,13 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Address is provided by {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} and message is
      * sent to first node connection succeeded to.
      *
+     * @param discoveryData Discovery data.
      * @return {@code true} if send succeeded.
      * @throws IgniteSpiException If any error occurs.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean sendJoinRequestMessage() throws IgniteSpiException {
-        TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode,
-            spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId())));
+    private boolean sendJoinRequestMessage(DiscoveryDataPacket discoveryData) throws IgniteSpiException {
+        TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
         // Time when it has been detected, that addresses from IP finder do not respond.
         long noResStart = 0;
@@ -3729,32 +3731,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                boolean locActiveOnStart = booleanAttribute(locNode, ATTR_ACTIVE_ON_START, true);
-                boolean rmtActiveOnStart = booleanAttribute(node, ATTR_ACTIVE_ON_START, true);
-
-                if (locActiveOnStart != rmtActiveOnStart) {
-                    String errMsg = "Local node's active on start flag differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same " +
-                        "active on start flag) [locActiveOnStart=" + locActiveOnStart +
-                        ", rmtActiveOnStart=" + rmtActiveOnStart +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                    String sndMsg = "Local node's active on start flag differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same " +
-                        "active on start flag) [locActiveOnStart=" + rmtActiveOnStart +
-                        ", rmtActiveOnStart=" + locActiveOnStart +
-                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                        ", rmtNodeId=" + locNode.id() + ']';
-
-                    nodeCheckError(node, errMsg, sndMsg);
-
-                    // Ignore join request.
-                    return;
-                }
-
                 final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
                 final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
@@ -4006,6 +3982,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * Processes node added message.
+         *
+         * For coordinator node method marks the messages as verified for rest of nodes to apply the
+         * changes this message is issued for.
+         *
+         * Node added message is processed by other nodes only after coordinator verification.
          *
          * @param msg Node added message.
          * @deprecated Due to current protocol node add process cannot be dropped in the middle of the ring,

@@ -194,10 +194,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
 
-        if (ctx.isDaemon() || !activeOnStart)
+        if (ctx.isDaemon())
             return;
 
         IgniteConfiguration cfg = ctx.config();
@@ -211,11 +211,20 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
-        if (ctx.isDaemon() || !ctx.state().active())
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (ctx.isDaemon() || !active)
             return;
 
-        cache = ctx.cache().utilityCache();
+        onKernalStart0();
+    }
+
+    /**
+     * Do kernal start.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void onKernalStart0() throws IgniteCheckedException {
+        updateUtilityCache();
 
         if (!ctx.clientNode())
             ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
@@ -274,6 +283,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
+    }
+
+    /**
+     *
+     */
+    public void updateUtilityCache() {
+        cache = ctx.cache().utilityCache();
     }
 
     /** {@inheritDoc} */
@@ -348,13 +364,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
 
-        start(true);
+        start();
 
-        onKernalStart(true);
+        onKernalStart0();
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) {
         if (log.isDebugEnabled())
             log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");

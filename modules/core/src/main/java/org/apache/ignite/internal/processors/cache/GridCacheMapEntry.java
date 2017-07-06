@@ -38,9 +38,9 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
@@ -2620,7 +2620,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         cctx.cacheId(),
                         key,
                         val,
-                        GridCacheOperation.CREATE,
+                        val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
                         null,
                         ver,
                         expireTime,
@@ -3167,6 +3167,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // No-op.
             }
             */
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ensureIndexed() throws GridCacheEntryRemovedException, IgniteCheckedException {
+        synchronized (this) {
+            checkObsolete();
+
+            if (cctx.queries().enabled())
+                cctx.offheap().updateIndexes(cctx, key, localPartition());
         }
     }
 

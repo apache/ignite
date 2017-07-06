@@ -533,6 +533,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @return Maximum time of awaiting PartitionMapExchange operation (in milliseconds)
+     */
+    protected long getPartitionMapExchangeTimeout() {
+        return 30_000;
+    }
+
+    /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
      * @param nodes Optional nodes.
@@ -546,7 +553,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         @Nullable Collection<ClusterNode> nodes,
         boolean printPartState
     ) throws InterruptedException {
-        long timeout = 30_000;
+        long timeout = getPartitionMapExchangeTimeout();
 
         long startTime = -1;
 
@@ -588,6 +595,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
             else
                 startTime = g0.context().discovery().gridStartTime();
+
+            if (g.cluster().localNode().isDaemon())
+                continue;
 
             IgniteInternalFuture<?> exchFut =
                 g0.context().cache().context().exchange().affinityReadyFuture(waitTopVer);
@@ -635,7 +645,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
                                 Collection<ClusterNode> owners = (topFut != null && topFut.isDone()) ?
-                                    top.nodes(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
+                                    top.owners(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
 
                                 int ownerNodesCnt = owners.size();
 
@@ -1615,8 +1625,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             ok = false;
         }
 
-        if (ok)
-            info("Deleted OK: " + file.getAbsolutePath() +
+        if (ok && log().isDebugEnabled()) // too much logging on real data
+            log().debug("Deleted OK: " + file.getAbsolutePath() +
                 (size >= 0 ? "(" + IgniteUtils.readableSize(size, false) + ")" : ""));
 
         return ok;
