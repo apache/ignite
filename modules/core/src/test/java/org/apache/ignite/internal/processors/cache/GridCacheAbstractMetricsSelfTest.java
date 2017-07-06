@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -581,8 +580,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMisses() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
-
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         int keyCnt = keyCount();
@@ -625,8 +622,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMissesOnEmptyCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
-
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertEquals("Expected 0 read", 0, cache.localMetrics().getCacheGets());
@@ -673,25 +668,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.remove(1);
 
         assertEquals(1L, cache.localMetrics().getCacheRemovals());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testManualEvictions() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
-
-        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
-            return;
-
-        cache.put(1, 1);
-
-        cache.localEvict(Collections.singleton(1));
-
-        assertEquals(0L, cache.localMetrics().getCacheRemovals());
-        assertEquals(1L, cache.localMetrics().getCacheEvictions());
     }
 
     /**

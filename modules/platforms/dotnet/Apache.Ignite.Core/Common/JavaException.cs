@@ -61,8 +61,9 @@ namespace Apache.Ignite.Core.Common
         /// <param name="javaClassName">Java exception class name.</param>
         /// <param name="javaMessage">Java exception message.</param>
         /// <param name="stackTrace">Java stack trace.</param>
-        public JavaException(string javaClassName, string javaMessage, string stackTrace)
-            : base(stackTrace ?? javaMessage)
+        /// <param name="cause">The cause.</param>
+        public JavaException(string javaClassName, string javaMessage, string stackTrace, Exception cause)
+            : base(stackTrace ?? javaMessage, cause)
         {
             // Send stackTrace to base ctor because it has all information, including class names and messages.
             // Store ClassName and Message separately for mapping purposes.

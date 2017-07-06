@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -54,7 +55,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testActivateDeActivateOnFixTopology() throws Exception {
         final Ignite igB1 = backUp(0);
@@ -140,7 +141,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testActivateDeActivateOnJoiningNode() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5520");
@@ -168,9 +169,9 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
             final IgniteInternalFuture<Void> af = runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     while (!stop.get()) {
-                        Ignite ig = randomBackUp(false);
-
                         if (canAct.get()) {
+                            Ignite ig = randomBackUp(false);
+
                             long start = System.currentTimeMillis();
 
                             ig.active(true);
@@ -184,6 +185,8 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
 
                             canAct.set(false);
                         }
+                        else
+                            U.sleep(100);
 
                     }
                     return null;
@@ -193,9 +196,9 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
             final IgniteInternalFuture<Void> df = runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     while (!stop.get()) {
-                        Ignite ig = randomBackUp(false);
-
                         if (!canAct.get()) {
+                            Ignite ig = randomBackUp(false);
+
                             long start = System.currentTimeMillis();
 
                             ig.active(false);
@@ -209,7 +212,8 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
 
                             canAct.set(true);
                         }
-
+                        else
+                            U.sleep(100);
                     }
                     return null;
                 }
@@ -243,16 +247,16 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
             jf2.get();
         }
         finally {
-            log.info("total started nodes: " + (seqIdx.get() - backUpNodes()));
+            log.info("Total started nodes: " + (seqIdx.get() - backUpNodes()));
 
-            log.info("total activate/deactivate:" + cntA.get() + "/" + cntD.get() + " aTime/dTime: "
+            log.info("Total activate/deactivate:" + cntA.get() + "/" + cntD.get() + " aTime/dTime: "
                 + (timeA.get() / cntA.get() + "/" + (timeD.get() / cntD.get()))
             );
         }
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testActivateDeActivateOnFixTopologyWithPutValues() throws Exception {
         final Ignite igB1 = backUp(0);
@@ -348,7 +352,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
             df.get();
         }
         finally {
-            log.info("total activate/deactivate:" + cntA.get() + "/" + cntD.get() + " aTime/dTime:"
+            log.info("Total activate/deactivate:" + cntA.get() + "/" + cntD.get() + " aTime/dTime:"
                 + (timeA.get() / cntA.get() + "/" + (timeD.get() / cntD.get()) + " nodes: " + backUpNodes()));
         }
     }

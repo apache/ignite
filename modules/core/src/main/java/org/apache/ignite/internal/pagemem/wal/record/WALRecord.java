@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -26,7 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public abstract class WALRecord {
     /**
-     * Record type.
+     * Record type. Ordinal of this record will be written to file. <br>
+     * <b>Note:</b> Do not change order of elements <br>
      */
     public enum RecordType {
         /** */
@@ -171,6 +173,13 @@ public abstract class WALRecord {
         public static RecordType fromOrdinal(int ord) {
             return ord < 0 || ord >= VALS.length ? null : VALS[ord];
         }
+
+        /**
+         * Fake record type, causes stop iterating and indicates segment EOF
+         * <b>Note:</b> regular record type is incremented by 1 and minimal value written to file is also 1
+         * For {@link WALMode#DEFAULT} this value is at least came from padding
+         */
+        public static final int STOP_ITERATION_RECORD_TYPE = 0;
     }
 
     /** */
