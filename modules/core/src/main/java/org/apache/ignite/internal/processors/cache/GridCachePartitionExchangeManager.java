@@ -2134,6 +2134,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (Exception e) {
                     System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " exception has been caught: " + e);
                 }
+                catch (Throwable e) {
+                    System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " throwable has been caught: " + e);
+                }
             }
         }
     }
