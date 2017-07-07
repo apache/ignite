@@ -748,14 +748,7 @@ public class DmlStatementsProcessor {
             return newArr;
         }
 
-        int objType = DataType.getTypeFromClass(val.getClass());
-
-        if (objType == type)
-            return val;
-
-        Value h2Val = desc.wrap(val, objType);
-
-        return h2Val.convertTo(type).getObject();
+        return H2Utils.convert(val, desc, type);
     }
 
     /**
