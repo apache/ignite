@@ -110,12 +110,12 @@ public class TrackingPageIO extends PageIO {
     /**
      * @param buf Buffer.
      * @param nextSnapshotTag Next snapshot id.
-     * @param lastSuccessfulSnapshotId Last successful snapshot id.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot id.
      * @param pageSize Page size.
      */
-    private void validateSnapshotId(ByteBuffer buf, long nextSnapshotTag, long lastSuccessfulSnapshotId, int pageSize) {
-        assert nextSnapshotTag != lastSuccessfulSnapshotId : "nextSnapshotTag = " + nextSnapshotTag +
-            ", lastSuccessfulSnapshotId = " + lastSuccessfulSnapshotId;
+    private void validateSnapshotId(ByteBuffer buf, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+        assert nextSnapshotTag != lastSuccessfulSnapshotTag : "nextSnapshotTag = " + nextSnapshotTag +
+            ", lastSuccessfulSnapshotId = " + lastSuccessfulSnapshotTag;
 
         long last = getLastSnapshotTag(buf);
 
@@ -126,7 +126,7 @@ public class TrackingPageIO extends PageIO {
 
         int cntOfPage = countOfPageToTrack(pageSize);
 
-        if (last <= lastSuccessfulSnapshotId) { //we can drop our data
+        if (last <= lastSuccessfulSnapshotTag) { //we can drop our data
             buf.putLong(LAST_SNAPSHOT_TAG_OFFSET, nextSnapshotTag);
 
             PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_OFFSET);
@@ -136,7 +136,7 @@ public class TrackingPageIO extends PageIO {
             int sizeOff = useLeftHalf(nextSnapshotTag) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + len;
             int sizeOff2 = !useLeftHalf(nextSnapshotTag) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + len;
 
-            if (last - lastSuccessfulSnapshotId == 1) { //we should keep only data in last half
+            if (last - lastSuccessfulSnapshotTag == 1) { //we should keep only data in last half
                 //new data will be written in the same half, we should move old data to another half
                 if ((nextSnapshotTag - last) % 2 == 0)
                     PageHandler.copyMemory(buf, sizeOff, buf, sizeOff2, len + SIZE_FIELD_SIZE);

@@ -412,24 +412,28 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
+     *
+     * @param nodeStopping {@code True} if tx was cancelled during node stop.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void uncommit() {
+    protected void uncommit(boolean nodeStopping) {
         try {
-            for (IgniteTxEntry e : writeMap().values()) {
-                try {
-                    GridCacheEntryEx Entry = e.cached();
+            if (!nodeStopping) {
+                for (IgniteTxEntry e : writeMap().values()) {
+                    try {
+                        GridCacheEntryEx entry = e.cached();
 
-                    if (e.op() != NOOP)
-                        Entry.invalidate(null, xidVer);
-                }
-                catch (Throwable t) {
-                    U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+                        if (e.op() != NOOP)
+                            entry.invalidate(xidVer);
+                    }
+                    catch (Throwable t) {
+                        U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                    if (t instanceof Error)
-                        throw (Error)t;
+                        if (t instanceof Error)
+                            throw (Error)t;
 
-                    break;
+                        break;
+                    }
                 }
             }
 

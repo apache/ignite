@@ -683,6 +683,8 @@ public class CacheGroupContext {
 
         aff.cancelFutures(err);
 
+        preldr.onKernalStop();
+
         offheapMgr.stop();
 
         ctx.io().removeCacheGroupHandlers(grpId);
@@ -853,8 +855,6 @@ public class CacheGroupContext {
             preldr = new GridCachePreloaderAdapter(this);
 
         if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
-            ClassLoader clsLdr = U.gridClassLoader();
-
             try {
                 offheapMgr = new GridCacheOffheapManager();
             }
