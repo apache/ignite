@@ -537,10 +537,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
-     * Checks whether this event type has any listener
+     * Checks whether this event type has any listener.
      *
      * @param type Event type to check.
-     * @return Whether or not this event type has any listener
+     * @return Whether or not this event type has any listener.
      */
     public boolean hasListener(int type) {
         assert type > 0 : "Invalid event type: " + type;

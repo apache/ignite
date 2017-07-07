@@ -90,7 +90,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     }
 
     /**
-     * @return EventTypes to record
+     * @return EventTypes to record.
      */
     protected int[] getIncludeEventTypes() {
         return new int[0];
