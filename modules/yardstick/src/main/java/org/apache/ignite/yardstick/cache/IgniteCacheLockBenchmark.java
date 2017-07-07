@@ -32,18 +32,20 @@ public class IgniteCacheLockBenchmark extends IgniteCacheAbstractBenchmark<Strin
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
         final int n = nextRandom(args.range());
-        final String key = "key"+n;
-        final String otherKey = "other_"+key;
+        final String key = "key" + n;
+        final String otherKey = "other_" + key;
         final IgniteCache<String, Integer> cache = cacheForOperation();
         final Lock lock = cache.lock(key);
 
         lock.lock();
+
         try {
-            cache.put(otherKey, cache.get(otherKey)+1);
+            cache.put(otherKey, cache.get(otherKey) + 1);
         }
         finally {
             lock.unlock();
         }
+
         return true;
     }
 
@@ -67,12 +69,12 @@ public class IgniteCacheLockBenchmark extends IgniteCacheAbstractBenchmark<Strin
     /**
      * @param cacheName Cache name.
      * @param cnt Number of entries to load.
-     * */
+     */
     protected void loadValues(String cacheName, int cnt) {
         try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
             for (int i = 0; i < cnt; i++) {
-                dataLdr.addData("key"+i, new Integer(0));
-                dataLdr.addData("other_key"+i, new Integer(0));
+                dataLdr.addData("key" + i, new Integer(0));
+                dataLdr.addData("other_key" + i, new Integer(0));
 
                 if (i % 100000 == 0) {
                     if (Thread.currentThread().isInterrupted())
