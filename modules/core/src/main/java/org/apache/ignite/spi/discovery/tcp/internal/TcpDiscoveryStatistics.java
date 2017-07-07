@@ -435,7 +435,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onServerSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         if (maxSrvSockInitTime < initTime)
             maxSrvSockInitTime = initTime;
@@ -447,7 +448,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onClientSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         clientSockCreatedCnt++;
 
