@@ -46,11 +46,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
     /** */
     @GridToStringInclude
-    @GridDirectTransient
     private GridDhtPartitionExchangeId exchId;
-
-    /** Serialized exchange id. */
-    private byte[] serializedExchId;
 
     /** */
     @GridToStringInclude
@@ -125,10 +121,14 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public int partition() {
+        return Integer.MIN_VALUE;
+    }
+
+    /** {@inheritDoc} */
     public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        serializedExchId = U.marshal(ctx, exchId);
         serializedAssignmentChange = U.marshal(ctx, assignmentChange);
     }
 
@@ -136,7 +136,6 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
     public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        exchId = U.unmarshal(ctx, serializedExchId, ldr);
         assignmentChange = U.unmarshal(ctx, serializedAssignmentChange, ldr);
     }
 
@@ -194,28 +193,29 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMessage("partFullMsg", partFullMsg))
+                if (!writer.writeUuid("ackUuid", ackUuid))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("serializedAssignmentChange", serializedAssignmentChange))
+                if (!writer.writeMessage("exchId", exchId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("serializedExchId", serializedExchId))
+                if (!writer.writeMessage("partFullMsg", partFullMsg))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeUuid("ackUuid", ackUuid))
+                if (!writer.writeByteArray("serializedAssignmentChange", serializedAssignmentChange))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -233,7 +233,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                partFullMsg = reader.readMessage("partFullMsg");
+                ackUuid = reader.readUuid("ackUuid");
 
                 if (!reader.isLastRead())
                     return false;
@@ -241,7 +241,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                serializedAssignmentChange = reader.readByteArray("serializedAssignmentChange");
+                exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -249,7 +249,7 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 5:
-                serializedExchId = reader.readByteArray("serializedExchId");
+                partFullMsg = reader.readMessage("partFullMsg");
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,12 +257,13 @@ public class GridDhtFinishExchangeMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 6:
-                ackUuid = reader.readUuid("ackUuid");
+                serializedAssignmentChange = reader.readByteArray("serializedAssignmentChange");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtFinishExchangeMessage.class);

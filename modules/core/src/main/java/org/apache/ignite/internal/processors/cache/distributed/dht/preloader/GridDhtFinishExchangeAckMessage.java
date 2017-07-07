@@ -38,13 +38,7 @@ public class GridDhtFinishExchangeAckMessage extends GridCacheMessage {
 
     /** */
     @GridToStringInclude
-    @GridDirectTransient
     private GridDhtPartitionExchangeId exchId;
-
-    /**
-     * Serialized exchange id.
-     */
-    private byte[] serializedExchId;
 
     /**
      * Default constructor.
@@ -81,22 +75,9 @@ public class GridDhtFinishExchangeAckMessage extends GridCacheMessage {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        serializedExchId = U.marshal(ctx, exchId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        exchId = U.unmarshal(ctx, serializedExchId, ldr);
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return Integer.MIN_VALUE;
     }
 
     /**
@@ -131,7 +112,7 @@ public class GridDhtFinishExchangeAckMessage extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("serializedExchId", serializedExchId))
+                if (!writer.writeMessage("exchId", exchId))
                     return false;
 
                 writer.incrementState();
@@ -155,7 +136,7 @@ public class GridDhtFinishExchangeAckMessage extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                serializedExchId = reader.readByteArray("serializedExchId");
+                exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
                     return false;
