@@ -23,13 +23,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
  * Example to showcase DDL capabilities of Ignite's SQL engine.
+ * <p>
+ * Remote nodes could be started from command line as follows:
+ * {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * <p>
+ * Alternatively you can run {@link ExampleNodeStartup} in either same or another JVM.
  */
 public class CacheQueryDdlExample {
     /** Dummy cache name. */
-    private static final String DUMMY_IDX_CACHE = "idx_cache";
+    private static final String DUMMY_CACHE_NAME = "dummy_cache";
 
     /**
      * Executes example.
@@ -44,7 +50,8 @@ public class CacheQueryDdlExample {
 
             // We need to create a dummy cache with indexing enabled in order to have API entry point
             // for running the queries, but this will change in the future.
-            CacheConfiguration<?, ?> idxCacheCfg = new CacheConfiguration<>(DUMMY_IDX_CACHE);
+            CacheConfiguration<?, ?> idxCacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME);
+
             idxCacheCfg.setIndexedTypes(Integer.class, Integer.class);
 
             // Auto-close cache at the end of the example.
@@ -108,7 +115,7 @@ public class CacheQueryDdlExample {
             }
             finally {
                 // Distributed cache can be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(DUMMY_IDX_CACHE);
+                ignite.destroyCache(DUMMY_CACHE_NAME);
             }
 
             print("Cache query DDL example finished.");
@@ -133,6 +140,6 @@ public class CacheQueryDdlExample {
      * @return Result.
      */
     private static List<List<?>> execute(Ignite ignite, String sql, Object... args) {
-        return ignite.cache(DUMMY_IDX_CACHE).query(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args)).getAll();
+        return ignite.cache(DUMMY_CACHE_NAME).query(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args)).getAll();
     }
 }
