@@ -19,9 +19,26 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * Initial snapshot operation interface.
  */
 public interface SnapshotOperation extends Serializable {
+    /**
+     * Cache group ids included to this snapshot.
+     *
+     * @return Cache names.
+     */
+    Set<Integer> cacheGroupIds();
+
+    /**
+     * Cache names included to this snapshot.
+     */
+    Set<String> cacheNames();
+
+    /**
+     * Any custom extra parameter.
+     */
+    Object extraParameter();
 }
