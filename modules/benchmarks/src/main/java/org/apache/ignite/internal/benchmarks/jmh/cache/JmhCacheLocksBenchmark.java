@@ -40,48 +40,56 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  */
 @Warmup(iterations = 40)
 @Measurement(iterations = 20)
-@Fork(value = 1)
+@Fork(1)
 public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     /** Fixed lock key for Ignite.reentrantLock() and IgniteCache.lock(). */
-    static final String lockKey = "key0";
+    private static final String lockKey = "key0";
 
     /** Fixed key. */
-    static final String lockKey1 = "key1";
+    private static final String lockKey1 = "key1";
 
     /** Number of locks for randomly tests. */
-    static final int N = 128;
+    private static final int N = 128;
 
     /** Parameter for Ignite.reentrantLock(). */
-    static final boolean failoverSafe = false;
+    private static final boolean failoverSafe = false;
 
     /** Parameter for Ignite.reentrantLock(). */
-    static final boolean fair = false;
+    private static final boolean fair = false;
 
     /** IgniteCache.lock() with a fixed lock key. */
-    Lock cacheLock;
+    private Lock cacheLock;
 
     /** Ignite.reentrantLock() with a fixed lock key. */
-    IgniteLock igniteLock;
+    private IgniteLock igniteLock;
 
+    /** Generate a random key for a benchmark. */
     @State(Scope.Benchmark)
     public static class Key {
+        /** */
         final String key;
 
+        /** */
         public Key() {
-            key = "key"+ThreadLocalRandom.current().nextInt(N);
+            key = "key" + ThreadLocalRandom.current().nextInt(N);
         }
     }
 
+    /** Generate two random keys for a benchmark. */
     @State(Scope.Benchmark)
     public static class KeyWithOther {
+        /** */
         final String key;
+
+        /** */
         final String otherKey;
 
+        /** */
         public KeyWithOther() {
             final int n = ThreadLocalRandom.current().nextInt(N);
 
-            key = "key"+n;
-            otherKey = "key"+(n+1);
+            key = "key" + n;
+            otherKey = "key" + (n + 1);
         }
     }
 
@@ -93,7 +101,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         cacheLock.lock();
 
         try {
-            cache.put(lockKey, ((Integer)cache.get(lockKey)) + 1);
+            cache.put(lockKey, (Integer)cache.get(lockKey) + 1);
         }
         finally {
             cacheLock.unlock();
@@ -108,7 +116,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         igniteLock.lock();
 
         try {
-            cache.put(lockKey, ((Integer)cache.get(lockKey)) + 1);
+            cache.put(lockKey, (Integer)cache.get(lockKey) + 1);
         }
         finally {
             igniteLock.unlock();
@@ -123,7 +131,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         cacheLock.lock();
 
         try {
-            cache.put(lockKey1, ((Integer)cache.get(lockKey1)) + 1);
+            cache.put(lockKey1, (Integer)cache.get(lockKey1) + 1);
         }
         finally {
             cacheLock.unlock();
@@ -138,7 +146,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         igniteLock.lock();
 
         try {
-            cache.put(lockKey1, ((Integer)cache.get(lockKey1)) + 1);
+            cache.put(lockKey1, (Integer)cache.get(lockKey1) + 1);
         }
         finally {
             igniteLock.unlock();
@@ -174,7 +182,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         lock.lock();
 
         try {
-            cache.put(k, ((Integer)cache.get(k)) + 1);
+            cache.put(k, (Integer)cache.get(k) + 1);
         }
         finally {
             lock.unlock();
@@ -192,7 +200,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         lock.lock();
 
         try {
-            cache.put(k, ((Integer)cache.get(k)) + 1);
+            cache.put(k, (Integer)cache.get(k) + 1);
         }
         finally {
             lock.unlock();
@@ -211,7 +219,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         lock.lock();
 
         try {
-            cache.put(other, ((Integer)cache.get(other)) + 1);
+            cache.put(other, (Integer)cache.get(other) + 1);
         }
         finally {
             lock.unlock();
@@ -230,7 +238,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         lock.lock();
 
         try {
-            cache.put(other, ((Integer)cache.get(other)) + 1);
+            cache.put(other, (Integer)cache.get(other) + 1);
         }
         finally {
             lock.unlock();
@@ -242,8 +250,8 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
      */
     @Setup(Level.Trial)
     public void createLock() {
-        for (int i = 0; i < 2*N; i++)
-            cache.put("key"+i, new Integer(i));
+        for (int i = 0; i < 2 * N; i++)
+            cache.put("key" + i, new Integer(i));
 
         cacheLock = cache.lock(lockKey);
         igniteLock = node.reentrantLock(lockKey, failoverSafe, fair, true);
@@ -275,7 +283,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
             .jvmArgs(
                 "-Xms1g",
                 "-Xmx1g",
-                //"-XX:+UnlockCommercialFeatures",
+                "-XX:+UnlockCommercialFeatures",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4),
