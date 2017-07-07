@@ -48,70 +48,56 @@ public class CacheQueryDdlExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             print("Cache query DDL example started.");
 
-            // We need to create a dummy cache with indexing enabled in order to have API entry point
-            // for running the queries, but this will change in the future.
-            CacheConfiguration<?, ?> idxCacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME);
+            // Create dummy cache to act as an entry point for SQL queries (new SQL API which do not require this
+            // will appear in future versions, JDBC and ODBC drivers do not require it already).
+            CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
+                .setSqlSchema("PUBLIC").setIndexedTypes(Integer.class, Integer.class);
 
-            idxCacheCfg.setIndexedTypes(Integer.class, Integer.class);
-
-            // Auto-close cache at the end of the example.
             try (
-                IgniteCache<?, ?> idxCache = ignite.getOrCreateCache(idxCacheCfg)
+                IgniteCache<?, ?> cache = ignite.getOrCreateCache(cacheCfg)
             ) {
-                // Let's create one table based on actual cache template...
-                execute(ignite, "CREATE TABLE Person (id int primary key, name varchar, surname varchar, age int, " +
-                    "orgId int, city varchar) WITH \"template=partitioned,backups=1\"");
+                // Create table based on PARTITIONED template with one backup.
+                cache.query(new SqlFieldsQuery("CREATE TABLE Person (id int primary key, name varchar, " +
+                    "surname varchar, age int, orgId int, city varchar) WITH \"template=partitioned,backups=1\""))
+                    .getAll();
 
-                // ...and another one based
-                execute(ignite, "CREATE TABLE City (name varchar primary key, region varchar, population int) " +
-                    "WITH \"template=replicated\"");
+                // Create reference City table based on REPLICATED template.
+                cache.query(new SqlFieldsQuery("CREATE TABLE City (name varchar primary key, region varchar, " +
+                    "population int) WITH \"template=replicated\"")).getAll();
 
-                print("Tables have been created.");
+                // Create an index.
+                cache.query(new SqlFieldsQuery("create index persIdx on Person (city, age desc)")).getAll();
 
-                for (Object[] person : new Object[][] {
-                    new Object[]{1L, 1L, "John", "Doe", 40, "Forest Hill"},
-                    new Object[]{2L, 2L, "Jane", "Roe", 20, "Washington"},
-                    new Object[]{3L, 2L, "Mary", "Major", 50, "Denver"},
-                    new Object[]{4L, 1L, "Richard", "Miles", 30, "New York"}
-                }) {
-                    execute(ignite,
-                        "insert into Person (id, orgId, name, surname, age, city) values (?, ?, ?, ?, ?, ?)",
-                        person);
-                }
+                print("Created database objects.");
 
-                for (Object[] city : new Object[][]{
-                    new Object[]{"Forest Hill", "Maryland", 300000},
-                    new Object[]{"Denver", "Colorado", 600000},
-                    new Object[]{"St. Petersburg", "Texas", 400000}
-                }) {
-                    execute(ignite,
-                        "insert into City (name, region, population) values (?, ?, ?)",
-                        city);
-                }
+                SqlFieldsQuery qry = new SqlFieldsQuery("insert into Person (id, orgId, name, surname, age, city) " +
+                    "values (?, ?, ?, ?, ?, ?)");
 
-                print("Data has been inserted.");
+                cache.query(qry.setArgs(1L, 1L, "John", "Doe", 40, "Forest Hill")).getAll();
+                cache.query(qry.setArgs(2L, 2L, "Jane", "Roe", 20, "Washington")).getAll();
+                cache.query(qry.setArgs(3L, 2L, "Mary", "Major", 50, "Denver")).getAll();
+                cache.query(qry.setArgs(4L, 1L, "Richard", "Miles", 30, "New York")).getAll();
 
-                execute(ignite, "create index persIdx on Person (city, age desc)");
+                qry = new SqlFieldsQuery("insert into City (name, region, population) values (?, ?, ?)");
 
-                print("Index has been created.");
+                cache.query(qry.setArgs("Forest Hill", "Maryland", 300000)).getAll();
+                cache.query(qry.setArgs("Denver", "Colorado", 600000)).getAll();
+                cache.query(qry.setArgs("St. Petersburg", "Texas", 400000)).getAll();
 
-                List<List<?>> res = execute(ignite,
-                    "SELECT p.name, p.surname, c.name from person p inner join City c on c.name = p.city");
+                print("Populated data.");
+
+                List<List<?>> res = cache.query(new SqlFieldsQuery(
+                    "SELECT p.name, p.surname, c.name from person p inner join City c on c.name = p.city")).getAll();
 
                 print("Query results:");
 
                 for (Object next : res)
                     System.out.println(">>>     " + next);
 
-                execute(ignite, "drop index persIdx");
+                cache.query(new SqlFieldsQuery("drop table Person")).getAll();
+                cache.query(new SqlFieldsQuery("drop table City")).getAll();
 
-                print("Index has been dropped.");
-
-                execute(ignite, "drop table person");
-
-                execute(ignite, "drop table \"CITY\"");
-
-                print("Tables have been dropped.");
+                print("Dropped database objects.");
             }
             finally {
                 // Distributed cache can be removed from cluster only by #destroyCache() call.
@@ -130,16 +116,5 @@ public class CacheQueryDdlExample {
     private static void print(String msg) {
         System.out.println();
         System.out.println(">>> " + msg);
-    }
-
-    /**
-     * Run a query with parameters on PUBLIC schema.
-     * @param ignite Ignite.
-     * @param sql Statement.
-     * @param args Arguments.
-     * @return Result.
-     */
-    private static List<List<?>> execute(Ignite ignite, String sql, Object... args) {
-        return ignite.cache(DUMMY_CACHE_NAME).query(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args)).getAll();
     }
 }
