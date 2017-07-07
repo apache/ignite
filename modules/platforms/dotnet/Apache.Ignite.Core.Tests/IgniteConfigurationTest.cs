@@ -683,7 +683,7 @@ namespace Apache.Ignite.Core.Tests
                         new MemoryPolicyConfiguration
                         {
                             Name = "myDefaultPlc",
-                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            PageEvictionMode = DataPageEvictionMode.Disabled,
                             InitialSize = 340 * 1024 * 1024,
                             MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
@@ -695,7 +695,7 @@ namespace Apache.Ignite.Core.Tests
                         new MemoryPolicyConfiguration
                         {
                             Name = "customPlc",
-                            PageEvictionMode = DataPageEvictionMode.RandomLru,
+                            PageEvictionMode = DataPageEvictionMode.Disabled,
                             MaxSize = 456 * 1024 * 1024,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
