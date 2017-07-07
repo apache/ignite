@@ -1524,7 +1524,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     private class TopologyListener implements DiscoveryEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
+        @Override public void onEvent(final DiscoveryEvent evt, final DiscoCache discoCache) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
 
             if (busyLock == null || !busyLock.enterBusy())
