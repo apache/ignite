@@ -77,6 +77,8 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         long ptr;
 
         try {
+            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " allocating chunk of size: " + (chunkSize / (1024 * 1024)) + "; regSize: " + regions.size());
+
             ptr = GridUnsafe.allocateMemory(chunkSize);
         }
         catch (IllegalArgumentException e) {
