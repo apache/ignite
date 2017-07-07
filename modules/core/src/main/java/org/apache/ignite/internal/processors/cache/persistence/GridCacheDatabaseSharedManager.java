@@ -580,6 +580,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private long[] calculateFragmentSizes(int concLvl, long cacheSize) {
+        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " calculating fragment sizes for concLvl: " + concLvl + "; maxSize: " + (cacheSize /1024 / 1024));
+
         if (concLvl < 2)
             concLvl = Runtime.getRuntime().availableProcessors();
 
