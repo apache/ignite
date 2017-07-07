@@ -288,14 +288,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
-        super.onKernalStart0(reconnect);
-
-        if (!cctx.kernalContext().clientNode() && cctx.kernalContext().state().active())
-            archiver.start();
-    }
-
     /**
      * @return Consistent ID.
      */
@@ -2335,7 +2327,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             super(log,
                 cctx,
                 serializer,
-                Math.min(16 * tlbSize, psCfg.getWalRecordIteratorBufferSize()));
+                psCfg.getWalRecordIteratorBufferSize());
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;

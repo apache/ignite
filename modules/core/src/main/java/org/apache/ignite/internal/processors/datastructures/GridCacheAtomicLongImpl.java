@@ -368,7 +368,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
     }
 

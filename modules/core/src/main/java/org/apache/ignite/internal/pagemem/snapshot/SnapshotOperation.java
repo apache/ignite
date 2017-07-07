@@ -134,12 +134,30 @@ public class SnapshotOperation implements Serializable {
      * @param op Op.
      */
     public static Collection<File> getOptionalPathsParameter(SnapshotOperation op) {
-        assert (op.type() == SnapshotOperationType.CHECK ||
-                op.type() == SnapshotOperationType.RESTORE ||
-                op.type() == SnapshotOperationType.RESTORE_2_PHASE)
-            && (op.extraParameter() == null || op.extraParameter() instanceof Collection);
+        assert (op.type() == SnapshotOperationType.RESTORE ||
+            op.type() == SnapshotOperationType.RESTORE_2_PHASE)
+            && (op.extraParameter() == null || op.extraParameter() instanceof Collection)
+            || (op.type() == SnapshotOperationType.CHECK &&
+            (op.extraParameter() == null || op.extraParameter() instanceof SnapshotCheckParameters));
+
+        if (op.type() == SnapshotOperationType.CHECK) {
+            if (op.extraParameter() == null)
+                return null;
+            else
+                return ((SnapshotCheckParameters)op.extraParameter()).optionalPaths();
+        }
 
         return (Collection<File>)op.extraParameter();
+    }
+
+    /**
+     * @param op Op.
+     */
+    public static boolean getSkipCrcParameter(SnapshotOperation op) {
+        assert op.type() == SnapshotOperationType.CHECK &&
+            (op.extraParameter() == null | op.extraParameter() instanceof SnapshotCheckParameters);
+
+        return op.extraParameter() != null && ((SnapshotCheckParameters)op.extraParameter()).skipCrc();
     }
 
     /**

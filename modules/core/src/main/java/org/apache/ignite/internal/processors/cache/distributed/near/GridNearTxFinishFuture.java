@@ -349,7 +349,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                                     GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
 
                                     if (entry != null)
-                                        entry.invalidate(null, tx.xidVersion());
+                                        entry.invalidate(tx.xidVersion());
                                 }
                             }
                             catch (Throwable t) {

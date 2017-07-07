@@ -136,6 +136,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
+        pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
+
         if (logOnly)
             pCfg.setWalMode(WALMode.LOG_ONLY);
 
@@ -180,46 +182,79 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testWalBig() throws Exception {
-        try {
-            IgniteEx ignite = startGrid(1);
+        IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+        ignite.active(true);
 
-            IgniteCache<Object, Object> cache = ignite.cache("partitioned");
+        IgniteCache<Object, Object> cache = ignite.cache("partitioned");
 
-            Random rnd = new Random();
+        Random rnd = new Random();
 
-            Map<Integer, IndexedObject> map = new HashMap<>();
+        Map<Integer, IndexedObject> map = new HashMap<>();
 
-            for (int i = 0; i < 10_000; i++) {
-                if (i % 1000 == 0)
-                    X.println(" >> " + i);
+        for (int i = 0; i < 10_000; i++) {
+            if (i % 1000 == 0)
+                X.println(" >> " + i);
 
-                int k = rnd.nextInt(300_000);
-                IndexedObject v = new IndexedObject(rnd.nextInt(10_000));
+            int k = rnd.nextInt(300_000);
+            IndexedObject v = new IndexedObject(rnd.nextInt(10_000));
 
-                cache.put(k, v);
-                map.put(k, v);
-            }
-
-            // Check.
-            for (Integer k : map.keySet())
-                assertEquals(map.get(k), cache.get(k));
-
-            stopGrid(1);
-
-            ignite = startGrid(1);
-
-            ignite.active(true);
-
-            cache = ignite.cache("partitioned");
-
-            // Check.
-            for (Integer k : map.keySet())
-                assertEquals(map.get(k), cache.get(k));
+            cache.put(k, v);
+            map.put(k, v);
         }
-        finally {
-            stopAllGrids();
+
+        // Check.
+        for (Integer k : map.keySet())
+            assertEquals(map.get(k), cache.get(k));
+
+        stopGrid(1);
+
+        ignite = startGrid(1);
+
+        ignite.active(true);
+
+        cache = ignite.cache("partitioned");
+
+        // Check.
+        for (Integer k : map.keySet())
+            assertEquals(map.get(k), cache.get(k));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testWalBigObjectNodeCancel() throws Exception {
+        final int MAX_SIZE_POWER = 21;
+
+        IgniteEx ignite = startGrid(1);
+
+        ignite.active(true);
+
+        IgniteCache<Object, Object> cache = ignite.cache("partitioned");
+
+        for (int i = 0; i < MAX_SIZE_POWER; ++i) {
+            int size = 1 << i;
+
+            cache.put("key_" + i, createTestData(size));
+        }
+
+        stopGrid(1, true);
+
+        ignite = startGrid(1);
+
+        ignite.active(true);
+
+        cache = ignite.cache("partitioned");
+
+        // Check.
+        for (int i = 0; i < MAX_SIZE_POWER; ++i) {
+            int size = 1 << i;
+
+            int[] data = createTestData(size);
+
+            int[] val = (int[])cache.get("key_" + i);
+
+            assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
         }
     }
 
@@ -974,6 +1009,19 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @param size Size of data.
+     * @return Test data.
+     */
+    private int[] createTestData(int size) {
+        int[] data = new int[size];
+
+        for (int d = 0; d < size; ++d)
+            data[d] = d;
+
+        return data;
     }
 
     /**
