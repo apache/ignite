@@ -95,10 +95,10 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
     }
 
     /**
-     * @param fullId Full id.
+     * @param fullId Full page id.
      * @param tmpWriteBuf buffer
-     * @param writtenPages Overall pages written, null value means there is no progress tracked
-     * @param totalPages Overall pages count to be written
+     * @param writtenPages Overall pages written, negative value means there is no progress tracked
+     * @param totalPages Overall pages count to be written, should be positive
      */
     public void onPageWrite(
         final FullPageId fullId,

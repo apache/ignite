@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.partstate;
 
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -33,19 +32,18 @@ import org.jetbrains.annotations.Nullable;
  * Page counts map.
  */
 public class PartitionStatMap {
-    private final PartStatMapFullPageIdComparator comparator = PartStatMapFullPageIdComparator.INSTANCE;
     /** Maps following pairs: (cacheId, partId) -> (lastAllocatedCount, allocatedCount) */
-    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>(comparator);
+    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
 
-    public PagesAllocationRange get(CachePartitionId key) {
+    @Nullable public PagesAllocationRange get(CachePartitionId key) {
         return map.get(key);
     }
 
     public PagesAllocationRange get(FullPageId fullId) {
-        return get(createKey(fullId));
+        return get(createCachePartId(fullId));
     }
 
-    @NotNull public static CachePartitionId createKey(@NotNull final FullPageId fullId) {
+    @NotNull public static CachePartitionId createCachePartId(@NotNull final FullPageId fullId) {
         return new CachePartitionId(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
     }
 
@@ -69,42 +67,23 @@ public class PartitionStatMap {
         return map.firstKey();
     }
 
+
+    /**
+     * Map view with lower keys
+     * @param key
+     * @return Map with greater keys than provided
+     */
     public SortedMap<CachePartitionId, PagesAllocationRange> headMap(CachePartitionId key) {
         return map.headMap(key);
     }
 
-    public SortedMap<CachePartitionId, PagesAllocationRange> headMap(FullPageId fullId) {
-        return headMap(createKey(fullId));
-    }
-
     /**
-     * Map view with greater key
-     * @param key
-     * @param inclusive
-     * @return Map with greater keys than provided
-     */
-    public SortedMap<CachePartitionId, PagesAllocationRange> tailMap(CachePartitionId key, boolean inclusive) {
-        return map.tailMap(key, inclusive); //todo
-    }
-
-    /**
-     *
-     * @param key to search
+     * Returns next (higher) key for provided cache and partition or null
+     * @param key cache and partition to search
      * @return first found key which is greater than provided
      */
     @Nullable public CachePartitionId nextKey(@NotNull final CachePartitionId key) {
-        CachePartitionId id = nextKey0(key);
-        assert id==map.navigableKeySet().higher(key);
-        return id;
-    }
-
-    @Nullable private CachePartitionId nextKey0(@NotNull CachePartitionId key) {
-        NavigableSet<CachePartitionId> ids = map.navigableKeySet();
-        for (CachePartitionId next : ids) {
-            if (comparator.compare(next, key) > 0)
-                return next; //observed first key which is greater than provided key
-        }
-        return null;
+        return map.navigableKeySet().higher(key);
     }
 
     public Set<Map.Entry<CachePartitionId, PagesAllocationRange>> entrySet() {
@@ -112,7 +91,7 @@ public class PartitionStatMap {
     }
 
     public boolean containsKey(FullPageId id) {
-        return map.containsKey(createKey(id));
+        return map.containsKey(createCachePartId(id));
     }
 
     public PagesAllocationRange put(CachePartitionId key, PagesAllocationRange val) {
