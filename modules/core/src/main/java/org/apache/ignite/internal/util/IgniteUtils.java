@@ -4502,9 +4502,6 @@ public abstract class IgniteUtils {
         assert name != null;
         assert itf != null;
 
-        if(IGNITE_MBEANS_DISABLED)
-            throw new IgniteException("No MBeans are allowed.");
-
         DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
 
         mbean.getMBeanInfo();
