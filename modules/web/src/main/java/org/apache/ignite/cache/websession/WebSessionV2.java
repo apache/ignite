@@ -169,7 +169,9 @@ class WebSessionV2 implements HttpSession {
 
         maxInactiveIntervalChanged = true;
         
-        genuineSes.setMaxInactiveInterval(interval);
+        if (genuineSes != null) {
+            genuineSes.setMaxInactiveInterval(interval);
+        }
     }
 
     /**
@@ -227,7 +229,9 @@ class WebSessionV2 implements HttpSession {
     @Override public void setAttribute(final String name, final Object val) {
         assertValid();
         
-        genuineSes.setAttribute(name, val);
+        if (genuineSes != null) {
+            genuineSes.setAttribute(name, val);
+        }
 
         if (val == null)
             removeAttribute(name);
@@ -281,6 +285,10 @@ class WebSessionV2 implements HttpSession {
         assertValid();
 
         attributes().put(name, REMOVED_ATTR);
+        
+        if (genuineSes != null) {
+            genuineSes.removeAttribute(name);
+        }
     }
 
     /** {@inheritDoc} */
