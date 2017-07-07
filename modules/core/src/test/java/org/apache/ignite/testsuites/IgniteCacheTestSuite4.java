@@ -134,6 +134,7 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxNoLo
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxNoReadThroughTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxNoWriteThroughTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindCoalescingTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalTransactionalSelfTest;
@@ -172,6 +173,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);
         suite.addTestSuite(IgniteCacheAtomicStoreSessionWriteBehindTest.class);
         suite.addTestSuite(IgniteCacheTxStoreSessionWriteBehindTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreSessionWriteBehindCoalescingTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNoReadThroughTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);

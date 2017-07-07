@@ -766,7 +766,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
                     List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
 
-                    for (ExchangeActions.ActionData startReq : exchActions.cacheStartRequests())
+                    for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests())
                         startDescs.add(startReq.descriptor());
 
                     cctx.database().readCheckpointAndRestoreMemory(startDescs);

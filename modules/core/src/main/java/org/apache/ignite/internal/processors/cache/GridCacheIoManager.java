@@ -91,6 +91,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
 /**
  * Cache communication manager.
@@ -131,19 +132,25 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private final List<GridCacheMessage> pendingMsgs = new ArrayList<>(MAX_STORED_PENDING_MESSAGES);
 
     /**
-     *
+     * @param sb String builder.
      */
-    public void dumpPendingMessages() {
+    public void dumpPendingMessages(StringBuilder sb) {
         synchronized (pendingMsgs) {
             if (pendingMsgs.isEmpty())
                 return;
 
-            diagnosticLog.info("Pending cache messages waiting for exchange [" +
-                "readyVer=" + cctx.exchange().readyAffinityVersion() +
-                ", discoVer=" + cctx.discovery().topologyVersion() + ']');
+            sb.append("Pending cache messages waiting for exchange [readyVer=").
+                append(cctx.exchange().readyAffinityVersion()).
+                append(", discoVer=").
+                append(cctx.discovery().topologyVersion()).append(']');
 
-            for (GridCacheMessage msg : pendingMsgs)
-                diagnosticLog.info("Message [waitVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
+            sb.append(nl());
+
+            for (GridCacheMessage msg : pendingMsgs) {
+                sb.append("Message [waitVer=").append(msg.topologyVersion()).append(", msg=").append(msg).append(']');
+
+                sb.append(nl());
+            }
         }
     }
 
@@ -244,11 +251,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
 
-                synchronized (pendingMsgs) {
-                    if (pendingMsgs.size() < 100)
-                        pendingMsgs.add(cacheMsg);
-                }
-
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         Runnable c = new Runnable() {
@@ -346,12 +348,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     append(", desc=").append(descriptorForMessage(cacheMsg)).
                     append(']');
 
-                msg0.append(U.nl()).append("Registered listeners:");
+                msg0.append(nl()).append("Registered listeners:");
 
                 Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
                 for (Map.Entry<Integer, IgniteBiInClosure[]> e : idxClsHandlers0.entrySet())
-                    msg0.append(U.nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue()));
+                    msg0.append(nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue()));
 
                 if (cctx.kernalContext().isStopping()) {
                     if (log.isDebugEnabled())

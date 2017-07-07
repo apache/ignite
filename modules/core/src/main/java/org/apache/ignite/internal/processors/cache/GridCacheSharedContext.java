@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -223,6 +224,10 @@ public class GridCacheSharedContext<K, V> {
         stateAwareMgrs.add(dbMgr);
 
         stateAwareMgrs.add(snpMgr);
+
+        for (PluginProvider prv : kernalCtx.plugins().allProviders())
+            if (prv instanceof IgniteChangeGlobalStateSupport)
+                stateAwareMgrs.add(((IgniteChangeGlobalStateSupport)prv));
     }
 
     /**

@@ -263,6 +263,10 @@ class ClusterCachesInfo {
                 "Write behind batch size", locAttr.writeBehindBatchSize(), rmtAttr.writeBehindBatchSize(),
                 false);
 
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindCoalescing",
+                "Write behind coalescing", locAttr.writeBehindCoalescing(), rmtAttr.writeBehindCoalescing(),
+                false);
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindEnabled",
                 "Write behind enabled", locAttr.writeBehindEnabled(), rmtAttr.writeBehindEnabled(), false);
 
@@ -620,7 +624,7 @@ class ClusterCachesInfo {
                         // If all caches in group will be destroyed it is not necessary to destroy single cache
                         // because group will be stopped anyway.
                         if (req.destroy()) {
-                            for (ExchangeActions.ActionData action : exchangeActions.cacheStopRequests()) {
+                            for (ExchangeActions.CacheActionData action : exchangeActions.cacheStopRequests()) {
                                 if (action.descriptor().groupId() == grpDesc.groupId())
                                     action.request().destroy(false);
                             }

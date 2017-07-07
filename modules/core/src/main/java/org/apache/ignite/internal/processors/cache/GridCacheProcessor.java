@@ -964,6 +964,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // No new caches should be added after this point.
         exch.onKernalStop(cancel);
 
+        sharedCtx.mvcc().onStop();
+
         for (CacheGroupContext grp : cacheGrps.values())
             grp.onKernalStop();
 
@@ -2107,8 +2109,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (exchActions == null)
             return;
 
-        if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null)
+        if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null) {
             ctx.dataStructures().restoreStructuresState(ctx);
+
+            ctx.service().updateUtilityCache();
+        }
 
         if (err == null) {
             // Force checkpoint if there is any cache stop request
@@ -2121,7 +2126,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
+            for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
                 stopGateway(action.request());
 
                 sharedCtx.database().checkpointReadLock();
@@ -2593,7 +2598,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
         boolean checkThreadTx) {
-        return dynamicStartCaches(ccfgList, CacheType.USER, failIfExists, checkThreadTx);
+        return dynamicStartCaches(ccfgList, null, failIfExists, checkThreadTx);
     }
 
     /**
@@ -2619,11 +2624,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             for (CacheConfiguration ccfg : ccfgList) {
+                CacheType ct = cacheType;
+
+                if (ct == null) {
+                    if (CU.isUtilityCache(ccfg.getName()))
+                        ct = CacheType.UTILITY;
+                    else if (internalCaches.contains(ccfg.getName()))
+                        ct = CacheType.INTERNAL;
+                    else
+                        ct = CacheType.USER;
+                }
+
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg,
                     ccfg.getName(),
                     null,
-                    cacheType,
+                    ct,
                     false,
                     failIfExists,
                     true
