@@ -50,7 +50,7 @@ public class ExchangeActions {
     private Map<String, ActionData> cachesToResetLostParts;
 
     /** */
-    private ClusterState newState;
+    private StateChangeRequest stateChangeReq;
 
     /**
      * @param grpId Group ID.
@@ -89,7 +89,7 @@ public class ExchangeActions {
     /**
      * @return New caches start requests.
      */
-    Collection<ActionData> cacheStartRequests() {
+    public Collection<ActionData> cacheStartRequests() {
         return cachesToStart != null ? cachesToStart.values() : Collections.<ActionData>emptyList();
     }
 
@@ -184,19 +184,31 @@ public class ExchangeActions {
     }
 
     /**
-     * @param state New cluster state.
+     * @param stateChange Cluster state change request.
      */
-    void newClusterState(ClusterState state) {
-        assert state != null;
-
-        newState = state;
+    public void stateChangeRequest(StateChangeRequest stateChange) {
+        this.stateChangeReq = stateChange;
     }
 
     /**
-     * @return New cluster state if state change was requested.
+     * @return {@code True} if has deactivate request.
      */
-    @Nullable public ClusterState newClusterState() {
-        return newState;
+    public boolean deactivate() {
+        return stateChangeReq != null && !stateChangeReq.activate();
+    }
+
+    /**
+     * @return {@code True} if has activate request.
+     */
+    public boolean activate() {
+        return stateChangeReq != null && stateChangeReq.activate();
+    }
+
+    /**
+     * @return Cluster state change request.
+     */
+    @Nullable public StateChangeRequest stateChangeRequest() {
+        return stateChangeReq;
     }
 
     /**
@@ -328,13 +340,14 @@ public class ExchangeActions {
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
-            F.isEmpty(cachesToResetLostParts);
+            F.isEmpty(cachesToResetLostParts) &&
+            stateChangeReq == null;
     }
 
     /**
      *
      */
-    static class ActionData {
+    public static class ActionData {
         /** */
         private final DynamicCacheChangeRequest req;
 
@@ -429,6 +442,6 @@ public class ExchangeActions {
             ", startGrps=" + startGrps +
             ", stopGrps=" + stopGrps +
             ", resetParts=" + (cachesToResetLostParts != null ? cachesToResetLostParts.keySet() : null) +
-            ", newState=" + newState + ']';
+            ", stateChangeRequest=" + stateChangeReq + ']';
     }
 }

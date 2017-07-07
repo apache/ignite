@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -36,6 +37,7 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -70,6 +72,14 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         return new TestIncrementStoreFactory();
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean writeBehindEnabled() { return true;}
+
+    /** {@inheritDoc} */
+    @Override protected boolean writeBehindCoalescing() { return false;}
+
+    private static Random rnd = new Random();
+
     /**
      * @throws Exception If failed.
      */
@@ -81,35 +91,30 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         assertEquals(cache.getConfiguration(CacheConfiguration.class).getCacheStoreFactory().getClass(),
             TestIncrementStoreFactory.class);
 
-        Set<Integer> keys = new HashSet<>();
-
-        for (int i = 0; i < 1000; i++) {
-            keys.add(i);
-
+        for (int i = 0; i < CacheConfiguration.DFLT_WRITE_BEHIND_FLUSH_SIZE * 2; i++) {
             cache.put(i, i);
         }
 
         Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < 100; i++)
-            futs.add(updateKeys(cache, keys));
+        for (int i = 0; i < 1000; i++)
+            futs.add(updateKey(cache));
 
         for (IgniteFuture<?> fut : futs)
             fut.get();
     }
 
     /**
-     * Update specified keys in async mode.
+     * Update random key in async mode.
      *
      * @param cache Cache to use.
-     * @param keys Keys to update.
      * @return IgniteFuture.
      */
-    private IgniteFuture<?>  updateKeys(IgniteCache<Integer, Integer> cache, Set<Integer> keys) {
+    private IgniteFuture<?>  updateKey(IgniteCache<Integer, Integer> cache) {
         IgniteCache asyncCache = cache.withAsync();
 
         // Using EntryProcessor.invokeAll to increment every value in place.
-        asyncCache.invokeAll(keys, new EntryProcessor<Integer, Integer, Object>() {
+        asyncCache.invoke(rnd.nextInt(100), new EntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {
                 entry.setValue(entry.getValue() + 1);
@@ -150,7 +155,8 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
             Object oldVal = storeMap.put(entry.getKey(), entry.getValue());
 
-            if (oldVal instanceof Integer && entry.getValue() instanceof Integer) {
+
+            if (oldVal != null) {
                 Integer oldInt = (Integer) oldVal;
                 Integer newInt = (Integer)entry.getValue();
 

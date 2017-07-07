@@ -64,7 +64,7 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
 
         try {
             if (req.command().equals(CLUSTER_CURRENT_STATE)) {
-                Boolean currentState = ctx.state().active();
+                Boolean currentState = ctx.state().publicApiActiveState();
 
                 res.setResponse(currentState);
             }
