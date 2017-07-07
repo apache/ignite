@@ -673,6 +673,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (loc == null || loc.state() == EVICTED) {
             locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
 
+            T2<Long, Long> cntr = cntrMap.get(p);
+
+            if (cntr != null)
+                loc.updateCounter(cntr.get2());
+
             if (ctx.pageStore() != null) {
                 try {
                     ctx.pageStore().onPartitionCreated(grp.groupId(), p);
@@ -1334,11 +1339,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (cntr != null && cntr.get2() > part.updateCounter())
                     part.updateCounter(cntr.get2());
+                else if (part.updateCounter() > 0)
+                    this.cntrMap.put(part.id(), new T2<>(part.initialUpdateCounter(), part.updateCounter()));
             }
         }
         finally {
             lock.writeLock().unlock();
-
         }
     }
 
@@ -1715,6 +1721,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         result.add(ctx.localNodeId());
                     }
 
+                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                        "[nodeId=" + ctx.localNodeId() + "cacheOrGroupName=" + grp.cacheOrGroupName() +
+                        ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+
                 }
             }
 
@@ -1731,6 +1741,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         result.add(e.getKey());
                     }
                 }
+
+                U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                    "[nodeId=" + ctx.localNodeId() + "cacheOrGroupName=" + grp.cacheOrGroupName() +
+                    ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
             }
 
             if (updateSeq)
