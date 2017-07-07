@@ -906,6 +906,7 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * Suspends transaction. It could be resume later.
+     * TODO: IGNITE-4887, Add support for pessimistic transactions, currently supports only optimistic ones.
      *
      * @param tx Transaction to suspend.
      * @throws IgniteCheckedException If suspension failed.
@@ -920,6 +921,7 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * Resume transaction if it was previously suspended.
+     * TODO: IGNITE-4887, Add support for pessimistic transactions, currently supports only optimistic ones.
      *
      * @param tx Transaction to resume.
      * @throws IgniteException If resume failed.

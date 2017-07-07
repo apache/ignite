@@ -36,15 +36,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assert;
 
 /**
  *
  */
 public abstract class AbstractTransactionsInMultipleThreadsTest extends GridCommonAbstractTest {
-    /** Transaction concurrency control. */
-    protected TransactionConcurrency transactionConcurrency;
-
     /** Transaction isolation level. */
     protected TransactionIsolation transactionIsolation;
 
@@ -95,24 +91,20 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
     }
 
     /**
-     * Starts test scenario for all transaction controls, and isolation levels.
+     * Starts test scenario for all transaction isolation levels.
      *
      * @param testScenario Test scenario.
      * @throws Exception If scenario failed.
      */
-    protected void runWithAllIsolationsAndConcurrencies(IgniteCallable<Void> testScenario) throws Exception {
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            this.transactionConcurrency = concurrency;
+    protected void runWithAllIsolations(IgniteCallable<Void> testScenario) throws Exception {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            this.transactionIsolation = isolation;
 
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                this.transactionIsolation = isolation;
-
-                try {
-                    testScenario.call();
-                }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
+            try {
+                testScenario.call();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
     }

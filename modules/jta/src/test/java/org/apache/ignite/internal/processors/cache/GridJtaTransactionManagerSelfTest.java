@@ -90,16 +90,14 @@ public class GridJtaTransactionManagerSelfTest extends GridCacheAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testJtaTransactionContextSwitch() throws Exception {
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
 
-                TransactionConfiguration cfg = grid(0).context().config().getTransactionConfiguration();
-                cfg.setDefaultTxConcurrency(concurrency);
-                cfg.setDefaultTxIsolation(isolation);
+            TransactionConfiguration cfg = grid(0).context().config().getTransactionConfiguration();
 
-                jtaTransactionContextSwitch(TransactionConcurrency.OPTIMISTIC.equals(concurrency)
-                    && (TransactionIsolation.REPEATABLE_READ.equals(isolation)));
-            }
+            cfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
+            cfg.setDefaultTxIsolation(isolation);
+
+            jtaTransactionContextSwitch((TransactionIsolation.REPEATABLE_READ.equals(isolation)));
         }
     }
 

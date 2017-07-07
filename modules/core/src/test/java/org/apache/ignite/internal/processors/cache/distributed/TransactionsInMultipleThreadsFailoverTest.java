@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -47,7 +46,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
         final IgniteTransactions transactions = grid(initiatingNodeIdx).transactions();
         IgniteCache<String, Integer> cache = jcache(initiatingNodeIdx);
 
-        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
+        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put(key, 1);
 
@@ -81,7 +80,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
     public void testTxRemoteNodeFailover() throws Exception {
         startGrid(getTestIgniteInstanceName(0));
 
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txRemoteNodeFailover();
 
@@ -105,24 +104,13 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
 
         assert remotePrimaryKey != null;
 
-        try {
-            performTransactionFailover(remotePrimaryKey, 1, 0);
-
-            if (transactionConcurrency.equals(TransactionConcurrency.PESSIMISTIC))
-                fail("Broken remote node must have caused exception");
-        }
-        catch (ClusterTopologyCheckedException ignore) {
-            // ignoring node breakage exception
-        }
+        performTransactionFailover(remotePrimaryKey, 1, 0);
 
         waitAllTransactionsHasFinished();
 
         IgniteCache<String, Integer> clientCache = jcache(0);
 
-        if (transactionConcurrency.equals(TransactionConcurrency.OPTIMISTIC))
-            assertEquals(1, (long)clientCache.get(remotePrimaryKey));
-        else
-            assertNull(clientCache.get(remotePrimaryKey));
+        assertEquals(1, (long)clientCache.get(remotePrimaryKey));
 
         clientCache.removeAll();
     }
@@ -133,7 +121,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
     public void testTxLocalNodeFailover() throws Exception {
         startGrid(getTestIgniteInstanceName(0));
 
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txLocalNodeFailover();
 
@@ -177,7 +165,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
 
         startGrid(getTestIgniteInstanceName(0), getConfiguration().setClientMode(true));
 
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txOnClientBreakRemote();
 
@@ -201,24 +189,13 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
 
         assert remotePrimaryKey != null;
 
-        try {
-            performTransactionFailover(remotePrimaryKey, 1, 0);
-
-            if (transactionConcurrency.equals(TransactionConcurrency.PESSIMISTIC))
-                fail("Broken remote node must have caused exception.");
-        }
-        catch (IgniteCheckedException ignore) {
-            // ignoring node breakage exception
-        }
+        performTransactionFailover(remotePrimaryKey, 1, 0);
 
         waitAllTransactionsHasFinished();
 
         IgniteCache<String, Integer> clientCache = jcache(0);
 
-        if (transactionConcurrency.equals(TransactionConcurrency.OPTIMISTIC))
-            assertEquals(1, (long)clientCache.get(remotePrimaryKey));
-        else
-            assertNull(clientCache.get(remotePrimaryKey));
+        assertEquals(1, (long)clientCache.get(remotePrimaryKey));
 
         clientCache.removeAll();
     }

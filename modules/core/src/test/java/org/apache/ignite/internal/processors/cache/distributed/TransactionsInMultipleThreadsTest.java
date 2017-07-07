@@ -63,7 +63,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     public void testSimpleTransactionInAnotherThread() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 simpleTransactionInAnotherThread();
 
@@ -81,7 +81,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         assertNull(cache.get("key1"));
 
-        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
+        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put("key1", 1);
         cache.put("key2", 2);
@@ -124,7 +124,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     public void testSimpleTransactionInAnotherThreadContinued() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 simpleTransactionInAnotherThreadContinued();
 
@@ -142,7 +142,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
 
         assertNull(cache.get("key1"));
 
-        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
+        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put("key1", 1);
         cache.put("key2", 2);
@@ -204,7 +204,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     public void testCrossCacheTransactionInAnotherThread() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 crossCacheTransactionInAnotherThread();
 
@@ -222,7 +222,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         final IgniteCache<String, Integer> cache1 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME));
         final IgniteCache<String, Integer> cache2 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME2));
 
-        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
+        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache1.put("key1", 1);
         cache2.put("key2", 2);
@@ -265,7 +265,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     public void testCrossCacheTransactionInAnotherThreadContinued() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 crossCacheTransactionInAnotherThreadContinued();
 
@@ -283,7 +283,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         final IgniteCache<String, Integer> cache1 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME));
         final IgniteCache<String, Integer> cache2 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME2));
 
-        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
+        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache1.put("key1", 1);
         cache2.put("key2", 2);
@@ -343,7 +343,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws Exception If failed.
      */
     public void testTransactionRollback() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 transactionRollback();
 
@@ -359,7 +359,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
         final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
 
-        final Transaction tx = transactions.txStart(transactionConcurrency, transactionIsolation);
+        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put("key1", 1);
         cache.put("key2", 2);
@@ -401,7 +401,6 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
      * @throws IgniteCheckedException If failed.
      */
     public void testMultipleTransactionsSuspendResume() throws IgniteCheckedException {
-        transactionConcurrency = TransactionConcurrency.OPTIMISTIC;
 
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             transactionIsolation = isolation;
@@ -420,7 +419,7 @@ public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMul
         Transaction clientTx;
 
         for (int i = 0; i < 10; i++) {
-            clientTx = clientNode.transactions().txStart(transactionConcurrency, transactionIsolation);
+            clientTx = clientNode.transactions().txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
             clientCache.put("1", i);
 

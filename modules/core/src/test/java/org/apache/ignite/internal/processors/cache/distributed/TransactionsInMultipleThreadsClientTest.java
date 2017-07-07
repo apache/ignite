@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +33,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jsr166.LongAdder8;
-import org.junit.Assert;
 
 /**
  *
@@ -54,65 +52,6 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
     }
 
     /**
-     * Test for pessimistic entry locking twice: before suspend, and after resume.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testPessimisticTxDoubleLock() throws IgniteCheckedException {
-        transactionConcurrency = TransactionConcurrency.PESSIMISTIC;
-
-        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            transactionIsolation = isolation;
-
-            pessimisticTxDoubleLock();
-        }
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void pessimisticTxDoubleLock() throws IgniteCheckedException {
-        final IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
-        final IgniteCache<String, Integer> remoteCache = jcache(0);
-
-        final String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
-
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
-
-        final Transaction clientTx = transactions.txStart(transactionConcurrency, transactionIsolation);
-
-        clientCache.put(remotePrimaryKey, 1);
-
-        clientTx.suspend();
-
-        final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
-                assertEquals(TransactionState.SUSPENDED, clientTx.state());
-
-                clientTx.resume();
-
-                assertEquals(TransactionState.ACTIVE, clientTx.state());
-
-                Integer val = clientCache.get(remotePrimaryKey);
-
-                clientCache.put(remotePrimaryKey, val + 1);
-
-                clientTx.commit();
-
-                return true;
-            }
-        });
-
-        fut.get(5000);
-
-        assertEquals(TransactionState.COMMITTED, clientTx.state());
-        assertEquals(2, jcache(0).get(remotePrimaryKey));
-
-        clientCache.removeAll();
-    }
-
-    /**
      * Test start 1 transaction, resuming it in another thread. And then start another transaction, trying to write
      * the same key and commit it.
      *
@@ -120,7 +59,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      */
     public void testResumeTxWhileStartingAnotherTx() throws Exception {
         for (final TransactionIsolation firstTxIsolation : TransactionIsolation.values())
-            runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            runWithAllIsolations(new IgniteCallable<Void>() {
                 @Override public Void call() throws Exception {
                     resumeTxWhileStartingAnotherTx(firstTxIsolation);
 
@@ -171,7 +110,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         barrier.await();
 
-        final Transaction clientTx2 = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency,
+        final Transaction clientTx2 = ignite(txInitiatorNodeId).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
             transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 3);
@@ -195,7 +134,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      */
     public void testSuspendTxAndStartNewTx() throws Exception {
         for (final TransactionIsolation firstTxIsolation : TransactionIsolation.values())
-            runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+            runWithAllIsolations(new IgniteCallable<Void>() {
                 @Override public Void call() throws Exception {
                     suspendTxAndStartNewTx(firstTxIsolation);
 
@@ -222,7 +161,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         clientTx.suspend();
 
-        final Transaction clientTx2 = clientIgnite.transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx2 = clientIgnite.transactions().txStart(TransactionConcurrency.OPTIMISTIC,
+            transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 2);
 
@@ -241,7 +181,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      * @throws Exception If failed.
      */
     public void testTxConcurrentSuspend() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txConcurrentSuspend();
 
@@ -264,7 +204,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
+            transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -297,7 +238,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      * @throws Exception If failed.
      */
     public void testTxConcurrentResume() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txConcurrentResume();
 
@@ -320,7 +261,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
+            transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -345,7 +287,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      * @throws Exception If failed.
      */
     public void testTxConcurrentCommit() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txConcurrentCommit();
 
@@ -368,7 +310,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
+            transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -407,7 +350,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      * @throws Exception If failed.
      */
     public void testTxConcurrentRollback() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txConcurrentRollback();
 
@@ -430,7 +373,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
+            transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
@@ -469,7 +413,7 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
      * @throws Exception If failed.
      */
     public void testTxConcurrentClose() throws Exception {
-        runWithAllIsolationsAndConcurrencies(new IgniteCallable<Void>() {
+        runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txConcurrentClose();
 
@@ -492,7 +436,8 @@ public class TransactionsInMultipleThreadsClientTest extends TransactionsInMulti
 
         String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(transactionConcurrency, transactionIsolation);
+        final Transaction clientTx = ignite(txInitiatorNodeId).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
+            transactionIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
 
