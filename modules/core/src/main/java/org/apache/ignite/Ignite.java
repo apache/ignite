@@ -675,8 +675,9 @@ public interface Ignite extends AutoCloseable {
     public void resetLostPartitions(Collection<String> cacheNames);
 
     /**
-     * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
+     * Returns a collection of {@link MemoryMetrics} that reflects durable memory usage on this Apache Ignite node
      * instance.
+     * <p>
      * Returns the collection that contains the latest snapshots for each memory region
      * configured with {@link MemoryPolicyConfiguration configuration} on this Ignite node instance.
      *
@@ -685,7 +686,7 @@ public interface Ignite extends AutoCloseable {
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
-     * Returns the latest {@link MemoryMetrics} snapshot for the memory region of the given name.
+     * Returns the latest {@link MemoryMetrics} snapshot for a memory region of the given name.
      *
      * To get the metrics for the default memory region use
      * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} as the name

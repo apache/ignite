@@ -55,8 +55,8 @@ public interface MemoryMetrics {
     public String getName();
 
     /**
-     * Gets a total number of allocated pages related to the memory policy. When persistence is disabled, this
-     * metric shows the total number of pages in memory. When persistence is enabled, this metric shows the
+     * Gets a total number of allocated pages related to the memory policy. When Ignite Persistent Store is disabled,
+     * this metric shows the total number of pages in memory. When the persistence is enabled, this metric shows the
      * total number of pages in memory and on disk.
      *
      * @return Total number of allocated pages.
@@ -93,25 +93,25 @@ public interface MemoryMetrics {
     public float getPagesFillFactor();
 
     /**
-     * Gets the number of dirty pages (pages which contents is different from the current persistent storage state).
-     * This metric is enabled only for Ignite nodes with enabled persistence.
+     * Gets a number of dirty pages (pages which content varies from the content of the same pages on disk).
+     * This metric is used only when Ignite Persistent Store is enabled.
      *
      * @return Current number of dirty pages.
      */
     public long getDirtyPages();
 
     /**
-     * Gets rate (pages per second) at which pages get replaced with other pages from persistent storage.
-     * The rate effectively represents the rate at which pages get 'evicted' in favor of newly needed pages.
-     * This metric is enabled only for Ignite nodes with enabled persistence.
+     * Gets a rate (pages per second) at which pages that are in RAM are replaced with another pages from disk.
+     * The metric effectively represents the rate at which pages get 'evicted' from RAM in favor of bringing another
+     * pages from disk. This metric is used only when the Ignite Persistent Store is enabled.
      *
      * @return Pages per second replace rate.
      */
     public float getPagesReplaceRate();
 
     /**
-     * Gets total number of pages currently loaded to the RAM. When persistence is disabled, this metric is equal
-     * to {@link #getTotalAllocatedPages()}.
+     * Gets a total number of pages currently loaded to the RAM. When the Ignite Persistent Store is disabled
+     * this metric is the same as to {@link #getTotalAllocatedPages()}.
      *
      * @return Total number of pages loaded to RAM.
      */

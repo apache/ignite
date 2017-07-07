@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
- * This example demonstrates how to tweak particular settings of Apache Ignite page memory using
+ * This example demonstrates how to tweak particular settings of Apache Ignite durable memory using
  * {@link MemoryConfiguration} and set up several memory policies for different caches with
  * {@link MemoryPolicyConfiguration}.
  * <p>

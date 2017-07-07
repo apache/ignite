@@ -20,37 +20,38 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
- * Persistence metrics used to obtain statistics on persistence.
+ * Persistence metrics used to obtain statistics on the Ignite Persistent Store.
  *
- * Use {@link IgniteCacheDatabaseSharedManager#persistentStoreMetrics()} to obtain persistent metrics.
+ * Use {@link Ignite#persistentStoreMetrics()} to obtain this set of metrics.
  */
 public interface PersistenceMetrics {
     /**
-     * Gets the average number of WAL records per second written during the last time interval.
+     * Gets the average number of WAL records per second logged during the last configured time interval.
      * <p>
      * The length of time interval is configured via {@link PersistentStoreConfiguration#setRateTimeInterval(long)}
-     * configurartion property.
-     * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
+     * configuration property.
+     * The number of sub-intervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
      */
     public float getWalLoggingRate();
 
     /**
-     * Gets the average number of bytes per second written during the last time interval.
+     * Gets the average number of bytes per second written during the last configured time interval.
+     * <p>
      * The length of time interval is configured via {@link PersistentStoreConfiguration#setRateTimeInterval(long)}
-     * configurartion property.
-     * The number of subintervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
+     * configuration property.
+     * The number of sub-intervals is configured via {@link PersistentStoreConfiguration#setSubIntervals(int)}
      * configuration property.
      */
     public float getWalWritingRate();
 
     /**
-     * Gets the current number of WAL segments in the WAL archive.
+     * Gets a current number of WAL segments in the WAL archive.
      */
     public int getWalArchiveSegments();
 
     /**
-     * Gets the average WAL fsync duration in microseconds over the last time interval.
+     * Gets an average WAL fsync duration in microseconds over the last configured time interval.
      * <p>
      * The length of time interval is configured via {@link PersistentStoreConfiguration#setRateTimeInterval(long)}
      * configurartion property.
@@ -60,56 +61,56 @@ public interface PersistenceMetrics {
     public float getWalFsyncTimeAverage();
 
     /**
-     * Gets the duration of the last checkpoint in milliseconds.
+     * Gets duration of the last checkpoint process in milliseconds.
      *
      * @return Total checkpoint duration in milliseconds.
      */
     public long getLastCheckpointingDuration();
 
     /**
-     * Gets the duration of last checkpoint lock wait in milliseconds.
+     * Gets duration of the last checkpoint lock wait time in milliseconds.
      *
      * @return Checkpoint lock wait time in milliseconds.
      */
     public long getLastCheckpointLockWaitDuration();
 
     /**
-     * Gets the duration of last checkpoint mark phase in milliseconds.
+     * Gets duration of the last checkpoint mark phase time in milliseconds.
      *
      * @return Checkpoint mark duration in milliseconds.
      */
     public long getLastCheckpointMarkDuration();
 
     /**
-     * Gets the duration of last checkpoint pages write phase in milliseconds.
+     * Gets duration of the last checkpoint pages write phase time in milliseconds.
      *
      * @return Checkpoint pages write phase in milliseconds.
      */
     public long getLastCheckpointPagesWriteDuration();
 
     /**
-     * Gets the duration of the sync phase of the last checkpoint in milliseconds.
+     * Gets duration of the fsync phase of the last checkpoint process in milliseconds.
      *
      * @return Checkpoint fsync time in milliseconds.
      */
     public long getLastCheckpointFsyncDuration();
 
     /**
-     * Gets the total number of pages written during the last checkpoint.
+     * Gets a total number of pages written during the last checkpoint process.
      *
      * @return Total number of pages written during the last checkpoint.
      */
     public long getLastCheckpointTotalPagesNumber();
 
     /**
-     * Gets the number of data pages written during the last checkpoint.
+     * Gets a number of data pages written during the last checkpoint process.
      *
      * @return Total number of data pages written during the last checkpoint.
      */
     public long getLastCheckpointDataPagesNumber();
 
     /**
-     * Gets the number of pages copied to a temporary checkpoint buffer during the last checkpoint.
+     * Gets a number of pages copied to a temporary checkpoint buffer during the last checkpoint.
      *
      * @return Total number of pages copied to a temporary checkpoint buffer during the last checkpoint.
      */
