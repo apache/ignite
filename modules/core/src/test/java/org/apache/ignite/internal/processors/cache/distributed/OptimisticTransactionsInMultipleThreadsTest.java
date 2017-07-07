@@ -35,7 +35,7 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  *
  */
-public class TransactionsInMultipleThreadsTest extends AbstractTransactionsInMultipleThreadsTest {
+public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransactionsInMultipleThreadsTest {
     /** Name for test cache*/
     private static final String TEST_CACHE_NAME = "testCache";
 

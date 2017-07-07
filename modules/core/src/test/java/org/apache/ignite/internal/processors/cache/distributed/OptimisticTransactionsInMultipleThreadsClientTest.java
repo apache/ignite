@@ -37,7 +37,7 @@ import org.jsr166.LongAdder8;
 /**
  *
  */
-public class TransactionsInMultipleThreadsClientTest extends TransactionsInMultipleThreadsTest {
+public class OptimisticTransactionsInMultipleThreadsClientTest extends OptimisticTransactionsInMultipleThreadsTest {
     /** Number of concurrently running threads, which tries to perform transaction operations.*/
     private int concurrentThreadsNum = 25;
 

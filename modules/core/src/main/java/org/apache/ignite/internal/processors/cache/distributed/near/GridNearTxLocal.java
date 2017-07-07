@@ -2861,7 +2861,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      */
     public void suspend() throws IgniteCheckedException {
         if (pessimistic())
-            throw new UnsupportedOperationException("Suspension is not supported yet.");
+            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions yet.");
 
         if (!ACTIVE.equals(state()))
             throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
@@ -3021,7 +3021,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      */
     public void resume() throws IgniteCheckedException {
         if (pessimistic())
-            throw new UnsupportedOperationException("Resuming is not supported yet.");
+            throw new UnsupportedOperationException("Resuming is not supported for pessimistic transactions yet.");
 
         synchronized (this) {
             if (!SUSPENDED.equals(state()))
@@ -3029,9 +3029,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                     + "[expected=" + SUSPENDED + ", actual=" + state() + ']');
 
             cctx.tm().attachThread(this);
-
-            if (pessimistic())
-                txState().updateMvccCandidatesWithCurrentThread(threadId);
 
             threadId = Thread.currentThread().getId();
 

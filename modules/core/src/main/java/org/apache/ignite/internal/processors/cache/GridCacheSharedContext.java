@@ -971,7 +971,8 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If suspension failed.
      */
     public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        checkPermission(tx);
+        if (tx.optimistic())
+            checkPermission(tx);
 
         tx.txState().awaitLastFut(this);
 

@@ -32,7 +32,7 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  *
  */
-public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransactionsInMultipleThreadsTest {
+public class OptimisticTransactionsInMultipleThreadsFailoverTest extends AbstractTransactionsInMultipleThreadsTest {
     /**
      * Starts transaction, breaks node and then resuming it in another thread.
      *
@@ -149,7 +149,7 @@ public class TransactionsInMultipleThreadsFailoverTest extends AbstractTransacti
             performTransactionFailover(localPrimaryKey, 1, 1);
         }
         catch (IgniteCheckedException ignore) {
-            // ignoring node breakage exception
+            // ignoring node breakage exception.
         }
 
         IgniteCache<String, Integer> remoteCache = jcache(0);
