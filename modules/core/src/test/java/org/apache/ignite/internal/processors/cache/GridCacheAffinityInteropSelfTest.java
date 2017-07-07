@@ -19,17 +19,24 @@ public class GridCacheAffinityInteropSelfTest extends GridCommonAbstractTest {
      */
     public void testFieldAffinityMapperWithCustomBinaryConfiguration() throws Exception {
         BinaryConfiguration binaryCfg = new BinaryConfiguration();
+
         binaryCfg.setClassNames(Collections.singletonList(PositionKey.class.getName()));
 
         IgniteConfiguration igniteCfg = getConfiguration();
+
         igniteCfg.setBinaryConfiguration(binaryCfg);
 
         try (Ignite ignite = Ignition.start(igniteCfg)) {
             final String CACHE = "positions";
+
             ignite.getOrCreateCache(CACHE);
+
             GridCacheContext cacheCtx = ((IgniteEx)ignite).context().cache().internalCache(CACHE).context();
+
             PositionKey sberbank = new PositionKey(1, "US80585Y3080");
+
             Object affinityKey = cacheCtx.affinity().affinityKey(sberbank);
+
             assertEquals(sberbank.getIsin(), affinityKey);
         }
     }
