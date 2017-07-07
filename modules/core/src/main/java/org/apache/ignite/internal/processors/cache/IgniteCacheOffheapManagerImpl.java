@@ -1179,12 +1179,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
-            int oldLen = FreeListImpl.getRowSize(oldRow);
+            // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
+            boolean sizeWithCacheId = grp.sharedGroup();
+
+            int oldLen = FreeListImpl.getRowSize(oldRow, sizeWithCacheId);
 
             if (oldLen > updateValSizeThreshold)
                 return false;
 
-            int newLen = FreeListImpl.getRowSize(dataRow);
+            int newLen = FreeListImpl.getRowSize(dataRow, sizeWithCacheId);
 
             return oldLen == newLen;
         }
