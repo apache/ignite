@@ -128,12 +128,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** */
     private final CacheDataStore store;
 
-    /** Partition updates. */
-    private final ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
-
-    /** Last applied update. */
-    private final AtomicLong lastApplied = new AtomicLong(0);
-
     /** Set if failed to move partition to RENTING state due to reservations, to be checked when
      * reservation is released. */
     private volatile boolean shouldBeRenting;
@@ -251,44 +245,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             return map.size() == 0;
 
         return size() == 0 && map.size() == 0;
-    }
-
-    /**
-     * @return Last applied update.
-     */
-    public long lastAppliedUpdate() {
-        return lastApplied.get();
-    }
-
-    /**
-     * @param cntr Received counter.
-     */
-    public void onUpdateReceived(long cntr) {
-        boolean changed = updates.putIfAbsent(cntr, true) == null;
-
-        if (!changed)
-            return;
-
-        while (true) {
-            Map.Entry<Long, Boolean> entry = updates.firstEntry();
-
-            if (entry == null)
-                return;
-
-            long first = entry.getKey();
-
-            long cntr0 = lastApplied.get();
-
-            if (first <= cntr0)
-                updates.remove(first);
-            else if (first == cntr0 + 1)
-                if (lastApplied.compareAndSet(cntr0, first))
-                    updates.remove(first);
-                else
-                    break;
-            else
-                break;
-        }
     }
 
     /** {@inheritDoc} */

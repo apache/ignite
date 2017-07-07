@@ -389,7 +389,7 @@ class GridDhtPartitionSupplier {
                     }
 
                     // Mark as last supply message.
-                    s.last(part);
+                    s.last(part, loc.updateCounter());
 
                     phase = SupplyContextPhase.NEW;
 

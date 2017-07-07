@@ -638,6 +638,11 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         if (loc == null || loc.state() == EVICTED) {
             locParts.set(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
+            T2<Long, Long> cntr = cntrMap.get(p);
+
+            if (cntr != null)
+                loc.updateCounter(cntr.get2());
+
             if (cctx.shared().pageStore() != null) {
                 try {
                     cctx.shared().pageStore().onPartitionCreated(cctx.cacheId(), p);
@@ -1301,6 +1306,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     if (cntr != null && cntr.get2() > part.updateCounter())
                         part.updateCounter(cntr.get2());
+                    else if (part.updateCounter() > 0)
+                        this.cntrMap.put(part.id(), new T2<>(part.initialUpdateCounter(), part.updateCounter()));
                 }
             }
 
@@ -1656,6 +1663,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         result.add(cctx.localNodeId());
                     }
 
+                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                        "[nodeId=" + cctx.localNodeId() + ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+
                 }
             }
 
@@ -1671,6 +1681,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                         result.add(e.getKey());
                     }
+
+                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                        "[nodeId=" + cctx.localNodeId() + ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
                 }
             }
 
