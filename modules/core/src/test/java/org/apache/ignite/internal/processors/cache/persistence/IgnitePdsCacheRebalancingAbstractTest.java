@@ -492,6 +492,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             assertEquals(Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
     }
 
+    /**
+     * @throws Exception If failed
+     */
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
         final Ignite ig = startGrids(4);
 
@@ -500,6 +503,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         int k = 0;
 
         try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
+            ds.allowOverwrite(true);
+
             for (int k0 = k; k < k0 + 10_000; k++)
                 ds.addData(k, k);
         }
@@ -523,6 +528,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             });
 
             try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
+                ds.allowOverwrite(true);
+
                 while (!fut.isDone()) {
                     ds.addData(k, k);
 

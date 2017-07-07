@@ -1327,7 +1327,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (cntr != null && cntr.get2() > part.updateCounter())
                     part.updateCounter(cntr.get2());
-                else
+                else if (part.updateCounter() > 0)
                     this.cntrMap.put(part.id(), new T2<>(part.initialUpdateCounter(), part.updateCounter()));
             }
         }
