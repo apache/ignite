@@ -255,7 +255,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
                 //"-XX:+UnlockCommercialFeatures",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
-                JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 2),
+                JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4),
                 JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client)).build();
 
         new Runner(opt).run();
