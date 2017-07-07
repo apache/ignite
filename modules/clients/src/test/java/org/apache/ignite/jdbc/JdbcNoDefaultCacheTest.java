@@ -31,7 +31,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -106,10 +105,17 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Connection URL.
+     */
+    protected String getUrl() {
+        return URL;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testDefaults() throws Exception {
-        String url = URL;
+        String url = getUrl();
 
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
@@ -126,7 +132,7 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     public void testNoCacheNameQuery() throws Exception {
         Statement stmt;
 
-        stmt = DriverManager.getConnection(URL).createStatement();
+        stmt = DriverManager.getConnection(getUrl()).createStatement();
 
         assertNotNull(stmt);
         assertFalse(stmt.isClosed());
