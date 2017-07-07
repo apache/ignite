@@ -16,6 +16,9 @@
  */
 
 import StringBuilder from './StringBuilder';
+import VersionService from 'app/modules/configuration/Version.service';
+
+const versionService = new VersionService();
 
 // Java built-in class names.
 import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
@@ -39,13 +42,17 @@ export default class IgniteMavenGenerator {
         deps.add({groupId, artifactId, version, jar});
     }
 
-    pickDependency(deps, key, dfltVer) {
+    pickDependency(deps, key, dfltVer, igniteVer) {
+        const extractVersion = (version) => {
+            return _.isArray(version) ? _.find(version, (v) => versionService.since(igniteVer, v.range)).version : version;
+        };
+
         if (!_.has(POM_DEPENDENCIES, key))
             return;
 
         const {groupId, artifactId, version, jar} = POM_DEPENDENCIES[key];
 
-        this.addDependency(deps, groupId || 'org.apache.ignite', artifactId, version || dfltVer, jar);
+        this.addDependency(deps, groupId || 'org.apache.ignite', artifactId, extractVersion(version) || dfltVer, jar);
     }
 
     addResource(sb, dir, exclude) {
@@ -139,9 +146,9 @@ export default class IgniteMavenGenerator {
      * @param deps Already added dependencies.
      * @param storeFactory Store factory to add dependency.
      */
-    storeFactoryDependency(deps, storeFactory) {
+    storeFactoryDependency(deps, storeFactory, igniteVer) {
         if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource'))
-            this.pickDependency(deps, storeFactory.dialect);
+            this.pickDependency(deps, storeFactory.dialect, null, igniteVer);
     }
 
     collectDependencies(cluster, targetVer) {
@@ -167,7 +174,7 @@ export default class IgniteMavenGenerator {
 
         _.forEach(caches, (cache) => {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind)
-                this.storeFactoryDependency(storeDeps, cache.cacheStoreFactory[cache.cacheStoreFactory.kind]);
+                this.storeFactoryDependency(storeDeps, cache.cacheStoreFactory[cache.cacheStoreFactory.kind], igniteVer);
 
             if (_.get(cache, 'nodeFilter.kind') === 'Exclude')
                 this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', igniteVer);
@@ -177,14 +184,14 @@ export default class IgniteMavenGenerator {
             const store = cluster.discovery.Jdbc;
 
             if (store.dataSourceBean && store.dialect)
-                this.storeFactoryDependency(storeDeps, cluster.discovery.Jdbc);
+                this.storeFactoryDependency(storeDeps, cluster.discovery.Jdbc, igniteVer);
         }
 
         _.forEach(cluster.checkpointSpi, (spi) => {
             if (spi.kind === 'S3')
                 this.pickDependency(deps, spi.kind, igniteVer);
             else if (spi.kind === 'JDBC')
-                this.storeFactoryDependency(storeDeps, spi.JDBC);
+                this.storeFactoryDependency(storeDeps, spi.JDBC, igniteVer);
         });
 
         if (_.get(cluster, 'hadoopConfiguration.mapReducePlanner.kind') === 'Weighted' ||
