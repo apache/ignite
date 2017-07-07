@@ -444,23 +444,28 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (stopping)
                         return;
 
-                    GridDhtPartitionExchangeId exchId = exchFut.exchangeId();assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
-                        topVer + ", exchId=" + exchId + ']';
+                    GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
+
+                    assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" + topVer +
+                        ", exchId=" + exchId + ']';
 
                     if (exchId.isLeft() && exchFut.serverNodeDiscoveryEvent())
                         removeNode(exchId.nodeId());
     
                     ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
+                    if (log.isDebugEnabled()) {
+                        log.debug("Partition map beforeExchange [exchId=" + exchId +
+                            ", fullMap=" + fullMapString() + ']');
+                    }
 
                     long updateSeq = this.updateSeq.incrementAndGet();
 
                     cntrMap.clear();
 
-                    boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());// If this is the oldest node.
+                    boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
+                    // If this is the oldest node.
                     if (oldest != null && (loc.equals(oldest) || grpStarted)) {
                         if (node2part == null) {
                             node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
@@ -470,18 +475,28 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     exchId + ", fullMap=" + fullMapString() + ']');
                         }
                         else if (!node2part.valid()) {
-                            node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+                            node2part = new GridDhtPartitionFullMap(oldest.id(),
+                                oldest.order(),
+                                updateSeq,
+                                node2part,
+                                false);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
-                                    node2part + ']');
+                            if (log.isDebugEnabled()) {
+                                log.debug("Created new full topology map on oldest node [exchId=" + exchId +
+                                    ", fullMap=" + node2part + ']');
+                            }
                         }
                         else if (!node2part.nodeId().equals(loc.id())) {
-                            node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+                            node2part = new GridDhtPartitionFullMap(oldest.id(),
+                                oldest.order(),
+                                updateSeq,
+                                node2part,
+                                false);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
-                                    exchId + ", fullMap=" + fullMapString() + ']');
+                            if (log.isDebugEnabled()) {
+                                log.debug("Copied old map into new map on oldest node (previous oldest node left) [" +
+                                    "exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
+                            }
                         }
                     }
 
@@ -499,9 +514,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     consistencyCheck();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
-                            fullMapString() + ']');
+                    if (log.isDebugEnabled()) {
+                        log.debug("Partition map after beforeExchange [exchId=" + exchId +
+                            ", fullMap=" + fullMapString() + ']');
+                    }
                 }
                 finally {
                     lock.writeLock().unlock();
