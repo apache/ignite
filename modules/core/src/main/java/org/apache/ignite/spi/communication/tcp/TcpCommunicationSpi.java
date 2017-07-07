@@ -340,6 +340,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** */
     private ConnectionPolicy connPlc;
 
+    /** */
+    private boolean enableTroubleshootingLog = IgniteSystemProperties
+        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
+
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
         new GridNioServerListenerAdapter<Message>() {
@@ -453,8 +457,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 final ClusterNode rmtNode = getSpiContext().node(sndId);
 
                 if (rmtNode == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Close incoming connection, unknown node: " + sndId);
+                    U.warn(log, "Close incoming connection, unknown node [nodeId=" + sndId +
+                        ", ses=" + ses + ']');
 
                     ses.close();
 
@@ -517,10 +521,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (oldClient != null) {
                         if (oldClient instanceof GridTcpNioCommunicationClient) {
-                            if (log.isDebugEnabled())
-                                log.debug("Received incoming connection when already connected " +
-                                    "to this node, rejecting [locNode=" + locNode.id() +
-                                    ", rmtNode=" + sndId + ']');
+                            if (log.isInfoEnabled())
+                                log.info("Received incoming connection when already connected " +
+                                "to this node, rejecting [locNode=" + locNode.id() +
+                                ", rmtNode=" + sndId + ']');
 
                             ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
 
@@ -549,10 +553,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             if (oldClient instanceof GridTcpNioCommunicationClient) {
                                 assert oldClient.connectionIndex() == connKey.connectionIndex() : oldClient;
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Received incoming connection when already connected " +
-                                        "to this node, rejecting [locNode=" + locNode.id() +
-                                        ", rmtNode=" + sndId + ']');
+                                if (log.isInfoEnabled())
+                                    log.info("Received incoming connection when already connected " +
+                                    "to this node, rejecting [locNode=" + locNode.id() +
+                                    ", rmtNode=" + sndId + ']');
 
                                 ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
 
@@ -572,7 +576,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         if (log.isDebugEnabled())
                             log.debug("Received incoming connection from remote node " +
-                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved +
+                            "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved +
                                 ", recovery=" + recoveryDesc + ']');
 
                         if (reserved) {
@@ -589,11 +593,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                     else {
                         if (oldFut instanceof ConnectFuture && locNode.order() < rmtNode.order()) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Received incoming connection from remote node while " +
-                                    "connecting to this node, rejecting [locNode=" + locNode.id() +
-                                    ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
-                                    ", rmtNodeOrder=" + rmtNode.order() + ']');
+                            if (log.isInfoEnabled()) {
+                                log.info("Received incoming connection from remote node while " +
+                                "connecting to this node, rejecting [locNode=" + locNode.id() +
+                                ", locNodeOrder=" + locNode.order() + ", rmtNode=" + rmtNode.id() +
+                                ", rmtNodeOrder=" + rmtNode.order() + ']');
                             }
 
                             ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
@@ -3126,11 +3130,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 ", addr=" + addr + ", err=" + e + ']');
 
                     if (attempt == reconCnt || connTimeout0 > maxConnTimeout) {
-                        if (log.isDebugEnabled())
-                            log.debug("Handshake timedout (will stop attempts to perform the handshake) " +
-                                "[timeout=" + connTimeout0 + ", maxConnTimeout=" + maxConnTimeout +
-                                ", attempt=" + attempt + ", reconCnt=" + reconCnt +
-                                ", err=" + e.getMessage() + ", addr=" + addr + ']');
+                        U.warn(log, "Handshake timedout (will stop attempts to perform the handshake) " +
+                            "[node=" + node.id() + ", timeout=" + connTimeout0 +
+                            ", maxConnTimeout=" + maxConnTimeout +
+                            ", attempt=" + attempt + ", reconCnt=" + reconCnt +
+                            ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
@@ -3166,6 +3170,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
                     boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(e);
+
+                    if (enableTroubleshootingLog)
+                        U.error(log, "Failed to establish connection to a remote node [node=" + node +
+                            ", addr=" + addr + ", connectAttempts=" + connectAttempts +
+                            ", failureDetThrReached=" + failureDetThrReached + ']', e);
 
                     if (failureDetThrReached)
                         LT.warn(log, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
@@ -3210,12 +3219,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     "[addrs=" + addrs + ']');
 
             if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
-                X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
-                    IgniteSpiOperationTimeoutException.class)) {
+                    X.hasCause(errs, ConnectException.class,
+                        SocketTimeoutException.class, HandshakeTimeoutException.class,
+                        IgniteSpiOperationTimeoutException.class)) {
+                    String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+                        "cluster [" + "rmtNode=" + node + ']';
 
-                U.error(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
-                    "cluster [" +
-                    "rmtNode=" + node + "]", errs);
+                    if(enableTroubleshootingLog)
+                        U.error(log, msg, errs);
+                    else
+                        U.warn(log, msg);
 
                 getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                     "rmtNode=" + node +
