@@ -92,7 +92,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid();
 
-        log = new Log4JLogger().getLogger(RendezvousAffinityFunction.class);
+        log = new Log4JLogger().getLogger(RendezvousAffinityFunctionSimpleBenchmark.class);
     }
 
     /** {@inheritDoc} */
@@ -354,9 +354,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testImprovedLog() throws Exception {
-        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
-
-        GridTestUtils.setFieldValue(aff, "log", log);
+        AffinityFunction aff = initializeAffinityFunction(false, 1024, true, log, null);
 
         List<ClusterNode> nodes = createBaseNodes(4);
 
@@ -371,15 +369,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @throws IOException On error.
      */
     public void testDistribution() throws IOException {
-        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
+        AffinityFunction aff0 = initializeAffinityFunction(false, 1024, true, log, null);
 
-        AffinityFunction aff1 = new RendezvousAffinityFunctionOld(true, 1024);
-
-        GridTestUtils.setFieldValue(aff0, "log", log);
-
-        GridTestUtils.setFieldValue(aff1, "log", log);
-
-        GridTestUtils.setFieldValue(aff1, "ignite", ignite);
+        AffinityFunction aff1 = initializeAffinityFunction(true, 1024, true, log, ignite);
 
         affinityDistribution(aff0, aff1);
     }
@@ -428,19 +420,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkAdd() {
         mode = TopologyModificationMode.ADD;
 
-        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
+        AffinityFunction aff0 = initializeAffinityFunction(true, 1024, true, log, ignite);
 
-        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 1024);
-
-        IgniteLogger log1 = new Log4JLogger().getLogger(RendezvousAffinityFunctionSimpleBenchmark.class);
-
-        GridTestUtils.setFieldValue(aff0, "log", log1);
-
-        GridTestUtils.setFieldValue(aff1, "log", log1);
-
-        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
-
-        GridTestUtils.setFieldValue(aff1, "ignite", ignite);
+        AffinityFunction aff1 = initializeAffinityFunction(false, 1024, true, log, null);
 
         affinityBenchmark(aff0, aff1);
     }
@@ -451,13 +433,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkChangeLast() {
         mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
-        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
+        AffinityFunction aff0 = initializeAffinityFunction(true, 1024, true, log, ignite);
 
-        GridTestUtils.setFieldValue(aff0, "log", log);
+        AffinityFunction aff1 = initializeAffinityFunction(false, 1024, true, log, null);
 
-        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
-
-        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024));
+        affinityBenchmark(aff0, aff1);
     }
 
     /**
@@ -512,6 +492,35 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                 aff1.getClass().getSimpleName(),
                 avr1, var1));
         }
+    }
+
+    /**
+     * @param isOld Is affinity function RendezvousAffinityFunctionOld.
+     * @param parts Total number of partitions.
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     * @param log Logger instance.
+     * @param ignite Ignite instance.
+     */
+    private AffinityFunction initializeAffinityFunction(boolean isOld, int parts, boolean exclNeighbors,
+        IgniteLogger log, Ignite ignite) {
+        AffinityFunction aff;
+
+        if (isOld) {
+            aff = new RendezvousAffinityFunctionOld(exclNeighbors, parts);
+        }
+        else {
+            aff = new RendezvousAffinityFunction(exclNeighbors, parts);
+        }
+
+        if (log != null) {
+            GridTestUtils.setFieldValue(aff, "log", log);
+        }
+
+        if (isOld && ignite != null) {
+            GridTestUtils.setFieldValue(aff, "ignite", ignite);
+        }
+
+        return aff;
     }
 
     /**
