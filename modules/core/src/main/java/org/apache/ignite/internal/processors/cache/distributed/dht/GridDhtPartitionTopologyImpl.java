@@ -1745,42 +1745,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * @param updateSeq Update sequence.
-     * @return {@code True} if state changed.
-     */
-    private boolean checkEvictions(long updateSeq) {
-        AffinityTopologyVersion affVer = grp.affinity().lastVersion();
-
-        boolean changed = false;
-
-        if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
-            List<List<ClusterNode>> aff = grp.affinity().assignments(topVer);
-
-            changed = checkEvictions(updateSeq, aff);
-
-            updateRebalanceVersion(aff);
-        }
-
-        return changed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void checkEvictions() {
-        lock.writeLock().lock();
-
-        try {
-            long updateSeq = this.updateSeq.incrementAndGet();
-
-            node2part.newUpdateSequence(updateSeq);
-
-            checkEvictions(updateSeq);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * @param updateSeq Update sequence.
      * @param aff Affinity assignments.
      * @return Checks if any of the local partitions need to be evicted.
      */
