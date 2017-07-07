@@ -440,18 +440,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 U.writeLock(lock);
 
-            try {
+                try {
+                    if (stopping)
+                        return;
 
-
-                if (stopping)
-                    return;
-
-                GridDhtPartitionExchangeId exchId = exchFut.exchangeId();assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
-                    topVer + ", exchId=" + exchId + ']';
+                    GridDhtPartitionExchangeId exchId = exchFut.exchangeId();assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
+                        topVer + ", exchId=" + exchId + ']';
 
                     if (exchId.isLeft() && exchFut.serverNodeDiscoveryEvent())
                         removeNode(exchId.nodeId());
-
+    
                     ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
                     if (log.isDebugEnabled())
@@ -461,10 +459,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     cntrMap.clear();
 
-                boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());// If this is the oldest node.
-                if (oldest != null && (loc.equals(oldest) || grpStarted)) {
-                    if (node2part == null) {
-                        node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
+                    boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());// If this is the oldest node.
+
+                    if (oldest != null && (loc.equals(oldest) || grpStarted)) {
+                        if (node2part == null) {
+                            node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
                             if (log.isDebugEnabled())
                                 log.debug("Created brand new full topology map on oldest node [exchId=" +
@@ -486,16 +485,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
                     }
 
-                if (grpStarted ||
-                    exchFut.discoveryEvent().type() == EVT_DISCOVERY_CUSTOM_EVT ||
-                    exchFut.serverNodeDiscoveryEvent()) {if (affReady)
-                    initPartitions0(exchFut, updateSeq);
-                else {
-                    List<List<ClusterNode>> aff = grp.affinity().idealAssignment();
+                    if (grpStarted ||
+                        exchFut.discoveryEvent().type() == EVT_DISCOVERY_CUSTOM_EVT ||
+                        exchFut.serverNodeDiscoveryEvent()) {
+                        if (affReady)
+                            initPartitions0(exchFut, updateSeq);
+                        else {
+                            List<List<ClusterNode>> aff = grp.affinity().idealAssignment();
 
-                        createPartitions(aff, updateSeq);
+                            createPartitions(aff, updateSeq);
+                        }
                     }
-                }
 
                     consistencyCheck();
 
