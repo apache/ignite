@@ -175,8 +175,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.config().isDaemon() || !ctx.state().active())
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (ctx.config().isDaemon() || !active)
             return;
 
         onKernalStart0();
@@ -278,7 +278,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext ctx) {
         if (log.isDebugEnabled())
             log.debug("DeActivate data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
@@ -326,12 +326,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return {@code True} if cache with such name is used to store data structures.
      */
     public static boolean isDataStructureCache(String cacheName) {
-        assert cacheName != null;
-
-        return cacheName.startsWith(ATOMICS_CACHE_NAME) ||
+        return cacheName != null && (cacheName.startsWith(ATOMICS_CACHE_NAME) ||
             cacheName.startsWith(DS_CACHE_NAME_PREFIX) ||
             cacheName.equals(DEFAULT_DS_GROUP_NAME) ||
-            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME);
+            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME));
     }
 
     /**

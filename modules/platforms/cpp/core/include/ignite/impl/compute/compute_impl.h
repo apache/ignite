@@ -108,6 +108,48 @@ namespace ignite
                     return promise.GetFuture();
                 }
 
+                /**
+                 * Asyncronuously runs provided ComputeFunc on a node within
+                 * the underlying cluster group.
+                 *
+                 * @tparam F Compute action type. Should implement ComputeAction
+                 *  class.
+                 * @param action Compute action to call.
+                 * @return Future that can be used to wait for action to complete.
+                 * @throw IgniteError in case of error.
+                 */
+                template<typename F>
+                Future<void> RunAsync(const F& action)
+                {
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(mem.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, void>(action));
+
+                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
+
+                    ComputeTaskHolderImpl<F, void>* taskPtr = new ComputeTaskHolderImpl<F, void>(jobHandle);
+                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
+
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    writer.WriteInt64(taskHandle);
+                    writer.WriteInt32(1);
+                    writer.WriteInt64(jobHandle);
+                    writer.WriteObject<F>(action);
+
+                    out.Synchronize();
+
+                    jobject target = InStreamOutObject(Operation::Unicast, *mem.Get());
+                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+
+                    common::Promise<void>& promise = taskPtr->GetPromise();
+                    promise.SetCancelTarget(cancelable);
+
+                    return promise.GetFuture();
+                }
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);
             };

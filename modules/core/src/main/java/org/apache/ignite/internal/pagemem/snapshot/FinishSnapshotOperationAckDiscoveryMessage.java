@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.snapshot;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,5 +74,11 @@ public class FinishSnapshotOperationAckDiscoveryMessage implements DiscoveryCust
      */
     public boolean success() {
         return success;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(FinishSnapshotOperationAckDiscoveryMessage.class, this,
+            "id", id, "opId", opId, "success", success);
     }
 }

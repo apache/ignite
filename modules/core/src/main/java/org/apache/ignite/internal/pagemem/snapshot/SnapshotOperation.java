@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.snapshot;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -50,6 +51,9 @@ public class SnapshotOperation implements Serializable {
     /** Optional list of dependent snapshot IDs. */
     private final Set<Long> dependentSnapshotIds;
 
+    /** Optional map of previous snapshots grouped by caches. */
+    private final Map<Long, Set<String>> prevSnapshots;
+
     /**
      * @param type Type.
      * @param snapshotId Snapshot id.
@@ -58,6 +62,7 @@ public class SnapshotOperation implements Serializable {
      * @param msg Extra user message.
      * @param extraParam Additional parameter.
      * @param dependentSnapshotIds Optional list of dependent snapshot IDs.
+     * @param prevSnapshots Optional map of previous snapshots grouped by caches.
      */
     public SnapshotOperation(
         SnapshotOperationType type,
@@ -66,7 +71,8 @@ public class SnapshotOperation implements Serializable {
         Set<String> cacheNames,
         String msg,
         Object extraParam,
-        Set<Long> dependentSnapshotIds
+        Set<Long> dependentSnapshotIds,
+        Map<Long, Set<String>> prevSnapshots
     ) {
         this.type = type;
         this.snapshotId = snapshotId;
@@ -75,6 +81,7 @@ public class SnapshotOperation implements Serializable {
         this.msg = msg;
         this.extraParam = extraParam;
         this.dependentSnapshotIds = dependentSnapshotIds;
+        this.prevSnapshots = prevSnapshots;
     }
 
     /**
@@ -131,15 +138,40 @@ public class SnapshotOperation implements Serializable {
     }
 
     /**
+     * @return Cache names grouped by previous snapshot IDs.
+     */
+    public Map<Long, Set<String>> previousSnapshots() {
+        return prevSnapshots;
+    }
+
+    /**
      * @param op Op.
      */
     public static Collection<File> getOptionalPathsParameter(SnapshotOperation op) {
-        assert (op.type() == SnapshotOperationType.CHECK ||
-                op.type() == SnapshotOperationType.RESTORE ||
-                op.type() == SnapshotOperationType.RESTORE_2_PHASE)
-            && (op.extraParameter() == null || op.extraParameter() instanceof Collection);
+        assert (op.type() == SnapshotOperationType.RESTORE ||
+            op.type() == SnapshotOperationType.RESTORE_2_PHASE)
+            && (op.extraParameter() == null || op.extraParameter() instanceof Collection)
+            || (op.type() == SnapshotOperationType.CHECK &&
+            (op.extraParameter() == null || op.extraParameter() instanceof SnapshotCheckParameters));
+
+        if (op.type() == SnapshotOperationType.CHECK) {
+            if (op.extraParameter() == null)
+                return null;
+            else
+                return ((SnapshotCheckParameters)op.extraParameter()).optionalPaths();
+        }
 
         return (Collection<File>)op.extraParameter();
+    }
+
+    /**
+     * @param op Op.
+     */
+    public static boolean getSkipCrcParameter(SnapshotOperation op) {
+        assert op.type() == SnapshotOperationType.CHECK &&
+            (op.extraParameter() == null | op.extraParameter() instanceof SnapshotCheckParameters);
+
+        return op.extraParameter() != null && ((SnapshotCheckParameters)op.extraParameter()).skipCrc();
     }
 
     /**
@@ -197,6 +229,7 @@ public class SnapshotOperation implements Serializable {
             ", msg='" + msg + '\'' +
             ", extraParam=" + extraParam +
             ", dependentSnapshotIds=" + dependentSnapshotIds +
+            ", prevSnapshots=" + prevSnapshots +
             '}';
     }
 }
