@@ -2126,7 +2126,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
+            for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
                 stopGateway(action.request());
 
                 sharedCtx.database().checkpointReadLock();

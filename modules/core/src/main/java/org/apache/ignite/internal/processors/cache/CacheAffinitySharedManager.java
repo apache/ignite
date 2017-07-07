@@ -701,7 +701,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        for (ExchangeActions.ActionData action : exchActions.cacheStartRequests()) {
+        for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             DynamicCacheDescriptor cacheDesc = action.descriptor();
 
             DynamicCacheChangeRequest req = action.request();
@@ -768,7 +768,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> gprs = new HashSet<>();
 
-        for (ExchangeActions.ActionData action : exchActions.cacheStartRequests()) {
+        for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             Integer grpId = action.descriptor().groupId();
 
             if (gprs.add(grpId)) {
@@ -786,7 +786,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
-        for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
+        for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
 
         for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
@@ -2308,10 +2308,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert old == null : old;
             }
 
-            for (ExchangeActions.ActionData req : exchActions.cacheStopRequests())
+            for (ExchangeActions.CacheActionData req : exchActions.cacheStopRequests())
                 registeredCaches.remove(req.descriptor().cacheId());
 
-            for (ExchangeActions.ActionData req : exchActions.cacheStartRequests())
+            for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
                 registeredCaches.put(req.descriptor().cacheId(), req.descriptor());
         }
 
