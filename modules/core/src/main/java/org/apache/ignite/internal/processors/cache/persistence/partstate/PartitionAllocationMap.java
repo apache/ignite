@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.partstate;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -33,11 +32,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PartitionAllocationMap {
     /** Maps following pairs: (cacheId, partId) -> (lastAllocatedCount, allocatedCount) */
-    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
+    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>();
 
     /**
      * Returns the value to which the specified key is mapped,
      * or {@code null} if this map contains no mapping for the key.
+     *
      * @param key to get
      * @return value or null
      */
@@ -45,46 +45,44 @@ public class PartitionAllocationMap {
         return map.get(key);
     }
 
-    public PagesAllocationRange get(FullPageId fullId) {
-        return get(createCachePartId(fullId));
-    }
-
+    /**
+     * Extracts partition information from full page ID
+     *
+     * @param fullId page related to some cache
+     * @return pair of cache ID and partition ID
+     */
     @NotNull public static CachePartitionId createCachePartId(@NotNull final FullPageId fullId) {
         return new CachePartitionId(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
     }
 
+    /** @return <tt>true</tt> if this map contains no key-value mappings */
     public boolean isEmpty() {
         return map.isEmpty();
     }
 
+    /** @return the number of key-value mappings in this map. */
     public int size() {
         return map.size();
     }
 
+    /** @return keys (all caches partitions) */
     public Set<CachePartitionId> keySet() {
         return map.keySet();
     }
 
+    /** @return values (allocation ranges) */
     public Iterable<PagesAllocationRange> values() {
         return map.values();
     }
 
+    /** @return Returns the first (lowest) key currently in this map. */
     public CachePartitionId firstKey() {
         return map.firstKey();
     }
 
-
-    /**
-     * Map view with lower keys
-     * @param key
-     * @return Map with greater keys than provided
-     */
-    public SortedMap<CachePartitionId, PagesAllocationRange> headMap(CachePartitionId key) {
-        return map.headMap(key);
-    }
-
     /**
      * Returns next (higher) key for provided cache and partition or null
+     *
      * @param key cache and partition to search
      * @return first found key which is greater than provided
      */
@@ -92,14 +90,22 @@ public class PartitionAllocationMap {
         return map.navigableKeySet().higher(key);
     }
 
+    /** @return set view of the mappings contained in this map, sorted in ascending key order */
     public Set<Map.Entry<CachePartitionId, PagesAllocationRange>> entrySet() {
         return map.entrySet();
     }
 
-    public boolean containsKey(FullPageId id) {
-        return map.containsKey(createCachePartId(id));
+    /** @return <tt>true</tt> if this map contains a mapping for the specified key */
+    public boolean containsKey(CachePartitionId key) {
+        return map.containsKey(key);
     }
 
+    /**
+     * @param key key with which the specified value is to be associated
+     * @param val value to be associated with the specified key
+     * @return the previous value associated with <tt>key</tt>, or <tt>null</tt> if there was no mapping for
+     * <tt>key</tt>.
+     */
     public PagesAllocationRange put(CachePartitionId key, PagesAllocationRange val) {
         return map.put(key, val);
     }
