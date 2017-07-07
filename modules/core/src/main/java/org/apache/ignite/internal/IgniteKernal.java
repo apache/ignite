@@ -98,6 +98,7 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
@@ -207,7 +208,6 @@ import static org.apache.ignite.internal.IgniteComponentType.HADOOP_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ACTIVE_ON_START;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
@@ -818,8 +818,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders();
 
-        final boolean activeOnStart = cfg.isActiveOnStart();
-
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -994,11 +992,28 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Suggest Operation System optimizations.
             ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions());
 
+            DiscoveryLocalJoinData joinData = ctx.discovery().localJoin();
+
+            IgniteInternalFuture<Boolean> transitionWaitFut = joinData.transitionWaitFuture();
+
+            boolean active;
+
+            if (transitionWaitFut != null) {
+                if (log.isInfoEnabled()) {
+                    log.info("Join cluster while cluster state transition is in progress, " +
+                        "waiting when transition finish.");
+                }
+
+                active = transitionWaitFut.get();
+            }
+            else
+                active = joinData.active();
+
             // Notify discovery manager the first to make sure that topology is discovered.
-            ctx.discovery().onKernalStart();
+            ctx.discovery().onKernalStart(active);
 
             // Notify IO manager the second so further components can send and receive messages.
-            ctx.io().onKernalStart();
+            ctx.io().onKernalStart(active);
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders())
@@ -1021,7 +1036,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (!skipDaemon(comp)) {
                     try {
-                        comp.onKernalStart();
+                        comp.onKernalStart(active);
                     }
                     catch (IgniteNeedReconnectException e) {
                         assert ctx.discovery().reconnectSupported();
@@ -1486,7 +1501,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
         add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
-        add(ATTR_ACTIVE_ON_START, cfg.isActiveOnStart());
 
         if (cfg.getMarshaller() instanceof BinaryMarshaller) {
             add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
@@ -3395,7 +3409,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            return context().state().active();
+            return context().state().publicApiActiveState();
         }
         finally {
             unguard();
@@ -3694,10 +3708,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @throws IgniteException if cluster in inActive state
      */
     private void checkClusterState() throws IgniteException {
-        if (!ctx.state().active())
+        if (!ctx.state().publicApiActiveState()) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
                 "join the cluster. To activate the cluster call Ignite.activate(true).");
+        }
     }
 
     /**

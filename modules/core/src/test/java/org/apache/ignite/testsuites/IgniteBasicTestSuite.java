@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCac
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
+import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
@@ -173,6 +174,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(FreeListImplSelfTest.class);
         suite.addTestSuite(MemoryMetricsSelfTest.class);
 
+        suite.addTestSuite(IgniteMarshallerCacheFSRestoreTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
 

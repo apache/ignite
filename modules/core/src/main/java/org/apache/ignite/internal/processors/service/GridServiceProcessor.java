@@ -211,8 +211,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.isDaemon() || !ctx.state().active())
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (ctx.isDaemon() || !active)
             return;
 
         onKernalStart0();
@@ -224,7 +224,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @throws IgniteCheckedException If failed.
      */
     private void onKernalStart0() throws IgniteCheckedException {
-        cache = ctx.cache().utilityCache();
+        updateUtilityCache();
 
         if (!ctx.clientNode())
             ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
@@ -283,6 +283,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
+    }
+
+    /**
+     *
+     */
+    public void updateUtilityCache() {
+        cache = ctx.cache().utilityCache();
     }
 
     /** {@inheritDoc} */
@@ -363,7 +370,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onDeActivate(GridKernalContext kctx) {
         if (log.isDebugEnabled())
             log.debug("DeActivate service processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
@@ -1523,6 +1530,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * Topology listener.
      */
     private class TopologyListener implements DiscoveryEventListener {
+        /** */
+        private volatile AffinityTopologyVersion currTopVer = null;
+
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
@@ -1555,6 +1565,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 else
                     topVer = new AffinityTopologyVersion((evt).topologyVersion(), 0);
 
+                currTopVer = topVer;
+
                 depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         // In case the cache instance isn't tracked by DiscoveryManager anymore.
@@ -1575,6 +1587,19 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                 boolean firstTime = true;
 
                                 while (it.hasNext()) {
+                                    // If topology changed again, let next event handle it.
+                                    AffinityTopologyVersion currTopVer0 = currTopVer;
+
+                                    if (currTopVer0 != topVer) {
+                                        if (log.isInfoEnabled())
+                                            log.info("Service processor detected a topology change during " +
+                                                "assignments calculation (will abort current iteration and " +
+                                                "re-calculate on the newer version): " +
+                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer + ']');
+
+                                        return;
+                                    }
+
                                     Cache.Entry<Object, Object> e = it.next();
 
                                     if (firstTime) {
