@@ -326,12 +326,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return {@code True} if cache with such name is used to store data structures.
      */
     public static boolean isDataStructureCache(String cacheName) {
-        assert cacheName != null;
-
-        return cacheName.startsWith(ATOMICS_CACHE_NAME) ||
+        return cacheName != null && (cacheName.startsWith(ATOMICS_CACHE_NAME) ||
             cacheName.startsWith(DS_CACHE_NAME_PREFIX) ||
             cacheName.equals(DEFAULT_DS_GROUP_NAME) ||
-            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME);
+            cacheName.equals(DEFAULT_VOLATILE_DS_GROUP_NAME));
     }
 
     /**
