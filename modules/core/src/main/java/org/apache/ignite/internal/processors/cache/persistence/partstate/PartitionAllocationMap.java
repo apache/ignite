@@ -31,10 +31,16 @@ import org.jetbrains.annotations.Nullable;
  * Information structure with partitions state.
  * Page counts map.
  */
-public class PartitionStatMap {
+public class PartitionAllocationMap {
     /** Maps following pairs: (cacheId, partId) -> (lastAllocatedCount, allocatedCount) */
     private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>(PartStatMapFullPageIdComparator.INSTANCE);
 
+    /**
+     * Returns the value to which the specified key is mapped,
+     * or {@code null} if this map contains no mapping for the key.
+     * @param key to get
+     * @return value or null
+     */
     @Nullable public PagesAllocationRange get(CachePartitionId key) {
         return map.get(key);
     }

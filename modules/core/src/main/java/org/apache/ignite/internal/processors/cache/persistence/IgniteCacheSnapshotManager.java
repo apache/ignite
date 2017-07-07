@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionStatMap;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +57,7 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
      */
     public boolean onMarkCheckPointBegin(
         SnapshotOperation snapOp,
-        PartitionStatMap map
+        PartitionAllocationMap map
     ) throws IgniteCheckedException {
         return false;
     }

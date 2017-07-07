@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.CachePartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionStatMap;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
@@ -402,7 +402,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param pages total number of pages allocated for partition <code>[partition, cacheId]</code>
      */
     private static void addPartition(
-        final PartitionStatMap map,
+        final PartitionAllocationMap map,
         final long metaPageAddr,
         final PagePartitionMetaIO io,
         final int cacheId,
