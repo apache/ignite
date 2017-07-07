@@ -28,6 +28,7 @@ import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
+import org.apache.ignite.internal.binary.BinaryMarshallerIntArraysSizeTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
@@ -90,8 +91,9 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
 
         suite.addTestSuite(BinaryTreeSelfTest.class);
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
-        suite.addTestSuite(BinaryObjectExceptionSelfTest.class);
+        suite.addTestSuite(BinaryMarshallerIntArraysSizeTest.class);
         suite.addTestSuite(BinaryUtilsSelfTest.class);
+        suite.addTestSuite(BinaryObjectExceptionSelfTest.class);
 
         suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);
         suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
