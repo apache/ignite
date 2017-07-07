@@ -49,6 +49,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @State(Scope.Benchmark)
     public static class Key {
         final String key;
+
         public Key() {
             key = "key"+ThreadLocalRandom.current().nextInt(N);
         }
@@ -58,8 +59,10 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     public static class KeyWithOther {
         final String key;
         final String otherKey;
+
         public KeyWithOther() {
             final int n = ThreadLocalRandom.current().nextInt(N);
+
             key = "key"+n;
             otherKey = "key"+(n+1);
         }
@@ -101,6 +104,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @Benchmark
     public void cacheLocksOtherKey() {
         cacheLock.lock();
+
         try {
             cache.put(lockKey1, ((Integer)cache.get(lockKey1)) + 1);
         }
@@ -115,6 +119,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @Benchmark
     public void igniteLocksOtherKey() {
         igniteLock.lock();
+
         try {
             cache.put(lockKey1, ((Integer)cache.get(lockKey1)) + 1);
         }
@@ -206,6 +211,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         final IgniteLock lock = node.reentrantLock(k, failoverSafe, fair, true);
 
         lock.lock();
+
         try {
             cache.put(other, ((Integer)cache.get(other)) + 1);
         }
