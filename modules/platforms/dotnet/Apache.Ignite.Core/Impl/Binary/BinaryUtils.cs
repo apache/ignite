@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Length of arrays writing mode. */
         public static readonly bool UseVarintArrayLenght =
-            (Environment.GetEnvironmentVariable(IgniteNoVarintArrayLength) ?? "false") == "true";
+            (Environment.GetEnvironmentVariable(IgniteNoVarintArrayLength) ?? "true") == "true";
 
         /// <summary>
         /// Default marshaller.

@@ -2670,5 +2670,26 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return !left.Equals(right);
             }
         }
+
+        /**
+         * <summary>Tests Ignite compatibility mode with versions that writing length of arrays in default format.</summary>
+         */
+        [Test]
+        public void TestNoVarintArrayLengthMode()
+        {
+            // Run "TestNoVarintArrayLengthMode" in a separate process with changed setting.
+            Environment.SetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength, "true");
+
+            TestUtils.RunTestInNewProcess(GetType().FullName, "TestNoVarintArrayLengthMode");
+        }
+
+        /**
+         * <summary>Test tear down.</summary>
+         */
+        [TearDown]
+        public void TearDown()
+        {
+            Environment.SetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength, null);
+        }
     }
 }
