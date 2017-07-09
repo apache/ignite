@@ -507,6 +507,7 @@
                                     </table>
                                 ]]>
                         </bottom>
+                        <maxmemory>1024m</maxmemory>
                     </configuration>
                 </plugin>
 
