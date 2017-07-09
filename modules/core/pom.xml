@@ -267,6 +267,22 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <argLine>-Xms512m -Xmx1368m</argLine>
+                    <includes>
+                        <include>org/apache/ignite/internal/processors/datastreamer/DataStreamerClassLoaderTest.java</include>
+                    </includes>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>../spring/target/ignite-spring-2.1.0-SNAPSHOT.jar</additionalClasspathElement>
+                    </additionalClasspathElements>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.3.2</version>
