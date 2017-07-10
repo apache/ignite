@@ -17,7 +17,6 @@
 package org.apache.ignite.ml.math;
 
 import java.io.Externalizable;
-
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 
 /**
