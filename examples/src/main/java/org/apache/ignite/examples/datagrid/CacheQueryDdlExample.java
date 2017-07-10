@@ -50,8 +50,7 @@ public class CacheQueryDdlExample {
 
             // Create dummy cache to act as an entry point for SQL queries (new SQL API which do not require this
             // will appear in future versions, JDBC and ODBC drivers do not require it already).
-            CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
-                .setSqlSchema("PUBLIC");
+            CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME).setSqlSchema("PUBLIC");
 
             try (
                 IgniteCache<?, ?> cache = ignite.getOrCreateCache(cacheCfg)
