@@ -56,32 +56,32 @@ public class CacheQueryDdlExample {
             try (
                 IgniteCache<?, ?> cache = ignite.getOrCreateCache(cacheCfg)
             ) {
-                // Create table based on PARTITIONED template with one backup.
-                cache.query(new SqlFieldsQuery(
-                    "CREATE TABLE person (id LONG PRIMARY KEY, name VARCHAR, city_id LONG) " +
-                    "WITH \"backups=1\"")).getAll();
-
                 // Create reference City table based on REPLICATED template.
                 cache.query(new SqlFieldsQuery(
                     "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll();
+
+                // Create table based on PARTITIONED template with one backup.
+                cache.query(new SqlFieldsQuery(
+                    "CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id)) " +
+                    "WITH \"backups=1, affinityKey=city_id\"")).getAll();
 
                 // Create an index.
                 cache.query(new SqlFieldsQuery("CREATE INDEX on Person (city_id)")).getAll();
 
                 print("Created database objects.");
 
-                SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO person (id, name, city_id) values (?, ?, ?)");
+                SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO city (id, name) VALUES (?, ?)");
+
+                cache.query(qry.setArgs(1L, "Forest Hill")).getAll();
+                cache.query(qry.setArgs(2L, "Denver")).getAll();
+                cache.query(qry.setArgs(3L, "St. Petersburg")).getAll();
+
+                qry = new SqlFieldsQuery("INSERT INTO person (id, name, city_id) values (?, ?, ?)");
 
                 cache.query(qry.setArgs(1L, "John Doe", 3L)).getAll();
                 cache.query(qry.setArgs(2L, "Jane Roe", 2L)).getAll();
                 cache.query(qry.setArgs(3L, "Mary Major", 1L)).getAll();
                 cache.query(qry.setArgs(4L, "Richard Miles", 2L)).getAll();
-
-                qry = new SqlFieldsQuery("INSERT INTO city (id, name) VALUES (?, ?)");
-
-                cache.query(qry.setArgs(1L, "Forest Hill")).getAll();
-                cache.query(qry.setArgs(2L, "Denver")).getAll();
-                cache.query(qry.setArgs(3L, "St. Petersburg")).getAll();
 
                 print("Populated data.");
 
@@ -91,7 +91,7 @@ public class CacheQueryDdlExample {
                 print("Query results:");
 
                 for (Object next : res)
-                    System.out.println(">>>     " + next);
+                    System.out.println(">>>    " + next);
 
                 cache.query(new SqlFieldsQuery("drop table Person")).getAll();
                 cache.query(new SqlFieldsQuery("drop table City")).getAll();
