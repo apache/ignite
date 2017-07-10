@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
@@ -117,8 +119,35 @@ namespace Apache.Ignite.Core.Tests.Binary
                         Assert.AreEqual(dt.Arr, r.Arr);
                         Assert.AreEqual(dt.Int, r.Int);
                     }
+
+                    TestSql(dt, getMarsh());
                 }
             }
+        }
+
+        /// <summary>
+        /// Tests SQL query, which verifies Java side of things.
+        /// </summary>
+        private static void TestSql(OffsetTest dt, Marshaller marsh)
+        {
+            var ignite = marsh.Ignite;
+
+            if (ignite == null)
+            {
+                return;
+            }
+
+            var cache = ignite.GetOrCreateCache<int, OffsetTest>(
+                    new CacheConfiguration("offs", new QueryEntity(typeof(int), typeof(OffsetTest))));
+
+            // Cache operation.
+            cache[1] = dt;
+            Assert.AreEqual(dt.Int, cache[1].Int);
+            Assert.AreEqual(dt.Arr, cache[1].Arr);
+
+            // SQL: read field on Java side to ensure correct offset handling.
+            var res = cache.QueryFields(new SqlFieldsQuery("select int from OffsetTest")).GetAll()[0][0];
+            Assert.AreEqual(dt.Int, (int) res);
         }
 
         /// <summary>
@@ -126,7 +155,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private class OffsetTest : IBinarizable
         {
+            [QuerySqlField]
             public byte[] Arr;  // Array to enforce field offset.
+
+            [QuerySqlField]
             public int Int;     // Value at offset.
 
             public void WriteBinary(IBinaryWriter writer)
