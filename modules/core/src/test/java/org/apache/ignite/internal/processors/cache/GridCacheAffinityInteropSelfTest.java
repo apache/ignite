@@ -41,6 +41,10 @@ public class GridCacheAffinityInteropSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Affinity field name specified in the configuration takes precedence over affinity field name specified in the
+     * code with {@link AffinityKeyMapped}
+     */
     public void testAffinityFieldConfigurationPrecedenceOverCode() throws Exception {
         BinaryConfiguration binaryCfg = new BinaryConfiguration();
 

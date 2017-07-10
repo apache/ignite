@@ -503,25 +503,25 @@ public class BinaryContext {
      * @return Affinity field name or {@code null} if field name was not found.
      */
     private String affinityFieldName(Map<String, String> affFieldCfg, String clsName) {
-        String cfgValue = affFieldCfg.remove(clsName);
+        String cfgVal = affFieldCfg.remove(clsName);
 
         ClassLoader ldr = U.gridClassLoader();
 
         try {
             Class cls = Class.forName(clsName, false, ldr);
 
-            String codeValue = affinityFieldName(cls);
+            String codeVal = affinityFieldName(cls);
 
-            if (cfgValue != null && codeValue != null && cfgValue != codeValue)
+            if (cfgVal != null && codeVal != null && !cfgVal.equals(codeVal))
                 U.warn(log(), String.format("Affinity field name for class \"%s\" is specified in the configuration " +
-                    "and code. The configured affinity field \"%s\" will be used.", clsName, cfgValue));
+                    "and code. The configured affinity field \"%s\" will be used.", clsName, cfgVal));
 
-            return cfgValue == null ? codeValue : cfgValue;
+            return cfgVal == null ? codeVal : cfgVal;
         }
         catch (ClassNotFoundException e) {
             U.error(log(), String.format("Failed to get affinity field name for class \"%s\": %s", clsName, e));
 
-            return cfgValue;
+            return cfgVal;
         }
     }
 
