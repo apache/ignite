@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -85,16 +86,18 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
 
             if (msg0 instanceof GridDhtPartitionsFullMessage && record &&
                 ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null) {
-                System.err.println("Record message from : " + node.id() + " " + msg + " "); //todo remove
+
+                System.err.println("Record message to [" + node.id() + "], msg: " + msg + " "); //todo remove
                 new Throwable("Debug").printStackTrace(); //todo remove
                 assert !replay.get() : "Record of message is not allowed after replay";
 
-                rs.putIfAbsent(node.id(), new Runnable() {
+                Runnable prevValue = rs.putIfAbsent(node.id(), new Runnable() {
                     @Override public void run() {
                         System.err.println("Replay: " + msg); //todo remove
                         DelayableCommunicationSpi.super.sendMessage(node, msg, ackC);
                     }
                 });
+                assert prevValue==null: "Duplicate message registered to [" + node.id() + "]";
             }
             else
                 try {
@@ -125,16 +128,19 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         startGrid(2);
         startGrid(3);
 
-        awaitPartitionMapExchange(true, true, null);
-
-        for (int i = 0; i < 2; i++) {
-            stopGrid(3);
-
+        boolean failFaster  = false;
+        if(!failFaster) { //todo remove
             awaitPartitionMapExchange(true, true, null);
 
-            startGrid(3);
+            for (int i = 0; i < 2; i++) {
+                stopGrid(3);
 
-            awaitPartitionMapExchange(true, true, null);
+                awaitPartitionMapExchange(true, true, null);
+
+                startGrid(3);
+
+                awaitPartitionMapExchange(true, true, null);
+            }
         }
 
         startGrid(4);
@@ -151,6 +157,9 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         while (record && rs.size() < 3) { // N - 1 nodes.
             U.sleep(10);
         }
+        boolean replayImmediate = false;
+        if (replayImmediate)
+            replayMessages();
 
         System.err.println("Entries: " + rs.entrySet()); //todo remove
 
@@ -160,16 +169,10 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
 
         awaitPartitionMapExchange();
 
-        record = false;
+        if (!replayImmediate)
+            replayMessages();
 
-        // rs.clear(); //todo remove
-        for (Runnable r : rs.values())
-            r.run(); // Causes real messages sending
-
-        assert replay.compareAndSet(false, true);
-
-        U.sleep(10000); // Enough time to process delayed GridDhtPartitionsFullMessages.
-
+        System.err.println("Stopping grid 3"); //todo remove
         stopGrid(3); // Forces exchange at all nodes and cause assertion failure in case obsolete partition map accepted.
 
         awaitPartitionMapExchange();
@@ -186,6 +189,18 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         assert grid(0).context().cache().context().exchange().readyAffinityVersion().topologyVersion() > topVer0;
         assert grid(1).context().cache().context().exchange().readyAffinityVersion().topologyVersion() > topVer1;
         assert grid(2).context().cache().context().exchange().readyAffinityVersion().topologyVersion() > topVer2;
+    }
+
+    private void replayMessages() throws IgniteInterruptedCheckedException {
+        record = false;
+
+        // rs.clear(); //todo remove
+        for (Runnable r : rs.values())
+            r.run(); // Causes real messages sending
+
+        assert replay.compareAndSet(false, true);
+
+        U.sleep(10000); // Enough time to process delayed GridDhtPartitionsFullMessages.
     }
 
     //todo remove

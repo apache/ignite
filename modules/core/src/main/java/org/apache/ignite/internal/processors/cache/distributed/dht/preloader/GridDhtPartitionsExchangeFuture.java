@@ -551,6 +551,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
+            if(crd.isLocal())
+                System.err.println("init() from crd: [" + cctx.kernalContext().igniteInstanceName() + "] remaining: nodes " + remaining); //todo remove
+
+
             boolean crdNode = crd != null && crd.isLocal();
 
             skipPreload = cctx.kernalContext().clientNode();
@@ -1210,7 +1214,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param node Node.
+     * @param node Target Node.
      * @throws IgniteCheckedException If failed.
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
@@ -1237,6 +1241,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
+
+        System.err.println("sendLocalPartitions(): from nodeid [" + node.id() + "]; instance=" + cctx.kernalContext().igniteInstanceName() + " sent single map"); //todo remove
 
         try {
             cctx.io().send(node, m, SYSTEM_POOL);
@@ -1281,6 +1287,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ", exchId=" + exchId + ", msg=" + m + ']');
         }
 
+        System.err.println("sendAllPartitions(): to nodeid [" + F.viewReadOnly(nodes, F.node2id()) + "];" +
+            " from " + cctx.kernalContext().igniteInstanceName() + " sent full map"); //todo remove
+
         for (ClusterNode node : nodes) {
             try {
                 cctx.io().send(node, m, SYSTEM_POOL);
@@ -1297,7 +1306,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param oldestNode Oldest node.
+     * @param oldestNode Oldest node. Target node to sent message to
      */
     private void sendPartitions(ClusterNode oldestNode) {
         try {

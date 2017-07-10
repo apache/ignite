@@ -1093,8 +1093,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node.
-     * @param id ID.
+     * @param node Destination cluster node.
+     * @param id Exchange ID.
      */
     private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) {
         GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(node,
@@ -1120,7 +1120,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param targetNode Target node.
-     * @param exchangeId ID.
+     * @param exchangeId Exchange ID.
      * @param clientOnlyExchange Client exchange flag.
      * @param sndCounters {@code True} if need send partition update counters.
      * @return Message.
@@ -1350,7 +1350,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node.
+     * @param node Sender cluster node.
      * @param msg Message.
      */
     private void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage msg) {
@@ -1405,7 +1405,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node ID.
+     * @param node Sender cluster node.
      * @param msg Message.
      */
     private void processSinglePartitionUpdate(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
@@ -1471,7 +1471,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node ID.
+     * @param node Sender cluster node.
      * @param msg Message.
      */
     private void processSinglePartitionRequest(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
@@ -2272,7 +2272,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** {@inheritDoc} */
+        /**
+         * @param nodeId sender node ID.
+         * @param msg Message.
+         * {@inheritDoc}
+         */
         @Override public void apply(UUID nodeId, M msg) {
             ClusterNode node = cctx.node(nodeId);
 
@@ -2290,7 +2294,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
-         * @param node Node.
+         * @param node Sender cluster node.
          * @param msg Message.
          */
         protected abstract void onMessage(ClusterNode node, M msg);
