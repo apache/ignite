@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
@@ -60,57 +59,12 @@ public class PessimisticTransactionsInMultipleThreadsTest extends AbstractTransa
      */
     private void suspendPessimisticTransaction() throws Exception {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
-        try (Transaction tx = transactions.txStart(TransactionConcurrency.PESSIMISTIC, transactionIsolation)) {
+        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, transactionIsolation)) {
             cache.put("key1", 1);
 
             tx.suspend();
-
-            fail("Suspend must fail, because it isn't supported for pessimistic transactions.");
-        }
-        catch (Throwable e) {
-            if (!X.hasCause(e, UnsupportedOperationException.class))
-                throw e;
-        }
-
-        assertNull(cache.get("key1"));
-    }
-
-    /**
-     * Test for incorrect suspension on pessimistic transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testIncorrectSuspendPessimisticTransaction() throws Exception {
-        runWithAllIsolations(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
-                incorrectSuspendPessimisticTransaction();
-
-                return null;
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void incorrectSuspendPessimisticTransaction() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
-
-        try (Transaction tx = transactions.txStart(TransactionConcurrency.PESSIMISTIC, transactionIsolation)) {
-            cache.put("key1", 1);
-
-            IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    tx.suspend();
-
-                    return null;
-                }
-            });
-
-            fut.get();
 
             fail("Suspend must fail, because it isn't supported for pessimistic transactions.");
         }
@@ -142,10 +96,12 @@ public class PessimisticTransactionsInMultipleThreadsTest extends AbstractTransa
      */
     private void resumePessimisticTransaction() throws Exception {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
-        try (Transaction tx = transactions.txStart(TransactionConcurrency.PESSIMISTIC, transactionIsolation)) {
+        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, transactionIsolation)) {
             cache.put("key1", 1);
+
+            tx.suspend();
 
             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {

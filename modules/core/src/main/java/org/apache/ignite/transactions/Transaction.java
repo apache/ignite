@@ -227,7 +227,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Commits this transaction by initiating {@code two-phase-commit} process.
      *
-     * @throws IgniteException If commit failed, or it was called by thread, not owning the transaction.
+     * @throws IgniteException If commit failed.
      * @throws TransactionTimeoutException If transaction is timed out.
      * @throws TransactionRollbackException If transaction is automatically rolled back.
      * @throws TransactionOptimisticException If transaction concurrency is {@link TransactionConcurrency#OPTIMISTIC}
@@ -241,7 +241,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
      *
      * @return a Future representing pending completion of the commit.
-     * @throws IgniteException If commit failed, or it was called by thread, not owning the transaction.
+     * @throws IgniteException If commit failed.
      * @throws TransactionTimeoutException If transaction is timed out.
      * @throws TransactionRollbackException If transaction is automatically rolled back.
      * @throws TransactionOptimisticException If transaction concurrency is {@link TransactionConcurrency#OPTIMISTIC}
@@ -274,14 +274,14 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     public IgniteFuture<Void> rollbackAsync() throws IgniteException;
 
     /**
-     * Resume transaction if it was previously suspended. <strong>Supported only for optimistic transactions for now.</strong>
+     * Resume transaction if it was previously suspended.
      *
      * @throws IgniteException If resume failed.
      */
     public void resume() throws IgniteException;
 
     /**
-     * Suspends transaction. It could be resumed later. <strong>Supported only for optimistic transactions for now.</strong>
+     * Suspends transaction. It could be resumed later. <strong>Supported only for optimistic transactions.</strong>
      *
      * @throws IgniteException If suspension failed.
      */

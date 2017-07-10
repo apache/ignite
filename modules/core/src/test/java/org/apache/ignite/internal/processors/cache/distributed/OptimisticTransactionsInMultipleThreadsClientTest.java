@@ -38,7 +38,7 @@ import org.jsr166.LongAdder8;
  *
  */
 public class OptimisticTransactionsInMultipleThreadsClientTest extends OptimisticTransactionsInMultipleThreadsTest {
-    /** Number of concurrently running threads, which tries to perform transaction operations.*/
+    /** Number of concurrently running threads, which tries to perform transaction operations. */
     private int concurrentThreadsNum = 25;
 
     /** {@inheritDoc} */
@@ -80,9 +80,9 @@ public class OptimisticTransactionsInMultipleThreadsClientTest extends Optimisti
 
         final String remotePrimaryKey = String.valueOf(primaryKey(remoteCache));
 
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
-        final Transaction clientTx = transactions.txStart(TransactionConcurrency.OPTIMISTIC,
+        final Transaction clientTx = txs.txStart(TransactionConcurrency.OPTIMISTIC,
             firstTxIsolation);
 
         clientCache.put(remotePrimaryKey, 1);
@@ -91,7 +91,7 @@ public class OptimisticTransactionsInMultipleThreadsClientTest extends Optimisti
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
+                assertNull(txs.tx());
                 assertEquals(TransactionState.SUSPENDED, clientTx.state());
 
                 clientTx.resume();
@@ -531,7 +531,7 @@ public class OptimisticTransactionsInMultipleThreadsClientTest extends Optimisti
 
             fail("Concurrent operation must failed, because it doesn't own transaction.");
         }
-        catch (IgniteException e) {
+        catch (Throwable e) {
             failedTxNumber.increment();
         }
     }

@@ -82,7 +82,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             try {
                 cacheTx.resume();
             }
-            catch (Exception e) {
+            catch (IgniteCheckedException e) {
                 throwException("Failed to resume cache transaction: " + e.getMessage(), e);
             }
     }
@@ -146,7 +146,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             try {
                 cacheTx.suspend();
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 throwException("Failed to suspend cache transaction: " + e.getMessage(), e);
             }
         else if ((flags & TMFAIL) > 0)

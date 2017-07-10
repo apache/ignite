@@ -36,10 +36,10 @@ import org.apache.ignite.transactions.TransactionState;
  *
  */
 public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransactionsInMultipleThreadsTest {
-    /** Name for test cache*/
+    /** Name for test cache */
     private static final String TEST_CACHE_NAME = "testCache";
 
-    /** Name for second test cache*/
+    /** Name for second test cache */
     private static final String TEST_CACHE_NAME2 = "testCache2";
 
     /** {@inheritDoc} */
@@ -77,11 +77,11 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
      */
     private void simpleTransactionInAnotherThread() throws IgniteCheckedException {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
         assertNull(cache.get("key1"));
 
-        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+        final Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put("key1", 1);
         cache.put("key2", 2);
@@ -92,7 +92,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
+                assertNull(txs.tx());
                 assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
@@ -138,11 +138,11 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
      */
     private void simpleTransactionInAnotherThreadContinued() throws IgniteCheckedException {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
         assertNull(cache.get("key1"));
 
-        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+        final Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put("key1", 1);
         cache.put("key2", 2);
@@ -154,7 +154,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
+                assertNull(txs.tx());
                 assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
@@ -173,7 +173,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
         fut.get(5000);
 
-        assertNull(transactions.tx());
+        assertNull(txs.tx());
         assertEquals(TransactionState.SUSPENDED, tx.state());
 
         tx.resume();
@@ -218,11 +218,11 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
      */
     private void crossCacheTransactionInAnotherThread() throws IgniteCheckedException {
         Ignite ignite = ignite(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite.transactions();
+        final IgniteTransactions txs = ignite.transactions();
         final IgniteCache<String, Integer> cache1 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME));
         final IgniteCache<String, Integer> cache2 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME2));
 
-        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+        final Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache1.put("key1", 1);
         cache2.put("key2", 2);
@@ -231,7 +231,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
+                assertNull(txs.tx());
                 assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
@@ -279,11 +279,11 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
      */
     private void crossCacheTransactionInAnotherThreadContinued() throws IgniteCheckedException {
         Ignite ignite = ignite(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite.transactions();
+        final IgniteTransactions txs = ignite.transactions();
         final IgniteCache<String, Integer> cache1 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME));
         final IgniteCache<String, Integer> cache2 = ignite.getOrCreateCache(getCacheConfiguration().setName(TEST_CACHE_NAME2));
 
-        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+        final Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache1.put("key1", 1);
         cache2.put("key2", 2);
@@ -293,7 +293,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
+                assertNull(txs.tx());
                 assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
@@ -312,7 +312,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
         fut.get(5000);
 
-        assertNull(transactions.tx());
+        assertNull(txs.tx());
         assertEquals(TransactionState.SUSPENDED, tx.state());
 
         tx.resume();
@@ -357,9 +357,9 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
      */
     private void transactionRollback() throws IgniteCheckedException {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
-        final IgniteTransactions transactions = ignite(txInitiatorNodeId).transactions();
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
-        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+        final Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put("key1", 1);
         cache.put("key2", 2);
@@ -368,7 +368,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
+                assertNull(txs.tx());
                 assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();
@@ -413,7 +413,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
      * @throws IgniteCheckedException If failed.
      */
     private void multipleTransactionsSuspendResume() throws IgniteCheckedException {
-        final List<Transaction> transactions = new ArrayList<>();
+        final List<Transaction> txs = new ArrayList<>();
         IgniteCache<String, Integer> clientCache = jcache(txInitiatorNodeId);
         Ignite clientNode = ignite(txInitiatorNodeId);
         Transaction clientTx;
@@ -425,7 +425,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
             clientTx.suspend();
 
-            transactions.add(clientTx);
+            txs.add(clientTx);
         }
 
         final IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
@@ -433,7 +433,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
                 assertNull(ignite(txInitiatorNodeId).transactions().tx());
 
                 for (int i = 0; i < 10; i++) {
-                    Transaction clientTx = transactions.get(i);
+                    Transaction clientTx = txs.get(i);
 
                     assertEquals(TransactionState.SUSPENDED, clientTx.state());
 

@@ -43,10 +43,10 @@ public class OptimisticTransactionsInMultipleThreadsFailoverTest extends Abstrac
      */
     private void performTransactionFailover(String key,
         int breakNodeIdx, int initiatingNodeIdx) throws IgniteCheckedException {
-        final IgniteTransactions transactions = grid(initiatingNodeIdx).transactions();
+        final IgniteTransactions txs = grid(initiatingNodeIdx).transactions();
         IgniteCache<String, Integer> cache = jcache(initiatingNodeIdx);
 
-        final Transaction tx = transactions.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+        final Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
 
         cache.put(key, 1);
 
@@ -54,11 +54,11 @@ public class OptimisticTransactionsInMultipleThreadsFailoverTest extends Abstrac
 
         G.stop(ignite(breakNodeIdx).name(), true);
 
-        assertNull(transactions.tx());
+        assertNull(txs.tx());
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                assertNull(transactions.tx());
+                assertNull(txs.tx());
                 assertEquals(TransactionState.SUSPENDED, tx.state());
 
                 tx.resume();

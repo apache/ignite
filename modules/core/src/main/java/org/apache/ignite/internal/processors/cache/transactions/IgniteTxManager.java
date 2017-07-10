@@ -2241,7 +2241,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param tx Transaction to be attached.
      */
-    public synchronized void attachThread(IgniteInternalTx tx) {
+    public void attachCurrentThread(IgniteInternalTx tx) {
         assert tx != null;
         assert !threadMap.containsKey(tx.threadId());
         assert !threadMap.containsValue(tx);

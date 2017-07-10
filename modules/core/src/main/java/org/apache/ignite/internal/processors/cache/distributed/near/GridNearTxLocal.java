@@ -2853,23 +2853,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     }
 
     /**
-     * Suspends transaction. It could be resumed later.
-     * TODO: IGNITE-4887, Add support for pessimistic transactions, currently supports only optimistic ones.
+     * Suspends transaction. It could be resumed later. Supported only for optimistic transactions.
      *
-     * @throws IgniteCheckedException If the transaction is in an incorrect state, or it was suspended by thread,
-     * not owning it.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state.
      */
     public void suspend() throws IgniteCheckedException {
         if (pessimistic())
-            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions yet.");
+            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
 
-        if (!ACTIVE.equals(state()))
-            throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
-                + "[expected=" + ACTIVE + ", actual=" + state() + ']');
+        synchronized (this) {
+            if (ACTIVE != state())
+                throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
+                    + "[expected=" + ACTIVE + ", actual=" + state() + ']');
 
-        cctx.tm().detachThread(this);
+            cctx.tm().detachThread(this);
 
-        state(SUSPENDED);
+            state(SUSPENDED);
+        }
     }
 
     /**
@@ -3015,20 +3015,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
 
     /**
      * Resumes transaction (possibly in another thread) if it was previously suspended.
-     * TODO: IGNITE-4887, Add support for pessimistic transactions, currently supports only optimistic ones.
      *
      * @throws IgniteCheckedException If the transaction is in an incorrect state.
      */
     public void resume() throws IgniteCheckedException {
-        if (pessimistic())
-            throw new UnsupportedOperationException("Resuming is not supported for pessimistic transactions yet.");
-
         synchronized (this) {
-            if (!SUSPENDED.equals(state()))
+            if (SUSPENDED != state())
                 throw new IgniteCheckedException("Trying to resume transaction with incorrect state "
                     + "[expected=" + SUSPENDED + ", actual=" + state() + ']');
 
-            cctx.tm().attachThread(this);
+            cctx.tm().attachCurrentThread(this);
 
             threadId = Thread.currentThread().getId();
 

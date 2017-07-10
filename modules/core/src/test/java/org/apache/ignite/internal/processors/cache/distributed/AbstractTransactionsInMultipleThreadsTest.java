@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
@@ -52,7 +51,7 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
      *
      * @return CacheConfiguration New cache configuration.
      */
-    protected CacheConfiguration<String, Integer> getCacheConfiguration(){
+    protected CacheConfiguration<String, Integer> getCacheConfiguration() {
         CacheConfiguration<String, Integer> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
@@ -67,7 +66,7 @@ public abstract class AbstractTransactionsInMultipleThreadsTest extends GridComm
         cfg.setClientMode(false);
         cfg.setCacheConfiguration(getCacheConfiguration());
 
-        return  cfg;
+        return cfg;
     }
 
     /** {@inheritDoc} */

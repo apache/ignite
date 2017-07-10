@@ -98,6 +98,9 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * Enters a call.
      */
     private void enter() {
+        assert TransactionState.SUSPENDED == state() || Thread.currentThread().getId() == threadId() :
+            "Only thread owning active transaction is permitted to operate it.";
+
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
@@ -291,9 +294,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
         try {
             return (IgniteFuture<Void>)createFuture(cctx.commitTxAsync(tx));
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
         }
         finally {
             leave();
