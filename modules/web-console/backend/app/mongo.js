@@ -106,6 +106,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
         tableName: String,
+        keyFieldName: String,
+        valueFieldName: String,
         databaseSchema: String,
         databaseTable: String,
         keyType: String,

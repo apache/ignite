@@ -898,17 +898,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
+     * @param nodeStop If {@code true} tx is cancelled on node stop.
      * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(boolean commit) throws IgniteCheckedException {
+    public void tmFinish(boolean commit, boolean nodeStop) throws IgniteCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            // Unlock all locks.
-            if (commit)
-                cctx.tm().commitTx(this);
-            else
-                cctx.tm().rollbackTx(this);
+            if (!nodeStop) {
+                // Unlock all locks.
+                if (commit)
+                    cctx.tm().commitTx(this);
+                else
+                    cctx.tm().rollbackTx(this);
+            }
 
             state(commit ? COMMITTED : ROLLED_BACK);
 

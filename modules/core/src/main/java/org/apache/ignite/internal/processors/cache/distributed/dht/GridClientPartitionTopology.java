@@ -828,11 +828,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return Collections.emptyList();
     }
 
-    /** {@inheritDoc} */
-    @Override public void checkEvictions() {
-        // No-op.
-    }
-
     /**
      * Updates value for single partition.
      *

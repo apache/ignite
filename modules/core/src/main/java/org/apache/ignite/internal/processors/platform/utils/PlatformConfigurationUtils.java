@@ -1505,7 +1505,10 @@ public class PlatformConfigurationUtils {
                 .setWalFlushFrequency((int) in.readLong())
                 .setWalFsyncDelay(in.readInt())
                 .setWalRecordIteratorBufferSize(in.readInt())
-                .setAlwaysWriteFullPages(in.readBoolean());
+                .setAlwaysWriteFullPages(in.readBoolean())
+                .setMetricsEnabled(in.readBoolean())
+                .setSubIntervals(in.readInt())
+                .setRateTimeInterval(in.readLong());
     }
 
     /**
@@ -1535,6 +1538,9 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getWalFsyncDelay());
             w.writeInt(cfg.getWalRecordIteratorBufferSize());
             w.writeBoolean(cfg.isAlwaysWriteFullPages());
+            w.writeBoolean(cfg.isMetricsEnabled());
+            w.writeInt(cfg.getSubIntervals());
+            w.writeLong(cfg.getRateTimeInterval());
 
         } else {
             w.writeBoolean(false);

@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -242,7 +241,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.
-            Debug.Assert(((BinaryReader) reader).Marshaller == BinaryUtils.Marshaller);
+            Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
 
             AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
             Backups = reader.ReadInt();

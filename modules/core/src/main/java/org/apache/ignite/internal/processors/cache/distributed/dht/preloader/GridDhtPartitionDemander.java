@@ -640,7 +640,7 @@ public class GridDhtPartitionDemander {
 
                     assert part != null;
 
-                    boolean last = supply.last().contains(p);
+                    boolean last = supply.last().containsKey(p);
 
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
@@ -680,6 +680,9 @@ public class GridDhtPartitionDemander {
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
+                                if (supply.isClean(p))
+                                    part.updateCounter(supply.last().get(p));
+
                                 top.own(part);
 
                                 fut.partitionDone(id, p);
