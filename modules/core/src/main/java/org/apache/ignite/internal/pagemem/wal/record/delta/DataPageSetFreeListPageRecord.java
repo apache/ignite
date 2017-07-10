@@ -31,12 +31,12 @@ public class DataPageSetFreeListPageRecord extends PageDeltaRecord {
     private long freeListPage;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param freeListPage Free list page ID.
      */
-    public DataPageSetFreeListPageRecord(int cacheId, long pageId, long freeListPage) {
-        super(cacheId, pageId);
+    public DataPageSetFreeListPageRecord(int grpId, long pageId, long freeListPage) {
+        super(grpId, pageId);
 
         this.freeListPage = freeListPage;
     }

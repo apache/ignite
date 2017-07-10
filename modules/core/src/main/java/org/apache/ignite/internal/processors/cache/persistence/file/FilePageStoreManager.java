@@ -269,8 +269,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
-        read(cacheId, pageId, pageBuf, false);
+    @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+        read(grpId, pageId, pageBuf, false);
     }
 
     /**
@@ -296,20 +296,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void readHeader(int cacheId, int partId, ByteBuffer buf) throws IgniteCheckedException {
-        PageStore store = getStore(cacheId, partId);
+    @Override public void readHeader(int grpId, int partId, ByteBuffer buf) throws IgniteCheckedException {
+        PageStore store = getStore(grpId, partId);
 
         store.readHeader(buf);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(int cacheId, long pageId, ByteBuffer pageBuf,int tag) throws IgniteCheckedException {
-        writeInternal(cacheId, pageId, pageBuf, tag);
+    @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+        writeInternal(grpId, pageId, pageBuf, tag);
     }
 
     /** {@inheritDoc} */
-    @Override public long pageOffset(int cacheId, long pageId) throws IgniteCheckedException {
-        PageStore store = getStore(cacheId, PageIdUtils.partId(pageId));
+    @Override public long pageOffset(int grpId, long pageId) throws IgniteCheckedException {
+        PageStore store = getStore(grpId, PageIdUtils.partId(pageId));
 
         return store.pageOffset(pageId);
     }
@@ -447,20 +447,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void sync(int cacheId, int partId) throws IgniteCheckedException {
-        getStore(cacheId, partId).sync();
+    @Override public void sync(int grpId, int partId) throws IgniteCheckedException {
+        getStore(grpId, partId).sync();
     }
 
     /** {@inheritDoc} */
-    @Override public void ensure(int cacheId, int partId) throws IgniteCheckedException {
-        getStore(cacheId, partId).ensure();
+    @Override public void ensure(int grpId, int partId) throws IgniteCheckedException {
+        getStore(grpId, partId).ensure();
     }
 
     /** {@inheritDoc} */
-    @Override public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException {
+    @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
         assert partId <= PageIdAllocator.MAX_PARTITION_ID || partId == PageIdAllocator.INDEX_PARTITION;
 
-        PageStore store = getStore(cacheId, partId);
+        PageStore store = getStore(grpId, partId);
 
         long pageIdx = store.allocatePage();
 
@@ -468,13 +468,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long metaPageId(final int cacheId) {
+    @Override public long metaPageId(final int grpId) {
         return metaPageId;
     }
 
     /** {@inheritDoc} */
-    @Override public int pages(int cacheId, int partId) throws IgniteCheckedException {
-        PageStore store = getStore(cacheId, partId);
+    @Override public int pages(int grpId, int partId) throws IgniteCheckedException {
+        PageStore store = getStore(grpId, partId);
 
         return store.pages();
     }

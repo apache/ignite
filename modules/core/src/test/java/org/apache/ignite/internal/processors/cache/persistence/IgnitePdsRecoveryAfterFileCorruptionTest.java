@@ -213,18 +213,18 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
 
         for (FullPageId fullId : pages) {
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
-                long pageAddr = mem.readLock(fullId.cacheId(), fullId.pageId(), page);
+                long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
 
                 for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
                     assertEquals(j + (int)fullId.pageId(), PageUtils.getInt(pageAddr, j));
 
-                mem.readUnlock(fullId.cacheId(), fullId.pageId(), page);
+                mem.readUnlock(fullId.groupId(), fullId.pageId(), page);
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
     }
@@ -252,10 +252,10 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         for (int i = 0; i < totalPages; i++) {
             FullPageId fullId = pages[i];
 
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
-                long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
+                long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
                 PageIO.setPageId(pageAddr, fullId.pageId());
 
@@ -264,11 +264,11 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                         PageUtils.putInt(pageAddr, j, j + (int)fullId.pageId());
                 }
                 finally {
-                    mem.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, true);
+                    mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
                 }
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
 
@@ -340,17 +340,17 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         wal.fsync(wal.log(new CheckpointRecord(null)));
 
         for (FullPageId fullId : pages) {
-            long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
+            long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
 
             try {
                 assertFalse("Page has a temp heap copy after the last checkpoint: [cacheId=" +
-                    fullId.cacheId() + ", pageId=" + fullId.pageId() + "]", mem.hasTempCopy(page));
+                    fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.hasTempCopy(page));
 
                 assertFalse("Page is dirty after the last checkpoint: [cacheId=" +
-                    fullId.cacheId() + ", pageId=" + fullId.pageId() + "]", mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                    fullId.groupId() + ", pageId=" + fullId.pageId() + "]", mem.isDirty(fullId.groupId(), fullId.pageId(), page));
             }
             finally {
-                mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                mem.releasePage(fullId.groupId(), fullId.pageId(), page);
             }
         }
     }
