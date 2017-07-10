@@ -729,7 +729,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     null,
                                     keepBinary,
                                     0,
-                                    false,
+                                    true,
                                     -1,
                                     null,
                                     (byte)0);

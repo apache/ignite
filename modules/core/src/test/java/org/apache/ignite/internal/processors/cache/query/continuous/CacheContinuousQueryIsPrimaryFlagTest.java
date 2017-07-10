@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -133,6 +134,47 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInitialQueryPrimaryFlag() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, backups, ATOMIC);
+
+        final int SRV_NODES = 3;
+
+        final int KEYS = 10;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        UUID uuid = null;
+
+        try {
+            for (int i = 0; i < KEYS; i++)
+                cache.put(i, i);
+
+            CacheEventListener2 lsnr = new CacheEventListener2();
+
+            uuid = grid(0).context().cache().cache(cache.getName()).context().continuousQueries()
+                .executeInternalQuery(lsnr, null, false, true, true);
+            
+            U.await(lsnr.latch, 5000L, TimeUnit.MILLISECONDS);
+            
+            assertEquals(KEYS, lsnr.updEvts.size());
+
+            for (CacheQueryEntryEvent evt : lsnr.updEvts)
+                assertTrue(evt.isPrimary());
+        }
+        finally {
+            if (uuid != null)
+                grid(0).context().cache().cache(cache.getName()).context().continuousQueries()
+                    .cancelInternalQuery(uuid);
+
+            grid(0).destroyCache(ccfg.getName());
+        }
 
         stopAllGrids();
     }
@@ -448,6 +490,26 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
                 isBackup.set(e.unwrap(CacheQueryEntryEvent.class).isBackup());
 
                 assertNull(this.evts.put(key, e));
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventListener2 extends CacheEventListener {
+        /** Updated events. */
+        private final static GridConcurrentHashSet<CacheQueryEntryEvent> updEvts = new GridConcurrentHashSet<>();
+
+        /** Latch. */
+        private final static CountDownLatch latch = new CountDownLatch(10);
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
+            for (CacheEntryEvent<?, ?> e : evts) {
+                latch.countDown();
+
+                updEvts.add(e.unwrap(CacheQueryEntryEvent.class));
             }
         }
     }
