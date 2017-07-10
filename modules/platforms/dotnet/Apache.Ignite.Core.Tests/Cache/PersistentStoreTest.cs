@@ -58,7 +58,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     PersistentStorePath = Path.Combine(_tempDir, "Store"),
                     WalStorePath = Path.Combine(_tempDir, "WalStore"),
-                    WalArchivePath = Path.Combine(_tempDir, "WalArchive")
+                    WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
+                    MetricsEnabled = true
                 }
             };
 
@@ -72,6 +73,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var cache = ignite.CreateCache<int, int>(cacheName);
 
                 cache[1] = 1;
+
+                // Check some metrics.
+                var metrics = ignite.GetPersistentStoreMetrics();
+                Assert.Greater(metrics.WalLoggingRate, 0);
+                Assert.Greater(metrics.WalWritingRate, 0);
+                Assert.Greater(metrics.WalFsyncTimeAverage, 0);
             }
 
             // Verify directories.

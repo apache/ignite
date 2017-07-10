@@ -99,6 +99,8 @@
     <Compile Include="Cache\IMemoryMetrics.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
+    <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="PersistentStore\IPersistentStoreMetrics.cs" />
     <Compile Include="PersistentStore\Package-Info.cs" />
     <Compile Include="PersistentStore\PersistentStoreConfiguration.cs" />
     <Compile Include="Configuration\SqlConnectorConfiguration.cs" />
