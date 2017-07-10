@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.GridCachePluginContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -53,6 +54,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
@@ -175,8 +179,32 @@ class ClusterCachesInfo {
                             locCacheInfo.cacheData().config().getName());
                     }
 
-                    if (checkConsistency)
+                    if (checkConsistency) {
                         checkCache(locCacheInfo, cacheData, cacheData.receivedFrom());
+
+                        ClusterNode rmt = ctx.discovery().node(cacheData.receivedFrom());
+
+                        if (rmt == null) {
+                            for (ClusterNode node : ctx.discovery().localJoin().discoCache().serverNodes()) {
+                                if (!node.isLocal() && ctx.discovery().cacheAffinityNode(node, locCfg.getName())) {
+                                    rmt = node;
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (rmt != null) {
+                            for (PluginProvider p : ctx.plugins().allProviders()) {
+                                CachePluginContext pluginCtx = new GridCachePluginContext(ctx, locCfg);
+
+                                CachePluginProvider provider = p.createCacheProvider(pluginCtx);
+
+                                if (provider != null)
+                                    provider.validateRemote(locCfg, cacheData.cacheConfiguration(), rmt);
+                            }
+                        }
+                    }
                 }
 
                 if (checkConsistency)
@@ -624,7 +652,7 @@ class ClusterCachesInfo {
                         // If all caches in group will be destroyed it is not necessary to destroy single cache
                         // because group will be stopped anyway.
                         if (req.destroy()) {
-                            for (ExchangeActions.ActionData action : exchangeActions.cacheStopRequests()) {
+                            for (ExchangeActions.CacheActionData action : exchangeActions.cacheStopRequests()) {
                                 if (action.descriptor().groupId() == grpDesc.groupId())
                                     action.request().destroy(false);
                             }

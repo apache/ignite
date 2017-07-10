@@ -167,6 +167,10 @@ public class InlineIndexHelperTest extends TestCase {
             assertTrue(ih.isValueFull(pageAddr, off));
 
             assertEquals("aaa", ih.get(pageAddr, off, 3 + 5).getString());
+
+            ih.put(pageAddr, off, ValueString.get("\u20acaaa"), 3 + 2);
+
+            assertNull(ih.get(pageAddr, off, 3 + 2));
         }
         finally {
             if (page != 0L)

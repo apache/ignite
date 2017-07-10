@@ -166,7 +166,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PAGE_RECORD:
                 PageSnapshot snap = (PageSnapshot)record;
 
-                buf.putInt(snap.fullPageId().cacheId());
+                buf.putInt(snap.fullPageId().groupId());
                 buf.putLong(snap.fullPageId().pageId());
                 buf.put(snap.pageData());
 
@@ -182,7 +182,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PARTITION_DESTROY:
                 PartitionDestroyRecord partDestroy = (PartitionDestroyRecord)record;
 
-                buf.putInt(partDestroy.cacheId());
+                buf.putInt(partDestroy.groupId());
                 buf.putInt(partDestroy.partitionId());
 
                 break;
@@ -190,7 +190,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case META_PAGE_INIT:
                 MetaPageInitRecord updRootsRec = (MetaPageInitRecord)record;
 
-                buf.putInt(updRootsRec.cacheId());
+                buf.putInt(updRootsRec.groupId());
                 buf.putLong(updRootsRec.pageId());
 
                 buf.putShort((short)updRootsRec.ioType());
@@ -203,7 +203,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
                 MetaPageUpdatePartitionDataRecord partDataRec = (MetaPageUpdatePartitionDataRecord)record;
 
-                buf.putInt(partDataRec.cacheId());
+                buf.putInt(partDataRec.groupId());
                 buf.putLong(partDataRec.pageId());
 
                 buf.putLong(partDataRec.updateCounter());
@@ -261,7 +261,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_PAGE_INSERT_RECORD:
                 DataPageInsertRecord diRec = (DataPageInsertRecord)record;
 
-                buf.putInt(diRec.cacheId());
+                buf.putInt(diRec.groupId());
                 buf.putLong(diRec.pageId());
 
                 buf.putShort((short)diRec.payload().length);
@@ -273,7 +273,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_PAGE_UPDATE_RECORD:
                 DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
 
-                buf.putInt(uRec.cacheId());
+                buf.putInt(uRec.groupId());
                 buf.putLong(uRec.pageId());
                 buf.putInt(uRec.itemId());
 
@@ -286,7 +286,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
                 final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
 
-                buf.putInt(difRec.cacheId());
+                buf.putInt(difRec.groupId());
                 buf.putLong(difRec.pageId());
 
                 buf.putLong(difRec.lastLink());
@@ -298,7 +298,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_PAGE_REMOVE_RECORD:
                 DataPageRemoveRecord drRec = (DataPageRemoveRecord)record;
 
-                buf.putInt(drRec.cacheId());
+                buf.putInt(drRec.groupId());
                 buf.putLong(drRec.pageId());
 
                 buf.put((byte)drRec.itemId());
@@ -308,7 +308,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 DataPageSetFreeListPageRecord freeListRec = (DataPageSetFreeListPageRecord)record;
 
-                buf.putInt(freeListRec.cacheId());
+                buf.putInt(freeListRec.groupId());
                 buf.putLong(freeListRec.pageId());
 
                 buf.putLong(freeListRec.freeListPage());
@@ -318,7 +318,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case INIT_NEW_PAGE_RECORD:
                 InitNewPageRecord inpRec = (InitNewPageRecord)record;
 
-                buf.putInt(inpRec.cacheId());
+                buf.putInt(inpRec.groupId());
                 buf.putLong(inpRec.pageId());
 
                 buf.putShort((short)inpRec.ioType());
@@ -330,7 +330,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_META_PAGE_INIT_ROOT:
                 MetaPageInitRootRecord imRec = (MetaPageInitRootRecord)record;
 
-                buf.putInt(imRec.cacheId());
+                buf.putInt(imRec.groupId());
                 buf.putLong(imRec.pageId());
 
                 buf.putLong(imRec.rootId());
@@ -340,7 +340,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_META_PAGE_INIT_ROOT2:
                 MetaPageInitRootInlineRecord imRec2 = (MetaPageInitRootInlineRecord)record;
 
-                buf.putInt(imRec2.cacheId());
+                buf.putInt(imRec2.groupId());
                 buf.putLong(imRec2.pageId());
 
                 buf.putLong(imRec2.rootId());
@@ -351,7 +351,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_META_PAGE_ADD_ROOT:
                 MetaPageAddRootRecord arRec = (MetaPageAddRootRecord)record;
 
-                buf.putInt(arRec.cacheId());
+                buf.putInt(arRec.groupId());
                 buf.putLong(arRec.pageId());
 
                 buf.putLong(arRec.rootId());
@@ -361,7 +361,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_META_PAGE_CUT_ROOT:
                 MetaPageCutRootRecord crRec = (MetaPageCutRootRecord)record;
 
-                buf.putInt(crRec.cacheId());
+                buf.putInt(crRec.groupId());
                 buf.putLong(crRec.pageId());
 
                 break;
@@ -369,7 +369,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_INIT_NEW_ROOT:
                 NewRootInitRecord<?> riRec = (NewRootInitRecord<?>)record;
 
-                buf.putInt(riRec.cacheId());
+                buf.putInt(riRec.groupId());
                 buf.putLong(riRec.pageId());
 
                 buf.putLong(riRec.rootId());
@@ -385,7 +385,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_PAGE_RECYCLE:
                 RecycleRecord recRec = (RecycleRecord)record;
 
-                buf.putInt(recRec.cacheId());
+                buf.putInt(recRec.groupId());
                 buf.putLong(recRec.pageId());
 
                 buf.putLong(recRec.newPageId());
@@ -395,7 +395,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_PAGE_INSERT:
                 InsertRecord<?> inRec = (InsertRecord<?>)record;
 
-                buf.putInt(inRec.cacheId());
+                buf.putInt(inRec.groupId());
                 buf.putLong(inRec.pageId());
 
                 buf.putShort((short)inRec.io().getType());
@@ -410,7 +410,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_FIX_LEFTMOST_CHILD:
                 FixLeftmostChildRecord flRec = (FixLeftmostChildRecord)record;
 
-                buf.putInt(flRec.cacheId());
+                buf.putInt(flRec.groupId());
                 buf.putLong(flRec.pageId());
 
                 buf.putLong(flRec.rightId());
@@ -420,7 +420,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_FIX_COUNT:
                 FixCountRecord fcRec = (FixCountRecord)record;
 
-                buf.putInt(fcRec.cacheId());
+                buf.putInt(fcRec.groupId());
                 buf.putLong(fcRec.pageId());
 
                 buf.putShort((short)fcRec.count());
@@ -430,7 +430,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_PAGE_REPLACE:
                 ReplaceRecord<?> rRec = (ReplaceRecord<?>)record;
 
-                buf.putInt(rRec.cacheId());
+                buf.putInt(rRec.groupId());
                 buf.putLong(rRec.pageId());
 
                 buf.putShort((short)rRec.io().getType());
@@ -444,7 +444,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_PAGE_REMOVE:
                 RemoveRecord rmRec = (RemoveRecord)record;
 
-                buf.putInt(rmRec.cacheId());
+                buf.putInt(rmRec.groupId());
                 buf.putLong(rmRec.pageId());
 
                 buf.putShort((short)rmRec.index());
@@ -455,7 +455,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_PAGE_INNER_REPLACE:
                 InnerReplaceRecord<?> irRec = (InnerReplaceRecord<?>)record;
 
-                buf.putInt(irRec.cacheId());
+                buf.putInt(irRec.groupId());
                 buf.putLong(irRec.pageId());
 
                 buf.putShort((short)irRec.destinationIndex());
@@ -468,7 +468,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_FORWARD_PAGE_SPLIT:
                 SplitForwardPageRecord sfRec = (SplitForwardPageRecord)record;
 
-                buf.putInt(sfRec.cacheId());
+                buf.putInt(sfRec.groupId());
                 buf.putLong(sfRec.pageId());
 
                 buf.putLong(sfRec.forwardId());
@@ -483,7 +483,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_EXISTING_PAGE_SPLIT:
                 SplitExistingPageRecord seRec = (SplitExistingPageRecord)record;
 
-                buf.putInt(seRec.cacheId());
+                buf.putInt(seRec.groupId());
                 buf.putLong(seRec.pageId());
 
                 buf.putShort((short)seRec.middleIndex());
@@ -494,7 +494,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_PAGE_MERGE:
                 MergeRecord<?> mRec = (MergeRecord<?>)record;
 
-                buf.putInt(mRec.cacheId());
+                buf.putInt(mRec.groupId());
                 buf.putLong(mRec.pageId());
 
                 buf.putLong(mRec.parentId());
@@ -507,7 +507,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PAGES_LIST_SET_NEXT:
                 PagesListSetNextRecord plNextRec = (PagesListSetNextRecord)record;
 
-                buf.putInt(plNextRec.cacheId());
+                buf.putInt(plNextRec.groupId());
                 buf.putLong(plNextRec.pageId());
 
                 buf.putLong(plNextRec.nextPageId());
@@ -517,7 +517,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PAGES_LIST_SET_PREVIOUS:
                 PagesListSetPreviousRecord plPrevRec = (PagesListSetPreviousRecord)record;
 
-                buf.putInt(plPrevRec.cacheId());
+                buf.putInt(plPrevRec.groupId());
                 buf.putLong(plPrevRec.pageId());
 
                 buf.putLong(plPrevRec.previousPageId());
@@ -527,7 +527,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PAGES_LIST_INIT_NEW_PAGE:
                 PagesListInitNewPageRecord plNewRec = (PagesListInitNewPageRecord)record;
 
-                buf.putInt(plNewRec.cacheId());
+                buf.putInt(plNewRec.groupId());
                 buf.putLong(plNewRec.pageId());
                 buf.putInt(plNewRec.ioType());
                 buf.putInt(plNewRec.ioVersion());
@@ -541,7 +541,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PAGES_LIST_ADD_PAGE:
                 PagesListAddPageRecord plAddRec = (PagesListAddPageRecord)record;
 
-                buf.putInt(plAddRec.cacheId());
+                buf.putInt(plAddRec.groupId());
                 buf.putLong(plAddRec.pageId());
 
                 buf.putLong(plAddRec.dataPageId());
@@ -551,7 +551,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PAGES_LIST_REMOVE_PAGE:
                 PagesListRemovePageRecord plRmvRec = (PagesListRemovePageRecord)record;
 
-                buf.putInt(plRmvRec.cacheId());
+                buf.putInt(plRmvRec.groupId());
                 buf.putLong(plRmvRec.pageId());
 
                 buf.putLong(plRmvRec.removedPageId());
@@ -561,7 +561,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case BTREE_FIX_REMOVE_ID:
                 FixRemoveId frRec = (FixRemoveId)record;
 
-                buf.putInt(frRec.cacheId());
+                buf.putInt(frRec.groupId());
                 buf.putLong(frRec.pageId());
 
                 buf.putLong(frRec.removeId());
@@ -571,7 +571,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case TRACKING_PAGE_DELTA:
                 TrackingPageDeltaRecord tpDelta = (TrackingPageDeltaRecord)record;
 
-                buf.putInt(tpDelta.cacheId());
+                buf.putInt(tpDelta.groupId());
                 buf.putLong(tpDelta.pageId());
 
                 buf.putLong(tpDelta.pageIdToMark());
@@ -583,7 +583,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case META_PAGE_UPDATE_NEXT_SNAPSHOT_ID:
                 MetaPageUpdateNextSnapshotId mpUpdateNextSnapshotId = (MetaPageUpdateNextSnapshotId)record;
 
-                buf.putInt(mpUpdateNextSnapshotId.cacheId());
+                buf.putInt(mpUpdateNextSnapshotId.groupId());
                 buf.putLong(mpUpdateNextSnapshotId.pageId());
 
                 buf.putLong(mpUpdateNextSnapshotId.nextSnapshotId());
@@ -594,7 +594,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 MetaPageUpdateLastSuccessfulFullSnapshotId mpUpdateLastSuccFullSnapshotId =
                     (MetaPageUpdateLastSuccessfulFullSnapshotId)record;
 
-                buf.putInt(mpUpdateLastSuccFullSnapshotId.cacheId());
+                buf.putInt(mpUpdateLastSuccFullSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccFullSnapshotId.pageId());
 
                 buf.putLong(mpUpdateLastSuccFullSnapshotId.lastSuccessfulFullSnapshotId());
@@ -605,7 +605,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 MetaPageUpdateLastSuccessfulSnapshotId mpUpdateLastSuccSnapshotId =
                     (MetaPageUpdateLastSuccessfulSnapshotId)record;
 
-                buf.putInt(mpUpdateLastSuccSnapshotId.cacheId());
+                buf.putInt(mpUpdateLastSuccSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccSnapshotId.pageId());
 
                 buf.putLong(mpUpdateLastSuccSnapshotId.lastSuccessfulSnapshotId());
@@ -617,7 +617,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 MetaPageUpdateLastAllocatedIndex mpUpdateLastAllocatedIdx =
                         (MetaPageUpdateLastAllocatedIndex) record;
 
-                buf.putInt(mpUpdateLastAllocatedIdx.cacheId());
+                buf.putInt(mpUpdateLastAllocatedIdx.groupId());
                 buf.putLong(mpUpdateLastAllocatedIdx.pageId());
 
                 buf.putInt(mpUpdateLastAllocatedIdx.lastAllocatedIndex());
@@ -627,7 +627,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PART_META_UPDATE_STATE:
                 PartitionMetaStateRecord partMetaStateRecord = (PartitionMetaStateRecord) record;
 
-                buf.putInt(partMetaStateRecord.cacheId());
+                buf.putInt(partMetaStateRecord.groupId());
 
                 buf.putInt(partMetaStateRecord.partitionId());
 
@@ -640,7 +640,7 @@ public class RecordV1Serializer implements RecordSerializer {
             case PAGE_LIST_META_RESET_COUNT_RECORD:
                 PageListMetaResetCountRecord pageListMetaResetCntRecord = (PageListMetaResetCountRecord) record;
 
-                buf.putInt(pageListMetaResetCntRecord.cacheId());
+                buf.putInt(pageListMetaResetCntRecord.groupId());
                 buf.putLong(pageListMetaResetCntRecord.pageId());
 
                 break;

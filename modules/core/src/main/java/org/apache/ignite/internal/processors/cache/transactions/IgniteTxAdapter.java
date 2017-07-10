@@ -435,9 +435,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         break;
                     }
                 }
-            }
 
-            cctx.tm().uncommitTx(this);
+                cctx.tm().uncommitTx(this);
+            }
         }
         catch (Exception ex) {
             U.error(log, "Failed to do uncommit.", ex);

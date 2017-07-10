@@ -81,7 +81,6 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -110,6 +109,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -622,7 +623,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     Integer tag
                 ) throws IgniteCheckedException {
                     // First of all, write page to disk.
-                    storeMgr.write(fullId.cacheId(), fullId.pageId(), pageBuf, tag);
+                    storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
                     // Only after write we can write page into snapshot.
                     snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
@@ -1335,25 +1336,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
-                            int cacheId = pageRec.fullPageId().cacheId();
+                            int grpId = pageRec.fullPageId().groupId();
                             long pageId = pageRec.fullPageId().pageId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(cacheId);
+                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
-                            long page = pageMem.acquirePage(cacheId, pageId, true);
+                            long page = pageMem.acquirePage(grpId, pageId, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(cacheId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
                                 try {
                                     PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
                                 }
                                 finally {
-                                    pageMem.writeUnlock(cacheId, pageId, page, null, true, true);
+                                    pageMem.writeUnlock(grpId, pageId, page, null, true, true);
                                 }
                             }
                             finally {
-                                pageMem.releasePage(cacheId, pageId, page);
+                                pageMem.releasePage(grpId, pageId, page);
                             }
 
                             applied++;
@@ -1365,14 +1366,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (apply) {
                             PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
 
-                            final int cId = destroyRec.cacheId();
+                            final int gId = destroyRec.groupId();
                             final int pId = destroyRec.partitionId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(cId);
+                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(gId);
 
                             pageMem.clearAsync(new P3<Integer, Long, Integer>() {
                                 @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
-                                    return cacheId == cId && PageIdUtils.partId(pageId) == pId;
+                                    return cacheId == gId && PageIdUtils.partId(pageId) == pId;
                                 }
                             }, true).get();
                         }
@@ -1383,27 +1384,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (apply && rec instanceof PageDeltaRecord) {
                             PageDeltaRecord r = (PageDeltaRecord)rec;
 
-                            int cacheId = r.cacheId();
+                            int grpId = r.groupId();
                             long pageId = r.pageId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(cacheId);
+                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
-                            long page = pageMem.acquirePage(cacheId, pageId, true);
+                            long page = pageMem.acquirePage(grpId, pageId, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(cacheId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
                                 try {
                                     r.applyDelta(pageMem, pageAddr);
                                 }
                                 finally {
-                                    pageMem.writeUnlock(cacheId, pageId, page, null, true, true);
+                                    pageMem.writeUnlock(grpId, pageId, page, null, true, true);
                                 }
                             }
                             finally {
-                                pageMem.releasePage(cacheId, pageId, page);
+                                pageMem.releasePage(grpId, pageId, page);
                             }
 
                             applied++;
@@ -1492,7 +1493,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case PART_META_UPDATE_STATE:
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
-                        partStates.put(new T2<>(metaStateRecord.cacheId(), metaStateRecord.partitionId()),
+                        partStates.put(new T2<>(metaStateRecord.groupId(), metaStateRecord.partitionId()),
                             new T2<>((int)metaStateRecord.state(), metaStateRecord.updateCounter()));
 
                         break;
@@ -1685,7 +1686,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (tag != null) {
                     tmpWriteBuf.rewind();
 
-                    PageStore store = storeMgr.writeInternal(fullId.cacheId(), fullId.pageId(), tmpWriteBuf, tag);
+                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag);
 
                     tmpWriteBuf.rewind();
 
@@ -2126,7 +2127,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     CacheState state = new CacheState(locParts.size());
 
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                        state.addPartitionState(part.id(), part.dataStore().fullSize(), part.lastAppliedUpdate());
+                        state.addPartitionState(part.id(), part.dataStore().fullSize(), part.updateCounter());
 
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }
@@ -2325,7 +2326,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     snapshotMgr.beforePageWrite(fullId);
 
-                    int grpId = fullId.cacheId();
+                    int grpId = fullId.groupId();
 
                     CacheGroupContext grp = context().cache().cacheGroup(grpId);
 

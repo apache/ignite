@@ -13,37 +13,30 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-package org.apache.ignite.internal.pagemem.snapshot;
 
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
-/** */
-public enum SnapshotOperationType {
-    /** Create. */
-    CREATE,
-    /** Restore. */
-    RESTORE,
-    /** Restore 2. */
-    RESTORE_2_PHASE,
-    /** Move. */
-    MOVE,
-    /** Delete. */
-    DELETE,
-    /** Check. */
-    CHECK;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
-    /** Enumerated values. */
-    private static final SnapshotOperationType[] VALS = values();
+/**
+ * File I/O factory which provides RandomAccessFileIO implementation of FileIO.
+ */
+public class RandomAccessFileIOFactory implements FileIOFactory {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
-     */
-    @Nullable public static SnapshotOperationType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    /** {@inheritDoc} */
+    @Override public FileIO create(File file) throws IOException {
+        return create(file, "rw");
+    }
+
+    /** {@inheritDoc} */
+    @Override public FileIO create(File file, String mode) throws IOException {
+        RandomAccessFile rf = new RandomAccessFile(file, mode);
+
+        return new RandomAccessFileIO(rf);
     }
 }
