@@ -18,14 +18,16 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -45,11 +47,17 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
+    /** Map of destination node ID to runnable with logic for real message sending.
+     * To apply real message sending use run method */
     private final ConcurrentHashMap8<UUID, Runnable> rs = new ConcurrentHashMap8<>();
 
-    /** */
+    /**
+     * Flag to redirect {@link GridDhtPartitionsFullMessage}s from real communication channel to {@link #rs} map.
+     * Applied only to messages not related to particular exchange
+     */
     private volatile boolean record = false;
+
+    private AtomicBoolean replay = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -73,11 +81,17 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         @Override public void sendMessage(final ClusterNode node, final Message msg,
             final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
+            System.err.println("MMM: " + msg0); //todo remove
 
             if (msg0 instanceof GridDhtPartitionsFullMessage && record &&
-                ((GridDhtPartitionsFullMessage)msg0).exchangeId() == null) {
+                ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null) {
+                System.err.println("Record message from : " + node.id() + " " + msg + " "); //todo remove
+                new Throwable("Debug").printStackTrace(); //todo remove
+                assert !replay.get() : "Record of message is not allowed after replay";
+
                 rs.putIfAbsent(node.id(), new Runnable() {
                     @Override public void run() {
+                        System.err.println("Replay: " + msg); //todo remove
                         DelayableCommunicationSpi.super.sendMessage(node, msg, ackC);
                     }
                 });
@@ -94,10 +108,10 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
     }
 
     /**
-     * @throws Exception e.
+     * @throws Exception e if failed.
      */
     public void test() throws Exception {
-        IgniteKernal ignite = (IgniteKernal)startGrid(0);
+        IgniteEx ignite = startGrid(0);
 
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -134,9 +148,11 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         // Emulate latest GridDhtPartitionsFullMessages.
         ignite.context().cache().context().exchange().scheduleResendPartitions();
 
-        while (rs.size() < 3) { // N - 1 nodes.
+        while (record && rs.size() < 3) { // N - 1 nodes.
             U.sleep(10);
         }
+
+        System.err.println("Entries: " + rs.entrySet()); //todo remove
 
         ignite(0).destroyCache(DEFAULT_CACHE_NAME);
 
@@ -144,8 +160,13 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
 
         awaitPartitionMapExchange();
 
+        record = false;
+
+        // rs.clear(); //todo remove
         for (Runnable r : rs.values())
-            r.run();
+            r.run(); // Causes real messages sending
+
+        assert replay.compareAndSet(false, true);
 
         U.sleep(10000); // Enough time to process delayed GridDhtPartitionsFullMessages.
 
@@ -165,6 +186,20 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         assert grid(0).context().cache().context().exchange().readyAffinityVersion().topologyVersion() > topVer0;
         assert grid(1).context().cache().context().exchange().readyAffinityVersion().topologyVersion() > topVer1;
         assert grid(2).context().cache().context().exchange().readyAffinityVersion().topologyVersion() > topVer2;
+    }
+
+    //todo remove
+    public void testAwait() throws Exception {
+        startGrids(2);
+        IgniteEx ignite = (IgniteEx) ignite(0);
+        ignite.getOrCreateCache("ffff");
+
+        awaitPartitionMapExchange();
+
+
+        ignite.context().cache().context().exchange().scheduleResendPartitions();
+        stopGrid(1);
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */

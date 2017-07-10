@@ -48,7 +48,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     @GridToStringExclude
     private UUID nodeId;
 
-    /** Event. */
+    /** Event type. */
     @GridToStringExclude
     private int evt;
 
@@ -57,7 +57,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
     /**
      * @param nodeId Node ID.
-     * @param evt Event.
+     * @param evt Event type.
      * @param topVer Topology version.
      */
     public GridDhtPartitionExchangeId(UUID nodeId, int evt, @NotNull AffinityTopologyVersion topVer) {
