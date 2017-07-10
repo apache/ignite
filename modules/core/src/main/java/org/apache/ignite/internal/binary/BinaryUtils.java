@@ -137,7 +137,7 @@ public class BinaryUtils {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
     /** Whether to write arrays lengths in varint encoding. */
-    public static final boolean VARINT_ARRAYS_LENGTH =
+    public static final boolean USE_VARINT_ARRAY_LENGTH =
         !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_VARINT_ARRAY_LENGTH);
 
     /** Field type names. */
@@ -2471,7 +2471,7 @@ public class BinaryUtils {
     /**
      * Reads from {@link BinaryInputStream} value of length of an array,
      * which can be presented in default format or varint encoding.
-     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
@@ -2481,7 +2481,7 @@ public class BinaryUtils {
      * @return Length of an array.
      */
     public static int doReadArrayLength(BinaryInputStream in) {
-        if (!VARINT_ARRAYS_LENGTH)
+        if (!USE_VARINT_ARRAY_LENGTH)
             return in.readInt();
 
         return doReadUnsignedVarint(in);
@@ -2490,7 +2490,7 @@ public class BinaryUtils {
     /**
      * Reads from {@link BinaryBuilderReader} value of length of an array,
      * which can be presented in default format or varint encoding.
-     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
@@ -2500,7 +2500,7 @@ public class BinaryUtils {
      * @return Length of an array.
      */
     public static int doReadArrayLength(BinaryBuilderReader in) {
-        if (!VARINT_ARRAYS_LENGTH)
+        if (!USE_VARINT_ARRAY_LENGTH)
             return in.readInt();
 
         return doReadUnsignedVarint(in);
@@ -2509,7 +2509,7 @@ public class BinaryUtils {
     /**
      * Reads from {@link ByteBuffer} value of length of an array,
      * which can be presented in default format or varint encoding.
-     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
@@ -2519,7 +2519,7 @@ public class BinaryUtils {
      * @return Length of an array.
      */
     public static int doReadArrayLength(ByteBuffer buf) {
-        if (!VARINT_ARRAYS_LENGTH)
+        if (!USE_VARINT_ARRAY_LENGTH)
             return buf.getInt();
 
         return doReadUnsignedVarint(buf);
@@ -2528,7 +2528,7 @@ public class BinaryUtils {
     /**
      * Reads value of length of an array, which can be presented in default format or varint encoding.
      * Starts reading from given offset.
-     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
@@ -2539,7 +2539,7 @@ public class BinaryUtils {
      * @return Length of an array.
      */
     public static int doReadArrayLength(byte[] arr, int off) {
-        if (!VARINT_ARRAYS_LENGTH)
+        if (!USE_VARINT_ARRAY_LENGTH)
             return BinaryPrimitives.readInt(arr, off);
 
         return doReadUnsignedVarint(arr, off);
@@ -2548,7 +2548,7 @@ public class BinaryUtils {
     /**
      * Reads value of length of an array, which can be presented in default format or varint encoding.
      * Starts reading from given offset.
-     * Reading method depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * Reading method depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * If you need to know number of bytes which were used for storage of the read value,
@@ -2559,7 +2559,7 @@ public class BinaryUtils {
      * @return Length of an array.
      */
     public static int doReadArrayLength(long ptr, int off) {
-        if (!VARINT_ARRAYS_LENGTH)
+        if (!USE_VARINT_ARRAY_LENGTH)
             return BinaryPrimitives.readInt(ptr, off);
 
         return doReadUnsignedVarint(ptr, off);
@@ -2569,13 +2569,13 @@ public class BinaryUtils {
      * Returns the amount of bytes required to write length of an array,
      * which can be presented in default format or varint encoding.
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
-     * It depends on the constant {@link #VARINT_ARRAYS_LENGTH}.
+     * It depends on the constant {@link #USE_VARINT_ARRAY_LENGTH}.
      *
      * @param len Array length.
      * @return Amount of bytes.
      */
     public static int sizeOfArrayLengthValue(int len) {
-        if (!VARINT_ARRAYS_LENGTH)
+        if (!USE_VARINT_ARRAY_LENGTH)
             return 4;
 
         return sizeInUnsignedVarint(len);
