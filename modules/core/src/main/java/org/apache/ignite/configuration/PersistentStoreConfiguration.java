@@ -44,9 +44,8 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default length of interval over which rate-based metric is calculated. */
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
-    /** */
-    @SuppressWarnings("UnnecessaryBoxing")
-    public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = new Long(256L * 1024 * 1024);
+    /** Default checkpointing page buffer size (may be adjusted by Ignite). */
+    public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = 256L * 1024 * 1024 * 1024;
 
     /** Default number of checkpointing threads. */
     public static final int DFLT_CHECKPOINTING_THREADS = 1;
@@ -94,7 +93,7 @@ public class PersistentStoreConfiguration implements Serializable {
     private long lockWaitTime = DFLT_LOCK_WAIT_TIME;
 
     /** */
-    private Long checkpointingPageBufSize = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
+    private Long checkpointingPageBufSize;
 
     /** */
     private int checkpointingThreads = DFLT_CHECKPOINTING_THREADS;
@@ -200,7 +199,8 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Gets amount of memory allocated for a checkpointing temporary buffer.
      *
-     * @return checkpointing page buffer size in bytes.
+     * @return Checkpointing page buffer size in bytes or {@code null} for Ignite
+     *      to choose the buffer size automatically.
      */
     public Long getCheckpointingPageBufferSize() {
         return checkpointingPageBufSize;
@@ -211,10 +211,11 @@ public class PersistentStoreConfiguration implements Serializable {
      * copies of pages that are being written to disk and being update in parallel while the checkpointing is in
      * progress.
      *
-     * @param checkpointingPageBufSize checkpointing page buffer size in bytes.
+     * @param checkpointingPageBufSize Checkpointing page buffer size in bytes or {@code null} for Ignite to
+     *      choose the buffer size automatically.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointingPageBufferSize(long checkpointingPageBufSize) {
+    public PersistentStoreConfiguration setCheckpointingPageBufferSize(Long checkpointingPageBufSize) {
         this.checkpointingPageBufSize = checkpointingPageBufSize;
 
         return this;
