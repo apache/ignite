@@ -1134,22 +1134,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 return false;
             }
 
-            if (node2part != null && node2part.compareTo(partMap) > 0) {
-                if (log.isDebugEnabled())
-                    log.debug("Stale partition map for full partition map update (will ignore) [lastExch=" +
-                        lastExchangeVer + ", exch=" + exchangeVer + ", curMap=" + node2part + ", newMap=" + partMap + ']');
-
-                return false;
-            }
-
-            if (exchangeVer != null)
-                lastExchangeVer = exchangeVer;
+            boolean fullMapUpdated = (node2part == null);
 
             if (node2part != null) {
                 for (GridDhtPartitionMap part : node2part.values()) {
                     GridDhtPartitionMap newPart = partMap.get(part.nodeId());
 
                     if (shouldOverridePartitionMap(part, newPart)) {
+                        fullMapUpdated = true;
+
                         if (log.isDebugEnabled())
                             log.debug("Overriding partition map in full update map [exchId=" + exchangeVer + ", curPart=" +
                                 mapString(part) + ", newPart=" + mapString(newPart) + ']');
@@ -1159,6 +1152,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         // then we keep the newer value.
                         partMap.put(part.nodeId(), part);
                     }
+                }
+
+                for (GridDhtPartitionMap part : partMap.values()) {
+                    fullMapUpdated |= !node2part.containsKey(part);
                 }
 
                 // Remove entry if node left.
@@ -1174,6 +1171,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
             }
+
+            if (!fullMapUpdated) {
+                if (log.isDebugEnabled())
+                    log.debug("No updates for full partition map (will ignore) [lastExch=" +
+                            lastExchangeVer + ", exch=" + exchangeVer + ", curMap=" + node2part + ", newMap=" + partMap + ']');
+
+                return false;
+            }
+
+            if (exchangeVer != null)
+                lastExchangeVer = exchangeVer;
 
             node2part = partMap;
 
