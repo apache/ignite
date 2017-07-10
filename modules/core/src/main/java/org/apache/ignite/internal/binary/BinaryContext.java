@@ -125,7 +125,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  * Binary context.
  */
 public class BinaryContext {
-    /** System loader.*/
+    /** System loader. */
     private static final ClassLoader sysLdr = U.gridClassLoader();
 
     /** */
@@ -461,14 +461,14 @@ public class BinaryContext {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName)) {
-                        String affField = affFields.remove(clsName0);
+                        String affField = affinityFieldName(affFields, clsName0);
 
                         descs.add(clsName0, mapper, serializer, identity, affField,
                             typeCfg.isEnum(), typeCfg.getEnumValues(), true);
                     }
                 }
                 else {
-                    String affField = affFields.remove(clsName);
+                    String affField = affinityFieldName(affFields, clsName);
 
                     descs.add(clsName, mapper, serializer, identity, affField,
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
@@ -489,6 +489,39 @@ public class BinaryContext {
             int typeId = globalMapper.typeId(typeName);
 
             affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
+        }
+    }
+
+    /**
+     * Get affinity field name from either {@link CacheKeyConfiguration} or {@link AffinityKeyMapped} annotation
+     * applied to a field of the class specified by {@code clsName} parameter.
+     * Configuration ({@link CacheKeyConfiguration}) takes precedence over code ({@link AffinityKeyMapped}) if
+     * different affinity field is specified in the configuration and code. A warning is logged in such a case.
+     *
+     * @param affFieldCfg Pre-configured Class name -> Affinity field name mappings
+     * @param clsName Class name to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
+     */
+    private String affinityFieldName(Map<String, String> affFieldCfg, String clsName) {
+        String cfgValue = affFieldCfg.remove(clsName);
+
+        ClassLoader ldr = U.gridClassLoader();
+
+        try {
+            Class cls = Class.forName(clsName, false, ldr);
+
+            String codeValue = affinityFieldName(cls);
+
+            if (cfgValue != null && codeValue != null && cfgValue != codeValue)
+                U.warn(log(), String.format("Affinity field name for class \"%s\" is specified in the configuration " +
+                    "and code. The configured affinity field \"%s\" will be used.", clsName, cfgValue));
+
+            return cfgValue == null ? codeValue : cfgValue;
+        }
+        catch (ClassNotFoundException e) {
+            U.error(log(), String.format("Failed to get affinity field name for class \"%s\": %s", clsName, e));
+
+            return cfgValue;
         }
     }
 
@@ -1218,7 +1251,6 @@ public class BinaryContext {
     }
 
     /**
-     *
      * @param typeId Type ID
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
@@ -1234,7 +1266,7 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-        return metaHnd != null ? metaHnd.metadata(typeId, schemaId): null;
+        return metaHnd != null ? metaHnd.metadata(typeId, schemaId) : null;
     }
 
     /**
@@ -1354,7 +1386,7 @@ public class BinaryContext {
      * @param ldr Class loader being undeployed.
      */
     public void onUndeploy(ClassLoader ldr) {
-        for (Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator(); it.hasNext();) {
+        for (Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
 
             // Never undeploy system types.
@@ -1368,7 +1400,6 @@ public class BinaryContext {
     }
 
     /**
-     *
      * @param cls Class
      * @return Enum name to ordinal mapping.
      */
@@ -1471,6 +1502,7 @@ public class BinaryContext {
 
         /**
          * Constructor.
+         *
          * @param clsName Class name.
          * @param mapper ID mapper.
          * @param serializer Serializer.
