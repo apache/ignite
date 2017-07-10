@@ -812,7 +812,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
 
     /** */
     @Test(expected = MathIllegalArgumentException.class)
-    public void testMathIllegalArgumentException(){
+    public void testMathIllegalArgumentException() {
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         mdl.validateSampleData(new DenseLocalOnHeapMatrix(1, 2), new DenseLocalOnHeapVector(1));
     }
