@@ -276,7 +276,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private FileLockHolder fileLockHolder;
 
     /** Lock wait time. */
-    private final int lockWaitTime;
+    private final long lockWaitTime;
 
     /** */
     private Map<Integer, Map<Integer, T2<Long, WALPointer>>> reservedForExchange;
@@ -2903,10 +2903,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @param lockWaitTime During which time thread will try capture file lock.
+         * @param lockWaitTimeMillis During which time thread will try capture file lock.
          * @throws IgniteCheckedException If failed to capture file lock.
          */
-        public void tryLock(int lockWaitTime) throws IgniteCheckedException {
+        public void tryLock(long lockWaitTimeMillis) throws IgniteCheckedException {
             assert lockFile != null;
 
             FileChannel ch = lockFile.getChannel();
@@ -2940,7 +2940,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 String content = null;
 
                 // Try to get lock, if not available wait 1 sec and re-try.
-                for (int i = 0; i < lockWaitTime; i += 1000) {
+                for (int i = 0; i < lockWaitTimeMillis; i += 1000) {
                     try {
                         lock = ch.tryLock(0, 1, false);
                         if (lock != null && lock.isValid()) {
@@ -2964,7 +2964,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (content == null)
                     content = readContent();
 
-                failMsg = "Failed to acquire file lock during " + (lockWaitTime / 1000) +
+                failMsg = "Failed to acquire file lock during " + (lockWaitTimeMillis / 1000) +
                     " sec, (locked by " + content + "): " + file.getAbsolutePath();
             }
             catch (Exception e) {

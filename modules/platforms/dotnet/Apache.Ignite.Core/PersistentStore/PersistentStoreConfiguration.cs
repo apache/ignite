@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.PersistentStore
         /// <summary>
         /// Default value for <see cref="WalFsyncDelayNanos"/>.
         /// </summary>
-        public const int DefaultWalFsyncDelayNanos = 1;
+        public const long DefaultWalFsyncDelayNanos = 1000;
 
         /// <summary>
         /// The default sub intervals.
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.PersistentStore
             WalMode = (WalMode)reader.ReadInt();
             TlbSize = reader.ReadInt();
             WalFlushFrequency = reader.ReadLongAsTimespan();
-            WalFsyncDelayNanos = reader.ReadInt();
+            WalFsyncDelayNanos = reader.ReadLong();
             WalRecordIteratorBufferSize = reader.ReadInt();
             AlwaysWriteFullPages = reader.ReadBoolean();
             MetricsEnabled = reader.ReadBoolean();
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.PersistentStore
             writer.WriteInt((int)WalMode);
             writer.WriteInt(TlbSize);
             writer.WriteTimeSpanAsLong(WalFlushFrequency);
-            writer.WriteInt(WalFsyncDelayNanos);
+            writer.WriteLong(WalFsyncDelayNanos);
             writer.WriteInt(WalRecordIteratorBufferSize);
             writer.WriteBoolean(AlwaysWriteFullPages);
             writer.WriteBoolean(MetricsEnabled);

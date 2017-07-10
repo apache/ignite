@@ -39,7 +39,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     private long checkpointingFreq;
 
     /** Lock wait time. */
-    private int lockWaitTime;
+    private long lockWaitTime;
 
     /** */
     private Long checkpointingPageBufSize;
@@ -72,10 +72,10 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     private int tlbSize;
 
     /** Wal flush frequency. */
-    private int walFlushFreq;
+    private long walFlushFreq;
 
-    /** Wal fsync delay. */
-    private int walFsyncDelay;
+    /** Wal fsync delay in nanoseconds. */
+    private long walFsyncDelay;
 
     /** Wal record iterator buffer size. */
     private int walRecordIterBuffSize;
@@ -114,7 +114,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         walMode = cfg.getWalMode();
         tlbSize = cfg.getTlbSize();
         walFlushFreq = cfg.getWalFlushFrequency();
-        walFsyncDelay = cfg.getWalFsyncDelay();
+        walFsyncDelay = cfg.getWalFsyncDelayNanos();
         walRecordIterBuffSize = cfg.getWalRecordIteratorBufferSize();
         alwaysWriteFullPages = cfg.isAlwaysWriteFullPages();
         subIntervals = cfg.getSubIntervals();
@@ -152,7 +152,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /**
      * @return Time for wait.
      */
-    public int getLockWaitTime() {
+    public long getLockWaitTime() {
         return lockWaitTime;
     }
 
@@ -229,14 +229,14 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /**
      * @return Flush frequency.
      */
-    public int getWalFlushFrequency() {
+    public long getWalFlushFrequency() {
         return walFlushFreq;
     }
 
     /**
      * Gets the fsync delay, in nanoseconds.
      */
-    public int getWalFsyncDelay() {
+    public long getWalFsyncDelay() {
         return walFsyncDelay;
     }
 
@@ -258,7 +258,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, persistenceStorePath);
         out.writeLong(checkpointingFreq);
-        out.writeInt(lockWaitTime);
+        out.writeLong(lockWaitTime);
         out.writeObject(checkpointingPageBufSize);
         out.writeInt(checkpointingThreads);
         out.writeInt(walHistSize);
@@ -269,8 +269,8 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         out.writeBoolean(metricsEnabled);
         U.writeEnum(out, walMode);
         out.writeInt(tlbSize);
-        out.writeInt(walFlushFreq);
-        out.writeInt(walFsyncDelay);
+        out.writeLong(walFlushFreq);
+        out.writeLong(walFsyncDelay);
         out.writeInt(walRecordIterBuffSize);
         out.writeBoolean(alwaysWriteFullPages);
         out.writeInt(subIntervals);
@@ -281,7 +281,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         persistenceStorePath = U.readString(in);
         checkpointingFreq = in.readLong();
-        lockWaitTime = in.readInt();
+        lockWaitTime = in.readLong();
         checkpointingPageBufSize = (Long)in.readObject();
         checkpointingThreads = in.readInt();
         walHistSize = in.readInt();
@@ -292,8 +292,8 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         metricsEnabled = in.readBoolean();
         walMode = WALMode.fromOrdinal(in.readByte());
         tlbSize = in.readInt();
-        walFlushFreq = in.readInt();
-        walFsyncDelay = in.readInt();
+        walFlushFreq = in.readLong();
+        walFsyncDelay = in.readLong();
         walRecordIterBuffSize = in.readInt();
         alwaysWriteFullPages = in.readBoolean();
         subIntervals = in.readInt();

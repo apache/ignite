@@ -70,7 +70,7 @@ public class PersistentStoreConfiguration implements Serializable {
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
 
     /** Default wal fsync delay. */
-    public static final int DFLT_WAL_FSYNC_DELAY = 1;
+    public static final int DFLT_WAL_FSYNC_DELAY = 1000;
 
     /** Default wal record iterator buffer size. */
     public static final int DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE = 64 * 1024 * 1024;
@@ -90,8 +90,8 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Checkpointing frequency. */
     private long checkpointingFreq = DFLT_CHECKPOINTING_FREQ;
 
-    /** Lock wait time. */
-    private int lockWaitTime = DFLT_LOCK_WAIT_TIME;
+    /** Lock wait time, in milliseconds. */
+    private long lockWaitTime = DFLT_LOCK_WAIT_TIME;
 
     /** */
     private Long checkpointingPageBufSize = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
@@ -124,10 +124,10 @@ public class PersistentStoreConfiguration implements Serializable {
     private int tlbSize = DFLT_TLB_SIZE;
 
     /** Wal flush frequency in milliseconds. */
-    private int walFlushFreq = DFLT_WAL_FLUSH_FREQ;
+    private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
 
     /** Wal fsync delay. */
-    private int walFsyncDelay = DFLT_WAL_FSYNC_DELAY;
+    private long walFsyncDelay = DFLT_WAL_FSYNC_DELAY;
 
     /** Wal record iterator buffer size. */
     private int walRecordIterBuffSize = DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE;
@@ -243,21 +243,23 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Time out in second, while wait and try get file lock for start persist manager.
+     * Time out in milliseonds to wait when acquiring persistence store lock file before failing the
+     * local node.
      *
-     * @return Time for wait.
+     * @return Lock wait time in milliseconds.
      */
-    public int getLockWaitTime() {
+    public long getLockWaitTime() {
         return lockWaitTime;
     }
 
     /**
-     * Time out in milliseconds, while wait and try get file lock for start persist manager.
+     * Time out in milliseconds  to wait when acquiring persistence store lock file before failing the
+     * local node.
      *
-     * @param lockWaitTime Lock wait time.
+     * @param lockWaitTime Lock wait time in milliseconds.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setLockWaitTime(int lockWaitTime) {
+    public PersistentStoreConfiguration setLockWaitTime(long lockWaitTime) {
         this.lockWaitTime = lockWaitTime;
 
         return this;
@@ -474,19 +476,22 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     *  Property define how often will be fsync, in milliseconds.
-     *  In background mode, exist thread which do fsync by timeout.
+     *  This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
+     *  all other WAL modes.
      *
-     * @return Flush frequency.
+     * @return WAL flush frequency, in milliseconds.
      */
-    public int getWalFlushFrequency() {
+    public long getWalFlushFrequency() {
         return walFlushFreq;
     }
 
     /**
-     * @param walFlushFreq Wal flush frequency, in milliseconds.
+     *  This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
+     *  all other WAL modes.
+     *
+     * @param walFlushFreq WAL flush frequency, in milliseconds.
      */
-    public PersistentStoreConfiguration setWalFlushFrequency(int walFlushFreq) {
+    public PersistentStoreConfiguration setWalFlushFrequency(long walFlushFreq) {
         this.walFlushFreq = walFlushFreq;
 
         return this;
@@ -495,15 +500,15 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Gets the fsync delay, in nanoseconds.
      */
-    public int getWalFsyncDelay() {
+    public long getWalFsyncDelayNanos() {
         return walFsyncDelay <= 0 ? DFLT_WAL_FSYNC_DELAY : walFsyncDelay;
     }
 
     /**
-     * @param walFsyncDelay Wal fsync delay, in nanoseconds.
+     * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
      */
-    public PersistentStoreConfiguration setWalFsyncDelay(int walFsyncDelay) {
-        this.walFsyncDelay = walFsyncDelay;
+    public PersistentStoreConfiguration setWalFsyncDelayNanos(long walFsyncDelayNanos) {
+        walFsyncDelay = walFsyncDelayNanos;
 
         return this;
     }
