@@ -367,6 +367,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FilePageStore idxStore = new FilePageStore(
             PageMemory.FLAG_IDX,
             idxFile,
+            pstCfg.getFileIOFactory(),
             cctx.kernalContext().config().getMemoryConfiguration());
 
         FilePageStore[] partStores = new FilePageStore[grpDesc.config().getAffinity().partitions()];
@@ -375,6 +376,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             FilePageStore partStore = new FilePageStore(
                 PageMemory.FLAG_DATA,
                 new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)),
+                pstCfg.getFileIOFactory(),
                 cctx.kernalContext().config().getMemoryConfiguration()
             );
 
