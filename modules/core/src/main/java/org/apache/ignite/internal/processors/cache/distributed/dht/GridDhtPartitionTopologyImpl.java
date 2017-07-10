@@ -1740,11 +1740,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         result.add(e.getKey());
                     }
-                }
 
-                U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                    "[nodeId=" + ctx.localNodeId() + "cacheOrGroupName=" + grp.cacheOrGroupName() +
-                    ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                        "[nodeId=" + ctx.localNodeId() + "cacheOrGroupName=" + grp.cacheOrGroupName() +
+                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                }
             }
 
             if (updateSeq)

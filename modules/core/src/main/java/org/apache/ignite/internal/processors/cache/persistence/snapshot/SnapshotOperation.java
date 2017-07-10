@@ -15,35 +15,30 @@
  * limitations under the License.
  *
  */
-package org.apache.ignite.internal.pagemem.snapshot;
 
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-/** */
-public enum SnapshotOperationType {
-    /** Create. */
-    CREATE,
-    /** Restore. */
-    RESTORE,
-    /** Restore 2. */
-    RESTORE_2_PHASE,
-    /** Move. */
-    MOVE,
-    /** Delete. */
-    DELETE,
-    /** Check. */
-    CHECK;
+import java.io.Serializable;
+import java.util.Set;
 
-    /** Enumerated values. */
-    private static final SnapshotOperationType[] VALS = values();
+/**
+ * Initial snapshot operation interface.
+ */
+public interface SnapshotOperation extends Serializable {
+    /**
+     * Cache group ids included to this snapshot.
+     *
+     * @return Cache names.
+     */
+    Set<Integer> cacheGroupIds();
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * Cache names included to this snapshot.
      */
-    @Nullable public static SnapshotOperationType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    Set<String> cacheNames();
+
+    /**
+     * Any custom extra parameter.
+     */
+    Object extraParameter();
 }
