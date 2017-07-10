@@ -132,35 +132,37 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     public void testNoCacheNameQuery() throws Exception {
         Statement stmt;
 
-        stmt = DriverManager.getConnection(getUrl()).createStatement();
+        try (Connection conn = DriverManager.getConnection(getUrl())) {
+            stmt = conn.createStatement();
 
-        assertNotNull(stmt);
-        assertFalse(stmt.isClosed());
+            assertNotNull(stmt);
+            assertFalse(stmt.isClosed());
 
-        stmt.execute("select t._key, t._val from \"cache1\".Integer t");
+            stmt.execute("select t._key, t._val from \"cache1\".Integer t");
 
-        ResultSet rs = stmt.getResultSet();
+            ResultSet rs = stmt.getResultSet();
 
-        while(rs.next())
-            assertEquals(rs.getInt(2), rs.getInt(1) * 2);
+            while (rs.next())
+                assertEquals(rs.getInt(2), rs.getInt(1) * 2);
 
-        stmt.execute("select t._key, t._val from \"cache2\".Integer t");
+            stmt.execute("select t._key, t._val from \"cache2\".Integer t");
 
-        rs = stmt.getResultSet();
+            rs = stmt.getResultSet();
 
-        while(rs.next())
-            assertEquals(rs.getInt(2), rs.getInt(1) * 3);
+            while (rs.next())
+                assertEquals(rs.getInt(2), rs.getInt(1) * 3);
 
-        stmt.execute("select t._key, t._val, v._val " +
-            "from \"cache1\".Integer t join \"cache2\".Integer v on t._key = v._key");
+            stmt.execute("select t._key, t._val, v._val " +
+                "from \"cache1\".Integer t join \"cache2\".Integer v on t._key = v._key");
 
-        rs = stmt.getResultSet();
+            rs = stmt.getResultSet();
 
-        while(rs.next()) {
-            assertEquals(rs.getInt(2), rs.getInt(1) * 2);
-            assertEquals(rs.getInt(3), rs.getInt(1) * 3);
+            while (rs.next()) {
+                assertEquals(rs.getInt(2), rs.getInt(1) * 2);
+                assertEquals(rs.getInt(3), rs.getInt(1) * 3);
+            }
+
+            stmt.close();
         }
-
-        stmt.close();
     }
 }
