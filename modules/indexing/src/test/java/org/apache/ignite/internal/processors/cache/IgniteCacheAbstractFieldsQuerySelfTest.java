@@ -348,7 +348,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     assert String.class.getName().equals(fields.get("_KEY"));
                     assert String.class.getName().equals(fields.get("_VAL"));
                 }
-                else if (DEFAULT_CACHE_NAME.equals(meta.cacheName()))
+                else if (DEFAULT_CACHE_NAME.equals(meta.cacheName()) || noOpCache.getName().equals(meta.cacheName()))
                     assertTrue("Invalid types size", types.isEmpty());
                 else
                     fail("Unknown cache: " + meta.cacheName());
