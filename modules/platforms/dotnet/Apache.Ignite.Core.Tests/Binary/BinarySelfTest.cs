@@ -2677,10 +2677,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestNoVarintArrayLengthMode()
         {
-            // Run "TestNoVarintArrayLengthMode" in a separate process with changed setting.
-            Environment.SetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength, "true");
+            if (Environment.GetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength) != "true")
+            {
+                // Run "TestNoVarintArrayLengthMode" in a separate process with changed setting.
+                Environment.SetEnvironmentVariable(BinaryUtils.IgniteNoVarintArrayLength, "true");
 
-            TestUtils.RunTestInNewProcess(GetType().FullName, "TestNoVarintArrayLengthMode");
+                TestUtils.RunTestInNewProcess(GetType().FullName, "TestNoVarintArrayLengthMode");
+            }
         }
 
         /**
