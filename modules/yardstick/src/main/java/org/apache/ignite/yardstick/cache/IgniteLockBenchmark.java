@@ -18,30 +18,28 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLock;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs Ignite.reentrantLock operations.
  */
 public class IgniteLockBenchmark extends IgniteCacheLockBenchmark {
+    IgniteLock lock;
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
-        final int n = nextRandom(args.range());
-        final String key = "key" + n;
-        final String otherKey = "other_" + key;
-        final IgniteCache<String, Integer> cache = cacheForOperation();
-        final IgniteLock lock = ignite().reentrantLock(key, false, false, true);
-
         lock.lock();
-
-        try {
-            cache.put(otherKey, cache.get(otherKey) + 1);
-        }
-        finally {
-            lock.unlock();
-        }
+        lock.unlock();
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+        String key = "key";
+
+        lock = ignite().reentrantLock(key, false, false, true);
     }
 }
