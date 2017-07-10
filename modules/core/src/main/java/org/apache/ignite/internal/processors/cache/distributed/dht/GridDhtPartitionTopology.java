@@ -280,11 +280,6 @@ public interface GridDhtPartitionTopology {
     public Collection<Integer> lostPartitions();
 
     /**
-     *
-     */
-    public void checkEvictions();
-
-    /**
      * @param skipZeros If {@code true} then filters out zero counters.
      * @return Partition update counters.
      */
@@ -324,6 +319,7 @@ public interface GridDhtPartitionTopology {
     /**
      * Make nodes from provided set owners for a given partition.
      * State of all current owners that aren't contained in the set will be reset to MOVING.
+     *
      * @param p Partition ID.
      * @param updateSeq If should increment sequence when updated.
      * @param owners Set of new owners.
@@ -333,6 +329,7 @@ public interface GridDhtPartitionTopology {
 
     /**
      * Callback on exchange done.
+     *
      * @param assignment New affinity assignment.
      */
     public void onExchangeDone(AffinityAssignment assignment);

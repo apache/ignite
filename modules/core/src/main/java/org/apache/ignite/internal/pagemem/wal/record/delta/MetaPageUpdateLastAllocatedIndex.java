@@ -32,8 +32,8 @@ public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateLastAllocatedIndex(int cacheId, long pageId, int lastAllocatedIdx) {
-        super(cacheId, pageId);
+    public MetaPageUpdateLastAllocatedIndex(int grpId, long pageId, int lastAllocatedIdx) {
+        super(grpId, pageId);
 
         this.lastAllocatedIdx = lastAllocatedIdx;
     }
