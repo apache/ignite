@@ -261,7 +261,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
         Object key = 1;
 
-        Ignite primary = primaryNode(key, qryClientCache.getName());
+        Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
 
         TestCommunicationSpi spi = (TestCommunicationSpi)primary.configuration().getCommunicationSpi();
 
@@ -434,7 +434,10 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      *
      */
-    private void checkFlags(int size, GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags, int nodes, CacheConfiguration ccfg) {
+    private void checkFlags(int size,
+        GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags,
+        int nodes,
+        CacheConfiguration ccfg) {
         int backup = 0;
         int primary = 0;
 
@@ -472,7 +475,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
         /** Filtred events. */
         private final static GridConcurrentHashSet<CacheQueryEntryEvent> evtsFlags = new GridConcurrentHashSet<>();
 
-        /** Flag backups node. */
+        /** Flag backup node. */
         private volatile static AtomicBoolean isBackup = new AtomicBoolean(false);
 
         /** {@inheritDoc} */
