@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.nio.ByteBuffer;
 import java.util.NavigableMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -34,11 +34,22 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Snapshot manager stub.
  */
-public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
+public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** Snapshot started lock filename. */
     public static final String SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME = "snapshot-started.loc";
+
+    /**
+     * Try to start local snapshot operation if it's required by discovery event.
+     *
+     * @param discoveryEvent Discovery event.
+     */
+    @Nullable public IgniteInternalFuture tryStartLocalSnapshotOperation(
+            @Nullable DiscoveryEvent discoveryEvent
+    ) throws IgniteCheckedException {
+        return null;
+    }
 
     /**
      * @param initiatorNodeId Initiator node id.
@@ -46,18 +57,18 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter im
      */
     @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
         UUID initiatorNodeId,
-        SnapshotOperation snapshotOperation
+        T snapshotOperation
     ) throws IgniteCheckedException {
         return null;
     }
 
     /**
-     * @param snapOp current snapshot operation.
+     * @param snapshotOperation current snapshot operation.
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */
     public boolean onMarkCheckPointBegin(
-        SnapshotOperation snapOp,
+        T snapshotOperation,
         NavigableMap<T2<Integer, Integer>, T2<Integer, Integer>> map
     ) throws IgniteCheckedException {
         return false;

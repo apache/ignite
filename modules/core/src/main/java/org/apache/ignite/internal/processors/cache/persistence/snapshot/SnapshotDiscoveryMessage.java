@@ -13,23 +13,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-
-/**
  *
  */
-public class GridCacheAtomicLateAffDisabledMultiNodeFullApiSelfTest extends
-    GridCacheAtomicMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setLateAffinityAssignment(false);
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-        return cfg;
-    }
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+
+/**
+ * Initial snapshot discovery message with possibility to trigger exchange.
+ */
+public interface SnapshotDiscoveryMessage extends DiscoveryCustomMessage {
+    /**
+     * Is exchange needed after receiving this message.
+     *
+     * @return True if exchange is needed, false in other case.
+     */
+    boolean needExchange();
 }
