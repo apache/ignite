@@ -1031,7 +1031,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             }
         }
 
-        return c.applyx(cache.context());
+        return retryTopologySafe(new IgniteOutClosureX<T>() {
+            @Override public T applyx() throws IgniteCheckedException {
+                return c.applyx(cache.context());
+            }
+        });
     }
 
     /**
