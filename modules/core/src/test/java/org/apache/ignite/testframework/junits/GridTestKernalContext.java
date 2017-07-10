@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.ExecutorService;
@@ -28,8 +29,10 @@ import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.GridKernalGatewayImpl;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -41,6 +44,13 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public GridTestKernalContext(IgniteLogger log) {
         this(log, new IgniteConfiguration());
+
+        try {
+            add(new IgnitePluginProcessor(this, config(), Collections.<PluginProvider>emptyList()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IllegalStateException("Must not fail for empty plugins list.", e);
+        }
     }
 
     /**
