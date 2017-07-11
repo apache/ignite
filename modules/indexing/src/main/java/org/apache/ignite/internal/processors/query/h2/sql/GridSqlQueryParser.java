@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -1171,6 +1172,14 @@ public class GridSqlQueryParser {
         throw new CacheException("Unsupported query: " + qry);
     }
 
+    /**
+     * Check if query may be run locally on all caches mentioned in the query.
+     * @param p Query.
+     * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
+     * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
+     *     to run distributed query.
+     * @see SqlFieldsQuery#isReplicatedOnly()
+     */
     public static boolean isLocalQuery(Prepared p, boolean replicatedOnlyQry) {
         Query qry = query(p);
 
@@ -1186,23 +1195,20 @@ public class GridSqlQueryParser {
         return true;
     }
 
-    public static Integer getQueryParallelism(Prepared p) {
+    /**
+     * Get first (i.e. random, as we need any one) cache from given query.
+     * @param p Query.
+     * @return Context for the first of the caches mentioned in the query, or {@code null} if it does not involve caches.
+     */
+    public static GridCacheContext getFirstCache(Prepared p) {
         Query qry = query(p);
 
-        Integer res = null;
-
         for (Table tbl : qry.getTables()) {
-            if (tbl instanceof GridH2Table) {
-                GridCacheContext cctx = ((GridH2Table) tbl).cache();
-
-                if (res == null)
-                    res = cctx.config().getQueryParallelism();
-                else if (res != cctx.config().getQueryParallelism())
-                    throw new IgniteSQLException("Inconsistent query parallelism");
-            }
+            if (tbl instanceof GridH2Table)
+                return ((GridH2Table) tbl).cache();
         }
 
-        return res;
+        return null;
     }
 
     /**

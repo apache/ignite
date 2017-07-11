@@ -1768,89 +1768,24 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
-        final boolean keepBinary) {
+    public FieldsQueryCursor<List<?>> querySqlFields(@Nullable final GridCacheContext<?,?> cctx,
+        final SqlFieldsQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
 
-        boolean loc = (qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal();
-
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
-        try {
-            final String schemaName = qry.getSchema() != null ? qry.getSchema() : idx.schema(cctx.name());
-            final int mainCacheId = CU.cacheId(cctx.name());
-
-            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
-
-            if (loc) {
-                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
-                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        GridQueryCancel cancel = new GridQueryCancel();
-
-                        FieldsQueryCursor<List<?>> cur;
-
-                        if (cctx.config().getQueryParallelism() > 1) {
-                            qry.setDistributedJoins(true);
-
-                            cur = idx.queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, mainCacheId);
-                        }
-                        else {
-                            IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
-
-                            cur = idx.queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
-                        }
-
-                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
-
-                        return cur;
-                    }
-                };
-            }
-            else {
-                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
-                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId);
-                    }
-                };
-            }
-
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Query SQL fields without strict dependency on concrete cache.
-     *
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
-     */
-    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final SqlFieldsQuery qry, final boolean keepBinary) {
-        checkxEnabled();
-
-        validateSqlFieldsQuery(qry);
-
-        if (qry.getSchema() == null)
-            qry.setSchema(QueryUtils.DFLT_SCHEMA);
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+        final String schemaName = qry.getSchema() != null ? qry.getSchema()
+            : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
 
         try {
             IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
                 @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                GridQueryCancel cancel = new GridQueryCancel();
+                    GridQueryCancel cancel = new GridQueryCancel();
 
-                return idx.querySqlFields(qry.getSchema(), qry, keepBinary, requestTopVer.get(), cancel);
+                    return idx.querySqlFields(schemaName, cctx, qry, keepBinary, requestTopVer.get(), cancel);
                 }
             };
 

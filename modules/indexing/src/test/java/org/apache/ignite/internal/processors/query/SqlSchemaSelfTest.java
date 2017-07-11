@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -24,9 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Tests for schemas.
@@ -63,13 +62,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema("PUBLIC");
 
-        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFields(null, qry, true).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFields(null, qry, true).iterator();
 
         assertTrue(iter.hasNext());
 
@@ -95,13 +94,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema(CACHE_PERSON);
 
-        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFields(null, qry, true).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFields(null, qry, true).iterator();
 
         assertTrue(iter.hasNext());
 

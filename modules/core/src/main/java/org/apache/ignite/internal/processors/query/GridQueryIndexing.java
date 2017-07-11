@@ -79,14 +79,14 @@ public interface GridQueryIndexing {
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
      *
      * @param schemaName Schema name.
+     * @param cctx Cache context.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
      * @param topVer Topology version.
-     * @param cancel Query cancel state handler.
-     * @return Cursor.
+     * @param cancel Query cancel state handler.     @return Cursor.
      */
-    public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
-        AffinityTopologyVersion topVer, GridQueryCancel cancel);
+    public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+        boolean keepBinary, AffinityTopologyVersion topVer, GridQueryCancel cancel);
 
     /**
      * Parses SQL query into two step query and executes it.
@@ -95,12 +95,11 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param keepBinary Keep binary flag.
      * @param cancel Query cancel.
-     * @param mainCacheId Main cache ID.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
+                                                                boolean keepBinary, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Perform a MERGE statement using data streamer as receiver.

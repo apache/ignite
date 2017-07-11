@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -47,7 +46,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.*;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_TBLS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_CLOSE;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC_BATCH;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_FETCH;
 
 /**
  * SQL query handler.
@@ -189,7 +194,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             qry.setCollocated(collocated);
             qry.setSchema(req.schema());
 
-            QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
+            QueryCursor qryCur = ctx.query().querySqlFields(null, qry, true);
 
             qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
@@ -240,7 +245,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             // Getting meta and do the checks for the first execution.
             qry.setArgs(paramSet[0]);
 
-            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(null, qry, true);
 
             if (qryCur.isQuery())
                 throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
@@ -274,7 +279,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     private long executeQuery(SqlFieldsQuery qry, Object[] row) {
         qry.setArgs(row);
 
-        QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
+        QueryCursor<List<?>> cur = ctx.query().querySqlFields(null, qry, true);
 
         return getRowsAffected(cur);
     }

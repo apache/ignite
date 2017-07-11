@@ -318,7 +318,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
      * @return Run result.
      */
     private List<List<?>> executeSql(IgniteEx node, String stmt, Object... args) {
-        return node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
+        return node.context().query().querySqlFields(null, new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
     }
 
     /**

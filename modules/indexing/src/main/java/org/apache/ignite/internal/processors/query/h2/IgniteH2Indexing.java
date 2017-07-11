@@ -54,6 +54,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -157,6 +159,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -538,6 +541,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             // Reset connection to receive new one at next call.
             U.close(conn, log);
+        }
+    }
+
+    /**
+     * @param sqlQry Sql query.
+     * @param params Params.
+     * @
+     */
+    private void sendQueryExecutedEvent(String sqlQry, Object[] params, String cacheName) {
+        if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            ctx.event().record(new CacheQueryExecutedEvent<>(
+                ctx.discovery().localNode(),
+                "SQL query executed.",
+                EVT_CACHE_QUERY_EXECUTED,
+                CacheQueryType.SQL.name(),
+                cacheName,
+                null,
+                sqlQry,
+                null,
+                null,
+                params,
+                null,
+                null));
         }
     }
 
@@ -1205,7 +1231,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res = queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId);
+        final QueryCursor<List<?>> res = queryDistributedSqlFields(schemaName, fqry, keepBinary, null);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1237,8 +1263,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
     }
 
-    @Override public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
-        AffinityTopologyVersion topVer, GridQueryCancel cancel) {
+    /** {@inheritDoc} */
+    @Override public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, GridCacheContext cctx,
+        SqlFieldsQuery qry, boolean keepBinary, AffinityTopologyVersion topVer, GridQueryCancel cancel) {
         final String sqlQry = qry.getSql();
 
         Connection c = connectionForSchema(schemaName);
@@ -1282,9 +1309,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
                 }
 
-                // TODO is this the place for detection?
-                // TODO Should we honor local flag from the query? Or is it just join mode hint?
                 loc = qry.isLocal() ||  GridSqlQueryParser.isLocalQuery(prepared, qry.isReplicatedOnly());
+
+                if (loc) {
+                    if (cctx == null)
+                        cctx = GridSqlQueryParser.getFirstCache(prepared);
+
+                    if (cctx != null && cctx.config().getQueryParallelism() > 1) {
+                        loc = false;
+
+                        qry.setDistributedJoins(true);
+
+                        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+                        assert qctx != null;
+
+                        // Let's refresh join mode for the splitter if we've changed distributed joins flag value.
+                        qctx.distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins()));
+                    }
+                }
 
                 if (!loc) {
                     try {
@@ -1297,7 +1340,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             meta = cachedQry.meta();
                         }
                         else {
-                            twoStepQry = split(stmt, qry, null);
+                            twoStepQry = split(stmt, qry);
                             meta = H2Utils.meta(stmt.getMetaData());
                         }
                     }
@@ -1329,7 +1372,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IndexingQueryFilter filter = backupFilter(topVer, qry.getPartitions());
 
             try {
-                return queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
+                FieldsQueryCursor<List<?>> res = queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
+
+                sendQueryExecutedEvent(sqlQry, qry.getArgs(), null);
+
+                return res;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
@@ -1345,7 +1392,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-        FieldsQueryCursor<List<?>> res = run(schemaName, qry, twoStepQry, meta, keepBinary, cancel);
+        FieldsQueryCursor<List<?>> res = doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary, cancel);
 
         if (cachedQry == null && !twoStepQry.explain()) {
             cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
@@ -1353,12 +1400,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
+        sendQueryExecutedEvent(sqlQry, qry.getArgs(), null);
+
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName,
-        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) {
+        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel) {
         final String sqlQry = qry.getSql();
 
         Connection c = connectionForSchema(schemaName);
@@ -1405,7 +1454,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (prepared.isQuery()) {
                         bindParameters(stmt, F.asList(qry.getArgs()));
 
-                        twoStepQry = split(stmt, qry, mainCacheId);
+                        twoStepQry = split(stmt, qry);
                     }
                 }
                 finally {
@@ -1433,7 +1482,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-        FieldsQueryCursor<List<?>> res = run(schemaName, qry, twoStepQry, meta, keepBinary, cancel);
+        FieldsQueryCursor<List<?>> res = doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary, cancel);
 
         if (cachedQry == null && !twoStepQry.explain()) {
             cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
@@ -1448,13 +1497,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Split query into two-step query.
      * @param stmt JDBC statement.
      * @param qry Original fields query.
-     * @param mainCacheId Main cache id, if available.
      * @return Two-step query.
      * @throws IgniteCheckedException in case of error inside {@link GridSqlQuerySplitter}.
      * @throws SQLException in case of error inside {@link GridSqlQuerySplitter}.
      */
-    private GridCacheTwoStepQuery split(PreparedStatement stmt, SqlFieldsQuery qry,
-        @Nullable Integer mainCacheId) throws IgniteCheckedException, SQLException {
+    private GridCacheTwoStepQuery split(PreparedStatement stmt, SqlFieldsQuery qry) throws IgniteCheckedException,
+        SQLException {
         GridCacheTwoStepQuery res = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
             qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), this);
 
@@ -1463,9 +1511,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert res != null;
 
         int tblCnt = res.tablesCount();
-
-        if (mainCacheId != null)
-            caches0.add(mainCacheId);
 
         if (tblCnt > 0) {
             for (QueryTable tblKey : res.tables()) {
@@ -1504,8 +1549,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cancel Cancel handler.
      * @return Cursor representing distributed query result.
      */
-    private QueryCursorImpl<List<?>> run(String schemaName, SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry,
-        List<GridQueryFieldMetadata> meta, boolean keepBinary, GridQueryCancel cancel) {
+    private QueryCursorImpl<List<?>> doRunDistributedQuery(String schemaName, SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry,
+                                                           List<GridQueryFieldMetadata> meta, boolean keepBinary, GridQueryCancel cancel) {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
