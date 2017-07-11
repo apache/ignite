@@ -479,19 +479,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
 
-            var queries = new QueryBase[]
-            {
-                new TextQuery(typeof (QueryPerson), "1*"),
-                new SqlQuery(typeof (QueryPerson), "age < 50")
-            };
+            // Text query.
+            var err = Assert.Throws<IgniteException>(() => cache.Query(new TextQuery(typeof(QueryPerson), "1*")));
 
-            foreach (var qry in queries)
-            {
-                var err = Assert.Throws<IgniteException>(() => cache.Query(qry));
+            Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
+                "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
 
-                Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
-                    "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
-            }
+            // SQL query.
+            err = Assert.Throws<IgniteException>(() => cache.Query(new SqlQuery(typeof(QueryPerson), "age < 50")));
+
+            Assert.AreEqual("Failed to find SQL table for type: QueryPerson", err.Message);
         }
 
         /// <summary>
