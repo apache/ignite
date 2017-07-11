@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -34,11 +35,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin.Cache;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -199,10 +203,43 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class,
+        /// performing a deep copy of specified cache configuration.
+        /// </summary>
+        /// <param name="other">The other configuration to perfrom deep copy from.</param>
+        public CacheConfiguration(CacheConfiguration other)
+        {
+            if (other != null)
+            {
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream));
+
+                    stream.SynchronizeOutput();
+                    stream.Seek(0, SeekOrigin.Begin);
+
+                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
+                }
+
+                // Plugins should be copied directly.
+                PluginConfigurations = other.PluginConfigurations;
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal CacheConfiguration(IBinaryRawReader reader)
+        internal CacheConfiguration(BinaryReader reader)
+        {
+            Read(reader);
+        }
+
+        /// <summary>
+        /// Reads data into this instance from the specified reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.
             Debug.Assert(((BinaryReader) reader).Marshaller == BinaryUtils.Marshaller);
@@ -244,7 +281,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
-            QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+            QueryEntities = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -253,19 +292,35 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
             count = reader.ReadInt();
-            PluginConfigurations = count == 0
-                ? null
-                : Enumerable.Range(0, count).Select(x => reader.ReadObject<ICachePluginConfiguration>()).ToList();
+
+            if (count > 0)
+            {
+                PluginConfigurations = new List<ICachePluginConfiguration>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    if (reader.ReadBoolean())
+                    {
+                        // FactoryId-based plugin: skip.
+                        var size = reader.ReadInt();
+                        reader.Stream.Seek(size, SeekOrigin.Current);
+                    }
+                    else
+                    {
+                        // Pure .NET plugin.
+                        PluginConfigurations.Add(reader.ReadObject<ICachePluginConfiguration>());
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
+        internal void Write(BinaryWriter writer)
         {
             // Make sure system marshaller is used.
-            Debug.Assert(((BinaryWriter) writer).Marshaller == BinaryUtils.Marshaller);
+            Debug.Assert(writer.Marshaller == BinaryUtils.Marshaller);
 
             writer.WriteInt((int) AtomicityMode);
             writer.WriteInt(Backups);
@@ -344,7 +399,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     {
                         writer.WriteBoolean(true);
                         writer.WriteInt(cachePlugin.CachePluginConfigurationClosureFactoryId.Value);
+
+                        int pos = writer.Stream.Position;
+                        writer.WriteInt(0);  // Reserve size.
+
                         cachePlugin.WriteBinary(writer);
+
+                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos);  // Write size.
                     }
                     else
                     {

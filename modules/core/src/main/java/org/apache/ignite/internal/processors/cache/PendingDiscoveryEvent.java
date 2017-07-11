@@ -17,22 +17,45 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  *
  */
-public enum ClusterState {
-    /**
-     * Cache is inactive. No operations are allowed, no partition assignments or rebalancing is performed.
-     */
-    INACTIVE,
+public class PendingDiscoveryEvent {
+    /** */
+    private final DiscoveryEvent evt;
+
+    /** */
+    private final DiscoCache cache;
 
     /**
-     * Cache is active and operations. There are no lost partitions.
+     * @param evt Event.
+     * @param cache Discovery data cache.
      */
-    ACTIVE,
+    public PendingDiscoveryEvent(DiscoveryEvent evt, DiscoCache cache) {
+        this.evt = evt;
+        this.cache = cache;
+    }
 
     /**
-     * Cache is inactive. But process of it activation in progress.
+     * @return Event.
      */
-    TRANSITION
+    public DiscoveryEvent event() {
+        return evt;
+    }
+
+    /**
+     * @return Discovery data cache.
+     */
+    public DiscoCache discoCache() {
+        return cache;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PendingDiscoveryEvent.class, this);
+    }
 }

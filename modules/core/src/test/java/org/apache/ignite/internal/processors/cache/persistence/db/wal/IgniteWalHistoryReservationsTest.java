@@ -297,7 +297,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
-        final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt);
+        final Ignite ig0 = startGrids(initGridCnt);
 
         ig0.active(true);
 
