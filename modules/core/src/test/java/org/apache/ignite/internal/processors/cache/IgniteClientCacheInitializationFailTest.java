@@ -241,12 +241,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, GridQueryCancel cancel) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, GridCacheContext<?, ?> cctx,
             SqlFieldsQuery qry, boolean keepBinary, AffinityTopologyVersion topVer, GridQueryCancel cancel) {
             return null;

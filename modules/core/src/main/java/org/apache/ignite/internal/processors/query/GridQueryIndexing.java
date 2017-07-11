@@ -89,19 +89,6 @@ public interface GridQueryIndexing {
         boolean keepBinary, AffinityTopologyVersion topVer, GridQueryCancel cancel);
 
     /**
-     * Parses SQL query into two step query and executes it.
-     *
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @param cancel Query cancel.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
-    public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-                                                                boolean keepBinary, GridQueryCancel cancel) throws IgniteCheckedException;
-
-    /**
      * Perform a MERGE statement using data streamer as receiver.
      *
      * @param schemaName Schema name.
