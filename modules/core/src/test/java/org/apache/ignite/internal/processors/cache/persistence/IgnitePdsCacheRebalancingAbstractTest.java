@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
@@ -41,11 +43,13 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -486,6 +490,76 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         for (Map.Entry<Integer, TestValue> entry : map.entrySet())
             assertEquals(Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
+        final Ignite ig = startGrids(4);
+
+        ig.active(true);
+
+        int k = 0;
+
+        try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
+            ds.allowOverwrite(true);
+
+            for (int k0 = k; k < k0 + 10_000; k++)
+                ds.addData(k, k);
+        }
+
+        for (int t = 0; t < 10; t++) {
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        stopGrid(3);
+
+                        IgniteEx ig0 = startGrid(3);
+
+                        awaitPartitionMapExchange();
+
+                        ig0.cache(cacheName).rebalance().get();
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+
+            try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
+                ds.allowOverwrite(true);
+
+                while (!fut.isDone()) {
+                    ds.addData(k, k);
+
+                    k++;
+
+                    U.sleep(1);
+                }
+            }
+
+            fut.get();
+
+            Map<Integer, Long> cntrs = new HashMap<>();
+
+            for (int g = 0; g < 4; g++) {
+                IgniteEx ig0 = grid(g);
+
+                for (GridDhtLocalPartition part : ig0.cachex(cacheName).context().topology().currentLocalPartitions()) {
+                    if (cntrs.containsKey(part.id()))
+                        assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
+                    else
+                        cntrs.put(part.id(), part.updateCounter());
+                }
+
+                for (int k0 = 0; k0 < k; k0++) {
+                    assertEquals(String.valueOf(k0), k0, ig0.cache(cacheName).get(k0));
+                }
+            }
+
+            assertEquals(ig.affinity(cacheName).partitions(), cntrs.size());
+        }
     }
 
     /**

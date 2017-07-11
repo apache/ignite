@@ -421,10 +421,12 @@ public class QueryUtils {
         QueryTypeIdKey typeId;
         QueryTypeIdKey altTypeId = null;
 
+        int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
+
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
             processBinaryMeta(ctx, qryEntity, desc);
 
-            typeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            typeId = new QueryTypeIdKey(cacheName, valTypeId);
 
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
@@ -471,8 +473,10 @@ public class QueryUtils {
             }
 
             typeId = new QueryTypeIdKey(cacheName, valCls);
-            altTypeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            altTypeId = new QueryTypeIdKey(cacheName, valTypeId);
         }
+
+        desc.typeId(valTypeId);
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }

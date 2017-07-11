@@ -52,8 +52,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
-import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -66,17 +64,17 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -111,14 +109,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     implements Comparable<GridDhtPartitionsExchangeFuture>, CachePartitionExchangeWorkerTask, IgniteDiagnosticAware {
     /** */
     public static final String EXCHANGE_LOG = "org.apache.ignite.internal.exchange.time";
-    /** Dummy flag. */
-    private final boolean dummy;
-
-    /** Force preload flag. */
-    private final boolean forcePreload;
-
-    /** Dummy reassign flag. */
-    private final boolean reassign;
 
     /** */
     @GridToStringExclude
@@ -197,9 +187,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** */
     private CacheAffinityChangeMessage affChangeMsg;
 
-    /** Skip preload flag. */
-    private boolean skipPreload;
-
     /** */
     private boolean clientOnlyExchange;
 
@@ -222,9 +209,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private volatile IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
-    /** Forced Rebalance future. */
-    private GridCompoundFuture<Boolean, Boolean> forcedRebFut;
-
     /** */
     private volatile Map<Integer, Map<Integer, Long>> partHistReserved;
 
@@ -234,62 +218,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     private final AtomicBoolean done = new AtomicBoolean();
-
-    /**
-     * Dummy future created to trigger reassignments if partition
-     * topology changed while preloading.
-     *
-     * @param cctx Cache context.
-     * @param reassign Dummy reassign flag.
-     * @param discoEvt Discovery event.
-     * @param exchId Exchange id.
-     */
-    public GridDhtPartitionsExchangeFuture(
-        GridCacheSharedContext cctx,
-        boolean reassign,
-        DiscoveryEvent discoEvt,
-        GridDhtPartitionExchangeId exchId
-    ) {
-        dummy = true;
-        forcePreload = false;
-
-        this.exchId = exchId;
-        this.reassign = reassign;
-        this.discoEvt = discoEvt;
-        this.cctx = cctx;
-
-        log = cctx.logger(getClass());
-        exchLog = cctx.logger(EXCHANGE_LOG);
-
-        onDone(exchId.topologyVersion());
-    }
-
-    /**
-     * Force preload future created to trigger reassignments if partition
-     * topology changed while preloading.
-     *
-     * @param cctx Cache context.
-     * @param discoEvt Discovery event.
-     * @param exchId Exchange id.
-     * @param forcedRebFut Forced Rebalance future.
-     */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext cctx, DiscoveryEvent discoEvt,
-        GridDhtPartitionExchangeId exchId, GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
-        dummy = false;
-        forcePreload = true;
-
-        this.exchId = exchId;
-        this.discoEvt = discoEvt;
-        this.cctx = cctx;
-        this.forcedRebFut = forcedRebFut;
-
-        log = cctx.logger(getClass());
-        exchLog = cctx.logger(EXCHANGE_LOG);
-
-        reassign = true;
-
-        onDone(exchId.topologyVersion());
-    }
 
     /**
      * @param cctx Cache context.
@@ -309,10 +237,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert exchId != null;
         assert exchId.topologyVersion() != null;
         assert exchActions == null || !exchActions.empty();
-
-        dummy = false;
-        forcePreload = false;
-        reassign = false;
 
         this.cctx = cctx;
         this.busyLock = busyLock;
@@ -349,41 +273,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
         return exchId.topologyVersion();
-    }
-
-    /**
-     * @return Skip preload flag.
-     */
-    public boolean skipPreload() {
-        return skipPreload;
-    }
-
-    /**
-     * @return Dummy flag.
-     */
-    public boolean dummy() {
-        return dummy;
-    }
-
-    /**
-     * @return Force preload flag.
-     */
-    public boolean forcePreload() {
-        return forcePreload;
-    }
-
-    /**
-     * @return Dummy reassign flag.
-     */
-    public boolean reassign() {
-        return reassign;
-    }
-
-    /**
-     * @return {@code True} if dummy reassign.
-     */
-    public boolean dummyReassign() {
-        return (dummy() || forcePreload()) && reassign();
     }
 
     /**
@@ -454,6 +343,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt, DiscoCache discoCache) {
         assert exchId.equals(this.exchId);
 
+        this.exchId.discoveryEvent(discoEvt);
         this.discoEvt = discoEvt;
         this.discoCache = discoCache;
 
@@ -477,7 +367,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @return {@code True} if deactivate cluster exchange.
      */
-    boolean deactivateCluster() {
+    private boolean deactivateCluster() {
         return exchActions != null && exchActions.deactivate();
     }
 
@@ -493,13 +383,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
-    }
-
-    /**
-     * @return Forced Rebalance future.
-     */
-    @Nullable public GridCompoundFuture<Boolean, Boolean> forcedRebalanceFuture() {
-        return forcedRebFut;
     }
 
     /**
@@ -539,14 +422,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert discoEvt != null : this;
         assert exchId.nodeId().equals(discoEvt.eventNode().id()) : this;
-        assert !dummy && !forcePreload : this;
 
         try {
             discoCache.updateAlives(cctx.discovery());
 
             AffinityTopologyVersion topVer = topologyVersion();
-
-            discoCache.updateAlives(cctx.discovery());
 
             srvNodes = new ArrayList<>(discoCache.serverNodes());
 
@@ -555,8 +435,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
             boolean crdNode = crd != null && crd.isLocal();
-
-            skipPreload = cctx.kernalContext().clientNode();
 
             exchLog.info("Started exchange init [topVer=" + topVer +
                 ", crd=" + crdNode +
@@ -581,7 +459,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof StartSnapshotOperationAckDiscoveryMessage) {
+                else if (msg instanceof SnapshotDiscoveryMessage) {
                     exchange = CU.clientNode(discoEvt.eventNode()) ?
                         onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
@@ -658,7 +536,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             if (cctx.localNode().isClient())
-                startLocalSnasphotOperation();
+                tryToPerformLocalSnapshotOperation();
 
             exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
@@ -767,7 +645,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
                     List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
 
-                    for (ExchangeActions.ActionData startReq : exchActions.cacheStartRequests())
+                    for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests())
                         startDescs.add(startReq.descriptor());
 
                     cctx.database().readCheckpointAndRestoreMemory(startDescs);
@@ -1007,26 +885,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-
+     * Try to start local snapshot operation if it is needed by discovery event
      */
-    private void startLocalSnasphotOperation() {
-        StartSnapshotOperationAckDiscoveryMessage snapOpMsg= getSnapshotOperationMessage();
+    private void tryToPerformLocalSnapshotOperation() {
+        try {
+            IgniteInternalFuture fut = cctx.snapshot()
+                .tryStartLocalSnapshotOperation(discoEvt);
 
-        if (snapOpMsg != null) {
-            SnapshotOperation op = snapOpMsg.snapshotOperation();
-
-            assert snapOpMsg.needExchange();
-
-            try {
-                IgniteInternalFuture fut = cctx.snapshot()
-                    .startLocalSnapshotOperation(snapOpMsg.initiatorNodeId(), snapOpMsg.snapshotOperation());
-
-                if (fut != null)
-                    fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Error while starting snapshot operation", e);
-            }
+            if (fut != null)
+                fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Error while starting snapshot operation", e);
         }
     }
 
@@ -1053,6 +923,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         int dumpCnt = 0;
 
+        long waitStart = U.currentTimeMillis();
+
         long nextDumpTime = 0;
 
         long futTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
@@ -1073,8 +945,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        if (log.isDebugEnabled())
-            log.debug("After waiting for partition release future: " + this);
+        long waitEnd = U.currentTimeMillis();
+
+        if (log.isInfoEnabled())
+            log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
+                ", waitTime=" + (waitEnd - waitStart) + "ms]");
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 
@@ -1336,13 +1211,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
-        boolean realExchange = !dummy && !forcePreload;
-
         if (!done.compareAndSet(false, true))
-            return dummy;
+            return false;
 
         if (err == null &&
-            realExchange &&
             !cctx.kernalContext().clientNode() &&
             (serverNodeDiscoveryEvent() || affChangeMsg != null)) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -1353,7 +1225,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
        }
 
-        if (err == null && realExchange) {
+        if (err == null) {
             if (centralizedAff) {
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal())
@@ -1395,7 +1267,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        startLocalSnasphotOperation();
+        tryToPerformLocalSnapshotOperation();
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), exchActions, err);
 
@@ -1423,14 +1295,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.database().releaseHistoryForExchange();
 
-        if (err == null && realExchange) {
+        if (err == null) {
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (!grp.isLocal())
                     grp.topology().onExchangeDone(grp.affinity().cachedAffinity(topologyVersion()));
             }
         }
 
-        if (super.onDone(res, err) && realExchange) {
+        if (super.onDone(res, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
@@ -1452,22 +1324,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return true;
         }
 
-        return dummy;
-    }
-
-    /**
-     *
-     */
-    private StartSnapshotOperationAckDiscoveryMessage getSnapshotOperationMessage() {
-        // If it's a snapshot operation request, synchronously wait for backup start.
-        if (discoEvt != null && discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-            DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
-
-            if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage)
-                return  (StartSnapshotOperationAckDiscoveryMessage)customMsg;
-        }
-
-        return null;
+        return false;
     }
 
     /**

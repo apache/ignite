@@ -30,12 +30,12 @@ public class FixLeftmostChildRecord extends PageDeltaRecord {
     private long rightId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param rightId Right ID.
      */
-    public FixLeftmostChildRecord(int cacheId, long pageId, long rightId) {
-        super(cacheId, pageId);
+    public FixLeftmostChildRecord(int grpId, long pageId, long rightId) {
+        super(grpId, pageId);
 
         this.rightId = rightId;
     }

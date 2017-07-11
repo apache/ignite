@@ -56,28 +56,28 @@ public class FullPageId {
     private final long effectivePageId;
 
     /** */
-    private final int cacheId;
+    private final int grpId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @return Hash code.
      */
-    public static int hashCode(int cacheId, long pageId) {
+    public static int hashCode(int grpId, long pageId) {
         long effectiveId = PageIdUtils.effectivePageId(pageId);
 
-        return U.hash(hashCode0(cacheId, effectiveId));
+        return U.hash(hashCode0(grpId, effectiveId));
     }
 
     /**
      * Will not clear link bits.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param effectivePageId Effective page ID.
      * @return Hash code.
      */
-    private static int hashCode0(int cacheId, long effectivePageId) {
-        return (int)(mix64(effectivePageId) ^ mix32(cacheId));
+    private static int hashCode0(int grpId, long effectivePageId) {
+        return (int)(mix64(effectivePageId) ^ mix32(grpId));
     }
 
     /**
@@ -107,11 +107,11 @@ public class FullPageId {
     }
     /**
      * @param pageId Page ID.
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      */
-    public FullPageId(long pageId, int cacheId) {
+    public FullPageId(long pageId, int grpId) {
         this.pageId = pageId;
-        this.cacheId = cacheId;
+        this.grpId = grpId;
 
         effectivePageId = PageIdUtils.effectivePageId(pageId);
     }
@@ -124,10 +124,10 @@ public class FullPageId {
     }
 
     /**
-     * @return Cache ID.
+     * @return Cache group ID.
      */
-    public int cacheId() {
-        return cacheId;
+    public int groupId() {
+        return grpId;
     }
 
     /** {@inheritDoc} */
@@ -140,18 +140,18 @@ public class FullPageId {
 
         FullPageId that = (FullPageId)o;
 
-        return effectivePageId == that.effectivePageId && cacheId == that.cacheId;
+        return effectivePageId == that.effectivePageId && grpId == that.grpId;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return hashCode0(cacheId, effectivePageId);
+        return hashCode0(grpId, effectivePageId);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return new SB("FullPageId [pageId=").appendHex(pageId)
             .a(", effectivePageId=").appendHex(effectivePageId)
-            .a(", cacheId=").a(cacheId).a(']').toString();
+            .a(", grpId=").a(grpId).a(']').toString();
     }
 }

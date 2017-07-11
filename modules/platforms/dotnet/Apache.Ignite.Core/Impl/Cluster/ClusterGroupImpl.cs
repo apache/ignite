@@ -35,9 +35,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Messaging;
+    using Apache.Ignite.Core.Impl.PersistentStore;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -129,6 +131,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** */
         private const int OpIsActive = 29;
+
+        /** */
+        private const int OpGetPersistentStoreMetrics = 30;
 
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
@@ -612,6 +617,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public bool IsActive()
         {
             return DoOutInOp(OpIsActive) == True;
+        }
+
+        /// <summary>
+        /// Gets the persistent store metrics.
+        /// </summary>
+        public IPersistentStoreMetrics GetPersistentStoreMetrics()
+        {
+            return DoInOp(OpGetPersistentStoreMetrics, stream =>
+                new PersistentStoreMetrics(Marshaller.StartUnmarshal(stream, false)));
         }
 
         /// <summary>
