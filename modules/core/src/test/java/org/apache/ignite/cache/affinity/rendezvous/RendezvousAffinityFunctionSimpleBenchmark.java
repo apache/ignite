@@ -53,11 +53,15 @@ import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,7 +69,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
@@ -100,9 +103,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid();
-
-        log = new Log4JLogger().getLogger(RendezvousAffinityFunctionSimpleBenchmark.class);
-
     }
 
     /** {@inheritDoc} */
@@ -364,6 +364,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testImprovedLog() throws Exception {
+//        log = initializeIgniteLogger();
+
         AffinityFunction aff = initializeAffinityFunction(false, 1024, true, log, null);
 
         List<ClusterNode> nodes = createBaseNodes(4);
@@ -371,8 +373,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         assignPartitions(aff, nodes, null, 2, 0);
 
         List<List<ClusterNode>> lst = assignPartitions(aff, nodes, null, 2, 1).get2();
-
-        List<List<Integer>> dist = freqDistribution(lst, nodes);
     }
 
     /**
@@ -535,6 +535,28 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
     /**
      *
+     * @return Ignite Logger.
+     */
+    private IgniteLogger initializeIgniteLogger() {
+        List<Ignite> all = G.allGrids();
+
+        IgniteKernal ignite1 = (IgniteKernal)Collections.min(all, new Comparator<Ignite>() {
+            @Override public int compare(Ignite n1, Ignite n2) {
+                return Long.compare(n1.cluster().localNode().order(), n2.cluster().localNode().order());
+            }
+        });
+
+        GridKernalContext ctx = ignite1.context();
+
+        GridCacheSharedContext cctx = ctx.cache().context();
+
+        IgniteLogger log = cctx.logger(getClass());
+
+        return log;
+    }
+
+    /**
+     *
      * @param affOld Old affinity.
      * @param affNew New affinity/
      * @return Count of partitions to migrate.
@@ -663,6 +685,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         /** Do nothing*/
         NONE
     }
+
+
 
     /**
      *  Full copy of the old implementation of the RendezvousAffinityFunction to check compatibility and performance.
