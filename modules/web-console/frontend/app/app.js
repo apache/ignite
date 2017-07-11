@@ -104,6 +104,7 @@ import domainsValidation from './filters/domainsValidation.filter';
 import duration from './filters/duration.filter';
 import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
+import id8 from './filters/id8.filter';
 
 // Controllers
 import profile from 'Controllers/profile-controller';
@@ -254,6 +255,7 @@ angular
 .filter('duration', duration)
 .filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
+.filter('id8', id8)
 .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
     $translateProvider.translations('en', i18n);
     $translateProvider.preferredLanguage('en');

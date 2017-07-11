@@ -49,8 +49,8 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param cacheData Cache data of the cache being started.
      * @throws IgniteCheckedException If failed to handle cache start callback.
      */
-    public void initializeForCache(CacheGroupDescriptor grpDesc,
-        StoredCacheData cacheData) throws IgniteCheckedException;
+    public void initializeForCache(CacheGroupDescriptor grpDesc, StoredCacheData cacheData)
+        throws IgniteCheckedException;
 
     /**
      * Callback called when a cache is stopping. After this callback is invoked, no data associated with
@@ -84,12 +84,12 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     /**
      * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId PageID to read.
      * @param pageBuf Page buffer to write to.
      * @throws IgniteCheckedException If failed to read the page.
      */
-    public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
      * Checks if partition store exists.
@@ -104,77 +104,77 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     /**
      * Reads a header of a page store.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @param buf Buffer to write to.
      * @throws IgniteCheckedException If failed.
      */
-    public void readHeader(int cacheId, int partId, ByteBuffer buf) throws IgniteCheckedException;
+    public void readHeader(int grpId, int partId, ByteBuffer buf) throws IgniteCheckedException;
 
     /**
      * Writes the page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If failed to write page.
      */
-    public void write(int cacheId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
+    public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the page store file.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @return Page offset.
      * @throws IgniteCheckedException If failed.
      */
-    public long pageOffset(int cacheId, long pageId) throws IgniteCheckedException;
+    public long pageOffset(int grpId, long pageId) throws IgniteCheckedException;
 
     /**
      * Makes sure that all previous writes to the store has been written to disk.
      *
-     * @param cacheId Cache ID to sync.
+     * @param grpId Cache group ID to sync.
      * @param partId Partition ID to sync.
      * @throws IgniteCheckedException If IO error occurred while running sync.
      */
-    public void sync(int cacheId, int partId) throws IgniteCheckedException;
+    public void sync(int grpId, int partId) throws IgniteCheckedException;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @throws IgniteCheckedException If failed.
      */
-    public void ensure(int cacheId, int partId) throws IgniteCheckedException;
+    public void ensure(int grpId, int partId) throws IgniteCheckedException;
 
     /**
      * Allocates a page for the given page space.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID. Used only if {@code flags} is equal to {@link PageMemory#FLAG_DATA}.
      * @param flags Page allocation flags.
      * @return Allocated page ID.
      * @throws IgniteCheckedException If IO exception occurred while allocating a page ID.
      */
-    public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
+    public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
      * Gets total number of allocated pages for the given space.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @return Number of allocated pages.
      * @throws IgniteCheckedException If failed.
      */
-    public int pages(int cacheId, int partId) throws IgniteCheckedException;
+    public int pages(int grpId, int partId) throws IgniteCheckedException;
 
     /**
      * Gets meta page ID for specified cache.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @return Meta page ID.
      */
-    public long metaPageId(int cacheId);
+    public long metaPageId(int grpId);
 
     /**
      * @return Saved cache configurations.

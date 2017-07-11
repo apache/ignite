@@ -934,7 +934,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     else if (rec instanceof PageDeltaRecord) {
                         PageDeltaRecord delta = (PageDeltaRecord)rec;
 
-                        FullPageId fullId = new FullPageId(delta.pageId(), delta.cacheId());
+                        FullPageId fullId = new FullPageId(delta.pageId(), delta.groupId());
 
                         byte[] pageData = rolledPages.get(fullId);
 
@@ -976,10 +976,10 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 ignite0.context().cache().context().database().checkpointReadLock();
 
                 try {
-                    long page = pageMem.acquirePage(fullId.cacheId(), fullId.pageId(), true);
+                    long page = pageMem.acquirePage(fullId.groupId(), fullId.pageId(), true);
 
                     try {
-                        long buf = pageMem.writeLock(fullId.cacheId(), fullId.pageId(), page, true);
+                        long buf = pageMem.writeLock(fullId.groupId(), fullId.pageId(), page, true);
 
                         try {
                             byte[] data = entry.getValue();
@@ -992,11 +992,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                             }
                         }
                         finally {
-                            pageMem.writeUnlock(fullId.cacheId(), fullId.pageId(), page, null, false, true);
+                            pageMem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, false, true);
                         }
                     }
                     finally {
-                        pageMem.releasePage(fullId.cacheId(), fullId.pageId(), page);
+                        pageMem.releasePage(fullId.groupId(), fullId.pageId(), page);
                     }
                 }
                 finally {

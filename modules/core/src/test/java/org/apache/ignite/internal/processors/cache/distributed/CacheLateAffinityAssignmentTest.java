@@ -142,8 +142,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setLateAffinityAssignment(true);
-
         TestRecordingCommunicationSpi commSpi;
 
         if (spiC != null)
@@ -183,7 +181,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         MemoryConfiguration cfg1 = new MemoryConfiguration();
 
-        cfg1.setDefaultMemoryPolicySize(50 * 1024 * 1024L);
+        cfg1.setDefaultMemoryPolicySize(100 * 1024 * 1024L);
 
         cfg.setMemoryConfiguration(cfg1);
 

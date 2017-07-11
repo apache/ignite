@@ -13,23 +13,32 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-
-/**
  *
  */
-public class GridCacheAtomicLateAffDisabledMultiNodeFullApiSelfTest extends
-    GridCacheAtomicMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setLateAffinityAssignment(false);
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-        return cfg;
-    }
+import java.io.Serializable;
+import java.util.Set;
+
+/**
+ * Initial snapshot operation interface.
+ */
+public interface SnapshotOperation extends Serializable {
+    /**
+     * Cache group ids included to this snapshot.
+     *
+     * @return Cache names.
+     */
+    Set<Integer> cacheGroupIds();
+
+    /**
+     * Cache names included to this snapshot.
+     */
+    Set<String> cacheNames();
+
+    /**
+     * Any custom extra parameter.
+     */
+    Object extraParameter();
 }

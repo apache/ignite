@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.util;
 
 import java.util.List;
-
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;

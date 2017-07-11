@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.PersistentStore
     using System;
     using System.ComponentModel;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -28,76 +29,6 @@ namespace Apache.Ignite.Core.PersistentStore
     /// </summary>
     public class PersistentStoreConfiguration
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
-        /// </summary>
-        public PersistentStoreConfiguration()
-        {
-            CheckpointingPageBufferSize = DefaultCheckpointingPageBufferSize;
-            CheckpointingThreads = DefaultCheckpointingThreads;
-            CheckpointingFrequency = DefaultCheckpointingFrequency;
-            LockWaitTime = DefaultLockWaitTime;
-            WalHistorySize = DefaultWalHistorySize;
-            WalSegments = DefaultWalSegments;
-            WalSegmentSize = DefaultWalSegmentSize;
-            TlbSize = DefaultTlbSize;
-            WalFlushFrequency = DefaultWalFlushFrequency;
-            WalRecordIteratorBufferSize = DefaultWalRecordIteratorBufferSize;
-            WalFsyncDelayNanos = DefaultWalFsyncDelayNanos;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        internal PersistentStoreConfiguration(IBinaryRawReader reader)
-        {
-            Debug.Assert(reader != null);
-
-            PersistentStorePath = reader.ReadString();
-            CheckpointingFrequency = reader.ReadLongAsTimespan();
-            CheckpointingPageBufferSize = reader.ReadLong();
-            CheckpointingThreads = reader.ReadInt();
-            LockWaitTime = reader.ReadLongAsTimespan();
-            WalHistorySize = reader.ReadInt();
-            WalSegments = reader.ReadInt();
-            WalSegmentSize = reader.ReadInt();
-            WalStorePath = reader.ReadString();
-            WalArchivePath = reader.ReadString();
-            WalMode = (WalMode) reader.ReadInt();
-            TlbSize = reader.ReadInt();
-            WalFlushFrequency = reader.ReadLongAsTimespan();
-            WalFsyncDelayNanos = reader.ReadInt();
-            WalRecordIteratorBufferSize = reader.ReadInt();
-            AlwaysWriteFullPages = reader.ReadBoolean();
-        }
-
-        /// <summary>
-        /// Writes this instance to the specified writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
-        {
-            Debug.Assert(writer != null);
-
-            writer.WriteString(PersistentStorePath);
-            writer.WriteTimeSpanAsLong(CheckpointingFrequency);
-            writer.WriteLong(CheckpointingPageBufferSize);
-            writer.WriteInt(CheckpointingThreads);
-            writer.WriteTimeSpanAsLong(LockWaitTime);
-            writer.WriteInt(WalHistorySize);
-            writer.WriteInt(WalSegments);
-            writer.WriteInt(WalSegmentSize);
-            writer.WriteString(WalStorePath);
-            writer.WriteString(WalArchivePath);
-            writer.WriteInt((int) WalMode);
-            writer.WriteInt(TlbSize);
-            writer.WriteTimeSpanAsLong(WalFlushFrequency);
-            writer.WriteInt(WalFsyncDelayNanos);
-            writer.WriteInt(WalRecordIteratorBufferSize);
-            writer.WriteBoolean(AlwaysWriteFullPages);
-        }
-
         /// <summary>
         /// Default value for <see cref="CheckpointingPageBufferSize"/>.
         /// </summary>
@@ -152,6 +83,96 @@ namespace Apache.Ignite.Core.PersistentStore
         /// Default value for <see cref="WalFsyncDelayNanos"/>.
         /// </summary>
         public const int DefaultWalFsyncDelayNanos = 1;
+
+        /// <summary>
+        /// The default sub intervals.
+        /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with Java config")]
+        public const int DefaultSubIntervals = 5;
+
+        /// <summary>
+        /// The default rate time interval.
+        /// </summary>
+        public static readonly TimeSpan DefaultRateTimeInterval = TimeSpan.FromSeconds(60);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
+        /// </summary>
+        public PersistentStoreConfiguration()
+        {
+            CheckpointingPageBufferSize = DefaultCheckpointingPageBufferSize;
+            CheckpointingThreads = DefaultCheckpointingThreads;
+            CheckpointingFrequency = DefaultCheckpointingFrequency;
+            LockWaitTime = DefaultLockWaitTime;
+            WalHistorySize = DefaultWalHistorySize;
+            WalSegments = DefaultWalSegments;
+            WalSegmentSize = DefaultWalSegmentSize;
+            TlbSize = DefaultTlbSize;
+            WalFlushFrequency = DefaultWalFlushFrequency;
+            WalRecordIteratorBufferSize = DefaultWalRecordIteratorBufferSize;
+            WalFsyncDelayNanos = DefaultWalFsyncDelayNanos;
+            RateTimeInterval = DefaultRateTimeInterval;
+            SubIntervals = DefaultSubIntervals;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal PersistentStoreConfiguration(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            PersistentStorePath = reader.ReadString();
+            CheckpointingFrequency = reader.ReadLongAsTimespan();
+            CheckpointingPageBufferSize = reader.ReadLong();
+            CheckpointingThreads = reader.ReadInt();
+            LockWaitTime = reader.ReadLongAsTimespan();
+            WalHistorySize = reader.ReadInt();
+            WalSegments = reader.ReadInt();
+            WalSegmentSize = reader.ReadInt();
+            WalStorePath = reader.ReadString();
+            WalArchivePath = reader.ReadString();
+            WalMode = (WalMode)reader.ReadInt();
+            TlbSize = reader.ReadInt();
+            WalFlushFrequency = reader.ReadLongAsTimespan();
+            WalFsyncDelayNanos = reader.ReadInt();
+            WalRecordIteratorBufferSize = reader.ReadInt();
+            AlwaysWriteFullPages = reader.ReadBoolean();
+            MetricsEnabled = reader.ReadBoolean();
+            SubIntervals = reader.ReadInt();
+            RateTimeInterval = reader.ReadLongAsTimespan();
+        }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            Debug.Assert(writer != null);
+
+            writer.WriteString(PersistentStorePath);
+            writer.WriteTimeSpanAsLong(CheckpointingFrequency);
+            writer.WriteLong(CheckpointingPageBufferSize);
+            writer.WriteInt(CheckpointingThreads);
+            writer.WriteTimeSpanAsLong(LockWaitTime);
+            writer.WriteInt(WalHistorySize);
+            writer.WriteInt(WalSegments);
+            writer.WriteInt(WalSegmentSize);
+            writer.WriteString(WalStorePath);
+            writer.WriteString(WalArchivePath);
+            writer.WriteInt((int)WalMode);
+            writer.WriteInt(TlbSize);
+            writer.WriteTimeSpanAsLong(WalFlushFrequency);
+            writer.WriteInt(WalFsyncDelayNanos);
+            writer.WriteInt(WalRecordIteratorBufferSize);
+            writer.WriteBoolean(AlwaysWriteFullPages);
+            writer.WriteBoolean(MetricsEnabled);
+            writer.WriteInt(SubIntervals);
+            writer.WriteTimeSpanAsLong(RateTimeInterval);
+        }
 
         /// <summary>
         /// Gets or sets the path where data and indexes will be persisted.
@@ -247,5 +268,26 @@ namespace Apache.Ignite.Core.PersistentStore
         /// Gets or sets a value indicating whether full pages should always be written.
         /// </summary>
         public bool AlwaysWriteFullPages { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to enable persistent store metrics.
+        /// See <see cref="IIgnite.GetPersistentStoreMetrics"/>.
+        /// </summary>
+        public bool MetricsEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the length of the time interval for rate-based metrics.
+        /// This interval defines a window over which hits will be tracked.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:01:00")]
+        public TimeSpan RateTimeInterval { get; set; }
+
+        /// <summary>
+        /// Number of sub-intervals to split the <see cref="RateTimeInterval"/> into to track the update history.
+        /// </summary>
+        [DefaultValue(DefaultSubIntervals)]
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with Java config")]
+        public int SubIntervals { get; set; }
     }
 }

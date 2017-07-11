@@ -1672,13 +1672,30 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate domain model for query group.
-    static domainModelQuery(domain, cfg = this.domainConfigurationBean(domain)) {
+    static domainModelQuery(domain, available, cfg = this.domainConfigurationBean(domain)) {
         if (cfg.valueOf('queryMetadata') === 'Configuration') {
-            const fields = _.map(domain.fields,
-                (e) => ({name: e.name, className: javaTypes.fullClassName(e.className)}));
+            const fields = _.filter(_.map(domain.fields,
+                (e) => ({name: e.name, className: javaTypes.fullClassName(e.className)})), (field) => {
+                return field.name !== domain.keyFieldName && field.name !== domain.valueFieldName;
+            });
 
-            cfg.stringProperty('tableName')
-                .mapProperty('fields', fields, 'fields', true)
+            cfg.stringProperty('tableName');
+
+            if (available('2.0.0')) {
+                cfg.stringProperty('keyFieldName')
+                    .stringProperty('valueFieldName');
+
+                const keyFieldName = cfg.valueOf('keyFieldName');
+                const valFieldName = cfg.valueOf('valueFieldName');
+
+                if (keyFieldName)
+                    fields.push({name: keyFieldName, className: javaTypes.fullClassName(domain.keyType)});
+
+                if (valFieldName)
+                    fields.push({name: valFieldName, className: javaTypes.fullClassName(domain.valueType)});
+            }
+
+            cfg.mapProperty('fields', fields, 'fields', true)
                 .mapProperty('aliases', 'aliases');
 
             const indexes = _.map(domain.indexes, (index) =>
@@ -2131,12 +2148,12 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate domain models configs.
-    static cacheDomains(domains, ccfg) {
+    static cacheDomains(domains, available, ccfg) {
         const qryEntities = _.reduce(domains, (acc, domain) => {
             if (_.isNil(domain.queryMetadata) || domain.queryMetadata === 'Configuration') {
                 const qryEntity = this.domainModelGeneral(domain);
 
-                this.domainModelQuery(domain, qryEntity);
+                this.domainModelQuery(domain, available, qryEntity);
 
                 acc.push(qryEntity);
             }
@@ -2160,7 +2177,7 @@ export default class IgniteConfigurationGenerator {
         this.cacheRebalance(cache, ccfg);
         this.cacheNearServer(cache, ccfg);
         this.cacheStatistics(cache, ccfg);
-        this.cacheDomains(cache.domains, ccfg);
+        this.cacheDomains(cache.domains, available, ccfg);
 
         return ccfg;
     }

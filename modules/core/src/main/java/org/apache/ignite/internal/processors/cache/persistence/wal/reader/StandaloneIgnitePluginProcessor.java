@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.Collections;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.plugin.PluginProvider;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.clustering package.
+ *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-        KMeansDistributedClustererTest.class,
-        KMeansLocalClustererTest.class
-})
-public class ClusteringTesetSuite {
+public class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
+    /**
+     * @param ctx Kernal context.
+     * @param cfg Ignite configuration.
+     */
+    public StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
+        super(ctx, cfg, Collections.<PluginProvider>emptyList());
+    }
 }
