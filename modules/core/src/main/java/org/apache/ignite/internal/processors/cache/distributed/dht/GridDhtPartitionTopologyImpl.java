@@ -129,7 +129,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Lock. */
     private final StripedCompositeReadWriteLock lock = new StripedCompositeReadWriteLock(16);
 
-    /** Partition update counter. */
+    /** Partition update counter. Maps partition number to pair of [ , update counter] */
     private Map<Integer, T2<Long, Long>> cntrMap = new HashMap<>();
 
     /** */
@@ -1089,11 +1089,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
+        @Nullable Map<Integer, T2<Long, Long>> incomeCntrMap,
         Set<Integer> partsToReload
     ) {
         if (log.isDebugEnabled())
-            log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
+            log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + "]");
+
+        //todo remove
+        System.err.println("Updating full partition map for cache [" + grp.cacheOrGroupName() + "], " +
+            "ids=" + grp.cacheIds() + " [exchVer=" + exchangeVer + ", parts=" + fullMapString() + "]");
 
         assert partMap != null;
 
@@ -1103,12 +1107,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (stopping)
                 return false;
 
-            if (cntrMap != null) {
+            if (incomeCntrMap != null) {
                 // update local map partition counters
-                for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
-                    T2<Long, Long> cntr = this.cntrMap.get(e.getKey());
+                for (Map.Entry<Integer, T2<Long, Long>> e : incomeCntrMap.entrySet()) {
+                    T2<Long, Long> existCntr = this.cntrMap.get(e.getKey());
 
-                    if (cntr == null || cntr.get2() < e.getValue().get2())
+                    if (existCntr == null || existCntr.get2() < e.getValue().get2())
                         this.cntrMap.put(e.getKey(), e.getValue());
                 }
 
@@ -1119,7 +1123,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (part == null)
                         continue;
 
-                    T2<Long, Long> cntr = cntrMap.get(part.id());
+                    T2<Long, Long> cntr = incomeCntrMap.get(part.id());
 
                     if (cntr != null)
                         part.updateCounter(cntr.get2());
@@ -1222,8 +1226,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         assert locPart != null;
 
-                        if (cntrMap != null) {
-                            T2<Long, Long> cntr = cntrMap.get(p);
+                        if (incomeCntrMap != null) {
+                            T2<Long, Long> cntr = incomeCntrMap.get(p);
 
                             if (cntr != null && cntr.get2() > locPart.updateCounter())
                                 locPart.updateCounter(cntr.get2());
@@ -1249,8 +1253,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             changed = true;
                         }
 
-                        if (cntrMap != null) {
-                            T2<Long, Long> cntr = cntrMap.get(p);
+                        if (incomeCntrMap != null) {
+                            T2<Long, Long> cntr = incomeCntrMap.get(p);
 
                             if (cntr != null && cntr.get2() > locPart.updateCounter())
                                 locPart.updateCounter(cntr.get2());

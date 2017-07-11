@@ -2026,7 +2026,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param node Sender node.
-     * @param msg Message.
+     * @param msg Message with full partition info.
      */
     private void processMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
@@ -2149,6 +2149,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             updatePartitionFullMap(partsMsg);
                         }
 
+                        System.err.println("Exchange on done for [" + cctx.kernalContext().localNodeId().toString()
+                            + "]: top.v [" + topologyVersion() + "]"); //todo remove
                         onDone(topologyVersion());
                     }
                     else {
