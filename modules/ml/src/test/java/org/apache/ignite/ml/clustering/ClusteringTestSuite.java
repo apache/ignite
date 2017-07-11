@@ -15,25 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.clustering;
 
-import java.util.Map;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.MapWrapperVector;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-public class VectorUtils {
-    /** Create new vector like given vector initialized by zeroes. */
-    public static Vector zeroesLike(Vector v) {
-        return v.like(v.size()).assign(0.0);
-    }
-
-    /** Create new */
-    public static DenseLocalOnHeapVector zeroes(int n) {
-        return (DenseLocalOnHeapVector)new DenseLocalOnHeapVector(n).assign(0.0);
-    }
-
-    /** */
-    public static Vector fromMap(Map<Integer, Double> value, boolean copy) {
-        return new MapWrapperVector(value);
-    }
+/**
+ * Test suite for all tests located in org.apache.ignite.ml.clustering package.
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    KMeansDistributedClustererTest.class,
+    KMeansLocalClustererTest.class
+})
+public class ClusteringTestSuite {
 }

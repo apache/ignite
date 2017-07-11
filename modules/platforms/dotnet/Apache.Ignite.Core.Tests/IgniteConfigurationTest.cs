@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // Ignore obsolete, we still need to test them.
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -138,7 +139,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
                 Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
-                Assert.AreEqual(cfg.IsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
+                Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
                 var atm = cfg.AtomicConfiguration;

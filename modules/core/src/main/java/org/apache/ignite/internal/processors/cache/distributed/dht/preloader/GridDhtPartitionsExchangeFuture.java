@@ -1042,6 +1042,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         int dumpCnt = 0;
 
+        long waitStart = U.currentTimeMillis();
+
         long nextDumpTime = 0;
 
         long futTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
@@ -1062,8 +1064,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        if (log.isDebugEnabled())
-            log.debug("After waiting for partition release future: " + this);
+        long waitEnd = U.currentTimeMillis();
+
+        if (log.isInfoEnabled())
+            log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
+                ", waitTime=" + (waitEnd - waitStart) + "ms]");
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 

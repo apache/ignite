@@ -18,8 +18,6 @@
 package org.apache.ignite.ml.math;
 
 import java.io.Externalizable;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.IndexException;

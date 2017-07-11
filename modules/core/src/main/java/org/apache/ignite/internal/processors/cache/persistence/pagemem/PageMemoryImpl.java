@@ -646,7 +646,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
             PageHeader.dirty(absPtr, false);
-            PageHeader.tempDirty(absPtr, false);
 
             // We pinned the page when allocated the temp buffer, release it now.
             PageHeader.releasePage(absPtr);
@@ -868,13 +867,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             finally {
                 seg.writeLock().unlock();
             }
-
         }
-        else {
-            copyPageForCheckpoint(absPtr, fullId, tmpBuf, tracker);
-
-            return tag;
-        }
+        else
+            return copyPageForCheckpoint(absPtr, fullId, tmpBuf, tracker) ? tag : null;
     }
 
     /**
@@ -882,51 +877,51 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param fullId Full id.
      * @param tmpBuf Tmp buffer.
      */
-    private void copyPageForCheckpoint(long absPtr, FullPageId fullId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker) {
+    private boolean copyPageForCheckpoint(long absPtr, FullPageId fullId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker) {
         assert absPtr != 0;
-
-        long tmpRelPtr;
 
         rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
         try {
-            tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
+            long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
 
-            clearCheckpoint(fullId);
+            if (!clearCheckpoint(fullId)){
+                assert tmpRelPtr == INVALID_REL_PTR;
 
-            if (tmpRelPtr != INVALID_REL_PTR)
+                return false;
+            }
+
+            if (tmpRelPtr != INVALID_REL_PTR){
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
+
+                long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
+
+                copyInBuffer(tmpAbsPtr, tmpBuf);
+
+                GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+
+                if (tracker != null)
+                    tracker.onCowPageWritten();
+
+                checkpointPool.releaseFreePage(tmpRelPtr);
+
+                // We pinned the page when allocated the temp buffer, release it now.
+                PageHeader.releasePage(absPtr);
+            }
             else {
                 copyInBuffer(absPtr, tmpBuf);
 
                 PageHeader.dirty(absPtr, false);
 
+                // We pinned the page when resolve abs pointer.
                 PageHeader.releasePage(absPtr);
-
-                return;
             }
+
+            return true;
         }
         finally {
             rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
         }
-
-        assert tmpRelPtr != 0;
-
-        long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
-
-        copyInBuffer(tmpAbsPtr, tmpBuf);
-
-        GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
-
-        PageHeader.dirty(tmpAbsPtr, false);
-
-        if (tracker != null)
-            tracker.onCowPageWritten();
-
-        checkpointPool.releaseFreePage(tmpRelPtr);
-
-        // We pinned the page when allocated the temp buffer, release it now.
-        PageHeader.releasePage(absPtr);
     }
 
     /**
@@ -1146,8 +1141,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
 
-            assert !PageHeader.tempDirty(tmpAbsPtr);
-
             GridUnsafe.copyMemory(
                 null,
                 absPtr + PAGE_OVERHEAD,
@@ -1254,15 +1247,16 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param fullPageId Page ID to clear.
+     * @return {@code True} if remove successfully.
      */
-    void clearCheckpoint(FullPageId fullPageId) {
+    boolean clearCheckpoint(FullPageId fullPageId) {
         Segment seg = segment(fullPageId.groupId(), fullPageId.pageId());
 
         Collection<FullPageId> pages0 = seg.segCheckpointPages;
 
         assert pages0 != null;
 
-        pages0.remove(fullPageId);
+        return pages0.remove(fullPageId);
     }
 
     /**
@@ -1655,6 +1649,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             if (isDirty(absPtr)) {
                 // Can evict a dirty page only if should be written by a checkpoint.
+                // These pages does not have tmp buffer.
                 if (cpPages != null && cpPages.contains(fullPageId)) {
                     assert storeMgr != null;
 
@@ -2024,23 +2019,6 @@ public class PageMemoryImpl implements PageMemoryEx {
          */
         private static boolean dirty(long absPtr, boolean dirty) {
             return flag(absPtr, DIRTY_FLAG, dirty);
-        }
-
-        /**
-         * @param absPtr Absolute pointer.
-         * @return Dirty flag.
-         */
-        private static boolean tempDirty(long absPtr) {
-            return flag(absPtr, TMP_DIRTY_FLAG);
-        }
-
-        /**
-         * @param absPtr Absolute pointer.
-         * @param tmpDirty Temp dirty flag.
-         * @return Previous value of temp dirty flag.
-         */
-        private static boolean tempDirty(long absPtr, boolean tmpDirty) {
-            return flag(absPtr, TMP_DIRTY_FLAG, tmpDirty);
         }
 
         /**
