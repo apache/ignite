@@ -67,6 +67,11 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         checkReassigns(7, 3);
     }
 
+    /** TBD */
+    public void testNodeMultiple() throws Exception {
+        checkReassigns(0, 5);
+    }
+
     /**
      * @throws Exception If failed.
      */
