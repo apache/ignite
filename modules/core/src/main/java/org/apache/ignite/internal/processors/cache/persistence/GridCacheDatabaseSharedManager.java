@@ -377,7 +377,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      */
     private void initDataBase() {
-        Long cpBufSize = persistenceCfg.getCheckpointingPageBufferSize();
+        long cpBufSize = persistenceCfg.getCheckpointingPageBufferSize();
 
         if (persistenceCfg.getCheckpointingThreads() > 1)
             asyncRunner = new ThreadPoolExecutor(
@@ -390,7 +390,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         // Intentionally use identity comparison to check if configuration default has changed.
         //noinspection NumberEquality
-        if (cpBufSize == null) {
+        if (cpBufSize == 0L) {
             cpBufSize = PersistentStoreConfiguration.DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
 
             MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();

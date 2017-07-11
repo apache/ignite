@@ -42,7 +42,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     private long lockWaitTime;
 
     /** */
-    private Long checkpointingPageBufSize;
+    private long checkpointingPageBufSize;
 
     /** */
     private int checkpointingThreads;
@@ -259,7 +259,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         U.writeString(out, persistenceStorePath);
         out.writeLong(checkpointingFreq);
         out.writeLong(lockWaitTime);
-        out.writeObject(checkpointingPageBufSize);
+        out.writeLong(checkpointingPageBufSize);
         out.writeInt(checkpointingThreads);
         out.writeInt(walHistSize);
         out.writeInt(walSegments);
@@ -282,7 +282,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         persistenceStorePath = U.readString(in);
         checkpointingFreq = in.readLong();
         lockWaitTime = in.readLong();
-        checkpointingPageBufSize = (Long)in.readObject();
+        checkpointingPageBufSize = in.readLong();
         checkpointingThreads = in.readInt();
         walHistSize = in.readInt();
         walSegments = in.readInt();

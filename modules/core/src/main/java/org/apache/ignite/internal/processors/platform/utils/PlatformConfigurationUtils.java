@@ -1520,9 +1520,7 @@ public class PlatformConfigurationUtils {
 
             w.writeString(cfg.getPersistentStorePath());
             w.writeLong(cfg.getCheckpointingFrequency());
-            w.writeLong(cfg.getCheckpointingPageBufferSize() == null ?
-                PersistentStoreConfiguration.DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE :
-                cfg.getCheckpointingPageBufferSize());
+            w.writeLong(cfg.getCheckpointingPageBufferSize());
             w.writeInt(cfg.getCheckpointingThreads());
             w.writeLong(cfg.getLockWaitTime());
             w.writeInt(cfg.getWalHistorySize());

@@ -93,7 +93,7 @@ public class PersistentStoreConfiguration implements Serializable {
     private long lockWaitTime = DFLT_LOCK_WAIT_TIME;
 
     /** */
-    private Long checkpointingPageBufSize;
+    private long checkpointingPageBufSize;
 
     /** */
     private int checkpointingThreads = DFLT_CHECKPOINTING_THREADS;
@@ -199,10 +199,10 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * Gets amount of memory allocated for a checkpointing temporary buffer.
      *
-     * @return Checkpointing page buffer size in bytes or {@code null} for Ignite
+     * @return Checkpointing page buffer size in bytes or {@code 0} for Ignite
      *      to choose the buffer size automatically.
      */
-    public Long getCheckpointingPageBufferSize() {
+    public long getCheckpointingPageBufferSize() {
         return checkpointingPageBufSize;
     }
 
@@ -211,11 +211,11 @@ public class PersistentStoreConfiguration implements Serializable {
      * copies of pages that are being written to disk and being update in parallel while the checkpointing is in
      * progress.
      *
-     * @param checkpointingPageBufSize Checkpointing page buffer size in bytes or {@code null} for Ignite to
+     * @param checkpointingPageBufSize Checkpointing page buffer size in bytes or {@code 0} for Ignite to
      *      choose the buffer size automatically.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointingPageBufferSize(Long checkpointingPageBufSize) {
+    public PersistentStoreConfiguration setCheckpointingPageBufferSize(long checkpointingPageBufSize) {
         this.checkpointingPageBufSize = checkpointingPageBufSize;
 
         return this;
