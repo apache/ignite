@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
@@ -31,43 +41,30 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.Cache;
-import java.io.Serializable;
-import java.util.*;
-
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- *
+ * FullTest queries left test.
  */
 public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
-    /** */
-    public static final int MAX_ITEM_COUNT = 100;
+    /** Cache size. */
+    private static final int MAX_ITEM_COUNT = 100;
 
-    /** */
-    public static final String PERSON_CACHE = "Person";
+    /** Cache name */
+    private static final String PERSON_CACHE = "Person";
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    public GridCacheFullTextQuerySelfTest() {
-        super(false);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -77,37 +74,32 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setIncludeEventTypes();
+
         cfg.setConnectorConfiguration(null);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<Integer, Person> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(PERSON_CACHE)
-                .setCacheMode(PARTITIONED)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setWriteSynchronizationMode(FULL_SYNC)
-                .setBackups(0)
-                .setIndexedTypes(Integer.class, Person.class);
+            .setCacheMode(PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setBackups(0)
+            .setIndexedTypes(Integer.class, Person.class);
 
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(2);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -116,7 +108,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of error.
      */
-    public void testTextQuery1() throws Exception {
+    public void testLocalTextQueryWithKeepBinary() throws Exception {
         checkTextQuery(true, true);
     }
 
@@ -125,7 +117,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of error.
      */
-    public void testTextQuery2() throws Exception {
+    public void testLocalTextQuery() throws Exception {
         checkTextQuery(true, false);
     }
 
@@ -134,7 +126,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of error.
      */
-    public void testTextQuery3() throws Exception {
+    public void testTextQueryWithKeepBinary() throws Exception {
         checkTextQuery(false, true);
     }
 
@@ -143,12 +135,15 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of error.
      */
-    public void testTextQuery4() throws Exception {
+    public void testTextQuery() throws Exception {
         checkTextQuery(false, true);
     }
 
-    /** */
-    public void checkTextQuery(boolean loc, boolean keepBinary) throws Exception {
+    /**
+     * @param loc local query flag.
+     * @param keepBinary keep binary flag.
+     */
+    private void checkTextQuery(boolean loc, boolean keepBinary) throws Exception {
         final IgniteEx ignite = grid(0);
 
         // 1. Populate cache with data, calculating expected count in parallel.
@@ -160,28 +155,36 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         });
 
         // 2. Validate results.
-        TextQuery qry = new TextQuery(Person.class, "1*").setLocal(loc);
+        TextQuery qry = new TextQuery<>(Person.class, "1*").setLocal(loc);
 
-        ValidateQueryResults(ignite, qry, exp, keepBinary);
+        validateQueryResults(ignite, qry, exp, keepBinary);
 
         clearCache(ignite);
     }
 
-    /** */
+    /**
+     * Clear cache with check.
+     */
     private static void clearCache(IgniteEx ignite) {
-        IgniteCache<Object, Object> cache = ignite.cache(PERSON_CACHE);
+        IgniteCache<Integer, Person> cache = ignite.cache(PERSON_CACHE);
 
         cache.clear();
 
-        List all = cache.query(new TextQuery(Person.class, "1*")).getAll();
+        List all = cache.query(new TextQuery<>(Person.class, "1*")).getAll();
 
         assertTrue(all.isEmpty());
     }
 
-    /** */
+    /**
+     * Fill cache.
+     *
+     * @throws IgniteCheckedException if failed.
+     */
     private static Set<Integer> populateCache(IgniteEx ignite, boolean loc, int cnt,
-                                              IgnitePredicate<Integer> expectedEntryFilter) throws IgniteCheckedException {
+        IgnitePredicate<Integer> expectedEntryFilter) throws IgniteCheckedException {
         IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
+
+        assertNotNull(cache);
 
         Random rand = new Random();
 
@@ -203,9 +206,13 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         return exp;
     }
 
-    /** */
-    private static void ValidateQueryResults(IgniteEx ignite, Query qry, Set<Integer> exp,
-                                             boolean keepBinary) throws IgniteCheckedException {
+    /**
+     * Check query results.
+     *
+     * @throws IgniteCheckedException if failed.
+     */
+    private static void validateQueryResults(IgniteEx ignite, Query qry, Set<Integer> exp,
+        boolean keepBinary) throws IgniteCheckedException {
         IgniteCache<Integer, Person> cache = ignite.cache(PERSON_CACHE);
 
         if (keepBinary) {
@@ -213,85 +220,102 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
             try (QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor = cache0.query(qry)) {
                 Set<Integer> exp0 = new HashSet<>(exp);
+
                 List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
 
                 for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
                     all.add(entry);
 
                     assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
+
                     assertEquals(entry.getKey(), entry.getValue().field("age"));
 
                     exp0.remove(entry.getKey());
                 }
 
-                AssertMissingExpectedKeys(ignite, exp0, all);
+                checkForMissedKeys(ignite, exp0, all);
             }
 
             try (QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor = cache0.query(qry)) {
                 Set<Integer> exp0 = new HashSet<>(exp);
+
                 List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
 
                 for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
                     all.add(entry);
 
                     assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
+
                     assertEquals(entry.getKey(), entry.getValue().field("age"));
 
                     exp0.remove(entry.getKey());
                 }
 
-                AssertMissingExpectedKeys(ignite, exp0, all);
+                checkForMissedKeys(ignite, exp0, all);
             }
-        } else {
+        }
+        else {
             try (QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry)) {
                 Set<Integer> exp0 = new HashSet<>(exp);
+
                 List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
 
                 for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
                     all.add(entry);
 
                     assertEquals(entry.getKey().toString(), entry.getValue().name);
+
                     assertEquals(entry.getKey(), Integer.valueOf(entry.getValue().age));
 
                     exp0.remove(entry.getKey());
                 }
 
-                AssertMissingExpectedKeys(ignite, exp0, all);
+                checkForMissedKeys(ignite, exp0, all);
             }
 
             try (QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry)) {
                 Set<Integer> exp0 = new HashSet<>(exp);
+
                 List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
 
                 for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
                     all.add(entry);
 
                     assertEquals(entry.getKey().toString(), entry.getValue().name);
+
                     assertEquals(entry.getKey().intValue(), entry.getValue().age);
 
                     exp0.remove(entry.getKey());
                 }
 
-                AssertMissingExpectedKeys(ignite, exp0, all);
+                checkForMissedKeys(ignite, exp0, all);
             }
         }
     }
 
-    /** */
-    private static void AssertMissingExpectedKeys(IgniteEx ignite, Collection<Integer> exp,
-                                                  List<Cache.Entry<Integer, ?>> all) throws IgniteCheckedException {
+    /**
+     * Check if there is missed keys.
+     *
+     * @throws IgniteCheckedException if failed.
+     */
+    private static void checkForMissedKeys(IgniteEx ignite, Collection<Integer> exp,
+        List<Cache.Entry<Integer, ?>> all) throws IgniteCheckedException {
         if (exp.size() == 0)
             return;
 
         IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
 
+        assertNotNull(cache);
+
         StringBuilder sb = new StringBuilder();
+
         Affinity<Integer> aff = cache.affinity();
 
         for (Integer key : exp) {
             Integer part = aff.partition(key);
-            sb.append(String.format(
-                    "Query did not return expected key '{0}' (exists: {1}), partition '{2}', partition nodes: ",
+
+            sb.append(
+                String.format("Query did not return expected key '%d' (exists: %s), partition '%d', partition nodes: ",
                     key, cache.get(key) != null, part));
 
             Collection<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackups(part);
@@ -313,113 +337,8 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test value object.
+     * Test model class.
      */
-    private static class ObjectValue implements Serializable {
-        /**
-         * String value.
-         */
-        @QueryTextField
-        private String strVal;
-
-        /**
-         * @param strVal String value.
-         */
-        ObjectValue(String strVal) {
-            this.strVal = strVal;
-        }
-
-        /**
-         * @return Value.
-         */
-        public String stringValue() {
-            return strVal;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ObjectValue other = (ObjectValue) o;
-
-            return strVal == null ? other.strVal == null : strVal.equals(other.strVal);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public int hashCode() {
-            return strVal != null ? strVal.hashCode() : 0;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
-            return S.toString(ObjectValue.class, this);
-        }
-    }
-
-    /**
-     * Test value key.
-     */
-    private static class ObjectKey implements Serializable {
-        /**
-         * String key.
-         */
-        @QueryTextField
-        private String strKey;
-
-        /**
-         * @param strKey String key.
-         */
-        ObjectKey(String strKey) {
-            this.strKey = strKey;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ObjectKey other = (ObjectKey) o;
-
-            return strKey == null ? other.strKey == null : strKey.equals(other.strKey);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public int hashCode() {
-            return strKey != null ? strKey.hashCode() : 0;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
-            return S.toString(ObjectKey.class, this);
-        }
-    }
-
-    /** */
     public static class Person implements Serializable {
         /** */
         @QueryTextField
@@ -430,8 +349,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         int age;
 
         /** */
-        @QuerySqlField
-        final Date birthday;
+        @QuerySqlField final Date birthday;
 
         /**
          * Constructor
