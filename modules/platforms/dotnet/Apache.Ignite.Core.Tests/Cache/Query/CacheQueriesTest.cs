@@ -907,6 +907,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     exp.Add(val);
             }
 
+            if (loc)
+            {
+                Assert.AreEqual(exp.Count,
+                    cache.GetLocalEntries(CachePeekMode.Primary).Count(x => expectedEntryFilter(x.Key)));
+            }
+
             return exp;
         }
     }
