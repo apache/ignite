@@ -41,6 +41,7 @@ public class IgniteLockBenchmark extends IgniteCacheLockBenchmark {
         super.setUp(cfg);
 
         String key = "key";
+
         lock = ignite().reentrantLock(key, false, false, true);
     }
 }

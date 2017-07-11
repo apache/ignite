@@ -47,8 +47,11 @@ public class IgniteCacheLockBenchmark extends IgniteCacheAbstractBenchmark<Strin
         super.setUp(cfg);
 
         String key = "key";
+
         IgniteCache<String, Integer> cache = cacheForOperation();
+
         cache.put(key, 0);
+
         lock = cache.lock(key);
     }
 }
