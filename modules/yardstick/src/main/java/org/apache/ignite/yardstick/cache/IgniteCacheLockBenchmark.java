@@ -26,6 +26,7 @@ import org.yardstickframework.BenchmarkConfiguration;
  * Ignite benchmark that performs IgniteCache.lock operations.
  */
 public class IgniteCacheLockBenchmark extends IgniteCacheAbstractBenchmark<String, Integer> {
+    /** Cache lock. */
     Lock lock;
 
     /** {@inheritDoc} */
@@ -44,8 +45,8 @@ public class IgniteCacheLockBenchmark extends IgniteCacheAbstractBenchmark<Strin
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
-        String key = "key";
 
+        String key = "key";
         IgniteCache<String, Integer> cache = cacheForOperation();
         cache.put(key, 0);
         lock = cache.lock(key);

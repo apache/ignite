@@ -25,6 +25,7 @@ import org.yardstickframework.BenchmarkConfiguration;
  * Ignite benchmark that performs Ignite.reentrantLock operations.
  */
 public class IgniteLockBenchmark extends IgniteCacheLockBenchmark {
+    /** Reentrant lock. */
     IgniteLock lock;
 
     /** {@inheritDoc} */
@@ -38,8 +39,8 @@ public class IgniteLockBenchmark extends IgniteCacheLockBenchmark {
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
-        String key = "key";
 
+        String key = "key";
         lock = ignite().reentrantLock(key, false, false, true);
     }
 }
