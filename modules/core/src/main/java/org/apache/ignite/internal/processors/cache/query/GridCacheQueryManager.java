@@ -103,6 +103,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -1374,13 +1375,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             catch (Throwable e) {
                 if (X.hasCause(e, ClassNotFoundException.class) && !qry.keepBinary() && cctx.binaryMarshaller() &&
                     !cctx.localNode().isClient() && !log.isQuiet()) {
-                    U.quietAndInfo(log, "Suggestion for the cause of ClassNotFoundException");
-                    U.quietAndInfo(log, "To disable, set -D" + IGNITE_QUIET + "=true");
-                    U.quietAndInfo(log, "  ^-- Ignite configured to use BinaryMarshaller but keepBinary is false for " +
+                    LT.info(log, "Suggestion for the cause of ClassNotFoundException");
+                    LT.info(log, "To disable, set -D" + IGNITE_QUIET + "=true");
+                    LT.info(log, "  ^-- Ignite configured to use BinaryMarshaller but keepBinary is false for " +
                         "request");
-                    U.quietAndInfo(log, "  ^-- Server node need to load definition of data classes. " +
+                    LT.info(log, "  ^-- Server node need to load definition of data classes. " +
                         "It can be reason of ClassNotFoundException(consider IgniteCache.withKeepBinary to fix)");
-                    U.quietAndInfo(log, "Refer this page for detailed information: " +
+                    LT.info(log, "Refer this page for detailed information: " +
                         "https://apacheignite.readme.io/docs/binary-marshaller");
                 }
 
