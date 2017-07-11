@@ -27,7 +27,7 @@ import org.yardstickframework.BenchmarkConfiguration;
  */
 public class IgniteCacheLockBenchmark extends IgniteCacheAbstractBenchmark<String, Integer> {
     /** Cache lock. */
-    Lock lock;
+    private Lock lock;
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
