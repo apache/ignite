@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -130,7 +131,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private final Set<UUID> remaining = new HashSet<>();
 
-    /** */
+    /** Guarded by this */
     @GridToStringExclude
     private int pendingSingleUpdates;
 
@@ -157,7 +158,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private final CountDownLatch evtLatch = new CountDownLatch(1);
 
-    /** */
+    /** Exchange future init method complete future */
     private GridFutureAdapter<Boolean> initFut;
 
     /** */
@@ -552,7 +553,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
             if(crd.isLocal())
-                System.err.println("init() from crd: [" + cctx.kernalContext().igniteInstanceName() + "] remaining: nodes " + remaining); //todo remove
+                System.err.println("init() from crd: [" + cctx.kernalContext().igniteInstanceName() + "; id: " + cctx.localNode().id() + "]" +
+                    " remaining: nodes " + remaining); //todo remove
 
 
             boolean crdNode = crd != null && crd.isLocal();
@@ -1242,7 +1244,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
 
-        System.err.println("sendLocalPartitions(): from nodeid [" + node.id() + "]; instance=" + cctx.kernalContext().igniteInstanceName() + " sent single map"); //todo remove
+        System.err.println("sendLocalPartitions(): to nodeid [" + node.id() + "];" +
+            "from [" + cctx.localNode().id() + "]; " +
+            " instance=" + cctx.kernalContext().igniteInstanceName() + " sent single map");
+        //todo remove
 
         try {
             cctx.io().send(node, m, SYSTEM_POOL);
@@ -1486,6 +1491,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Processing of received single message. Actual processing in future may be delayed if init method was not
+     * completed, see {@link #initDone()}
+     *
      * @param node Sender node.
      * @param msg Single partition info.
      */
@@ -1525,11 +1533,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Note this method performs heavy updatePartitionSingleMap operation, this operation is moved out from the
+     * synchronized block. Only count of such updates {@link #pendingSingleUpdates} is managed under critical section.
+     *
      * @param node Sender node.
-     * @param msg Message.
+     * @param msg Partition single message.
      */
-    private void processMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        boolean allReceived = false;
+    private void processMessage(@NotNull ClusterNode node, @NotNull GridDhtPartitionsSingleMessage msg) {
+        boolean allReceived = false; // received all expected messages
         boolean updateSingleMap = false;
 
         synchronized (this) {
@@ -1537,6 +1548,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (crd.isLocal()) {
                 if (remaining.remove(node.id())) {
+                    System.err.println("Removed node [" + node.id() + "] Remaining nodes: [" + remaining + "]"); //todo remove
                     updateSingleMap = true;
 
                     pendingSingleUpdates++;
@@ -1604,6 +1616,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
+
+            System.err.println("Sending [" + msg + "] to discovery"); //todo remove
 
             cctx.discovery().sendCustomEvent(msg);
         }
@@ -1902,6 +1916,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.discovery().sendCustomEvent(msg);
                 }
 
+                System.err.println("Exchange future done for top.v [" + exchangeId().topologyVersion() + "]; nodes=" + nodes); //todo remove
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
@@ -2170,7 +2185,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     *
+     * Moves exchange future to state 'init done' using {@link #initFut}
      */
     private void initDone() {
         while (!isDone()) {

@@ -82,7 +82,7 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         @Override public void sendMessage(final ClusterNode node, final Message msg,
             final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
-            System.err.println("MMM: " + msg0); //todo remove
+            System.err.println("MMM: T=[" + Thread.currentThread().getName() + "] " + msg0); //todo remove
 
             if (msg0 instanceof GridDhtPartitionsFullMessage && record &&
                 ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null) {
