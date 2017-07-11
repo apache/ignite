@@ -308,111 +308,101 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * Returns collection of nodes (primary first) for specified partition.
      *
      * @param part Partition.
-     * @param node Nodes.
+     * @param nodes Nodes.
      * @param backups Number of backups.
      * @param neighborhoodCache Neighborhood.
      * @return Assignment.
      */
-    public ClusterNode assignPartition(int part,
-        ClusterNode node,
+    public List<ClusterNode> assignPartition(int part,
+        List<ClusterNode> nodes,
         int backups,
         @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
-//        if (nodes.size() <= 1)
-//            return nodes;
+        if (nodes.size() <= 1)
+            return nodes;
 
-//        IgniteBiTuple<Long, ClusterNode> [] hashArr =
-//            (IgniteBiTuple<Long, ClusterNode> [])new IgniteBiTuple[nodes.size()];
-//
-//        for (int i = 0; i < nodes.size(); i++) {
-//            ClusterNode node = nodes.get(i);
-//
-//            Object nodeHash = resolveNodeHash(node);
-//
-//            long hash = hash(nodeHash.hashCode(), part);
-//
-//            hashArr[i] = F.t(hash, node);
-//        }
+        IgniteBiTuple<Long, ClusterNode> [] hashArr =
+            (IgniteBiTuple<Long, ClusterNode> [])new IgniteBiTuple[nodes.size()];
 
-        IgniteBiTuple<Long, ClusterNode> hashArr = new IgniteBiTuple<>();
+        for (int i = 0; i < nodes.size(); i++) {
+            ClusterNode node = nodes.get(i);
 
-        Object nodeHash = resolveNodeHash(node);
+            Object nodeHash = resolveNodeHash(node);
 
-        long hash = hash(nodeHash.hashCode(), part);
+            long hash = hash(nodeHash.hashCode(), part);
 
-        hashArr = F.t(hash, node);
+            hashArr[i] = F.t(hash, node);
+        }
 
-//        final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
-
-        final int primaryAndBackups = 1;
-
-//        Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, primaryAndBackups);
+        final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
 
         Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, primaryAndBackups);
 
         // REPLICATED cache case
-//        if (backups == Integer.MAX_VALUE)
-//            return replicatedAssign(nodes, sortedNodes);
-
-//        Iterator<ClusterNode> it = sortedNodes.iterator();
+        if (backups == Integer.MAX_VALUE)
+            return replicatedAssign(nodes, sortedNodes);
 
         Iterator<ClusterNode> it = sortedNodes.iterator();
+
+        List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
 
         Collection<ClusterNode> allNeighbors = new HashSet<>();
 
         ClusterNode primary = it.next();
 
+        res.add(primary);
+
         if (exclNeighbors)
             allNeighbors.addAll(neighborhoodCache.get(primary.id()));
 
-//        // Select backups.
-//        if (backups > 0) {
-//            while (it.hasNext()) {
-//                ClusterNode backupNode = it.next();
-//
-//                if (exclNeighbors) {
-//                    if (!allNeighbors.contains(node)) {
-//                        res.add(node);
-//
-//                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
-//                    }
-//                }
-//                else if ((backupFilter != null && backupFilter.apply(primary, node))
-//                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
-//                    || (affinityBackupFilter == null && backupFilter == null) ) {
-//                    res.add(node);
-//
-//                    if (exclNeighbors)
-//                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
-//                }
-//            }
-//        }
+        // Select backups.
+        if (backups > 0) {
+            while (it.hasNext() && res.size() < primaryAndBackups) {
+                ClusterNode node = it.next();
 
-//        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
-//            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
-//            it = sortedNodes.iterator();
-//
-//            it.next();
-//
-//            while (it.hasNext() && res.size() < primaryAndBackups) {
-//                ClusterNode node = it.next();
-//
-//                if (!res.contains(node))
-//                    res.add(node);
-//            }
-//
-//            if (!exclNeighborsWarn) {
-//                LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
-//                        "because topology has no enough nodes to assign backups.",
-//                    "Affinity function excludeNeighbors property is ignored " +
-//                        "because topology has no enough nodes to assign backups.");
-//
-//                exclNeighborsWarn = true;
-//            }
-//        }
-//
-//        assert res.size() <= primaryAndBackups;
+                if (exclNeighbors) {
+                    if (!allNeighbors.contains(node)) {
+                        res.add(node);
 
-        return primary;
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                    }
+                }
+                else if ((backupFilter != null && backupFilter.apply(primary, node))
+                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                    || (affinityBackupFilter == null && backupFilter == null) ) {
+                    res.add(node);
+
+                    if (exclNeighbors)
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                }
+            }
+        }
+
+        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
+            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
+            it = sortedNodes.iterator();
+
+            it.next();
+
+            while (it.hasNext() && res.size() < primaryAndBackups) {
+                ClusterNode node = it.next();
+
+                if (!res.contains(node))
+                    res.add(node);
+            }
+
+            if (!exclNeighborsWarn) {
+                LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
+                        "because topology has no enough nodes to assign backups.",
+                    "Affinity function excludeNeighbors property is ignored " +
+                        "because topology has no enough nodes to assign backups.");
+
+                exclNeighborsWarn = true;
+            }
+        }
+
+        assert res.size() <= primaryAndBackups;
+
+        return res;
     }
 
     /**
@@ -605,36 +595,24 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * Sorts the initial array with linear sort algorithm array
      */
     private static class LazyLinearSortedContainer implements Iterable<ClusterNode> {
-//        /** Initial node-hash array. */
-//        private final IgniteBiTuple<Long, ClusterNode>[] arr;
-
-        /** Initial node-hash. */
-        private final IgniteBiTuple<Long, ClusterNode> nodeHash;
+        /** Initial node-hash array. */
+        private final IgniteBiTuple<Long, ClusterNode>[] arr;
 
         /** Count of the sorted elements */
         private int sorted;
 
-//        /**
-//         * @param arr Node / partition hash list.
-//         * @param needFirstSortedCnt Estimate count of elements to return by iterator.
-//         */
-//        LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode>[] arr, int needFirstSortedCnt) {
-//            this.arr = arr;
-//
-//            if (needFirstSortedCnt > (int)Math.log(arr.length)) {
-//                Arrays.sort(arr, COMPARATOR);
-//
-//                sorted = arr.length;
-//            }
-//        }
-
         /**
-         * @param nodeHash Node / partition hash list.
+         * @param arr Node / partition hash list.
          * @param needFirstSortedCnt Estimate count of elements to return by iterator.
          */
-        LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode> nodeHash, int needFirstSortedCnt) {
-            this.nodeHash = nodeHash;
-            sorted = 1;
+        LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode>[] arr, int needFirstSortedCnt) {
+            this.arr = arr;
+
+            if (needFirstSortedCnt > (int)Math.log(arr.length)) {
+                Arrays.sort(arr, COMPARATOR);
+
+                sorted = arr.length;
+            }
         }
 
         /** {@inheritDoc} */
