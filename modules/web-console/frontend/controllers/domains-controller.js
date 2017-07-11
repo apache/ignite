@@ -18,9 +18,11 @@
 import templateUrl from 'views/configuration/domains-import.tpl.pug';
 
 // Controller for Domain model screen.
-export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'AgentManager', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
-    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Input, Loading, ModelNormalizer, UnsavedChangesGuard, agentMgr, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
+export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'AgentManager', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData', 'IgniteVersion',
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Input, Loading, ModelNormalizer, UnsavedChangesGuard, agentMgr, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData, Version) {
         UnsavedChangesGuard.install($scope);
+
+        this.available = Version.available.bind(Version);
 
         const emptyDomain = {empty: true};
 
@@ -661,9 +663,6 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                 }
 
                 if (!_.isEmpty($scope.caches)) {
-                    if (item.cachesOrTemplates.length > 0)
-                        item.cachesOrTemplates.push(null);
-
                     _.forEach($scope.caches, function(cache) {
                         item.cachesOrTemplates.push(cache);
                     });
@@ -944,6 +943,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                         const keyField = newDomain.keyFields[0];
 
                         newDomain.keyType = keyField.javaType;
+                        newDomain.keyFieldName = keyField.javaFieldName;
 
                         // Exclude key column from query fields.
                         newDomain.fields = _.filter(newDomain.fields, (field) => field.name !== keyField.javaFieldName);
@@ -1304,7 +1304,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                     $scope.selectedItem.queryMetadata = 'Configuration';
 
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.domains');
+                    $state.go('base.configuration.tabs.advanced.domains');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 
 /**
  * Delta record for updates in tracking pages
@@ -35,13 +35,13 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     private final long lastSuccessfulSnapshotId;
 
     /**
-     * @param cacheId Cache id.
+     * @param grpId Cache group id.
      * @param pageId Page id.
      * @param nextSnapshotId
      * @param lastSuccessfulSnapshotId
      */
-    public TrackingPageDeltaRecord(int cacheId, long pageId, long pageIdToMark, long nextSnapshotId, long lastSuccessfulSnapshotId) {
-        super(cacheId, pageId);
+    public TrackingPageDeltaRecord(int grpId, long pageId, long pageIdToMark, long nextSnapshotId, long lastSuccessfulSnapshotId) {
+        super(grpId, pageId);
 
         this.pageIdToMark = pageIdToMark;
         this.nextSnapshotId = nextSnapshotId;

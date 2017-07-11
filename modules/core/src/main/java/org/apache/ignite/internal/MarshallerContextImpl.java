@@ -126,11 +126,11 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             if (plugins != null && !plugins.isEmpty()) {
                 for (PluginProvider plugin : plugins) {
-                    URL pluginClsNames = ldr.getResource("META-INF/" + plugin.name().toLowerCase()
+                    Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
                         + ".classnames.properties");
 
-                    if (pluginClsNames != null)
-                        processResource(pluginClsNames);
+                    while (pluginUrls.hasMoreElements())
+                        processResource(pluginUrls.nextElement());
                 }
             }
         }
@@ -265,6 +265,17 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName)
+        throws IgniteCheckedException
+    {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
+
+        cache.put(typeId, new MappedName(clsName, true));
+
+        return true;
+    }
+
     /**
      * @param res result of exchange.
      */
@@ -305,18 +316,14 @@ public class MarshallerContextImpl implements MarshallerContext {
      *
      * @param item type mapping to propose
      * @return null if cache doesn't contain any mappings for given (platformId, typeId) pair,
-     * previous class name otherwise.
+     * previous {@link MappedName mapped name} otherwise.
      */
-    public String onMappingProposed(MarshallerMappingItem item) {
+    public MappedName onMappingProposed(MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
         MappedName newName = new MappedName(item.className(), false);
-        MappedName oldName;
 
-        if ((oldName = cache.putIfAbsent(item.typeId(), newName)) == null)
-            return null;
-        else
-            return oldName.className();
+        return cache.putIfAbsent(item.typeId(), newName);
     }
 
     /**

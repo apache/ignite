@@ -23,7 +23,7 @@ WORKDIR /opt/web-console-frontend
 
 COPY src .
 
-RUN npm install --no-optional
+RUN npm install --no-optional --prod
 
 VOLUME /opt/web-console-frontend/build
 

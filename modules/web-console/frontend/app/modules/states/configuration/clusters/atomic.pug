@@ -18,6 +18,9 @@ include /app/helpers/jade/mixins
 
 -var form = 'atomics'
 -var model = 'backupItem.atomicConfiguration'
+-var affModel = model + '.affinity'
+-var rendezvousAff = affModel + '.kind === "Rendezvous"'
+-var customAff = affModel + '.kind === "Custom"'
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
@@ -50,5 +53,27 @@ include /app/helpers/jade/mixins
                         After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made')
                 .settings-row(ng-show=`!(${model}.cacheMode && ${model}.cacheMode != "PARTITIONED")`)
                     +number('Backups:', model + '.backups', '"backups"', 'true', '0', '0', 'Number of backup nodes')
+                div(ng-if='$ctrl.available("2.1.0")')
+                    .settings-row
+                        +dropdown('Function:', `${affModel}.kind`, '"AffinityKind"', 'true', 'Default', 'affinityFunction',
+                            'Key topology resolver to provide mapping from keys to nodes\
+                            <ul>\
+                                <li>Rendezvous - Based on Highest Random Weight algorithm<br/></li>\
+                                <li>Custom - Custom implementation of key affinity function<br/></li>\
+                                <li>Default - By default rendezvous affinity function  with 1024 partitions is used<br/></li>\
+                            </ul>')
+                    .panel-details(ng-if=rendezvousAff)
+                        .details-row
+                            +number-required('Partitions', `${affModel}.Rendezvous.partitions`, '"RendPartitions"', 'true', rendPartitionsRequired, '1024', '1', 'Number of partitions')
+                        .details-row
+                            +java-class('Backup filter', `${affModel}.Rendezvous.affinityBackupFilter`, '"RendAffinityBackupFilter"', 'true', 'false',
+                                'Backups will be selected from all nodes that pass this filter')
+                        .details-row
+                            +checkbox('Exclude neighbors', `${affModel}.Rendezvous.excludeNeighbors`, '"RendExcludeNeighbors"',
+                                'Exclude same - host - neighbors from being backups of each other and specified number of backups')
+                    .panel-details(ng-if=customAff)
+                        .details-row
+                            +java-class('Class name:', `${affModel}.Custom.className`, '"AffCustomClassName"', 'true', customAff,
+                                'Custom key affinity function implementation class name')
             .col-sm-6
                 +preview-xml-java(model, 'clusterAtomics')

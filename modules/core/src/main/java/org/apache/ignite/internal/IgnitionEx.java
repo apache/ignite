@@ -55,16 +55,16 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -118,7 +118,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -524,7 +523,6 @@ public class IgnitionEx {
      * an exception will be thrown.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
-     * failIfStarted Throw or not an exception if grid is already started.
      * @param failIfStarted When flag is {@code true} and grid with specified name has been already started
      *      the exception is thrown. Otherwise the existing instance of the grid is returned.
      * @return Started grid or existing grid.
@@ -2201,8 +2199,6 @@ public class IgnitionEx {
             if (IgniteComponentType.HADOOP.inClassPath())
                 cacheCfgs.add(CU.hadoopSystemCache());
 
-            cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
-
             CacheConfiguration[] userCaches = cfg.getCacheConfiguration();
 
             if (userCaches != null && userCaches.length > 0) {
@@ -2216,10 +2212,6 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
 
-                    if (CU.isAtomicsCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
                     if (CU.isUtilityCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
@@ -2228,6 +2220,10 @@ public class IgnitionEx {
                         throw new IgniteCheckedException(
                             "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
                                 + "\" because it is reserved for IGFS internal purposes.");
+
+                    if (DataStructuresProcessor.isDataStructureCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + ccfg.getName() +
+                            "\" because it is reserved for data structures.");
 
                     cacheCfgs.add(ccfg);
                 }
@@ -2404,30 +2400,6 @@ public class IgnitionEx {
             cache.setCopyOnRead(false);
 
             return cache;
-        }
-
-        /**
-         * Creates cache configuration for atomic data structures.
-         *
-         * @param cfg Atomic configuration.
-         * @return Cache configuration for atomic data structures.
-         */
-        private static CacheConfiguration atomicsSystemCache(AtomicConfiguration cfg) {
-            CacheConfiguration ccfg = new CacheConfiguration();
-
-            ccfg.setName(CU.ATOMICS_CACHE_NAME);
-            ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setRebalanceMode(SYNC);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-            ccfg.setCacheMode(cfg.getCacheMode());
-            ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
-            ccfg.setAffinity(cfg.getAffinity());
-            ccfg.setRebalanceOrder(-1); //Prior to user caches.
-
-            if (cfg.getCacheMode() == PARTITIONED)
-                ccfg.setBackups(cfg.getBackups());
-
-            return ccfg;
         }
 
         /**

@@ -177,7 +177,7 @@ public class AgentClusterDemo {
                     int port = basePort.get();
 
                     try {
-                        IgniteEx ignite = (IgniteEx)Ignition.start(igniteConfiguration(port, idx, idx == NODE_CNT));
+                        IgniteEx ignite = (IgniteEx)Ignition.start(igniteConfiguration(port, idx, false));
 
                         if (idx == 0) {
                             Collection<String> jettyAddrs = ignite.localNode().attribute(ATTR_REST_JETTY_ADDRS);
@@ -201,7 +201,7 @@ public class AgentClusterDemo {
 
                             initLatch.countDown();
 
-                            deployServices(ignite.services());
+                            deployServices(ignite.services(ignite.cluster().forServers()));
                         }
                     }
                     catch (Throwable e) {
