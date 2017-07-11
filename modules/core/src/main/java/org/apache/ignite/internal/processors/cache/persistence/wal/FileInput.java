@@ -102,6 +102,9 @@ public final class FileInput implements ByteBufferBackedDataInput {
             return;
 
         if (buf.capacity() < requested) {
+            if (expBuf == null)
+                throw new IOException("Requested size is greater than buffer: " + requested);
+
             buf = expBuf.expand(requested);
 
             assert available == buf.remaining();
