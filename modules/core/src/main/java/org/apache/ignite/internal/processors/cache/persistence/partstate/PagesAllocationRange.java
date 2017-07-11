@@ -26,34 +26,29 @@ public class PagesAllocationRange {
     /**
      * Previously observed total number of allocated pages. May be stored using PageMetaIO.
      * Used to separate newly allocated pages with previously observed state
-     * Minimum value is 0. Can't be greater than {@link #allocatedPageCnt}
+     * Minimum value is 0. Can't be greater than {@link #currAllocatedPageCnt}
      */
     private final int lastAllocatedPageCnt;
 
     /** Total current number of pages allocated, minimum value is 0. */
-    private final int allocatedPageCnt;
+    private final int currAllocatedPageCnt;
 
     /**
      * Creates pages range
      *
      * @param lastAllocatedPageCnt Last allocated pages count.
-     * @param allocatedPageCnt Currently allocated pages count.
+     * @param currAllocatedPageCnt Currently allocated pages count.
      */
-    public PagesAllocationRange(final int lastAllocatedPageCnt, final int allocatedPageCnt) {
+    public PagesAllocationRange(final int lastAllocatedPageCnt, final int currAllocatedPageCnt) {
         this.lastAllocatedPageCnt = lastAllocatedPageCnt;
-        this.allocatedPageCnt = allocatedPageCnt;
+        this.currAllocatedPageCnt = currAllocatedPageCnt;
     }
 
     /**
      * @return Total current number of pages allocated, minimum value is 0.
      */
-    public int getAllocatedPageCnt() {
-        return allocatedPageCnt;
-    }
-
-    /** Tmp method for compatibility with tuple */
-    public int get2() {
-        return getAllocatedPageCnt();
+    public int getCurrAllocatedPageCnt() {
+        return currAllocatedPageCnt;
     }
 
     /**
@@ -63,16 +58,11 @@ public class PagesAllocationRange {
         return lastAllocatedPageCnt;
     }
 
-    /** Tmp method for compatibility with tuple */
-    public int get1() {
-        return getLastAllocatedPageCnt();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return "PagesAllocationRange{" +
             "lastAllocatedPageCnt=" + lastAllocatedPageCnt +
-            ", allocatedPageCnt=" + allocatedPageCnt +
+            ", currAllocatedPageCnt=" + currAllocatedPageCnt +
             '}';
     }
 }

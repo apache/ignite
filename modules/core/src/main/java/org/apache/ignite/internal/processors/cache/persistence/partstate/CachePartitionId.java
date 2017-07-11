@@ -18,15 +18,21 @@
 package org.apache.ignite.internal.processors.cache.persistence.partstate;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Pair of cache ID with partition ID. Immutable class, may be used as key in maps
+ * Pair of cache ID with partition ID. Immutable, comparable class, may be used as key in maps
  */
 public class CachePartitionId implements Comparable<CachePartitionId> {
+    /** Index for super(meta) page. There is always such page for iterated cache partition  */
+    private static final int METAPAGE_IDX = 0;
+
     /** Cache ID. */
     private final int cacheId;
+
     /** Partition ID. */
     private final int partId;
 
@@ -38,6 +44,14 @@ public class CachePartitionId implements Comparable<CachePartitionId> {
     public CachePartitionId(final int cacheId, final int partId) {
         this.cacheId = cacheId;
         this.partId = partId;
+    }
+
+    /**
+     * @param partId Partition ID.
+     * @return flag to be used for partition
+     */
+    private static byte getFlagByPartId(final int partId) {
+        return partId == PageIdAllocator.INDEX_PARTITION ? PageMemory.FLAG_IDX : PageMemory.FLAG_DATA;
     }
 
     /**
@@ -54,19 +68,9 @@ public class CachePartitionId implements Comparable<CachePartitionId> {
         return partId;
     }
 
-    /** Tmp method for compatibility with tuple */
-    public int get1() {
-        return getCacheId();
-    }
-
-    /** Tmp method for compatibility with tuple */
-    public int get2() {
-        return getPartId();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Key{" +
+        return "CachePartitionId{" +
             "cacheId=" + cacheId +
             ", partId=" + partId +
             '}';
@@ -113,17 +117,26 @@ public class CachePartitionId implements Comparable<CachePartitionId> {
      * @param pageIdx Page Index, monotonically growing number within each partition
      * @return page ID (64 bits) constructed from partition ID and given index
      */
-    public long createPageId(final int pageIdx) {
-        return PageIdUtils.pageId(getPartId(), (byte)0, pageIdx);
+    private long createPageId(final int pageIdx) {
+        final int partId = getPartId();
+
+        return PageIdUtils.pageId(partId, getFlagByPartId(partId), pageIdx);
     }
 
     /**
-     * Returns Full page ID
+     * Returns Full page ID. For index 0 will return super-page of next partition
      *
      * @param pageIdx Page Index, monotonically growing number within each partition
      * @return FullPageId consists of cache ID (32 bits) and page ID (64 bits).
      */
-    @NotNull public FullPageId createFullPageId(final int pageIdx) {
+    @NotNull private FullPageId createFullPageId(final int pageIdx) {
         return new FullPageId(createPageId(pageIdx), getCacheId());
+    }
+
+    /**
+     * @return will return super-page (metapage) of this partition
+     */
+    @NotNull public FullPageId createFirstPageFullId() {
+        return createFullPageId(METAPAGE_IDX);
     }
 }
