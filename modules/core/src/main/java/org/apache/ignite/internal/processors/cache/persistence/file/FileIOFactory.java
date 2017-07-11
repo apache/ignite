@@ -15,18 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 
-/**
- * Test suite for all tests located in org.apache.ignite.ml.clustering package.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-        KMeansDistributedClustererTest.class,
-        KMeansLocalClustererTest.class
-})
-public class ClusteringTesetSuite {
+public interface FileIOFactory extends Serializable {
+
+    /**
+     * Creates I/O interface for file with default I/O mode
+     *
+     * @param file File
+     * @return File I/O interface
+     * @throws IOException If I/O interface creation was failed
+     */
+    FileIO create(File file) throws IOException;
+
+    /**
+     * Creates I/O interface for file with specified mode
+     *
+     * @param file File
+     * @param mode I/O mode in
+     * @return File I/O interface
+     * @throws IOException If I/O interface creation was failed
+     */
+    FileIO create(File file, String mode) throws IOException;
+
 }

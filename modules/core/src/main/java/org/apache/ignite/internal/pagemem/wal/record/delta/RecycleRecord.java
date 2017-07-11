@@ -29,12 +29,12 @@ public class RecycleRecord extends PageDeltaRecord {
     private long newPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param newPageId New page ID.
      */
-    public RecycleRecord(int cacheId, long pageId, long newPageId) {
-        super(cacheId, pageId);
+    public RecycleRecord(int grpId, long pageId, long newPageId) {
+        super(grpId, pageId);
 
         this.newPageId = newPageId;
     }

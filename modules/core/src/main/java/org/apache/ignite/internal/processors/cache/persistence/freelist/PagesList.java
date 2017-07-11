@@ -333,7 +333,7 @@ public abstract class PagesList extends DataStructure {
                     io.resetCount(pageAddr);
 
                     if (needWalDeltaRecord(pageId, page, null))
-                        wal.log(new PageListMetaResetCountRecord(cacheId, pageId));
+                        wal.log(new PageListMetaResetCountRecord(grpId, pageId));
 
                     nextPageId = io.getNextMetaPageId(pageAddr);
                 }
@@ -682,13 +682,13 @@ public abstract class PagesList extends DataStructure {
             incrementBucketSize(bucket);
 
             if (needWalDeltaRecord(pageId, page, null))
-                wal.log(new PagesListAddPageRecord(cacheId, pageId, dataId));
+                wal.log(new PagesListAddPageRecord(grpId, pageId, dataId));
 
             DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataAddr);
             dataIO.setFreeListPageId(dataAddr, pageId);
 
             if (needWalDeltaRecord(dataId, dataPage, null))
-                wal.log(new DataPageSetFreeListPageRecord(cacheId, dataId, pageId));
+                wal.log(new DataPageSetFreeListPageRecord(grpId, dataId, pageId));
         }
 
         return true;
@@ -728,11 +728,11 @@ public abstract class PagesList extends DataStructure {
             setupNextPage(io, pageId, pageAddr, newDataId, dataAddr);
 
             if (needWalDeltaRecord(pageId, page, null))
-                wal.log(new PagesListSetNextRecord(cacheId, pageId, newDataId));
+                wal.log(new PagesListSetNextRecord(grpId, pageId, newDataId));
 
             if (needWalDeltaRecord(dataId, data, null))
                 wal.log(new PagesListInitNewPageRecord(
-                    cacheId,
+                    grpId,
                     dataId,
                     io.getType(),
                     io.getVersion(),
@@ -761,13 +761,13 @@ public abstract class PagesList extends DataStructure {
                     setupNextPage(io, pageId, pageAddr, nextId, nextPageAddr);
 
                     if (needWalDeltaRecord(pageId, page, null))
-                        wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+                        wal.log(new PagesListSetNextRecord(grpId, pageId, nextId));
 
                     int idx = io.addPage(nextPageAddr, dataId, pageSize());
 
                     if (needWalDeltaRecord(nextId, nextPage, nextWalPlc))
                         wal.log(new PagesListInitNewPageRecord(
-                            cacheId,
+                            grpId,
                             nextId,
                             io.getType(),
                             io.getVersion(),
@@ -781,7 +781,7 @@ public abstract class PagesList extends DataStructure {
                     dataIO.setFreeListPageId(dataAddr, nextId);
 
                     if (needWalDeltaRecord(dataId, data, null))
-                        wal.log(new DataPageSetFreeListPageRecord(cacheId, dataId, nextId));
+                        wal.log(new DataPageSetFreeListPageRecord(grpId, dataId, nextId));
 
                     incrementBucketSize(bucket);
 
@@ -853,12 +853,12 @@ public abstract class PagesList extends DataStructure {
                         setupNextPage(io, prevId, prevAddr, nextId, nextPageAddr);
 
                         if (needWalDeltaRecord(prevId, prevPage, walPlc))
-                            wal.log(new PagesListSetNextRecord(cacheId, prevId, nextId));
+                            wal.log(new PagesListSetNextRecord(grpId, prevId, nextId));
 
                         // Here we should never write full page, because it is known to be new.
                         if (needWalDeltaRecord(nextId, nextPage, FALSE))
                             wal.log(new PagesListInitNewPageRecord(
-                                cacheId,
+                                grpId,
                                 nextId,
                                 io.getType(),
                                 io.getVersion(),
@@ -887,7 +887,7 @@ public abstract class PagesList extends DataStructure {
                 else {
                     // TODO: use single WAL record for bag?
                     if (needWalDeltaRecord(prevId, prevPage, walPlc))
-                        wal.log(new PagesListAddPageRecord(cacheId, prevId, nextId));
+                        wal.log(new PagesListAddPageRecord(grpId, prevId, nextId));
 
                     incrementBucketSize(bucket);
                 }
@@ -1035,7 +1035,7 @@ public abstract class PagesList extends DataStructure {
                         decrementBucketSize(bucket);
 
                         if (needWalDeltaRecord(tailId, tailPage, null))
-                            wal.log(new PagesListRemovePageRecord(cacheId, tailId, pageId));
+                            wal.log(new PagesListRemovePageRecord(grpId, tailId, pageId));
 
                         dirty = true;
 
@@ -1085,7 +1085,7 @@ public abstract class PagesList extends DataStructure {
                             initIo.initNewPage(tailAddr, dataPageId, pageSize());
 
                             if (needWalDeltaRecord(tailId, tailPage, null)) {
-                                wal.log(new InitNewPageRecord(cacheId, tailId, initIo.getType(),
+                                wal.log(new InitNewPageRecord(grpId, tailId, initIo.getType(),
                                     initIo.getVersion(), dataPageId));
                             }
                         }
@@ -1163,13 +1163,13 @@ public abstract class PagesList extends DataStructure {
                 decrementBucketSize(bucket);
 
                 if (needWalDeltaRecord(pageId, page, null))
-                    wal.log(new PagesListRemovePageRecord(cacheId, pageId, dataId));
+                    wal.log(new PagesListRemovePageRecord(grpId, pageId, dataId));
 
                 // Reset free list page ID.
                 dataIO.setFreeListPageId(dataAddr, 0L);
 
                 if (needWalDeltaRecord(dataId, dataPage, null))
-                    wal.log(new DataPageSetFreeListPageRecord(cacheId, dataId, 0L));
+                    wal.log(new DataPageSetFreeListPageRecord(grpId, dataId, 0L));
 
                 if (!io.isEmpty(pageAddr))
                     return true; // In optimistic case we still have something in the page and can leave it as is.
@@ -1343,7 +1343,7 @@ public abstract class PagesList extends DataStructure {
                 nextIO.setPreviousId(nextAddr, 0);
 
                 if (needWalDeltaRecord(nextId, nextPage, null))
-                    wal.log(new PagesListSetPreviousRecord(cacheId, nextId, 0L));
+                    wal.log(new PagesListSetPreviousRecord(grpId, nextId, 0L));
             }
             else // Do a fair merge: link previous and next to each other.
                 fairMerge(prevId, pageId, nextId, nextPage, nextAddr);
@@ -1384,12 +1384,12 @@ public abstract class PagesList extends DataStructure {
                 prevIO.setNextId(prevAddr, nextId);
 
                 if (needWalDeltaRecord(prevId, prevPage, null))
-                    wal.log(new PagesListSetNextRecord(cacheId, prevId, nextId));
+                    wal.log(new PagesListSetNextRecord(grpId, prevId, nextId));
 
                 nextIO.setPreviousId(nextAddr, prevId);
 
                 if (needWalDeltaRecord(nextId, nextPage, null))
-                    wal.log(new PagesListSetPreviousRecord(cacheId, nextId, prevId));
+                    wal.log(new PagesListSetPreviousRecord(grpId, nextId, prevId));
             }
             finally {
                 writeUnlock(prevId, prevPage, prevAddr, true);
