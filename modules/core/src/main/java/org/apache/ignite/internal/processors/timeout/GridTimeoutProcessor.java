@@ -37,7 +37,7 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** */
-    private final IgniteThread timeoutWorker;
+    private final GridWorkerWrapper timeoutWorker;
 
     /** Time-based sorted set for timeout objects. */
     private final GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjs =
@@ -62,8 +62,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     public GridTimeoutProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        timeoutWorker = new IgniteThread(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
-            new TimeoutWorker());
+        timeoutWorker = new GridWorkerWrapper(new TimeoutWorker());
     }
 
     /** {@inheritDoc} */
@@ -76,7 +75,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        U.interrupt(timeoutWorker);
+        timeoutWorker.cancel();
         U.join(timeoutWorker);
 
         if (log.isDebugEnabled())
@@ -128,6 +127,24 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      */
     public void removeTimeoutObject(GridTimeoutObject timeoutObj) {
         timeoutObjs.remove(timeoutObj);
+    }
+
+    /**
+     * Wraps {@link TimeoutWorker} in a {@link IgniteThread}
+     * with access to {@link TimeoutWorker#cancel()} method.
+     */
+    private static class GridWorkerWrapper extends IgniteThread {
+        /** */
+        private final GridWorker worker;
+
+        public GridWorkerWrapper(GridWorker worker) {
+            super(worker);
+            this.worker = worker;
+        }
+
+        public void cancel(){
+            worker.cancel();
+        }
     }
 
     /**
