@@ -160,9 +160,9 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
 
             uuid = grid(0).context().cache().cache(cache.getName()).context().continuousQueries()
                 .executeInternalQuery(lsnr, null, false, true, true);
-            
+
             U.await(lsnr.latch, 5000L, TimeUnit.MILLISECONDS);
-            
+
             assertEquals(KEYS, lsnr.updEvts.size());
 
             for (CacheQueryEntryEvent evt : lsnr.updEvts)
@@ -500,7 +500,7 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     /**
      *
      */
-    public static class CacheEventListener2 extends CacheEventListener {
+    public static class CacheEventListener2 implements CacheEntryUpdatedListener<Object, Object> {
         /** Updated events. */
         private final static GridConcurrentHashSet<CacheQueryEntryEvent> updEvts = new GridConcurrentHashSet<>();
 
