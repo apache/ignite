@@ -379,12 +379,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var exp = PopulateCache(cache, loc, cnt, x => x < 50);
 
             // 2. Validate results.
-            var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", loc)
+            var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50")
             {
                 EnableDistributedJoins = distrJoin,
                 EnforceJoinOrder = enforceJoinOrder,
                 Colocated = !distrJoin,
                 ReplicatedOnly = false,
+                Local = loc,
                 Timeout = TimeSpan.FromSeconds(2)
             };
 
@@ -888,29 +889,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var rand = new Random();
 
-            var exp = new HashSet<int>();
-
-            var aff = cache.Ignite.GetAffinity(cache.Name);
-
-            var localNode = cache.Ignite.GetCluster().GetLocalNode();
-
             for (var i = 0; i < cnt; i++)
             {
                 var val = rand.Next(cnt);
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
-
-                if (expectedEntryFilter(val) && (!loc || aff.IsPrimary(localNode, val)))
-                    exp.Add(val);
             }
 
-            if (loc)
-            {
-                Assert.AreEqual(exp.Count,
-                    cache.GetLocalEntries(CachePeekMode.Primary).Count(x => expectedEntryFilter(x.Key)));
-            }
+            var entries = loc
+                ? cache.GetLocalEntries(CachePeekMode.Primary)
+                : cache;
 
-            return exp;
+            return new HashSet<int>(entries.Select(x => x.Key).Where(expectedEntryFilter));
         }
     }
 
