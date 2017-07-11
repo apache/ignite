@@ -1839,9 +1839,6 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
 
         validateSqlFieldsQuery(qry);
 
-        if (qry.isLocal())
-            throw new IgniteException("Local query is not supported without specific cache.");
-
         if (qry.getSchema() == null)
             qry.setSchema(QueryUtils.DFLT_SCHEMA);
 
@@ -1851,9 +1848,9 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
         try {
             IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
                 @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
+                GridQueryCancel cancel = new GridQueryCancel();
 
-                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null);
+                return idx.querySqlFields(qry.getSchema(), qry, keepBinary, requestTopVer.get(), cancel);
                 }
             };
 

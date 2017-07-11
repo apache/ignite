@@ -32,9 +32,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
@@ -1167,6 +1169,40 @@ public class GridSqlQueryParser {
             return query(EXPLAIN_COMMAND.get((Explain)qry));
 
         throw new CacheException("Unsupported query: " + qry);
+    }
+
+    public static boolean isLocalQuery(Prepared p, boolean replicatedOnlyQry) {
+        Query qry = query(p);
+
+        for (Table tbl : qry.getTables()) {
+            if (tbl instanceof GridH2Table) {
+                GridCacheContext cctx = ((GridH2Table) tbl).cache();
+
+                if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static Integer getQueryParallelism(Prepared p) {
+        Query qry = query(p);
+
+        Integer res = null;
+
+        for (Table tbl : qry.getTables()) {
+            if (tbl instanceof GridH2Table) {
+                GridCacheContext cctx = ((GridH2Table) tbl).cache();
+
+                if (res == null)
+                    res = cctx.config().getQueryParallelism();
+                else if (res != cctx.config().getQueryParallelism())
+                    throw new IgniteSQLException("Inconsistent query parallelism");
+            }
+        }
+
+        return res;
     }
 
     /**

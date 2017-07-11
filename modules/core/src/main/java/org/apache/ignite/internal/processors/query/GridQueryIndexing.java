@@ -76,6 +76,19 @@ public interface GridQueryIndexing {
         boolean keepBinary, int mainCacheId) throws IgniteCheckedException;
 
     /**
+     * Detect whether SQL query should be executed in distributed or local manner and execute it.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @param topVer Topology version.
+     * @param cancel Query cancel state handler.
+     * @return Cursor.
+     */
+    public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
+        AffinityTopologyVersion topVer, GridQueryCancel cancel);
+
+    /**
      * Parses SQL query into two step query and executes it.
      *
      * @param schemaName Schema name.
