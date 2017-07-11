@@ -54,7 +54,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -76,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -158,7 +156,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
-import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -540,29 +537,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             // Reset connection to receive new one at next call.
             U.close(conn, log);
-        }
-    }
-
-    /**
-     * @param sqlQry Sql query.
-     * @param params Params.
-     * @
-     */
-    private void sendQueryExecutedEvent(String sqlQry, Object[] params, String cacheName) {
-        if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-            ctx.event().record(new CacheQueryExecutedEvent<>(
-                ctx.discovery().localNode(),
-                "SQL query executed.",
-                EVT_CACHE_QUERY_EXECUTED,
-                CacheQueryType.SQL.name(),
-                cacheName,
-                null,
-                sqlQry,
-                null,
-                null,
-                params,
-                null,
-                null));
         }
     }
 
@@ -1371,11 +1345,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IndexingQueryFilter filter = backupFilter(topVer, qry.getPartitions());
 
             try {
-                FieldsQueryCursor<List<?>> res = queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
-
-                sendQueryExecutedEvent(sqlQry, qry.getArgs(), null);
-
-                return res;
+                return queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
@@ -1398,8 +1368,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
-
-        sendQueryExecutedEvent(sqlQry, qry.getArgs(), null);
 
         return res;
     }

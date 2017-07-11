@@ -1785,7 +1785,12 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                 @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     GridQueryCancel cancel = new GridQueryCancel();
 
-                    return idx.querySqlFields(schemaName, cctx, qry, keepBinary, requestTopVer.get(), cancel);
+                    FieldsQueryCursor<List<?>> res =
+                        idx.querySqlFields(schemaName, cctx, qry, keepBinary, requestTopVer.get(), cancel);
+
+                    sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx != null ? cctx.name() : null);
+
+                    return res;
                 }
             };
 
