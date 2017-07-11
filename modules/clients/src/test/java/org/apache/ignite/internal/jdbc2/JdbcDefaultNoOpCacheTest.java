@@ -13,37 +13,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-package org.apache.ignite.internal.pagemem.snapshot;
 
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.jdbc2;
 
-/** */
-public enum SnapshotOperationType {
-    /** Create. */
-    CREATE,
-    /** Restore. */
-    RESTORE,
-    /** Restore 2. */
-    RESTORE_2_PHASE,
-    /** Move. */
-    MOVE,
-    /** Delete. */
-    DELETE,
-    /** Check. */
-    CHECK;
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
-    /** Enumerated values. */
-    private static final SnapshotOperationType[] VALS = values();
+/**
+ * Test to check JDBC2 driver behavior when cache specified in connection string does not have any query entities.
+ */
+public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest {
+    /** Ignite configuration URL. */
+    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
 
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
-     */
-    @Nullable public static SnapshotOperationType fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    /** {@inheritDoc} */
+    protected String getUrl() {
+        return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
     }
 }

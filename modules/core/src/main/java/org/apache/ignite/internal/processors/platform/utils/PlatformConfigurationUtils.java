@@ -561,8 +561,6 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setDaemon(in.readBoolean());
         if (in.readBoolean())
-            cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean())
             cfg.setFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
@@ -1010,8 +1008,6 @@ public class PlatformConfigurationUtils {
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(true);
-        w.writeBoolean(cfg.isLateAffinityAssignment());
         w.writeBoolean(true);
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
@@ -1505,7 +1501,10 @@ public class PlatformConfigurationUtils {
                 .setWalFlushFrequency((int) in.readLong())
                 .setWalFsyncDelay(in.readInt())
                 .setWalRecordIteratorBufferSize(in.readInt())
-                .setAlwaysWriteFullPages(in.readBoolean());
+                .setAlwaysWriteFullPages(in.readBoolean())
+                .setMetricsEnabled(in.readBoolean())
+                .setSubIntervals(in.readInt())
+                .setRateTimeInterval(in.readLong());
     }
 
     /**
@@ -1535,6 +1534,9 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getWalFsyncDelay());
             w.writeInt(cfg.getWalRecordIteratorBufferSize());
             w.writeBoolean(cfg.isAlwaysWriteFullPages());
+            w.writeBoolean(cfg.isMetricsEnabled());
+            w.writeInt(cfg.getSubIntervals());
+            w.writeLong(cfg.getRateTimeInterval());
 
         } else {
             w.writeBoolean(false);

@@ -41,13 +41,13 @@ public class ExchangeActions {
     private List<CacheGroupActionData> cacheGrpsToStop;
 
     /** */
-    private Map<String, ActionData> cachesToStart;
+    private Map<String, CacheActionData> cachesToStart;
 
     /** */
-    private Map<String, ActionData> cachesToStop;
+    private Map<String, CacheActionData> cachesToStop;
 
     /** */
-    private Map<String, ActionData> cachesToResetLostParts;
+    private Map<String, CacheActionData> cachesToResetLostParts;
 
     /** */
     private StateChangeRequest stateChangeReq;
@@ -60,7 +60,7 @@ public class ExchangeActions {
         Boolean destroy = null;
 
         // Check that caches associated with that group will be all stopped only or all destroyed.
-        for (ExchangeActions.ActionData action : cacheStopRequests()) {
+        for (CacheActionData action : cacheStopRequests()) {
             if (action.descriptor().groupId() == grpId) {
                 if (destroy == null)
                     destroy = action.request().destroy();
@@ -89,15 +89,15 @@ public class ExchangeActions {
     /**
      * @return New caches start requests.
      */
-    public Collection<ActionData> cacheStartRequests() {
-        return cachesToStart != null ? cachesToStart.values() : Collections.<ActionData>emptyList();
+    public Collection<CacheActionData> cacheStartRequests() {
+        return cachesToStart != null ? cachesToStart.values() : Collections.<CacheActionData>emptyList();
     }
 
     /**
      * @return Stop cache requests.
      */
-    Collection<ActionData> cacheStopRequests() {
-        return cachesToStop != null ? cachesToStop.values() : Collections.<ActionData>emptyList();
+    Collection<CacheActionData> cacheStopRequests() {
+        return cachesToStop != null ? cachesToStop.values() : Collections.<CacheActionData>emptyList();
     }
 
     /**
@@ -114,7 +114,7 @@ public class ExchangeActions {
      */
     public boolean systemCachesStarting() {
         if (cachesToStart != null) {
-            for (ActionData data : cachesToStart.values()) {
+            for (CacheActionData data : cachesToStart.values()) {
                 if (CU.isSystemCache(data.request().cacheName()))
                     return true;
             }
@@ -127,9 +127,9 @@ public class ExchangeActions {
      * @param map Actions map.
      * @param ctx Context.
      */
-    private void completeRequestFutures(Map<String, ActionData> map, GridCacheSharedContext ctx) {
+    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
         if (map != null) {
-            for (ActionData req : map.values())
+            for (CacheActionData req : map.values())
                 ctx.cache().completeCacheStartFuture(req.req, true, null);
         }
     }
@@ -159,7 +159,7 @@ public class ExchangeActions {
      */
     public boolean cacheStopped(int cacheId) {
         if (cachesToStop != null) {
-            for (ActionData cache : cachesToStop.values()) {
+            for (CacheActionData cache : cachesToStop.values()) {
                 if (cache.desc.cacheId() == cacheId)
                     return true;
             }
@@ -174,7 +174,7 @@ public class ExchangeActions {
      */
     public boolean cacheStarted(int cacheId) {
         if (cachesToStart != null) {
-            for (ActionData cache : cachesToStart.values()) {
+            for (CacheActionData cache : cachesToStart.values()) {
                 if (cache.desc.cacheId() == cacheId)
                     return true;
             }
@@ -217,7 +217,7 @@ public class ExchangeActions {
      * @param desc Cache descriptor.
      * @return Actions map.
      */
-    private Map<String, ActionData> add(Map<String, ActionData> map,
+    private Map<String, CacheActionData> add(Map<String, CacheActionData> map,
         DynamicCacheChangeRequest req,
         DynamicCacheDescriptor desc) {
         assert req != null;
@@ -226,7 +226,7 @@ public class ExchangeActions {
         if (map == null)
             map = new HashMap<>();
 
-        ActionData old = map.put(req.cacheName(), new ActionData(req, desc));
+        CacheActionData old = map.put(req.cacheName(), new CacheActionData(req, desc));
 
         assert old == null : old;
 
@@ -347,7 +347,7 @@ public class ExchangeActions {
     /**
      *
      */
-    public static class ActionData {
+    public static class CacheActionData {
         /** */
         private final DynamicCacheChangeRequest req;
 
@@ -358,7 +358,7 @@ public class ExchangeActions {
          * @param req Request.
          * @param desc Cache descriptor.
          */
-        ActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        CacheActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
             assert req != null;
             assert desc != null;
 

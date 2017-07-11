@@ -15,20 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 
-/**
- *
- */
-public class GridCachePartitionedLateAffDisabledMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+public interface FileIOFactory extends Serializable {
 
-        cfg.setLateAffinityAssignment(false);
+    /**
+     * Creates I/O interface for file with default I/O mode
+     *
+     * @param file File
+     * @return File I/O interface
+     * @throws IOException If I/O interface creation was failed
+     */
+    FileIO create(File file) throws IOException;
 
-        return cfg;
-    }
+    /**
+     * Creates I/O interface for file with specified mode
+     *
+     * @param file File
+     * @param mode I/O mode in
+     * @return File I/O interface
+     * @throws IOException If I/O interface creation was failed
+     */
+    FileIO create(File file, String mode) throws IOException;
+
 }

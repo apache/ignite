@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // Ignore obsolete, we still need to test them.
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -138,7 +139,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
                 Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
-                Assert.AreEqual(cfg.IsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
+                Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
                 var atm = cfg.AtomicConfiguration;
@@ -266,6 +267,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(pers.WalSegments, resPers.WalSegments);
                 Assert.AreEqual(pers.WalSegmentSize, resPers.WalSegmentSize);
                 Assert.AreEqual(pers.WalStorePath, resPers.WalStorePath);
+                Assert.AreEqual(pers.MetricsEnabled, resPers.MetricsEnabled);
+                Assert.AreEqual(pers.RateTimeInterval, resPers.RateTimeInterval);
+                Assert.AreEqual(pers.SubIntervals, resPers.SubIntervals);
             }
         }
 
@@ -539,6 +543,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalSegmentSize, cfg.WalSegmentSize);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalSegments, cfg.WalSegments);
             Assert.AreEqual(WalMode.Default, cfg.WalMode);
+            Assert.IsFalse(cfg.MetricsEnabled);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultSubIntervals, cfg.SubIntervals);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultRateTimeInterval, cfg.RateTimeInterval);
         }
 
         /// <summary>
@@ -683,7 +690,7 @@ namespace Apache.Ignite.Core.Tests
                         new MemoryPolicyConfiguration
                         {
                             Name = "myDefaultPlc",
-                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            PageEvictionMode = DataPageEvictionMode.Disabled,
                             InitialSize = 340 * 1024 * 1024,
                             MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
@@ -695,7 +702,7 @@ namespace Apache.Ignite.Core.Tests
                         new MemoryPolicyConfiguration
                         {
                             Name = "customPlc",
-                            PageEvictionMode = DataPageEvictionMode.RandomLru,
+                            PageEvictionMode = DataPageEvictionMode.Disabled,
                             MaxSize = 456 * 1024 * 1024,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
@@ -741,7 +748,10 @@ namespace Apache.Ignite.Core.Tests
                     WalRecordIteratorBufferSize = 32 * 1024 * 1024,
                     WalSegments = 6,
                     WalSegmentSize = 5 * 1024 * 1024,
-                    WalStorePath = Path.GetTempPath()
+                    WalStorePath = Path.GetTempPath(),
+                    MetricsEnabled = true,
+                    SubIntervals = 7,
+                    RateTimeInterval = TimeSpan.FromSeconds(9)
                 }
             };
         }

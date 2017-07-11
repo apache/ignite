@@ -22,12 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-
+import javax.cache.Cache;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.*;
+import org.apache.ignite.ml.math.DistanceMeasure;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.functions.Functions;
@@ -39,9 +40,7 @@ import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixSto
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
-import javax.cache.Cache;
-
-import static org.apache.ignite.ml.math.impls.CacheUtils.*;
+import static org.apache.ignite.ml.math.impls.CacheUtils.distributedFold;
 import static org.apache.ignite.ml.math.util.MatrixUtil.localCopyOf;
 
 /**
@@ -78,8 +77,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
     /** */
     @Override public KMeansModel cluster(SparseDistributedMatrix points, int k) throws
-            MathIllegalArgumentException, ConvergenceException {
-        SparseDistributedMatrix pointsCp = (SparseDistributedMatrix) points.like(points.rowSize(), points.columnSize());
+        MathIllegalArgumentException, ConvergenceException {
+        SparseDistributedMatrix pointsCp = (SparseDistributedMatrix)points.like(points.rowSize(), points.columnSize());
 
         // TODO: this copy is very ineffective, just for POC. Immutability of data should be guaranteed by other methods
         // such as logical locks for example.
@@ -174,7 +173,8 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private List<Vector> getNewCenters(int k, ConcurrentHashMap<Integer, Double> costs, IgniteUuid uid, double sumCosts) {
+    private List<Vector> getNewCenters(int k, ConcurrentHashMap<Integer, Double> costs, IgniteUuid uid,
+        double sumCosts) {
         return distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
             (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
                 List<Vector>,
@@ -253,25 +253,25 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     /** */
     private SumsAndCounts getSumsAndCounts(Vector[] centers, int dim, IgniteUuid uid) {
         return CacheUtils.distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
-                (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
-                    Map<Integer, Double> vec = entry.getValue();
+            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
+                Map<Integer, Double> vec = entry.getValue();
 
-                    IgniteBiTuple<Integer, Double> closest = findClosest(centers, VectorUtils.fromMap(vec, false));
-                    int bestCenterIdx = closest.get1();
+                IgniteBiTuple<Integer, Double> closest = findClosest(centers, VectorUtils.fromMap(vec, false));
+                int bestCenterIdx = closest.get1();
 
-                    counts.totalCost += closest.get2();
-                    counts.sums.putIfAbsent(bestCenterIdx, VectorUtils.zeroes(dim));
+                counts.totalCost += closest.get2();
+                counts.sums.putIfAbsent(bestCenterIdx, VectorUtils.zeroes(dim));
 
-                    counts.sums.compute(bestCenterIdx,
-                            (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(VectorUtils.fromMap(vec, false)));
+                counts.sums.compute(bestCenterIdx,
+                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(VectorUtils.fromMap(vec, false)));
 
-                    counts.counts.merge(bestCenterIdx, 1,
-                            (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
+                counts.counts.merge(bestCenterIdx, 1,
+                    (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
 
-                    return counts;
-                },
-                key -> key.get2().equals(uid),
-                SumsAndCounts::merge, new SumsAndCounts()
+                return counts;
+            },
+            key -> key.get2().equals(uid),
+            SumsAndCounts::merge, new SumsAndCounts()
         );
     }
 

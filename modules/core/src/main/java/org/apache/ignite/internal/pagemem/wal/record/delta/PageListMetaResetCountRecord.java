@@ -26,11 +26,11 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.io.Pages
  */
 public class PageListMetaResetCountRecord extends PageDeltaRecord  {
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      */
-    public PageListMetaResetCountRecord(int cacheId, long pageId) {
-        super(cacheId, pageId);
+    public PageListMetaResetCountRecord(int grpId, long pageId) {
+        super(grpId, pageId);
     }
 
     /** {@inheritDoc} */

@@ -22,9 +22,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.*;
+import org.apache.ignite.ml.math.DistanceMeasure;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
@@ -97,7 +99,7 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
 
             for (int p = 0; p < points.rowSize(); p++)
                 costs.setX(p, Math.min(getDistanceMeasure().compute(localCopyOf(points.viewRow(p)), centers[i]),
-                        costs.get(p)));
+                    costs.get(p)));
         }
 
         int[] oldClosest = new int[points.rowSize()];
@@ -135,7 +137,8 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
                 if (counts[j] == 0.0) {
                     // Assign center to a random point
                     centers[j] = points.viewRow(rand.nextInt(points.rowSize()));
-                } else {
+                }
+                else {
                     sums[j] = sums[j].times(1.0 / counts[j]);
                     centers[j] = sums[j];
                 }

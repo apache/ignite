@@ -21,10 +21,7 @@ import java.io.DataInput;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,7 +30,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -83,14 +83,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
      * @param log Logger.
      * @param sharedCtx Shared context.
+     * @param ioFactory File I/O factory.
      */
     StandaloneWalRecordsIterator(
-        @NotNull final File walFilesDir,
-        @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
+        @NotNull File walFilesDir,
+        @NotNull IgniteLogger log,
+        @NotNull GridCacheSharedContext sharedCtx,
+        @NotNull FileIOFactory ioFactory) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
+            ioFactory,
             BUF_SIZE);
         init(walFilesDir, false, null);
         advance();
@@ -101,17 +104,20 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      *
      * @param log Logger.
      * @param sharedCtx Shared context.
+     * @param ioFactory File I/O factory.
      * @param workDir Work directory is scanned, false - archive
      * @param walFiles Wal files.
      */
     StandaloneWalRecordsIterator(
-        @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext sharedCtx,
-        final boolean workDir,
-        @NotNull final File... walFiles) throws IgniteCheckedException {
+            @NotNull IgniteLogger log,
+            @NotNull GridCacheSharedContext sharedCtx,
+            @NotNull FileIOFactory ioFactory,
+            boolean workDir,
+            @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordV1Serializer(sharedCtx),
+            ioFactory,
             BUF_SIZE);
         this.workDir = workDir;
         init(null, workDir, walFiles);
@@ -138,10 +144,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
         else {
             this.workDir = workDir;
+
             if (workDir)
                 walFileDescriptors = scanIndexesFromFileHeaders(walFiles);
             else
                 walFileDescriptors = new ArrayList<>(Arrays.asList(FileWriteAheadLogManager.scan(walFiles)));
+
             curWalSegmIdx = !walFileDescriptors.isEmpty() ? walFileDescriptors.get(0).getIdx() : 0;
         }
         curWalSegmIdx--;
@@ -172,13 +180,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             FileWALPointer ptr;
 
-            try (RandomAccessFile rf = new RandomAccessFile(file, "r");) {
-                final FileChannel ch = rf.getChannel();
-                final ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
+            try (FileIO fileIO = ioFactory.create(file, "r")) {
+                final DataInput in = new FileInput(fileIO,
+                    new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder()));
 
-                buf.order(ByteOrder.nativeOrder());
-
-                final DataInput in = new FileInput(ch, buf);
                 // Header record must be agnostic to the serializer version.
                 final int type = in.readUnsignedByte();
 

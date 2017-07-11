@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
@@ -132,6 +134,9 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /** Always write full pages. */
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
+
+    /** Factory to provide I/O interface for files */
+    private FileIOFactory fileIOFactory = new RandomAccessFileIOFactory();
 
     /**
      * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
@@ -534,6 +539,25 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public PersistentStoreConfiguration setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
         this.alwaysWriteFullPages = alwaysWriteFullPages;
+
+        return this;
+    }
+
+    /**
+     * Factory to provide implementation of FileIO interface
+     * which is used for any file read/write operations
+     *
+     * @return File I/O factory
+     */
+    public FileIOFactory getFileIOFactory() {
+        return fileIOFactory;
+    }
+
+    /**
+     * @param fileIOFactory File I/O factory
+     */
+    public PersistentStoreConfiguration setFileIOFactory(FileIOFactory fileIOFactory) {
+        this.fileIOFactory = fileIOFactory;
 
         return this;
     }

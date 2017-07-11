@@ -13,20 +13,32 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
+import java.util.Set;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.clustering package.
+ * Initial snapshot operation interface.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-        KMeansDistributedClustererTest.class,
-        KMeansLocalClustererTest.class
-})
-public class ClusteringTesetSuite {
+public interface SnapshotOperation extends Serializable {
+    /**
+     * Cache group ids included to this snapshot.
+     *
+     * @return Cache names.
+     */
+    Set<Integer> cacheGroupIds();
+
+    /**
+     * Cache names included to this snapshot.
+     */
+    Set<String> cacheNames();
+
+    /**
+     * Any custom extra parameter.
+     */
+    Object extraParameter();
 }

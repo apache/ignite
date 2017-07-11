@@ -15,21 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+.tooltip {
+    font-family: Roboto;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-
-/**
- *
- */
-public class GridCacheAtomicLateAffDisabledMultiNodeFullApiSelfTest extends
-    GridCacheAtomicMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setLateAffinityAssignment(false);
-
-        return cfg;
+    & > .tooltip-inner {
+        padding: 12px;
+        background-color: #FFF;
     }
 }
