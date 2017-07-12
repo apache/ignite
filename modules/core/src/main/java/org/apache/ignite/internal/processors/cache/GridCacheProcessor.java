@@ -838,8 +838,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.query().onCacheKernalStart();
 
-            sharedCtx.mvcc().registerEventListener();
-
             sharedCtx.exchange().onKernalStart(active, false);
         }
         finally {

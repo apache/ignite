@@ -64,6 +64,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1091,15 +1092,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** */
     private final ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> inRecDescs = GridConcurrentFactory.newMap();
 
-    /** Discovery listener. */
-    private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(Event evt) {
-            assert evt instanceof DiscoveryEvent : evt;
-            assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ;
-
-            onNodeLeft(((DiscoveryEvent)evt).eventNode().id());
-        }
-    };
+    /** */
+    private final GridLocalEventListener discoLsnr = new DiscoveryListener();
 
     /**
      * @return {@code True} if ssl enabled.
@@ -3746,6 +3740,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private static void writeMessageType(ByteBuffer buf, short type) {
         buf.put((byte)(type & 0xFF));
         buf.put((byte)((type >> 8) & 0xFF));
+    }
+
+    /**
+     *
+     */
+    private class DiscoveryListener implements GridLocalEventListener, HighPriorityListener {
+        /** {@inheritDoc} */
+        @Override public void onEvent(Event evt) {
+            assert evt instanceof DiscoveryEvent : evt;
+            assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ;
+
+            onNodeLeft(((DiscoveryEvent)evt).eventNode().id());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int order() {
+            return 0;
+        }
     }
 
     /**
