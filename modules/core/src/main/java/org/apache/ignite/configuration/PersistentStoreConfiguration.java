@@ -44,9 +44,6 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default length of interval over which rate-based metric is calculated. */
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
-    /** Default checkpointing page buffer size (may be adjusted by Ignite). */
-    public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = 256L * 1024 * 1024 * 1024;
-
     /** Default number of checkpointing threads. */
     public static final int DFLT_CHECKPOINTING_THREADS = 1;
 
