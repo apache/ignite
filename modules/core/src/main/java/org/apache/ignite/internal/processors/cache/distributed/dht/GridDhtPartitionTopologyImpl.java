@@ -451,7 +451,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     if (exchId.isLeft() && exchFut.serverNodeDiscoveryEvent())
                         removeNode(exchId.nodeId());
-    
+
                     ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
                     if (log.isDebugEnabled()) {
@@ -1090,12 +1090,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, T2<Long, Long>> incomeCntrMap,
-        Set<Integer> partsToReload
-    ) {
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion topVerFromMsg) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + "]");
 
         //todo remove
+        if(GridDhtTopologyFuture.DUMP)
         System.err.println("Updating full partition map for cache [" + grp.cacheOrGroupName() + "], " +
             "ids=" + grp.cacheIds() + " [exchVer=" + exchangeVer + ", parts=" + fullMapString() + "]");
 
@@ -1134,6 +1135,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for full partition map update (will ignore) [lastExch=" +
                         lastExchangeVer + ", exch=" + exchangeVer + ']');
+
+                return false;
+            }
+
+            if (topVerFromMsg != null && lastExchangeVer != null && lastExchangeVer.compareTo(topVerFromMsg) > 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Stale top.version for full partition map update message (will ignore) [lastExch=" +
+                        lastExchangeVer + ", topVersion=" + topVerFromMsg + ']');
 
                 return false;
             }

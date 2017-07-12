@@ -28,6 +28,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -82,18 +86,27 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         @Override public void sendMessage(final ClusterNode node, final Message msg,
             final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
-            System.err.println("MMM: T=[" + Thread.currentThread().getName() + "] " + msg0); //todo remove
+
+            if(GridDhtTopologyFuture.DUMP) System.err.println("MMM: T=[" + Thread.currentThread().getName() + "] " + msg0); //todo remove
 
             if (msg0 instanceof GridDhtPartitionsFullMessage && record &&
                 ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null) {
 
-                System.err.println("Record message to [" + node.id() + "], msg: " + msg + " "); //todo remove
-                new Throwable("Debug").printStackTrace(); //todo remove
+                if(GridDhtTopologyFuture.DUMP) System.err.println("Record message to [" + node.id() + "], msg: " + msg + " "); //todo remove
+
+                if(GridDhtTopologyFuture.DUMP) new Throwable("Debug").printStackTrace(); //todo remove
                 assert !replay.get() : "Record of message is not allowed after replay";
+
+                //todo remove
+                GridDhtPartitionFullMap map = ((GridDhtPartitionsFullMessage)msg0).partitions().get(1544803905);
+                GridDhtPartitionMap map1 = map.get(ignite.cluster().localNode().id());
+                AffinityTopologyVersion version = map1.topologyVersion();
+                System.err.println(version);
 
                 Runnable prevValue = rs.putIfAbsent(node.id(), new Runnable() {
                     @Override public void run() {
-                        System.err.println("Replay: " + msg); //todo remove
+
+                        if(GridDhtTopologyFuture.DUMP) System.err.println("Replay: " + msg); //todo remove
                         DelayableCommunicationSpi.super.sendMessage(node, msg, ackC);
                     }
                 });
@@ -160,6 +173,7 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         boolean replayImmediate = false;
         if (replayImmediate)
             replayMessages();
+        //record = false;
 
         System.err.println("Entries: " + rs.entrySet()); //todo remove
 
@@ -191,30 +205,20 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         assert grid(2).context().cache().context().exchange().readyAffinityVersion().topologyVersion() > topVer2;
     }
 
+    /**
+     * Replays all saved messages from map, actual sent is performed
+     *
+     * @throws IgniteInterruptedCheckedException
+     */
     private void replayMessages() throws IgniteInterruptedCheckedException {
         record = false;
 
-        // rs.clear(); //todo remove
         for (Runnable r : rs.values())
             r.run(); // Causes real messages sending
 
         assert replay.compareAndSet(false, true);
 
         U.sleep(10000); // Enough time to process delayed GridDhtPartitionsFullMessages.
-    }
-
-    //todo remove
-    public void testAwait() throws Exception {
-        startGrids(2);
-        IgniteEx ignite = (IgniteEx) ignite(0);
-        ignite.getOrCreateCache("ffff");
-
-        awaitPartitionMapExchange();
-
-
-        ignite.context().cache().context().exchange().scheduleResendPartitions();
-        stopGrid(1);
-        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */

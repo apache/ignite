@@ -150,7 +150,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap8<>();
 
     /** */
-    private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
+    @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
     private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
@@ -941,7 +941,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());
 
-            sendAllPartitions(rmts);
+            sendAllPartitions(rmts, rmtTopVer);
         }
         else {
             if (log.isDebugEnabled())
@@ -954,9 +954,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param nodes Nodes.
+     * @param topVer Topology version. Will be added to full message.
      */
-    private void sendAllPartitions(Collection<ClusterNode> nodes) {
+    private void sendAllPartitions(Collection<ClusterNode> nodes,
+        @Nullable final AffinityTopologyVersion topVer) {
         GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, null, null, null, null);
+
+        if (topVer != null)
+            m.topologyVersion(topVer);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -1376,8 +1381,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else if (!grp.isLocal())
                         top = grp.topology();
 
-                    if (top != null)
-                        updated |= top.update(null, entry.getValue(), null, msg.partsToReload(cctx.localNodeId(), grpId));
+                    if (top != null) {
+                        final AffinityTopologyVersion topVerFromNonExchangeMsg = msg.topologyVersion();
+                        updated |= top.update(null,
+                            entry.getValue(),
+                            null,
+                            msg.partsToReload(cctx.localNodeId(), grpId),
+                            topVerFromNonExchangeMsg);
+                    }
                 }
 
                 if (!cctx.kernalContext().clientNode() && updated)
@@ -1412,6 +1423,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (!enterBusy())
             return;
 
+        if(GridDhtTopologyFuture.DUMP)
         System.err.println("processSinglePartitionUpdate() from [" + node.id().toString() + "] "); //todo remove
 
         try {

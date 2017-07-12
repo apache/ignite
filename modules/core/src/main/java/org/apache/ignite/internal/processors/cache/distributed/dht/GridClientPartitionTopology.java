@@ -578,8 +578,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         @Nullable AffinityTopologyVersion exchVer,
         GridDhtPartitionFullMap partMap,
         Map<Integer, T2<Long, Long>> cntrMap,
-        Set<Integer> partsToReload
-    ) {
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion topVerFromMsg) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchVer + ", parts=" + fullMapString() + ']');
 
@@ -590,6 +590,14 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for full partition map update (will ignore) [lastExchId=" +
                         lastExchangeVer + ", exchVer=" + exchVer + ']');
+
+                return false;
+            }
+
+            if (topVerFromMsg != null && lastExchangeVer != null && lastExchangeVer.compareTo(topVerFromMsg) > 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Stale exchange id for full partition map update message (will ignore) [lastExchId=" +
+                        lastExchangeVer + ", topVersion=" + topVerFromMsg + ']');
 
                 return false;
             }
@@ -1011,7 +1019,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 Map<Integer, T2<Long, Long>> res = U.newHashMap(cntrMap.size());
 
                 for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
-                    //todo equals of unconvertible type: e.getValue().get2().equals(ZERO)
                     if (!e.getValue().get2().equals(ZERO))
                         res.put(e.getKey(), e.getValue());
                 }

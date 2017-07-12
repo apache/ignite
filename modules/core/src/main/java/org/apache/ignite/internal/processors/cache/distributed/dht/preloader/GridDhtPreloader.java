@@ -188,9 +188,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         int partCnt = grp.affinity().partitions();
 
-        if(!(exchFut.forcePreload() || exchFut.dummyReassign() || exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()))) {
-            System.err.println("Failure "); //todo remove
-        }
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
             exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +

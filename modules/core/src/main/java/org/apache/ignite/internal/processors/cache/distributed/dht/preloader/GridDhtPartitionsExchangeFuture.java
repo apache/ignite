@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPar
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -552,6 +553,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
+            if(GridDhtTopologyFuture.DUMP)
             if(crd.isLocal())
                 System.err.println("init() from crd: [" + cctx.kernalContext().igniteInstanceName() + "; id: " + cctx.localNode().id() + "]" +
                     " remaining: nodes " + remaining); //todo remove
@@ -730,7 +732,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(topologyVersion(),
                         clientTop.partitionMap(true),
                         clientTop.updateCounters(false),
-                        Collections.<Integer>emptySet());
+                        Collections.<Integer>emptySet(),
+                        null);
                 }
             }
 
@@ -926,7 +929,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 grp.topology().update(topologyVersion(),
                                     fullMap,
                                     top.updateCounters(false),
-                                    Collections.<Integer>emptySet());
+                                    Collections.<Integer>emptySet(),
+                                    null);
 
                                 break;
                             }
@@ -1244,6 +1248,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
 
+        if(GridDhtTopologyFuture.DUMP)
         System.err.println("sendLocalPartitions(): to nodeid [" + node.id() + "];" +
             "from [" + cctx.localNode().id() + "]; " +
             " instance=" + cctx.kernalContext().igniteInstanceName() + " sent single map");
@@ -1292,6 +1297,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ", exchId=" + exchId + ", msg=" + m + ']');
         }
 
+        if(GridDhtTopologyFuture.DUMP)
         System.err.println("sendAllPartitions(): to nodeid [" + F.viewReadOnly(nodes, F.node2id()) + "];" +
             " from " + cctx.kernalContext().igniteInstanceName() + " sent full map"); //todo remove
 
@@ -1548,7 +1554,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (crd.isLocal()) {
                 if (remaining.remove(node.id())) {
-                    System.err.println("Removed node [" + node.id() + "] Remaining nodes: [" + remaining + "]"); //todo remove
+
+                    if(GridDhtTopologyFuture.DUMP) System.err.println("Removed node [" + node.id() + "] Remaining nodes: [" + remaining + "]"); //todo remove
                     updateSingleMap = true;
 
                     pendingSingleUpdates++;
@@ -1617,6 +1624,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
 
+            if(GridDhtTopologyFuture.DUMP)
             System.err.println("Sending [" + msg + "] to discovery"); //todo remove
 
             cctx.discovery().sendCustomEvent(msg);
@@ -1916,6 +1924,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.discovery().sendCustomEvent(msg);
                 }
 
+                if(GridDhtTopologyFuture.DUMP)
                 System.err.println("Exchange future done for top.v [" + exchangeId().topologyVersion() + "]; nodes=" + nodes); //todo remove
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
@@ -2084,7 +2093,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 grp.topology().update(topologyVersion(),
                     entry.getValue(),
                     cntrMap,
-                    msg.partsToReload(cctx.localNodeId(), grpId));
+                    msg.partsToReload(cctx.localNodeId(), grpId),
+                    null);
             }
             else {
                 ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
@@ -2093,7 +2103,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.exchange().clientTopology(grpId, this).update(topologyVersion(),
                         entry.getValue(),
                         cntrMap,
-                        Collections.<Integer>emptySet());
+                        Collections.<Integer>emptySet(),
+                        null);
                 }
             }
         }
@@ -2149,6 +2160,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             updatePartitionFullMap(partsMsg);
                         }
 
+                        if(GridDhtTopologyFuture.DUMP)
                         System.err.println("Exchange on done for [" + cctx.kernalContext().localNodeId().toString()
                             + "]: top.v [" + topologyVersion() + "]"); //todo remove
                         onDone(topologyVersion());
