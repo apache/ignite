@@ -222,6 +222,8 @@ public class MemoryConfiguration implements Serializable {
 
         if (maxSize < DFLT_MEMORY_POLICY_INITIAL_SIZE)
             memPlc.setInitialSize(maxSize);
+        else
+            memPlc.setInitialSize(DFLT_MEMORY_POLICY_INITIAL_SIZE);
 
         memPlc.setMaxSize(maxSize);
 

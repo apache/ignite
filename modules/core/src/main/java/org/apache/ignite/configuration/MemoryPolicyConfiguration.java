@@ -172,7 +172,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      *
      * @return Memory policy start size.
      */
-    public Long getInitialSize() {
+    public long getInitialSize() {
         return initialSize;
     }
 
