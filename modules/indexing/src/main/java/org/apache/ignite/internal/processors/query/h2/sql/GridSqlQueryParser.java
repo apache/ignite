@@ -396,6 +396,9 @@ public class GridSqlQueryParser {
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
     /** */
+    private static final Getter<TableView, Query> TABLE_VIEW_QUERY = getter(TableView.class, "viewQuery");
+
+    /** */
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
 
     /** */
@@ -1174,20 +1177,22 @@ public class GridSqlQueryParser {
 
     /**
      * Check if query may be run locally on all caches mentioned in the query.
-     * @param p Query.
+     * @param qry Query.
      * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
      *     to run distributed query.
      * @see SqlFieldsQuery#isReplicatedOnly()
      */
-    public static boolean isLocalQuery(Prepared p, boolean replicatedOnlyQry) {
-        Query qry = query(p);
-
+    public static boolean isLocalQuery(Query qry, boolean replicatedOnlyQry) {
         for (Table tbl : qry.getTables()) {
             if (tbl instanceof GridH2Table) {
                 GridCacheContext cctx = ((GridH2Table) tbl).cache();
 
                 if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                    return false;
+            }
+            else if (tbl instanceof TableView) {
+                if (!isLocalQuery(TABLE_VIEW_QUERY.get((TableView) tbl), replicatedOnlyQry))
                     return false;
             }
         }

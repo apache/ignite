@@ -1282,7 +1282,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
                 }
 
-                loc = qry.isLocal() ||  GridSqlQueryParser.isLocalQuery(prepared, qry.isReplicatedOnly());
+                loc = qry.isLocal() ||  GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared),
+                    qry.isReplicatedOnly());
 
                 if (loc) {
                     if (cctx == null)
