@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -1206,11 +1207,15 @@ public class GridSqlQueryParser {
      * @return Context for the first of the caches mentioned in the query, or {@code null} if it does not involve caches.
      */
     public static GridCacheContext getFirstCache(Prepared p) {
+        A.notNull(p, "p");
+
         Query qry = query(p);
 
         for (Table tbl : qry.getTables()) {
             if (tbl instanceof GridH2Table)
                 return ((GridH2Table) tbl).cache();
+            else if (tbl instanceof TableView)
+                return getFirstCache(TABLE_VIEW_QUERY.get((TableView)tbl));
         }
 
         return null;

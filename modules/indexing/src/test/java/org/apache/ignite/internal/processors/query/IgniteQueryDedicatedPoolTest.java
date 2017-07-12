@@ -103,7 +103,10 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
-            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select currentPolicy()"));
+            // We do this in order to have 1 row in results of select - function is called once per each row of result.
+            cache.put(1, 1);
+
+            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select currentPolicy() from Integer"));
 
             List<List<?>> result = cursor.getAll();
 

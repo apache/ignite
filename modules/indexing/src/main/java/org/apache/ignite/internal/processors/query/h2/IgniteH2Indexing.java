@@ -1260,7 +1260,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         PreparedStatement stmt = null;
         Prepared prepared;
 
-        boolean loc = false;
+        boolean loc = qry.isLocal();
 
         try {
             stmt = prepareStatementNoCache(c, sqlQry);
@@ -1282,8 +1282,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
                 }
 
-                loc = qry.isLocal() ||  GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared),
-                    qry.isReplicatedOnly());
+                loc |= GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared), qry.isReplicatedOnly());
 
                 if (loc) {
                     if (cctx == null)
@@ -1339,11 +1338,59 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridH2QueryContext.clearThreadLocal();
         }
 
+        IndexingQueryFilter filter = (loc ? backupFilter(topVer, qry.getPartitions()) : null);
+
+        if (!prepared.isQuery()) {
+            assert !prepared.isQuery();
+
+            if (cctx != null)
+                loc |= cctx.isLocal();
+
+            if (DmlStatementsProcessor.isDmlStatement(prepared)) {
+                try {
+                    if (!loc)
+                        return dmlProc.updateSqlFieldsDistributed(schemaName, stmt, qry, cancel);
+                    else {
+                        final GridQueryFieldsResult res = dmlProc.updateSqlFieldsLocal(schemaName, stmt, qry, filter,
+                            cancel);
+
+                        return new QueryCursorImpl<>(new Iterable<List<?>>() {
+                            @Override public Iterator<List<?>> iterator() {
+                                try {
+                                    return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), true);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    throw new IgniteException(e);
+                                }
+                            }
+                        }, cancel);
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
+                        ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                }
+            }
+
+            if (DdlStatementsProcessor.isDdlStatement(prepared)) {
+                if (loc)
+                    throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+                try {
+                    return ddlProc.runDdlStatement(sqlQry, stmt);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
+                }
+            }
+
+            throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName());
+        }
+
         // We've detected a local query, let's just run it.
         if (loc) {
             assert prepared.isQuery();
-
-            IndexingQueryFilter filter = backupFilter(topVer, qry.getPartitions());
 
             try {
                 return queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
@@ -1353,9 +1400,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
             }
         }
-
-        if (!prepared.isQuery())
-            return runNonQuery(schemaName, stmt, qry, cancel);
 
         assert twoStepQry != null;
 
@@ -1453,44 +1497,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         cursor.fieldsMeta(meta);
 
         return cursor;
-    }
-
-    /**
-     * Execute DML or DDL statement.
-     * @param schemaName Schema name.
-     * @param stmt H2 statement.
-     * @param qry Original query.
-     * @param cancel Query cancel handler.
-     * @return Cursor representing DML or DDL operation result.
-     */
-    private FieldsQueryCursor<List<?>> runNonQuery(String schemaName, PreparedStatement stmt, SqlFieldsQuery qry,
-        GridQueryCancel cancel) {
-        Prepared prepared = GridSqlQueryParser.prepared(stmt);
-
-        assert !prepared.isQuery();
-
-        String sqlQry = qry.getSql();
-
-        if (DmlStatementsProcessor.isDmlStatement(prepared)) {
-            try {
-                return dmlProc.updateSqlFieldsDistributed(schemaName, stmt, qry, cancel);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
-                        ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
-            }
-        }
-
-        if (DdlStatementsProcessor.isDdlStatement(prepared)) {
-            try {
-                return ddlProc.runDdlStatement(sqlQry, stmt);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
-            }
-        }
-
-        throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName());
     }
 
     /**
