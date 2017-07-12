@@ -92,6 +92,16 @@ namespace Apache.Ignite.Core.PersistentStore
         public static readonly TimeSpan DefaultRateTimeInterval = TimeSpan.FromSeconds(60);
 
         /// <summary>
+        /// Default value for <see cref="WalStorePath"/>.
+        /// </summary>
+        public const string DefaultWalStorePath = "db/wal";
+
+        /// <summary>
+        /// Default value for <see cref="WalArchivePath"/>.
+        /// </summary>
+        public const string DefaultWalArchivePath = "db/wal/archive";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
         /// </summary>
         public PersistentStoreConfiguration()
@@ -108,6 +118,8 @@ namespace Apache.Ignite.Core.PersistentStore
             WalFsyncDelayNanos = DefaultWalFsyncDelayNanos;
             RateTimeInterval = DefaultRateTimeInterval;
             SubIntervals = DefaultSubIntervals;
+            WalArchivePath = DefaultWalArchivePath;
+            WalStorePath = DefaultWalStorePath;
         }
 
         /// <summary>
@@ -222,12 +234,14 @@ namespace Apache.Ignite.Core.PersistentStore
         /// <summary>
         /// Gets or sets the path to the directory where WAL (Write Ahead Log) is stored.
         /// </summary>
+        [DefaultValue(DefaultWalStorePath)]
         public string WalStorePath { get; set; }
 
         /// <summary>
         /// Gets or sets the path to the directory where WAL (Write Ahead Log) archive is stored.
         /// Every WAL segment will be fully copied to this directory before it can be reused for WAL purposes.
         /// </summary>
+        [DefaultValue(DefaultWalArchivePath)]
         public string WalArchivePath { get; set; }
 
         /// <summary>
