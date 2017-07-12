@@ -18,6 +18,8 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Random;
 import org.apache.ignite.IgniteCache;
@@ -66,9 +68,16 @@ public class IgnitePutTxLoadBenchmark extends IgniteCacheAbstractBenchmark<Integ
         long endTime;
 
         try (Transaction tx = transactions.txStart(args.txConcurrency(), args.txIsolation())) {
+            ArrayList<Long> keyList = new ArrayList<>(args.scaleFactor());
+
+            for (int i = 0; i < args.scaleFactor(); i++)
+                keyList.add(random.nextLong());
+
+            Collections.sort(keyList);
+
             for (int i = 0; i < args.scaleFactor(); i++){
                 IgniteCache<Object, Object> curCache = cacheList.get(random.nextInt(cacheList.size()));
-                curCache.put(random.nextLong(), val);
+                curCache.put(keyList.get(i), val);
             }
 
             startTime = System.currentTimeMillis();
