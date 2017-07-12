@@ -316,6 +316,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultSubIntervals, plc.SubIntervals);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultRateTimeInterval, plc.RateTimeInterval);
+
+                // Check PersistentStoreConfiguration defaults.
+                CheckDefaultProperties(resCfg.PersistentStoreConfiguration);
             }
         }
 
