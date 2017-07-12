@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  * topology version.
  */
 public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopologyVersion> {
-    //todo remove
-    boolean DUMP = true;
-
     /**
      * Gets topology version of this future.
      *

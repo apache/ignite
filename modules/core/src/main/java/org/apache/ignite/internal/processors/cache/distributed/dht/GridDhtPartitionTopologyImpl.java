@@ -1093,12 +1093,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         Set<Integer> partsToReload,
         @Nullable AffinityTopologyVersion topVerFromMsg) {
         if (log.isDebugEnabled())
-            log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + "]");
-
-        //todo remove
-        if(GridDhtTopologyFuture.DUMP)
-        System.err.println("Updating full partition map for cache [" + grp.cacheOrGroupName() + "], " +
-            "ids=" + grp.cacheIds() + " [exchVer=" + exchangeVer + ", parts=" + fullMapString() + "]");
+            log.debug("Updating full partition map for cache [" + grp.cacheOrGroupName() + "], [exchVer=" + exchangeVer + ", parts=" + fullMapString() + "]");
 
         assert partMap != null;
 

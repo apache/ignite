@@ -1423,9 +1423,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (!enterBusy())
             return;
 
-        if(GridDhtTopologyFuture.DUMP)
-        System.err.println("processSinglePartitionUpdate() from [" + node.id().toString() + "] "); //todo remove
-
         try {
             if (msg.exchangeId() == null) {
                 if (log.isDebugEnabled())

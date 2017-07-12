@@ -553,12 +553,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
-            if(GridDhtTopologyFuture.DUMP)
-            if(crd.isLocal())
-                System.err.println("init() from crd: [" + cctx.kernalContext().igniteInstanceName() + "; id: " + cctx.localNode().id() + "]" +
-                    " remaining: nodes " + remaining); //todo remove
-
-
             boolean crdNode = crd != null && crd.isLocal();
 
             skipPreload = cctx.kernalContext().clientNode();
@@ -1248,12 +1242,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
 
-        if(GridDhtTopologyFuture.DUMP)
-        System.err.println("sendLocalPartitions(): to nodeid [" + node.id() + "];" +
-            "from [" + cctx.localNode().id() + "]; " +
-            " instance=" + cctx.kernalContext().igniteInstanceName() + " sent single map");
-        //todo remove
-
         try {
             cctx.io().send(node, m, SYSTEM_POOL);
         }
@@ -1296,10 +1284,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
                 ", exchId=" + exchId + ", msg=" + m + ']');
         }
-
-        if(GridDhtTopologyFuture.DUMP)
-        System.err.println("sendAllPartitions(): to nodeid [" + F.viewReadOnly(nodes, F.node2id()) + "];" +
-            " from " + cctx.kernalContext().igniteInstanceName() + " sent full map"); //todo remove
 
         for (ClusterNode node : nodes) {
             try {
@@ -1554,8 +1538,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (crd.isLocal()) {
                 if (remaining.remove(node.id())) {
-
-                    if(GridDhtTopologyFuture.DUMP) System.err.println("Removed node [" + node.id() + "] Remaining nodes: [" + remaining + "]"); //todo remove
                     updateSingleMap = true;
 
                     pendingSingleUpdates++;
@@ -1623,9 +1605,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
-
-            if(GridDhtTopologyFuture.DUMP)
-            System.err.println("Sending [" + msg + "] to discovery"); //todo remove
 
             cctx.discovery().sendCustomEvent(msg);
         }
@@ -1924,8 +1903,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.discovery().sendCustomEvent(msg);
                 }
 
-                if(GridDhtTopologyFuture.DUMP)
-                System.err.println("Exchange future done for top.v [" + exchangeId().topologyVersion() + "]; nodes=" + nodes); //todo remove
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
@@ -2160,9 +2137,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             updatePartitionFullMap(partsMsg);
                         }
 
-                        if(GridDhtTopologyFuture.DUMP)
-                        System.err.println("Exchange on done for [" + cctx.kernalContext().localNodeId().toString()
-                            + "]: top.v [" + topologyVersion() + "]"); //todo remove
                         onDone(topologyVersion());
                     }
                     else {

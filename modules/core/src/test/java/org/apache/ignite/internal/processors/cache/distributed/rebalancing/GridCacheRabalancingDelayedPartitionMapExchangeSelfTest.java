@@ -87,30 +87,24 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
             final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
 
-            if(GridDhtTopologyFuture.DUMP) System.err.println("MMM: T=[" + Thread.currentThread().getName() + "] " + msg0); //todo remove
+            if (log.isDebugEnabled())
+                log.debug("Message: T=[" + Thread.currentThread().getName() + "] " + msg0); //todo remove
 
             if (msg0 instanceof GridDhtPartitionsFullMessage && record &&
                 ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null) {
-
-                if(GridDhtTopologyFuture.DUMP) System.err.println("Record message to [" + node.id() + "], msg: " + msg + " "); //todo remove
-
-                if(GridDhtTopologyFuture.DUMP) new Throwable("Debug").printStackTrace(); //todo remove
+                if (log.isDebugEnabled())
+                    log.debug("Record message to [" + node.id() + "], msg: " + msg + " "); //todo remove
                 assert !replay.get() : "Record of message is not allowed after replay";
-
-                //todo remove
-                GridDhtPartitionFullMap map = ((GridDhtPartitionsFullMessage)msg0).partitions().get(1544803905);
-                GridDhtPartitionMap map1 = map.get(ignite.cluster().localNode().id());
-                AffinityTopologyVersion version = map1.topologyVersion();
-                System.err.println(version);
 
                 Runnable prevValue = rs.putIfAbsent(node.id(), new Runnable() {
                     @Override public void run() {
 
-                        if(GridDhtTopologyFuture.DUMP) System.err.println("Replay: " + msg); //todo remove
+                        if (log.isDebugEnabled())
+                            log.debug("Replay: " + msg);
                         DelayableCommunicationSpi.super.sendMessage(node, msg, ackC);
                     }
                 });
-                assert prevValue==null: "Duplicate message registered to [" + node.id() + "]";
+                assert prevValue == null : "Duplicate message registered to [" + node.id() + "]";
             }
             else
                 try {
@@ -141,19 +135,16 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         startGrid(2);
         startGrid(3);
 
-        boolean failFaster  = false;
-        if(!failFaster) { //todo remove
+        awaitPartitionMapExchange(true, true, null);
+
+        for (int i = 0; i < 2; i++) {
+            stopGrid(3);
+
             awaitPartitionMapExchange(true, true, null);
 
-            for (int i = 0; i < 2; i++) {
-                stopGrid(3);
+            startGrid(3);
 
-                awaitPartitionMapExchange(true, true, null);
-
-                startGrid(3);
-
-                awaitPartitionMapExchange(true, true, null);
-            }
+            awaitPartitionMapExchange(true, true, null);
         }
 
         startGrid(4);
@@ -170,12 +161,6 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         while (record && rs.size() < 3) { // N - 1 nodes.
             U.sleep(10);
         }
-        boolean replayImmediate = false;
-        if (replayImmediate)
-            replayMessages();
-        //record = false;
-
-        System.err.println("Entries: " + rs.entrySet()); //todo remove
 
         ignite(0).destroyCache(DEFAULT_CACHE_NAME);
 
@@ -183,10 +168,8 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
 
         awaitPartitionMapExchange();
 
-        if (!replayImmediate)
-            replayMessages();
+        replayMessages();
 
-        System.err.println("Stopping grid 3"); //todo remove
         stopGrid(3); // Forces exchange at all nodes and cause assertion failure in case obsolete partition map accepted.
 
         awaitPartitionMapExchange();
