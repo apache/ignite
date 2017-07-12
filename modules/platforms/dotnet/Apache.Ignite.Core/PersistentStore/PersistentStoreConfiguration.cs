@@ -30,11 +30,6 @@ namespace Apache.Ignite.Core.PersistentStore
     public class PersistentStoreConfiguration
     {
         /// <summary>
-        /// Default value for <see cref="CheckpointingPageBufferSize"/>.
-        /// </summary>
-        public const long DefaultCheckpointingPageBufferSize = 256L * 1024 * 1024;
-
-        /// <summary>
         /// Default value for <see cref="CheckpointingThreads"/>.
         /// </summary>
         public const int DefaultCheckpointingThreads = 1;
@@ -101,7 +96,6 @@ namespace Apache.Ignite.Core.PersistentStore
         /// </summary>
         public PersistentStoreConfiguration()
         {
-            CheckpointingPageBufferSize = DefaultCheckpointingPageBufferSize;
             CheckpointingThreads = DefaultCheckpointingThreads;
             CheckpointingFrequency = DefaultCheckpointingFrequency;
             LockWaitTime = DefaultLockWaitTime;
@@ -188,8 +182,9 @@ namespace Apache.Ignite.Core.PersistentStore
 
         /// <summary>
         /// Gets or sets the size of the checkpointing page buffer.
+        /// <para />
+        /// Default is <c>0</c>: Ignite will choose buffer size automatically.
         /// </summary>
-        [DefaultValue(DefaultCheckpointingPageBufferSize)]
         public long CheckpointingPageBufferSize { get; set; }
 
         /// <summary>
@@ -256,7 +251,7 @@ namespace Apache.Ignite.Core.PersistentStore
         /// Gets or sets the WAL (Write Ahead Log) fsync (disk sync) delay, in nanoseconds
         /// </summary>
         [DefaultValue(DefaultWalFsyncDelayNanos)]
-        public int WalFsyncDelayNanos { get; set; }
+        public long WalFsyncDelayNanos { get; set; }
 
         /// <summary>
         /// Gets or sets the size of the WAL (Write Ahead Log) record iterator buffer, in bytes.
