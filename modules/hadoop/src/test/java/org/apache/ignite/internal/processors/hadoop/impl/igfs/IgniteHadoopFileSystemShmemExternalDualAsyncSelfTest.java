@@ -30,4 +30,9 @@ public class IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest
     public IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest() {
         super(DUAL_ASYNC, true);
     }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5691");
+    }
 }

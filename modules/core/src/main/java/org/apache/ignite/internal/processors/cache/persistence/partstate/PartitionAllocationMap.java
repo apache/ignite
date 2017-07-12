@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PartitionAllocationMap {
     /** Maps following pairs: (cacheId, partId) -> (lastAllocatedCount, allocatedCount) */
-    private final NavigableMap<CachePartitionId, PagesAllocationRange> map = new TreeMap<>();
+    private final NavigableMap<GroupPartitionId, PagesAllocationRange> map = new TreeMap<>();
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -41,7 +41,7 @@ public class PartitionAllocationMap {
      * @param key to get
      * @return value or null
      */
-    @Nullable public PagesAllocationRange get(CachePartitionId key) {
+    @Nullable public PagesAllocationRange get(GroupPartitionId key) {
         return map.get(key);
     }
 
@@ -51,8 +51,8 @@ public class PartitionAllocationMap {
      * @param fullId page related to some cache
      * @return pair of cache ID and partition ID
      */
-    @NotNull public static CachePartitionId createCachePartId(@NotNull final FullPageId fullId) {
-        return new CachePartitionId(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
+    @NotNull public static GroupPartitionId createCachePartId(@NotNull final FullPageId fullId) {
+        return new GroupPartitionId(fullId.groupId(), PageIdUtils.partId(fullId.pageId()));
     }
 
     /** @return <tt>true</tt> if this map contains no key-value mappings */
@@ -66,7 +66,7 @@ public class PartitionAllocationMap {
     }
 
     /** @return keys (all caches partitions) */
-    public Set<CachePartitionId> keySet() {
+    public Set<GroupPartitionId> keySet() {
         return map.keySet();
     }
 
@@ -76,7 +76,7 @@ public class PartitionAllocationMap {
     }
 
     /** @return Returns the first (lowest) key currently in this map. */
-    public CachePartitionId firstKey() {
+    public GroupPartitionId firstKey() {
         return map.firstKey();
     }
 
@@ -86,17 +86,17 @@ public class PartitionAllocationMap {
      * @param key cache and partition to search
      * @return first found key which is greater than provided
      */
-    @Nullable public CachePartitionId nextKey(@NotNull final CachePartitionId key) {
+    @Nullable public GroupPartitionId nextKey(@NotNull final GroupPartitionId key) {
         return map.navigableKeySet().higher(key);
     }
 
     /** @return set view of the mappings contained in this map, sorted in ascending key order */
-    public Set<Map.Entry<CachePartitionId, PagesAllocationRange>> entrySet() {
+    public Set<Map.Entry<GroupPartitionId, PagesAllocationRange>> entrySet() {
         return map.entrySet();
     }
 
     /** @return <tt>true</tt> if this map contains a mapping for the specified key */
-    public boolean containsKey(CachePartitionId key) {
+    public boolean containsKey(GroupPartitionId key) {
         return map.containsKey(key);
     }
 
@@ -106,7 +106,7 @@ public class PartitionAllocationMap {
      * @return the previous value associated with <tt>key</tt>, or <tt>null</tt> if there was no mapping for
      * <tt>key</tt>.
      */
-    public PagesAllocationRange put(CachePartitionId key, PagesAllocationRange val) {
+    public PagesAllocationRange put(GroupPartitionId key, PagesAllocationRange val) {
         return map.put(key, val);
     }
 

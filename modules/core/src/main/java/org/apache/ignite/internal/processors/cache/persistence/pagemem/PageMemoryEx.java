@@ -77,13 +77,13 @@ public interface PageMemoryEx extends PageMemory {
      * @see #acquirePage(int, long)
      * Will not read page from file if it is not present in memory
      *
-     * @param cacheId Cache id.
+     * @param grpId Cache group ID.
      * @param pageId Page id.
      * @param restore Get page for restore
      * @throws IgniteCheckedException If failed.
      * @return Page.
      */
-    public long acquirePage(int cacheId, long pageId, boolean restore) throws IgniteCheckedException;
+    public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;
 
     /**
      * Heuristic method which allows a thread to check if it safe to start memory struture modifications

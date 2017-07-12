@@ -29,12 +29,12 @@ public class PagesListSetPreviousRecord extends PageDeltaRecord {
     private final long prevPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param prevPageId Previous page ID.
      */
-    public PagesListSetPreviousRecord(int cacheId, long pageId, long prevPageId) {
-        super(cacheId, pageId);
+    public PagesListSetPreviousRecord(int grpId, long pageId, long prevPageId) {
+        super(grpId, pageId);
 
         this.prevPageId = prevPageId;
     }

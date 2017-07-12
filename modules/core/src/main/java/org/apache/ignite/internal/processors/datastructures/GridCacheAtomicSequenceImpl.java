@@ -451,7 +451,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */

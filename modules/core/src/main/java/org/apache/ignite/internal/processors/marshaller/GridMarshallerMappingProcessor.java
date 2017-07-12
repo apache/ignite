@@ -113,7 +113,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         marshallerCtx.onMarshallerProcessorStarted(ctx, transport);
 
-        discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
+        discoMgr.setCustomEventListener(MappingProposedMessage.class, new MappingProposedListener());
 
         discoMgr.setCustomEventListener(MappingAcceptedMessage.class, new MappingAcceptedListener());
 
@@ -168,7 +168,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingRequestMessage : msg;
 
             MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage) msg;
@@ -200,7 +200,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      */
     private final class MissingMappingResponseListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingResponseMessage : msg;
 
             MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage) msg;
@@ -233,7 +233,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private final class MarshallerMappingExchangeListener implements CustomEventListener<MappingProposedMessage> {
+    private final class MappingProposedListener implements CustomEventListener<MappingProposedMessage> {
         /** {@inheritDoc} */
         @Override public void onCustomEvent(
                 AffinityTopologyVersion topVer,
@@ -246,13 +246,15 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
                 if (!msg.inConflict()) {
                     MarshallerMappingItem item = msg.mappingItem();
-                    String conflictingName = marshallerCtx.onMappingProposed(item);
+                    MappedName existingName = marshallerCtx.onMappingProposed(item);
 
-                    if (conflictingName != null) {
-                        if (conflictingName.equals(item.className()))
+                    if (existingName != null) {
+                        String existingClsName = existingName.className();
+
+                        if (existingClsName.equals(item.className()) && !existingName.accepted())
                             msg.markDuplicated();
-                        else
-                            msg.conflictingWithClass(conflictingName);
+                        else if (!existingClsName.equals(item.className()))
+                            msg.conflictingWithClass(existingClsName);
                     }
                 }
                 else {

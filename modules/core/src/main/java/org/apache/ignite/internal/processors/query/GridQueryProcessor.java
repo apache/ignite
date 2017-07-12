@@ -43,6 +43,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -209,7 +209,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         valCtx = new CacheQueryObjectValueContext(ctx);
 
         ioLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof SchemaOperationStatusMessage) {
                     SchemaOperationStatusMessage msg0 = (SchemaOperationStatusMessage)msg;
 
@@ -512,10 +512,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     cacheData.queryEntities(cacheDesc.schema().entities());
 
-                    CacheGroupDescriptor grpDesc = ctx.cache().cacheDescriptors().get(cacheData.config().getName()).groupDescriptor();
-
                     try {
-                        ctx.cache().context().pageStore().storeCacheData(grpDesc, cacheData);
+                        ctx.cache().context().pageStore().storeCacheData(cacheData);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IllegalStateException("Failed to persist cache data: " + cacheData.config().getName(), e);
@@ -1322,6 +1320,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 ccfg = new CacheConfiguration<>().setCacheMode(CacheMode.REPLICATED);
             else
                 throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
+
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         }
 
         if (!F.isEmpty(ccfg.getQueryEntities()))

@@ -26,11 +26,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
  */
 public class MetaPageCutRootRecord extends PageDeltaRecord {
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      */
-    public MetaPageCutRootRecord(int cacheId, long pageId) {
-        super(cacheId, pageId);
+    public MetaPageCutRootRecord(int grpId, long pageId) {
+        super(grpId, pageId);
     }
 
     /** {@inheritDoc} */

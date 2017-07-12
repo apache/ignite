@@ -18,13 +18,23 @@
 package org.apache.ignite.ml.clustering;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.*;
+import org.apache.ignite.ml.math.DistanceMeasure;
+import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -36,8 +46,10 @@ import static org.apache.ignite.ml.clustering.KMeansUtil.checkIsInEpsilonNeighbo
 
 /** */
 public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
-    /** Number of nodes in grid. We should use 1 in this test because otherwise algorithm will be unstable
-     * (We cannot guarantee the order in which results are returned from each node). */
+    /**
+     * Number of nodes in grid. We should use 1 in this test because otherwise algorithm will be unstable
+     * (We cannot guarantee the order in which results are returned from each node).
+     */
     private static final int NODE_COUNT = 1;
 
     /** Grid instance. */
@@ -79,7 +91,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         double[] v2 = new double[] {1960, 373200};
 
         SparseDistributedMatrix points = new SparseDistributedMatrix(2, 2, StorageConstants.ROW_STORAGE_MODE,
-                StorageConstants.RANDOM_ACCESS_MODE);
+            StorageConstants.RANDOM_ACCESS_MODE);
 
         points.setRow(0, v1);
         points.setRow(1, v2);
@@ -110,7 +122,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         int centersCnt = centers.size();
 
         SparseDistributedMatrix points = new SparseDistributedMatrix(ptsCnt, 2, StorageConstants.ROW_STORAGE_MODE,
-                StorageConstants.RANDOM_ACCESS_MODE);
+            StorageConstants.RANDOM_ACCESS_MODE);
 
         List<Integer> permutation = IntStream.range(0, ptsCnt).boxed().collect(Collectors.toList());
         Collections.shuffle(permutation, rnd);
@@ -146,7 +158,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         Vector[] resCenters = mdl.centers();
         Arrays.sort(resCenters, comp);
 
-        checkIsInEpsilonNeighbourhood(resCenters, massCenters.toArray(new Vector[]{}), 30.0);
+        checkIsInEpsilonNeighbourhood(resCenters, massCenters.toArray(new Vector[] {}), 30.0);
     }
 
     /** */
@@ -178,7 +190,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
                 return signum;
 
             return (int)Math.signum(orderedNodes.get(ind1).minus(v1).kNorm(2) -
-                    orderedNodes.get(ind2).minus(v2).kNorm(2));
+                orderedNodes.get(ind2).minus(v2).kNorm(2));
         }
     }
 }

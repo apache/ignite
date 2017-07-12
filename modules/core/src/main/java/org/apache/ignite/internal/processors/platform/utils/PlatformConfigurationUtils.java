@@ -561,8 +561,6 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setDaemon(in.readBoolean());
         if (in.readBoolean())
-            cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean())
             cfg.setFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
@@ -885,8 +883,10 @@ public class PlatformConfigurationUtils {
             writer.writeInt(cnt);
 
             for (CachePluginConfiguration cfg : plugins) {
-                if (cfg instanceof PlatformCachePluginConfiguration)
-                    writer.writeObject(((PlatformCachePluginConfiguration)cfg).nativeCfg());
+                if (cfg instanceof PlatformCachePluginConfiguration) {
+                    writer.writeBoolean(false);  // Pure platform plugin.
+                    writer.writeObject(((PlatformCachePluginConfiguration) cfg).nativeCfg());
+                }
             }
         }
     }
@@ -1008,8 +1008,6 @@ public class PlatformConfigurationUtils {
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(true);
-        w.writeBoolean(cfg.isLateAffinityAssignment());
         w.writeBoolean(true);
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
@@ -1317,6 +1315,8 @@ public class PlatformConfigurationUtils {
     private static void readCachePluginConfiguration(CacheConfiguration cfg, BinaryRawReader in) {
         int plugCfgFactoryId = in.readInt();
 
+        in.readInt(); // skip size.
+
         PlatformCachePluginConfigurationClosure plugCfg = cachePluginConfiguration(plugCfgFactoryId);
 
         plugCfg.apply(cfg, in);
@@ -1501,7 +1501,10 @@ public class PlatformConfigurationUtils {
                 .setWalFlushFrequency((int) in.readLong())
                 .setWalFsyncDelay(in.readInt())
                 .setWalRecordIteratorBufferSize(in.readInt())
-                .setAlwaysWriteFullPages(in.readBoolean());
+                .setAlwaysWriteFullPages(in.readBoolean())
+                .setMetricsEnabled(in.readBoolean())
+                .setSubIntervals(in.readInt())
+                .setRateTimeInterval(in.readLong());
     }
 
     /**
@@ -1531,6 +1534,9 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getWalFsyncDelay());
             w.writeInt(cfg.getWalRecordIteratorBufferSize());
             w.writeBoolean(cfg.isAlwaysWriteFullPages());
+            w.writeBoolean(cfg.isMetricsEnabled());
+            w.writeInt(cfg.getSubIntervals());
+            w.writeLong(cfg.getRateTimeInterval());
 
         } else {
             w.writeBoolean(false);

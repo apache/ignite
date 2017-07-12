@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
                                 </memoryPolicies>
                             </memoryConfiguration>
                             <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
-                            <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' />
+                            <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -151,7 +151,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
             Assert.IsTrue(cfg.IsDaemon);
-            Assert.IsFalse(cfg.IsLateAffinityAssignment);
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
@@ -315,7 +314,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(10, pers.WalSegments);
             Assert.AreEqual(11, pers.WalSegmentSize);
             Assert.AreEqual("baz", pers.WalStorePath);
-
+            Assert.IsTrue(pers.MetricsEnabled);
+            Assert.AreEqual(3, pers.SubIntervals);
+            Assert.AreEqual(TimeSpan.FromSeconds(6), pers.RateTimeInterval);
         }
 
         /// <summary>
@@ -834,7 +835,6 @@ namespace Apache.Ignite.Core.Tests
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
                 },
-                IsLateAffinityAssignment = false,
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
@@ -907,7 +907,10 @@ namespace Apache.Ignite.Core.Tests
                     WalRecordIteratorBufferSize = 32 * 1024 * 1024,
                     WalSegments = 6,
                     WalSegmentSize = 5 * 1024 * 1024,
-                    WalStorePath = Path.GetTempPath()
+                    WalStorePath = Path.GetTempPath(),
+                    SubIntervals = 25,
+                    MetricsEnabled = true,
+                    RateTimeInterval = TimeSpan.FromDays(1)
                 },
                 IsActiveOnStart = false
             };

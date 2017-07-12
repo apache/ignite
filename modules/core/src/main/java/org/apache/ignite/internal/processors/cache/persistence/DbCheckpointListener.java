@@ -24,17 +24,28 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.Partiti
  *
  */
 public interface DbCheckpointListener {
+    /**
+     * Context with information about current snapshots.
+     */
     public interface Context {
+        /**
+         *
+         */
         public boolean nextSnapshot();
 
         /**
          * @return Partition allocation statistic map
          */
         public PartitionAllocationMap partitionStatMap();
+
+        /**
+         * @param cacheOrGrpName Cache or group name.
+         */
+        public boolean needToSnapshot(String cacheOrGrpName);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void onCheckpointBegin(Context context) throws IgniteCheckedException;
+    public void onCheckpointBegin(Context ctx) throws IgniteCheckedException;
 }
