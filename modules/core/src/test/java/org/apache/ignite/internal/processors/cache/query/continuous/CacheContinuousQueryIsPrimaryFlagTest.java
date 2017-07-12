@@ -44,8 +44,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
+import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -69,6 +71,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 
 /**
  *
@@ -137,6 +140,26 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     }
 
     /**
+     * @param cacheMode Cache mode.
+     * @param backups Number of backups.
+     * @param atomicityMode Cache atomicity mode.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Object, Object> cacheConfiguration(
+        CacheMode cacheMode,
+        int backups,
+        CacheAtomicityMode atomicityMode) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setBackups(backups);
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        return ccfg;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testInitialQueryPrimaryFlag() throws Exception {
@@ -180,23 +203,28 @@ public class CacheContinuousQueryIsPrimaryFlagTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param cacheMode Cache mode.
-     * @param backups Number of backups.
-     * @param atomicityMode Cache atomicity mode.
-     * @return Cache configuration.
+     * @throws Exception If failed.
      */
-    protected CacheConfiguration<Object, Object> cacheConfiguration(
-        CacheMode cacheMode,
-        int backups,
-        CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+    public void testSystemUtilityCachePrimaryFlag() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, backups, ATOMIC);
 
-        ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setBackups(backups);
-        ccfg.setCacheMode(cacheMode);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        startGrid("server").services()
+            .deployClusterSingleton("my-service", MyServiceFactory.create());
 
-        return ccfg;
+        client = true;
+
+        startGrid("client");
+
+        client = false;
+
+        Iterable<CacheEntryEvent<?, ?>> it = ((IgniteKernal)grid("server")).internalCache(UTILITY_CACHE_NAME).context()
+            .continuousQueries().existingEntries(false, null);
+
+        for (CacheEntryEvent<?, ?> e : it) {
+            assertTrue(e.unwrap(CacheQueryEntryEvent.class).isPrimary());
+        }
+
+        stopAllGrids();
     }
 
     /**
