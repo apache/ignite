@@ -487,7 +487,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 persStoreMetrics,
                 PersistenceMetricsMXBean.class);
         }
-        catch (JMException e) {
+        catch (Throwable e) {
             throw new IgniteCheckedException("Failed to register " + MBEAN_NAME + " MBean.", e);
         }
     }
@@ -504,11 +504,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
         }
-        catch (InstanceNotFoundException ignore) {
-            if(!log.isDebugEnabled())
-                U.warn(log, "Failed to unregister non-existed " + MBEAN_NAME + " MBean.", ignore);
-        }
-        catch (MBeanRegistrationException e) {
+        catch (Throwable e) {
             U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
         }
     }

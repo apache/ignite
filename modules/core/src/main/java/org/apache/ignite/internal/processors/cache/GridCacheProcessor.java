@@ -3599,7 +3599,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     U.registerCacheMBean(srvr, ctx.igniteInstanceName(), cacheName, obj.getClass().getName(), mbeanImpl,
                         (Class<Object>)itf);
                 }
-                catch (JMException e) {
+                catch (Throwable e) {
                     throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
                 }
 
@@ -3642,7 +3642,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 srvr.unregisterMBean(U.makeCacheMBeanName(ctx.igniteInstanceName(), cacheName, o.getClass().getName()));
             }
-            catch (JMException e) {
+            catch (Throwable e) {
                 U.error(log, "Failed to unregister MBean for component: " + o, e);
             }
         }

@@ -148,7 +148,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 new MemoryMetricsMXBeanImpl(memMetrics, memPlcCfg),
                 MemoryMetricsMXBean.class);
         }
-        catch (JMException e) {
+        catch (Throwable e) {
             U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
         }
     }
@@ -679,7 +679,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     "MemoryMetrics", name
                     ));
         }
-        catch (JMException e) {
+        catch (Throwable e) {
             U.error(log, "Failed to unregister MBean for memory metrics: " +
                 name, e);
         }
