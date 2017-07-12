@@ -39,7 +39,7 @@ export default class IgniteMavenGenerator {
     }
 
     addDependency(deps, groupId, artifactId, version, jar) {
-        deps.add({groupId, artifactId, version, jar});
+        deps.push({groupId, artifactId, version, jar});
     }
 
     pickDependency(deps, key, dfltVer, igniteVer) {
@@ -78,7 +78,7 @@ export default class IgniteMavenGenerator {
     dependenciesSection(sb, deps) {
         sb.startBlock('<dependencies>');
 
-        deps.forEach((dep) => {
+        _.forEach(deps, (dep) => {
             sb.startBlock('<dependency>');
 
             this.addProperty(sb, 'groupId', dep.groupId);
@@ -154,8 +154,8 @@ export default class IgniteMavenGenerator {
     collectDependencies(cluster, targetVer) {
         const igniteVer = targetVer.ignite;
 
-        const deps = new Set();
-        const storeDeps = new Set();
+        const deps = [];
+        const storeDeps = [];
 
         this.addDependency(deps, 'org.apache.ignite', 'ignite-core', igniteVer);
 
@@ -204,7 +204,7 @@ export default class IgniteMavenGenerator {
         if (cluster.logger && cluster.logger.kind)
             this.pickDependency(deps, cluster.logger.kind, igniteVer);
 
-        return new Set([...deps, ...storeDeps]);
+        return _.uniqWith(deps.concat(...storeDeps), _.isEqual);
     }
 
     /**

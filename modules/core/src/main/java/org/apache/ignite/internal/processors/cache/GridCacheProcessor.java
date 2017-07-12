@@ -1670,7 +1670,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             String cacheName = ccfg.getName();
 
-            if ((inclLoc || ccfg.getCacheMode() != LOCAL) && QueryUtils.isEnabled(ccfg))
+            if ((inclLoc || ccfg.getCacheMode() != LOCAL))
                 return publicJCache(cacheName);
         }
 
@@ -1680,7 +1680,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 CacheConfiguration ccfg = desc.cacheConfiguration();
 
-                if (ccfg.getCacheMode() != LOCAL && QueryUtils.isEnabled(ccfg)) {
+                if (ccfg.getCacheMode() != LOCAL) {
                     dynamicStartCache(null, ccfg.getName(), null, false, true, true).get();
 
                     return publicJCache(ccfg.getName());
