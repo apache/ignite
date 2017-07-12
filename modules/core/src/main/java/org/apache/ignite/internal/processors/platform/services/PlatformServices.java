@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
+import org.apache.ignite.internal.processors.service.GridServiceTopology;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -276,9 +277,11 @@ public class PlatformServices extends PlatformAbstractTarget {
                             ? PLATFORM_DOTNET : PLATFORM_JAVA;
                         writer.writeByte(platform);
 
-                        Map<UUID, Integer> top = d.topologySnapshot();
+                        GridServiceTopology top = d.topologySnapshot();
 
-                        PlatformUtils.writeMap(writer, top, new PlatformWriterBiClosure<UUID, Integer>() {
+                        writer.writeLong(top.version());
+                        writer.writeInt(top.eachNode());
+                        PlatformUtils.writeMap(writer, top.perNode(), new PlatformWriterBiClosure<UUID, Integer>() {
                             @Override public void write(BinaryRawWriterEx writer, UUID key, Integer val) {
                                 writer.writeUuid(key);
                                 writer.writeInt(val);

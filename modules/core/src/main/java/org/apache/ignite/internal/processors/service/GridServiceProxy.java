@@ -271,14 +271,20 @@ public class GridServiceProxy<T> implements Serializable {
         if (hasLocNode && ctx.service().service(name) != null)
             return ctx.discovery().localNode();
 
-        Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name, waitTimeout);
+        GridServiceTopology snapshot = ctx.service().serviceTopology(name, waitTimeout);
 
         if (snapshot == null || snapshot.isEmpty())
             return null;
 
+        if (snapshot.eachNode() > 0)
+            // N instance on each node - return first node in the cluster
+            return prj.nodes().iterator().next();
+
+        Map<UUID, Integer> assignments = snapshot.perNode();
+
         // Optimization for cluster singletons.
-        if (snapshot.size() == 1) {
-            UUID nodeId = snapshot.keySet().iterator().next();
+        if (assignments.size() == 1) {
+            UUID nodeId = assignments.keySet().iterator().next();
 
             return prj.node(nodeId);
         }
@@ -289,17 +295,17 @@ public class GridServiceProxy<T> implements Serializable {
         if (nodes.size() == 1) {
             ClusterNode n = nodes.iterator().next();
 
-            return snapshot.containsKey(n.id()) ? n : null;
+            return assignments.containsKey(n.id()) ? n : null;
         }
 
         // Optimization if projection is the whole grid.
         if (prj.predicate() == F.<ClusterNode>alwaysTrue()) {
-            int idx = ThreadLocalRandom8.current().nextInt(snapshot.size());
+            int idx = ThreadLocalRandom8.current().nextInt(assignments.size());
 
             int i = 0;
 
             // Get random node.
-            for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
+            for (Map.Entry<UUID, Integer> e : assignments.entrySet()) {
                 if (i++ >= idx) {
                     if (e.getValue() > 0)
                         return ctx.discovery().node(e.getKey());
@@ -309,7 +315,7 @@ public class GridServiceProxy<T> implements Serializable {
             i = 0;
 
             // Circle back.
-            for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
+            for (Map.Entry<UUID, Integer> e : assignments.entrySet()) {
                 if (e.getValue() > 0)
                     return ctx.discovery().node(e.getKey());
 
@@ -321,7 +327,7 @@ public class GridServiceProxy<T> implements Serializable {
             List<ClusterNode> nodeList = new ArrayList<>(nodes.size());
 
             for (ClusterNode n : nodes) {
-                Integer cnt = snapshot.get(n.id());
+                Integer cnt = assignments.get(n.id());
 
                 if (cnt != null && cnt > 0)
                     nodeList.add(n);

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -29,7 +27,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 
 /**
- * Service per-node assignment.
+ * Service per-node assignment
  */
 public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Serialization version. */
@@ -38,15 +36,12 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Node ID. */
     private final UUID nodeId;
 
-    /** Topology version. */
-    private final long topVer;
-
     /** Service configuration. */
     private final ServiceConfiguration cfg;
 
-    /** Assignments. */
+    /** Service topology */
     @GridToStringInclude
-    private Map<UUID, Integer> assigns = Collections.emptyMap();
+    private final GridServiceTopology top;
 
     /**
      * @param cfg Configuration.
@@ -56,7 +51,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     public GridServiceAssignments(ServiceConfiguration cfg, UUID nodeId, long topVer) {
         this.cfg = cfg;
         this.nodeId = nodeId;
-        this.topVer = topVer;
+        top = new GridServiceTopology(topVer);
     }
 
     /**
@@ -71,13 +66,6 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      */
     public String name() {
         return cfg.getName();
-    }
-
-    /**
-     * @return Topology version.
-     */
-    public long topologyVersion() {
-        return topVer;
     }
 
     /**
@@ -109,17 +97,10 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     }
 
     /**
-     * @return Assignments.
+     * @return Service topology
      */
-    public Map<UUID, Integer> assigns() {
-        return assigns;
-    }
-
-    /**
-     * @param assigns Assignments.
-     */
-    public void assigns(Map<UUID, Integer> assigns) {
-        this.assigns = assigns;
+    public GridServiceTopology topology() {
+        return top;
     }
 
     /** {@inheritDoc} */

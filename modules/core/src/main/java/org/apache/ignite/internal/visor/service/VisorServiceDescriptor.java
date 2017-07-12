@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.service.GridServiceTopology;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -57,7 +58,7 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
      * Service deployment topology snapshot.
      * Number of service instances deployed on a node mapped to node ID.
      */
-    private Map<UUID, Integer> topSnapshot;
+    private GridServiceTopology topSnapshot;
 
     /**
      * Default constructor.
@@ -133,7 +134,7 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
     /**
      * @return Service deployment topology snapshot. Number of service instances deployed on a node mapped to node ID.
      */
-    public Map<UUID, Integer> getTopologySnapshot() {
+    public GridServiceTopology getTopologySnapshot() {
         return topSnapshot;
     }
 
@@ -145,7 +146,9 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
         out.writeInt(maxPerNodeCnt);
         U.writeString(out, cacheName);
         U.writeUuid(out, originNodeId);
-        U.writeMap(out, topSnapshot);
+        out.writeLong(topSnapshot.version());
+        out.writeInt(topSnapshot.eachNode());
+        U.writeMap(out, topSnapshot.perNode());
     }
 
     /** {@inheritDoc} */
@@ -156,7 +159,14 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
         maxPerNodeCnt = in.readInt();
         cacheName = U.readString(in);
         originNodeId = U.readUuid(in);
-        topSnapshot = U.readMap(in);
+        topSnapshot = new GridServiceTopology(in.readLong());
+        int topEachNode = in.readInt();
+        Map<UUID, Integer> topPerNode = U.readMap(in);
+
+        if (topEachNode > 0)
+            topSnapshot.eachNode(topEachNode);
+        else
+            topSnapshot.perNode(topPerNode);
     }
 
     /** {@inheritDoc} */

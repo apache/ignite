@@ -18,8 +18,8 @@
 package org.apache.ignite.services;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.service.GridServiceTopology;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,28 +34,28 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Service name.
      */
-    public String name();
+    String name();
 
     /**
      * Gets service class.
      *
      * @return Service class.
      */
-    public Class<? extends Service> serviceClass();
+    Class<? extends Service> serviceClass();
 
     /**
      * Gets maximum allowed total number of deployed services in the grid, {@code 0} for unlimited.
      *
      * @return Maximum allowed total number of deployed services in the grid, {@code 0} for unlimited.
      */
-    public int totalCount();
+    int totalCount();
 
     /**
      * Gets maximum allowed number of deployed services on each node, {@code 0} for unlimited.
      *
      * @return Maximum allowed total number of deployed services on each node, {@code 0} for unlimited.
      */
-    public int maxPerNodeCount();
+    int maxPerNodeCount();
 
     /**
      * Gets cache name used for key-to-node affinity calculation. This parameter is optional
@@ -63,7 +63,7 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Cache name, possibly {@code null}.
      */
-    @Nullable public String cacheName();
+    @Nullable String cacheName();
 
     /**
      * Gets affinity key used for key-to-node affinity calculation. This parameter is optional
@@ -71,20 +71,20 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Affinity key, possibly {@code null}.
      */
-    @Nullable public <K> K affinityKey();
+    @Nullable <K> K affinityKey();
 
     /**
      * Gets ID of grid node that initiated the service deployment.
      *
      * @return ID of grid node that initiated the service deployment.
      */
-    public UUID originNodeId();
+    UUID originNodeId();
 
     /**
      * Gets service deployment topology snapshot. Service topology snapshot is represented
      * by number of service instances deployed on a node mapped to node ID.
      *
-     * @return Map of number of service instances per node ID.
+     * @return Service deployment topology.
      */
-    public Map<UUID, Integer> topologySnapshot();
+    GridServiceTopology topologySnapshot();
 }

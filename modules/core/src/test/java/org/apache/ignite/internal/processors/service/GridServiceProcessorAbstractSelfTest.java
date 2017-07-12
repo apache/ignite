@@ -775,8 +775,14 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         for (ServiceDescriptor d : descs) {
             if (d.name().equals(svcName)) {
-                for (Integer i : d.topologySnapshot().values())
-                    sum += i;
+                GridServiceTopology top = d.topologySnapshot();
+
+                if (top.eachNode() > 0)
+                    sum = top.eachNode();
+                else {
+                    for (Integer i : top.perNode().values())
+                        sum += i;
+                }
             }
         }
 

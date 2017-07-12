@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -720,7 +719,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Service topology.
      * @throws IgniteCheckedException On error.
      */
-    public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
+    public GridServiceTopology serviceTopology(String name, long timeout) throws IgniteCheckedException {
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
         final ServiceTopologyCallable call = new ServiceTopologyCallable(name);
@@ -740,11 +739,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Service topology.
      * @throws IgniteCheckedException In case of error.
      */
-    private static Map<UUID, Integer> serviceTopology(IgniteInternalCache<Object, Object> cache, String svcName)
+    private static GridServiceTopology serviceTopology(IgniteInternalCache<Object, Object> cache, String svcName)
         throws IgniteCheckedException {
         GridServiceAssignments val = (GridServiceAssignments)cache.get(new GridServiceAssignmentsKey(svcName));
 
-        return val != null ? val.assigns() : null;
+        return val != null ? val.topology() : null;
     }
 
     /**
@@ -767,7 +766,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                     new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
-                    desc.topologySnapshot(assigns.assigns());
+                    desc.topologySnapshot(assigns.topology());
 
                     descs.add(desc);
                 }
@@ -966,7 +965,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
-                GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
+                GridServiceTopology top = assigns.topology();
 
                 Map<UUID, Integer> cnts = new HashMap<>();
 
@@ -978,9 +977,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
                         cnts.put(n.id(), cnt);
                     }
+
+                    top.perNode(cnts);
                 }
-                else {
-                    if (!nodes.isEmpty()) {
+                else if (nodes != null && !nodes.isEmpty()) {
+                    if (totalCnt == 0 && maxPerNodeCnt > 0)
+                        top.eachNode(maxPerNodeCnt);
+                    else {
                         int size = nodes.size();
 
                         int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
@@ -1000,11 +1003,13 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         if (remainder > 0) {
                             int cnt = perNodeCnt + 1;
 
+                            GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
+
                             if (oldAssigns != null) {
                                 Collection<UUID> used = new HashSet<>();
 
                                 // Avoid redundant moving of services.
-                                for (Map.Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                                for (Map.Entry<UUID, Integer> e : oldAssigns.topology().perNode().entrySet()) {
                                     // Do not assign services to left nodes.
                                     if (ctx.discovery().node(e.getKey()) == null)
                                         continue;
@@ -1054,9 +1059,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                             }
                         }
                     }
-                }
 
-                assigns.assigns(cnts);
+                    top.perNode(cnts);
+                }
 
                 cache.put(key, assigns);
 
@@ -1081,7 +1086,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private void redeploy(GridServiceAssignments assigns) {
         String svcName = assigns.name();
 
-        Integer assignCnt = assigns.assigns().get(ctx.localNodeId());
+        GridServiceTopology top = assigns.topology();
+
+        Integer assignCnt = top.eachNode() > 0 ? top.eachNode() : top.perNode().get(ctx.localNodeId());
 
         if (assignCnt == null)
             assignCnt = 0;
@@ -1365,7 +1372,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
 
-            if (busyLock ==  null || !busyLock.enterBusy())
+            if (busyLock == null || !busyLock.enterBusy())
                 return;
 
             try {
@@ -1868,7 +1875,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     @GridInternal
     @SerializableTransient(methodName = "serializableTransient")
-    private static class ServiceTopologyCallable implements IgniteCallable<Map<UUID, Integer>> {
+    private static class ServiceTopologyCallable implements IgniteCallable<GridServiceTopology> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1898,7 +1905,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         }
 
         /** {@inheritDoc} */
-        @Override public Map<UUID, Integer> call() throws Exception {
+        @Override public GridServiceTopology call() throws Exception {
             IgniteInternalCache<Object, Object> cache = ignite.context().cache().utilityCache();
 
             if (cache == null) {

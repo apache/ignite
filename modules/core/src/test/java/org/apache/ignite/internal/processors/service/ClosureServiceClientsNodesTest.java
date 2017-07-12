@@ -168,8 +168,6 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultService() throws Exception {
-        UUID clientNodeId = grid(0).cluster().localNode().id();
-
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
 
@@ -191,15 +189,10 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, srvDscs.size());
 
-            Map<UUID, Integer> nodesMap = F.first(srvDscs).topologySnapshot();
+            GridServiceTopology top = F.first(srvDscs).topologySnapshot();
 
-            assertEquals(NODES_CNT - 1, nodesMap.size());
-
-            for (Map.Entry<UUID, Integer> nodeInfo : nodesMap.entrySet()) {
-                assertFalse(clientNodeId.equals(nodeInfo.getKey()));
-
-                assertEquals(1, nodeInfo.getValue().intValue());
-            }
+            assertEquals(1, top.eachNode());
+            assertTrue(top.perNode().isEmpty());
 
             ignite.services().cancelAll();
         }
@@ -232,7 +225,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, srvDscs.size());
 
-            Map<UUID, Integer> nodesMap = F.first(srvDscs).topologySnapshot();
+            GridServiceTopology top = F.first(srvDscs).topologySnapshot();
 
             assertEquals(1, nodesMap.size());
 
