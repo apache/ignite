@@ -63,6 +63,7 @@ public class IgnitePutTxLoadBenchmark extends IgniteCacheAbstractBenchmark<Integ
         IgniteTransactions transactions = ignite().transactions();
 
         long startTime;
+        long endTime;
 
         try (Transaction tx = transactions.txStart(args.txConcurrency(), args.txIsolation())) {
             for (int i = 0; i < args.scaleFactor(); i++){
@@ -73,11 +74,14 @@ public class IgnitePutTxLoadBenchmark extends IgniteCacheAbstractBenchmark<Integ
             startTime = System.currentTimeMillis();
 
             tx.commit();
+
+            endTime = System.currentTimeMillis();
+
         }
 
         TransactionMetrics tm = transactions.metrics();
 
-        if (tm.commitTime() - startTime > args.getWarningTime())
+        if (endTime - startTime > args.getWarningTime())
             BenchmarkUtils.println("Transaction commit time = " + (tm.commitTime() - startTime));
 
         if (tm.txRollbacks() > 0 && args.printRollBacks())
