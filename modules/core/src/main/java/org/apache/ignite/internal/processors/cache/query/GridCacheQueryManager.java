@@ -1375,13 +1375,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             catch (Throwable e) {
                 if (X.hasCause(e, ClassNotFoundException.class) && !qry.keepBinary() && cctx.binaryMarshaller() &&
                     !cctx.localNode().isClient() && !log.isQuiet()) {
-                    LT.info(log, "Suggestion for the cause of ClassNotFoundException");
-                    LT.info(log, "To disable, set -D" + IGNITE_QUIET + "=true");
-                    LT.info(log, "  ^-- Ignite configured to use BinaryMarshaller but keepBinary is false for " +
+                    LT.warn(log, "Suggestion for the cause of ClassNotFoundException");
+                    LT.warn(log, "To disable, set -D" + IGNITE_QUIET + "=true");
+                    LT.warn(log, "  ^-- Ignite configured to use BinaryMarshaller but keepBinary is false for " +
                         "request");
-                    LT.info(log, "  ^-- Server node need to load definition of data classes. " +
+                    LT.warn(log, "  ^-- Server node need to load definition of data classes. " +
                         "It can be reason of ClassNotFoundException(consider IgniteCache.withKeepBinary to fix)");
-                    LT.info(log, "Refer this page for detailed information: " +
+                    LT.warn(log, "Refer this page for detailed information: " +
                         "https://apacheignite.readme.io/docs/binary-marshaller");
                 }
 
