@@ -208,6 +208,7 @@ public class DemoCachesLoadService implements Service {
         ccfg.setQueryDetailMetricsSize(10);
         ccfg.setStatisticsEnabled(true);
         ccfg.setSqlFunctionClasses(SQLFunctions.class);
+        ccfg.setMemoryPolicyName("demo");
 
         return ccfg;
     }

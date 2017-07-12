@@ -67,6 +67,8 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
+import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -241,21 +243,23 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             SecurityContext secCtx0 = ses.secCtx;
 
-            try {
-                if (secCtx0 == null)
-                    ses.secCtx = secCtx0 = authenticate(req);
+            if (ctx.state().publicApiActiveState() || !isClusterActivateTaskRequest(req)) {
+                try {
+                    if (secCtx0 == null)
+                        ses.secCtx = secCtx0 = authenticate(req);
 
-                authorize(req, secCtx0);
-            }
-            catch (SecurityException e) {
-                assert secCtx0 != null;
+                    authorize(req, secCtx0);
+                }
+                catch (SecurityException e) {
+                    assert secCtx0 != null;
 
-                GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+                    GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-                return new GridFinishedFuture<>(res);
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+                    return new GridFinishedFuture<>(res);
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+                }
             }
         }
 
@@ -314,6 +318,25 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 return res;
             }
         });
+    }
+
+    /**
+     * We skip authentication for activate cluster request.
+     * It's necessary workaround to make possible cluster activation through Visor,
+     * as security checks require working caches.
+     *
+     * @param req Request.
+     */
+    private boolean isClusterActivateTaskRequest(GridRestRequest req) {
+        if (req instanceof GridRestTaskRequest) {
+            GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
+
+            if (VisorGatewayTask.class.getCanonicalName().equals(taskReq.taskName()) &&
+                taskReq.params().contains(VisorChangeGridActiveStateTask.class.getCanonicalName()))
+                return true;
+        }
+
+        return false;
     }
 
     /**
