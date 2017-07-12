@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -181,7 +180,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 retries.addAll(fut.invalidPartitions());
             }
 
-        fut.listen(new CI1<IgniteInternalFuture<Object>>() {
+            fut.listen(new CI1<IgniteInternalFuture<Object>>() {
             @Override public void apply(IgniteInternalFuture<Object> fut) {
                 try {
                     fut.get();

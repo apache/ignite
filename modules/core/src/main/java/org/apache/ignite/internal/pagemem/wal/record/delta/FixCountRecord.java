@@ -19,8 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * Fix elements count record.
@@ -30,11 +30,11 @@ public class FixCountRecord extends PageDeltaRecord {
     private int cnt;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      */
-    public FixCountRecord(int cacheId, long pageId, int cnt) {
-        super(cacheId, pageId);
+    public FixCountRecord(int grpId, long pageId, int cnt) {
+        super(grpId, pageId);
 
         this.cnt = cnt;
     }

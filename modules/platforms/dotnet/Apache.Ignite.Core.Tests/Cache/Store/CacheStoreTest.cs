@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -203,6 +204,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(1, cache.GetSize());
         }
 
+        /// <summary>
+        /// Tests that exceptions from user code are propagated properly.
+        /// </summary>
         [Test]
         public void TestExceptions()
         {
@@ -211,7 +215,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cache.Put(1, "val");
 
             CacheTestStore.ThrowError = true;
-            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
+            
+            var ex = Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail"));
+
+            Assert.IsTrue(ex.ToString().Contains(
+                "at Apache.Ignite.Core.Tests.Cache.Store.CacheTestStore.ThrowIfNeeded"));  // Check proper stack trace.
+
+            Assert.IsNotNull(ex.InnerException);  // RollbackException.
+
+            var javaEx = ex.InnerException.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+
+            CheckCustomStoreError(javaEx.InnerException);
 
             // TODO: IGNITE-4535
             //cache.LocalEvict(new[] {1});
@@ -599,11 +614,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// </summary>
         private static void CheckCustomStoreError(Exception err)
         {
-            var customErr = err as CacheTestStore.CustomStoreException ??
-                         err.InnerException as CacheTestStore.CustomStoreException;
+            var customErr = err.GetBaseException() as CacheTestStore.CustomStoreException;
 
             Assert.IsNotNull(customErr);
-
             Assert.AreEqual(customErr.Message, customErr.Details);
         }
     }

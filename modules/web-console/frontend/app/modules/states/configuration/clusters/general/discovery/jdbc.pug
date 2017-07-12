@@ -16,16 +16,17 @@
 
 include /app/helpers/jade/mixins
 
--var model = 'backupItem.discovery.Jdbc'
--var required = 'backupItem.discovery.kind === "Jdbc"'
+mixin discovery-jdbc(modelAt = 'backupItem')
+    -const model = `${modelAt}.discovery.Jdbc`
+    -const required = `${modelAt}.discovery.kind === "Jdbc"`
 
-div
-    .details-row
-        +checkbox('DB schema should be initialized by Ignite', `${model}.initSchema`, '"initSchema"',
-            'Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user')
     .details-row
         +text('Data source bean name:', `${model}.dataSourceBean`,
             '"dataSourceBean"', required, 'Input bean name', 'Name of the data source bean in Spring context')
     .details-row
         +dialect('Dialect:', `${model}.dialect`, '"dialect"', required,
             'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect', 'Choose JDBC dialect')
+    .details-row
+        +checkbox('DB schema should be initialized by Ignite', `${model}.initSchema`, '"initSchema"',
+            'Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user')
+    .pcb-flex-grid-break

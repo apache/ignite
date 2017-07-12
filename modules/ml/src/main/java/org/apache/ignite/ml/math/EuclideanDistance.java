@@ -32,7 +32,7 @@ public class EuclideanDistance implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override
     public double compute(Vector a, Vector b)
-    throws CardinalityException {
+        throws CardinalityException {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
     }
 

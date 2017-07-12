@@ -24,6 +24,7 @@ import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -343,7 +344,11 @@ public final class UpdatePlanBuilder {
 
                         BinaryObject bin = cctx.grid().binary().toBinary(obj);
 
-                        return cctx.grid().binary().builder(bin);
+                        BinaryObjectBuilder builder = cctx.grid().binary().builder(bin);
+
+                        cctx.prepareAffinityField(builder);
+
+                        return builder;
                     }
                 };
             }
@@ -352,7 +357,11 @@ public final class UpdatePlanBuilder {
                 return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                        return cctx.grid().binary().builder(typeName);
+                        BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
+
+                        cctx.prepareAffinityField(builder);
+
+                        return builder;
                     }
                 };
             }

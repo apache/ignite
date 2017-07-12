@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarl
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDiscoveryDataConcurrentJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheStartOnJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
@@ -133,6 +134,7 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxNoLo
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxNoReadThroughTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxNoWriteThroughTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindCoalescingTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalTransactionalSelfTest;
@@ -171,6 +173,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);
         suite.addTestSuite(IgniteCacheAtomicStoreSessionWriteBehindTest.class);
         suite.addTestSuite(IgniteCacheTxStoreSessionWriteBehindTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreSessionWriteBehindCoalescingTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNoReadThroughTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);
@@ -305,6 +308,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(GridCacheDhtTxPreloadSelfTest.class);
         suite.addTestSuite(GridCacheNearTxPreloadSelfTest.class);
         suite.addTestSuite(GridReplicatedTxPreloadTest.class);
+        suite.addTestSuite(CacheGroupsPreloadTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheFilterTest.class);
 

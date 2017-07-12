@@ -29,7 +29,7 @@ export default ['IgniteVersion', 'JavaTransformer', function(Version, java) {
         case 'igniteConfiguration':
             const clsName = client ? 'ClientConfigurationFactory' : 'ServerConfigurationFactory';
 
-            ctrl.generate = (cluster) => java.cluster(cluster, Version.current, 'config', clsName, client);
+            ctrl.generate = (cluster) => java.cluster(cluster, Version.currentSbj.getValue(), 'config', clsName, client);
 
             break;
         case 'clusterCaches':

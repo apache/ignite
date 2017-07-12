@@ -98,7 +98,7 @@ public final class GridTestProperties {
         // Load default properties.
         File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
 
-        assert cfgFile.exists();
+        assert cfgFile != null && cfgFile.exists();
         assert !cfgFile.isDirectory();
 
         dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
@@ -309,13 +309,11 @@ public final class GridTestProperties {
 
                 fileProps.load(in);
 
-                for (Entry<Object, Object> prop : fileProps.entrySet()) {
+                for (Entry<Object, Object> prop : fileProps.entrySet())
                     props.put((String) prop.getKey(), (String) prop.getValue());
-                }
 
-                for (Entry<String, String> prop : props.entrySet()) {
+                for (Entry<String, String> prop : props.entrySet())
                     prop.setValue(substituteProperties(prop.getValue()));
-                }
             }
         }
         catch (IOException e) {
