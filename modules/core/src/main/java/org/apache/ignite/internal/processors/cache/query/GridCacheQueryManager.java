@@ -1,19 +1,19 @@
- /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/*
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 package org.apache.ignite.internal.processors.cache.query;
 
@@ -1892,35 +1892,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Gets SQL metadata for all available caches.
+     * Gets SQL metadata.
      *
      * @return SQL metadata.
      * @throws IgniteCheckedException In case of error.
      */
     public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
-        return sqlMetadata(null);
-    }
-
-    /**
-     * Gets SQL metadata.
-     *
-     * @param cacheName Cache name.
-     * @return SQL metadata.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public Collection<GridCacheSqlMetadata> sqlMetadata(@Nullable final String cacheName) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
         try {
-            Callable<Collection<CacheSqlMetadata>> job = new MetadataJob(cacheName);
-
-            final String cName = cacheName == null ? this.cacheName : cacheName;
+            Callable<Collection<CacheSqlMetadata>> job = new MetadataJob();
 
             // Remote nodes that have current cache.
             Collection<ClusterNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode n) {
-                    return cctx.kernalContext().discovery().cacheAffinityNode(n, cName);
+                    return cctx.kernalContext().discovery().cacheAffinityNode(n, cacheName);
                 }
             });
 
@@ -1958,7 +1945,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
 
             // Metadata for current cache must be first in list.
-            col.add(new CacheSqlMetadata(map.remove(cName)));
+            col.add(new CacheSqlMetadata(map.remove(cacheName)));
 
             for (Collection<CacheSqlMetadata> metas : map.values())
                 col.add(new CacheSqlMetadata(metas));
@@ -2053,35 +2040,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @IgniteInstanceResource
         private Ignite ignite;
 
-        private final String cacheName;
-
-        MetadataJob (@Nullable String cacheName) {
-            this.cacheName = cacheName;
-        }
-
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
             final GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
-            Collection<String> cacheNames;
-
-            if (cacheName != null)
-                cacheNames = Collections.singletonList(cacheName);
-            else {
-                cacheNames = F.viewReadOnly(ctx.cache().caches(),
-                    new C1<IgniteInternalCache<?, ?>, String>() {
-                        @Override public String apply(IgniteInternalCache<?, ?> c) {
-                            return c.name();
-                        }
-                    },
-                    new P1<IgniteInternalCache<?, ?>>() {
-                        @Override public boolean apply(IgniteInternalCache<?, ?> c) {
-                            return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
-                                !CU.ATOMICS_CACHE_NAME.equals(c.name());
-                        }
+            Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
+                new C1<IgniteInternalCache<?, ?>, String>() {
+                    @Override public String apply(IgniteInternalCache<?, ?> c) {
+                        return c.name();
                     }
-                );
-            }
+                },
+                new P1<IgniteInternalCache<?, ?>>() {
+                    @Override public boolean apply(IgniteInternalCache<?, ?> c) {
+                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
+                            !CU.ATOMICS_CACHE_NAME.equals(c.name());
+                    }
+                }
+            );
 
             return F.transform(cacheNames, new C1<String, CacheSqlMetadata>() {
                 @Override public CacheSqlMetadata apply(String cacheName) {

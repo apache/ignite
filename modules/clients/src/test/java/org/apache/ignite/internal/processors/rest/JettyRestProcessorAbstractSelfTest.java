@@ -1129,7 +1129,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals(5, metas.size());
 
-        Collection<GridCacheSqlMetadata> dfltCacheMeta = cache.context().queries().sqlMetadata(DEFAULT_CACHE_NAME);
+        Collection<GridCacheSqlMetadata> dfltCacheMeta = cache.context().queries().sqlMetadata();
 
         String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
 
@@ -1149,7 +1149,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
-        Collection<GridCacheSqlMetadata> meta = c.context().queries().sqlMetadata(DEFAULT_CACHE_NAME);
+        Collection<GridCacheSqlMetadata> meta = c.context().queries().sqlMetadata();
 
         String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
 

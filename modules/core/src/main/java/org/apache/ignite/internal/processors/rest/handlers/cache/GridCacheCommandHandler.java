@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.rest.handlers.cache;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +35,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMetrics;
@@ -54,7 +52,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -942,25 +939,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             GridDiscoveryManager discovery = ignite.context().discovery();
 
-            boolean sameCaches = true;
-
-            Set<String> caches = discovery.nodePublicCaches(F.first(subgrid)).keySet();
+            Map<ComputeJob, ClusterNode> map = U.newHashMap(1);
 
             for (int i = 1; i < subgrid.size(); i++) {
-                if (!caches.equals(discovery.nodePublicCaches(subgrid.get(i)).keySet())) {
-                    sameCaches = false;
+                if (discovery.nodePublicCaches(subgrid.get(i)).keySet().contains(cacheName)) {
+                    map.put(new MetadataJob(cacheName), subgrid.get(i));
 
                     break;
                 }
-            }
-
-            Map<ComputeJob, ClusterNode> map = U.newHashMap(sameCaches ? 1 : subgrid.size());
-
-            if (sameCaches)
-                map.put(new MetadataJob(cacheName), ignite.localNode());
-            else {
-                for (ClusterNode node : subgrid)
-                    map.put(new MetadataJob(cacheName), node);
             }
 
             return map;
@@ -973,7 +959,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             for (ComputeJobResult r : results) {
                 if (!r.isCancelled() && r.getException() == null) {
-                    for (GridCacheSqlMetadata m : r.<Collection<GridCacheSqlMetadata>>getData()) {
+                    if (r.getData() != null) {
+                        GridCacheSqlMetadata m = r.<GridCacheSqlMetadata>getData();
                         if (!map.containsKey(m.cacheName()))
                             map.put(m.cacheName(), m);
                     }
@@ -1013,14 +1000,20 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridCacheSqlMetadata> execute() {
+        @Override public GridCacheSqlMetadata execute() {
             IgniteInternalCache<?, ?> cache = ignite.context().cache().publicCache(cacheName);
 
             if (cache == null)
-                return Collections.emptyList();
+                return null;
 
             try {
-                return cache.context().queries().sqlMetadata(cacheName);
+                Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
+
+                for (GridCacheSqlMetadata meta : metas)
+                    if (meta.cacheName().equals(cacheName))
+                        return meta;
+
+                return null;
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
