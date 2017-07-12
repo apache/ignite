@@ -37,7 +37,7 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** */
-    private final GridWorkerWrapper timeoutWorker;
+    private final TimeoutWorker timeoutWorker;
 
     /** Time-based sorted set for timeout objects. */
     private final GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjs =
@@ -62,12 +62,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     public GridTimeoutProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        timeoutWorker = new GridWorkerWrapper(new TimeoutWorker());
+        timeoutWorker = new TimeoutWorker();
     }
 
     /** {@inheritDoc} */
     @Override public void start() {
-        timeoutWorker.start();
+        new IgniteThread(timeoutWorker).start();
 
         if (log.isDebugEnabled())
             log.debug("Timeout processor started.");
@@ -130,24 +130,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Wraps {@link TimeoutWorker} in a {@link IgniteThread}
-     * with access to {@link TimeoutWorker#cancel()} method.
-     */
-    private static class GridWorkerWrapper extends IgniteThread {
-        /** */
-        private final GridWorker worker;
-
-        public GridWorkerWrapper(GridWorker worker) {
-            super(worker);
-            this.worker = worker;
-        }
-
-        public void cancel(){
-            worker.cancel();
-        }
-    }
-
-    /**
      * Handles job timeouts.
      */
     private class TimeoutWorker extends GridWorker {
@@ -180,6 +162,9 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
                             if (e instanceof Error)
                                 throw e;
+
+                            if(isCancelled())
+                                return;
                         }
                     }
                     else
