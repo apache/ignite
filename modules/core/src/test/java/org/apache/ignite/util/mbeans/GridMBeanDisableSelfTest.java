@@ -17,31 +17,16 @@
 
 package org.apache.ignite.util.mbeans;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.concurrent.Callable;
-import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanInfo;
-import javax.management.MBeanOperationInfo;
-import javax.management.MBeanParameterInfo;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.management.StandardMBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.IgniteMXBean;
-import org.apache.ignite.mxbean.MXBeanDescription;
-import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
-import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -50,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        setIgniteMbeansDisabled(true);
+        IgniteUtils.IGNITE_MBEANS_DISABLED = true;
 
         super.beforeTestsStarted();
     }
@@ -59,19 +44,7 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        setIgniteMbeansDisabled(false);
-    }
-
-    /** */
-    private void setIgniteMbeansDisabled(boolean value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = IgniteUtils.class.getField("IGNITE_MBEANS_DISABLED");
-        field.setAccessible(true);
-
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-        field.setBoolean(null, value);
+        IgniteUtils.IGNITE_MBEANS_DISABLED = false;
     }
 
     /**
