@@ -138,7 +138,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /**
      * @return Checkpointing page buffer size in bytes.
      */
-    public Long getCheckpointingPageBufferSize() {
+    public long getCheckpointingPageBufferSize() {
         return checkpointingPageBufSize;
     }
 
@@ -236,7 +236,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /**
      * Gets the fsync delay, in nanoseconds.
      */
-    public long getWalFsyncDelay() {
+    public long getWalFsyncDelayNanos() {
         return walFsyncDelay;
     }
 
