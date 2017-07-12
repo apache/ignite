@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Page counts map.
  */
 public class PartitionAllocationMap {
-    /** Maps following pairs: (cacheId, partId) -> (lastAllocatedCount, allocatedCount) */
+    /** Maps following pairs: (groupId, partId) -> (lastAllocatedCount, allocatedCount) */
     private final NavigableMap<GroupPartitionId, PagesAllocationRange> map = new TreeMap<>();
 
     /**

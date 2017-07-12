@@ -25,21 +25,22 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Pair of cache ID with partition ID. Immutable, comparable class, may be used as key in maps
+ * Pair of cache group ID with partition ID. Immutable, comparable class, may be used as key in maps
  */
 public class GroupPartitionId implements Comparable<GroupPartitionId> {
     /** Index for super(meta) page. There is always such page for iterated cache partition  */
     private static final int METAPAGE_IDX = 0;
 
-    /** Cache ID. */
+    /** Cache group ID. */
     private final int grpId;
 
     /** Partition ID. */
     private final int partId;
 
     /**
-     * Creates cache partition
-     * @param grpId Cache ID.
+     * Creates group-partition tuple.
+     *
+     * @param grpId Group ID.
      * @param partId Partition ID.
      */
     public GroupPartitionId(final int grpId, final int partId) {

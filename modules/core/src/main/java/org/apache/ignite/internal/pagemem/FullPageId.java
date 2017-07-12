@@ -55,7 +55,7 @@ public class FullPageId {
     /** */
     private final long effectivePageId;
 
-    /** Cache ID. */
+    /** Cache group ID. */
     private final int grpId;
 
     /**
