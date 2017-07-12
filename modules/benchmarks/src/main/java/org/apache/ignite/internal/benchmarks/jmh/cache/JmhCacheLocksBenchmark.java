@@ -78,6 +78,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @Setup(Level.Trial)
     public void createLock() {
         cacheLock = cache.lock(lockKey);
+
         igniteLock = node.reentrantLock(lockKey, failoverSafe, fair, true);
     }
 
