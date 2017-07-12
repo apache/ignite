@@ -40,7 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -52,6 +51,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -109,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -263,8 +264,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private boolean stopping;
 
-    /** Checkpoint runner thread pool. */
-    private ExecutorService asyncRunner;
+    /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
+    @Nullable private ExecutorService asyncRunner;
 
     /** Buffer for the checkpoint threads. */
     private ThreadLocal<ByteBuffer> threadBuf;
@@ -1916,6 +1917,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             asyncRunner == null ? 1 : chp.cpPages.collectionsSize());
 
                         tracker.onPagesWriteStart();
+                        final AtomicInteger writtenPagesCtr = new AtomicInteger();
+                        final int totalPagesToWriteCnt = chp.cpPages.size();
 
                         if (asyncRunner != null) {
                             for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
@@ -1923,7 +1926,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     tracker,
                                     chp.cpPages.innerCollection(i),
                                     updStores,
-                                    doneWriteFut
+                                    doneWriteFut,
+                                    writtenPagesCtr,
+                                    totalPagesToWriteCnt
                                 );
 
                                 try {
@@ -1937,7 +1942,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                         else {
                             // Single-threaded checkpoint.
-                            Runnable write = new WriteCheckpointPages(tracker, chp.cpPages, updStores, doneWriteFut);
+                            Runnable write = new WriteCheckpointPages(tracker,
+                                chp.cpPages,
+                                updStores,
+                                doneWriteFut,
+                                writtenPagesCtr,
+                                totalPagesToWriteCnt);
 
                             write.run();
                         }
@@ -2092,15 +2102,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     curCpProgress = curr;
                 }
 
-                final NavigableMap<T2<Integer, Integer>, T2<Integer, Integer>> map =
-                    new TreeMap<>(FullPageIdIterableComparator.INSTANCE);
+                final PartitionAllocationMap map = new PartitionAllocationMap();
 
                 DbCheckpointListener.Context ctx0 = new DbCheckpointListener.Context() {
                     @Override public boolean nextSnapshot() {
                         return curr.nextSnapshot;
                     }
 
-                    @Override public Map<T2<Integer, Integer>, T2<Integer, Integer>> partitionStatMap() {
+                    /** {@inheritDoc} */
+                    @Override public PartitionAllocationMap partitionStatMap() {
                         return map;
                     }
 
@@ -2278,14 +2288,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     *
-     */
+    /** Pages write task */
     private class WriteCheckpointPages implements Runnable {
         /** */
         private CheckpointMetricsTracker tracker;
 
-        /** */
+        /** Collection of page IDs to write under this task. Overall pages to write may be greater than this collection*/
         private Collection<FullPageId> writePageIds;
 
         /** */
@@ -2294,19 +2302,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private CountDownFuture doneFut;
 
+        /** Counter for all written pages. May be shared between several workers */
+        private AtomicInteger writtenPagesCntr;
+
+        /** Total pages to write, counter may be greater than {@link #writePageIds} size*/
+        private final int totalPagesToWrite;
+
         /**
-         * @param writePageIds Write page IDs.
+         * Creates task for write pages
+         * @param tracker
+         * @param writePageIds Collection of page IDs to write.
+         * @param updStores
+         * @param doneFut
+         * @param writtenPagesCntr all written pages counter, may be shared between several write tasks
+         * @param totalPagesToWrite total pages to be written under this checkpoint
          */
         private WriteCheckpointPages(
-            CheckpointMetricsTracker tracker,
-            Collection<FullPageId> writePageIds,
-            GridConcurrentHashSet<PageStore> updStores,
-            CountDownFuture doneFut
-        ) {
+            final CheckpointMetricsTracker tracker,
+            final Collection<FullPageId> writePageIds,
+            final GridConcurrentHashSet<PageStore> updStores,
+            final CountDownFuture doneFut,
+            @NotNull final AtomicInteger writtenPagesCntr,
+            final int totalPagesToWrite) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
+            this.writtenPagesCntr = writtenPagesCntr;
+            this.totalPagesToWrite = totalPagesToWrite;
         }
 
         /** {@inheritDoc} */
@@ -2354,7 +2377,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tmpWriteBuf.rewind();
                         }
 
-                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf);
+                        int curWrittenPages = writtenPagesCntr.incrementAndGet();
+
+                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages, totalPagesToWrite);
 
                         tmpWriteBuf.rewind();
 

@@ -792,8 +792,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer getForCheckpoint(FullPageId fullId, ByteBuffer tmpBuf, CheckpointMetricsTracker tracker) {
-        assert tmpBuf.remaining() == pageSize();
+    @Override public Integer getForCheckpoint(FullPageId fullId, ByteBuffer outBuf, CheckpointMetricsTracker tracker) {
+        assert outBuf.remaining() == pageSize();
 
         Segment seg = segment(fullId.groupId(), fullId.pageId());
 
@@ -876,7 +876,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
         else
-            return copyPageForCheckpoint(absPtr, fullId, tmpBuf, tmpBuffer, tracker) ? tag : null;
+            return copyPageForCheckpoint(absPtr, fullId, outBuf, tmpBuffer, tracker) ? tag : null;
     }
 
     /**
@@ -1565,7 +1565,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private final int maxDirtyPages;
 
-        /** */
+        /** Maps partition (cacheId, partId) to its tag. Tag is 1-based incrementing partition file counter */
         private final Map<T2<Integer, Integer>, Integer> partTagMap = new HashMap<>();
 
         /**
@@ -1903,7 +1903,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         /**
          * @param grpId Cache group ID.
          * @param partId Partition ID.
-         * @return Partition tag.
+         * @return Partition tag. Growing 1 based partition file version
          */
         private int partTag(int grpId, int partId) {
             assert getReadHoldCount() > 0 || getWriteHoldCount() > 0;
