@@ -94,36 +94,47 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         this.lock = lock;
     }
 
-    //TODO Find more beautiful way to set cache manager (possibly move method to interface)
+    /**
+     * Sets CacheManager to delegate.
+     * @param cacheMgr Cache Manager.
+     */
     public void setCacheManager(org.apache.ignite.cache.CacheManager cacheMgr) {
+        //TODO Find more beautiful way to set cache manager (possibly move method to interface)
         if (delegate instanceof IgniteCacheProxyImpl)
             ((IgniteCacheProxyImpl) delegate).setCacheManager(cacheMgr);
     }
 
+    /** {@inheritDoc} */
     @Override public GridCacheContext<K, V> context() {
         return delegate.context();
     }
 
+    /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
         return delegate.getConfiguration(clazz);
     }
 
+    /** {@inheritDoc} */
     @Override public String getName() {
         return delegate.getName();
     }
 
+    /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
         return delegate.getCacheManager();
     }
 
+    /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> internalProxy() {
         return delegate.internalProxy();
     }
 
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> cacheNoGate() {
         return new GatewayProtectedCacheProxy<>(delegate, opCtx, false);
     }
 
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         GridCacheGateway<K, V> gate = gate();
 
@@ -137,10 +148,12 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> withSkipStore() {
         return skipStore();
     }
 
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> skipStore() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -159,6 +172,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> withNoRetries() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -177,6 +191,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> withPartitionRecover() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -195,10 +210,12 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
     @Override public <K1, V1> GatewayProtectedCacheProxy<K1, V1> withKeepBinary() {
         return keepBinary();
     }
 
+    /** {@inheritDoc} */
     @Override public <K1, V1> GatewayProtectedCacheProxy<K1, V1> keepBinary() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -212,6 +229,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> withDataCenterId(byte dataCenterId) {
         GridCacheGateway<K, V> gate = gate();
 
@@ -230,8 +248,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -244,8 +262,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -258,8 +276,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -272,8 +290,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -286,8 +304,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public V getAndPutIfAbsent(K key, V val) throws CacheException, TransactionException {
+    /** {@inheritDoc} */
+    @Override public V getAndPutIfAbsent(K key, V val) throws CacheException, TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -300,8 +318,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<V> getAndPutIfAbsentAsync(K key, V val) throws CacheException, TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndPutIfAbsentAsync(K key, V val) throws CacheException, TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -314,18 +332,18 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public Lock lock(K key) {
+    /** {@inheritDoc} */
+    @Override public Lock lock(K key) {
         return delegate.lock(key);
     }
 
-    @Override
-    public Lock lockAll(Collection<? extends K> keys) {
+    /** {@inheritDoc} */
+    @Override public Lock lockAll(Collection<? extends K> keys) {
         return delegate.lockAll(keys);
     }
 
-    @Override
-    public boolean isLocalLocked(K key, boolean byCurrThread) {
+    /** {@inheritDoc} */
+    @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -338,8 +356,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <R> QueryCursor<R> query(Query<R> qry) {
+    /** {@inheritDoc} */
+    @Override public <R> QueryCursor<R> query(Query<R> qry) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -352,8 +370,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
+    /** {@inheritDoc} */
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -366,8 +384,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
+    /** {@inheritDoc} */
+    @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -380,8 +398,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -394,8 +412,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public QueryMetrics queryMetrics() {
+    /** {@inheritDoc} */
+    @Override public QueryMetrics queryMetrics() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -408,8 +426,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void resetQueryMetrics() {
+    /** {@inheritDoc} */
+    @Override public void resetQueryMetrics() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -422,8 +440,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public Collection<? extends QueryDetailMetrics> queryDetailMetrics() {
+    /** {@inheritDoc} */
+    @Override public Collection<? extends QueryDetailMetrics> queryDetailMetrics() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -436,8 +454,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void resetQueryDetailMetrics() {
+    /** {@inheritDoc} */
+    @Override public void resetQueryDetailMetrics() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -450,8 +468,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void localEvict(Collection<? extends K> keys) {
+    /** {@inheritDoc} */
+    @Override public void localEvict(Collection<? extends K> keys) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -464,8 +482,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public V localPeek(K key, CachePeekMode... peekModes) {
+    /** {@inheritDoc} */
+    @Override public V localPeek(K key, CachePeekMode... peekModes) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -478,8 +496,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public int size(CachePeekMode... peekModes) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public int size(CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -492,8 +510,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -506,8 +524,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public long sizeLong(CachePeekMode... peekModes) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public long sizeLong(CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -520,8 +538,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -534,8 +552,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -548,8 +566,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -562,8 +580,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public int localSize(CachePeekMode... peekModes) {
+    /** {@inheritDoc} */
+    @Override public int localSize(CachePeekMode... peekModes) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -576,8 +594,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public long localSizeLong(CachePeekMode... peekModes) {
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode... peekModes) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -590,8 +608,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public long localSizeLong(int partition, CachePeekMode... peekModes) {
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(int partition, CachePeekMode... peekModes) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -604,8 +622,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -618,8 +636,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -632,8 +650,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public V get(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public V get(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -646,8 +664,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<V> getAsync(K key) {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAsync(K key) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -660,8 +678,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public CacheEntry<K, V> getEntry(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public CacheEntry<K, V> getEntry(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -674,8 +692,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<CacheEntry<K, V>> getEntryAsync(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<CacheEntry<K, V>> getEntryAsync(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -688,8 +706,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public Map<K, V> getAll(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public Map<K, V> getAll(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -702,8 +720,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -716,8 +734,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -730,8 +748,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -744,8 +762,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public Map<K, V> getAllOutTx(Set<? extends K> keys) {
+    /** {@inheritDoc} */
+    @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -758,8 +776,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -772,8 +790,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public boolean containsKey(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public boolean containsKey(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -786,8 +804,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void loadAll(Set<? extends K> keys, boolean replaceExisting, CompletionListener completionListener) {
+    /** {@inheritDoc} */
+    @Override public void loadAll(Set<? extends K> keys, boolean replaceExisting, CompletionListener completionListener) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -800,8 +818,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Boolean> containsKeyAsync(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> containsKeyAsync(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -814,8 +832,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public boolean containsKeys(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public boolean containsKeys(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -828,8 +846,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Boolean> containsKeysAsync(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> containsKeysAsync(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -842,8 +860,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void put(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public void put(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -856,8 +874,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> putAsync(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> putAsync(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -870,8 +888,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public V getAndPut(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public V getAndPut(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -884,8 +902,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<V> getAndPutAsync(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndPutAsync(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -898,8 +916,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void putAll(Map<? extends K, ? extends V> map) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public void putAll(Map<? extends K, ? extends V> map) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -912,8 +930,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -926,8 +944,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public boolean putIfAbsent(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -940,8 +958,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Boolean> putIfAbsentAsync(K key, V val) {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> putIfAbsentAsync(K key, V val) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -954,8 +972,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public boolean remove(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public boolean remove(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -968,8 +986,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Boolean> removeAsync(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> removeAsync(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -982,8 +1000,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public boolean remove(K key, V oldVal) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public boolean remove(K key, V oldVal) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -996,8 +1014,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Boolean> removeAsync(K key, V oldVal) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> removeAsync(K key, V oldVal) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1010,8 +1028,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public V getAndRemove(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public V getAndRemove(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1024,8 +1042,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<V> getAndRemoveAsync(K key) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndRemoveAsync(K key) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1038,8 +1056,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public boolean replace(K key, V oldVal, V newVal) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public boolean replace(K key, V oldVal, V newVal) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1052,8 +1070,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1066,8 +1084,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public boolean replace(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public boolean replace(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1080,8 +1098,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Boolean> replaceAsync(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> replaceAsync(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1094,8 +1112,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public V getAndReplace(K key, V val) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public V getAndReplace(K key, V val) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1108,8 +1126,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<V> getAndReplaceAsync(K key, V val) {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<V> getAndReplaceAsync(K key, V val) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1122,8 +1140,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void removeAll(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public void removeAll(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1136,8 +1154,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> removeAllAsync(Set<? extends K> keys) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> removeAllAsync(Set<? extends K> keys) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1150,8 +1168,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void removeAll() {
+    /** {@inheritDoc} */
+    @Override public void removeAll() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1164,8 +1182,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> removeAllAsync() {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> removeAllAsync() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1178,8 +1196,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void clear() {
+    /** {@inheritDoc} */
+    @Override public void clear() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1192,8 +1210,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> clearAsync() {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> clearAsync() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1206,8 +1224,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void clear(K key) {
+    /** {@inheritDoc} */
+    @Override public void clear(K key) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1220,8 +1238,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> clearAsync(K key) {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> clearAsync(K key) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1234,8 +1252,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void clearAll(Set<? extends K> keys) {
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<? extends K> keys) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1248,8 +1266,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1262,8 +1280,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void localClear(K key) {
+    /** {@inheritDoc} */
+    @Override public void localClear(K key) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1276,8 +1294,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void localClearAll(Set<? extends K> keys) {
+    /** {@inheritDoc} */
+    @Override public void localClearAll(Set<? extends K> keys) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1290,8 +1308,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1304,8 +1322,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> IgniteFuture<T> invokeAsync(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> invokeAsync(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1318,8 +1336,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1332,8 +1350,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1346,8 +1364,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1360,8 +1378,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1374,8 +1392,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1388,8 +1406,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys, CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1402,13 +1420,13 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public <T> T unwrap(Class<T> clazz) {
+    /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
         return delegate.unwrap(clazz);
     }
 
-    @Override
-    public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
+    /** {@inheritDoc} */
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1421,8 +1439,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
+    /** {@inheritDoc} */
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1435,6 +1453,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
     @Override public Iterator<Entry<K, V>> iterator() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -1448,6 +1467,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void destroy() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -1467,10 +1487,12 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             destroyFuture.get();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> destroyAsync() {
         return delegate.destroyAsync();
     }
 
+    /** {@inheritDoc} */
     @Override public void close() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -1490,22 +1512,27 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             closeFuture.get();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> closeAsync() {
         return delegate.closeAsync();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isClosed() {
         return delegate.isClosed();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> rebalance() {
         return delegate.rebalance();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> indexReadyFuture() {
         return delegate.indexReadyFuture();
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
         GridCacheGateway<K, V> gate = gate();
 
@@ -1519,8 +1546,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public CacheMetrics metrics(ClusterGroup grp) {
+    /** {@inheritDoc} */
+    @Override public CacheMetrics metrics(ClusterGroup grp) {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1533,8 +1560,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public CacheMetrics localMetrics() {
+    /** {@inheritDoc} */
+    @Override public CacheMetrics localMetrics() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1547,8 +1574,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public CacheMetricsMXBean mxBean() {
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean mxBean() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1561,8 +1588,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public CacheMetricsMXBean localMxBean() {
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean localMxBean() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1575,8 +1602,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
-    @Override
-    public Collection<Integer> lostPartitions() {
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> lostPartitions() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -1588,7 +1615,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             onLeave(gate, prev);
         }
     }
-    
+
+    /**
+     * Safely get CacheGateway.
+     * @return Cache Gateway.
+     */
     @Nullable private GridCacheGateway<K, V> gate() {
         GridCacheContext<K, V> cacheContext = delegate.context();
         return cacheContext != null ? cacheContext.gate() : null;
@@ -1653,30 +1684,37 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             gate.leaveNoLock();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isProxyClosed() {
         return delegate.isProxyClosed();
     }
 
+    /** {@inheritDoc} */
     @Override public void closeProxy() {
         delegate.closeProxy();
     }
 
+    /** {@inheritDoc} */
     @Override public V getTopologySafe(K key) {
         return delegate.getTopologySafe(key);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAsync() {
         return delegate.withAsync();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isAsync() {
         return delegate.isAsync();
     }
 
+    /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
         return delegate.future();
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(delegate);
 
@@ -1685,6 +1723,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         out.writeObject(opCtx);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         delegate = (IgniteCacheProxy<K, V>) in.readObject();
 
