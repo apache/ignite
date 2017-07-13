@@ -158,13 +158,17 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             timeoutObj.onTimeout();
                         }
                         catch (Throwable e) {
+                            if (isCancelled() && !(e instanceof Error)){
+                                if (log.isDebugEnabled())
+                                    log.debug("Error when executing timeout callback: " + timeoutObj);
+
+                                return;
+                            }
+
                             U.error(log, "Error when executing timeout callback: " + timeoutObj, e);
 
-                            if (e instanceof Error)
+                            if ((e instanceof Error))
                                 throw e;
-
-                            if(isCancelled())
-                                return;
                         }
                     }
                     else
