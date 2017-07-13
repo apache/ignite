@@ -940,6 +940,9 @@ class ClusterCachesInfo {
 
         CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
 
+        //CacheGroup configurations that were created from local node configuration
+        Map<Integer, CacheGroupDescriptor> localCacheGrps = new HashMap(registeredCacheGroups());
+
         // Replace locally registered data with actual data received from cluster.
         registeredCaches.clear();
         registeredCacheGrps.clear();
@@ -954,6 +957,9 @@ class ClusterCachesInfo {
                 grpData.startTopologyVersion(),
                 grpData.deploymentId(),
                 grpData.caches());
+
+            if (localCacheGrps.containsKey(grpDesc.groupId()))
+                grpDesc.mergeWith(localCacheGrps.get(grpDesc.groupId()));
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
 

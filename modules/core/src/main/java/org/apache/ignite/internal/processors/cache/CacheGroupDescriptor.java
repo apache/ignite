@@ -197,6 +197,17 @@ public class CacheGroupDescriptor {
     }
 
     /**
+     * Method to merge this CacheGroup descriptor with another one.
+     *
+     * @param otherDesc CacheGroup descriptor that must be merged with this one.
+     */
+    void mergeWith(CacheGroupDescriptor otherDesc) {
+        assert otherDesc != null : otherDesc;
+
+        config().setRebalanceDelay(otherDesc.config().getRebalanceDelay());
+    }
+
+    /**
      * @return Start version for dynamically started group.
      */
     @Nullable public AffinityTopologyVersion startTopologyVersion() {
