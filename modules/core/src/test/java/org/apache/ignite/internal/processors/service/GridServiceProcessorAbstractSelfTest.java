@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.service;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -454,7 +456,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         IgniteServices svcs = g.services().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
-                CACHE_NAME, affKey);
+            CACHE_NAME, affKey);
 
         IgniteFuture<?> fut = svcs.future();
 
@@ -775,14 +777,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         for (ServiceDescriptor d : descs) {
             if (d.name().equals(svcName)) {
-                GridServiceTopology top = d.topologySnapshot();
-
-                if (top.eachNode() > 0)
-                    sum = top.eachNode();
-                else {
-                    for (Integer i : top.perNode().values())
-                        sum += i;
-                }
+                for (Map.Entry<UUID, Integer> i : d.topologySnapshot())
+                    sum += i.getValue();
             }
         }
 

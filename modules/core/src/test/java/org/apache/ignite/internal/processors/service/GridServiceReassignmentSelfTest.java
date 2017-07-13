@@ -67,11 +67,6 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         checkReassigns(7, 3);
     }
 
-    /** TBD */
-    public void testNodeMultiple() throws Exception {
-        checkReassigns(0, 5);
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -155,8 +150,8 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
      * @param maxPerNode Maximum number of services per node.
      * @param gridIdx Grid index to check.
      * @param lastTry Last try flag.
-     * @return {@code True} if check passed.
      * @throws Exception If failed.
+     * @return {@code True} if check passed.
      */
     private boolean checkServices(int total, int maxPerNode, int gridIdx, boolean lastTry) throws Exception {
         IgniteEx grid = grid(gridIdx);
@@ -171,39 +166,26 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         int sum = 0;
 
-        GridServiceTopology topology = assignments.topology();
+        for (Map.Entry<UUID, Integer> entry : assignments.topology()) {
+            UUID nodeId = entry.getKey();
 
-        if (total == 0 && maxPerNode > 0) {
-            assertTrue(
-                "There must be no per-node assignments for total=0, maxPerNode > 0 deployment",
-                topology.perNode().isEmpty());
-            assertEquals(
-                "maxPerNode services must be assigned to each node for total=0, maxPerNode > 0 deployment",
-                maxPerNode,
-                topology.eachNode());
+            if (!lastTry && !nodes.contains(nodeId))
+                return false;
+
+            assertTrue("Dead node is in assignments: " + nodeId, nodes.contains(nodeId));
+
+            Integer nodeCnt = entry.getValue();
+
+            if (maxPerNode > 0)
+                assertTrue("Max per node limit exceeded [nodeId=" + nodeId + ", max=" + maxPerNode +
+                    ", actual=" + nodeCnt, nodeCnt <= maxPerNode);
+
+            sum += nodeCnt;
         }
-        else {
-            for (Map.Entry<UUID, Integer> entry : topology.perNode().entrySet()) {
-                UUID nodeId = entry.getKey();
 
-                if (!lastTry && !nodes.contains(nodeId))
-                    return false;
-
-                assertTrue("Dead node is in assignments: " + nodeId, nodes.contains(nodeId));
-
-                Integer nodeCnt = entry.getValue();
-
-                if (maxPerNode > 0)
-                    assertTrue("Max per node limit exceeded [nodeId=" + nodeId + ", max=" + maxPerNode +
-                        ", actual=" + nodeCnt, nodeCnt <= maxPerNode);
-
-                sum += nodeCnt;
-            }
-
-            if (total > 0)
-                assertTrue("Total number of services limit exceeded [sum=" + sum +
-                    ", assigns=" + topology.perNode() + ']', sum <= total);
-        }
+        if (total > 0)
+            assertTrue("Total number of services limit exceeded [sum=" + sum +
+                ", topology=" + assignments.topology() + ']', sum <= total);
 
         if (!lastTry && proxy(grid).get() != 10)
             return false;

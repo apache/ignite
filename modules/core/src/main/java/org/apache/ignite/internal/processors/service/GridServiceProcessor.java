@@ -960,14 +960,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 }
             }
             else
-                nodes = null;
+                nodes = new ArrayList<>();
 
             try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
-
-                GridServiceTopology top = assigns.topology();
-
-                Map<UUID, Integer> cnts = new HashMap<>();
 
                 if (affKey != null) {
                     ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
@@ -975,16 +971,22 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                     if (n != null) {
                         int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
 
-                        cnts.put(n.id(), cnt);
+                        assigns.topology(new SingleNodeServiceTopology(cnt, n.id()));
                     }
-
-                    top.perNode(cnts);
                 }
-                else if (nodes != null && !nodes.isEmpty()) {
-                    if (totalCnt == 0 && maxPerNodeCnt > 0 && nodeFilter == null)
-                        top.eachNode(maxPerNodeCnt);
-                    else {
+                else if (totalCnt == 0 && maxPerNodeCnt > 0) {
+                    Collection<UUID> nodeIds = new ArrayList<>(nodes.size());
+
+                    for (ClusterNode n : nodes)
+                        nodeIds.add(n.id());
+
+                    assigns.topology(new HomomorphicServiceTopology(maxPerNodeCnt, nodeIds));
+                }
+                else {
+                    if (!nodes.isEmpty()) {
                         int size = nodes.size();
+
+                        Map<UUID, Integer> cnts = new HashMap<>();
 
                         int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
                         int remainder = totalCnt != 0 ? totalCnt % size : 0;
@@ -1009,7 +1011,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                 Collection<UUID> used = new HashSet<>();
 
                                 // Avoid redundant moving of services.
-                                for (Map.Entry<UUID, Integer> e : oldAssigns.topology().perNode().entrySet()) {
+                                for (Map.Entry<UUID, Integer> e : oldAssigns.topology()) {
                                     // Do not assign services to left nodes.
                                     if (ctx.discovery().node(e.getKey()) == null)
                                         continue;
@@ -1058,9 +1060,9 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                 }
                             }
                         }
-                    }
 
-                    top.perNode(cnts);
+                        assigns.topology(new PolymorphicServiceTopology(cnts));
+                    }
                 }
 
                 cache.put(key, assigns);
@@ -1088,10 +1090,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         GridServiceTopology top = assigns.topology();
 
-        Integer assignCnt = top.eachNode() > 0 ? top.eachNode() : top.perNode().get(ctx.localNodeId());
-
-        if (assignCnt == null)
-            assignCnt = 0;
+        Integer assignCnt = top == null ? 0 : top.nodeServiceCount(ctx.localNodeId());
 
         Collection<ServiceContextImpl> ctxs;
 
@@ -1372,7 +1371,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
 
-            if (busyLock == null || !busyLock.enterBusy())
+            if (busyLock ==  null || !busyLock.enterBusy())
                 return;
 
             try {

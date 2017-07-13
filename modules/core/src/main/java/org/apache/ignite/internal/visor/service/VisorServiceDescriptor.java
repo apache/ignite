@@ -146,9 +146,7 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
         out.writeInt(maxPerNodeCnt);
         U.writeString(out, cacheName);
         U.writeUuid(out, originNodeId);
-        out.writeLong(topSnapshot.version());
-        out.writeInt(topSnapshot.eachNode());
-        U.writeMap(out, topSnapshot.perNode());
+        out.writeObject(topSnapshot);
     }
 
     /** {@inheritDoc} */
@@ -159,14 +157,7 @@ public class VisorServiceDescriptor extends VisorDataTransferObject {
         maxPerNodeCnt = in.readInt();
         cacheName = U.readString(in);
         originNodeId = U.readUuid(in);
-        topSnapshot = new GridServiceTopology(in.readLong());
-        int topEachNode = in.readInt();
-        Map<UUID, Integer> topPerNode = U.readMap(in);
-
-        if (topEachNode > 0)
-            topSnapshot.eachNode(topEachNode);
-        else
-            topSnapshot.perNode(topPerNode);
+        topSnapshot = (GridServiceTopology)in.readObject();
     }
 
     /** {@inheritDoc} */

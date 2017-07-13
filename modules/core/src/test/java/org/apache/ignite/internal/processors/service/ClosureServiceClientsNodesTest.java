@@ -168,6 +168,8 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultService() throws Exception {
+        UUID clientNodeId = grid(0).cluster().localNode().id();
+
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
 
@@ -189,10 +191,15 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, srvDscs.size());
 
-            GridServiceTopology top = F.first(srvDscs).topologySnapshot();
+            GridServiceTopology nodesMap = F.first(srvDscs).topologySnapshot();
 
-            assertEquals(1, top.eachNode());
-            assertTrue(top.perNode().isEmpty());
+            assertEquals(NODES_CNT - 1, nodesMap.nodeCount());
+
+            for (Map.Entry<UUID, Integer> nodeInfo : nodesMap) {
+                assertFalse(clientNodeId.equals(nodeInfo.getKey()));
+
+                assertEquals(1, nodeInfo.getValue().intValue());
+            }
 
             ignite.services().cancelAll();
         }
@@ -225,12 +232,11 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, srvDscs.size());
 
-            GridServiceTopology top = F.first(srvDscs).topologySnapshot();
+            GridServiceTopology nodesMap = F.first(srvDscs).topologySnapshot();
 
-            assertEquals(0, top.eachNode());
-            assertEquals(1, top.perNode().size());
+            assertEquals(1, nodesMap.nodeCount());
 
-            for (Map.Entry<UUID, Integer> nodeInfo : top.perNode().entrySet()) {
+            for (Map.Entry<UUID, Integer> nodeInfo : nodesMap) {
                 assertEquals(clientNodeId, nodeInfo.getKey());
 
                 assertEquals(1, nodeInfo.getValue().intValue());
@@ -249,7 +255,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
-          //No-op.
+            //No-op.
         }
 
         /** {@inheritDoc} */
