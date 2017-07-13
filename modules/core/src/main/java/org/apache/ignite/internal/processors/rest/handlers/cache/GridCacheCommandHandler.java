@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.handlers.cache;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -406,7 +407,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_METADATA: {
-                    fut = ctx.task().execute(MetadataTask.class, cacheName);
+                    fut = ctx.task().execute(MetadataTask.class, req0.cacheName());
 
                     break;
                 }
@@ -939,13 +940,43 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             GridDiscoveryManager discovery = ignite.context().discovery();
 
-            Map<ComputeJob, ClusterNode> map = U.newHashMap(1);
+            Map<ComputeJob, ClusterNode> map = U.newHashMap(F.isEmpty(cacheName) ? subgrid.size() : 1);
 
-            for (int i = 1; i < subgrid.size(); i++) {
-                if (discovery.nodePublicCaches(subgrid.get(i)).keySet().contains(cacheName)) {
-                    map.put(new MetadataJob(cacheName), subgrid.get(i));
+            if (!F.isEmpty(cacheName)) {
+                for (int i = 1; i < subgrid.size(); i++) {
+                    if (discovery.nodePublicCaches(subgrid.get(i)).keySet().contains(cacheName)) {
+                        MetadataJob job = new MetadataJob();
 
-                    break;
+                        job.setArguments(cacheName);
+
+                        map.put(job, subgrid.get(i));
+
+                        break;
+                    }
+                }
+
+                if (map.isEmpty())
+                    throw new IgniteException("Failed to request meta data. " + cacheName + " is not found");
+            }
+            else {
+                // get meta for all caches.
+                boolean sameCaches = true;
+
+                Set<String> caches = discovery.nodePublicCaches(F.first(subgrid)).keySet();
+
+                for (int i = 1; i < subgrid.size(); i++) {
+                    if (!caches.equals(discovery.nodePublicCaches(subgrid.get(i)).keySet())) {
+                        sameCaches = false;
+
+                        break;
+                    }
+                }
+
+                if (sameCaches)
+                    map.put(new MetadataJob(), ignite.localNode());
+                else {
+                    for (ClusterNode node : subgrid)
+                        map.put(new MetadataJob(), node);
                 }
             }
 
@@ -959,8 +990,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             for (ComputeJobResult r : results) {
                 if (!r.isCancelled() && r.getException() == null) {
-                    if (r.getData() != null) {
-                        GridCacheSqlMetadata m = r.<GridCacheSqlMetadata>getData();
+                    for (GridCacheSqlMetadata m : r.<Collection<GridCacheSqlMetadata>>getData()) {
                         if (!map.containsKey(m.cacheName()))
                             map.put(m.cacheName(), m);
                     }
@@ -985,35 +1015,47 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Cache name. */
-        private final String cacheName;
-
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
         /**
-         * @param cacheName Cache name.
+         *
          */
-        MetadataJob(String cacheName) {
-            this.cacheName = cacheName;
+        MetadataJob() {
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheSqlMetadata execute() {
-            IgniteInternalCache<?, ?> cache = ignite.context().cache().publicCache(cacheName);
+        @Override public Collection<GridCacheSqlMetadata> execute() {
+            String cacheName = null;
+            IgniteInternalCache<?, ?> cache;
 
-            if (cache == null)
-                return null;
+            if (!F.isEmpty(arguments())) {
+                cacheName = argument(0);
+
+                cache = ignite.context().cache().publicCache(cacheName);
+
+                assert cache != null;
+            }
+            else {
+                cache = F.first(ignite.context().cache().publicCaches()).internalProxy();
+
+                if (cache == null)
+                    return Collections.emptyList();
+            }
 
             try {
                 Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
-                for (GridCacheSqlMetadata meta : metas)
-                    if (meta.cacheName().equals(cacheName))
-                        return meta;
+                if (cacheName != null) {
+                    for (GridCacheSqlMetadata meta : metas)
+                        if (meta.cacheName().equals(cacheName))
+                            return Collections.singleton(meta);
 
-                return null;
+                    throw new IgniteException("No meta data for " + cacheName + " can be found");
+                }
+
+                return metas;
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

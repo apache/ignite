@@ -1040,11 +1040,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param metas Metadata for Ignite caches.
      * @throws Exception If failed.
      */
-    private void testMetadata(Collection<GridCacheSqlMetadata> metas, String ret) throws Exception {
-        JsonNode arr = jsonResponse(ret);
-
+    private void testMetadata(Collection<GridCacheSqlMetadata> metas, JsonNode arr) throws Exception {
         assertTrue(arr.isArray());
-        assertEquals(metas.size(), arr.size());
 
         for (JsonNode item : arr) {
             JsonNode cacheNameNode = item.get("cacheName");
@@ -1129,13 +1126,30 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertEquals(5, metas.size());
 
-        Collection<GridCacheSqlMetadata> dfltCacheMeta = cache.context().queries().sqlMetadata();
-
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
+        String ret = content(F.asMap("cacheName", "", "cmd", GridRestCommand.CACHE_METADATA.key()));
 
         info("Cache metadata: " + ret);
 
-        testMetadata(dfltCacheMeta, ret);
+        JsonNode arrResponse = jsonResponse(ret);
+
+        assertEquals(5, arrResponse.size());
+
+        testMetadata(metas, arrResponse);
+
+        Collection<GridCacheSqlMetadata> dfltCacheMeta = cache.context().queries().sqlMetadata();
+
+        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
+
+        info("Cache metadata: " + ret);
+
+        arrResponse = jsonResponse(ret);
+
+        assertEquals(1, arrResponse.size());
+
+        testMetadata(dfltCacheMeta, arrResponse);
+
+        assertResponseContainsError(content(
+            F.asMap("cacheName", "nonExistingCacheName", "cmd", GridRestCommand.CACHE_METADATA.key())));
     }
 
     /**
@@ -1149,13 +1163,31 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
-        Collection<GridCacheSqlMetadata> meta = c.context().queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
+        String ret = content(F.asMap("cacheName", "", "cmd", GridRestCommand.CACHE_METADATA.key()));
 
         info("Cache metadata: " + ret);
 
-        testMetadata(meta, ret);
+        JsonNode arrResponse = jsonResponse(ret);
+
+        assertEquals(6, arrResponse.size());
+
+        testMetadata(metas, arrResponse);
+
+        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME,
+            "cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+
+        info("Cache metadata with cacheName parameter: " + ret);
+
+        arrResponse = jsonResponse(ret);
+
+        assertEquals(1, arrResponse.size());
+
+        testMetadata(metas, arrResponse);
+
+        assertResponseContainsError(content(
+            F.asMap("cacheName", "nonExistingCacheName", "cmd", GridRestCommand.CACHE_METADATA.key())));
     }
 
     /**
