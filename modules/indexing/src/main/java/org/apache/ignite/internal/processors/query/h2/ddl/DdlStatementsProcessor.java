@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.sql.PreparedStatement;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -286,12 +288,21 @@ public class DdlStatementsProcessor {
 
         res.setTableName(createTbl.tableName());
 
+        Set<String> notNullFields = null;
+
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
             Column col = gridCol.column();
 
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
+
+            if (!col.isNullable()) {
+                if (notNullFields == null)
+                    notNullFields = new HashSet<>();
+
+                notNullFields.add(e.getKey());
+            }
         }
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
@@ -301,6 +312,7 @@ public class DdlStatementsProcessor {
         res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
+        res.setNotNullFields(notNullFields);
 
         return res;
     }

@@ -63,4 +63,21 @@ public interface GridQueryProperty {
      * @return Parent property or {@code null} if this property is not nested.
      */
     public GridQueryProperty parent();
+
+    /**
+     * Gets the flag restricting {@code null} value for this property.
+     *
+     * @return {@code true} if property does not allow {@code null} value.
+     */
+    public boolean notNull();
+
+    /**
+     * Performs validation of given key and value against configured constraints for this property.
+     * Throws runtime exception if validation fails.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, if error happens.
+     */
+    public void validate(Object key, Object val) throws IgniteCheckedException;
 }

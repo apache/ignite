@@ -2480,6 +2480,27 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
     }
 
     /**
+     * Performs validation of provided key and value against configured constraints.
+     * Throws runtime exception if validation fails.
+     *
+     * @param cacheName Name of the cache.
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If error happens.
+     */
+    public void validateKeyAndValue(String cacheName, KeyCacheObject key, CacheObject val)
+        throws IgniteCheckedException {
+        CacheObjectContext coctx = cacheObjectContext(cacheName);
+
+        QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
+
+        if (desc == null)
+            return;
+
+        desc.validateKeyAndValue(key, val);
+    }
+
+    /**
      * @param ver Version.
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {

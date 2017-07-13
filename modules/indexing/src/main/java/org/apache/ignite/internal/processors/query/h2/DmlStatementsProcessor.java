@@ -83,7 +83,6 @@ import org.h2.command.dml.Update;
 import org.h2.table.Column;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
-import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueTime;
@@ -1022,6 +1021,8 @@ public class DmlStatementsProcessor {
             if (val instanceof BinaryObjectBuilder)
                 val = ((BinaryObjectBuilder) val).build();
         }
+
+        desc.validateKeyAndValue(key, val);
 
         return new IgniteBiTuple<>(key, val);
     }

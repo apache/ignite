@@ -1252,8 +1252,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         break; // While.
                     }
 
+                    CacheObject cVal = cacheCtx.toCacheObject(val);
+
+                    if (op == CREATE || op == UPDATE)
+                        cacheCtx.validateKeyAndValue(cacheKey, cVal);
+
                     txEntry = addEntry(op,
-                        cacheCtx.toCacheObject(val),
+                        cVal,
                         entryProcessor,
                         invokeArgs,
                         entry,
@@ -1356,8 +1361,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 GridCacheOperation op = rmv ? DELETE : entryProcessor != null ? TRANSFORM :
                     v != null ? UPDATE : CREATE;
 
+                CacheObject cVal = cacheCtx.toCacheObject(val);
+
+                if (op == CREATE || op == UPDATE)
+                    cacheCtx.validateKeyAndValue(cacheKey, cVal);
+
                 txEntry = addEntry(op,
-                    cacheCtx.toCacheObject(val),
+                    cVal,
                     entryProcessor,
                     invokeArgs,
                     entry,

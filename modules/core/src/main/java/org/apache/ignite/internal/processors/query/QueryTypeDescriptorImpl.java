@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -66,6 +69,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Aliases. */
     private Map<String, String> aliases;
 
+    /** Not-null fields. */
+    private Set<String> notNulls;
+
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
 
@@ -98,6 +104,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** Obsolete. */
     private volatile boolean obsolete;
+
+    /** */
+    private Set<GridQueryProperty> validateProps;
 
     /**
      * Constructor.
@@ -360,6 +369,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
+        if (prop.notNull()) {
+            if (validateProps == null)
+                validateProps = new HashSet<>();
+
+            validateProps.add(prop);
+        }
+
         fields.put(name, prop.type());
     }
 
@@ -401,6 +417,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void aliases(Map<String, String> aliases) {
         this.aliases = aliases;
+    }
+
+    /** */
+    public void notNulls(Set<String> notNulls) {
+        this.notNulls = notNulls;
     }
 
     /**
@@ -455,5 +476,14 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     @Nullable @Override public String valueFieldAlias() {
         return valFieldName != null ? aliases.get(valFieldName) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
+        if (validateProps == null)
+            return;
+
+        for (GridQueryProperty prop: validateProps)
+            prop.validate(key, val);
     }
 }

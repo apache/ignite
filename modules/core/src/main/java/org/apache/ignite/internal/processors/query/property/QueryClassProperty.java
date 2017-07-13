@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.property;
 
+import java.sql.SQLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -44,18 +47,27 @@ public class QueryClassProperty implements GridQueryProperty {
     /** */
     private final CacheObjectContext coCtx;
 
+    /** */
+    private final boolean notNull;
+
     /**
      * Constructor.
      *
      * @param accessor Way of accessing the property.
+     * @param key {@code true} if key property, {@code false} otherwise.
+     * @param name Property name.
+     * @param notNull {@code true} if null value is not allowed.
+     * @param coCtx Cache Object Context.
      */
     public QueryClassProperty(QueryPropertyAccessor accessor, boolean key, String name,
-        @Nullable CacheObjectContext coCtx) {
+        boolean notNull, @Nullable CacheObjectContext coCtx) {
         this.accessor = accessor;
 
         this.key = key;
 
         this.name = !F.isEmpty(name) ? name : accessor.getPropertyName();
+
+        this.notNull = notNull;
 
         this.coCtx = coCtx;
     }
@@ -75,6 +87,10 @@ public class QueryClassProperty implements GridQueryProperty {
 
     /** {@inheritDoc} */
     @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+        if (notNull && propVal == null)
+            throw new IgniteSQLException("Null value is not allowed for field '" + name() + "'",
+                IgniteQueryErrorCode.NULL_VALUE);
+
         Object x = unwrap(this.key ? key : val);
 
         if (parent != null)
@@ -126,5 +142,17 @@ public class QueryClassProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public GridQueryProperty parent() {
         return parent;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean notNull() {
+        return notNull;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validate(Object key, Object val) throws IgniteCheckedException {
+        if (value(key, val) == null)
+            throw new IgniteSQLException("Null value is not allowed for field '" + name() + "'",
+                IgniteQueryErrorCode.NULL_VALUE);
     }
 }

@@ -1804,6 +1804,21 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * Performs validation of provided key and value against configured constraints.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If validation fails.
+     */
+    public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+        try {
+            ctx.query().validateKeyAndValue(cacheName, key, val);
+        } catch (RuntimeException e) {
+            throw U.cast(e);
+        }
+    }
+
+    /**
      * @param map Map.
      * @param key Key.
      * @param val Value.

@@ -424,6 +424,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     procRes = processor.process(invokeEntry, t.get2());
 
                                     val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
+
+                                    cacheCtx.validateKeyAndValue(key, val);
                                 }
                                 catch (Exception e) {
                                     err = e;
