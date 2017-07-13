@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -194,7 +195,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             qry.setCollocated(collocated);
             qry.setSchema(req.schema());
 
-            QueryCursor qryCur = ctx.query().querySqlFields(null, qry, true);
+            QueryCursor qryCur = ctx.query().querySqlFields(qry, true);
 
             qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
@@ -245,7 +246,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             // Getting meta and do the checks for the first execution.
             qry.setArgs(paramSet[0]);
 
-            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(null, qry, true);
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(qry, true);
 
             if (qryCur.isQuery())
                 throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
@@ -279,7 +280,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     private long executeQuery(SqlFieldsQuery qry, Object[] row) {
         qry.setArgs(row);
 
-        QueryCursor<List<?>> cur = ctx.query().querySqlFields(null, qry, true);
+        QueryCursor<List<?>> cur = ctx.query().querySqlFields(qry, true);
 
         return getRowsAffected(cur);
     }

@@ -1762,6 +1762,17 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
     /**
      * Query SQL fields.
      *
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     */
+    public FieldsQueryCursor<List<?>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary) {
+        return querySqlFields(null, qry, keepBinary);
+    }
+
+    /**
+     * Query SQL fields.
+     *
      * @param cctx Cache context.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
