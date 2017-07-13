@@ -1825,8 +1825,16 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
      * @return Indexing query filter.
      */
     public IndexingQueryFilter backupFilter(@Nullable final int[] parts) {
-        final AffinityTopologyVersion topVer = requestTopVer.get();
+        return backupFilter(U.firstNotNull(requestTopVer.get(), AffinityTopologyVersion.NONE), parts);
+    }
 
+    /**
+     * Create query filter for given partitions and topology version.
+     * @param topVer topology version.
+     * @param parts partitions to create filter for.
+     * @return Indexing query filter.
+     */
+    public IndexingQueryFilter backupFilter(final AffinityTopologyVersion topVer, @Nullable final int[] parts) {
         return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
