@@ -596,8 +596,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
             if (topVerFromMsg != null && lastExchangeVer != null && lastExchangeVer.compareTo(topVerFromMsg) > 0) {
                 if (log.isDebugEnabled())
-                    log.debug("Stale exchange id for full partition map update message (will ignore) [lastExchId=" +
-                        lastExchangeVer + ", topVersion=" + topVerFromMsg + ']');
+                    log.debug("Stale topology version for full partition map update message (will ignore) " +
+                        "[lastExchId=" + lastExchangeVer + ", topVersion=" + topVerFromMsg + ']');
 
                 return false;
             }

@@ -207,7 +207,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Init timestamp. Used to track the amount of time spent to complete the future. */
     private long initTs;
 
-    /** */
+    /**
+     * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
+     * partitions maps to nodes using disco (ring) instead of communication.
+     */
     private boolean centralizedAff;
 
     /** Change global state exception. */
