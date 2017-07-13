@@ -43,7 +43,7 @@ import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -176,7 +176,8 @@ public class CacheManager implements javax.cache.CacheManager {
             if (res == null)
                 throw new CacheException();
 
-            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
+            //TODO find possibility to set manager more cleanly
+            ((GatewayProtectedCacheProxy<K, V>)res).setCacheManager(this);
 
             if (igniteCacheCfg.isManagementEnabled())
                 enableManagement(cacheName, true);

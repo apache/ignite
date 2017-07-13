@@ -149,7 +149,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            CacheObject obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(0).peekVisibleValue();
+            CacheObject obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate()).peekEx(0).peekVisibleValue();
 
             int actCnt = cnt.get();
 
