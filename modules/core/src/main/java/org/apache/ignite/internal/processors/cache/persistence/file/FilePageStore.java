@@ -77,7 +77,7 @@ public class FilePageStore implements PageStore {
     /** */
     private volatile boolean recover;
 
-    /** */
+    /** Partition file version, 1-based incrementing counter. For outdated pages tag has low value, and write does nothing */
     private volatile int tag;
 
     /** */

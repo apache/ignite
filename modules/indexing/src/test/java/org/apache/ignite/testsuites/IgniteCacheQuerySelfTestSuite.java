@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsDi
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSqlQueryValueCopySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
@@ -266,12 +267,12 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest.class);
         suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
-
         suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
-
         suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
-
         suite.addTestSuite(CacheQueryEvictDataLostTest.class);
+
+        // Full text queries.
+        suite.addTestSuite(GridCacheFullTextQuerySelfTest.class);
 
         // Ignite cache and H2 comparison.
         suite.addTestSuite(BaseH2CompareQueryTest.class);

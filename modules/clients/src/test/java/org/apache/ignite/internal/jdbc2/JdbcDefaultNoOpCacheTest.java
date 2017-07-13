@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-import './badge/index.scss';
-import './btn/index.scss';
-import './datepicker/index.scss';
-import './timepicker/index.scss';
-import './tabs/index.scss';
-import './table/index.scss';
-import './panel/index.scss';
-import './dropdown/index.scss';
-import './modal/index.scss';
-import './ui-grid/index.scss';
-import './ui-grid-header/index.scss';
-import './ui-grid-settings/index.scss';
-import './page/index.scss';
-import './radio/index.scss';
-import './switcher/index.scss';
-import './form-field/index.scss';
-import './typography/index.scss';
-import './grid/index.scss';
-import './tooltip/index.scss';
+package org.apache.ignite.internal.jdbc2;
+
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+
+/**
+ * Test to check JDBC2 driver behavior when cache specified in connection string does not have any query entities.
+ */
+public class JdbcDefaultNoOpCacheTest extends org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest {
+    /** Ignite configuration URL. */
+    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
+
+    /** {@inheritDoc} */
+    protected String getUrl() {
+        return CFG_URL_PREFIX + "cache=noop@" + CFG_URL;
+    }
+}

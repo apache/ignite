@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains automatic JDBC store example.
- */
-package org.apache.ignite.examples.binary.datagrid.store.auto;
+.tooltip {
+    font-family: Roboto;
+
+    & > .tooltip-inner {
+        padding: 12px;
+        background-color: #FFF;
+    }
+}

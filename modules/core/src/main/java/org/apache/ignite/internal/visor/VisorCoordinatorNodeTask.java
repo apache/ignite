@@ -15,22 +15,25 @@
  * limitations under the License.
  */
 
-import './badge/index.scss';
-import './btn/index.scss';
-import './datepicker/index.scss';
-import './timepicker/index.scss';
-import './tabs/index.scss';
-import './table/index.scss';
-import './panel/index.scss';
-import './dropdown/index.scss';
-import './modal/index.scss';
-import './ui-grid/index.scss';
-import './ui-grid-header/index.scss';
-import './ui-grid-settings/index.scss';
-import './page/index.scss';
-import './radio/index.scss';
-import './switcher/index.scss';
-import './form-field/index.scss';
-import './typography/index.scss';
-import './grid/index.scss';
-import './tooltip/index.scss';
+package org.apache.ignite.internal.visor;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+
+/**
+ * Base class for Visor tasks intended to execute job on coordinator node.
+ */
+public abstract class VisorCoordinatorNodeTask<A, R> extends VisorOneNodeTask<A, R> {
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<A> arg) {
+        ClusterNode crd = ignite.context().discovery().discoCache().oldestAliveServerNode();
+
+        Collection<UUID> nids = new ArrayList<>(1);
+
+        nids.add(crd == null ? ignite.localNode().id() : crd.id());
+
+        return nids;
+    }
+}
