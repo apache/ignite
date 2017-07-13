@@ -996,8 +996,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                             remainder = 0;
                         }
 
-                        for (ClusterNode n : nodes)
-                            cnts.put(n.id(), perNodeCnt);
+                        for (ClusterNode n : nodes) {
+                            if (perNodeCnt > 0)
+                                cnts.put(n.id(), perNodeCnt);
+                        }
 
                         assert perNodeCnt >= 0;
                         assert remainder >= 0;

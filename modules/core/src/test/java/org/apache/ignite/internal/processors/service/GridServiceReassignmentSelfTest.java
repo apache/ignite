@@ -180,6 +180,8 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
                 assertTrue("Max per node limit exceeded [nodeId=" + nodeId + ", max=" + maxPerNode +
                     ", actual=" + nodeCnt, nodeCnt <= maxPerNode);
 
+            assertTrue("Topology should not store explicit zero assignments", entry.getValue() != 0);
+
             sum += nodeCnt;
         }
 
