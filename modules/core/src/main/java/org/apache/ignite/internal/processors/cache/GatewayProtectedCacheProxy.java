@@ -61,6 +61,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
         implements IgniteCacheProxy<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache proxy delegate. */
     private IgniteCacheProxy<K, V> delegate;
 
