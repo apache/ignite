@@ -1731,4 +1731,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         opCtx = (CacheOperationContext) in.readObject();
     }
+
+    @Override
+    public boolean equals(Object another) {
+        GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy) another;
+
+        return this.delegate.equals(anotherProxy.delegate);
+    }
 }
