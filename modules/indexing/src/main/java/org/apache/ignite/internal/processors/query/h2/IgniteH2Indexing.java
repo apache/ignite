@@ -371,7 +371,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             PreparedStatement stmt = cache.get(sql);
 
             if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).isCancelled() &&
-                    !GridSqlQueryParser.prepared(stmt).needRecompile()) {
+                !GridSqlQueryParser.prepared(stmt).needRecompile()) {
                 assert stmt.getConnection() == c;
 
                 return stmt;
@@ -1362,6 +1362,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result: prepared statement, H2 command, two-step query (if needed),
      *     metadata for two-step query (if needed), evaluated query local execution flag.
      */
+    @SuppressWarnings("SimplifiableConditionalExpression")
     private T5<PreparedStatement, Prepared, GridCacheTwoStepQuery, List<GridQueryFieldMetadata>, Boolean>
         parseAndSplit(String schemaName, SqlFieldsQuery qry) {
         final UUID locNodeId = ctx.localNodeId();
@@ -1371,7 +1372,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Connection c = connectionForSchema(schemaName);
 
         // Here we will just parse the statement, no need to optimize it at all.
-        H2Utils.setupConnection(c, /*distributedJoins*/false, /*enforceJoinOrder*/true);
+        H2Utils.setupConnection(c, /*distributedJoins*/false,
+            // Use flag from query here only if we're looking at local query.
+            /*enforceJoinOrder*/(!qry.isLocal() ? true : qry.isEnforceJoinOrder()));
 
         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
             .distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins())));
