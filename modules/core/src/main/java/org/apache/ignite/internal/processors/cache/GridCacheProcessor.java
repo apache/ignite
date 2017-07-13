@@ -3578,6 +3578,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
         assert obj != null;
 
         MBeanServer srvr = ctx.config().getMBeanServer();
@@ -3596,7 +3599,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     U.registerCacheMBean(srvr, ctx.igniteInstanceName(), cacheName, obj.getClass().getName(), mbeanImpl,
                         (Class<Object>)itf);
                 }
-                catch (JMException e) {
+                catch (Throwable e) {
                     throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
                 }
 
@@ -3639,7 +3642,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 srvr.unregisterMBean(U.makeCacheMBeanName(ctx.igniteInstanceName(), cacheName, o.getClass().getName()));
             }
-            catch (JMException e) {
+            catch (Throwable e) {
                 U.error(log, "Failed to unregister MBean for component: " + o, e);
             }
         }

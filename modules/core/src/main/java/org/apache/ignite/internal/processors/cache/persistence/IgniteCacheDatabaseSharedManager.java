@@ -115,6 +115,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Registers MBeans for all MemoryMetrics configured in this instance.
      */
     private void registerMetricsMBeans() {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
         IgniteConfiguration cfg = cctx.gridConfig();
 
         for (MemoryMetrics memMetrics : memMetricsMap.values()) {
@@ -134,6 +137,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         MemoryPolicyConfiguration memPlcCfg,
         IgniteConfiguration cfg
     ) {
+        assert !U.IGNITE_MBEANS_DISABLED;
+
         try {
             U.registerMBean(
                 cfg.getMBeanServer(),
@@ -143,7 +148,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 new MemoryMetricsMXBeanImpl(memMetrics, memPlcCfg),
                 MemoryMetricsMXBean.class);
         }
-        catch (JMException e) {
+        catch (Throwable e) {
             U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
         }
     }
@@ -648,24 +653,35 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
                 memPlc.evictionTracker().stop();
 
-                IgniteConfiguration cfg = cctx.gridConfig();
-
-                try {
-                    cfg.getMBeanServer().unregisterMBean(
-                        U.makeMBeanName(
-                            cfg.getIgniteInstanceName(),
-                            "MemoryMetrics",
-                            memPlc.memoryMetrics().getName()));
-                }
-                catch (JMException e) {
-                    U.error(log, "Failed to unregister MBean for memory metrics: " +
-                        memPlc.memoryMetrics().getName(), e);
-                }
+                unregisterMBean(memPlc.memoryMetrics().getName());
             }
 
             memPlcMap.clear();
 
             memPlcMap = null;
+        }
+    }
+
+    /**
+     * Unregister MBean.
+     * @param name Name of mbean.
+     */
+    private void unregisterMBean(String name) {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        IgniteConfiguration cfg = cctx.gridConfig();
+
+        try {
+            cfg.getMBeanServer().unregisterMBean(
+                U.makeMBeanName(
+                    cfg.getIgniteInstanceName(),
+                    "MemoryMetrics", name
+                    ));
+        }
+        catch (Throwable e) {
+            U.error(log, "Failed to unregister MBean for memory metrics: " +
+                name, e);
         }
     }
 
