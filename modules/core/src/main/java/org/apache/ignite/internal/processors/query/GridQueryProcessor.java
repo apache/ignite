@@ -1799,7 +1799,8 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                     FieldsQueryCursor<List<?>> res =
                         idx.querySqlFields(schemaName, qry, keepBinary, requestTopVer.get(), cancel);
 
-                    sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx != null ? cctx.name() : null);
+                    if (cctx != null)
+                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
 
                     return res;
                 }
