@@ -587,7 +587,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
             fail("Rolling back suspended transaction is prohibited from the other thread.");
         }
         catch (Throwable ignore) {
-            // ignoring rollback exception on suspended transaction.
+            // ignoring rollback exception on suspended transaction from the other thread.
         }
     }
 
