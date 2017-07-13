@@ -1653,7 +1653,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         ctx.name());
         }
 
-        return CU.convertToCacheException(new IgniteCheckedException(e));
+        if (e instanceof IgniteCheckedException)
+            return CU.convertToCacheException((IgniteCheckedException) e);
+
+        if (e instanceof RuntimeException)
+            return (RuntimeException) e;
+
+        throw new IllegalStateException("Unknown exception", e);
     }
 
     /**
