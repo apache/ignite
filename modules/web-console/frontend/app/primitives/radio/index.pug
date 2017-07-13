@@ -14,8 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field-switch(label, model, name, disabled, required)
-    .switch--ignite
+mixin form-field-radio(label, model, name, value, disabled, required, tip)
+    .radio--ignite.ignite-form-field
         label(id=`{{ ${name} }}Label`)
             .input-tip
                 if block
@@ -24,11 +24,18 @@ mixin form-field-switch(label, model, name, disabled, required)
                     input(
                         id=`{{ ${name} }}Input`
                         name=`{{ ${name} }}`
-                        type='checkbox'
+                        type='radio'
 
                         data-ng-model=model
+                        data-ng-value=value
                         data-ng-required=required && `${required}`
                         data-ng-disabled=disabled && `${disabled}`
+
+                        data-ng-focus='tableReset()'
+
+                        data-ignite-form-panel-field=''
                     )
                     div
             span #{label}
+
+            +tooltip(tip, tipOpts)
