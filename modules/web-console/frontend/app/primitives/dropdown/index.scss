@@ -56,6 +56,10 @@
 
     ul.select.dropdown-menu {
         li {
+            hr {
+                display: none;
+            }
+
             a {
                 &:before {
                     content: '';

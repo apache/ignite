@@ -53,123 +53,160 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
     /** Cache 2. */
     protected static final String cache2 = "cache2";
 
-    //Todo Cache with node filter.
+    /** */
     protected static final String cache3 = "cache3";
 
+    /** */
     protected static final String cache4 = "cache4";
 
-    protected static final String cache5 = "cache5";
+    /** */
+    private static final String cache5 = "cache5";
 
     /** Caches info. */
-    public static final String CACHES_INFO = "cachesInfo";
+    private static final String CACHES_INFO = "cachesInfo";
 
     /** Registered caches. */
-    public static final String REGISTERED_CACHES = "registeredCaches";
+    private static final String REGISTERED_CACHES = "registeredCaches";
 
     /** Caches. */
     public static final String CACHES = "caches";
 
     /**
-     * @param ig Ig.
+     * @param ig Node.
+     * @return Cache descriptors.
      */
     protected static Map<String, DynamicCacheDescriptor> cacheDescriptors(IgniteEx ig) {
         return field((Object)field(ig.context().cache(), CACHES_INFO), REGISTERED_CACHES);
     }
 
     /**
-     * @param ig Ig.
+     * @param ig Node.
+     * @return Node caches.
      */
     protected static Map<String, GridCacheAdapter> caches(IgniteEx ig){
         return field(ig.context().cache(), CACHES);
     }
 
     /**
-     *
+     * @return Test builder.
+     * @throws Exception If failed.
      */
     public abstract JoinNodeTestPlanBuilder withOutConfigurationTemplate() throws Exception;
 
     /**
-     *
+     * @return Test builder.
+     * @throws Exception If failed.
      */
     public abstract JoinNodeTestPlanBuilder staticCacheConfigurationOnJoinTemplate() throws Exception;
 
     /**
-     *
+     * @return Test builder.
+     * @throws Exception If failed.
      */
     public abstract JoinNodeTestPlanBuilder staticCacheConfigurationInClusterTemplate() throws Exception;
 
     /**
-     *
+     * @return Test builder.
+     * @throws Exception If failed.
      */
     public abstract JoinNodeTestPlanBuilder staticCacheConfigurationSameOnBothTemplate() throws Exception;
 
     /**
-     *
+     * @return Test builder.
+     * @throws Exception If failed.
      */
     public abstract JoinNodeTestPlanBuilder staticCacheConfigurationDifferentOnBothTemplate() throws Exception;
 
     // Client node join.
 
+    /**
+     * @return Test builder.
+     * @throws Exception If failed.
+     */
     public abstract JoinNodeTestPlanBuilder joinClientWithOutConfigurationTemplate() throws Exception;
 
+    /**
+     * @return Test builder.
+     * @throws Exception If failed.
+     */
     public abstract JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationOnJoinTemplate() throws Exception;
 
+    /**
+     * @return Test builder.
+     * @throws Exception If failed.
+     */
     public abstract JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationInClusterTemplate() throws Exception;
 
+    /**
+     * @return Test builder.
+     * @throws Exception If failed.
+     */
     public abstract JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationSameOnBothTemplate() throws Exception;
 
+    /**
+     * @return Test builder.
+     * @throws Exception If failed.
+     */
     public abstract JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationDifferentOnBothTemplate() throws Exception;
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public abstract void testJoinWithOutConfiguration() throws Exception;
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public abstract void testStaticCacheConfigurationOnJoin() throws Exception;
 
     /**
+     * @throws Exception If failed.
      *
      */
     public abstract void testStaticCacheConfigurationInCluster() throws Exception;
 
     /**
+     * @throws Exception If failed.
      *
      */
     public abstract void testStaticCacheConfigurationSameOnBoth() throws Exception;
 
     /**
+     * @throws Exception If failed.
      *
      */
     public abstract void testStaticCacheConfigurationDifferentOnBoth() throws Exception;
 
     /**
+     * @throws Exception If failed.
      *
      */
     public abstract void testJoinClientWithOutConfiguration() throws Exception;
 
     /**
+     * @throws Exception If failed.
      *
      */
     public abstract void testJoinClientStaticCacheConfigurationOnJoin() throws Exception;
 
     /**
+     * @throws Exception If failed.
      *
      */
     public abstract void testJoinClientStaticCacheConfigurationInCluster() throws Exception;
 
     /**
+     * @throws Exception If failed.
      *
      */
     public abstract void testJoinClientStaticCacheConfigurationSameOnBoth() throws Exception;
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public abstract void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -178,6 +215,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -188,6 +226,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
     /**
      * @param idx Index.
+     * @return Ignite instance name.
      */
     protected String name(int idx) {
         return getTestIgniteInstanceName(idx);
@@ -195,6 +234,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
     /**
      * @param name Name.
+     * @return Igntie configuration.
+     * @throws Exception If failed.
      */
     protected IgniteConfiguration cfg(String name) throws Exception {
         try {
@@ -206,7 +247,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @return Test builder.
      */
     protected JoinNodeTestPlanBuilder builder() {
         return JoinNodeTestPlanBuilder.builder();
@@ -214,13 +255,14 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
     /**
      * @param cfgs Cfgs.
+     * @return Configurations.
      */
-    protected static <T> T[] buildConfiguration(T... cfgs) {
+    private static <T> T[] buildConfiguration(T... cfgs) {
         return cfgs;
     }
 
     /**
-     *
+     * @return Cache configuration.
      */
     protected CacheConfiguration atomicCfg() {
         return new CacheConfiguration(cache1)
@@ -228,6 +270,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Cache configuration.
      *
      */
     protected CacheConfiguration transactionCfg() {
@@ -236,7 +279,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @return Cache configurations.
      */
     protected CacheConfiguration[] allCacheConfigurations() {
         return buildConfiguration(atomicCfg(), transactionCfg());
@@ -309,6 +352,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         /** After de activate. */
         private Runnable afterDeActivate = Noop;
 
+        /** */
         private IgniteCallable<List<CacheConfiguration>> dynamicCacheStart =
             new IgniteCallable<List<CacheConfiguration>>() {
                 @Override public List<CacheConfiguration> call() throws Exception {
@@ -316,6 +360,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 }
             };
 
+        /** */
         private IgniteCallable<List<String>> dynamicCacheStop =
             new IgniteCallable<List<String>>() {
                 @Override public List<String> call() throws Exception {
@@ -323,15 +368,19 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 }
             };
 
+        /** */
         private Runnable afterDynamicCacheStarted = Noop;
 
+        /** */
         private Runnable afterDynamicCacheStopped = Noop;
 
         /** End. */
         private Runnable end = Noop;
 
         /**
-         *
+         * @param cfgs Configurations.
+         * @return Test builder.
+         * @throws Exception If failed.
          */
         public JoinNodeTestPlanBuilder clusterConfiguration(IgniteConfiguration... cfgs) throws Exception {
             clusterCfg = cfgs;
@@ -359,7 +408,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @param cfg Configuration.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder nodeConfiguration(IgniteConfiguration cfg) {
             nodeCfg = cfg;
@@ -382,6 +432,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         /**
          * @param func Func.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder nodeConfiguration(
             IgniteClosure<IgniteConfiguration, IgniteConfiguration> func
@@ -393,7 +444,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @param r Cluster start callback.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder afterClusterStarted(Runnable r) {
             strPlanBuilder.append("Check after cluster start\n");
@@ -404,7 +456,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @param r Node join callback.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder afterNodeJoin(Runnable r) {
             strPlanBuilder.append("Check after node join")
@@ -416,7 +469,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @param state State after join.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder stateAfterJoin(boolean state) {
             strPlanBuilder.append("Check state on all nodes after join, must be ")
@@ -429,7 +483,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @param r Activate callback.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder afterActivate(Runnable r) {
             strPlanBuilder.append("Check after activate")
@@ -441,7 +496,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @param r Deactivate callback.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder afterDeActivate(Runnable r) {
             strPlanBuilder.append("Check after deActivate")
@@ -452,6 +508,10 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             return this;
         }
 
+        /**
+         * @param caches Callback.
+         * @return Test builder.
+         */
         public JoinNodeTestPlanBuilder dynamicCacheStart(IgniteCallable<List<CacheConfiguration>> caches){
             strPlanBuilder.append("Dynamic caches start")
                 .append("\n");
@@ -461,6 +521,10 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             return this;
         }
 
+        /**
+         * @param r Cache start callback.
+         * @return Test builder.
+         */
         public JoinNodeTestPlanBuilder afterDynamicCacheStarted(Runnable r){
             strPlanBuilder.append("Check after dynamic caches start")
                 .append("\n");
@@ -470,6 +534,10 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             return this;
         }
 
+        /**
+         * @param caches Callback.
+         * @return Test builder.
+         */
         public JoinNodeTestPlanBuilder dynamicCacheStop(IgniteCallable<List<String>> caches){
             strPlanBuilder.append("Dynamic caches stop")
                 .append("\n");
@@ -479,6 +547,10 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             return this;
         }
 
+        /**
+         * @param r Callback.
+         * @return Test builder.
+         */
         public JoinNodeTestPlanBuilder afterDynamicCacheStopped(Runnable r){
             strPlanBuilder.append("Check after dynamic caches stop")
                 .append("\n");
@@ -490,6 +562,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         /**
          * @param end End.
+         * @return Test builder.
          */
         public JoinNodeTestPlanBuilder setEnd(Runnable end) {
             strPlanBuilder.append("Check before stop")
@@ -501,7 +574,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @throws Exception If failed.
          */
         public void execute() throws Exception {
             try {
@@ -611,12 +684,19 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             }
         }
 
+        /**
+         * @param ig Node.
+         * @return Next minor version.
+         */
         private AffinityTopologyVersion nextMinorVersion(IgniteEx ig){
             AffinityTopologyVersion cur = ig.context().discovery().topologyVersionEx();
 
-           return new AffinityTopologyVersion(cur.topologyVersion(), cur.minorTopologyVersion() + 1);
+           return cur.nextMinorVersion();
         }
 
+        /**
+         * @param ver Version.
+         */
         private void awaitTopologyVersion(final AffinityTopologyVersion ver){
             onAllNode(new CI1<IgniteEx>() {
                 @Override public void apply(IgniteEx ig) {
@@ -643,7 +723,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @return Started nodes.
          */
         protected List<IgniteEx> grids() {
             List<IgniteEx> res = new ArrayList<>();
@@ -655,14 +735,14 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @return Test builder.
          */
         public static JoinNodeTestPlanBuilder builder() {
             return new JoinNodeTestPlanBuilder();
         }
 
         /**
-         *
+         * @return Callback.
          */
         public Runnable checkCacheOnlySystem() {
             return onAllNode(new IgniteInClosure<IgniteEx>() {
@@ -686,15 +766,11 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @return Callback.
          */
         public Runnable checkCacheEmpty() {
             return onAllNode(new IgniteInClosure<IgniteEx>() {
                 @Override public void apply(IgniteEx ig) {
-                    Map<String, DynamicCacheDescriptor> desc = cacheDescriptors(ig);
-
-                    Assert.assertTrue(desc.isEmpty());
-
                     Assert.assertNull(ig.context().cache().cache(cache1));
                     Assert.assertNull(ig.context().cache().cache(cache2));
 
@@ -706,7 +782,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         }
 
         /**
-         *
+         * @return Callback.
          */
         public Runnable checkCacheNotEmpty() {
             return onAllNode(new IgniteInClosure<IgniteEx>() {
@@ -735,6 +811,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         /**
          * @param cls Closure.
+         * @return Callback.
          */
         private Runnable onAllNode(final IgniteInClosure<IgniteEx> cls) {
             return new Runnable() {

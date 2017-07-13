@@ -101,7 +101,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             throws IgniteCheckedException {
             DataPageIO io = (DataPageIO)iox;
 
-            int rowSize = getRowSize(row);
+            int rowSize = getRowSize(row, row.cacheId() != 0);
 
             boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
 
@@ -147,7 +147,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             throws IgniteCheckedException {
             DataPageIO io = (DataPageIO)iox;
 
-            int rowSize = getRowSize(row);
+            int rowSize = getRowSize(row, row.cacheId() != 0);
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
             assert oldFreeSpace > 0 : oldFreeSpace;
@@ -203,7 +203,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
                 wal.log(new DataPageInsertRecord(
-                    cacheId,
+                    grpId,
                     pageId,
                     payload));
             }
@@ -246,7 +246,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
-                wal.log(new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink));
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink));
             }
 
             return written + payloadSize;
@@ -448,12 +448,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
         assert part != PageIdAllocator.INDEX_PARTITION;
 
-        return pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_DATA);
+        return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(CacheDataRow row) throws IgniteCheckedException {
-        int rowSize = getRowSize(row);
+        int rowSize = getRowSize(row, row.cacheId() != 0);
 
         int written = 0;
 
@@ -579,17 +579,18 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /**
      * @param row Row.
+     * @param withCacheId If {@code true} adds cache ID size.
      * @return Entry size on page.
      * @throws IgniteCheckedException If failed.
      */
-    public static int getRowSize(CacheDataRow row) throws IgniteCheckedException {
+    public static int getRowSize(CacheDataRow row, boolean withCacheId) throws IgniteCheckedException {
         KeyCacheObject key = row.key();
         CacheObject val = row.value();
 
         int keyLen = key.valueBytesLength(null);
         int valLen = val.valueBytesLength(null);
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (row.cacheId() == 0 ? 0 : 4);
+        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (withCacheId ? 4 : 0);
     }
 
     /** {@inheritDoc} */

@@ -441,7 +441,7 @@ public class InlineIndexHelper {
                     size = (short)s.length;
                 else {
                     s = trimUTF8(s, maxSize - 3);
-                    size = (short)(s.length | 0x8000);
+                    size = (short)(s == null ? 0 : s.length | 0x8000);
                 }
 
                 if (s == null) {

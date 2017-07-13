@@ -2099,13 +2099,13 @@ public abstract class GridAbstractTest extends TestCase {
         for (Ignite g : G.allGrids()) {
             final GridKernalContext ctx = ((IgniteKernal)g).context();
 
-            if (ctx.isStopping())
+            if (ctx.isStopping() || !g.active())
                 continue;
 
             AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
             AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-            if (! topVer.equals(exchVer)) {
+            if (!topVer.equals(exchVer)) {
                 info("Topology version mismatch [node="  + g.name() +
                     ", exchVer=" + exchVer +
                     ", topVer=" + topVer + ']');

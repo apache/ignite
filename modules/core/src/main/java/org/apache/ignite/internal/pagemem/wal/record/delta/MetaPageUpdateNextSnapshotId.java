@@ -31,8 +31,8 @@ public class MetaPageUpdateNextSnapshotId extends PageDeltaRecord {
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateNextSnapshotId(int cacheId, long pageId, long nextSnapshotId) {
-        super(cacheId, pageId);
+    public MetaPageUpdateNextSnapshotId(int grpId, long pageId, long nextSnapshotId) {
+        super(grpId, pageId);
 
         this.nextSnapshotId = nextSnapshotId;
     }

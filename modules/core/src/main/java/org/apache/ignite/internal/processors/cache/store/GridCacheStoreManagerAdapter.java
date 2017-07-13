@@ -34,7 +34,6 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
@@ -186,6 +185,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
         store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
         store.setBatchSize(cfg.getWriteBehindBatchSize());
+        store.setWriteCoalescing(cfg.getWriteBehindCoalescing());
 
         return store;
     }

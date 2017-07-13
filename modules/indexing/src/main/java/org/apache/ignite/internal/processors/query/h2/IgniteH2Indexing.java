@@ -2280,7 +2280,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Bind query parameters and calculate partitions derived from the query.
      *
+     * @param partInfoList Collection of query derived partition info.
+     * @param params Query parameters.
      * @return Partitions.
+     * @throws IgniteCheckedException, If fails.
      */
     private int[] calculateQueryPartitions(CacheQueryPartitionInfo[] partInfoList, Object[] params)
         throws IgniteCheckedException {
@@ -2288,9 +2291,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
 
         for (CacheQueryPartitionInfo partInfo: partInfoList) {
-            int partId = partInfo.partition() < 0 ?
-                kernalContext().affinity().partition(partInfo.cacheName(), params[partInfo.paramIdx()]) :
-                partInfo.partition();
+            int partId = (partInfo.partition() >= 0) ? partInfo.partition() :
+                bindPartitionInfoParameter(partInfo, params);
 
             int i = 0;
 
@@ -2311,6 +2313,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             result[i] = list.get(i);
 
         return result;
+    }
+
+    /**
+     * Bind query parameter to partition info and calculate partition.
+     *
+     * @param partInfo Partition Info.
+     * @param params Query parameters.
+     * @return Partition.
+     * @throws IgniteCheckedException, If fails.
+     */
+    private int bindPartitionInfoParameter(CacheQueryPartitionInfo partInfo, Object[] params)
+        throws IgniteCheckedException {
+        assert partInfo != null;
+        assert partInfo.partition() < 0;
+
+        GridH2RowDescriptor desc = dataTable(partInfo.cacheName(),
+                partInfo.tableName()).rowDescriptor();
+
+        Object param = H2Utils.convert(params[partInfo.paramIdx()],
+                desc, partInfo.dataType());
+
+        return kernalContext().affinity().partition(partInfo.cacheName(), param);
     }
 
     /** {@inheritDoc} */
