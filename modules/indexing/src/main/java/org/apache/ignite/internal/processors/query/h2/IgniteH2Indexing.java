@@ -370,7 +370,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             PreparedStatement stmt = cache.get(sql);
 
-            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).isCancelled()) {
+            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).isCancelled() &&
+                    !GridSqlQueryParser.prepared(stmt).needRecompile()) {
                 assert stmt.getConnection() == c;
 
                 return stmt;
@@ -1361,7 +1362,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result: prepared statement, H2 command, two-step query (if needed),
      *     metadata for two-step query (if needed), evaluated query local execution flag.
      */
-    private T5<PreparedStatement, Prepared, GridCacheTwoStepQuery, List<GridQueryFieldMetadata>, Boolean> parseAndSplit(String schemaName, SqlFieldsQuery qry) {
+    private T5<PreparedStatement, Prepared, GridCacheTwoStepQuery, List<GridQueryFieldMetadata>, Boolean>
+        parseAndSplit(String schemaName, SqlFieldsQuery qry) {
         final UUID locNodeId = ctx.localNodeId();
 
         final String sqlQry = qry.getSql();
@@ -1380,7 +1382,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean loc = qry.isLocal();
 
         try {
-            stmt = prepareStatementNoCache(c, sqlQry);
+            stmt = prepareStatementAndCaches(c, sqlQry);
 
             prepared = GridSqlQueryParser.prepared(stmt);
 
@@ -1396,7 +1398,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     U.closeQuiet(stmt);
 
                     throw new IgniteSQLException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
-                            Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
+                        Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
                 }
 
                 loc |= GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared), qry.isReplicatedOnly());
@@ -1431,13 +1433,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         throw new IgniteSQLException(e);
                     }
                     finally {
+                        // We're sure to have non local query at this point, so let's remove raw statement from cache
+                        // as whole two step query will be cached later on.
+                        getStatementsCacheForCurrentThread().remove(sqlQry);
+
                         U.close(stmt, log);
                     }
                 }
             }
-
-            // We're safe to cache this statement now that we know it's local or not a query.
-            getStatementsCacheForCurrentThread().put(sqlQry, stmt);
 
             return new T5<>(stmt, prepared, null, null, loc);
         }
@@ -1535,13 +1538,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sqlQry Query.
      * @return H2 prepared statement.
      */
-    private PreparedStatement prepareStatementNoCache(Connection c, String sqlQry) {
+    private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry) {
         boolean cachesCreated = false;
 
         while (true) {
             try {
-                // Do not cache this statement because the whole query object will be cached later on.
-                return prepareStatement(c, sqlQry, false);
+                return prepareStatement(c, sqlQry, true);
             }
             catch (SQLException e) {
                 if (!cachesCreated && (
