@@ -1761,7 +1761,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Restarts this cache proxy.
      */
     public void restart() {
-        System.err.println("RESTARTED PROXY(!) " + context().localNodeId());
         GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
 
         final GridFutureAdapter<Void> currentFut = this.restartFut.get();
