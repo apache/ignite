@@ -1019,12 +1019,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
-        /**
-         *
-         */
-        MetadataJob() {
-        }
-
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
             String cacheName = null;
