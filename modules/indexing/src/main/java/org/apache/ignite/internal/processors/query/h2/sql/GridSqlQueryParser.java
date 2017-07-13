@@ -1185,8 +1185,12 @@ public class GridSqlQueryParser {
      * @see SqlFieldsQuery#isReplicatedOnly()
      */
     public static boolean isLocalQuery(Query qry, boolean replicatedOnlyQry) {
+        boolean hasCaches = false;
+
         for (Table tbl : qry.getTables()) {
             if (tbl instanceof GridH2Table) {
+                hasCaches = true;
+
                 GridCacheContext cctx = ((GridH2Table) tbl).cache();
 
                 if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
@@ -1198,7 +1202,9 @@ public class GridSqlQueryParser {
             }
         }
 
-        return true;
+        // For consistency with old logic, let's not force locality in absence of caches -
+        // if there are no caches, original SqlFieldsQuery's isLocal flag will be used.
+        return hasCaches;
     }
 
     /**

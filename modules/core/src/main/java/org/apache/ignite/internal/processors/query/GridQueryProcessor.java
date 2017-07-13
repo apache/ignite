@@ -1786,7 +1786,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     FieldsQueryCursor<List<?>> res =
-                        idx.querySqlFields(schemaName, cctx, qry, keepBinary, requestTopVer.get(), cancel);
+                        idx.querySqlFields(schemaName, qry, keepBinary, requestTopVer.get(), cancel);
 
                     sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx != null ? cctx.name() : null);
 

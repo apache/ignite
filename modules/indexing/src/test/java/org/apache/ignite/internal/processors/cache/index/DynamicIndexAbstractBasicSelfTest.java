@@ -889,12 +889,6 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
-
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
-            }
-        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

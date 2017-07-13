@@ -120,6 +120,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -1204,7 +1205,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res = querySqlFields(schemaName, null, fqry, keepBinary, null, null);
+        final QueryCursor<List<?>> res = querySqlFields(schemaName, fqry, keepBinary, null, null);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1237,115 +1238,51 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, GridCacheContext cctx,
+    @Override public FieldsQueryCursor<List<?>> querySqlFields(String schemaName,
         SqlFieldsQuery qry, boolean keepBinary, AffinityTopologyVersion topVer, GridQueryCancel cancel) {
         final String sqlQry = qry.getSql();
 
-        Connection c = connectionForSchema(schemaName);
+        GridCacheTwoStepQuery twoStepQry;
+        List<GridQueryFieldMetadata> meta;
 
-        GridCacheTwoStepQuery twoStepQry = null;
-        List<GridQueryFieldMetadata> meta = null;
+        H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry,
+            qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
 
-        H2TwoStepCachedQueryKey cachedQryKey = null;
-        H2TwoStepCachedQuery cachedQry = null;
-
-        final UUID locNodeId = ctx.localNodeId();
-
-        // Here we will just parse the statement, no need to optimize it at all.
-        H2Utils.setupConnection(c, /*distributedJoins*/false, /*enforceJoinOrder*/true);
-
-        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
-            .distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins())));
+        // Prior to parsing, let's try our luck for cached two-step query.
+        H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         PreparedStatement stmt = null;
-        Prepared prepared;
 
-        boolean loc = qry.isLocal();
+        Prepared prepared = null;
 
-        try {
-            stmt = prepareStatementNoCache(c, sqlQry);
+        boolean loc = false;
 
-            prepared = GridSqlQueryParser.prepared(stmt);
+        if (cachedQry != null) {
+            twoStepQry = cachedQry.query().copy();
 
-            if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
-                throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
-                    IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
-
-            if (prepared.isQuery()) {
-                try {
-                    bindParameters(stmt, F.asList(qry.getArgs()));
-                }
-                catch (IgniteCheckedException e) {
-                    U.closeQuiet(stmt);
-
-                    throw new IgniteSQLException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
-                        Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
-                }
-
-                loc |= GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared), qry.isReplicatedOnly());
-
-                if (loc) {
-                    if (cctx == null)
-                        cctx = GridSqlQueryParser.getFirstCache(prepared);
-
-                    if (cctx != null && cctx.config().getQueryParallelism() > 1) {
-                        loc = false;
-
-                        qry.setDistributedJoins(true);
-
-                        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-                        assert qctx != null;
-
-                        // Let's refresh join mode for the splitter if we've changed distributed joins flag value.
-                        qctx.distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins()));
-                    }
-                }
-
-                if (!loc) {
-                    try {
-                        cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry,
-                            qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
-                        cachedQry = twoStepCache.get(cachedQryKey);
-
-                        if (cachedQry != null) {
-                            twoStepQry = cachedQry.query().copy();
-                            meta = cachedQry.meta();
-                        }
-                        else {
-                            twoStepQry = split(stmt, qry);
-                            meta = H2Utils.meta(stmt.getMetaData());
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteSQLException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
-                            Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
-                    }
-                    catch (SQLException e) {
-                        throw new IgniteSQLException(e);
-                    }
-                    finally {
-                        U.close(stmt, log);
-                    }
-                }
-            }
-
-            if (loc || !prepared.isQuery())
-                // We're safe to cache this statement now that we know it's local.
-                getStatementsCacheForCurrentThread().put(sqlQry, stmt);
+            meta = cachedQry.meta();
         }
-        finally {
-            GridH2QueryContext.clearThreadLocal();
+        else {
+            T5<PreparedStatement, Prepared, GridCacheTwoStepQuery, List<GridQueryFieldMetadata>, Boolean> parseRes =
+                parseAndSplit(schemaName, qry);
+
+            stmt = parseRes.get1();
+
+            // Let's avoid second reflection getter call by returning Prepared object too
+            prepared = parseRes.get2();
+
+            twoStepQry = parseRes.get3();
+
+            meta = parseRes.get4();
+
+            assert parseRes.get5() != null;
+
+            loc = parseRes.get5();
         }
 
         IndexingQueryFilter filter = (loc ? backupFilter(topVer, qry.getPartitions()) : null);
 
-        if (!prepared.isQuery()) {
-            assert !prepared.isQuery();
-
-            if (cctx != null)
-                loc |= cctx.isLocal();
-
+        if (prepared != null && !prepared.isQuery()) {
             if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                 try {
                     if (!loc)
@@ -1390,7 +1327,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // We've detected a local query, let's just run it.
         if (loc) {
-            assert prepared.isQuery();
+            assert prepared != null && prepared.isQuery();
 
             try {
                 return queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
@@ -1416,6 +1353,99 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         return res;
     }
+
+    /**
+     * Parse and split query if needed, cache either two-step query or statement.
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @return Result: prepared statement, H2 command, two-step query (if needed),
+     *     metadata for two-step query (if needed), evaluated query local execution flag.
+     */
+    private T5<PreparedStatement, Prepared, GridCacheTwoStepQuery, List<GridQueryFieldMetadata>, Boolean> parseAndSplit(String schemaName, SqlFieldsQuery qry) {
+        final UUID locNodeId = ctx.localNodeId();
+
+        final String sqlQry = qry.getSql();
+
+        Connection c = connectionForSchema(schemaName);
+
+        // Here we will just parse the statement, no need to optimize it at all.
+        H2Utils.setupConnection(c, /*distributedJoins*/false, /*enforceJoinOrder*/true);
+
+        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
+            .distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins())));
+
+        PreparedStatement stmt;
+        Prepared prepared;
+
+        boolean loc = qry.isLocal();
+
+        try {
+            stmt = prepareStatementNoCache(c, sqlQry);
+
+            prepared = GridSqlQueryParser.prepared(stmt);
+
+            if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
+                throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
+                    IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+
+            if (prepared.isQuery()) {
+                try {
+                    bindParameters(stmt, F.asList(qry.getArgs()));
+                }
+                catch (IgniteCheckedException e) {
+                    U.closeQuiet(stmt);
+
+                    throw new IgniteSQLException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
+                            Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
+                }
+
+                loc |= GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared), qry.isReplicatedOnly());
+
+                if (loc) {
+                    GridCacheContext cctx = GridSqlQueryParser.getFirstCache(prepared);
+
+                    if (cctx != null && cctx.config().getQueryParallelism() > 1) {
+                        loc = false;
+
+                        qry.setDistributedJoins(true);
+
+                        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+                        assert qctx != null;
+
+                        // Let's refresh join mode for the splitter if we've changed distributed joins flag value.
+                        qctx.distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins()));
+                    }
+                }
+
+                // It's not an "else" branch as loc's value could had been changed in previous if.
+                if (!loc) {
+                    try {
+                        return new T5<>(stmt, prepared, split(stmt, qry), H2Utils.meta(stmt.getMetaData()), false);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteSQLException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
+                            Arrays.deepToString(qry.getArgs()) + "]", IgniteQueryErrorCode.PARSING, e);
+                    }
+                    catch (SQLException e) {
+                        throw new IgniteSQLException(e);
+                    }
+                    finally {
+                        U.close(stmt, log);
+                    }
+                }
+            }
+
+            // We're safe to cache this statement now that we know it's local or not a query.
+            getStatementsCacheForCurrentThread().put(sqlQry, stmt);
+
+            return new T5<>(stmt, prepared, null, null, loc);
+        }
+        finally {
+            GridH2QueryContext.clearThreadLocal();
+        }
+    }
+
 
     /**
      * Split query into two-step query.
@@ -1486,7 +1516,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException("Failed to calculate derived partitions: [qry=" + qry.getSql() + ", params=" +
-                        Arrays.deepToString(qry.getArgs()) + "]", e);
+                    Arrays.deepToString(qry.getArgs()) + "]", e);
             }
         }
 
