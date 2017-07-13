@@ -318,9 +318,8 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
         assert timeObjs.size() == max;
 
         // Remove timeout objects so that they aren't able to times out (supposing the cycle takes less than 500 ms).
-        for (GridTimeoutObject obj : timeObjs) {
+        for (GridTimeoutObject obj : timeObjs)
             ctx.timeout().removeTimeoutObject(obj);
-        }
 
         Thread.sleep(1000);
 
@@ -383,9 +382,8 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                 // Remove timeout objects so that they aren't able to times out
                 // (supposing the cycle takes less than 500 ms).
-                for (GridTimeoutObject obj : timeObjs) {
+                for (GridTimeoutObject obj : timeObjs)
                     ctx.timeout().removeTimeoutObject(obj);
-                }
             }
         }, threads, "timeout-test-worker");
 
@@ -394,6 +392,9 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
         assert callCnt.get() == 0;
     }
 
+    /**
+     * @throws Exception If test failed.
+     */
     public void testAddRemoveInterleaving() throws Exception {
         final AtomicInteger callCnt = new AtomicInteger(0);
 
@@ -443,9 +444,8 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
                 // Remove timeout objects so that they aren't able to times out
                 // (supposing the cycle takes less than 500 ms).
-                for (GridTimeoutObject obj : timeObjs) {
+                for (GridTimeoutObject obj : timeObjs)
                     ctx.timeout().removeTimeoutObject(obj);
-                }
             }
         }, 100, "timeout-test-worker");
 
@@ -632,12 +632,16 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testCancelingWithClearedInterruptedFlag() throws Exception {
-        startGrid(0).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(10) {
+        final CountDownLatch onTimeoutCalled = new CountDownLatch(1);
+
+        ctx.timeout().addTimeoutObject(new GridTimeoutObjectAdapter(10) {
             @Override public void onTimeout() {
                 try {
+                    onTimeoutCalled.countDown();
+
                     // Wait for CacheProcessor has stopped and cause InterruptedException
                     // which clears interrupted flag.
-                    Thread.sleep(10_000);
+                    Thread.sleep(Long.MAX_VALUE);
                 }
                 catch (InterruptedException ignore) {
                     // No-op.
@@ -645,6 +649,6 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        stopGrid(0);
+        onTimeoutCalled.await();
     }
 }

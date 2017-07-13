@@ -39,7 +39,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Test correctness of rollback a transaction with timeout during the grid stop.
  */
-public class IgniteTxRollbackOnStopTest extends GridCacheAbstractSelfTest {
+public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int PUT_CNT = 10_000;
 
@@ -56,7 +56,7 @@ public class IgniteTxRollbackOnStopTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTxRollbackOnStop() throws Exception {
+    public void testTxRemoveTimeoutObjects() throws Exception {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
@@ -87,6 +87,10 @@ public class IgniteTxRollbackOnStopTest extends GridCacheAbstractSelfTest {
             if (!X.hasCause(e, TransactionTimeoutException.class))
                 throw e;
         }
+
+        assertDoesNotContainLockTimeoutObjects();
+
+        logTimeoutObjectsFrequency();
 
         stopGrid(gridCount());
 

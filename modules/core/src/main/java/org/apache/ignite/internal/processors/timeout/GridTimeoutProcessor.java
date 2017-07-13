@@ -176,7 +176,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 }
 
                 synchronized (mux) {
-                    while (true) {
+                    while (!isCancelled()) {
                         // Access of the first element must be inside of
                         // synchronization block, so we don't miss out
                         // on thread notification events sent from
