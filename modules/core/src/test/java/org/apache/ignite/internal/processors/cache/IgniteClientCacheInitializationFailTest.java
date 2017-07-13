@@ -42,7 +42,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -242,7 +241,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, AffinityTopologyVersion topVer, GridQueryCancel cancel) {
+            boolean keepBinary, GridQueryCancel cancel) {
             return null;
         }
 
@@ -320,11 +319,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void markForRebuildFromHash(String cacheName) {
             // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
-            return null;
         }
 
         /** {@inheritDoc} */

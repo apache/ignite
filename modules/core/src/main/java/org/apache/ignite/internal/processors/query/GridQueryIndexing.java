@@ -29,7 +29,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -77,15 +76,13 @@ public interface GridQueryIndexing {
 
     /**
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
-     *
      * @param schemaName Schema name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @param topVer Topology version.
      * @param cancel Query cancel state handler.     @return Cursor.
      */
-    public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, AffinityTopologyVersion topVer, GridQueryCancel cancel);
+    public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
+        GridQueryCancel cancel);
 
     /**
      * Perform a MERGE statement using data streamer as receiver.
@@ -231,15 +228,6 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      */
     public void markForRebuildFromHash(String cacheName);
-
-    /**
-     * Returns backup filter.
-     *
-     * @param topVer Topology version.
-     * @param parts Partitions.
-     * @return Backup filter.
-     */
-    public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts);
 
     /**
      * Client disconnected callback.

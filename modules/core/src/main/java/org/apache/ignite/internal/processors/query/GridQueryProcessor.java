@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -99,6 +101,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -1786,7 +1789,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     FieldsQueryCursor<List<?>> res =
-                        idx.querySqlFields(schemaName, qry, keepBinary, requestTopVer.get(), cancel);
+                        idx.querySqlFields(schemaName, qry, keepBinary, cancel);
 
                     sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx != null ? cctx.name() : null);
 
@@ -1802,6 +1805,70 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Create query filter for given partitions.
+     * @param parts partitions to create filter for.
+     * @return Indexing query filter.
+     */
+    public IndexingQueryFilter backupFilter(@Nullable final int[] parts) {
+        final AffinityTopologyVersion topVer = requestTopVer.get();
+
+        return new IndexingQueryFilter() {
+            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
+                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+                if (cache.context().isReplicated())
+                    return null;
+
+                final GridCacheAffinityManager aff = cache.context().affinity();
+
+                if (parts != null) {
+                    if (parts.length < 64) { // Fast scan for small arrays.
+                        return new IgniteBiPredicate<K, V>() {
+                            @Override public boolean apply(K k, V v) {
+                                int p = aff.partition(k);
+
+                                for (int p0 : parts) {
+                                    if (p0 == p)
+                                        return true;
+
+                                    if (p0 > p) // Array is sorted.
+                                        return false;
+                                }
+
+                                return false;
+                            }
+                        };
+                    }
+
+                    return new IgniteBiPredicate<K, V>() {
+                        @Override public boolean apply(K k, V v) {
+                            int p = aff.partition(k);
+
+                            return Arrays.binarySearch(parts, p) >= 0;
+                        }
+                    };
+                }
+
+                final ClusterNode locNode = ctx.discovery().localNode();
+
+                return new IgniteBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        return aff.primaryByKey(locNode, k, topVer);
+                    }
+                };
+            }
+
+            @Override public boolean isValueRequired() {
+                return false;
+            }
+
+            @Override public String toString() {
+                return "IndexingQueryFilter [ver=" + topVer + ']';
+            }
+        };
     }
 
     /**
@@ -1938,8 +2005,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                             return idx.queryDistributedSql(schemaName, qry, keepBinary, mainCacheId);
                         }
                         else
-                            return idx.queryLocalSql(schemaName, qry, idx.backupFilter(requestTopVer.get(),
-                                qry.getPartitions()), keepBinary);
+                            return idx.queryLocalSql(schemaName, qry, backupFilter(qry.getPartitions()), keepBinary);
                     }
                 }, true);
         }

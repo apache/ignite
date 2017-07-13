@@ -371,7 +371,7 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) idx.querySqlFields(schemaName, newFieldsQry, true, null, cancel);
+            cur = (QueryCursorImpl<List<?>>) idx.querySqlFields(schemaName, newFieldsQry, true, cancel);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry,
