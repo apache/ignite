@@ -151,6 +151,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
+    /** Default checkpointing page buffer size (may be adjusted by Ignite). */
+    public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = 256L * 1024 * 1024;
+
     /** Skip sync. */
     private final boolean skipSync = IgniteSystemProperties.getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
 
@@ -277,7 +280,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private FileLockHolder fileLockHolder;
 
     /** Lock wait time. */
-    private final int lockWaitTime;
+    private final long lockWaitTime;
 
     /** */
     private Map<Integer, Map<Integer, T2<Long, WALPointer>>> reservedForExchange;
@@ -375,10 +378,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void initDataBase() throws IgniteCheckedException {
-        Long cpBufSize = persistenceCfg.getCheckpointingPageBufferSize();
+    private void initDataBase() {
+        long cpBufSize = persistenceCfg.getCheckpointingPageBufferSize();
 
         if (persistenceCfg.getCheckpointingThreads() > 1)
             asyncRunner = new ThreadPoolExecutor(
@@ -391,7 +394,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         // Intentionally use identity comparison to check if configuration default has changed.
         //noinspection NumberEquality
-        if (cpBufSize == PersistentStoreConfiguration.DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE) {
+        if (cpBufSize == 0L) {
+            cpBufSize = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
+
             MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
             assert memCfg != null;
@@ -2928,10 +2933,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @param lockWaitTime During which time thread will try capture file lock.
+         * @param lockWaitTimeMillis During which time thread will try capture file lock.
          * @throws IgniteCheckedException If failed to capture file lock.
          */
-        public void tryLock(int lockWaitTime) throws IgniteCheckedException {
+        public void tryLock(long lockWaitTimeMillis) throws IgniteCheckedException {
             assert lockFile != null;
 
             FileChannel ch = lockFile.getChannel();
@@ -2965,7 +2970,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 String content = null;
 
                 // Try to get lock, if not available wait 1 sec and re-try.
-                for (int i = 0; i < lockWaitTime; i += 1000) {
+                for (int i = 0; i < lockWaitTimeMillis; i += 1000) {
                     try {
                         lock = ch.tryLock(0, 1, false);
                         if (lock != null && lock.isValid()) {
@@ -2989,7 +2994,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (content == null)
                     content = readContent();
 
-                failMsg = "Failed to acquire file lock during " + (lockWaitTime / 1000) +
+                failMsg = "Failed to acquire file lock during " + (lockWaitTimeMillis / 1000) +
                     " sec, (locked by " + content + "): " + file.getAbsolutePath();
             }
             catch (Exception e) {
