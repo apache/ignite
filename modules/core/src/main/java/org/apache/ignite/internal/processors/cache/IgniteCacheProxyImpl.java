@@ -126,7 +126,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Empty constructor required for {@link Externalizable}.
      */
     public IgniteCacheProxyImpl() {
-        restartFut = new AtomicReference<>(null);
+        restartFut = new AtomicReference<GridFutureAdapter<Void>>(null);
     }
 
     /**
@@ -139,7 +139,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             @NotNull IgniteInternalCache<K, V> delegate,
             boolean async
     ) {
-        this(ctx, delegate, new AtomicReference<>(null), async);
+        this(ctx, delegate, new AtomicReference<GridFutureAdapter<Void>>(null), async);
     }
 
     /**
