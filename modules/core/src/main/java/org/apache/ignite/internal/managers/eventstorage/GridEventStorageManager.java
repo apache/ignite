@@ -542,7 +542,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public boolean hasListener(int type) {
         assert type > 0 : "Invalid event type: " + type;
 
-        return !F.isEmpty(lsnrs.get(type));
+        Listeners listeners = lsnrs.get(type);
+
+        return (listeners != null) && (!F.isEmpty(listeners.highPriorityLsnrs) || !F.isEmpty(listeners.lsnrs));
     }
 
     /**
