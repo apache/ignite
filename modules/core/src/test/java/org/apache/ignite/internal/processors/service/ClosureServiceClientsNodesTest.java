@@ -227,9 +227,10 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             GridServiceTopology top = F.first(srvDscs).topologySnapshot();
 
-            assertEquals(1, nodesMap.size());
+            assertEquals(0, top.eachNode());
+            assertEquals(1, top.perNode().size());
 
-            for (Map.Entry<UUID, Integer> nodeInfo : nodesMap.entrySet()) {
+            for (Map.Entry<UUID, Integer> nodeInfo : top.perNode().entrySet()) {
                 assertEquals(clientNodeId, nodeInfo.getKey());
 
                 assertEquals(1, nodeInfo.getValue().intValue());

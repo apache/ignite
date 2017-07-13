@@ -981,7 +981,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                     top.perNode(cnts);
                 }
                 else if (nodes != null && !nodes.isEmpty()) {
-                    if (totalCnt == 0 && maxPerNodeCnt > 0)
+                    if (totalCnt == 0 && maxPerNodeCnt > 0 && nodeFilter == null)
                         top.eachNode(maxPerNodeCnt);
                     else {
                         int size = nodes.size();
