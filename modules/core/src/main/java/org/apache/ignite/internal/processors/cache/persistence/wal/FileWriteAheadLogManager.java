@@ -124,7 +124,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final int tlbSize;
 
     /** WAL flush frequency. Makes sense only for {@link WALMode#BACKGROUND} log WALMode. */
-    private final int flushFreq;
+    private final long flushFreq;
 
     /** Fsync delay. */
     private final long fsyncDelay;
@@ -229,7 +229,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         mode = psCfg.getWalMode();
         tlbSize = psCfg.getTlbSize();
         flushFreq = psCfg.getWalFlushFrequency();
-        fsyncDelay = psCfg.getWalFsyncDelay();
+        fsyncDelay = psCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = psCfg.isAlwaysWriteFullPages();
         ioFactory = psCfg.getFileIOFactory();
         walAutoArchiveAfterInactivity = psCfg.getWalAutoArchiveAfterInactivity();
@@ -1666,7 +1666,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Condition activated each time writeBuffer() completes. Used to wait previously flushed write to complete */
         private final Condition writeComplete = lock.newCondition();
 
-        /** Condition for timed wait of several threads, see {@link PersistentStoreConfiguration#getWalFsyncDelay()} */
+        /** Condition for timed wait of several threads, see {@link PersistentStoreConfiguration#getWalFsyncDelayNanos()} */
         private final Condition fsync = lock.newCondition();
 
         /**

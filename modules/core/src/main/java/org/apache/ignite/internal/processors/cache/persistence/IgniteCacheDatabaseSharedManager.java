@@ -295,15 +295,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param dbCfg Database configuration.
-     * @param memPlcCfg MemoryPolicy configuration.
-     * @param memMetrics MemoryMetrics instance.
-     */
-    private MemoryPolicy createDefaultMemoryPolicy(MemoryConfiguration dbCfg, MemoryPolicyConfiguration memPlcCfg, MemoryMetricsImpl memMetrics) {
-        return initMemory(dbCfg, memPlcCfg, memMetrics);
-    }
-
-    /**
      * @param sysCacheInitSize Initial size of PageMemory to be created for system cache.
      * @param sysCacheMaxSize Maximum size of PageMemory to be created for system cache.
      *
@@ -454,6 +445,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If config is invalid.
      */
     private void checkPolicySize(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
+        boolean dfltInitSize = false;
+
+        if (plcCfg.getInitialSize() == 0) {
+            plcCfg.setInitialSize(DFLT_MEMORY_POLICY_INITIAL_SIZE);
+
+            dfltInitSize = true;
+        }
+
         if (plcCfg.getInitialSize() < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("MemoryPolicy must have size more than 10MB (use " +
                 "MemoryPolicyConfiguration.initialSize property to set correct size in bytes) " +
@@ -461,8 +460,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             );
 
         if (plcCfg.getMaxSize() < plcCfg.getInitialSize()) {
-            // We will know for sure if initialSize has been changed if we compare Longs by "==".
-            if (plcCfg.getInitialSize() == DFLT_MEMORY_POLICY_INITIAL_SIZE) {
+            // If initial size was not set, use the max size.
+            if (dfltInitSize) {
                 plcCfg.setInitialSize(plcCfg.getMaxSize());
 
                 LT.warn(log, "MemoryPolicy maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) +
