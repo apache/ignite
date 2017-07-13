@@ -1305,7 +1305,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                 if (loc)
-                    throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
+                    throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                 try {

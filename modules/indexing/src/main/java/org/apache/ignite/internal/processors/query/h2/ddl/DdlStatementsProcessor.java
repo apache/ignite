@@ -107,7 +107,7 @@ public class DdlStatementsProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
-                checkTable(tbl);
+                isDdlSupported(tbl);
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -140,7 +140,7 @@ public class DdlStatementsProcessor {
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
-                    checkTable(tbl);
+                    isDdlSupported(tbl);
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
@@ -233,13 +233,18 @@ public class DdlStatementsProcessor {
         }
     }
 
-    private static void checkTable(GridH2Table tbl) {
+    /**
+     * Check if table supports DDL statement.
+     *
+     * @param tbl Table.
+     */
+    private static void isDdlSupported(GridH2Table tbl) {
         GridCacheContext cctx = tbl.cache();
 
         assert cctx != null;
 
         if (cctx.isLocal())
-            throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
+            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
