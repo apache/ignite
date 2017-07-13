@@ -23,14 +23,17 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 /**
  *
@@ -41,6 +44,9 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
 
     /** Name for second test cache */
     private static final String TEST_CACHE_NAME2 = "testCache2";
+
+    /** Transaction timeout. */
+    private static final long TIMEOUT = 100;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -453,5 +459,220 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
         assertEquals(9, jcache(0).get("1"));
 
         clientCache.removeAll();
+    }
+
+    /**
+     * Test for closing suspended transaction.
+     */
+    public void testCloseSuspendedTransaction() {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            transactionIsolation = isolation;
+
+            closeSuspendedTransaction();
+        }
+    }
+
+    /**
+     *
+     */
+    private void closeSuspendedTransaction() {
+        final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
+
+        Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+
+        cache.put("key1", 1);
+
+        tx.suspend();
+
+        tx.close();
+
+        assertEquals(TransactionState.ROLLED_BACK, tx.state());
+        assertNull(cache.get("key1"));
+    }
+
+    /**
+     * Test for rolling back suspended transaction.
+     */
+    public void testRollbackSuspendedTransaction() {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            transactionIsolation = isolation;
+
+            rollbackSuspendedTransaction();
+        }
+    }
+
+    /**
+     *
+     */
+    private void rollbackSuspendedTransaction() {
+        final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
+
+        Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+
+        cache.put("key1", 1);
+
+        tx.suspend();
+
+        tx.rollback();
+
+        assertEquals(TransactionState.ROLLED_BACK, tx.state());
+        assertNull(cache.get("key1"));
+    }
+
+    /**
+     * Test checking commit on suspended transaction leads to exception.
+     */
+    public void testCommitSuspendedTxIsProhibited() {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            transactionIsolation = TransactionIsolation.SERIALIZABLE;
+
+            commitSuspendedTxIsProhibited();
+        }
+    }
+
+    /**
+     *
+     */
+    private void commitSuspendedTxIsProhibited() {
+        final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
+
+        try (Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation)) {
+            cache.put("key1", 1);
+
+            tx.suspend();
+
+            tx.commit();
+
+            fail("Committing suspended transaction is prohibited.");
+        }
+        catch (IgniteException ignore) {
+            // ignoring commit exception on suspended transaction.
+        }
+    }
+
+    /**
+     * Test checking commit on suspended transaction leads to exception.
+     */
+    public void testRollbackSuspendedTxIsProhibitedFromOtherThread() throws Exception {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            transactionIsolation = isolation;
+
+            rollbackSuspendedTxIsProhibitedFromOtherThread();
+        }
+    }
+
+    /**
+     *
+     */
+    private void rollbackSuspendedTxIsProhibitedFromOtherThread() {
+        final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
+
+        try (Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation)) {
+            cache.put("key1", 1);
+
+            tx.suspend();
+
+            multithreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    tx.rollback();
+
+                    return null;
+                }
+            }, 1);
+
+            fail("Rolling back suspended transaction is prohibited from the other thread.");
+        }
+        catch (Throwable ignore) {
+            // ignoring rollback exception on suspended transaction.
+        }
+    }
+
+    /**
+     * Test checking timeout on resumed transaction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTransactionTimeoutOnResumedTransaction() throws Exception {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            transactionIsolation = isolation;
+
+            transactionTimeoutOnResumedTransaction();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void transactionTimeoutOnResumedTransaction() throws Exception {
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
+        boolean tryResume = false;
+
+        try (Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation, TIMEOUT, 0)) {
+            tx.suspend();
+
+            long sleep = TIMEOUT * 2;
+
+            Thread.sleep(sleep);
+
+            tryResume = true;
+
+            tx.resume();
+
+            fail("Transaction must have timed out.");
+        }
+        catch (Exception e) {
+            if (!(X.hasCause(e, TransactionTimeoutException.class)))
+                throw e;
+        }
+
+        assert tryResume;
+    }
+
+    /**
+     * Test checking timeout on suspended transaction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTransactionTimeoutOnSuspendedTransaction() throws Exception {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            transactionIsolation = isolation;
+
+            transactionTimeoutOnSuspendedTransaction();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void transactionTimeoutOnSuspendedTransaction() throws Exception {
+        final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
+        final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
+        boolean trySuspend = false;
+
+        try (Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation, TIMEOUT, 0)) {
+            cache.put("key1", 1);
+
+            long sleep = TIMEOUT * 2;
+
+            Thread.sleep(sleep);
+
+            trySuspend = true;
+
+            tx.suspend();
+
+            fail("Transaction must have timed out.");
+        }
+        catch (Exception e) {
+            if (!(X.hasCause(e, TransactionTimeoutException.class)))
+                throw e;
+        }
+
+        assertNull(cache.get("key1"));
+
+        assert trySuspend;
     }
 }

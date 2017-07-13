@@ -2855,11 +2855,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * Suspends transaction. It could be resumed later. Supported only for optimistic transactions.
      *
-     * @throws IgniteCheckedException If the transaction is in an incorrect state.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
     public void suspend() throws IgniteCheckedException {
         if (pessimistic())
             throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
+
+        checkValid();
 
         synchronized (this) {
             if (ACTIVE != state())
@@ -3016,9 +3018,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * Resumes transaction (possibly in another thread) if it was previously suspended.
      *
-     * @throws IgniteCheckedException If the transaction is in an incorrect state.
+     * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
     public void resume() throws IgniteCheckedException {
+        checkValid();
+
         synchronized (this) {
             if (SUSPENDED != state())
                 throw new IgniteCheckedException("Trying to resume transaction with incorrect state "
@@ -3061,6 +3065,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 return false;
             }
         }
+
 
         IgniteCheckedException err = null;
 
