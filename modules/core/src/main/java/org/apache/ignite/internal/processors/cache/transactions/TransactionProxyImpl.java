@@ -96,12 +96,10 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /**
      * Enters a call.
-     *
-     * @param checkThreadId Whether threadId should be checked.
      */
-    private void enter(boolean checkThreadId) {
-        assert Thread.currentThread().getId() == threadId() || !checkThreadId :
-            "Only thread owning transaction is permitted to operate it.";
+    private void enter() {
+        assert Thread.currentThread().getId() == threadId() || TransactionState.SUSPENDED == state() :
+            "Only thread owning active transaction is permitted to operate it.";
 
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
@@ -210,7 +208,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void suspend() throws IgniteException {
-        enter(true);
+        enter();
 
         try {
             cctx.suspendTx(tx);
@@ -245,7 +243,10 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public boolean setRollbackOnly() {
-        enter(true);
+        enter();
+
+        assert TransactionState.SUSPENDED != state() :
+            "Marking rollback operation on suspended transaction is prohibited.";
 
         try {
             return tx.setRollbackOnly();
@@ -257,7 +258,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public boolean isRollbackOnly() {
-        enter(true);
+        enter();
 
         try {
             if (async)
@@ -272,7 +273,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void commit() {
-        enter(true);
+        enter();
 
         try {
             IgniteInternalFuture<IgniteInternalTx> commitFut = cctx.commitTxAsync(tx);
@@ -292,7 +293,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
-        enter(true);
+        enter();
 
         try {
             return (IgniteFuture<Void>)createFuture(cctx.commitTxAsync(tx));
@@ -304,7 +305,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void close() {
-        enter(true);
+        enter();
 
         try {
             cctx.endTx(tx);
@@ -319,7 +320,10 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void rollback() {
-        enter(true);
+        enter();
+
+        assert TransactionState.SUSPENDED != state() :
+            "Rollback operation on suspended transaction is prohibited.";
 
         try {
             IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
@@ -339,7 +343,10 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
-        enter(true);
+        enter();
+
+        assert TransactionState.SUSPENDED != state() :
+            "Rollback operation on suspended transaction is prohibited.";
 
         try {
             return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
@@ -354,7 +361,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
-        enter(false);
+        enter();
 
         try {
             cctx.resumeTx(tx);

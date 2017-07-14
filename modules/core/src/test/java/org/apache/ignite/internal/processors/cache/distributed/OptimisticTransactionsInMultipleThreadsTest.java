@@ -494,37 +494,41 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
     /**
      * Test for rolling back suspended transaction.
      */
-    public void testRollbackSuspendedTransaction() {
+    public void testRollbackSuspendedTransactionIsProhibited() {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             transactionIsolation = isolation;
 
-            rollbackSuspendedTransaction();
+            rollbackSuspendedTransactionIsProhibited();
         }
     }
 
     /**
      *
      */
-    private void rollbackSuspendedTransaction() {
+    private void rollbackSuspendedTransactionIsProhibited() {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
         final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
-        Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation);
+        try (Transaction tx = txs.txStart(TransactionConcurrency.OPTIMISTIC, transactionIsolation)) {
+            cache.put("key1", 1);
 
-        cache.put("key1", 1);
+            tx.suspend();
 
-        tx.suspend();
+            tx.rollback();
 
-        tx.rollback();
+            fail("Rolling back suspended transaction is prohibited.");
+        }
+        catch (Throwable ignore) {
+            // ignoring rollback exception on suspended transaction.
+        }
 
-        assertEquals(TransactionState.ROLLED_BACK, tx.state());
         assertNull(cache.get("key1"));
     }
 
     /**
      * Test checking commit on suspended transaction leads to exception.
      */
-    public void testCommitSuspendedTxIsProhibited() {
+    public void testCommitSuspendedTransactionIsProhibited() {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             transactionIsolation = TransactionIsolation.SERIALIZABLE;
 
@@ -556,18 +560,18 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
     /**
      * Test checking commit on suspended transaction leads to exception.
      */
-    public void testRollbackSuspendedTxIsProhibitedFromOtherThread() throws Exception {
+    public void testRollbackSuspendedTransactionIsProhibitedFromOtherThread() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             transactionIsolation = isolation;
 
-            rollbackSuspendedTxIsProhibitedFromOtherThread();
+            rollbackSuspendedTransactionIsProhibitedFromOtherThread();
         }
     }
 
     /**
      *
      */
-    private void rollbackSuspendedTxIsProhibitedFromOtherThread() {
+    private void rollbackSuspendedTransactionIsProhibitedFromOtherThread() {
         final IgniteCache<String, Integer> cache = jcache(txInitiatorNodeId);
         final IgniteTransactions txs = ignite(txInitiatorNodeId).transactions();
 
