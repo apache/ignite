@@ -34,6 +34,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -246,6 +247,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             }
         }
 
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 4096));
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());

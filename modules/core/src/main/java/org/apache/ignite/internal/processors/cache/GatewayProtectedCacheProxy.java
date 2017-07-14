@@ -54,6 +54,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -86,8 +87,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @param lock True if cache proxy should be protected with gateway lock, false in other case.
      */
     public GatewayProtectedCacheProxy(
-            IgniteCacheProxy<K, V> delegate,
-            CacheOperationContext opCtx,
+            @NotNull IgniteCacheProxy<K, V> delegate,
+            @NotNull CacheOperationContext opCtx,
             boolean lock) {
         this.delegate = delegate;
         this.opCtx = opCtx;
@@ -1657,8 +1658,13 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @param gate Cache gateway.
      * @return {@code True} if enter successful.
      */
-    private boolean onEnterIfNoStop(GridCacheGateway<K, V> gate) {
-        checkProxyIsValid(gate);
+    private boolean onEnterIfNoStop(@Nullable GridCacheGateway<K, V> gate) {
+        try {
+            checkProxyIsValid(gate);
+        }
+        catch (Exception e) {
+            return false;
+        }
 
         return lock ? gate.enterIfNotStopped() : gate.enterIfNotStoppedNoLock();
     }

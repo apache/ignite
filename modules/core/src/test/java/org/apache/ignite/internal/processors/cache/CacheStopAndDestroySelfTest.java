@@ -768,8 +768,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         cache.close();
 
-        cache.close();
-
         try {
             cache.get(1);
 
