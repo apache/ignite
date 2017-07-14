@@ -473,7 +473,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             final AtomicBoolean done = new AtomicBoolean();
 
             try {
-                final int totalPutCnt = 50000;
+                final int totalPutCnt = 10000;
 
                 IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -491,60 +491,67 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                             futs.add(ldr.addData(idx, idx));
                         }
 
-                        ldr.flush();
+//                        ldr.flush();
 
-                        for (IgniteFuture<?> fut : futs)
-                            fut.get();
+//                        for (IgniteFuture<?> fut : futs) {
+//                            info("Before: " + fut);
+//
+//                            fut.get();
+//
+//                            info("After.");
+//                        }
 
                         return null;
                     }
                 }, 5, "producer");
 
-                IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        while (!done.get()) {
-                            ldr.flush();
-
-                            U.sleep(100);
-                        }
-
-                        return null;
-                    }
-                }, 1, "flusher");
+//                IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
+//                    @Override public Object call() throws Exception {
+//                        while (!done.get()) {
+//                            ldr.flush();
+//
+//                            U.sleep(100);
+//                        }
+//
+//                        return null;
+//                    }
+//                }, 1, "flusher");
 
                 // Define index of node being restarted.
                 final int restartNodeIdx = nodesCntCache + nodesCntNoCache + 1;
 
-                IgniteInternalFuture<?> fut3 = multithreadedAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try {
-                            for (int i = 0; i < 5; i++) {
-                                Ignite g = startGrid(restartNodeIdx);
+                //TODO Uncomment
 
-                                UUID id = g.cluster().localNode().id();
-
-                                info(">>>>>>> Started node: " + id);
-
-                                U.sleep(1000);
-
-                                stopGrid(getTestIgniteInstanceName(restartNodeIdx), true);
-
-                                info(">>>>>>> Stopped node: " + id);
-                            }
-                        }
-                        finally {
-                            done.set(true);
-
-                            info("Start stop thread finished.");
-                        }
-
-                        return null;
-                    }
-                }, 1, "start-stop-thread");
+//                IgniteInternalFuture<?> fut3 = multithreadedAsync(new Callable<Object>() {
+//                    @Override public Object call() throws Exception {
+//                        try {
+//                            for (int i = 0; i < 5; i++) {
+//                                Ignite g = startGrid(restartNodeIdx);
+//
+//                                UUID id = g.cluster().localNode().id();
+//
+//                                info(">>>>>>> Started node: " + id);
+//
+//                                U.sleep(1000);
+//
+//                                stopGrid(getTestIgniteInstanceName(restartNodeIdx), true);
+//
+//                                info(">>>>>>> Stopped node: " + id);
+//                            }
+//                        }
+//                        finally {
+//                            done.set(true);
+//
+//                            info("Start stop thread finished.");
+//                        }
+//
+//                        return null;
+//                    }
+//                }, 1, "start-stop-thread");
 
                 fut1.get();
-                fut2.get();
-                fut3.get();
+//                fut2.get();
+//                fut3.get();
             }
             finally {
                 ldr.close(false);
