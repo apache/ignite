@@ -404,6 +404,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MBEAN_APPEND_CLASS_LOADER_ID = "IGNITE_MBEAN_APPEND_CLASS_LOADER_ID";
 
     /**
+     * If property is set to {@code true}, then Ignite will disable MBeans registration.
+     * This may be helpful if MBeans are not allowed e.g. for security reasons.
+     *
+     * Default is {@code false}
+     */
+    public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
+
+    /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
      */
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
