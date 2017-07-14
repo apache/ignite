@@ -1,9 +1,5 @@
 package org.apache.ignite.internal.processors.service;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,12 +25,13 @@ public class SingleNodeServiceTopology implements GridServiceTopology {
     final private UUID node;
 
     /**
-     * Initializes new instance of {@link SingleNodeServiceTopology}
+     * Initializes new instance of {@link SingleNodeServiceTopology}. Use {@link GridServiceTopologyFactory} to create
+     * instances of this class.
      *
-     * @param cnt Number of service instances deployed on each node
-     * @param node Nodes in the topology
+     * @param node Node in the topology
+     * @param cnt Number of service instances deployed on the node
      */
-    public SingleNodeServiceTopology(int cnt, UUID node) {
+    SingleNodeServiceTopology(UUID node, int cnt) {
         A.ensure(cnt > 0, "cnt must be positive");
         A.notNull(node, "node");
 

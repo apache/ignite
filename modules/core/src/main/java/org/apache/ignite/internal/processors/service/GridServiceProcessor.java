@@ -965,23 +965,19 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
+                GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
+
                 if (affKey != null) {
                     ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
 
                     if (n != null) {
                         int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
 
-                        assigns.topology(new SingleNodeServiceTopology(cnt, n.id()));
+                        assigns.topology(GridServiceTopologyFactory.get(n, cnt));
                     }
                 }
-                else if (totalCnt == 0 && maxPerNodeCnt > 0) {
-                    Collection<UUID> nodeIds = new ArrayList<>(nodes.size());
-
-                    for (ClusterNode n : nodes)
-                        nodeIds.add(n.id());
-
-                    assigns.topology(new HomomorphicServiceTopology(maxPerNodeCnt, nodeIds));
-                }
+                else if (totalCnt == 0 && maxPerNodeCnt > 0)
+                    assigns.topology(GridServiceTopologyFactory.get(nodes, maxPerNodeCnt));
                 else {
                     if (!nodes.isEmpty()) {
                         int size = nodes.size();
@@ -996,18 +992,14 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                             remainder = 0;
                         }
 
-                        for (ClusterNode n : nodes) {
-                            if (perNodeCnt > 0)
-                                cnts.put(n.id(), perNodeCnt);
-                        }
+                        for (ClusterNode n : nodes)
+                            cnts.put(n.id(), perNodeCnt);
 
                         assert perNodeCnt >= 0;
                         assert remainder >= 0;
 
                         if (remainder > 0) {
                             int cnt = perNodeCnt + 1;
-
-                            GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
 
                             if (oldAssigns != null) {
                                 Collection<UUID> used = new HashSet<>();
@@ -1063,11 +1055,12 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                             }
                         }
 
-                        assigns.topology(new PolymorphicServiceTopology(cnts));
+                        assigns.topology(GridServiceTopologyFactory.get(cnts));
                     }
                 }
 
-                cache.put(key, assigns);
+                if (oldAssigns == null || !topologiesEqual(oldAssigns.topology(), assigns.topology()))
+                    cache.put(key, assigns);
 
                 tx.commit();
 
@@ -1792,6 +1785,30 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 cancel(ctxs, ctxs.size());
             }
         }
+    }
+
+    /**
+     * @return true if topologies include same number of nodes and same number of service instances are deployed on
+     * each node. Attention: the order of the entries in the topologies shall be the same.
+     */
+    private static boolean topologiesEqual(GridServiceTopology a, GridServiceTopology b) {
+        if (a == null && b == null)
+            return true;
+
+        if (a == null || b == null)
+            return false;
+
+        Iterator<Map.Entry<UUID, Integer>> itA = a.iterator(), itB = b.iterator();
+
+        while (itA.hasNext() && itB.hasNext()) {
+            Map.Entry<UUID, Integer> eA = itA.next();
+            Map.Entry<UUID, Integer> eB = itB.next();
+
+            if (!eA.getKey().equals(eB.getKey()) || !eA.getValue().equals(eB.getValue()))
+                return false;
+        }
+
+        return !(itA.hasNext() || itB.hasNext());
     }
 
     /**

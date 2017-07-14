@@ -18,12 +18,14 @@ public class PolymorphicServiceTopology implements GridServiceTopology {
     private final Map<UUID, Integer> nodeCntMap;
 
     /**
-     * Initializes new instance of {@link PolymorphicServiceTopology}
+     * Initializes new instance of {@link PolymorphicServiceTopology}. Use {@link GridServiceTopologyFactory} to create
+     * instances of this class.
      *
      * @param nodeCntMap Node ID -> number of service instances map
      */
-    public PolymorphicServiceTopology(Map<UUID, Integer> nodeCntMap) {
+    PolymorphicServiceTopology(Map<UUID, Integer> nodeCntMap) {
         A.notNull(nodeCntMap, "nodeCntMap");
+        A.ensure(nodeCntMap.size() > 0, "nodeCntMap must not be empty");
 
         this.nodeCntMap = nodeCntMap;
     }

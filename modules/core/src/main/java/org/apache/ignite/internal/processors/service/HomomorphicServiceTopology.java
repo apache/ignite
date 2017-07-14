@@ -19,23 +19,25 @@ public class HomomorphicServiceTopology implements GridServiceTopology {
 
     /** Number of service instances deployed on each node */
     @GridToStringInclude
-    final private int cntPerNode;
+    final private int cnt;
 
     /** Nodes in the topology */
     @GridToStringInclude
     final private Collection<UUID> nodes;
 
     /**
-     * Initializes new instance of {@link HomomorphicServiceTopology}
+     * Initializes new instance of {@link HomomorphicServiceTopology}. Use {@link GridServiceTopologyFactory} to create
+     * instances of this class.
      *
-     * @param cntPerNode Number of service instances deployed on each node
      * @param nodes Nodes in the topology
+     * @param cnt Number of service instances deployed on each node
      */
-    public HomomorphicServiceTopology(int cntPerNode, Collection<UUID> nodes) {
-        A.ensure(cntPerNode > 0, "cntPerNode must be positive");
+    HomomorphicServiceTopology(Collection<UUID> nodes, int cnt) {
+        A.ensure(cnt > 0, "cnt must be positive");
         A.notNull(nodes, "nodes");
+        A.ensure(nodes.size() > 0, "nodes must not be empty");
 
-        this.cntPerNode = cntPerNode;
+        this.cnt = cnt;
         this.nodes = nodes;
     }
 
@@ -49,7 +51,7 @@ public class HomomorphicServiceTopology implements GridServiceTopology {
             }
 
             @Override public Map.Entry<UUID, Integer> next() {
-                return new AbstractMap.SimpleEntry<>(it.next(), HomomorphicServiceTopology.this.cntPerNode);
+                return new AbstractMap.SimpleEntry<>(it.next(), HomomorphicServiceTopology.this.cnt);
             }
 
             @Override public void remove() {
@@ -62,7 +64,7 @@ public class HomomorphicServiceTopology implements GridServiceTopology {
     @Override public int nodeServiceCount(UUID node) {
         for (UUID n : nodes) {
             if (n.equals(node))
-                return cntPerNode;
+                return cnt;
         }
 
         return 0;
