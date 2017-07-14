@@ -421,8 +421,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         checkValid();
 
         try {
-            txState.awaitLastFut(cctx);
-
             cctx.tm().prepareTx(this, entries);
         }
         catch (IgniteCheckedException e) {
