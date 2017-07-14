@@ -15,21 +15,33 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache.Query
-{
-    using Apache.Ignite.Core.Binary;
-    using NUnit.Framework;
+package org.apache.ignite.yardstick.cache;
 
-    /// <summary>
-    /// LINQ test with simple name mapper.
-    /// </summary>
-    [TestFixture]
-    public class CacheLinqTestSimpleName : CacheLinqTest
-    {
-        /** <inheritdoc /> */
-        protected override IBinaryNameMapper GetNameMapper()
-        {
-            return BinaryBasicNameMapper.SimpleNameInstance;
-        }
+import java.util.Map;
+import org.apache.ignite.IgniteLock;
+import org.yardstickframework.BenchmarkConfiguration;
+
+/**
+ * Ignite benchmark that performs Ignite.reentrantLock operations.
+ */
+public class IgniteLockBenchmark extends IgniteCacheLockBenchmark {
+    /** Reentrant lock. */
+    private IgniteLock lock;
+
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> map) throws Exception {
+        lock.lock();
+        lock.unlock();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        String key = "key";
+
+        lock = ignite().reentrantLock(key, false, false, true);
     }
 }
