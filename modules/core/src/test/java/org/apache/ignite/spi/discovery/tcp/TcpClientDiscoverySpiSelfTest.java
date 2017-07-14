@@ -142,7 +142,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private boolean longSockTimeouts;
 
     /** */
-    private int maxMissedClientHbs = TcpDiscoverySpi.DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
+    protected int maxMissedClientHbs = TcpDiscoverySpi.DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
 
     /** */
     private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
