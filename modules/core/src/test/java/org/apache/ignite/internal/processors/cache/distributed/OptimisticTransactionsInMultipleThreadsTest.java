@@ -530,7 +530,7 @@ public class OptimisticTransactionsInMultipleThreadsTest extends AbstractTransac
      */
     public void testCommitSuspendedTransactionIsProhibited() {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            transactionIsolation = TransactionIsolation.SERIALIZABLE;
+            transactionIsolation = isolation;
 
             commitSuspendedTxIsProhibited();
         }
