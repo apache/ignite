@@ -1465,13 +1465,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
         @Nullable IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
-            List<DataStreamerEntry> entries0 = null;
-            GridFutureAdapter<Object> curFut0 = null;
-
             acquireRemapSemaphore();
 
             for (PerPartitionBuffer b : entriesMap.values()) {
                 AffinityTopologyVersion batchTopVer = null;
+                List<DataStreamerEntry> entries0 = null;
+                GridFutureAdapter<Object> curFut0 = null;
 
                 synchronized (b) {
                     if (!b.entries.isEmpty()) {
@@ -1516,11 +1515,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
         private void incrementActiveTasks() throws IgniteInterruptedCheckedException {
-            if (timeout == DFLT_UNLIMIT_TIMEOUT) {
-                if (sem.availablePermits() <= 0)
-                    U.debug(log, "No Permits node=" + node.order() + " " + node.isLocal() + " " + isLocNode);
+            if (timeout == DFLT_UNLIMIT_TIMEOUT)
                 U.acquire(sem);
-            }
             else if (!U.tryAcquire(sem, timeout, TimeUnit.MILLISECONDS)) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to add parallel operation.");
@@ -1535,9 +1531,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private void signalTaskFinished(IgniteInternalFuture<Object> f) {
             assert f != null;
 
-
             sem.release();
-            U.debug(log, "Released: " + sem.availablePermits() + " node=" + node.order());
         }
 
         /**
