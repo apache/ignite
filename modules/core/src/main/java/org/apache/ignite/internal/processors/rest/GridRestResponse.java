@@ -59,7 +59,7 @@ public class GridRestResponse implements Externalizable {
     private String err;
 
     /** Response object. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object obj;
 
     /**

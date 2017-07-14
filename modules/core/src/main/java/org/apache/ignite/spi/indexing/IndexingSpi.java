@@ -35,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  *
+ * <b>NOTE:</b> Key and value arguments of IgniteSpi methods can be {@link org.apache.ignite.binary.BinaryObject} instances.
+ * BinaryObjects can be deserialized manually if original objects needed.
+ *
  * Here is a Java example on how to configure SPI.
  * <pre name="code" class="java">
  * IndexingSpi spi = new MyIndexingSpi();
