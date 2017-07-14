@@ -188,10 +188,11 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 tx.removeMapping(m.primary().id());
         }
 
-        ERR_UPD.compareAndSet(this, null, e);
-
         if (keyLockFut != null)
             keyLockFut.onDone(e);
+
+        if (ERR_UPD.compareAndSet(this, null, e))
+            onComplete();
     }
 
     /** {@inheritDoc} */
