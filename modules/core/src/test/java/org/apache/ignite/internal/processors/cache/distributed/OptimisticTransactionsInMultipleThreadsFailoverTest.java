@@ -96,6 +96,7 @@ public class OptimisticTransactionsInMultipleThreadsFailoverTest extends Abstrac
      */
     private void txRemoteNodeFailover() throws Exception {
         startGrid(1);
+
         awaitPartitionMapExchange();
 
         IgniteCache<String, Integer> remoteCache = jcache(1);
@@ -137,6 +138,7 @@ public class OptimisticTransactionsInMultipleThreadsFailoverTest extends Abstrac
      */
     private void txLocalNodeFailover() throws Exception {
         startGrid(1);
+
         awaitPartitionMapExchange();
 
         IgniteCache localCache = jcache(1);
@@ -165,6 +167,8 @@ public class OptimisticTransactionsInMultipleThreadsFailoverTest extends Abstrac
 
         startGrid(getTestIgniteInstanceName(0), getConfiguration().setClientMode(true));
 
+        awaitPartitionMapExchange();
+
         runWithAllIsolations(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 txOnClientBreakRemote();
@@ -181,6 +185,7 @@ public class OptimisticTransactionsInMultipleThreadsFailoverTest extends Abstrac
      */
     private void txOnClientBreakRemote() throws Exception {
         startGrid(1);
+
         awaitPartitionMapExchange();
 
         IgniteCache remoteCache = jcache(1);

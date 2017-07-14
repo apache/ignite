@@ -46,6 +46,7 @@ public class OptimisticTransactionsInMultipleThreadsClientTest extends Optimisti
         super.beforeTestsStarted();
 
         startGrid(getTestIgniteInstanceName(1), getConfiguration().setClientMode(true));
+
         awaitPartitionMapExchange();
 
         txInitiatorNodeId = 1;
@@ -170,6 +171,8 @@ public class OptimisticTransactionsInMultipleThreadsClientTest extends Optimisti
 
         assertEquals(2, jcache(0).get(remotePrimaryKey));
 
+        clientTx.resume();
+
         clientTx.close();
 
         remoteCache.removeAll();
@@ -224,8 +227,11 @@ public class OptimisticTransactionsInMultipleThreadsClientTest extends Optimisti
         fut.get();
 
         // if transaction was not closed after resume, then close it now.
-        if (successfulResume.get() == 0)
+        if (successfulResume.get() == 0) {
+            clientTx.resume();
+
             clientTx.close();
+        }
 
         assertTrue(successfulResume.get() < 2);
         assertEquals(concurrentThreadsNum, failedTxNumber.intValue() + successfulResume.intValue());

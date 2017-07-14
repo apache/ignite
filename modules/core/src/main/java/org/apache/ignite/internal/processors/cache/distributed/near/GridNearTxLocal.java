@@ -2868,7 +2868,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
                     + "[expected=" + ACTIVE + ", actual=" + state() + ']');
 
-            cctx.tm().detachThread(this);
+            cctx.tm().detachCurrentThread(this);
 
             state(SUSPENDED);
         }

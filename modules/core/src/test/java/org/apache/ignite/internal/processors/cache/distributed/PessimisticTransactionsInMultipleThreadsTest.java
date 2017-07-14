@@ -36,6 +36,7 @@ public class PessimisticTransactionsInMultipleThreadsTest extends AbstractTransa
         super.beforeTestsStarted();
 
         startGrids(2);
+
         awaitPartitionMapExchange();
     }
 
