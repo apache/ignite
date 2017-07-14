@@ -40,12 +40,13 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about partitions of a single node.
+ * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future
  */
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Local partitions. */
+    /** Local partitions. Serialized as {@link #partsBytes} */
     @GridToStringInclude
     @GridDirectTransient
     private Map<Integer, GridDhtPartitionMap> parts;
@@ -54,7 +55,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @GridDirectMap(keyType = Integer.class, valueType = Integer.class)
     private Map<Integer, Integer> dupPartsData;
 
-    /** Serialized partitions. */
+    /** Serialized local partitions. Unmarshalled to {@link #parts} */
     private byte[] partsBytes;
 
     /** Partitions update counters. */

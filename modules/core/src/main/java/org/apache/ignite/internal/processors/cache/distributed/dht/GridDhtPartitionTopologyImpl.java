@@ -99,7 +99,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** */
     private final AtomicReferenceArray<GridDhtLocalPartition> locParts;
 
-    /** Node to partition map. */
+    /** Node to partition map from all nodes. */
     private GridDhtPartitionFullMap node2part;
 
     /** */
@@ -451,7 +451,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     if (exchId.isLeft() && exchFut.serverNodeDiscoveryEvent())
                         removeNode(exchId.nodeId());
-    
+
                     ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
                     if (log.isDebugEnabled()) {
@@ -465,7 +465,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
-                    // If this is the oldest node.
+                    // If this is the oldest node with cache (coordinator) or cache was added during this exchange
                     if (oldest != null && (loc.equals(oldest) || grpStarted)) {
                         if (node2part == null) {
                             node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
@@ -1566,12 +1566,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean detectLostPartitions(DiscoveryEvent discoEvt) {
+    @Override public Collection<Integer> detectLostPartitions(DiscoveryEvent discoEvt) {
         lock.writeLock().lock();
 
         try {
             if (node2part == null)
-                return false;
+                return null;
 
             int parts = grp.affinity().partitions();
 
@@ -1591,8 +1591,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            boolean changed = false;
 
+            boolean changed = false;
+            //todo accumulate and return changed flag
             if (!F.isEmpty(lost)) {
                 PartitionLossPolicy plc = grp.config().getPartitionLossPolicy();
 
@@ -1610,7 +1611,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (marked)
                             updateLocal(locPart.id(), locPart.state(), updSeq);
 
-                        changed |= marked;
+                        changed |= marked; //todo check how to return
                     }
                     // Update map for remote node.
                     else if (plc != PartitionLossPolicy.IGNORE) {
@@ -1636,7 +1637,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     grp.needsRecovery(true);
             }
 
-            return changed;
+            return lost;
         }
         finally {
             lock.writeLock().unlock();

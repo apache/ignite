@@ -203,7 +203,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final Map<UUID, Exception> changeGlobalStateExceptions = new ConcurrentHashMap8<>();
 
     /** */
-    private ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
 
     /** */
     @GridToStringExclude
@@ -218,6 +218,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     private final AtomicBoolean done = new AtomicBoolean();
+
+    /**
+     * All detected lost partitions .
+     * Maps cache group id to collection of partition IDs
+     */
+    private Map<Integer, Collection<Integer>> lostPart;
+
 
     /**
      * @param cctx Cache context.
@@ -428,11 +435,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             AffinityTopologyVersion topVer = topologyVersion();
 
-            srvNodes = new ArrayList<>(discoCache.serverNodes());
+            List<ClusterNode> srvNodes = new ArrayList<>(discoCache.serverNodes());
 
             remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
+
+            this.srvNodes = srvNodes;
 
             boolean crdNode = crd != null && crd.isLocal();
 
@@ -1158,11 +1167,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (stateChangeExchange() && !F.isEmpty(changeGlobalStateExceptions))
             m.setErrorsMap(changeGlobalStateExceptions);
 
+        if (lostPart != null)
+           m.setLostPart(lostPart);
+
         return m;
     }
 
     /**
-     * @param nodes Nodes.
+     * @param nodes Target Nodes.
      * @throws IgniteCheckedException If failed.
      */
     private void sendAllPartitions(Collection<ClusterNode> nodes) throws IgniteCheckedException {
@@ -1634,26 +1646,37 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Detect lost partitions.
+     * Detect lost partitions in case of node left or failed.
+     * For topology coordinator is called when all {@link GridDhtPartitionsSingleMessage} were received
+     * For other nodes is called when exchange future is completed by {@link GridDhtPartitionsFullMessage}
      */
-    private void detectLostPartitions() {
+    @Nullable private Map<Integer, Collection<Integer>> detectLostPartitions() {
         boolean detected = false;
-
+        Map<Integer, Collection<Integer>> lostPartitions = null;
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
-                return;
+                return null;
 
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (!grp.isLocal()) {
-                    boolean detectedOnGrp = grp.topology().detectLostPartitions(discoEvt);
+                    Collection<Integer> lostPartitionsForCache = grp.topology().detectLostPartitions(discoEvt);
 
-                    detected |= detectedOnGrp;
+                    //todo  detected |= detectedOnGrp;
+
+                    if (lostPartitionsForCache != null) {
+                        if (lostPartitions == null)
+                            lostPartitions = new HashMap<>();
+                        lostPartitions.put(grp.groupId(), lostPartitionsForCache);
+                    }
                 }
             }
         }
 
         if (detected)
             cctx.exchange().scheduleResendPartitions();
+
+
+        return lostPartitions;
     }
 
     /**
@@ -1680,7 +1703,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     *
+     * Called only for coordinator node when all {@link GridDhtPartitionsSingleMessage}s were received
      */
     private void onAllReceived() {
         try {
@@ -1732,7 +1755,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
             else if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
-                detectLostPartitions();
+                addLostPartitions(detectLostPartitions());
 
             updateLastVersion(cctx.versions().last());
 
@@ -1752,12 +1775,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     onAffinityInitialized(fut);
             }
             else {
-                List<ClusterNode> nodes;
+                List<ClusterNode> remoteNodes;
 
                 synchronized (this) {
-                    srvNodes.remove(cctx.localNode());
+                    remoteNodes = new ArrayList<>(srvNodes);
 
-                    nodes = new ArrayList<>(srvNodes);
+                    remoteNodes.remove(cctx.localNode());
                 }
 
                 IgniteCheckedException err = null;
@@ -1784,8 +1807,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.discovery().sendCustomEvent(msg);
                 }
 
-                if (!nodes.isEmpty())
-                    sendAllPartitions(nodes);
+                if (!remoteNodes.isEmpty())
+                    sendAllPartitions(remoteNodes);
 
                 onDone(exchangeId().topologyVersion(), err);
             }
@@ -1795,6 +1818,28 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
+        }
+    }
+
+    /**
+     * Accumulates all lost partitions for current topology from next cache. See {@link #lostPart}
+     * @param lostPartitions currently found lost partitions (maps cache ID to lost partitions collection)
+     */
+    private void addLostPartitions(@Nullable final Map<Integer, Collection<Integer>> lostPartitions) {
+        if (F.isEmpty(lostPartitions))
+            return;
+
+        if (lostPart == null)
+            lostPart = new HashMap<>();
+
+        for (Map.Entry<Integer, Collection<Integer>> next : lostPartitions.entrySet()) {
+            Collection<Integer> integers = lostPart.get(next.getKey());
+
+            if (integers == null) {
+                integers = new HashSet<>();
+                lostPart.put(next.getKey(), integers);
+            }
+            integers.addAll(next.getValue());
         }
     }
 
@@ -1961,6 +2006,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         entry.getValue(),
                         cntrMap,
                         Collections.<Integer>emptySet());
+                }
+            }
+        }
+
+        final Map<Integer, Collection<Integer>> lostPart = msg.getLostPart();
+        if (lostPart != null && !lostPart.isEmpty()) {
+            for (Map.Entry<Integer, Collection<Integer>> grpIdToLostPartitions : lostPart.entrySet()) {
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpIdToLostPartitions.getKey());
+                if (grp.eventRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                    for (Integer part : grpIdToLostPartitions.getValue()) {
+                        grp.addRebalanceEvent(part, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+                    }
                 }
             }
         }
@@ -2285,14 +2343,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public String toString() {
         Set<UUID> remaining;
+        List<ClusterNode> srvNodes;
 
         synchronized (this) {
             remaining = new HashSet<>(this.remaining);
+            srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
+            "srvNodes", srvNodes,
             "super", super.toString());
     }
 

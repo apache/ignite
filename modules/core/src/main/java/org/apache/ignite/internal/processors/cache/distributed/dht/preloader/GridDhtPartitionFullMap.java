@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Full partition map.
+ * Full partition map from all nodes.
  */
 public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> implements Externalizable {
     /** */

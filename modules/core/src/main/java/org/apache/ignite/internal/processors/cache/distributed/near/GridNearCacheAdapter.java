@@ -64,7 +64,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Common logic for near caches.
+ * Common logic for near caches (smaller local cache that stores most recently or most frequently accessed data).
  */
 public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** */

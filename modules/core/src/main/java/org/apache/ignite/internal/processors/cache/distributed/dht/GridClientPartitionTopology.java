@@ -288,7 +288,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
         long updateSeq = this.updateSeq.incrementAndGet();
 
-        // If this is the oldest node.
+        // If this is the oldest node with cache (coordinator) or cache was added during this exchange
         if (oldest.id().equals(loc.id()) || exchFut.dynamicCacheGroupStarted(grpId)) {
             if (node2part == null) {
                 node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
@@ -835,10 +835,10 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean detectLostPartitions(DiscoveryEvent discoEvt) {
+    @Override public Collection<Integer> detectLostPartitions(DiscoveryEvent discoEvt) {
         assert false : "detectLostPartitions should never be called on client topology";
 
-        return false;
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */

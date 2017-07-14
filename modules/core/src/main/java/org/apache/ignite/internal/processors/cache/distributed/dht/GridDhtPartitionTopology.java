@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * DHT partition topology.
+ * Distributed Hash Table (DHT) partition topology.
  */
 @GridToStringExclude
 public interface GridDhtPartitionTopology {
@@ -267,7 +267,7 @@ public interface GridDhtPartitionTopology {
      * @param discoEvt Discovery event for which we detect lost partitions.
      * @return {@code True} if partitions state got updated.
      */
-    public boolean detectLostPartitions(DiscoveryEvent discoEvt);
+    @Nullable public Collection<Integer> detectLostPartitions(DiscoveryEvent discoEvt);
 
     /**
      * Resets the state of all LOST partitions to OWNING.

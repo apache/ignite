@@ -22,12 +22,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -116,7 +116,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSendMessage() throws Exception {
+    public void testSendMessage() throws Throwable {
         try {
             startGridsMultiThreaded(2);
 
@@ -130,31 +130,30 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void doSend() throws Exception {
-        GridIoManager mgr0 = ((IgniteKernal)grid(0)).context().io();
-        GridIoManager mgr1 = ((IgniteKernal)grid(1)).context().io();
+    private void doSend() throws Throwable {
+        GridIoManager mgr0 = grid(0).context().io();
+        GridIoManager mgr1 = grid(1).context().io();
 
         String topic = "test-topic";
 
         final CountDownLatch latch = new CountDownLatch(SAMPLE_CNT);
+        final AtomicReference<Throwable> throwableAtomicRef = new AtomicReference<>();
 
         mgr1.addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 try {
-                    latch.countDown();
-
                     Collection<TestMessage1> messages = ((TestMessage) msg).entries();
 
                     assertEquals(10, messages.size());
 
-                    int count = 0;
+                    int cnt = 0;
 
                     for (TestMessage1 msg1 : messages) {
                         assertTrue(msg1.body().contains(TEST_BODY));
 
                         int i = Integer.parseInt(msg1.body().substring(TEST_BODY.length() + 1));
 
-                        assertEquals(count, i);
+                        assertEquals(cnt, i);
 
                         TestMessage2 msg2 = (TestMessage2) msg1.message();
 
@@ -166,16 +165,21 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
                         GridTestMessage msg3 = (GridTestMessage) msg2.message();
 
-                        assertEquals(count, msg3.getMsgId());
+                        assertEquals(cnt, msg3.getMsgId());
 
                         assertEquals(grid(1).localNode().id(), msg3.getSourceNodeId());
 
-                        count++;
+                        cnt++;
                     }
                 }
                 catch (Exception e) {
                     fail("Exception " + e.getMessage());
+                    throwableAtomicRef.set(e);
+                } catch (Throwable t) {
+                    throwableAtomicRef.set(t);
+                    t.printStackTrace();
                 }
+                latch.countDown();
             }
         });
 
@@ -197,6 +201,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         mgr0.sendToCustomTopic(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
 
         assert latch.await(3, SECONDS);
+
+        final Throwable throwable = throwableAtomicRef.get();
+
+        if (throwable != null)
+            throw throwable;
     }
 
     /** */

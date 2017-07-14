@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -42,7 +44,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Information about partitions of all nodes in topology.
+ * Information about partitions of all nodes in topology.		<br>
+ * Is sent by topology coordinator:
+ *  when all {@link GridDhtPartitionsSingleMessage}s were received.<br>
+ * May be also compacted as part of {@link CacheAffinityChangeMessage} for node left or failed case.<br>
  */
 public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
@@ -99,6 +104,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @GridDirectTransient
     private transient boolean compress;
 
+    //todo implement compaction and transfer in message
+    @GridDirectTransient
+    private Map<Integer, Collection<Integer>> lostPart;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -110,6 +119,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param id Exchange ID.
      * @param lastVer Last version.
      * @param topVer Topology version.
+     * @param partHistSuppliers
+     * @param partsToReload
      */
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
         @Nullable GridCacheVersion lastVer,
@@ -529,6 +540,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return 46;
     }
 
+    //todo update fields count
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 12;
@@ -538,5 +550,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public String toString() {
         return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt", parts != null ? parts.size() : 0,
             "super", super.toString());
+    }
+
+    public void setLostPart(Map<Integer,Collection<Integer>> lostPart) {
+        this.lostPart = lostPart;
+    }
+
+    public Map<Integer, Collection<Integer>> getLostPart() {
+        return lostPart;
     }
 }

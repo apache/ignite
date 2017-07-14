@@ -149,7 +149,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @GridToStringExclude
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap8<>();
 
-    /** */
+    /** Last initialized topology future. */
     private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
@@ -877,6 +877,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * Partition refresh callback.
+     * For non-coordinator (non-oldest) node causes partitions single message to be sent to coordinator.
+     * For coordinator causes sending partitions full message
      */
     private void refreshPartitions() {
         ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
@@ -926,7 +928,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param nodes Nodes.
+     * @param nodes Target Nodes.
      */
     private void sendAllPartitions(Collection<ClusterNode> nodes) {
         GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, null, null, null, null);
@@ -956,6 +958,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      *     finishUnmarshall methods are called).
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
+     * @param partsToReload
+     * @param partHistSuppliers
      * @return Message.
      */
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
@@ -1178,7 +1182,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param nodeId Cause node ID.
      * @param topVer Topology version.
-     * @param evt Event.
+     * @param evt Event type.
      * @return Exchange ID instance.
      */
     private GridDhtPartitionExchangeId exchangeId(UUID nodeId, AffinityTopologyVersion topVer, DiscoveryEvent evt) {
