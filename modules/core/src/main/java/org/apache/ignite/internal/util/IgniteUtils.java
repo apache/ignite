@@ -9343,6 +9343,17 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1) {
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+        }
+        return Collections.singletonList(col.iterator().next());
+    }
+
+    /**
      * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
      * loopback addresses first, last otherwise.
      *
