@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// <summary>
     /// Tests all examples in various modes.
     /// </summary>
-    [Category(TestUtils.CategoryIntensive)]
+    [Category(TestUtils.CategoryExamples)]
     public class ExamplesTest
     {
         /** */

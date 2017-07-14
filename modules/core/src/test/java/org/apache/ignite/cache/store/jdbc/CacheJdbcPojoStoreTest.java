@@ -25,6 +25,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.cache.integration.CacheWriterException;
@@ -216,7 +217,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
             "Person_Complex (id integer not null, org_id integer not null, city_id integer not null, " +
-            "name varchar(50), salary integer, PRIMARY KEY(id))");
+            "name varchar(50), salary integer, PRIMARY KEY(id, org_id, city_id))");
 
         conn.commit();
 
@@ -232,6 +233,8 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
      */
     public void testLoadCache() throws Exception {
         Connection conn = store.openConnection(false);
+
+        Random rnd = new Random();
 
         PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
 
@@ -347,6 +350,52 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         assertTrue(orgKeys.isEmpty());
         assertTrue(prnKeys.isEmpty());
         assertTrue(prnComplexKeys.isEmpty());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParallelLoad() throws Exception {
+        Connection conn = store.openConnection(false);
+
+        PreparedStatement prnComplexStmt = conn.prepareStatement("INSERT INTO Person_Complex(id, org_id, city_id, name, salary) VALUES (?, ?, ?, ?, ?)");
+
+        for (int i = 0; i < 8; i++) {
+
+            prnComplexStmt.setInt(1, (i >> 2) & 1);
+            prnComplexStmt.setInt(2, (i >> 1) & 1);
+            prnComplexStmt.setInt(3, i % 2);
+
+            prnComplexStmt.setString(4, "name");
+            prnComplexStmt.setInt(5, 1000 + i * 500);
+
+            prnComplexStmt.addBatch();
+        }
+
+        prnComplexStmt.executeBatch();
+
+        U.closeQuiet(prnComplexStmt);
+
+        conn.commit();
+
+        U.closeQuiet(conn);
+
+        final Collection<PersonComplexKey> prnComplexKeys = new ConcurrentLinkedQueue<>();
+
+        IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
+            @Override public void apply(Object k, Object v) {
+                if (k instanceof PersonComplexKey && v instanceof Person)
+                    prnComplexKeys.add((PersonComplexKey)k);
+                else
+                    fail("Unexpected entry [key=" + k + ", value=" + v + "]");
+            }
+        };
+
+        store.setParallelLoadCacheMinimumThreshold(2);
+
+        store.loadCache(c);
+
+        assertEquals(8, prnComplexKeys.size());
     }
 
     /**

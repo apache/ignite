@@ -464,7 +464,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2017 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -813,7 +813,7 @@
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
+                                        <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
@@ -821,6 +821,7 @@
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
+                                        <exclude>/src/test/resources/META-INF/services/org.apache.ignite.plugin.PluginProvider</exclude>
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>
                                         <exclude>dev-tools/gradle/wrapper/**/*</exclude>
@@ -894,13 +895,15 @@
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
                                         <!--web console-->
-                                        <exclude>**/src/main/js/.babelrc</exclude>
-                                        <exclude>**/src/main/js/.eslintrc</exclude>
-                                        <exclude>**/src/main/js/build/**</exclude>
-                                        <exclude>**/src/main/js/node_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules_temp/**</exclude>
-                                        <exclude>**/src/main/js/serve/config/settings.json.sample</exclude>
+                                        <exclude>**/.babelrc</exclude>
+                                        <exclude>**/.eslintrc</exclude>
+                                        <exclude>**/.dockerignore</exclude>
+                                        <exclude>**/backend/config/settings.json.sample</exclude>
+                                        <exclude>**/backend/node_modules/**</exclude>
+                                        <exclude>**/frontend/build/**</exclude>
+                                        <exclude>**/frontend/ignite_modules/**</exclude>
+                                        <exclude>**/frontend/ignite_modules_temp/**</exclude>
+                                        <exclude>**/frontend/node_modules/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

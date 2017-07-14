@@ -400,12 +400,12 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         igfs.delete(path("/A1/B1/C3"), false);
         assertNull(igfs.info(path("/A1/B1/C3")));
 
-        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/A1/B1")));
+        assertTrue(F.isEmpty(igfs.listPaths(path("/A1/B1"))));
 
         igfs.delete(path("/A2/B2"), true);
         assertNull(igfs.info(path("/A2/B2")));
 
-        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/A2")));
+        assertTrue(F.isEmpty(igfs.listPaths(path("/A2"))));
 
         assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(igfs.listPaths(path("/"))));
 
@@ -416,13 +416,14 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         igfs.delete(path("/A"), true);
         igfs.delete(path("/A1"), true);
         igfs.delete(path("/A2"), true);
-        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/")));
+
+        assertTrue(F.isEmpty(igfs.listPaths(path("/"))));
 
         // Delete root when it is empty:
         igfs.delete(path("/"), false);
         igfs.delete(path("/"), true);
 
-        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/")));
+        assertTrue(F.isEmpty(igfs.listPaths(path("/"))));
 
         for (Cache.Entry<Object, Object> e : metaCache)
             info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
@@ -603,7 +604,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Cleanup.
         igfs.format();
 
-        assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(root));
+        assertTrue(F.isEmpty(igfs.listPaths(root)));
     }
 
     /**
