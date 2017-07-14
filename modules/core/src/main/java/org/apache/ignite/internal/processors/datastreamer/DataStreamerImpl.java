@@ -62,6 +62,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -1439,7 +1440,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         "[batchTopVer=" + curBatchTopVer + ", topVer=" + topVer + "]"));
                 }
                 else if (entries0 != null) {
-                    submit(entries0, curBatchTopVer, curFut0, remap);
+                    submit(entries0, curBatchTopVer, curFut0, remap, b.partId);
 
                     if (cancelled)
                         curFut0.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
@@ -1483,7 +1484,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
 
                 if (entries0 != null)
-                    submit(entries0, batchTopVer, curFut0, false);
+                    submit(entries0, batchTopVer, curFut0, false, b.partId);
             }
 
             // Create compound future for this flush.
@@ -1624,15 +1625,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param topVer Topology version.
          * @param curFut Current future.
          * @param remap Remapping flag.
+         * @param partId Partition ID.
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private void submit(
             final Collection<DataStreamerEntry> entries,
             @Nullable AffinityTopologyVersion topVer,
             final GridFutureAdapter<Object> curFut,
-            boolean remap
-        )
-            throws IgniteInterruptedCheckedException {
+            boolean remap,
+            int partId
+        ) throws IgniteInterruptedCheckedException {
             assert entries != null;
             assert !entries.isEmpty();
             assert curFut != null;
@@ -1715,7 +1717,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     reqId,
                     topicBytes,
                     cacheName,
-                    updaterBytes,
+                    updaterBytes, // TODO why do we always send updater bytes?
                     entries,
                     true,
                     skipStore,
@@ -1726,10 +1728,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.participants() : null,
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
-                    topVer);
+                    topVer,
+                    rcvr == ISOLATED_UPDATER ? partId : -1);
 
                 try {
-                    ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
+                    ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req,
+                        partId == -1 ? plc : GridIoPolicy.SYSTEM_POOL);
 
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
@@ -1937,8 +1941,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache,
-            Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
+        @Override public void receive(
+            IgniteCache<KeyCacheObject, CacheObject> cache,
+            Collection<Map.Entry<KeyCacheObject, CacheObject>> entries
+        ) {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;
 
             GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
