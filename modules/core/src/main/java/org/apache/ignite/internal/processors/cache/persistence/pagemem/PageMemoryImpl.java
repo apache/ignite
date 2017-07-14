@@ -656,6 +656,13 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (rmv)
             seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId), tag);
 
+        // TODO: verify consistency
+        if (seg.segCheckpointPages != null)
+            seg.segCheckpointPages.remove(new FullPageId(pageId, cacheId));
+
+        if (seg.dirtyPages != null)
+            seg.dirtyPages.remove(new FullPageId(pageId, cacheId));
+
         return relPtr;
     }
 
