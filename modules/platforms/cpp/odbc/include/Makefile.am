@@ -27,6 +27,7 @@ noinst_HEADERS = \
     ignite/odbc/query/column_metadata_query.h \
     ignite/odbc/query/query.h \
     ignite/odbc/query/primary_keys_query.h \
+    ignite/odbc/protocol_version.h \
     ignite/odbc/statement.h \
     ignite/odbc/config/configuration.h \
     ignite/odbc/config/connection_info.h \
@@ -37,6 +38,7 @@ noinst_HEADERS = \
     ignite/odbc/row.h \
     ignite/odbc/utility.h \
     ignite/odbc/environment.h \
+    ignite/odbc/dsn_config.h \
     ignite/odbc/system/odbc_constants.h \
     ignite/odbc/system/socket_client.h \
     ignite/odbc/meta/primary_key_meta.h \

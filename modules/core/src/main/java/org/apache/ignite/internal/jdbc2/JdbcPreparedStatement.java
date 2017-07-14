@@ -50,11 +50,9 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        ResultSet rs = executeQuery(sql);
+        ensureNotClosed();
 
-        args = null;
-
-        return rs;
+        return executeQuery(sql);
     }
 
     /** {@inheritDoc} */

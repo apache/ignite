@@ -58,7 +58,6 @@ namespace ignite
             assert(val != 0);
             assert(len > 0);
             assert(sign == 1 || sign == 0 || sign == -1);
-            assert(val[0] != 0);
 
             if (bigEndian)
             {

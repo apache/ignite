@@ -19,6 +19,8 @@ package org.apache.ignite.internal.util;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -128,8 +130,11 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -146,6 +151,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -170,6 +176,8 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -179,6 +187,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -210,6 +219,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -254,7 +264,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 /**
  * Collection of utility methods used throughout the system.
  */
-@SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName"})
+@SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
@@ -301,9 +311,6 @@ public abstract class IgniteUtils {
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
-
-    /** Project work directory. */
-    private static volatile String igniteWork;
 
     /** OS JDK string. */
     private static String osJdkStr;
@@ -475,6 +482,9 @@ public abstract class IgniteUtils {
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
     /** */
+    private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddrAllHostNames;
+
+    /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap8<>();
 
@@ -489,6 +499,19 @@ public abstract class IgniteUtils {
 
     /** Object.toString() */
     private static Method toStringMtd;
+
+    /** Empty local Ignite name. */
+    public static final String LOC_IGNITE_NAME_EMPTY = new String();
+
+    /** Local Ignite name thread local. */
+    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
+        @Override protected String initialValue() {
+            return LOC_IGNITE_NAME_EMPTY;
+        }
+    };
+
+    /** Ignite MBeans disabled flag. */
+    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
 
     /**
      * Initializes enterprise check.
@@ -1791,15 +1814,16 @@ public abstract class IgniteUtils {
 
     /**
      * @param addrs Addresses.
+     * @return List of reachable addresses.
      */
-    public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
-        final int reachTimeout = 2000;
-
+    public static List<InetAddress> filterReachable(Collection<InetAddress> addrs) {
         if (addrs.isEmpty())
             return Collections.emptyList();
 
+        final int reachTimeout = 2000;
+
         if (addrs.size() == 1) {
-            InetAddress addr = addrs.get(0);
+            InetAddress addr = F.first(addrs);
 
             if (reachable(addr, reachTimeout))
                 return Collections.singletonList(addr);
@@ -1813,32 +1837,36 @@ public abstract class IgniteUtils {
 
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
 
-        for (final InetAddress addr : addrs) {
-            futs.add(executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    if (reachable(addr, reachTimeout)) {
-                        synchronized (res) {
-                            res.add(addr);
+        try {
+            for (final InetAddress addr : addrs) {
+                futs.add(executor.submit(new Runnable() {
+                    @Override public void run() {
+                        if (reachable(addr, reachTimeout)) {
+                            synchronized (res) {
+                                res.add(addr);
+                            }
                         }
                     }
+                }));
+            }
+
+            for (Future<?> fut : futs) {
+                try {
+                    fut.get();
                 }
-            }));
-        }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
 
-        for (Future<?> fut : futs) {
-            try {
-                fut.get();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
-                throw new IgniteException(e);
+                    throw new IgniteException("Thread has been interrupted.", e);
+                }
+                catch (ExecutionException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
-
-        executor.shutdown();
+        finally {
+            executor.shutdown();
+        }
 
         return res;
     }
@@ -1855,41 +1883,61 @@ public abstract class IgniteUtils {
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
         throws IOException, IgniteCheckedException {
+        return resolveLocalAddresses(locAddr, false);
+    }
+
+    /**
+     * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
+     * a common address this method returns single host name, and when a wildcard address passed
+     * this method tries to collect addresses of all available interfaces.
+     *
+     * @param locAddr Local address to resolve.
+     * @param allHostNames If {@code true} then include host names for all addresses.
+     * @return Resolved available addresses and host names of given local address.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If no network interfaces found.
+     */
+    public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr,
+        boolean allHostNames) throws IOException, IgniteCheckedException {
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
         Collection<String> hostNames = new ArrayList<>();
 
         if (locAddr.isAnyLocalAddress()) {
-            IgniteBiTuple<Collection<String>, Collection<String>> res = cachedLocalAddr;
+            IgniteBiTuple<Collection<String>, Collection<String>> res =
+                allHostNames ? cachedLocalAddrAllHostNames : cachedLocalAddr;
 
             if (res == null) {
-                List<InetAddress> localAddrs = new ArrayList<>();
+                List<InetAddress> locAddrs = new ArrayList<>();
 
                 for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
                     for (InetAddress addr : asIterable(itf.getInetAddresses())) {
                         if (!addr.isLinkLocalAddress())
-                            localAddrs.add(addr);
+                            locAddrs.add(addr);
                     }
                 }
 
-                localAddrs = filterReachable(localAddrs);
+                locAddrs = filterReachable(locAddrs);
 
-                for (InetAddress addr : localAddrs)
-                    addresses(addr, addrs, hostNames);
+                for (InetAddress addr : locAddrs)
+                    addresses(addr, addrs, hostNames, allHostNames);
 
                 if (F.isEmpty(addrs))
                     throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
 
                 res = F.t(addrs, hostNames);
 
-                cachedLocalAddr = res;
+                if (allHostNames)
+                    cachedLocalAddrAllHostNames = res;
+                else
+                    cachedLocalAddr = res;
             }
 
             return res;
         }
 
-        addresses(locAddr, addrs, hostNames);
+        addresses(locAddr, addrs, hostNames, allHostNames);
 
         return F.t(addrs, hostNames);
     }
@@ -1897,16 +1945,20 @@ public abstract class IgniteUtils {
     /**
      * @param addr Address.
      * @param addrs Addresses.
+     * @param allHostNames If {@code true} then include host names for all addresses.
      * @param hostNames Host names.
      */
-    private static void addresses(InetAddress addr, Collection<String> addrs, Collection<String> hostNames) {
+    private static void addresses(InetAddress addr, Collection<String> addrs, Collection<String> hostNames,
+        boolean allHostNames) {
         String hostName = addr.getHostName();
 
         String ipAddr = addr.getHostAddress();
 
         addrs.add(ipAddr);
 
-        if (!F.isEmpty(hostName) && !addr.isLoopbackAddress())
+        if (allHostNames)
+            hostNames.add(hostName);
+        else if (!F.isEmpty(hostName) && !addr.isLoopbackAddress())
             hostNames.add(hostName);
     }
 
@@ -4062,7 +4114,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Logs warning message in both verbose and quite modes.
+     * Logs warning message in both verbose and quiet modes.
      *
      * @param log Logger to use.
      * @param msg Message to log.
@@ -4072,7 +4124,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Logs warning message in both verbose and quite modes.
+     * Logs warning message in both verbose and quiet modes.
      *
      * @param log Logger to use.
      * @param shortMsg Short message.
@@ -4242,7 +4294,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Prints out the message in quite and info modes.
+     * Prints out the message in quiet and info modes.
      *
      * @param log Logger.
      * @param msg Message to print.
@@ -4375,10 +4427,13 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String gridName, @Nullable String grp,
         String name, T impl, @Nullable Class<T> itf) throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("No MBeans are allowed."));
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4399,10 +4454,14 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4425,10 +4484,14 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
     public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String gridName,
         @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -8504,15 +8567,31 @@ public abstract class IgniteUtils {
      * @return {@code True} if given object has overridden equals and hashCode method.
      */
     public static boolean overridesEqualsAndHashCode(Object obj) {
-        try {
-            Class<?> cls = obj.getClass();
+        return overridesEqualsAndHashCode(obj.getClass());
+    }
 
+    /**
+     * @param cls Class.
+     * @return {@code True} if given class has overridden equals and hashCode method.
+     */
+    public static boolean overridesEqualsAndHashCode(Class<?> cls) {
+        try {
             return !Object.class.equals(cls.getMethod("equals", Object.class).getDeclaringClass()) &&
                 !Object.class.equals(cls.getMethod("hashCode").getDeclaringClass());
         }
         catch (NoSuchMethodException | SecurityException ignore) {
             return true; // Ignore.
         }
+    }
+
+    /**
+     * @param obj Object.
+     * @return {@code True} if given object is a {@link BinaryObjectEx} and
+     * has {@link BinaryUtils#FLAG_EMPTY_HASH_CODE} set
+     */
+    public static boolean isHashCodeEmpty(Object obj) {
+        return obj != null && obj instanceof BinaryObjectEx &&
+            ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
     }
 
     /**
@@ -8832,54 +8911,56 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get default work directory.
+     *
+     * @return Default work directory.
+     */
+    public static String defaultWorkDirectory() throws IgniteCheckedException {
+        return workDirectory(null, null);
+    }
+
+    /**
+     * Get work directory for the given user-provided work directory and Ignite home.
+     *
      * @param userWorkDir Ignite work folder provided by user.
      * @param userIgniteHome Ignite home folder provided by user.
      */
-    public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userIgniteHome)
+    public static String workDirectory(@Nullable String userWorkDir, @Nullable String userIgniteHome)
         throws IgniteCheckedException {
-        String igniteWork0 = igniteWork;
+        if (userIgniteHome == null)
+            userIgniteHome = getIgniteHome();
 
-        if (igniteWork0 == null) {
-            synchronized (IgniteUtils.class) {
-                // Double check.
-                igniteWork0 = igniteWork;
+        File workDir;
 
-                if (igniteWork0 != null)
-                    return;
+        if (!F.isEmpty(userWorkDir))
+            workDir = new File(userWorkDir);
+        else if (!F.isEmpty(IGNITE_WORK_DIR))
+            workDir = new File(IGNITE_WORK_DIR);
+        else if (!F.isEmpty(userIgniteHome))
+            workDir = new File(userIgniteHome, "work");
+        else {
+            String tmpDirPath = System.getProperty("java.io.tmpdir");
 
-                File workDir;
+            if (tmpDirPath == null)
+                throw new IgniteCheckedException("Failed to create work directory in OS temp " +
+                    "(property 'java.io.tmpdir' is null).");
 
-                if (!F.isEmpty(userWorkDir))
-                    workDir = new File(userWorkDir);
-                else if (!F.isEmpty(IGNITE_WORK_DIR))
-                    workDir = new File(IGNITE_WORK_DIR);
-                else if (!F.isEmpty(userIgniteHome))
-                    workDir = new File(userIgniteHome, "work");
-                else {
-                    String tmpDirPath = System.getProperty("java.io.tmpdir");
-
-                    if (tmpDirPath == null)
-                        throw new IgniteCheckedException("Failed to create work directory in OS temp " +
-                            "(property 'java.io.tmpdir' is null).");
-
-                    workDir = new File(tmpDirPath, "ignite" + File.separator + "work");
-                }
-
-                if (!workDir.isAbsolute())
-                    throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
-
-                if (!mkdirs(workDir))
-                    throw new IgniteCheckedException("Work directory does not exist and cannot be created: " + workDir);
-
-                if (!workDir.canRead())
-                    throw new IgniteCheckedException("Cannot read from work directory: " + workDir);
-
-                if (!workDir.canWrite())
-                    throw new IgniteCheckedException("Cannot write to work directory: " + workDir);
-
-                igniteWork = workDir.getAbsolutePath();
-            }
+            workDir = new File(tmpDirPath, "ignite" + File.separator + "work");
         }
+
+        if (!workDir.isAbsolute())
+            throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
+
+        if (!mkdirs(workDir))
+            throw new IgniteCheckedException("Work directory does not exist and cannot be created: " + workDir);
+
+        if (!workDir.canRead())
+            throw new IgniteCheckedException("Cannot read from work directory: " + workDir);
+
+        if (!workDir.canWrite())
+            throw new IgniteCheckedException("Cannot write to work directory: " + workDir);
+
+        return workDir.getAbsolutePath();
     }
 
     /**
@@ -8890,30 +8971,23 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Nullifies work directory. For test purposes only.
-     */
-    public static void nullifyWorkDirectory() {
-        igniteWork = null;
-    }
-
-    /**
      * Resolves work directory.
      *
+     * @param workDir Work directory.
      * @param path Path to resolve.
      * @param delIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist)
+        throws IgniteCheckedException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            String ggWork0 = igniteWork;
-
-            if (F.isEmpty(ggWork0))
+            if (F.isEmpty(workDir))
                 throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
 
-            dir = new File(ggWork0, dir.getPath());
+            dir = new File(workDir, dir.getPath());
         }
 
         if (delIfExist && dir.exists()) {
@@ -9636,5 +9710,320 @@ public abstract class IgniteUtils {
                 return threads[i].getName();
 
         return "<failed to find active thread " + threadId + '>';
+    }
+
+    /**
+     * @param t0 Comparable object.
+     * @param t1 Comparable object.
+     * @param <T> Comparable type.
+     * @return Maximal object o t0 and t1.
+     */
+    public static <T extends Comparable<? super T>> T max(T t0, T t1) {
+        return t0.compareTo(t1) > 0 ? t0 : t1;
+    }
+
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param in Input stream.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(Marshaller marsh, InputStream in, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert marsh != null;
+        assert in != null;
+
+        try {
+            return marsh.unmarshal(in, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * @param marsh Marshaller.
+     * @param zipBytes Zip-compressed bytes.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException
+     */
+    public static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        assert marsh != null;
+        assert zipBytes != null;
+
+        try {
+            ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipBytes));
+
+            in.getNextEntry();
+
+            return marsh.unmarshal(in, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param marsh Marshaller.
+     * @param arr Byte array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(Marshaller marsh, byte[] arr, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert marsh != null;
+        assert arr != null;
+
+        try {
+            return marsh.unmarshal(arr, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param ctx Kernal contex.
+     * @param arr Byte array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(GridKernalContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert ctx != null;
+        assert arr != null;
+
+        try {
+            return U.unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param ctx Kernal contex.
+     * @param arr Byte array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(GridCacheSharedContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert ctx != null;
+        assert arr != null;
+
+        try {
+            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Marshals object to byte array.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param marsh Marshaller.
+     * @param obj Object to marshal.
+     * @return Byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(Marshaller marsh, Object obj) throws IgniteCheckedException {
+        assert marsh != null;
+
+        try {
+            return marsh.marshal(obj);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Marshals object to byte array.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param marsh Marshaller.
+     * @param obj Object to marshal.
+     * @param out Output stream.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static void marshal(Marshaller marsh, @Nullable Object obj, OutputStream out)
+        throws IgniteCheckedException {
+        assert marsh != null;
+
+        try {
+            marsh.marshal(obj, out);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Marshals object to byte array. Wrap marshaller
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param ctx Kernal context.
+     * @param obj Object to marshal.
+     * @return Byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(GridKernalContext ctx, Object obj) throws IgniteCheckedException {
+        assert ctx != null;
+
+        return marshal(ctx.config().getMarshaller(), obj);
+    }
+
+    /**
+     * Marshals object to byte array. Wrap marshaller
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param ctx Cache context.
+     * @param obj Object to marshal.
+     * @return Byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(GridCacheSharedContext ctx, Object obj) throws IgniteCheckedException {
+        assert ctx != null;
+
+        return marshal(ctx.marshaller(), obj);
+    }
+
+    /**
+     * Get current Ignite name.
+     *
+     * @return Current Ignite name.
+     */
+    @Nullable public static String getCurrentIgniteName() {
+        return LOC_IGNITE_NAME.get();
+    }
+
+    /**
+     * Check if current Ignite name is set.
+     *
+     * @param name Name to check.
+     * @return {@code True} if set.
+     */
+    @SuppressWarnings("StringEquality")
+    public static boolean isCurrentIgniteNameSet(@Nullable String name) {
+        return name != LOC_IGNITE_NAME_EMPTY;
+    }
+
+    /**
+     * Set current Ignite name.
+     *
+     * @param newName New name.
+     * @return Old name.
+     */
+    @SuppressWarnings("StringEquality")
+    @Nullable public static String setCurrentIgniteName(@Nullable String newName) {
+        String oldName = LOC_IGNITE_NAME.get();
+
+        if (oldName != newName)
+            LOC_IGNITE_NAME.set(newName);
+
+        return oldName;
+    }
+
+    /**
+     * Restore old Ignite name.
+     *
+     * @param oldName Old name.
+     * @param curName Current name.
+     */
+    @SuppressWarnings("StringEquality")
+    public static void restoreOldIgniteName(@Nullable String oldName, @Nullable String curName) {
+        if (oldName != curName)
+            LOC_IGNITE_NAME.set(oldName);
+    }
+
+    /**
+     * @param bytes Byte array to compress.
+     * @return Compressed bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static byte[] zip(@Nullable byte[] bytes) throws IgniteCheckedException {
+        try {
+            if (bytes == null)
+                return null;
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+            try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+                ZipEntry entry = new ZipEntry("");
+
+                try {
+                    entry.setSize(bytes.length);
+
+                    zos.putNextEntry(entry);
+
+                    zos.write(bytes);
+                }
+                finally {
+                    zos.closeEntry();
+                }
+            }
+
+            return bos.toByteArray();
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 }
