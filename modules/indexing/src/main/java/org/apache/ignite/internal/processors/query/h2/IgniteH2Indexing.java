@@ -1395,7 +1395,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             loc |= GridSqlQueryParser.isLocalQuery(GridSqlQueryParser.query(prepared), qry.isReplicatedOnly());
 
             if (loc) {
-                GridCacheContext cctx = GridSqlQueryParser.getFirstCache(prepared);
+                GridCacheContext cctx = GridSqlQueryParser.getFirstPartitionedCache(prepared);
 
                 if (cctx != null && cctx.config().getQueryParallelism() > 1) {
                     loc = false;

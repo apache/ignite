@@ -1208,20 +1208,26 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * Get first (i.e. random, as we need any one) cache from given query.
+     * Get first (i.e. random, as we need any one) partitioned cache from given query
+     *     to determine expected query parallelism.
      * @param p Query.
-     * @return Context for the first of the caches mentioned in the query, or {@code null} if it does not involve caches.
+     * @return Context for the first of partitioned caches mentioned in the query,
+     *     or {@code null} if it does not involve partitioned caches.
      */
-    public static GridCacheContext getFirstCache(Prepared p) {
+    public static GridCacheContext getFirstPartitionedCache(Prepared p) {
         A.notNull(p, "p");
 
         Query qry = query(p);
 
         for (Table tbl : qry.getTables()) {
-            if (tbl instanceof GridH2Table)
-                return ((GridH2Table) tbl).cache();
+            if (tbl instanceof GridH2Table) {
+                GridCacheContext cctx = ((GridH2Table)tbl).cache();
+
+                if (cctx.isPartitioned())
+                    return cctx;
+            }
             else if (tbl instanceof TableView)
-                return getFirstCache(TABLE_VIEW_QUERY.get((TableView)tbl));
+                return getFirstPartitionedCache(TABLE_VIEW_QUERY.get((TableView)tbl));
         }
 
         return null;
