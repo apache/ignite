@@ -59,7 +59,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     PersistentStorePath = Path.Combine(_tempDir, "Store"),
                     WalStorePath = Path.Combine(_tempDir, "WalStore"),
                     WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
-                    MetricsEnabled = true
+                    MetricsEnabled = true,
+                    CheckpointingPageBufferSize = 1024 * 1024  // TODO: Use default (IGNITE-5717)
                 }
             };
 
@@ -116,7 +117,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(GetTestConfiguration())
             {
-                PersistentStoreConfiguration = new PersistentStoreConfiguration()
+                PersistentStoreConfiguration = new PersistentStoreConfiguration
+                {
+                    CheckpointingPageBufferSize = 1024 * 1024  // TODO: Use default (IGNITE-5717)
+                }
             };
 
             using (var ignite = Ignition.Start(cfg))

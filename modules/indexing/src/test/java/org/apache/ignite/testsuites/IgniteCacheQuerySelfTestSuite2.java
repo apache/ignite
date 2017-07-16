@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitioned
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedTransactionalConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedAtomicConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedTransactionalConcurrentSelfTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsCompareQueryTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest;
@@ -61,6 +62,8 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
 
         suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
+
+        suite.addTestSuite(ScanQueryOffheapExpiryPolicySelfTest.class);
 
         suite.addTestSuite(IgniteCacheCrossCacheJoinRandomTest.class);
         suite.addTestSuite(IgniteCacheClientQueryReplicatedNodeRestartSelfTest.class);

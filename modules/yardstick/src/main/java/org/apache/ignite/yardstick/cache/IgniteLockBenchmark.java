@@ -15,8 +15,33 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.yardstick.cache;
+
+import java.util.Map;
+import org.apache.ignite.IgniteLock;
+import org.yardstickframework.BenchmarkConfiguration;
+
 /**
- * <!-- Package description. -->
- * Contains automatic JDBC store example.
+ * Ignite benchmark that performs Ignite.reentrantLock operations.
  */
-package org.apache.ignite.examples.binary.datagrid.store.auto;
+public class IgniteLockBenchmark extends IgniteCacheLockBenchmark {
+    /** Reentrant lock. */
+    private IgniteLock lock;
+
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> map) throws Exception {
+        lock.lock();
+        lock.unlock();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        String key = "key";
+
+        lock = ignite().reentrantLock(key, false, false, true);
+    }
+}
