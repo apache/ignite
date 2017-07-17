@@ -2118,8 +2118,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         exchLog.info("onFinishExchangeMessage start [exchId=" + exchangeId() + ", from=" + node + ", local=" + cctx.localNode() + ']');
 
         onDiscoveryEvent(new IgniteRunnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (isDone() || !enterBusy())
                     return;
 
@@ -2127,8 +2126,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert centralizedAff;
 
                     if (crd.equals(node)) {
+                        boolean acked = false;
+
+                        synchronized (mux) {
+                            acked = notAcked.isEmpty();
+                        }
+
                         // Delay exchange completion on next coord until all nodes acked finish message.
-                        if (crd2 != null && crd2.isLocal() && !crd2.equals(crd) && !notAcked.isEmpty() &&
+                        // TODO FIXME !notAcked.isEmpty() not thread safe. need allAcked variable.
+                        if (crd2 != null && crd2.isLocal() && !crd2.equals(crd) && !acked &&
                                 (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)) {
                             // Message can't be sent twice from old coord.
                             assert GridDhtPartitionsExchangeFuture.this.delayedFinishExchangeMessage == null;
