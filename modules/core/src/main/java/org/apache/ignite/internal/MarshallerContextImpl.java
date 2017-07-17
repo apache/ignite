@@ -51,6 +51,9 @@ import org.apache.ignite.plugin.PluginProvider;
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
+    /** Class name read attempts. */
+    private static final int CLS_NAME_READ_ATTEMPTS = 5;
+
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -193,35 +196,56 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
         }
 
-        String clsName = cache0.getTopologySafe(id);
+        String clsName = null;
+
+        // Class name maybe not in marshaller cache yet.
+        for (int i = 0; i < CLS_NAME_READ_ATTEMPTS; i++) {
+            clsName = cache0.getTopologySafe(id);
+
+            if (clsName != null)
+                break;
+        }
 
         if (clsName == null) {
             String fileName = id + ".classname";
 
-            Lock lock = fileLock(fileName);
+            // Class name may be not in the file yet.
+            for (int i = 0; i < CLS_NAME_READ_ATTEMPTS; i++) {
+                Lock lock = fileLock(fileName);
 
-            lock.lock();
+                lock.lock();
 
-            try {
-                File file = new File(workDir, fileName);
+                File file;
 
-                try (FileInputStream in = new FileInputStream(file)) {
-                    FileLock fileLock = fileLock(in.getChannel(), true);
+                try {
+                    file = new File(workDir, fileName);
 
-                    assert fileLock != null : fileName;
+                    try (FileInputStream in = new FileInputStream(file)) {
+                        FileLock fileLock = fileLock(in.getChannel(), true);
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                        clsName = reader.readLine();
+                        assert fileLock != null : fileName;
+
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                            clsName = reader.readLine();
+                        }
+                    }
+                    catch (IOException ignore) {
+                        // Will fail on last try.
                     }
                 }
-                catch (IOException e) {
+                finally {
+                    lock.unlock();
+                }
+
+                if (clsName != null)
+                    break;
+
+                // Fail when reached last attempt.
+                if (i == CLS_NAME_READ_ATTEMPTS - 1) {
                     throw new IgniteCheckedException("Class definition was not found " +
                         "at marshaller cache and local file. " +
                         "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
                 }
-            }
-            finally {
-                lock.unlock();
             }
 
             // Must explicitly put entry to cache to invoke other continuous queries.
