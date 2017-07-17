@@ -163,18 +163,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private AtomicBoolean added = new AtomicBoolean(false);
 
-    /** */
-    private AtomicBoolean waitAck = new AtomicBoolean(false);
-
     /** Event latch. */
     @GridToStringExclude
     private final CountDownLatch evtLatch = new CountDownLatch(1);
 
     /** */
     private GridFutureAdapter<Boolean> initFut;
-
-    /** */
-    private GridFutureAdapter<Boolean> ackFut;
 
     /** */
     @GridToStringExclude
@@ -261,6 +255,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private AffinityAttachmentHolder affAttachmentHolder;
+
+    /** */
+    private GridDhtFinishExchangeMessage delayedFinishExchangeMessage;
+
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -350,8 +348,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         exchLog = cctx.logger(EXCHANGE_LOG);
 
         initFut = new GridFutureAdapter<>();
-
-        ackFut = new GridFutureAdapter<>();
 
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() + ", fut=" + this + ']');
@@ -1373,8 +1369,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             initFut.onDone(err == null);
 
-            ackFut.onDone();
-
             if (affAttachmentHolder != null)
                 affAttachmentHolder.attachment(null);
 
@@ -1679,7 +1673,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cctx.io().safeSend(nodes, msg,
                     GridIoPolicy.SYSTEM_POOL, null);
 
-            onFinishExchangeMessage(cctx.localNode(), msg, false);
+            onFinishExchangeMessage(cctx.localNode(), msg);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -2113,22 +2107,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * Affinity change message callback, processed from the same thread as {@link #onNodeLeft}.
-     *
-     * @param node Message sender node.
+     *  @param node Message sender node.
      * @param msg Message.
      */
-    public void onFinishExchangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg, final boolean sndAck) {
+    public void onFinishExchangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
 
         assert crd != null;
 
         exchLog.info("onFinishExchangeMessage start [exchId=" + exchangeId() + ", from=" + node + ", local=" + cctx.localNode() + ']');
 
-        if (waitAck.get()) // Prevent double completion.
-            return;
-
         onDiscoveryEvent(new IgniteRunnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 if (isDone() || !enterBusy())
                     return;
 
@@ -2136,56 +2127,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert centralizedAff;
 
                     if (crd.equals(node)) {
-                        // Delay processing until all acks are received.
-                        boolean waitForAck = crd2 != null && crd2.isLocal() && !crd2.equals(crd) && !notAcked.isEmpty() &&
-                                (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED);
+                        // Delay exchange completion on next coord until all nodes acked finish message.
+                        if (crd2 != null && crd2.isLocal() && !crd2.equals(crd) && !notAcked.isEmpty() &&
+                                (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)) {
+                            // Message can't be sent twice from old coord.
+                            assert GridDhtPartitionsExchangeFuture.this.delayedFinishExchangeMessage == null;
 
-                        exchLog.info("onFinishExchangeMessage middle [exchId=" + exchangeId() + ", waitForAck=" + waitForAck + ", from=" + node + ", local=" + cctx.localNode() + ']');
+                            GridDhtPartitionsExchangeFuture.this.delayedFinishExchangeMessage = msg;
 
-                        boolean changed = waitAck.compareAndSet(false, true);
-
-                        assert changed;
-
-                        if (waitForAck) {
-                            while (true) {
-                                try {
-                                    ackFut.get(10, TimeUnit.SECONDS);
-
-                                    break;
-                                } catch (IgniteFutureTimeoutCheckedException ignore) {
-                                    // Continue.
-                                    U.warn(log, "Still waiting for exchange acknowledgement: [exchId=" + exchangeId() + ", localNodeId=" + cctx.localNodeId() + ", remaining nodes: " + notAcked + ']');
-                                } catch (IgniteCheckedException e) {
-                                    U.error(log, "Error while waiting for exchange acknowledgement", e);
-
-                                    onDone(e);
-
-                                    return;
-                                }
-                            }
+                            return;
                         }
 
-                        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
-                                crd.isLocal(),
-                                msg);
+                        doFinish(msg);
 
-                        if (!crd.isLocal()) {
-                            GridDhtPartitionsFullMessage partsMsg = msg.partitionFullMessage();
-
-                            assert partsMsg != null : msg;
-                            assert partsMsg.lastVersion() != null : partsMsg;
-
-                            updatePartitionFullMap(partsMsg);
+                        try {
+                            sendAck(msg.ackUuid());
+                        } catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to acknowledge exchange completion", e);
                         }
-
-                        onDone(topologyVersion());
-
-                        if (sndAck && !waitForAck)
-                            try {
-                                sendAck(msg.ackUuid());
-                            } catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to acknowledge exchange completion", e);
-                            }
                     } else {
                         if (log.isDebugEnabled()) {
                             log.debug("Ignore affinity change message, coordinator changed [node=" + node.id() +
@@ -2201,6 +2160,27 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
         });
+    }
+
+    /** */
+    private void doFinish(GridDhtFinishExchangeMessage msg) {
+        if (msg == null)
+            return; // Will be finished later.
+
+        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
+                crd.isLocal(),
+                msg);
+
+        if (!crd.isLocal()) {
+            GridDhtPartitionsFullMessage partsMsg = msg.partitionFullMessage();
+
+            assert partsMsg != null : msg;
+            assert partsMsg.lastVersion() != null : partsMsg;
+
+            updatePartitionFullMap(partsMsg);
+        }
+
+        onDone(topologyVersion());
     }
 
     /**
@@ -2219,16 +2199,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     return;
 
                 try {
+                    boolean acked;
+
                     synchronized (mux) {
                         boolean rmvd = notAcked.remove(node.id());
 
-                        exchLog.info("Ack received: [exchId=" + exchangeId() + ", from=" + node + ", to=" + cctx.localNode() + ']');
+                        acked = rmvd && notAcked.isEmpty();
 
-                        if (rmvd && notAcked.isEmpty())
-                            ackFut.onDone(true);
+                        exchLog.info("Ack received: [exchId=" + exchangeId() + ", from=" + node +
+                                ", to=" + cctx.localNode() + ", allAcked=" + acked + ']');
                     }
-                }
-                finally {
+
+                    if (acked)
+                        doFinish(delayedFinishExchangeMessage);
+                } finally {
                     leaveBusy();
                 }
             }
@@ -2278,6 +2262,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         initFut.onDone(true);
     }
 
+    private boolean isAcked() {
+        return false;
+    }
+
     /**
      * Node left callback, processed from the same thread as {@link #onFinishExchangeMessage}.
      *
@@ -2299,6 +2287,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     try {
                         boolean crdChanged = false;
+                        boolean isAcked = false;
                         boolean allReceived = false;
                         Set<UUID> reqFrom = null;
 
@@ -2332,12 +2321,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             crd0 = crd;
 
-//                            rmvd = notAcked.remove(node.id());
-//
-//                            exchLog.info("onNodeLeft ack removed: [exchId=" + exchangeId() + ", remaining=" + notAcked.size() + ']');
+                            rmvd = notAcked.remove(node.id());
 
-//                            if (rmvd && notAcked.isEmpty())
-//                                ackFut.onDone(true);
+                            exchLog.info("onNodeLeft ack removed: [exchId=" + exchangeId() + ", remaining=" + notAcked.size() + ']');
+
+                            if (rmvd && notAcked.isEmpty())
+                                isAcked = true;
                         }
 
                         if (crd0 == null) {
@@ -2362,6 +2351,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         if (crd0.isLocal()) {
                             if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
                                 changeGlobalStateExceptions.put(crd0.id(), changeGlobalStateE);
+
+                            if (isAcked && !isDone() && delayedFinishExchangeMessage != null) {
+                                doFinish(delayedFinishExchangeMessage);
+
+                                return;
+                            }
 
                             if (allReceived) {
                                 onAllReceived();

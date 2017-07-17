@@ -540,8 +540,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
 
         forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override
-            public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+            @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 List<List<ClusterNode>> idealAssignment = aff.idealAssignment();
 
                 assert idealAssignment != null;
