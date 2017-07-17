@@ -41,7 +41,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -132,12 +131,6 @@ public class GridMapQueryExecutor {
     /** */
     private IgniteH2Indexing h2;
 
-    /**
-     * Identical simultaneous queries results reuse flag.
-     * @see IgniteConfiguration#sqlResultsReuse
-     */
-    private boolean reuseResults;
-
     /** */
     private ConcurrentMap<UUID, NodeResults> qryRess = new ConcurrentHashMap8<>();
 
@@ -169,8 +162,6 @@ public class GridMapQueryExecutor {
         this.h2 = h2;
 
         log = ctx.log(GridMapQueryExecutor.class);
-
-        reuseResults = ctx.grid().configuration().isSqlResultsReuse();
 
         final UUID locNodeId = ctx.localNodeId();
 
@@ -469,6 +460,7 @@ public class GridMapQueryExecutor {
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
+        final boolean resReuse = req.isFlagSet(GridH2QueryRequest.FLAG_MAP_RESULTS_REUSE);
 
         final List<Integer> cacheIds = req.caches();
 
@@ -499,6 +491,7 @@ public class GridMapQueryExecutor {
                             joinMode,
                             enforceJoinOrder,
                             false,
+                            resReuse,
                             req.timeout(),
                             params);
 
@@ -522,6 +515,7 @@ public class GridMapQueryExecutor {
             joinMode,
             enforceJoinOrder,
             replicated,
+            resReuse,
             req.timeout(),
             params);
     }
@@ -539,6 +533,11 @@ public class GridMapQueryExecutor {
      * @param tbls Tables.
      * @param pageSize Page size.
      * @param distributedJoinMode Query distributed join mode.
+     * @param enforceJoinOrder Enforce join order flag.
+     * @param replicated Replicated query flag.
+     * @param resReuse Result reuse flag.
+     * @param timeout Query timeout, ms.
+     * @param params Query arguments.
      */
     private void onQueryRequest0(
         ClusterNode node,
@@ -555,6 +554,7 @@ public class GridMapQueryExecutor {
         DistributedJoinMode distributedJoinMode,
         boolean enforceJoinOrder,
         boolean replicated,
+        boolean resReuse,
         int timeout,
         Object[] params
     ) {
@@ -642,9 +642,9 @@ public class GridMapQueryExecutor {
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         QueryKey key = new QueryKey(qry.query(), topVer, segmentId, qry.parameters(params),
-                                distributedJoinMode, enforceJoinOrder, partsMap, parts);
+                            distributedJoinMode, enforceJoinOrder, partsMap, parts);
 
-                        rs = runQuery(key, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
+                        rs = runQuery(key, resReuse, node, mainCctx, conn, timeout, qr.cancels[qryIdx], evt);
                     }
 
                     qr.addResult(qryIdx, qry, node.id(), rs, params);
@@ -1233,6 +1233,7 @@ public class GridMapQueryExecutor {
     /**
      * Execute query specified by {@code key} or reuse result of the same concurrently running query.
      * @param key Query key to make similar queries reuse the same result as needed.
+     * @param resReuse Result reuse control flag.
      * @param node Cluster node.
      * @param mainCctx Cache context.
      * @param conn H2 connection.
@@ -1242,9 +1243,9 @@ public class GridMapQueryExecutor {
      * @return Query result.
      * @throws IgniteCheckedException if failed.
      */
-    private ResultSetWrapper runQuery(QueryKey key, ClusterNode node, GridCacheContext mainCctx, Connection conn,
-        int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
-        if (!isResultReused(key)) {
+    private ResultSetWrapper runQuery(QueryKey key, boolean resReuse, ClusterNode node, GridCacheContext mainCctx,
+        Connection conn, int timeout, GridQueryCancel cancel, boolean evt) throws IgniteCheckedException {
+        if (!resReuse || !isResultReused(key)) {
             ResultSet rs = executeQuery(node, mainCctx, conn, key.qry, key.params, timeout, cancel, evt);
 
             ResultSetWrapper res = new ResultSetWrapper(rs, null, null);
@@ -1303,9 +1304,8 @@ public class GridMapQueryExecutor {
      * @return {@code true} if this key corresponds to a query whose result may be reused, {@code false} otherwise.
      */
     private boolean isResultReused(QueryKey key) {
-        return reuseResults &&
-            // Reuse query result if we don't have partitions list set, OR if it's what we've got from partitions map.
-            (key.parts == null || (key.partsMap != null && key.partsMap.get(ctx.localNodeId()) == key.parts));
+        // Reuse query result if we don't have partitions list set, OR if it's what we've got from partitions map.
+        return (key.parts == null || (key.partsMap != null && key.partsMap.get(ctx.localNodeId()) == key.parts));
     }
 
     /**

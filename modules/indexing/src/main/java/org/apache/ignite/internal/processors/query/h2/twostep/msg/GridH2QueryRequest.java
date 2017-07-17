@@ -78,6 +78,11 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      */
     public static final int FLAG_REPLICATED = 1 << 4;
 
+    /**
+     * If results of MAP queries may be reused.
+     */
+    public static final int FLAG_MAP_RESULTS_REUSE = 1 << 5;
+
     /** */
     private long reqId;
 

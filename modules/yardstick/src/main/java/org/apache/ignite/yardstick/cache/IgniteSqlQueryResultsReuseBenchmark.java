@@ -109,7 +109,7 @@ public class IgniteSqlQueryResultsReuseBenchmark extends IgniteCacheAbstractBenc
             long curTime = System.currentTimeMillis();
 
             if (curTime > nextPutTime) {
-                cache().put(nextRandom(args.range), person(nextRandom(args.range)));
+                cache().put(nextRandom(args.range()), person(nextRandom(args.range())));
 
                 putCnt.incrementAndGet();
 
@@ -156,6 +156,8 @@ public class IgniteSqlQueryResultsReuseBenchmark extends IgniteCacheAbstractBenc
         SqlQuery<Integer, Person> qry = new SqlQuery<>(Person.class, "salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);
+
+        qry.setResultReuseEnabled(true);
 
         return cache.query(qry).getAll();
     }

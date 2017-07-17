@@ -197,9 +197,6 @@ public class IgniteConfiguration {
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;
 
-    /** Default value for SQL results reuse flag. */
-    public static final boolean DFLT_SQL_RESULTS_REUSE = true;
-
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
@@ -279,9 +276,6 @@ public class IgniteConfiguration {
 
     /** Daemon flag. */
     private boolean daemon;
-
-    /** SQL results reuse flag. */
-    private boolean sqlResultsReuse = DFLT_SQL_RESULTS_REUSE;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -566,7 +560,6 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
-        sqlResultsReuse = cfg.isSqlResultsReuse();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -645,43 +638,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setDaemon(boolean daemon) {
         this.daemon = daemon;
-
-        return this;
-    }
-
-    /**
-     * Whether or not SQL MAP queries should be throttled on this node.
-     * <p>
-     * Distributed SQL queries in Ignite are internally executed in two stages: <b>MAP</b>
-     * and <b>REDUCE</b>.
-     * <p>
-     * If many identical SQL queries are executed on the grid within short amount of time
-     * or simultaneously, instead of fetching data on each query, <b>MAP</b> stages
-     * of all those identical queries occurring on the same node may
-     * reuse the same result - as long as data is not concurrently modified.
-     *
-     * @return {@code True} if SQL <b>MAP</b> queries should be throttled on this node, {@code false} otherwise.
-     */
-    public boolean isSqlResultsReuse() {
-        return sqlResultsReuse;
-    }
-
-    /**
-     * Whether or not SQL MAP queries should be throttled on this node.
-     * <p>
-     * Distributed SQL queries in Ignite are internally executed in two stages: <b>MAP</b>
-     * and <b>REDUCE</b>.
-     * <p>
-     * If many identical SQL queries are executed on the grid within short amount of time
-     * or simultaneously, instead of fetching data on each query, <b>MAP</b> stages
-     * of all those identical queries occurring on the same node may
-     * reuse the same result - as long as data is not concurrently modified.
-     *
-     * @param sqlResultsReuse SQL results reuse flag.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setSqlResultsReuse(boolean sqlResultsReuse) {
-        this.sqlResultsReuse = sqlResultsReuse;
 
         return this;
     }

@@ -71,6 +71,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
+    /** SQL results reuse flag. */
+    private boolean resReuse;
+
     /** Partitions for query */
     private int[] parts;
 
@@ -266,6 +269,43 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isReplicatedOnly() {
         return replicatedOnly;
+    }
+
+    /**
+     * Whether or not results of SQL MAP stage execution should be cached on data nodes.
+     * <p>
+     * Distributed SQL queries in Ignite are internally executed in two stages: <b>MAP</b>
+     * and <b>REDUCE</b>.
+     * <p>
+     * If many identical SQL queries are executed on the grid within short amount of time
+     * or simultaneously, instead of fetching data on each query, <b>MAP</b> stages
+     * of all those identical queries occurring on the same node may
+     * reuse the same result - as long as data is not concurrently modified.
+     *
+     * @return {@code True} if results of SQL <b>MAP</b> may be cached for this query, {@code false} otherwise.
+     */
+    public boolean isResultReuseEnabled() {
+        return resReuse;
+    }
+
+    /**
+     * Whether or not results of SQL MAP stage execution should be cached on data nodes.
+     * <p>
+     * Distributed SQL queries in Ignite are internally executed in two stages: <b>MAP</b>
+     * and <b>REDUCE</b>.
+     * <p>
+     * If many identical SQL queries are executed on the grid within short amount of time
+     * or simultaneously, instead of fetching data on each query, <b>MAP</b> stages
+     * of all those identical queries occurring on the same node may
+     * reuse the same result - as long as data is not concurrently modified.
+     *
+     * @param resReuse SQL results reuse flag.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setResultReuseEnabled(boolean resReuse) {
+        this.resReuse = resReuse;
+
+        return this;
     }
 
     /**

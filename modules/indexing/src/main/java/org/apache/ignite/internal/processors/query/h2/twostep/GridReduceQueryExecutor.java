@@ -503,6 +503,7 @@ public class GridReduceQueryExecutor {
      * @param qry Query.
      * @param keepBinary Keep binary.
      * @param enforceJoinOrder Enforce join order of tables.
+     * @param resReuse Result reuse control flag.
      * @param timeoutMillis Timeout in milliseconds.
      * @param cancel Query cancel.
      * @param params Query parameters.
@@ -514,6 +515,7 @@ public class GridReduceQueryExecutor {
         GridCacheTwoStepQuery qry,
         boolean keepBinary,
         boolean enforceJoinOrder,
+        boolean resReuse,
         int timeoutMillis,
         GridQueryCancel cancel,
         Object[] params,
@@ -710,6 +712,9 @@ public class GridReduceQueryExecutor {
 
                 if (isReplicatedOnly)
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+                if (resReuse)
+                    flags |= GridH2QueryRequest.FLAG_MAP_RESULTS_REUSE;
 
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
