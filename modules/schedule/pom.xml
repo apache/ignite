@@ -83,6 +83,21 @@
         </dependency>
     </dependencies>
 
+    <profile>
+        <id>lgpl</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <configuration>
+                        <skip>false</skip>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+
     <build>
         <plugins>
             <!-- Generate the OSGi MANIFEST.MF for this fragment. It is a fragment because it contains internal processors
