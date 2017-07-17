@@ -18,10 +18,8 @@
 package org.apache.ignite.ml.math;
 
 import java.util.Map;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MapWrapperVector;
-import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
 
 public class VectorUtils {
     /** Create new vector like given vector initialized by zeroes. */
@@ -31,7 +29,7 @@ public class VectorUtils {
 
     /** Create new */
     public static DenseLocalOnHeapVector zeroes(int n) {
-        return (DenseLocalOnHeapVector) new DenseLocalOnHeapVector(n).assign(0.0);
+        return (DenseLocalOnHeapVector)new DenseLocalOnHeapVector(n).assign(0.0);
     }
 
     /** */

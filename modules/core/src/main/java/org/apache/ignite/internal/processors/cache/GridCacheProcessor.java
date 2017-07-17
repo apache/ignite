@@ -1668,11 +1668,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteCacheProxy<?, ?> getOrStartPublicCache(boolean start, boolean inclLoc) throws IgniteCheckedException {
         // Try to find started cache first.
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
+            if (!e.getValue().context().userCache())
+                continue;
+
             CacheConfiguration ccfg = e.getValue().configuration();
 
             String cacheName = ccfg.getName();
 
-            if ((inclLoc || ccfg.getCacheMode() != LOCAL) && QueryUtils.isEnabled(ccfg))
+            if ((inclLoc || ccfg.getCacheMode() != LOCAL))
                 return publicJCache(cacheName);
         }
 
@@ -1680,9 +1683,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (Map.Entry<String, DynamicCacheDescriptor> e : cachesInfo.registeredCaches().entrySet()) {
                 DynamicCacheDescriptor desc = e.getValue();
 
+                if (!desc.cacheType().userCache())
+                    continue;
+
                 CacheConfiguration ccfg = desc.cacheConfiguration();
 
-                if (ccfg.getCacheMode() != LOCAL && QueryUtils.isEnabled(ccfg)) {
+                if (ccfg.getCacheMode() != LOCAL) {
                     dynamicStartCache(null, ccfg.getName(), null, false, true, true).get();
 
                     return publicJCache(ccfg.getName());

@@ -30,11 +30,6 @@ namespace Apache.Ignite.Core.PersistentStore
     public class PersistentStoreConfiguration
     {
         /// <summary>
-        /// Default value for <see cref="CheckpointingPageBufferSize"/>.
-        /// </summary>
-        public const long DefaultCheckpointingPageBufferSize = 256L * 1024 * 1024;
-
-        /// <summary>
         /// Default value for <see cref="CheckpointingThreads"/>.
         /// </summary>
         public const int DefaultCheckpointingThreads = 1;
@@ -82,7 +77,7 @@ namespace Apache.Ignite.Core.PersistentStore
         /// <summary>
         /// Default value for <see cref="WalFsyncDelayNanos"/>.
         /// </summary>
-        public const int DefaultWalFsyncDelayNanos = 1;
+        public const long DefaultWalFsyncDelayNanos = 1000;
 
         /// <summary>
         /// The default sub intervals.
@@ -97,11 +92,20 @@ namespace Apache.Ignite.Core.PersistentStore
         public static readonly TimeSpan DefaultRateTimeInterval = TimeSpan.FromSeconds(60);
 
         /// <summary>
+        /// Default value for <see cref="WalStorePath"/>.
+        /// </summary>
+        public const string DefaultWalStorePath = "db/wal";
+
+        /// <summary>
+        /// Default value for <see cref="WalArchivePath"/>.
+        /// </summary>
+        public const string DefaultWalArchivePath = "db/wal/archive";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
         /// </summary>
         public PersistentStoreConfiguration()
         {
-            CheckpointingPageBufferSize = DefaultCheckpointingPageBufferSize;
             CheckpointingThreads = DefaultCheckpointingThreads;
             CheckpointingFrequency = DefaultCheckpointingFrequency;
             LockWaitTime = DefaultLockWaitTime;
@@ -114,6 +118,8 @@ namespace Apache.Ignite.Core.PersistentStore
             WalFsyncDelayNanos = DefaultWalFsyncDelayNanos;
             RateTimeInterval = DefaultRateTimeInterval;
             SubIntervals = DefaultSubIntervals;
+            WalArchivePath = DefaultWalArchivePath;
+            WalStorePath = DefaultWalStorePath;
         }
 
         /// <summary>
@@ -137,7 +143,7 @@ namespace Apache.Ignite.Core.PersistentStore
             WalMode = (WalMode)reader.ReadInt();
             TlbSize = reader.ReadInt();
             WalFlushFrequency = reader.ReadLongAsTimespan();
-            WalFsyncDelayNanos = reader.ReadInt();
+            WalFsyncDelayNanos = reader.ReadLong();
             WalRecordIteratorBufferSize = reader.ReadInt();
             AlwaysWriteFullPages = reader.ReadBoolean();
             MetricsEnabled = reader.ReadBoolean();
@@ -166,7 +172,7 @@ namespace Apache.Ignite.Core.PersistentStore
             writer.WriteInt((int)WalMode);
             writer.WriteInt(TlbSize);
             writer.WriteTimeSpanAsLong(WalFlushFrequency);
-            writer.WriteInt(WalFsyncDelayNanos);
+            writer.WriteLong(WalFsyncDelayNanos);
             writer.WriteInt(WalRecordIteratorBufferSize);
             writer.WriteBoolean(AlwaysWriteFullPages);
             writer.WriteBoolean(MetricsEnabled);
@@ -188,8 +194,9 @@ namespace Apache.Ignite.Core.PersistentStore
 
         /// <summary>
         /// Gets or sets the size of the checkpointing page buffer.
+        /// <para />
+        /// Default is <c>0</c>: Ignite will choose buffer size automatically.
         /// </summary>
-        [DefaultValue(DefaultCheckpointingPageBufferSize)]
         public long CheckpointingPageBufferSize { get; set; }
 
         /// <summary>
@@ -227,12 +234,14 @@ namespace Apache.Ignite.Core.PersistentStore
         /// <summary>
         /// Gets or sets the path to the directory where WAL (Write Ahead Log) is stored.
         /// </summary>
+        [DefaultValue(DefaultWalStorePath)]
         public string WalStorePath { get; set; }
 
         /// <summary>
         /// Gets or sets the path to the directory where WAL (Write Ahead Log) archive is stored.
         /// Every WAL segment will be fully copied to this directory before it can be reused for WAL purposes.
         /// </summary>
+        [DefaultValue(DefaultWalArchivePath)]
         public string WalArchivePath { get; set; }
 
         /// <summary>
@@ -256,7 +265,7 @@ namespace Apache.Ignite.Core.PersistentStore
         /// Gets or sets the WAL (Write Ahead Log) fsync (disk sync) delay, in nanoseconds
         /// </summary>
         [DefaultValue(DefaultWalFsyncDelayNanos)]
-        public int WalFsyncDelayNanos { get; set; }
+        public long WalFsyncDelayNanos { get; set; }
 
         /// <summary>
         /// Gets or sets the size of the WAL (Write Ahead Log) record iterator buffer, in bytes.

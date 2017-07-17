@@ -59,7 +59,6 @@ import org.apache.ignite.ml.math.impls.vector.VectorIterableTest;
 import org.apache.ignite.ml.math.impls.vector.VectorNormTest;
 import org.apache.ignite.ml.math.impls.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.impls.vector.VectorViewTest;
-import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

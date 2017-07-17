@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // Ignore obsolete, we still need to test them.
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -138,7 +139,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
                 Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
-                Assert.AreEqual(cfg.IsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
+                Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
                 var atm = cfg.AtomicConfiguration;
@@ -315,6 +316,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultSubIntervals, plc.SubIntervals);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultRateTimeInterval, plc.RateTimeInterval);
+
+                // Check PersistentStoreConfiguration defaults.
+                CheckDefaultProperties(resCfg.PersistentStoreConfiguration);
             }
         }
 
@@ -531,8 +535,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(PersistentStoreConfiguration.DefaultTlbSize, cfg.TlbSize);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingFrequency, cfg.CheckpointingFrequency);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingThreads, cfg.CheckpointingThreads);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingPageBufferSize, 
-                cfg.CheckpointingPageBufferSize);
+            Assert.AreEqual(default(long), cfg.CheckpointingPageBufferSize);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultLockWaitTime, cfg.LockWaitTime);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFlushFrequency, cfg.WalFlushFrequency);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFsyncDelayNanos, cfg.WalFsyncDelayNanos);
@@ -545,6 +548,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(cfg.MetricsEnabled);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultSubIntervals, cfg.SubIntervals);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultRateTimeInterval, cfg.RateTimeInterval);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalStorePath, cfg.WalStorePath);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
         }
 
         /// <summary>
