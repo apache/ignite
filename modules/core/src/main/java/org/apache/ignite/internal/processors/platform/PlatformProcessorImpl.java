@@ -448,7 +448,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
-        return PlatformAbstractTarget.throwUnsupported(type);
+        return processInStreamOutLong(type, reader);
     }
 
     /** {@inheritDoc} */
