@@ -102,6 +102,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_TRANSACTIONS = 9;
 
+    /** */
+    private static final int OP_GET_CLUSTER_GROUP = 10;
+
+    /** */
+    private static final int OP_GET_COMPUTE = 11;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -242,18 +248,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
         return platformCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy projection() throws IgniteCheckedException {
-        return proxy(new PlatformClusterGroup(platformCtx, ctx.grid().cluster()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy compute(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM));
     }
 
     /** {@inheritDoc} */
@@ -573,7 +567,19 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
+                                                                         BinaryRawReaderEx reader,
+                                                                         BinaryRawWriterEx writer)
+            throws IgniteCheckedException {
+
+        switch (type) {
+            case OP_GET_COMPUTE: {
+                PlatformClusterGroup grp0 = (PlatformClusterGroup)arg;
+
+                return new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM);
+            }
+        }
+
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
@@ -587,6 +593,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         switch (type) {
             case OP_GET_TRANSACTIONS:
                 return new PlatformTransactions(platformCtx);
+
+            case OP_GET_CLUSTER_GROUP:
+                return new PlatformClusterGroup(platformCtx, ctx.grid().cluster());
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
