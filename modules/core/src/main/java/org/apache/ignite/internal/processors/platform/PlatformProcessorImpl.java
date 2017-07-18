@@ -136,6 +136,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_CACHE_NAMES = 20;
 
+    /** */
+    private static final int OP_CREATE_NEAR_CACHE = 21;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_NEAR_CACHE = 22;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -317,24 +323,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         this.clusterRestarted = clusterRestarted;
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy createNearCache(@Nullable String cacheName, long memPtr) {
-        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
-
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
-        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
-
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
-
-        return createPlatformCache(cache);
     }
 
     /**
@@ -545,6 +533,26 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return new PlatformAtomicSequence(platformCtx, atomicSeq);
             }
+
+            case OP_CREATE_NEAR_CACHE: {
+                String cacheName = reader.readString();
+
+                NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_GET_OR_CREATE_NEAR_CACHE: {
+                String cacheName = reader.readString();
+
+                NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
+
+                return createPlatformCache(cache);
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -622,19 +630,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public Exception convertException(Exception e) {
         return e;
-    }
-
-    /**
-     * Gets the near cache config.
-     *
-     * @param memPtr Memory pointer.
-     * @return Near config.
-     */
-    private NearCacheConfiguration getNearCacheConfiguration(long memPtr) {
-        assert memPtr != 0;
-
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        return PlatformConfigurationUtils.readNearConfiguration(reader);
     }
 
     /**
