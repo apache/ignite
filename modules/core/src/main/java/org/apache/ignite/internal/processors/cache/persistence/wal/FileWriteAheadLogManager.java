@@ -1657,6 +1657,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private volatile long lastFsyncPos;
 
+        /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)}*/
+        private final AtomicBoolean stop = new AtomicBoolean(false);
+
         /** */
         private final Lock lock = new ReentrantLock();
 
@@ -1773,13 +1776,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param ptr Pointer.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean flushOrWait(FileWALPointer ptr, boolean stop) throws IgniteCheckedException {
+        private void flushOrWait(FileWALPointer ptr, boolean stop) throws IgniteCheckedException {
             long expWritten;
 
             if (ptr != null) {
                 // If requested obsolete file index, it must be already flushed by close.
                 if (ptr.index() != idx)
-                    return false;
+                    return;
 
                 expWritten = ptr.fileOffset();
             }
@@ -1787,12 +1790,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 expWritten = recordOffset(head.get());
 
             if (flush(ptr, stop))
-                return true;
+                return;
 
             // Spin-wait for a while before acquiring the lock.
             for (int i = 0; i < 64; i++) {
                 if (written >= expWritten)
-                    return false;
+                    return;
             }
 
             // If we did not flush ourselves then await for concurrent flush to complete.
@@ -1805,8 +1808,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             finally {
                 lock.unlock();
             }
-
-            return false;
         }
 
         /**
@@ -1984,24 +1985,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param ptr Pointer to sync.
          * @throws StorageException If failed.
          */
-        private boolean fsync(FileWALPointer ptr, boolean stop) throws StorageException, IgniteCheckedException {
+        private void fsync(FileWALPointer ptr, boolean stop) throws StorageException, IgniteCheckedException {
             lock.lock();
 
             try {
                 if (ptr != null) {
                     if (!needFsync(ptr))
-                        return false;
+                        return;
 
                     if (fsyncDelay > 0 && !stopped()) {
                         // Delay fsync to collect as many updates as possible: trade latency for throughput.
                         U.await(fsync, fsyncDelay, TimeUnit.NANOSECONDS);
 
                         if (!needFsync(ptr))
-                            return false;
+                            return;
                     }
                 }
 
-                boolean flushed = flushOrWait(ptr, stop);
+                flushOrWait(ptr, stop);
 
                 if (lastFsyncPos != written) {
                     assert lastFsyncPos < written; // Fsync position must be behind.
@@ -2027,8 +2028,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (metricsEnabled)
                         metrics.onFsync(end - start);
                 }
-
-                return flushed;
             }
             finally {
                 lock.unlock();
@@ -2041,9 +2040,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws StorageException If failed.
          */
         private boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
-            boolean flushed = mode == WALMode.DEFAULT ? fsync(null, true) : flushOrWait(null, true);
+            if (mode == WALMode.DEFAULT)
+                fsync(null, true);
+            else
+                flushOrWait(null, true);
 
-            if (flushed) {
+            if (stop.compareAndSet(false, true)) {
                 try {
                     int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE;
 
@@ -2154,7 +2156,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             logBackoff *= 2;
 
                         U.warn(log, "Still waiting for a concurrent write to complete [written=" + written +
-                            ", pos=" + pos + ", lastFsyncPos=" + lastFsyncPos + ", stop=" + stopped() +
+                            ", pos=" + pos + ", lastFsyncPos=" + lastFsyncPos + ", stop=" + stop.get() +
                             ", actualPos=" + safePosition() + ']');
 
                         lastLogged = now;
