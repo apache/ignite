@@ -38,6 +38,7 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
@@ -47,10 +48,18 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_CACHE_REREAD_PAUSE;
+
 /**
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
+    /** Cache reread tries. */
+    private static final int CACHE_REREAD_TRIES = 5;
+
+    /** Cache reread pause. */
+    private static final int CACHE_REREAD_PAUSE = IgniteSystemProperties.getInteger(IGNITE_MARSHALLER_CACHE_REREAD_PAUSE, 20);
+
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -193,7 +202,16 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
         }
 
-        String clsName = cache0.getTopologySafe(id);
+        String clsName = null;
+
+        for (int i = 0; i < CACHE_REREAD_TRIES; i++) {
+            clsName = cache0.getTopologySafe(id);
+
+            if (clsName != null)
+                break;
+
+            U.sleep(CACHE_REREAD_PAUSE);
+        }
 
         if (clsName == null) {
             String fileName = id + ".classname";
