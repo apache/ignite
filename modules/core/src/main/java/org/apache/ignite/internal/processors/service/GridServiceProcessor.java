@@ -1603,7 +1603,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private class TopologyListener implements DiscoveryEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
+        @Override public void onEvent(final DiscoveryEvent evt, final DiscoCache discoCache) {
             if (!busyLock.enterBusy())
                 return;
 

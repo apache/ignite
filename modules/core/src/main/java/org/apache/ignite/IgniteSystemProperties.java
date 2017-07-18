@@ -577,6 +577,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
 
     /**
+     * If this property is set, a node will forcible fail a remote node when it fails to establish a communication
+     * connection.
+     */
+    public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
