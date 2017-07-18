@@ -827,14 +827,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Marshaller.
-        /// </summary>
-        internal Marshaller Marshaller
-        {
-            get { return _marsh; }
-        }
-
-        /// <summary>
         /// Gets the binary processor.
         /// </summary>
         internal BinaryProcessor BinaryProcessor
