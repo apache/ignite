@@ -74,7 +74,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * GridGain platform processor.
  */
 @SuppressWarnings({"ConditionalExpressionWithIdenticalBranches", "unchecked"})
-public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor {
+public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor, PlatformTarget {
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -520,6 +520,57 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy binaryProcessor() {
         return proxy(new PlatformBinaryProcessor(platformCtx));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        return PlatformAbstractTarget.throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Exception convertException(Exception e) {
+        return e;
     }
 
     /**
