@@ -90,6 +90,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_OR_CREATE_CACHE_FROM_CONFIG = 5;
 
+    /** */
+    private static final int OP_DESTROY_CACHE = 6;
+
+    /** */
+    private static final int OP_GET_AFFINITY = 7;
+
+    /** */
+    private static final int OP_GET_DATA_STREAMER = 8;
+
+    /** */
+    private static final int OP_GET_TRANSACTIONS = 9;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -230,31 +242,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
         return platformCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroyCache(@Nullable String name) throws IgniteCheckedException {
-        ctx.grid().destroyCache(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy affinity(@Nullable String name) throws IgniteCheckedException {
-        return proxy(new PlatformAffinity(platformCtx, ctx, name));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy dataStreamer(@Nullable String cacheName, boolean keepBinary)
-        throws IgniteCheckedException {
-        IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
-
-        ldr.keepBinary(true);
-
-        return proxy(new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy transactions() {
-        return proxy(new PlatformTransactions(platformCtx));
     }
 
     /** {@inheritDoc} */
@@ -424,6 +411,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * Creates new platform cache.
      */
     private PlatformTarget createPlatformCache(IgniteCacheProxy cache) {
+        assert cache != null;
+
         return new PlatformCache(platformCtx, cache, false, cacheExts);
     }
 
@@ -492,6 +481,14 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_DESTROY_CACHE: {
+                ctx.grid().destroyCache(reader.readString());
+
+                return 0;
+            }
+        }
+
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
@@ -524,8 +521,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(name);
 
-                assert cache != null;
-
                 return createPlatformCache(cache);
             }
 
@@ -533,8 +528,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 String name = reader.readString();
 
                 IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(name);
-
-                assert cache != null;
 
                 return createPlatformCache(cache);
             }
@@ -559,6 +552,21 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return createPlatformCache(cache);
             }
+
+            case OP_GET_AFFINITY: {
+                return new PlatformAffinity(platformCtx, ctx, reader.readString());
+            }
+
+            case OP_GET_DATA_STREAMER: {
+                String cacheName = reader.readString();
+                boolean keepBinary = reader.readBoolean();
+
+                IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
+
+                ldr.keepBinary(true);
+
+                return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary);
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -576,6 +584,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_GET_TRANSACTIONS:
+                return new PlatformTransactions(platformCtx);
+        }
+
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
@@ -699,13 +712,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         else
             //noinspection ZeroLengthArrayAllocation
             return new PlatformPluginExtension[0];
-    }
-
-    /**
-     * Wraps target in a proxy.
-     */
-    private PlatformTargetProxy proxy(PlatformTarget target) {
-        return new PlatformTargetProxyImpl(target, platformCtx);
     }
 
     /**
