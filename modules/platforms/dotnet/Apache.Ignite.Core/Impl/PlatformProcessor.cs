@@ -17,10 +17,13 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+
     /// <summary>
     /// Platform processor, interop entry point, delegates to PlatformProcessorImpl in Java.
     /// </summary>
-    internal class PlatformProcessor
+    internal class PlatformProcessor : PlatformTarget
     {
         /// <summary>
         /// Operation codes.
@@ -51,7 +54,23 @@ namespace Apache.Ignite.Core.Impl
             GetOrCreateNearCache = 22,
             LoggerIsLevelEnabled = 23,
             LoggerLog = 24,
-            GetBinaryProcessor = 25,
+            GetBinaryProcessor = 25
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PlatformProcessor"/> class.
+        /// </summary>
+        public PlatformProcessor(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        public IUnmanagedTarget GetCache(string name)
+        {
+            return DoOutOpObject((int) Op.GetCache, w => w.WriteString(name));
         }
     }
 }
