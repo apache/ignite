@@ -233,7 +233,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             out.synchronize();
 
-            platformCtx.gateway().onStart(this, mem.pointer());
+            platformCtx.gateway().onStart(new PlatformTargetProxyImpl(this, platformCtx), mem.pointer());
         }
 
         // At this moment all necessary native libraries must be loaded, so we can process with store creation.
