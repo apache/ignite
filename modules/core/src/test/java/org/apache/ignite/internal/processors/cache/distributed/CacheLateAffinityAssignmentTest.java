@@ -1141,21 +1141,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         Ignite ignite3 = startServer(3, 4);
 
         TestRecordingCommunicationSpi spi0 =
-                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
-
-        TestRecordingCommunicationSpi spi2 =
-                (TestRecordingCommunicationSpi) ignite2.configuration().getCommunicationSpi();
-
-        TestRecordingCommunicationSpi spi3 =
-                (TestRecordingCommunicationSpi) ignite3.configuration().getCommunicationSpi();
+            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi(), spi2, spi3;
 
         // Prevent exchange completion.
         spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
 
         // Block rebalance.
         blockSupplySend(spi0, CACHE_NAME1);
-        blockSupplySend(spi2, CACHE_NAME1);
-        blockSupplySend(spi3, CACHE_NAME1);
+        blockSupplySend((spi2 = (TestRecordingCommunicationSpi)ignite2.configuration().getCommunicationSpi()), CACHE_NAME1);
+        blockSupplySend((spi3 = (TestRecordingCommunicationSpi)ignite3.configuration().getCommunicationSpi()), CACHE_NAME1);
 
         stopNode(1, 5);
 
