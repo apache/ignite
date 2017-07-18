@@ -3123,16 +3123,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
      * @throws IgniteCheckedException If failed.
      */
     public final void prepare() throws IgniteCheckedException {
-        prepareAsync().get();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public final void awaitLastFutureAndPrepare() throws IgniteCheckedException {
         txState().awaitLastFuture(cctx);
 
-        prepare();
+        prepareAsync().get();
     }
 
     /**

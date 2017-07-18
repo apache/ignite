@@ -122,7 +122,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             throw new XAException("Cache transaction is not in active state.");
 
         try {
-            cacheTx.awaitLastFutureAndPrepare();
+            cacheTx.prepare();
         }
         catch (IgniteCheckedException e) {
             throwException("Failed to prepare cache transaction.", e);
@@ -248,7 +248,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             throw new CacheException("Cache transaction is not in active state.");
 
         try {
-            cacheTx.awaitLastFutureAndPrepare();
+            cacheTx.prepare();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException("Failed to prepare cache transaction.", e);

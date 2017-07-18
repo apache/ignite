@@ -160,7 +160,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_PREPARE:
-                ((TransactionProxyImpl)tx(val)).tx().awaitLastFutureAndPrepare();
+                ((TransactionProxyImpl)tx(val)).tx().prepare();
 
                 return TRUE;
 
