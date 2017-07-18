@@ -84,7 +84,8 @@ namespace Apache.Ignite.Core.Impl
             GetOrCreateNearCache = 22,
             LoggerIsLevelEnabled = 23,
             LoggerLog = 24,
-            GetBinaryProcessor = 25
+            GetBinaryProcessor = 25,
+            ReleaseStart = 26
         }
 
         /** */
@@ -916,6 +917,14 @@ namespace Apache.Ignite.Core.Impl
         internal PluginProcessor PluginProcessor
         {
             get { return _pluginProcessor; }
+        }
+
+        /// <summary>
+        /// Notify processor that it is safe to use.
+        /// </summary>
+        internal void ProcessorReleaseStart()
+        {
+            InLongOutLong((int) Op.ReleaseStart, 0);
         }
     }
 }

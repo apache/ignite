@@ -127,11 +127,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.IgnitionStopAll(ctx, cancel);
         }
 
-        internal static void ProcessorReleaseStart(IUnmanagedTarget target)
-        {
-            JNI.ProcessorReleaseStart(target.Context, target.Target);
-        }
-
         internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);

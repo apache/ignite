@@ -291,10 +291,14 @@ namespace Apache.Ignite.Core
                 }
                 finally
                 {
+                    var ignite = _startup.Ignite;
+
                     _startup = null;
 
-                    if (interopProc != null)
-                        UU.ProcessorReleaseStart(interopProc);
+                    if (ignite != null)
+                    {
+                        ignite.ProcessorReleaseStart();
+                    }
                 }
             }
         }

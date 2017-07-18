@@ -40,12 +40,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStopAll")]
         public static extern void IgnitionStopAll(void* ctx, [MarshalAs(UnmanagedType.U1)] bool cancel);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorReleaseStart")]
-        public static extern void ProcessorReleaseStart(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorProjection")]
-        public static extern void* ProcessorProjection(void* ctx, void* obj);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCache")]
         public static extern void* ProcessorCache(void* ctx, void* obj, sbyte* name);
 
