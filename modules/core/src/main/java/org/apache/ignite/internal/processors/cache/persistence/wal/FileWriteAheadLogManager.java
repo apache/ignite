@@ -1864,7 +1864,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (expHead.previous() == null) {
                 assert expHead instanceof FakeRecord;
 
-                return false;
+                if (stop == ((FakeRecord)expHead).stop)
+                    return false;
             }
 
             // Fail-fast before CAS.
@@ -2073,8 +2074,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 return true;
             }
-
-            return false;
+            else
+                return false;
         }
 
         /**
