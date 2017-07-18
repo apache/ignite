@@ -132,29 +132,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.ProcessorReleaseStart(target.Context, target.Target);
         }
 
-        internal static IUnmanagedTarget ProcessorProjection(IUnmanagedTarget target)
-        {
-            void* res = JNI.ProcessorProjection(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProcessorCache(IUnmanagedTarget target, string name)
-        {
-            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
-
-            try
-            {
-                void* res = JNI.ProcessorCache(target.Context, target.Target, name0);
-
-                return target.ChangeTarget(res);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(new IntPtr(name0));
-            }
-        }
-
         internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);

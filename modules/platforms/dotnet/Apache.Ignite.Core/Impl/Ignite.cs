@@ -158,17 +158,17 @@ namespace Apache.Ignite.Core.Impl
 
             marsh.Ignite = this;
 
-            _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
+            _prj = new ClusterGroupImpl(proc, DoOutOpObject((int) Op.GetClusterGroup), marsh, this, null);
 
             _binary = new Binary.Binary(marsh);
 
-            _binaryProc = new BinaryProcessor(UU.ProcessorBinaryProcessor(proc), marsh);
+            _binaryProc = new BinaryProcessor(DoOutOpObject((int) Op.GetBinaryProcessor), marsh);
 
             cbs.Initialize(this);
 
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
-                    () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, GetLocalNode().Id));
+                () => new TransactionsImpl(DoOutOpObject((int) Op.GetTransactions), marsh, GetLocalNode().Id));
 
             // Set reconnected task to completed state for convenience.
             _clientReconnectTaskCompletionSource.SetResult(false);
