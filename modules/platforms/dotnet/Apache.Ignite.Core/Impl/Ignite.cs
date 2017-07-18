@@ -53,8 +53,40 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : IIgnite, ICluster
+    internal class Ignite : PlatformTarget, IIgnite, ICluster
     {
+        /// <summary>
+        /// Operation codes for PlatformProcessorImpl calls.
+        /// </summary>
+        private enum Op
+        {
+            GetCache = 1,
+            CreateCache = 2,
+            GetOrCreateCache = 3,
+            CreateCacheFromConfig = 4,
+            GetOrCreateCacheFromConfig = 5,
+            DestroyCache = 6,
+            GetAffinity = 7,
+            GetDataStreamer = 8,
+            GetTransactions = 9,
+            GetClusterGroup = 10,
+            GetCompute = 11,
+            GetMessaging = 12,
+            GetEvents = 13,
+            GetServices = 14,
+            GetExtension = 15,
+            GetAtomicLong = 16,
+            GetAtomicReference = 17,
+            GetAtomicSequence = 18,
+            GetIgniteConfiguration = 19,
+            GetCacheNames = 20,
+            CreateNearCache = 21,
+            GetOrCreateNearCache = 22,
+            LoggerIsLevelEnabled = 23,
+            LoggerLog = 24,
+            GetBinaryProcessor = 25
+        }
+
         /** */
         private readonly IgniteConfiguration _cfg;
 
@@ -109,7 +141,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="lifecycleHandlers">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
         public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
-            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs)
+            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs) : base(proc, marsh)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
@@ -389,7 +421,8 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return Cache<TK, TV>(UU.ProcessorCache(_proc, name));
+
+            return Cache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
         }
 
         /** <inheritdoc /> */
@@ -397,7 +430,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, name));
+            return Cache<TK, TV>(DoOutOpObject((int) Op.GetOrCreateCache, w => w.WriteString(name)));
         }
 
         /** <inheritdoc /> */
