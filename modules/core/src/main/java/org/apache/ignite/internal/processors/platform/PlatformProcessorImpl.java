@@ -130,6 +130,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_ATOMIC_SEQUENCE = 18;
 
+    /** */
+    private static final int OP_GET_IGNITE_CONFIGURATION = 19;
+
+    /** */
+    private static final int OP_GET_CACHE_NAMES = 20;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -311,31 +317,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         this.clusterRestarted = clusterRestarted;
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void getIgniteConfiguration(long memPtr) {
-        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
-        BinaryRawWriterEx writer = platformCtx.writer(stream);
-
-        PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
-
-        stream.synchronize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void getCacheNames(long memPtr) {
-        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
-        BinaryRawWriterEx writer = platformCtx.writer(stream);
-
-        Collection<String> names = ignite().cacheNames();
-
-        writer.writeInt(names.size());
-
-        for (String name : names)
-            writer.writeString(name);
-
-        stream.synchronize();
     }
 
     /** {@inheritDoc} */
@@ -598,6 +579,25 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        switch (type) {
+            case OP_GET_IGNITE_CONFIGURATION: {
+                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
+
+                return;
+            }
+
+            case OP_GET_CACHE_NAMES: {
+                Collection<String> names = ignite().cacheNames();
+
+                writer.writeInt(names.size());
+
+                for (String name : names)
+                    writer.writeString(name);
+
+                return;
+            }
+        }
+
         PlatformAbstractTarget.throwUnsupported(type);
     }
 
