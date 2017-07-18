@@ -148,6 +148,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_LOGGER_LOG = 24;
 
+    /** */
+    private static final int OP_GET_BINARY_PROCESSOR = 25;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -405,12 +408,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTargetProxy binaryProcessor() {
-        return proxy(new PlatformBinaryProcessor(platformCtx));
-    }
-
-
-    /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_LOGGER_IS_LEVEL_ENABLED: {
@@ -645,6 +642,10 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_GET_CLUSTER_GROUP:
                 return new PlatformClusterGroup(platformCtx, ctx.grid().cluster());
+
+            case OP_GET_BINARY_PROCESSOR: {
+                return new PlatformBinaryProcessor(platformCtx);
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
