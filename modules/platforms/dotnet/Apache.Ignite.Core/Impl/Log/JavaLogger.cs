@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Log
     internal class JavaLogger : ILogger
     {
         /** */
-        private IUnmanagedTarget _proc;
+        private Ignite _proc;
 
         /** */
         private readonly List<LogLevel> _enabledLevels = new List<LogLevel>(5);
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Log
         /// Sets the processor.
         /// </summary>
         /// <param name="proc">The proc.</param>
-        public void SetProcessor(IUnmanagedTarget proc)
+        public void SetProcessor(Ignite proc)
         {
             Debug.Assert(proc != null);
 
@@ -56,8 +56,8 @@ namespace Apache.Ignite.Core.Impl.Log
 
                 // Preload enabled levels.
                 _enabledLevels.AddRange(
-                    new[] { LogLevel.Trace, LogLevel.Debug, LogLevel.Info, LogLevel.Warn, LogLevel.Error }
-                        .Where(x => UnmanagedUtils.ProcessorLoggerIsLevelEnabled(proc, (int)x)));
+                    new[] {LogLevel.Trace, LogLevel.Debug, LogLevel.Info, LogLevel.Warn, LogLevel.Error}
+                        .Where(x => proc.LoggerIsLevelEnabled(x)));
 
                 foreach (var log in _pendingLogs)
                 {
@@ -104,7 +104,9 @@ namespace Apache.Ignite.Core.Impl.Log
         private void Log(LogLevel level, string msg, string category, string err)
         {
             if (IsEnabled(level))
-                UnmanagedUtils.ProcessorLoggerLog(_proc, (int)level, msg, category, err);
+            {
+                _proc.LoggerLog(level, msg, category, err);
+            }
         }
     }
 }

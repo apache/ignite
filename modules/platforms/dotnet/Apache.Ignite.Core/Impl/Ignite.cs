@@ -686,14 +686,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IgniteConfiguration GetConfiguration()
         {
-            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
-            {
-                UU.ProcessorGetIgniteConfiguration(_proc, stream.MemoryPointer);
-
-                stream.SynchronizeInput();
-
-                return new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(stream), _cfg);
-            }
+            return DoInOp((int) Op.GetIgniteConfiguration,
+                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg));
         }
 
         /** <inheritdoc /> */
@@ -925,6 +919,28 @@ namespace Apache.Ignite.Core.Impl
         internal void ProcessorReleaseStart()
         {
             InLongOutLong((int) Op.ReleaseStart, 0);
+        }
+
+        /// <summary>
+        /// Checks whether log level is enabled in Java logger.
+        /// </summary>
+        internal bool LoggerIsLevelEnabled(LogLevel logLevel)
+        {
+            return InLongOutLong((int) Op.LoggerIsLevelEnabled, (long) logLevel) == True;
+        }
+
+        /// <summary>
+        /// Logs to the Java logger.
+        /// </summary>
+        internal void LoggerLog(LogLevel level, string msg, string category, string err)
+        {
+            InStreamOutLong((int) Op.LoggerLog, w =>
+            {
+                w.WriteInt((int) level);
+                w.WriteString(msg);
+                w.WriteString(category);
+                w.WriteString(err);
+            });
         }
     }
 }
