@@ -60,4 +60,13 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed.
      */
     public void awaitStart() throws IgniteCheckedException;
+
+    /**
+     * Register cache store.
+     *
+     * @param store Store.
+     * @param convertBinary Convert binary flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void registerStore(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException;
 }
