@@ -51,9 +51,6 @@ import org.apache.ignite.plugin.PluginProvider;
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
-    /** Class name read attempts. */
-    private static final int CLS_NAME_READ_ATTEMPTS = 5;
-
     /** */
     private static final GridStripedLock fileLock = new GridStripedLock(32);
 
@@ -196,21 +193,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
         }
 
-        String clsName = null;
-
-        // Class name maybe not in marshaller cache yet.
-        for (int i = 0; i < CLS_NAME_READ_ATTEMPTS; i++) {
-            clsName = cache0.getTopologySafe(id);
-
-            if (clsName != null)
-                break;
-        }
+        String clsName = cache0.getTopologySafe(id);
 
         if (clsName == null) {
             String fileName = id + ".classname";
 
             // Class name may be not in the file yet.
-            for (int i = 0; i < CLS_NAME_READ_ATTEMPTS; i++) {
+            for (int i = 0; i < 2; i++) {
                 Lock lock = fileLock(fileName);
 
                 lock.lock();
@@ -240,12 +229,14 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 if (clsName != null)
                     break;
 
-                // Fail when reached last attempt.
-                if (i == CLS_NAME_READ_ATTEMPTS - 1) {
+                // Fail on second unsuccessful try.
+                if (i == 1) {
                     throw new IgniteCheckedException("Class definition was not found " +
                         "at marshaller cache and local file. " +
                         "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
                 }
+
+                U.sleep(20);
             }
 
             // Must explicitly put entry to cache to invoke other continuous queries.
