@@ -261,13 +261,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTargetProxy events(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformEvents(platformCtx, grp0.projection().ignite().events(grp0.projection())));
-    }
-
-    /** {@inheritDoc} */
     @Override public PlatformTargetProxy services(PlatformTargetProxy grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
@@ -585,6 +578,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_GET_MESSAGING:
                 return new PlatformMessaging(platformCtx, projection.ignite().message(projection));
+
+            case OP_GET_EVENTS:
+                return new PlatformEvents(platformCtx, projection.ignite().events(projection));
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
