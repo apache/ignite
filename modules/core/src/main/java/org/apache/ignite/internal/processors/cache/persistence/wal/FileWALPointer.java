@@ -24,6 +24,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * File WAL pointer.
  */
 public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
+    /** WAL pointer length. */
+    public static final int WAL_POINTER_LENGTH = 8 /* segment file index (long) */
+        + 4 /* file offset (int) */
+        + 4 /* record length (int) */;
+
     /** Absolute WAL segment file index (incrementing counter) */
     private final long idx;
 

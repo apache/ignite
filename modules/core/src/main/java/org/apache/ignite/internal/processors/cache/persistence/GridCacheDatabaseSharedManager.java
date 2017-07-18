@@ -142,6 +142,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer.WAL_POINTER_LENGTH;
 
 /**
  *
@@ -1281,8 +1282,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private WALPointer readPointer(File cpMarkerFile, ByteBuffer buf) throws IgniteCheckedException {
         buf.position(0);
 
+        assert cpMarkerFile.length() == WAL_POINTER_LENGTH
+            : "Unexpected checkpoint marker length: " + cpMarkerFile.length();
+
         try (FileChannel ch = FileChannel.open(cpMarkerFile.toPath(), StandardOpenOption.READ)) {
-            ch.read(buf);
+            do {
+                ch.read(buf);
+            }
+            while (buf.position() < WAL_POINTER_LENGTH);
 
             buf.flip();
 
