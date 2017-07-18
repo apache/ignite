@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -107,6 +108,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_GET_COMPUTE = 11;
+
+    /** */
+    private static final int OP_GET_MESSAGING = 12;
+
+    /** */
+    private static final int OP_GET_EVENTS = 13;
+
+    /** */
+    private static final int OP_GET_SERVICES = 14;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -248,13 +258,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
         return platformCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy message(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformMessaging(platformCtx, grp0.projection().ignite().message(grp0.projection())));
     }
 
     /** {@inheritDoc} */
@@ -572,12 +575,16 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                                                                          BinaryRawWriterEx writer)
             throws IgniteCheckedException {
 
-        switch (type) {
-            case OP_GET_COMPUTE: {
-                PlatformClusterGroup grp0 = (PlatformClusterGroup)arg;
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)arg;
+        assert grp0 != null;
+        ClusterGroupEx projection = grp0.projection();
 
-                return new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM);
-            }
+        switch (type) {
+            case OP_GET_COMPUTE:
+                return new PlatformCompute(platformCtx, projection, PlatformUtils.ATTR_PLATFORM);
+
+            case OP_GET_MESSAGING:
+                return new PlatformMessaging(platformCtx, projection.ignite().message(projection));
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
