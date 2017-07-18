@@ -118,6 +118,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_SERVICES = 14;
 
+    /** */
+    private static final int OP_GET_EXTENSION = 15;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -258,30 +261,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
         return platformCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy services(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
-
-        return proxy(new PlatformServices(platformCtx, grp0.projection().ignite().services(grp0.projection()), false));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy extensions() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy extension(int id) {
-        if (extensions != null && id < extensions.length) {
-            PlatformPluginExtension ext = extensions[id];
-
-            if (ext != null)
-                return proxy(ext.createTarget());
-        }
-
-        throw new IgniteException("Platform extension is not registered [id=" + id + ']');
     }
 
     /** {@inheritDoc} */
@@ -557,6 +536,20 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary);
             }
+
+            case OP_GET_EXTENSION: {
+                int id = reader.readInt();
+
+                if (extensions != null && id < extensions.length) {
+                    PlatformPluginExtension ext = extensions[id];
+
+                    if (ext != null) {
+                        return ext.createTarget();
+                    }
+                }
+
+                throw new IgniteException("Platform extension is not registered [id=" + id + ']');
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -581,6 +574,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_GET_EVENTS:
                 return new PlatformEvents(platformCtx, projection.ignite().events(projection));
+
+            case OP_GET_SERVICES:
+                return new PlatformServices(platformCtx, projection.ignite().services(projection), false);
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
