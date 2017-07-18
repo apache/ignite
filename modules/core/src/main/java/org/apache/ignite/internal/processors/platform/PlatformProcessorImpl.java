@@ -151,6 +151,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_BINARY_PROCESSOR = 25;
 
+    /** */
+    private static final int OP_RELEASE_START = 26;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -412,6 +415,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         switch (type) {
             case OP_LOGGER_IS_LEVEL_ENABLED: {
                 return loggerIsLevelEnabled((int) val) ? PlatformAbstractTarget.TRUE : PlatformAbstractTarget.FALSE;
+            }
+
+            case OP_RELEASE_START: {
+                releaseStart();
+
+                return 0;
             }
         }
 
