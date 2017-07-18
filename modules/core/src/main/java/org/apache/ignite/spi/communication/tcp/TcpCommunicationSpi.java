@@ -349,6 +349,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private boolean enableForcibleNodeKill = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
+    /** */
+    private boolean enableTroubleshootingLog = IgniteSystemProperties
+        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
+
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
         new GridNioServerListenerAdapter<Message>() {
@@ -2988,9 +2992,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(e);
 
-                    U.error(log, "Failed to establish connection to a remote node [node=" + node +
-                        ", addr=" + addr + ", connectAttempts=" + connectAttempts +
-                        ", failureDetThrReached" + failureDetThrReached + ']', e);
+                    if (enableTroubleshootingLog)
+                        U.error(log, "Failed to establish connection to a remote node [node=" + node +
+                            ", addr=" + addr + ", connectAttempts=" + connectAttempts +
+                            ", failureDetThrReached=" + failureDetThrReached + ']', e);
 
                     if (failureDetThrReached)
                         LT.warn(log, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
@@ -3037,13 +3042,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             if (enableForcibleNodeKill) {
                 if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
-                X.hasCause(errs, ConnectException.class, HandshakeException.class,
-                    SocketTimeoutException.class, HandshakeTimeoutException.class,
-                    IgniteSpiOperationTimeoutException.class)) {
+                    X.hasCause(errs, ConnectException.class, HandshakeException.class,
+                        SocketTimeoutException.class, HandshakeTimeoutException.class,
+                        IgniteSpiOperationTimeoutException.class)) {
+                    String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+                        "cluster [" + "rmtNode=" + node + ']';
 
-                U.error(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
-                    "cluster [" +
-                    "rmtNode=" + node + ']', errs);
+                    if (enableTroubleshootingLog)
+                        U.error(log, msg, errs);
+                    else
+                        U.warn(log, msg);
 
                     getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                         "rmtNode=" + node +
