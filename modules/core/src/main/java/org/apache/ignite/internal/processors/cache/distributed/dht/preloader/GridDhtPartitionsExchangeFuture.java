@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
@@ -92,6 +93,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -109,6 +111,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     implements Comparable<GridDhtPartitionsExchangeFuture>, CachePartitionExchangeWorkerTask, IgniteDiagnosticAware {
     /** */
     public static final String EXCHANGE_LOG = "org.apache.ignite.internal.exchange.time";
+
+    /** */
+    private static final int RELEASE_FUTURE_DUMP_THRESHOLD =
+        IgniteSystemProperties.getInteger(IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD, 0);
 
     /** */
     @GridToStringExclude
@@ -623,9 +629,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param crd Coordinator flag.
      * @return Exchange type.
-     * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onClusterStateChangeRequest(boolean crd) throws IgniteCheckedException {
+    private ExchangeType onClusterStateChangeRequest(boolean crd) {
         assert exchActions != null && !exchActions.empty() : this;
 
         StateChangeRequest req = exchActions.stateChangeRequest();
@@ -894,14 +899,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             IgniteInternalFuture fut = cctx.snapshot()
                 .tryStartLocalSnapshotOperation(discoEvt);
 
-            if (fut != null)
+            if (fut != null) {
                 fut.get();
 
-            long end = U.currentTimeMillis();
+                long end = U.currentTimeMillis();
 
-            if (log.isInfoEnabled())
-                log.info("Snapshot initialization completed [topVer=" + exchangeId().topologyVersion() +
-                    ", time=" + (end - start) + "ms]");
+                if (log.isInfoEnabled())
+                    log.info("Snapshot initialization completed [topVer=" + exchangeId().topologyVersion() +
+                        ", time=" + (end - start) + "ms]");
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Error while starting snapshot operation", e);
@@ -955,9 +961,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         long waitEnd = U.currentTimeMillis();
 
-        if (log.isInfoEnabled())
+        if (log.isInfoEnabled()) {
+            long waitTime = (waitEnd - waitStart);
+
+            String futInfo = RELEASE_FUTURE_DUMP_THRESHOLD > 0 && waitTime > RELEASE_FUTURE_DUMP_THRESHOLD ?
+                partReleaseFut.toString() : "NA";
+
             log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
-                ", waitTime=" + (waitEnd - waitStart) + "ms]");
+                ", waitTime=" + (waitEnd - waitStart) + "ms, futInfo=" + futInfo + "]");
+        }
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 

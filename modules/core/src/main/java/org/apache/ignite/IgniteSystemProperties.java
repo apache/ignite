@@ -677,6 +677,13 @@ public final class IgniteSystemProperties {
         "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
 
     /**
+     * If a partition release future completion time during an exchange exceeds this threshold, the contents of
+     * the future will be dumped to the log on exchange. Default is {@code 0} (disabled).
+     */
+    public static final String IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD =
+        "IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
