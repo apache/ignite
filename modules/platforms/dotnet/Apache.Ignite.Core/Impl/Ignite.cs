@@ -423,7 +423,7 @@ namespace Apache.Ignite.Core.Impl
             IgniteArgumentCheck.NotNull(name, "name");
 
 
-            return Cache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
+            return GetCache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
         }
 
         /** <inheritdoc /> */
@@ -431,7 +431,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return Cache<TK, TV>(DoOutOpObject((int) Op.GetOrCreateCache, w => w.WriteString(name)));
+            return GetCache<TK, TV>(DoOutOpObject((int) Op.GetOrCreateCache, w => w.WriteString(name)));
         }
 
         /** <inheritdoc /> */
@@ -464,7 +464,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeOutput();
 
-                return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
+                return GetCache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
             }
         }
 
@@ -473,7 +473,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
+            return GetCache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
         }
 
         /** <inheritdoc /> */
@@ -507,7 +507,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeOutput();
 
-                return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
+                return GetCache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
             }
         }
 
@@ -527,7 +527,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// New instance of cache wrapping specified native cache.
         /// </returns>
-        public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
+        public ICache<TK, TV> GetCache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
         {
             return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
         }
@@ -814,7 +814,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeOutput();
 
-                return Cache<TK, TV>(func(_proc, name, stream.MemoryPointer));
+                return GetCache<TK, TV>(func(_proc, name, stream.MemoryPointer));
             }
         }
 
