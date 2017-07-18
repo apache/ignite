@@ -121,6 +121,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_EXTENSION = 15;
 
+    /** */
+    private static final int OP_GET_ATOMIC_LONG = 16;
+
+    /** */
+    private static final int OP_GET_ATOMIC_REFERENCE = 17;
+
+    /** */
+    private static final int OP_GET_ATOMIC_SEQUENCE = 18;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -281,35 +290,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         finally {
             storeLock.readLock().unlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy atomicLong(String name, long initVal, boolean create) throws IgniteException {
-        GridCacheAtomicLongImpl atomicLong = (GridCacheAtomicLongImpl)ignite().atomicLong(name, initVal, create);
-
-        if (atomicLong == null)
-            return null;
-
-        return proxy(new PlatformAtomicLong(platformCtx, atomicLong));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy atomicSequence(String name, long initVal, boolean create)
-        throws IgniteException {
-        IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
-
-        if (atomicSeq == null)
-            return null;
-
-        return proxy(new PlatformAtomicSequence(platformCtx, atomicSeq));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy atomicReference(String name, long memPtr, boolean create)
-        throws IgniteException {
-        PlatformAtomicReference ref = PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
-
-        return ref != null ? proxy(ref) : null;
     }
 
     /** {@inheritDoc} */
@@ -549,6 +529,40 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 }
 
                 throw new IgniteException("Platform extension is not registered [id=" + id + ']');
+            }
+
+            case OP_GET_ATOMIC_LONG: {
+                String name = reader.readString();
+                long initVal = reader.readLong();
+                boolean create = reader.readBoolean();
+
+                GridCacheAtomicLongImpl atomicLong = (GridCacheAtomicLongImpl)ignite().atomicLong(name, initVal, create);
+
+                if (atomicLong == null)
+                    return null;
+
+                return new PlatformAtomicLong(platformCtx, atomicLong);
+            }
+
+            case OP_GET_ATOMIC_REFERENCE: {
+                String name = reader.readString();
+                long memPtr = reader.readLong();
+                boolean create = reader.readBoolean();
+
+                return PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
+            }
+
+            case OP_GET_ATOMIC_SEQUENCE: {
+                String name = reader.readString();
+                long initVal = reader.readLong();
+                boolean create = reader.readBoolean();
+
+                IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
+
+                if (atomicSeq == null)
+                    return null;
+
+                return new PlatformAtomicSequence(platformCtx, atomicSeq);
             }
         }
 
