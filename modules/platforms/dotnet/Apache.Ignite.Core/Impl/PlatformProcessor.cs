@@ -3,7 +3,7 @@
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
+ * (the "License"), you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
@@ -27,7 +27,31 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private enum Op
         {
-            
+            GetCache = 1,
+            CreateCache = 2,
+            GetOrCreateCache = 3,
+            CreateCacheFromConfig = 4,
+            GetOrCreateCacheFromConfig = 5,
+            DestroyCache = 6,
+            GetAffinity = 7,
+            GetDataStreamer = 8,
+            GetTransactions = 9,
+            GetClusterGroup = 10,
+            GetCompute = 11,
+            GetMessaging = 12,
+            GetEvents = 13,
+            GetServices = 14,
+            GetExtension = 15,
+            GetAtomicLong = 16,
+            GetAtomicReference = 17,
+            GetAtomicSequence = 18,
+            GetIgniteConfiguration = 19,
+            GetCacheNames = 20,
+            CreateNearCache = 21,
+            GetOrCreateNearCache = 22,
+            LoggerIsLevelEnabled = 23,
+            LoggerLog = 24,
+            GetBinaryProcessor = 25,
         }
     }
 }
