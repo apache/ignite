@@ -366,13 +366,18 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startWithCaches1(srvs, clients);
 
-        if (initiallyActive && persistenceEnabled())
+        int minorVer = 1;
+
+        if (initiallyActive && persistenceEnabled()) {
             ignite(0).active(true);
+
+            minorVer++;
+        }
 
         if (blockMsgNodes.length == 0)
             blockMsgNodes = new int[]{1};
 
-        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(srvs + clients, 1);
+        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(srvs + clients, minorVer);
 
         List<TestRecordingCommunicationSpi> spis = new ArrayList<>();
 
