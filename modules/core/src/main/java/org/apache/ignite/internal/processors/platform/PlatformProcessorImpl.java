@@ -142,6 +142,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_GET_OR_CREATE_NEAR_CACHE = 22;
 
+    /** */
+    private static final int OP_LOGGER_IS_LEVEL_ENABLED = 23;
+
+    /** */
+    private static final int OP_LOGGER_LOG = 24;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -334,7 +340,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         return new PlatformCache(platformCtx, cache, false, cacheExts);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Checks whether logger level is enabled.
+     *
+     * @param level Level.
+     * @return Result.
+     */
     private boolean loggerIsLevelEnabled(int level) {
         IgniteLogger log = ctx.grid().log();
 
@@ -356,8 +367,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public void loggerLog(int level, String message, String category, String errorInfo) {
+    /**
+     * Logs to the Ignite logger.
+     *
+     * @param level Level.
+     * @param message Message.
+     * @param category Category.
+     * @param errorInfo Exception.
+     */
+    private void loggerLog(int level, String message, String category, String errorInfo) {
         IgniteLogger log = ctx.grid().log();
 
         if (category != null)
@@ -394,6 +412,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_LOGGER_IS_LEVEL_ENABLED: {
+                return loggerIsLevelEnabled((int) val) ? PlatformAbstractTarget.TRUE : PlatformAbstractTarget.FALSE;
+            }
+        }
+
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
