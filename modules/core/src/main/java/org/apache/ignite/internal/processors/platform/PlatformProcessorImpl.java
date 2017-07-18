@@ -75,6 +75,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @SuppressWarnings({"ConditionalExpressionWithIdenticalBranches", "unchecked"})
 public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor, PlatformTarget {
+    /** */
+    private static final int OP_GET_CACHE = 1;
+
+    /** */
+    private static final int OP_CREATE_CACHE = 2;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_CACHE = 3;
+
+    /** */
+    private static final int OP_CREATE_CACHE_FROM_CONFIG = 4;
+
+    /** */
+    private static final int OP_GET_OR_CREATE_CACHE_FROM_CONFIG = 5;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -215,59 +230,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
         return platformCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy cache(@Nullable String name) throws IgniteCheckedException {
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().cache(name);
-
-        if (cache == null)
-            throw new IllegalArgumentException("Cache doesn't exist: " + name);
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy createCache(@Nullable String name) throws IgniteCheckedException {
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(name);
-
-        assert cache != null;
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(name);
-
-        assert cache != null;
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy createCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
-
-        IgniteCacheProxy cache = reader.readBoolean()
-            ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
-            : (IgniteCacheProxy)ctx.grid().createCache(cfg);
-
-        return createPlatformCache(cache);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTargetProxy getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
-
-        IgniteCacheProxy cache = reader.readBoolean()
-            ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
-                    PlatformConfigurationUtils.readNearConfiguration(reader))
-            : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
-
-        return createPlatformCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -461,12 +423,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /**
      * Creates new platform cache.
      */
-    private PlatformTargetProxy createPlatformCache(IgniteCacheProxy cache) {
-        return proxy(new PlatformCache(platformCtx, cache, false, cacheExts));
+    private PlatformTarget createPlatformCache(IgniteCacheProxy cache) {
+        return new PlatformCache(platformCtx, cache, false, cacheExts);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean loggerIsLevelEnabled(int level) {
+    private boolean loggerIsLevelEnabled(int level) {
         IgniteLogger log = ctx.grid().log();
 
         switch (level) {
@@ -545,6 +507,60 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_GET_CACHE: {
+                String name = reader.readString();
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().cache(name);
+
+                if (cache == null)
+                    throw new IllegalArgumentException("Cache doesn't exist: " + name);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_CREATE_CACHE: {
+                String name = reader.readString();
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(name);
+
+                assert cache != null;
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_GET_OR_CREATE_CACHE: {
+                String name = reader.readString();
+
+                IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(name);
+
+                assert cache != null;
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_CREATE_CACHE_FROM_CONFIG: {
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+                IgniteCacheProxy cache = reader.readBoolean()
+                        ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
+                        : (IgniteCacheProxy)ctx.grid().createCache(cfg);
+
+                return createPlatformCache(cache);
+            }
+
+            case OP_GET_OR_CREATE_CACHE_FROM_CONFIG: {
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+                IgniteCacheProxy cache = reader.readBoolean()
+                        ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
+                        PlatformConfigurationUtils.readNearConfiguration(reader))
+                        : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
+
+                return createPlatformCache(cache);
+            }
+        }
+
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
