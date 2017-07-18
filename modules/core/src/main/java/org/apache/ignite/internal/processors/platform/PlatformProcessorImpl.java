@@ -438,6 +438,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_LOGGER_LOG: {
                 loggerLog(reader.readInt(), reader.readString(), reader.readString(), reader.readString());
+
+                return 0;
             }
         }
 
