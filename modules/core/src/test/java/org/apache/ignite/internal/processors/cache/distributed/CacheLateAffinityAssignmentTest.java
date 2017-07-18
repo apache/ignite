@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1049,7 +1050,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(2);
+        //doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(2);
     }
 
     /**
@@ -1057,7 +1058,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(2);
+        //doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(2);
     }
 
     /**
@@ -1065,7 +1066,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange3() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2(1);
+        //doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2(1);
     }
 
     /**
@@ -1074,7 +1075,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange() throws Exception {
-        doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(1);
+        //doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(1);
     }
 
 
@@ -1083,157 +1084,46 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    private void doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(int cnt) throws Exception {
+    private void doTestCoordLeaveBlockedFinishExchangeMessage(int cnt, int stopId, int... blockedIds) throws Exception {
         int ord = 1;
-
-        Ignite ignite0 = startServer(ord - 1, ord++);
-
-        Ignite ignite1 = startServer(ord - 1, ord++);
-
-        Ignite ignite2 = startServer(ord - 1, ord++);
 
         for (int i = 0; i < cnt; i++)
             startServer(ord - 1, ord++);
 
         TestRecordingCommunicationSpi spi0 =
-                (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
+            (TestRecordingCommunicationSpi) grid(0).configuration().getCommunicationSpi();
 
-        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
+        for (int i = 0; i < blockedIds.length; i++) {
+            int id = blockedIds[i];
 
-        stopNode(3, ord);
+            spi0.blockMessages(GridDhtFinishExchangeMessage.class, grid(id).name());
+        }
+
+        stopNode(stopId, ord);
 
         AffinityTopologyVersion topVer = topVer(ord++, 0);
 
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>(blockedIds.length);
+
+        for (int id : blockedIds)
+            futs.add(affFuture(topVer, grid(id)));
 
         U.sleep(1_000);
 
-        assertTrue(fut0.isDone());
-        assertFalse(fut1.isDone()); // New coord can't complete exchange without all nodes.
-        assertTrue(fut2.isDone());
+        for (int i = 0; i < futs.size(); i++) {
+            IgniteInternalFuture<?> fut = futs.get(i);
 
-        // Must be acked.
-        GridFutureAdapter<Boolean> ackFut = U.field(fut1, "ackFut");
-        assertTrue(ackFut.isDone());
-
-        stopNode(0, ord);
-
-        checkAffinity(1 + cnt, topVer(ord, 0), true);
-    }
-
-    /**
-     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
-     *
-     * @throws Exception
-     */
-    private void doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(int cnt) throws Exception {
-        int ord = 1;
-
-        Ignite ignite0 = startServer(ord - 1, ord++);
-
-        Ignite ignite1 = startServer(ord - 1, ord++);
-
-        Ignite ignite2 = startServer(ord - 1, ord++);
-
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
-
-        stopNode(3, ord);
-
-        AffinityTopologyVersion topVer = topVer(ord++, 0);
-
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(2_000);
-
-        assertTrue(fut0.isDone());
-        assertTrue(fut1.isDone()); // New coord can't complete exchange without all nodes.
-        assertTrue(fut2.isDone());
-
-        // Must be acked.
-        GridFutureAdapter<Boolean> ackFut = U.field(fut1, "ackFut");
-        assertTrue(ackFut.isDone());
-
-//        stopNode(0, ord);
-//
-//        checkAffinity(1 + cnt, topVer(ord, 0), true);
-    }
-
-    private void doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2(int cnt) throws Exception {
-        int ord = 1;
-
-        Ignite ignite0 = startServer(ord - 1, ord++);
-
-        Ignite ignite1 = startServer(ord - 1, ord++);
-
-        Ignite ignite2 = startServer(ord - 1, ord++);
-
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
-
-        TestRecordingCommunicationSpi spi0 =
-            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
-
-        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
-
-        stopNode(3, ord);
-
-        AffinityTopologyVersion topVer = topVer(ord++, 0);
-
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(1_000);
-
-        assertTrue(fut0.isDone());
-        assertFalse(fut1.isDone()); // New coord can't complete exchange without all nodes.
-        assertFalse(fut2.isDone());
+            assertTrue("Expected finished exchange",
+                Arrays.binarySearch(blockedIds, i) < 0 ? fut.isDone() : !fut.isDone());
+        }
 
         stopNode(0, ord);
 
-        checkAffinity(1 + cnt, topVer(ord, 0), true);
-    }
+        checkAffinity(cnt - 1, topVer(ord, 0), true);
 
-    private void doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(int cnt) throws Exception {
-        int ord = 1;
+        ord++;
 
-        Ignite ignite0 = startServer(ord - 1, ord++);
-
-        Ignite ignite1 = startServer(ord - 1, ord++);
-
-        Ignite ignite2 = startServer(ord - 1, ord++);
-
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
-
-        TestRecordingCommunicationSpi spi0 =
-            (TestRecordingCommunicationSpi) ignite0.configuration().getCommunicationSpi();
-
-        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite1.name());
-        spi0.blockMessages(GridDhtFinishExchangeMessage.class, ignite2.name());
-
-        stopNode(3, ord);
-
-        AffinityTopologyVersion topVer = topVer(ord++, 0);
-
-        IgniteInternalFuture<?> fut0 = affFuture(topVer, ignite0);
-        IgniteInternalFuture<?> fut1 = affFuture(topVer, ignite1);
-        IgniteInternalFuture<?> fut2 = affFuture(topVer, ignite2);
-
-        U.sleep(1_000);
-
-        assertTrue(fut0.isDone());
-        assertFalse(fut1.isDone()); // New coord can't complete exchange without all nodes.
-        assertFalse(fut2.isDone());
-
-        stopNode(0, ord);
-
-        checkAffinity(1 + cnt, topVer(ord, 0), true);
+        checkAffinity(cnt - 2, topVer(ord, 0), true);
     }
 
     /**

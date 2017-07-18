@@ -847,8 +847,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         if (crd && lateAffAssign) {
             forAllRegisteredCaches(new IgniteInClosureX<DynamicCacheDescriptor>() {
-                @Override
-                public void applyx(DynamicCacheDescriptor desc) throws IgniteCheckedException {
+                @Override public void applyx(DynamicCacheDescriptor desc) throws IgniteCheckedException {
                     CacheHolder cache = cache(fut, desc);
 
                     if (cache.affinity().lastVersion().equals(AffinityTopologyVersion.NONE)) {
@@ -863,8 +862,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
         else {
             forAllCaches(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-                @Override
-                public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+                @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                     if (aff.lastVersion().equals(AffinityTopologyVersion.NONE))
                         initAffinity(aff, fut, false);
                 }
@@ -1666,7 +1664,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                                 GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                                 if (state != GridDhtPartitionState.OWNING) {
-                                    // Prefer backup nodes to minimize rebalance traffic in case of leaving nodes.
                                     for (int i = 1; i < curNodes.size(); i++) {
                                         ClusterNode curNode = curNodes.get(i);
 

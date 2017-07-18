@@ -257,8 +257,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private AffinityAttachmentHolder affAttachmentHolder;
 
     /** */
-    private GridDhtFinishExchangeMessage delayedFinishExchangeMessage;
+    private volatile GridDhtFinishExchangeMessage delayedFinishExchangeMessage;
 
+    /** */
+    private AtomicBoolean finishGuard = new AtomicBoolean(false);
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -1521,6 +1523,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         partReleaseFut = null;
         changeGlobalStateE = null;
         assignmentChanges.clear();
+        delayedFinishExchangeMessage = null;
     }
 
     /**
@@ -2107,7 +2110,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * Affinity change message callback, processed from the same thread as {@link #onNodeLeft}.
-     *  @param node Message sender node.
+     * @param node Message sender node.
      * @param msg Message.
      */
     public void onFinishExchangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg) {
@@ -2126,19 +2129,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert centralizedAff;
 
                     if (crd.equals(node)) {
-                        boolean acked = false;
+                        boolean acked;
 
                         synchronized (mux) {
                             acked = notAcked.isEmpty();
                         }
 
                         // Delay exchange completion on next coord until all nodes acked finish message.
-                        // TODO FIXME !notAcked.isEmpty() not thread safe. need allAcked variable.
                         if (crd2 != null && crd2.isLocal() && !crd2.equals(crd) && !acked &&
                                 (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)) {
-                            // Message can't be sent twice from old coord.
-                            assert GridDhtPartitionsExchangeFuture.this.delayedFinishExchangeMessage == null;
-
                             GridDhtPartitionsExchangeFuture.this.delayedFinishExchangeMessage = msg;
 
                             return;
@@ -2146,11 +2145,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         doFinish(msg);
 
-                        try {
-                            sendAck(msg.ackUuid());
-                        } catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to acknowledge exchange completion", e);
-                        }
+                        if (!crd.isLocal())
+                            try {
+                                sendAck(msg.ackUuid());
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to acknowledge exchange completion", e);
+                            }
                     } else {
                         if (log.isDebugEnabled()) {
                             log.debug("Ignore affinity change message, coordinator changed [node=" + node.id() +
@@ -2169,9 +2170,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** */
-    private void doFinish(GridDhtFinishExchangeMessage msg) {
+    private void doFinish(@Nullable GridDhtFinishExchangeMessage msg) {
         if (msg == null)
             return; // Will be finished later.
+
+        if (!finishGuard.compareAndSet(false, true))
+            return;
 
         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
                 crd.isLocal(),
