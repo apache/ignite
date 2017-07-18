@@ -1660,20 +1660,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
 
-            // todo exclude dead nodes.
-
-            List<ClusterNode> nodes;
-
-            synchronized (mux) {
-                List<ClusterNode> nodes0 = new ArrayList<>(notAcked.size());
-
-                for (UUID uuid : notAcked)
-                    nodes0.add(discoCache.node(uuid));
-
-                nodes = nodes0;
-            }
-
-            cctx.io().safeSend(nodes, msg,
+            cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg,
                     GridIoPolicy.SYSTEM_POOL, null);
 
             onFinishExchangeMessage(cctx.localNode(), msg);
