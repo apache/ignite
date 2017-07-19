@@ -38,8 +38,10 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
+import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAddConstraint;
+import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.CreateTableData;
@@ -391,6 +393,30 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_TBL_NAME =
+        getter(AlterTableAlterColumn.class, "tableName");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, ArrayList<Column>> ALTER_COLUMN_NEW_COLS =
+        getter(AlterTableAlterColumn.class, "columnsToAdd");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_NOT_EXISTS =
+        getter(AlterTableAlterColumn.class, "ifNotExists");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_TBL_EXISTS =
+        getter(AlterTableAlterColumn.class, "ifTableExists");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_BEFORE_COL =
+        getter(AlterTableAlterColumn.class, "addBefore");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_AFTER_COL =
+        getter(AlterTableAlterColumn.class, "addAfter");
 
     /** */
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
@@ -1009,6 +1035,60 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Parse {@code ALTER TABLE} statement.
+     * @param stmt H2 statement.
+     */
+    private GridSqlStatement parseAlterColumn(AlterTableAlterColumn stmt) {
+        switch (stmt.getType()) {
+            case CommandInterface.ALTER_TABLE_ADD_COLUMN:
+                return parseAddColumn(stmt);
+
+            default:
+                throw new IgniteSQLException("Unsupported operation code: " + stmt.getType());
+        }
+    }
+
+    /**
+     * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
+     * @param addCol H2 statement.
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     */
+    private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
+        assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
+
+        GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
+
+        ArrayList<Column> h2NewCols = ALTER_COLUMN_NEW_COLS.get(addCol);
+
+        GridSqlColumn[] gridNewCols = new GridSqlColumn[h2NewCols.size()];
+
+        for (int i = 0; i < h2NewCols.size(); i++) {
+            Column h2Col = h2NewCols.get(i);
+
+            gridNewCols[i] = new GridSqlColumn(h2Col, null, h2Col.getName());
+        }
+
+        res.columns(gridNewCols);
+
+        if (gridNewCols.length == 1)
+            res.ifNotExists(ALTER_COLUMN_IF_NOT_EXISTS.get(addCol));
+
+        res.ifTableExists(ALTER_COLUMN_IF_TBL_EXISTS.get(addCol));
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(addCol);
+
+        res.schemaName(schema.getName());
+
+        res.tableName(ALTER_COLUMN_TBL_NAME.get(addCol));
+
+        res.beforeColumnName(ALTER_COLUMN_BEFORE_COL.get(addCol));
+
+        res.afterColumnName(ALTER_COLUMN_AFTER_COL.get(addCol));
+
+        return res;
+    }
+
+    /**
      * @param name Param name.
      * @param val Param value.
      * @param res Table params to update.
@@ -1206,7 +1286,10 @@ public class GridSqlQueryParser {
             return parseCreateTable((CreateTable)stmt);
 
         if (stmt instanceof DropTable)
-            return parseDropTable((DropTable) stmt);
+            return parseDropTable((DropTable)stmt);
+
+        if (stmt instanceof AlterTableAlterColumn)
+            return parseAlterColumn((AlterTableAlterColumn)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.DropIndex;
@@ -203,6 +205,29 @@ public class DdlStatementsProcessor {
                 else
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
             }
+            else if (stmt0 instanceof GridSqlAlterTableAddColumn) {
+                GridSqlAlterTableAddColumn cmd = (GridSqlAlterTableAddColumn)stmt0;
+
+                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("ALTER TABLE may only be executed on " +
+                        QueryUtils.DFLT_SCHEMA + " schema.");
+
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null && cmd.ifTableExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
+
+                if (tbl == null) {
+                    if (!cmd.ifTableExists())
+                        throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                            cmd.tableName());
+                }
+                else
+                    ; // GridQueryProc call here
+            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -311,6 +336,6 @@ public class DdlStatementsProcessor {
      */
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
-            cmd instanceof DropTable;
+            cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
     }
 }
