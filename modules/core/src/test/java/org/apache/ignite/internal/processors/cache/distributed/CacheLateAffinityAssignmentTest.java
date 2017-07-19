@@ -424,8 +424,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(6, 0), true);
 
-        assertNull(((IgniteKernal) ignite(2)).context().cache().internalCache(CACHE_NAME1));
-        assertNotNull(((IgniteKernal) ignite(3)).context().cache().internalCache(CACHE_NAME1));
+        assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
+        assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
 
         assertNotNull(ignite(2).cache(CACHE_NAME1));
 
@@ -1074,6 +1074,30 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testBlockedFinishMsg3() throws Exception {
         doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, 1);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testBlockedFinishMsg4() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testBlockedFinishMsg5() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, 1);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testBlockedFinishMsg6() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, 2);
     }
 
     /**
