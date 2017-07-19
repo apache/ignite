@@ -280,18 +280,19 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
+        GridAffinityFunctionContextImpl afCtxt = new GridAffinityFunctionContextImpl(sorted, prevAssignment,
+            discoEvt, topVer, backups, cacheOrGrpName, ctx.localNodeId().toString());
+
         if (prevAssignment != null && discoEvt != null) {
             boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
 
             if (!affNode)
                 assignment = prevAssignment;
             else
-                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                assignment = aff.assignPartitions(afCtxt);
         }
         else
-            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
-                topVer, backups));
+            assignment = aff.assignPartitions(afCtxt);
 
         assert assignment != null;
 

@@ -168,7 +168,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         setPartitions(parts);
 
         this.backupFilter = backupFilter;
-//        this.log = new Log4JLogger().getLogger(RendezvousAffinityFunction.class);
     }
 
     /**
@@ -494,7 +493,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
         List<List<Integer>> dist = freqDistribution(assignments, nodes);
 
-        printDistribution(dist);
+        printDistribution(dist, affCtx.getCacheName(), affCtx.getNodeID());
 
         return assignments;
     }
@@ -523,10 +522,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             for (List<ClusterNode> l : lst) {
                 ClusterNode node = l.get(i);
 
-                if (!map.containsKey(node))
-                    map.put(node, new AtomicInteger(1));
-                else
-                    map.get(node).incrementAndGet();
+                if (node.isLocal()) {
+                    if (!map.containsKey(node))
+                        map.put(node, new AtomicInteger(1));
+                    else
+                        map.get(node).incrementAndGet();
+                }
             }
 
             nodeMaps.add(map);
@@ -534,40 +535,45 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
         List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
         for (ClusterNode node : nodes) {
-            List<Integer> byBackups = new ArrayList<>(backups);
+            if (node.isLocal()) {
+                List<Integer> byBackups = new ArrayList<>(backups);
+                for (int j = 0; j < backups; ++j) {
+                    if (nodeMaps.get(j).get(node) == null)
+                        byBackups.add(0);
+                    else
+                        byBackups.add(nodeMaps.get(j).get(node).get());
+                }
 
-            for (int j = 0; j < backups; ++j) {
-                if (nodeMaps.get(j).get(node) == null)
-                    byBackups.add(0);
-                else
-                    byBackups.add(nodeMaps.get(j).get(node).get());
+                byNodes.add(byBackups);
             }
-
-            byNodes.add(byBackups);
         }
         return byNodes;
     }
 
     /**
      * @param nodesParts Frequency distribution.
+     * @param localNodeID
+     * @param cacheName
      */
-    private void printDistribution(Collection<List<Integer>> nodesParts) {
-        log.info("#### NODES COUNT:" + nodesParts.size());
+    private void printDistribution(Collection<List<Integer>> nodesParts, String cacheName, String localNodeID) {
+        if (nodesParts.size() != 0) {
+            log.info(" #### NODES COUNT:" + nodesParts.size());
 
-        int nodeNum = 0;
+            int nodeNum = 0;
 
-        for (List<Integer> part : nodesParts) {
-            log.info("## Node " + nodeNum++ + ":");
+            for (List<Integer> part : nodesParts) {
+                log.info("## Node " + nodeNum++ + ":");
 
-            int nr = 0;
+                int nr = 0;
 
-            for (int cnt : part) {
-                int percentage = (int)Math.round((double)cnt / getPartitions() * 100);
+                for (int cnt : part) {
+                    int percentage = (int)Math.round((double)cnt / getPartitions() * 100);
 
-                log.info((nr == 0 ? "Primary" : "Backup" + nr) + " node: " +
-                    "partitions count=" + cnt + " percentage of parts count=" + percentage + "% ");
+                    log.info("cacheName=" + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " node=" + localNodeID +
+                        ", partitions count=" + cnt + " percentage of parts count=" + percentage + "% ");
 
-                nr++;
+                    nr++;
+                }
             }
         }
     }

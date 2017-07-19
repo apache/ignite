@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.List;
+import java.util.UUID;
+
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -43,6 +45,12 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /** Number of backups to assign. */
     private final int backups;
 
+    /** Cache Name. */
+    private String cacheName;
+
+    /** Node ID. */
+    private String nodeID;
+
     /**
      * @param topSnapshot Topology snapshot.
      * @param topVer Topology version.
@@ -54,6 +62,18 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
         this.discoEvt = discoEvt;
         this.topVer = topVer;
         this.backups = backups;
+    }
+
+    /**
+     * @param topSnapshot Topology snapshot.
+     * @param topVer Topology version.
+     */
+    public GridAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
+                                           DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups,
+                                           String cacheName, String nodeID) {
+        this(topSnapshot, prevAssignment, discoEvt, topVer, backups);
+        this.cacheName = cacheName;
+        this.nodeID = nodeID;
     }
 
     /** {@inheritDoc} */
@@ -79,6 +99,24 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /** {@inheritDoc} */
     @Override public int backups() {
         return backups;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getCacheName() {
+        return cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setCacheName(String cacheName) {
+        this.cacheName = cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getNodeID() { return nodeID; }
+
+    /** {@inheritDoc} */
+    @Override public void setNodeID(String nodeID) {
+        this.nodeID = nodeID;
     }
 
     /**
