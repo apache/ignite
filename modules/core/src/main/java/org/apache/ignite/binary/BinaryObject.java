@@ -142,7 +142,7 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @throws BinaryInvalidTypeException If class doesn't exist.
      * @throws BinaryObjectException In case of any other error.
      */
-    public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException;
+    public <T> T deserialize(ClassLoader ldr, boolean useCache) throws BinaryObjectException;
 
     /**
      * Copies this binary object.

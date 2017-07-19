@@ -632,11 +632,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
+    @Nullable @Override public <T> T deserialize(@Nullable ClassLoader ldr, boolean useCache) throws BinaryObjectException {
         if (ldr == null)
             return deserialize();
 
-        return (T)reader(null, ldr, true, false).deserialize();
+        return (T)reader(null, ldr, true, useCache).deserialize();
     }
 
     /** {@inheritDoc} */

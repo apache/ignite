@@ -175,8 +175,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
-        boolean useCache = ldr == null;
+    @Override public <T> T deserialize(@Nullable ClassLoader ldr, boolean useCache) throws BinaryObjectException {
+//        boolean useCache = ldr == null;
 
         ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
@@ -209,7 +209,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T deserialize() throws BinaryObjectException {
-        return (T)deserialize(null);
+        return (T)deserialize(null, true);
     }
 
     /** {@inheritDoc} */

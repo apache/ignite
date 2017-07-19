@@ -165,7 +165,7 @@ public class BinaryClassLoaderTest extends GridCommonAbstractTest {
 
             assertTrue(catchEx);
 
-            Object personVal = binaryVal.deserialize(testClassLoader);
+            Object personVal = binaryVal.deserialize(testClassLoader, false);
 
             assertTrue(personVal != null && personVal.getClass().getName().equals(valClassName));
         }
