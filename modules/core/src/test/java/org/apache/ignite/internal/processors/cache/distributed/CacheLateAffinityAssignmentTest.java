@@ -1050,7 +1050,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception
      */
     public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1() throws Exception {
-        //doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange(2);
+        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, 2);
     }
 
     /**
@@ -1087,43 +1087,70 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private void doTestCoordLeaveBlockedFinishExchangeMessage(int cnt, int stopId, int... blockedIds) throws Exception {
         int ord = 1;
 
-        for (int i = 0; i < cnt; i++)
-            startServer(ord - 1, ord++);
+        Ignite newCoord = null;
+
+        for (int i = 0; i < cnt; i++) {
+            Ignite ignite = startServer(ord - 1, ord++);
+
+            if (i == 1)
+                newCoord = ignite;
+        }
 
         TestRecordingCommunicationSpi spi0 =
             (TestRecordingCommunicationSpi) grid(0).configuration().getCommunicationSpi();
 
+        Set<String> blocked = new HashSet<>();
+
         for (int i = 0; i < blockedIds.length; i++) {
             int id = blockedIds[i];
 
-            spi0.blockMessages(GridDhtFinishExchangeMessage.class, grid(id).name());
+            String name = grid(id).name();
+
+            blocked.add(name);
+
+            spi0.blockMessages(GridDhtFinishExchangeMessage.class, name);
         }
 
         stopNode(stopId, ord);
 
-        AffinityTopologyVersion topVer = topVer(ord++, 0);
+        AffinityTopologyVersion topVer = topVer(ord, 0);
 
-        List<IgniteInternalFuture<?>> futs = new ArrayList<>(blockedIds.length);
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>(cnt);
 
-        for (int id : blockedIds)
-            futs.add(affFuture(topVer, grid(id)));
+        List<Ignite> grids = G.allGrids();
+
+        for (Ignite ignite : grids)
+            futs.add(affFuture(topVer, ignite));
 
         U.sleep(1_000);
+
+        assertEquals(futs.size(), grids.size());
 
         for (int i = 0; i < futs.size(); i++) {
             IgniteInternalFuture<?> fut = futs.get(i);
 
+            Ignite ignite = grids.get(i);
+
+            // New coord exchange always not finished if at least one node is blocked.
+            if (ignite.equals(newCoord)) {
+                assertTrue(blockedIds.length == 0 ? fut.isDone() : !fut.isDone());
+
+                continue;
+            }
+
             assertTrue("Expected finished exchange",
-                Arrays.binarySearch(blockedIds, i) < 0 ? fut.isDone() : !fut.isDone());
+                blocked.contains(ignite.name()) ? !fut.isDone() : fut.isDone());
         }
-
-        stopNode(0, ord);
-
-        checkAffinity(cnt - 1, topVer(ord, 0), true);
 
         ord++;
 
+        stopNode(0, ord); // Triggers exchange completion from new ccord.
+
+        checkAffinity(cnt - 2, topVer(ord - 1, 0), true);
+
         checkAffinity(cnt - 2, topVer(ord, 0), true);
+
+        awaitPartitionMapExchange();
     }
 
     /**
