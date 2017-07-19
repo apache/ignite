@@ -205,6 +205,11 @@ public class CacheGroupDescriptor {
         assert otherDesc != null : otherDesc;
 
         config().setRebalanceDelay(otherDesc.config().getRebalanceDelay());
+        config().setRebalanceBatchesPrefetchCount(otherDesc.config().getRebalanceBatchesPrefetchCount());
+        config().setRebalanceBatchSize(otherDesc.config().getRebalanceBatchSize());
+        config().setRebalanceOrder(otherDesc.config().getRebalanceOrder());
+        config().setRebalanceThrottle(otherDesc.config().getRebalanceThrottle());
+        config().setRebalanceTimeout(otherDesc.config().getRebalanceTimeout());
     }
 
     /**

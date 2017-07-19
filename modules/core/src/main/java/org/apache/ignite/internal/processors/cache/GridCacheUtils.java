@@ -987,6 +987,29 @@ public class GridCacheUtils {
             }
         }
     }
+
+    /**
+     * @param cfg1 Local cache group configuration.
+     * @param attrName Short attribute name for error message.
+     * @param attrMsg Full attribute name for error message.
+     * @param localAttrVal Value of attribute from local configuration.
+     * @param gridAttrVal Value of attribute from grid configuration.
+     */
+    public static void validateLocalAndGridCacheGroupAttributesMismatch(IgniteLogger log,
+        CacheConfiguration cfg1,
+        String attrName,
+        String attrMsg,
+        Object localAttrVal,
+        Object gridAttrVal) {
+        if (F.eq(localAttrVal, gridAttrVal))
+            return;
+
+        U.warn(log, attrMsg + " mismatch for local and received from grid cache group configurations " +
+            "[groupName=" + cfg1.getGroupName() +
+            ", local " + attrName + "=" + localAttrVal +
+            ", received from grid " + attrName + "=" + gridAttrVal + ']');
+    }
+
     /**
      * @param cfg1 Existing configuration.
      * @param cfg2 Cache configuration to start.

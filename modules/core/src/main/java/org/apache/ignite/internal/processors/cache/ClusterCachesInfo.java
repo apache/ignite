@@ -958,8 +958,14 @@ class ClusterCachesInfo {
                 grpData.deploymentId(),
                 grpData.caches());
 
-            if (localCacheGrps.containsKey(grpDesc.groupId()))
-                grpDesc.mergeWith(localCacheGrps.get(grpDesc.groupId()));
+
+            if (localCacheGrps.containsKey(grpDesc.groupId())) {
+                CacheGroupDescriptor locGrpCfg = localCacheGrps.get(grpDesc.groupId());
+
+                validateLocalSpecificConfigurations(locGrpCfg.config(), grpDesc.config());
+
+                grpDesc.mergeWith(locGrpCfg);
+            }
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
 
@@ -1048,6 +1054,45 @@ class ClusterCachesInfo {
             initStartCachesForLocalJoin(false);
         else
             locJoinStartCaches = Collections.emptyList();
+    }
+
+    /**
+     * Inspects local configuration vs grid configuration
+     * and prints out warnings if there are any settings received from grid
+     * that were overwritten by local configuration settings.
+     *
+     * @param localGroupCfg Cache Group configuration on local node.
+     * @param gridGroupCfg Cache Group configuration received from grid.
+     */
+    private void validateLocalSpecificConfigurations(CacheConfiguration localGroupCfg, CacheConfiguration gridGroupCfg) {
+        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceDelay", "Rebalance delay",
+            localGroupCfg.getRebalanceDelay(),
+            gridGroupCfg.getRebalanceDelay());
+
+        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceBatchesPrefetchCount",
+            "Rebalance batches prefetch count",
+            localGroupCfg.getRebalanceBatchesPrefetchCount(),
+            gridGroupCfg.getRebalanceBatchesPrefetchCount());
+
+        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceBatchSize",
+            "Rebalance batch size",
+            localGroupCfg.getRebalanceBatchSize(),
+            gridGroupCfg.getRebalanceBatchSize());
+
+        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceOrder",
+            "Rebalance order",
+            localGroupCfg.getRebalanceOrder(),
+            gridGroupCfg.getRebalanceOrder());
+
+        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceThrottle",
+            "Rebalance throttle",
+            localGroupCfg.getRebalanceThrottle(),
+            gridGroupCfg.getRebalanceThrottle());
+
+        CU.validateLocalAndGridCacheGroupAttributesMismatch(log, localGroupCfg, "rebalanceTimeout",
+            "Rebalance timeout",
+            localGroupCfg.getRebalanceTimeout(),
+            gridGroupCfg.getRebalanceTimeout());
     }
 
     /**
