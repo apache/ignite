@@ -1705,10 +1705,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lastFsyncPos = pos;
         }
 
+        /**
+         * Checks if current head is a close fake record and returns {@code true} if so.
+         *
+         * @return {@code true} if current head is close record.
+         */
         private boolean stopped() {
             return stopped(head.get());
         }
 
+        /**
+         * @param record Record to check.
+         * @return {@code true} if the record is fake close record.
+         */
         private boolean stopped(WALRecord record) {
             return record instanceof FakeRecord && ((FakeRecord)record).stop;
         }
@@ -1822,11 +1831,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     WALRecord expHead = head.get();
 
                     if (expHead.previous() == null) {
-                        assert expHead instanceof FakeRecord;
+                        FakeRecord frHead = (FakeRecord)expHead;
 
-                        if (((FakeRecord)expHead).stop == stop || ((FakeRecord)expHead).stop ||
-                                head.compareAndSet(expHead, new FakeRecord(((FakeRecord)expHead).position(), stop)))
-                                return false;
+                        if (frHead.stop == stop || frHead.stop ||
+                            head.compareAndSet(expHead, new FakeRecord(frHead.position(), stop)))
+                            return false;
                     }
 
                     if (flush(expHead, stop))
@@ -1863,9 +1872,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private boolean flush(WALRecord expHead, boolean stop) throws StorageException, IgniteCheckedException {
             if (expHead.previous() == null) {
-                assert expHead instanceof FakeRecord;
+                FakeRecord frHead = (FakeRecord)expHead;
 
-                if (stop == ((FakeRecord)expHead).stop)
+                if (stop == frHead.stop)
                     return false;
             }
 
@@ -2044,6 +2053,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 fsync(null, true);
             else
                 flushOrWait(null, true);
+
+            assert stopped() : "Segment is not closed after close flush: " + head.get();
 
             if (stop.compareAndSet(false, true)) {
                 try {
