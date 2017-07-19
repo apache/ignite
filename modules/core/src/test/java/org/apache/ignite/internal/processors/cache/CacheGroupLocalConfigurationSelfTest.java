@@ -60,7 +60,8 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
     }
 
     /**
-     *
+     * Test validates that all cache group configuration attributes from local config
+     * that must not be overwritten by grid config are preserved.
      */
     public void testLocalConfigurationAttributesPreserved() throws Exception {
         startGrid(0);
