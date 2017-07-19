@@ -1049,7 +1049,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1() throws Exception {
+    public void testBlockedFinishMsg1() throws Exception {
         doTestCoordLeaveBlockedFinishExchangeMessage(4, 3, 2);
     }
 
@@ -1057,8 +1057,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange2() throws Exception {
-        //doTestCoordinatorLeaveAfterNodeLeavesNewCoordNotFinishedExchange1(2);
+    public void testBlockedFinishMsg2() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(4, 3);
     }
 
     /**
@@ -1101,9 +1101,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Set<String> blocked = new HashSet<>();
 
-        for (int i = 0; i < blockedIds.length; i++) {
-            int id = blockedIds[i];
-
+        for (int id : blockedIds) {
             String name = grid(id).name();
 
             blocked.add(name);
@@ -1144,7 +1142,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         ord++;
 
-        stopNode(0, ord); // Triggers exchange completion from new ccord.
+        stopNode(0, ord); // Triggers exchange completion from new coord.
 
         checkAffinity(cnt - 2, topVer(ord - 1, 0), true);
 
