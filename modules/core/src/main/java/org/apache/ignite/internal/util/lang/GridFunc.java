@@ -617,20 +617,6 @@ public class GridFunc {
     }
 
     /**
-     *
-     * @param nodes
-     * @return
-     */
-    public static List<UUID> nodeIdsCopy(@Nullable Collection<? extends ClusterNode> nodes) {
-        List<UUID> ids = new ArrayList<>(nodes.size());
-
-        for (ClusterNode node : nodes)
-            ids.add(node.id());
-
-        return ids;
-    }
-
-    /**
      * Convenient utility method that returns collection of node ID8s for a given
      * collection of grid nodes. ID8 is a shorter string representation of node ID,
      * mainly the first 8 characters.

@@ -183,7 +183,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
             List<List<UUID>> assignment = new ArrayList<>(assignments.size());
 
             for (int i = 0; i < assignments.size(); i++)
-                assignment.add(F.nodeIdsCopy(assignments.get(i)));
+                assignment.add(new ArrayList<>(F.nodeIds(assignments.get(i))));
 
             return assignment;
         }

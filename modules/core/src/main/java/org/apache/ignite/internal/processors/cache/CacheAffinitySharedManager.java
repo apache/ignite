@@ -1811,7 +1811,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         if (map == null)
                             res.put(cache.cacheId(), (map = U.newHashMap(nodes.size())));
 
-                        map.put(p, F.nodeIdsCopy(nodes));
+                        map.put(p, new ArrayList<>(F.nodeIds(nodes)));
                     }
                 }
             }
