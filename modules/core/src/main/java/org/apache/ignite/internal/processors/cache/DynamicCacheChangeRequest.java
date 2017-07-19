@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -70,6 +72,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** */
     private UUID rcvdFrom;
+
+    /** FIXME test! */
+    private CreationTrace trace;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -284,8 +289,39 @@ public class DynamicCacheChangeRequest implements Serializable {
         return rcvdFrom;
     }
 
+    public void newTrace() {
+        this.trace = new CreationTrace();
+    }
+
+    @Nullable public CreationTrace trace() {
+        return trace;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheChangeRequest.class, this, "cacheName", cacheName());
+    }
+
+    public static class CreationTrace implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        private Exception e;
+        public CreationTrace() {
+            try {
+                throw new Exception();
+            } catch (Exception e) {
+                this.e = e;
+            }
+        }
+
+        @Override
+        public String toString() {
+            if (e == null)
+                return "NONE";
+            final StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            return sw.toString();
+        }
     }
 }

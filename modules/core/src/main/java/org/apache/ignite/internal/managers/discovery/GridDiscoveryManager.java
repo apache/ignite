@@ -134,6 +134,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -2063,6 +2064,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Nullable DiscoveryCustomMessage data
         ) {
             assert node != null : data;
+
+            if (type == EVT_DISCOVERY_CUSTOM_EVT) {
+                System.out.println("GDM.DW.addEvent():  Thread: " + Thread.currentThread().getName()
+                    + "\n, topVer: " + topVer
+                    + "\n, node: " + node
+                    + "\n, data: " + data
+                );
+                try {
+                    throw new Exception();
+                } catch (Exception x) {
+                    x.printStackTrace(System.out);
+                }
+            }
 
             evts.add(new GridTuple5<>(type, topVer, node, topSnapshot, data));
         }

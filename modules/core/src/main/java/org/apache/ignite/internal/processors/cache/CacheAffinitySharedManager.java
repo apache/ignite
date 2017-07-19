@@ -409,8 +409,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         }
                     }
                 }
-                else
-                    initStartedCacheOnCoordinator(fut, cacheId);
+                else {
+                    try {
+                        initStartedCacheOnCoordinator(fut, cacheId);
+                    } catch (IllegalStateException e) {
+                        System.out.println("  Thread: " + Thread.currentThread().getName() + "\n"
+                            + ", invalid cache: " + GridCacheProcessor.withId(req.cacheName())
+                            + ", req: " + GridCacheProcessor.toString(req));
+                        e.printStackTrace(System.out);
+                    }
+                }
             }
             else if (req.stop() || req.close()) {
                 cctx.cache().blockGateway(req);
@@ -729,7 +737,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param cacheId Cache ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void initStartedCacheOnCoordinator(GridDhtPartitionsExchangeFuture fut, final Integer cacheId)
+    void initStartedCacheOnCoordinator(GridDhtPartitionsExchangeFuture fut, final Integer cacheId)
         throws IgniteCheckedException {
         CacheHolder cache = caches.get(cacheId);
 
@@ -740,8 +748,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             assert desc != null : cacheId;
 
-            if (desc.cacheConfiguration().getCacheMode() == LOCAL)
-                return;
+            try {
+                if (desc.cacheConfiguration().getCacheMode() == LOCAL)
+                    return;
+            } catch (RuntimeException e) {
+                throw new IllegalStateException(String.valueOf(cacheId), e);
+            }
 
             cache = cacheCtx != null ? new CacheHolder1(cacheCtx, null) : CacheHolder2.create(cctx, desc, fut, null);
 

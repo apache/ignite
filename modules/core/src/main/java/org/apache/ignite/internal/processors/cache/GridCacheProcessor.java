@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -654,6 +656,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.receivedFrom(ctx.localNodeId());
 
             if (!template) {
+                //XXX
+                logBeforeAdd(desc, -1, null);
+
                 registeredCaches.put(masked, desc);
 
                 ctx.discovery().setCacheFilter(
@@ -2041,6 +2046,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             desc.receivedFrom(req.receivedFrom());
 
+                            //XXX
+                            logBeforeAdd(desc, -2 , null);
+
                             DynamicCacheDescriptor old = registeredCaches.put(maskNull(req.cacheName()), desc);
 
                             assert old == null : old;
@@ -2616,6 +2624,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         startDesc.startTopologyVersion(newTopVer);
 
+                        //XXX
+                        logBeforeAdd(startDesc, topVer.topologyVersion(), req);
+
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
                         assert old == null :
@@ -2667,6 +2678,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (!needExchange && desc != null)
                     req.cacheFutureTopologyVersion(desc.startTopologyVersion());
+                /*else
+                    sharedCtx.affinity() //.initStartedCacheOnCoordinator(null, CU.cacheId(req.cacheName()))
+                        ; // ISCOC
+                */
             }
             else {
                 assert req.stop() ^ req.close() : req;
@@ -2680,6 +2695,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ctx.discovery().removeCacheFilter(req.cacheName());
 
                         needExchange = true;
+
+                        // XXX
+                        logOnRemove(req.cacheName(), old, topVer.topologyVersion(), req);
                     }
                     else {
                         assert req.close() : req;
@@ -2695,6 +2713,39 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return incMinorTopVer;
+    }
+
+    private void logOnRemove(String cacheName, DynamicCacheDescriptor removed, long topVer, DynamicCacheChangeRequest req) {
+        final List<String> caches = new ArrayList<>();
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            caches.add(withId(desc.cacheConfiguration().getName()));
+        }
+        System.out.println("  Thread: " + Thread.currentThread().getName()
+            + ", topVer: " + topVer + "\n"
+            + ", req: " + toString(req) + "\n"
+            + ", caches: " + caches
+            + ", removing cacheId: " + withId(cacheName)
+            + ", result: " + (removed != null));
+    }
+
+    private void logBeforeAdd(DynamicCacheDescriptor added, long topVer, DynamicCacheChangeRequest req) {
+        final List<String> caches = new ArrayList<>();
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            caches.add(withId(desc.cacheConfiguration().getName()));
+        }
+        System.out.println("  Thread: " + Thread.currentThread().getName()
+            + ", topVer: " + topVer + "\n"
+            + ", req: " + toString(req) + "\n"
+            + ", caches: " + caches
+            + ", adding cacheId: " + withId(added.cacheConfiguration().getName()));
+    }
+
+    public static String toString(DynamicCacheChangeRequest req) {
+        return "[hc:" + (req != null ? req.hashCode() : 0) + "]-" + req;
+    }
+
+    public static String withId(String name) {
+        return name + "[" + CU.cacheId(name) + "]";
     }
 
     /**
@@ -3224,14 +3275,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache descriptor.
      */
     @Nullable public DynamicCacheDescriptor cacheDescriptor(int cacheId) {
+        final List<Integer> cacheIds = new ArrayList<>();
         for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
             CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
             assert ccfg != null : cacheDesc;
 
-            if (CU.cacheId(ccfg.getName()) == cacheId)
+            final int id = CU.cacheId(ccfg.getName());
+            if (id == cacheId)
                 return cacheDesc;
+            cacheIds.add(id); // XXX
         }
+        System.out.println("  Thread: " + Thread.currentThread().getName() + "\n"
+            + ", cacheIds: " + cacheIds
+            + ", requested cacheId: " + cacheId); // XXX
 
         return null;
     }

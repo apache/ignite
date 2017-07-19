@@ -268,6 +268,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     // Event callback - without this callback future will never complete.
                     exchFut.onEvent(exchId, e);
 
+                    if (e.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                        System.out.println("  Thread: " + Thread.currentThread().getName()
+                            + "\n, exchFut: " + exchFut
+                        );
+                        try {
+                            throw new Exception();
+                        } catch (Exception x) {
+                            x.printStackTrace(System.out);
+                        }
+                    }
+
                     // Start exchange process.
                     addFuture(exchFut);
                 }
