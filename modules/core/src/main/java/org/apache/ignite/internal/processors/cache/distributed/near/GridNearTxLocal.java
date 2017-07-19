@@ -3120,10 +3120,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     }
 
     /**
+     * @param awaitLastFuture If true - method will wait until transaction finish every action started before.
      * @throws IgniteCheckedException If failed.
      */
-    public final void prepare() throws IgniteCheckedException {
-        txState().awaitLastFuture(cctx);
+    public final void prepare(boolean awaitLastFuture) throws IgniteCheckedException {
+        if (awaitLastFuture)
+            txState().awaitLastFuture(cctx);
 
         prepareAsync().get();
     }
