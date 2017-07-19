@@ -3714,7 +3714,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final AtomicReferenceArray<IgniteCache> caches = new AtomicReferenceArray<>(CACHES);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < CACHES; i++) {
             CacheAtomicityMode atomicityMode = i % 2 == 0 ? ATOMIC : TRANSACTIONAL;
 
             caches.set(i,
@@ -3807,28 +3807,40 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                 IgniteInternalFuture opFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                     @Override public void run() {
-                        try {
-                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                            while (!stop.get()) {
+                        while (!stop.get()) {
+                            try {
                                 int idx = rnd.nextInt(CACHES);
 
                                 IgniteCache cache = caches.get(idx);
 
                                 if (cache != null && caches.compareAndSet(idx, cache, null)) {
-                                    for (int i = 0; i < 10; i++)
-                                        cacheOperation(rnd, cache);
+                                    try {
+                                        for (int i = 0; i < 10; i++)
+                                            cacheOperation(rnd, cache);
+                                    }
+                                    catch (Exception e) {
+                                        if (X.hasCause(e, CacheStoppedException.class)) {
+                                            // Cache operation can be blocked on
+                                            // awaiting new topology version and cancelled with CacheStoppedException cause.
 
-                                    caches.set(idx, cache);
+                                            continue;
+                                        }
+
+                                        throw e;
+                                    } finally {
+                                        caches.set(idx, cache);
+                                    }
                                 }
                             }
-                        }
-                        catch (Exception e) {
-                            err.set(e);
+                            catch (Exception e) {
+                                err.set(e);
 
-                            log.error("Unexpected error: " + e, e);
+                                log.error("Unexpected error: " + e, e);
 
-                            stop.set(true);
+                                stop.set(true);
+                            }
                         }
                     }
                 }, 8, "op-thread");
