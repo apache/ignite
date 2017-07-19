@@ -71,12 +71,20 @@ final class CacheJtaResource implements XAResource, Synchronization {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(Xid xid, int flags) {
+    @Override public void start(Xid xid, int flags) throws XAException {
         if (log.isDebugEnabled())
             log.debug("XA resource start(...) [xid=" + xid + ", flags=<" + flags(flags) + ">]");
 
         // Simply save global transaction id.
         this.xid = xid;
+
+        if ((flags & TMRESUME) == TMRESUME)
+            try {
+                cacheTx.resume();
+            }
+            catch (IgniteCheckedException e) {
+                throwException("Failed to resume cache transaction: " + e.getMessage(), e);
+            }
     }
 
     /**
@@ -121,20 +129,27 @@ final class CacheJtaResource implements XAResource, Synchronization {
             cacheTx.prepare();
         }
         catch (IgniteCheckedException e) {
-            throwException("Failed to prepare cache transaction.", e);
+            throwException("Failed to prepare cache transaction: " + e.getMessage(), e);
         }
 
         return XA_OK;
     }
 
     /** {@inheritDoc} */
-    @Override public void end(Xid xid, int flags) {
+    @Override public void end(Xid xid, int flags) throws XAException {
         assert this.xid.equals(xid);
 
         if (log.isDebugEnabled())
             log.debug("XA resource end(...) [xid=" + xid + ", flags=<" + flags(flags) + ">]");
 
-        if ((flags & TMFAIL) > 0)
+        if ((flags & TMSUSPEND) == TMSUSPEND)
+            try {
+                cacheTx.suspend();
+            }
+            catch (Throwable e) {
+                throwException("Failed to suspend cache transaction: " + e.getMessage(), e);
+            }
+        else if ((flags & TMFAIL) > 0)
             cacheTx.setRollbackOnly();
     }
 
@@ -249,7 +264,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
             cacheTx.prepare();
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException("Failed to prepare cache transaction.", e);
+            throw new CacheException("Failed to prepare cache transaction: " + e.getMessage(), e);
         }
     }
 
@@ -264,7 +279,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
                     cacheTx.commit();
                 }
                 catch (IgniteCheckedException e) {
-                    throw new CacheException("Failed to commit cache transaction.", e);
+                    throw new CacheException("Failed to commit cache transaction: " + e.getMessage(), e);
                 }
 
                 break;
@@ -277,7 +292,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
                     cacheTx.rollback();
                 }
                 catch (IgniteCheckedException e) {
-                    throw new CacheException("Failed to rollback cache transaction.", e);
+                    throw new CacheException("Failed to rollback cache transaction: " + e.getMessage(), e);
                 }
 
                 break;
