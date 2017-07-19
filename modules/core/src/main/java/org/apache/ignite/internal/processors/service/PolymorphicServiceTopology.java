@@ -3,6 +3,7 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -15,6 +16,7 @@ public class PolymorphicServiceTopology implements GridServiceTopology {
     private static final long serialVersionUID = 0L;
 
     /** Node ID -> number of service instances map */
+    @GridToStringInclude
     private final Map<UUID, Integer> nodeCntMap;
 
     /**
@@ -45,6 +47,19 @@ public class PolymorphicServiceTopology implements GridServiceTopology {
     /** {@inheritDoc} */
     @Override public int nodeCount() {
         return nodeCntMap.size();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+    @Override public boolean equals(Object other) {
+        // We assume here the nodeCntMap's Map implementation is based on java.util.AbstractMap, which properly
+        // implements equals()
+        return nodeCntMap.equals(other);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return nodeCntMap.hashCode();
     }
 
     /** {@inheritDoc} */

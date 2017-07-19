@@ -34,28 +34,28 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Service name.
      */
-    String name();
+    public String name();
 
     /**
      * Gets service class.
      *
      * @return Service class.
      */
-    Class<? extends Service> serviceClass();
+    public Class<? extends Service> serviceClass();
 
     /**
      * Gets maximum allowed total number of deployed services in the grid, {@code 0} for unlimited.
      *
      * @return Maximum allowed total number of deployed services in the grid, {@code 0} for unlimited.
      */
-    int totalCount();
+    public int totalCount();
 
     /**
      * Gets maximum allowed number of deployed services on each node, {@code 0} for unlimited.
      *
      * @return Maximum allowed total number of deployed services on each node, {@code 0} for unlimited.
      */
-    int maxPerNodeCount();
+    public int maxPerNodeCount();
 
     /**
      * Gets cache name used for key-to-node affinity calculation. This parameter is optional
@@ -63,7 +63,7 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Cache name, possibly {@code null}.
      */
-    @Nullable String cacheName();
+    public @Nullable String cacheName();
 
     /**
      * Gets affinity key used for key-to-node affinity calculation. This parameter is optional
@@ -71,14 +71,14 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Affinity key, possibly {@code null}.
      */
-    @Nullable <K> K affinityKey();
+    public @Nullable <K> K affinityKey();
 
     /**
      * Gets ID of grid node that initiated the service deployment.
      *
      * @return ID of grid node that initiated the service deployment.
      */
-    UUID originNodeId();
+    public UUID originNodeId();
 
     /**
      * Gets service deployment topology snapshot. Service topology snapshot is represented
@@ -86,5 +86,5 @@ public interface ServiceDescriptor extends Serializable {
      *
      * @return Service deployment topology.
      */
-    GridServiceTopology topologySnapshot();
+    public GridServiceTopology topologySnapshot();
 }

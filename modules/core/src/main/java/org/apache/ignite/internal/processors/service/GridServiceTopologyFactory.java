@@ -50,17 +50,29 @@ public class GridServiceTopologyFactory {
     public static GridServiceTopology get(Map<UUID, Integer> nodeCntMap) {
         A.notNull(nodeCntMap, "nodeCntMap");
 
+        int prevCnt = 0;
+        boolean allSame = true;
+
         Iterator<Map.Entry<UUID, Integer>> it = nodeCntMap.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, Integer> e = it.next();
-            if (e.getValue() == null || e.getValue() == 0)
+            Integer cnt = e.getValue();
+            if (cnt == null || cnt == 0)
                 it.remove();
+            else {
+                if (prevCnt != 0 && prevCnt != cnt)
+                    allSame = false;
+
+                prevCnt = cnt;
+            }
         }
 
         A.ensure(nodeCntMap.size() > 0, "nodeCntMap must not be empty");
 
         if (nodeCntMap.size() > 1)
-            return new PolymorphicServiceTopology(nodeCntMap);
+            return allSame ?
+                new HomomorphicServiceTopology(nodeCntMap.keySet(), prevCnt) :
+                new PolymorphicServiceTopology(nodeCntMap);
 
         Map.Entry<UUID, Integer> e = nodeCntMap.entrySet().iterator().next();
 

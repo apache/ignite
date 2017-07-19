@@ -59,6 +59,29 @@ public class SingleNodeServiceTopology implements GridServiceTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object other) {
+        if (this == other)
+            return true;
+
+        if (!(other instanceof SingleNodeServiceTopology))
+            return false;
+
+        SingleNodeServiceTopology otherTop = (SingleNodeServiceTopology)other;
+
+        return cnt == otherTop.cnt && node.equals(otherTop.node);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 33;
+
+        res = 31 * res + cnt;
+        res = 31 * res + node.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SingleNodeServiceTopology.class, this);
     }

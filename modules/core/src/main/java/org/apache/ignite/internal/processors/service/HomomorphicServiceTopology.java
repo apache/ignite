@@ -76,6 +76,48 @@ public class HomomorphicServiceTopology implements GridServiceTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object other) {
+        if (this == other)
+            return true;
+
+        if (!(other instanceof HomomorphicServiceTopology))
+            return false;
+
+        HomomorphicServiceTopology otherTop = (HomomorphicServiceTopology)other;
+
+        if (cnt != otherTop.cnt)
+            return false;
+
+        if (nodes.size() != otherTop.nodes.size())
+            return false;
+
+        Iterator<UUID> it = nodes.iterator(), otherIt = otherTop.nodes.iterator();
+
+        while (it.hasNext()) {
+            UUID id = it.next();
+            UUID otherId = otherIt.next();
+
+            if (!id.equals(otherId))
+                return false;
+        }
+
+        return true;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 33;
+
+        res = 31 * res + cnt;
+
+        for (UUID id : nodes)
+            res = 31 * res + id.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(HomomorphicServiceTopology.class, this);
     }
