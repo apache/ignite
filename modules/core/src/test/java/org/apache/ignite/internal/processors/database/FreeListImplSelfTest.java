@@ -335,7 +335,9 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected FreeList createFreeList(int pageSize) throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+            .setInitialSize(1024 * MB)
+            .setMaxSize(1024 * MB);
 
         pageMem = createPageMemory(pageSize, plcCfg);
 

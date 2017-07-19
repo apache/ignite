@@ -1605,6 +1605,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerKernalMBean() throws IgniteCheckedException {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
         try {
             kernalMBean = U.registerMBean(
                 cfg.getMBeanServer(),
@@ -1626,6 +1629,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerLocalNodeMBean() throws IgniteCheckedException {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
         ClusterLocalNodeMetricsMXBean mbean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode());
 
         try {
@@ -1662,7 +1668,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService mgmtExecSvc,
         ExecutorService restExecSvc,
         ExecutorService qryExecSvc,
-        ExecutorService schemaExecSvc) throws IgniteCheckedException {
+        ExecutorService schemaExecSvc
+    ) throws IgniteCheckedException {if(U.IGNITE_MBEANS_DISABLED)
+            return;
         pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
@@ -1684,6 +1692,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private ObjectName registerExecutorMBean(ExecutorService exec, String name) throws IgniteCheckedException {
         assert exec != null;
+        assert !U.IGNITE_MBEANS_DISABLED;
 
         try {
             ObjectName res = U.registerMBean(
@@ -1710,24 +1719,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @throws IgniteCheckedException If registration failed.
      */
     private void registerStripedExecutorMBean(StripedExecutor stripedExecSvc) throws IgniteCheckedException {
-        if (stripedExecSvc != null) {
-            String name = "StripedExecutor";
+        if (stripedExecSvc == null || U.IGNITE_MBEANS_DISABLED)
+            return;
 
-            try {
-                stripedExecSvcMBean = U.registerMBean(
-                    cfg.getMBeanServer(),
-                    cfg.getIgniteInstanceName(),
-                    "Thread Pools",
-                    name,
-                    new StripedExecutorMXBeanAdapter(stripedExecSvc),
-                    StripedExecutorMXBean.class);
+        String name = "StripedExecutor";
 
-                if (log.isDebugEnabled())
-                    log.debug("Registered executor service MBean: " + stripedExecSvcMBean);
-            } catch (JMException e) {
-                throw new IgniteCheckedException("Failed to register executor service MBean [name="
-                    + name + ", exec=" + stripedExecSvc + ']', e);
-            }
+        try {
+            stripedExecSvcMBean = U.registerMBean(
+                cfg.getMBeanServer(),
+                cfg.getIgniteInstanceName(),
+                "Thread Pools",
+                name,
+                new StripedExecutorMXBeanAdapter(stripedExecSvc),
+                StripedExecutorMXBean.class);
+
+            if (log.isDebugEnabled())
+                log.debug("Registered executor service MBean: " + stripedExecSvcMBean);
+        }
+        catch (JMException e) {
+            throw new IgniteCheckedException("Failed to register executor service MBean [name="
+                + name + ", exec=" + stripedExecSvc + ']', e);
         }
     }
 
@@ -1738,22 +1749,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @return {@code True} if successfully unregistered, {@code false} otherwise.
      */
     private boolean unregisterMBean(@Nullable ObjectName mbean) {
-        if (mbean != null)
-            try {
-                cfg.getMBeanServer().unregisterMBean(mbean);
+        if (mbean == null)
+            return true;
 
-                if (log.isDebugEnabled())
-                    log.debug("Unregistered MBean: " + mbean);
+        assert !U.IGNITE_MBEANS_DISABLED;
 
-                return true;
-            }
-            catch (JMException e) {
-                U.error(log, "Failed to unregister MBean.", e);
+        try {
+            cfg.getMBeanServer().unregisterMBean(mbean);
 
-                return false;
-            }
+            if (log.isDebugEnabled())
+                log.debug("Unregistered MBean: " + mbean);
 
-        return true;
+            return true;
+        }
+        catch (JMException e) {
+            U.error(log, "Failed to unregister MBean.", e);
+
+            return false;
+        }
     }
 
     /**

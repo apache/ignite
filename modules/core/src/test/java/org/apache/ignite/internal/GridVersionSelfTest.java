@@ -32,6 +32,8 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testVersions() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5413");
+
         String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
 
         System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
