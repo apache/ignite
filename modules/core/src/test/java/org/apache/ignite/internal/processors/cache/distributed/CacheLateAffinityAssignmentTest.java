@@ -1109,7 +1109,16 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             spi0.blockMessages(GridDhtFinishExchangeMessage.class, name);
         }
 
+        Map<String, List<List<ClusterNode>>> aff = checkAffinity(cnt, topVer(ord - 1, 1), true);
+
         stopNode(stopId, ord);
+
+        boolean primaryChanged = calculateAffinity(ord, false, aff);
+
+        aff = checkAffinity(cnt - 1, topVer(ord, 0), !primaryChanged);
+
+        if (primaryChanged)
+            aff = checkAffinity(cnt - 2, topVer(ord, 1), true);
 
         AffinityTopologyVersion topVer = topVer(ord, 0);
 
@@ -1131,12 +1140,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             // New coord exchange always not finished if at least one node is blocked.
             if (ignite.equals(newCoord)) {
-                assertTrue(blockedIds.length == 0 ? fut.isDone() : !fut.isDone());
+                assertTrue("Expected finished exchange: " + ignite.name(),
+                    blockedIds.length == 0 ? fut.isDone() : !fut.isDone());
 
                 continue;
             }
 
-            assertTrue("Expected finished exchange",
+            assertTrue("Expected finished exchange: " + ignite.name(),
                 blocked.contains(ignite.name()) ? !fut.isDone() : fut.isDone());
         }
 
@@ -1144,9 +1154,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopNode(0, ord); // Triggers exchange completion from new coord.
 
-        checkAffinity(cnt - 2, topVer(ord - 1, 0), true);
+        primaryChanged = calculateAffinity(ord, false, aff);
 
-        checkAffinity(cnt - 2, topVer(ord, 0), true);
+        checkAffinity(cnt - 2, topVer(ord, 0), !primaryChanged);
+
+        if (primaryChanged)
+            checkAffinity(cnt - 2, topVer(ord, 1), true);
 
         awaitPartitionMapExchange();
     }
