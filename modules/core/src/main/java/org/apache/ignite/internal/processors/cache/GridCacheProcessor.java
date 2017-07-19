@@ -2134,19 +2134,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 // Cancel all operations blocking gateway
                 if (gctx != null) {
-                    IgniteCheckedException ex;
-
-                    String msg = "Failed to wait for topology update, cache group is stopping.";
+                    final String msg = "Failed to wait for topology update, cache group is stopping.";
 
                     // If snapshot operation in progress we must throw CacheStoppedException
                     // for correct cache proxy restart. For more details see
                     // IgniteCacheProxy.cacheException()
-                    if (ctx.cache().context().snapshot().snapshotOperationInProgress())
-                        ex = new CacheStoppedException(msg);
-                    else
-                        ex = new IgniteCheckedException(msg);
-
-                    gctx.affinity().cancelFutures(ex);
+                    gctx.affinity().cancelFutures(new CacheStoppedException(msg));
                 }
 
                 stopGateway(action.request());
