@@ -190,7 +190,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
 
     /** Assignment changes received when coordinator fails to finish exchange with {@link GridDhtFinishExchangeMessage}. */
-    private final Map<Integer, Map<Integer, List<UUID>>> assignmentChanges = new ConcurrentHashMap8<>();
+    private Map<Integer, Map<Integer, List<UUID>>> assignmentChanges = null;
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -1621,8 +1621,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         Map<Integer, Map<Integer, List<UUID>>> change = msg.assignmentChange();
 
-        if (change != null && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED))
-            assignmentChanges.putAll(change); // TODO validate equality.
+        if (change != null && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)) {
+            // TODO optimize
+            synchronized (mux) {
+                if (assignmentChanges == null)
+                    assignmentChanges = U.newHashMap(change.size());
+
+                assignmentChanges.putAll(change); // TODO validate equality.
+            }
+        }
 
         if (updateSingleMap)
             updatePartitionSingleMap(node, msg);
@@ -2105,7 +2112,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         assert crd != null;
 
-        exchLog.info("onFinishExchangeMessage start [exchId=" + exchangeId() + ", from=" + node + ", local=" + cctx.localNode() + ']');
+        if (isDone() || !enterBusy())
+            return;
+
+        exchLog.info("onFinishExchangeMessage start [exchId=" + exchangeId() + ", from=" + node + ", local=" + cctx.localNode() + ", assignmentChange=" + msg.assignmentChange() + ']');
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {

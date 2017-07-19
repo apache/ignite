@@ -1606,17 +1606,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 assert newAssignment != null;
 
-                if (!fut.assignmentChanges().isEmpty() && fut.assignmentChanges().containsKey(cacheDesc.cacheId())) {
+                // Some nodes have finished exchange.
+                if (changes != null) {
                     // Override with ready assignments.
                     for (int p = 0; p < newAssignment.size(); p++) {
                         List<ClusterNode> newNodes = newAssignment.get(p);
 
                         Map<Integer, List<UUID>> map = changes.get(cacheDesc.cacheId());
 
+                        if (map == null)
+                            continue;
+
                         List<UUID> uuids = map.get(p);
 
-                        if (uuids == null)
-                            continue;
+                        assert uuids != null;
 
                         List<ClusterNode> nodes = new ArrayList<>(uuids.size());
 
