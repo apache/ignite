@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache.Query
+namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
+    using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
 
     /// <summary>
     /// LINQ test with simple name mapper.
     /// </summary>
     [TestFixture]
-    public class CacheLinqTestSqlEscapeAll : CacheLinqTest
+    public class CacheLinqTestSimpleName : CacheLinqTest
     {
         /** <inheritdoc /> */
-        protected override bool GetSqlEscapeAll()
+        protected override IBinaryNameMapper GetNameMapper()
         {
-            return true;
+            return BinaryBasicNameMapper.SimpleNameInstance;
         }
     }
 }
