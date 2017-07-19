@@ -18,13 +18,18 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis.server;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
@@ -32,26 +37,37 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.FLUSHALL;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.FLUSHDB;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage.CACHE_NAME_PREFIX;
 
 /**
- * Redis FLUSHDB command handler.
+ * Redis FLUSHDB/FLUSHALL command handler.
  */
-public class GridRedisFlushDbCommandHandler extends GridRedisRestCommandHandler {
+public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        FLUSHDB
+        FLUSHDB,
+        FLUSHALL
     );
+
+    /** Grid context. */
+    private final GridKernalContext ctx;
 
     /**
      * Handler constructor.
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
+     * @param ctx Context.
      */
-    public GridRedisFlushDbCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    public GridRedisFlushCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
+        GridKernalContext ctx) {
         super(log, hnd);
+
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -66,8 +82,34 @@ public class GridRedisFlushDbCommandHandler extends GridRedisRestCommandHandler 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
         restReq.clientId(msg.clientId());
-        restReq.command(CACHE_REMOVE_ALL);
-        restReq.cacheName(msg.cacheName());
+
+        switch (msg.command()) {
+            case FLUSHDB:
+                restReq.command(CACHE_REMOVE_ALL);
+                restReq.cacheName(msg.cacheName());
+
+                break;
+            default:
+                // CACHE_CLEAR
+                List<String> redisCaches = new ArrayList<>();
+
+                for (IgniteCacheProxy<?, ?> cache : ctx.cache().publicCaches()) {
+                    if (cache.getName().startsWith(CACHE_NAME_PREFIX)) {
+                        redisCaches.add(cache.getName());
+                    }
+                }
+
+                if (redisCaches.isEmpty())
+                    throw new GridRedisGenericException("No Redis caches found");
+
+                Map<Object, Object> caches = U.newHashMap(redisCaches.size());
+
+                for (String c : redisCaches)
+                    caches.put(c, null);
+
+                restReq.command(CACHE_CLEAR);
+                restReq.values(caches);
+        }
 
         return restReq;
     }

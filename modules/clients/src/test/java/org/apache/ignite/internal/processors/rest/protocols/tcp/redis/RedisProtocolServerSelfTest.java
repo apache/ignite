@@ -59,7 +59,50 @@ public class RedisProtocolServerSelfTest extends RedisCommonAbstractTest {
 
             Assert.assertEquals(100, (long)jedis.dbSize());
 
+            jedis.select(1);
+
+            jcache().putAll(new HashMap<Integer, Integer>() {
+                {
+                    for (int i = 0; i < 100; i++)
+                        put(i, i);
+                }
+            });
+
+            // flush database 1.
             jedis.flushDB();
+
+            Assert.assertEquals(0, (long)jedis.dbSize());
+
+            jedis.select(0);
+
+            Assert.assertEquals(100, (long)jedis.dbSize());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFlushAll() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals(0, (long)jedis.dbSize());
+
+            for (int i = 0; i < 100; i++)
+                jedis.set(String.valueOf(i), String.valueOf(i));
+
+            Assert.assertEquals(100, (long)jedis.dbSize());
+
+            jedis.select(1);
+
+            for (int i = 0; i < 100; i++)
+                jedis.set(String.valueOf(i), String.valueOf(i));
+
+            Assert.assertEquals(100, (long)jedis.dbSize());
+
+            jedis.flushAll();
+
+            Assert.assertEquals(0, (long)jedis.dbSize());
+
+            jedis.select(0);
 
             Assert.assertEquals(0, (long)jedis.dbSize());
         }
