@@ -580,6 +580,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
+    /** Ignite marshaller cache reread pause. */
+    public static final String IGNITE_MARSHALLER_CACHE_REREAD_PAUSE = "IGNITE_MARSHALLER_CACHE_REREAD_PAUSE";
+
     /**
      * Enforces singleton.
      */
