@@ -84,6 +84,8 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         super.beforeTest();
 
         startGrids(NODES);
+
+        awaitPartitionMapExchange();
     }
 
     /**

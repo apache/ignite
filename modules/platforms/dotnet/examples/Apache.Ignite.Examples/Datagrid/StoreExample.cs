@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.ExamplesDll.Binary;
-using Apache.Ignite.ExamplesDll.Datagrid;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Datagrid;
+
     /// <summary>
     /// Example demonstrating cache store.
     /// <para />
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    class StoreExample
+    public class StoreExample
     {
         /// <summary>Cache name.</summary>
         private const string CacheName = "dotnet_cache_with_store";
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Loaded entry from store through ICache.LoadCache().");
                 Console.WriteLine(">>> Current cache size: " + cache.GetSize());
-                
+
                 // Load entry from store calling ICache.Get() method.
                 Employee emp = cache.Get(2);
 
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 // Clear values again.
                 cache.Clear();
-                
+
                 Console.WriteLine();
                 Console.WriteLine(">>> Cleared values from cache again.");
                 Console.WriteLine(">>> Current cache size: " + cache.GetSize());
