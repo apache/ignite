@@ -1599,6 +1599,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         exchLog.info("processSingleMessage start [topVer=" + topologyVersion() +
             ", fromId=" + node.id() +
             ", fromOrder=" + node.order() +
+            ", assignmentChange=" + msg.assignmentChange() +
             ']');
 
         synchronized (mux) {
@@ -1620,8 +1621,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         Map<Integer, Map<Integer, List<UUID>>> change = msg.assignmentChange();
 
-        if (change != null && !change.isEmpty() &&
-                (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED))
+        if (change != null && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED))
             assignmentChanges.putAll(change); // TODO validate equality.
 
         if (updateSingleMap)
@@ -2365,6 +2365,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
 
                                 for (UUID nodeId : reqFrom) {
+                                    log.info("Send GridDhtPartitionsSingleRequest [nodeId=" + nodeId +
+                                        ", exchId=" + exchId + ']');
+
                                     try {
                                         // It is possible that some nodes finished exchange with previous coordinator.
                                         cctx.io().send(nodeId, req, SYSTEM_POOL);
