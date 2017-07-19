@@ -67,7 +67,34 @@ namespace Apache.Ignite.Core.Impl.Datastream
         
         /** Operation: set receiver. */
         private const int OpReceiver = 2;
-        
+
+        /** */
+        private const int OpAllowOverwrite = 3;
+
+        /** */
+        private const int OpSetAllowOverwrite = 4;
+
+        /** */
+        private const int OpSkipStore = 5;
+
+        /** */
+        private const int OpSetSkipStore = 6;
+
+        /** */
+        private const int OpPerNodeBufferSize = 7;
+
+        /** */
+        private const int OpSetPerNodeBufferSize = 8;
+
+        /** */
+        private const int OpPerNodeParallelOps = 9;
+
+        /** */
+        private const int OpSetPerNodeParallelOps = 10;
+
+        /** */
+        private const int OpListenTopology = 11;
+
         /** Cache name. */
         private readonly string _cacheName;
 
@@ -129,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             _hnd = marsh.Ignite.HandleRegistry.Allocate(thisRef);
 
             // Start topology listening. This call will ensure that buffer size member is updated.
-            UU.DataStreamerListenTopology(target, _hnd);
+            DoOutInOp(OpListenTopology, _hnd);
 
             // Membar to ensure fields initialization before leaving constructor.
             Thread.MemoryBarrier();
@@ -157,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerAllowOverwriteGet(Target);
+                    return DoOutInOp(OpAllowOverwrite) == True;
                 }
                 finally
                 {
@@ -172,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerAllowOverwriteSet(Target, value);
+                    DoOutInOp(OpSetAllowOverwrite, value ? True : False);
                 }
                 finally
                 {
@@ -192,7 +219,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerSkipStoreGet(Target);
+                    return DoOutInOp(OpSkipStore) == True;
                 }
                 finally
                 {
@@ -207,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerSkipStoreSet(Target, value);
+                    DoOutInOp(OpSetSkipStore, value ? True : False);
                 }
                 finally
                 {
@@ -227,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerPerNodeBufferSizeGet(Target);
+                    return (int) DoOutInOp(OpPerNodeBufferSize);
                 }
                 finally
                 {
@@ -242,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerPerNodeBufferSizeSet(Target, value);
+                    DoOutInOp(OpSetPerNodeBufferSize, value);
 
                     _bufSndSize = _topSize * value;
                 }
@@ -264,7 +291,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerPerNodeParallelOperationsGet(Target);
+                    return (int) DoOutInOp(OpPerNodeParallelOps);
                 }
                 finally
                 {
@@ -280,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerPerNodeParallelOperationsSet(Target, value);
+                    DoOutInOp(OpSetPerNodeParallelOps, value);
                 }
                 finally
                 {
@@ -571,7 +598,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     _topVer = topVer;
                     _topSize = topSize > 0 ? topSize : 1;  // Do not set to 0 to avoid 0 buffer size.
 
-                    _bufSndSize = _topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
+                    _bufSndSize = (int) (_topSize * DoOutInOp(OpPerNodeBufferSize));
                 }
             }
             finally

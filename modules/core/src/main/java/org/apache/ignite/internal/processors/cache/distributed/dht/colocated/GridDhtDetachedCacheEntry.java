@@ -97,4 +97,9 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
         // No-op for detached cache entry.
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return cctx.affinity().partition(key);
+    }
 }

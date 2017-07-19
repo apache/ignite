@@ -25,7 +25,13 @@ import java.util.Collection;
  */
 public interface JdbcDialect extends Serializable {
     /**
-     * Construct select count query.
+     * @param ident SQL identifier to escape.
+     * @return Escaped SQL identifier.
+     */
+    public String escape(String ident);
+
+    /**
+     * Construct query to get ranges bounds.
      *
      * @param fullTblName Full table name.
      * @param keyCols Database key columns for order.
@@ -34,7 +40,7 @@ public interface JdbcDialect extends Serializable {
     public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols);
 
     /**
-     * Construct select count query.
+     * Construct load cache query over specified range.
      *
      * @param fullTblName Full table name.
      * @param keyCols Database key columns for order.
@@ -43,8 +49,8 @@ public interface JdbcDialect extends Serializable {
      * @param appendUpperBound Need add upper bound for range.
      * @return Query for select count.
      */
-    public String loadCacheRangeQuery(String fullTblName,
-        Collection<String> keyCols, Iterable<String> uniqCols, boolean appendLowerBound, boolean appendUpperBound);
+    public String loadCacheRangeQuery(String fullTblName, Collection<String> keyCols, Iterable<String> uniqCols,
+        boolean appendLowerBound, boolean appendUpperBound);
 
     /**
      * Construct load cache query.
@@ -73,6 +79,7 @@ public interface JdbcDialect extends Serializable {
      * @param fullTblName Full table name.
      * @param keyCols Database key columns.
      * @param valCols Database value columns.
+     * @return Insert query.
      */
     public String insertQuery(String fullTblName, Collection<String> keyCols, Collection<String> valCols);
 
@@ -82,6 +89,7 @@ public interface JdbcDialect extends Serializable {
      * @param fullTblName Full table name.
      * @param keyCols Database key columns.
      * @param valCols Database value columns.
+     * @return Update query.
      */
     public String updateQuery(String fullTblName, Collection<String> keyCols, Iterable<String> valCols);
 
@@ -96,7 +104,7 @@ public interface JdbcDialect extends Serializable {
      * @param fullTblName Full table name.
      * @param keyCols Database key columns.
      * @param uniqCols Database unique value columns.
-     * @return Put query.
+     * @return Merge query.
      */
     public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols);
 
@@ -115,4 +123,13 @@ public interface JdbcDialect extends Serializable {
      * @return Max query parameters count.
      */
     public int getMaxParameterCount();
+
+    /**
+     * Gives the JDBC driver a hint how many rows should be fetched from the database when more rows are needed.
+     * If the value specified is zero, then the hint is ignored.
+     * The default value is zero.
+     *
+     * @return The fetch size for result sets.
+     */
+    public int getFetchSize();
 }

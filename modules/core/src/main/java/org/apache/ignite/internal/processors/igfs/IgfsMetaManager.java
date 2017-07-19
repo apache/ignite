@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
@@ -248,7 +249,25 @@ public class IgfsMetaManager extends IgfsManager {
      */
     <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
         try {
-            return clientCompute().call(task);
+            return runClientTask(IgfsUtils.ROOT_ID, task);
+        }
+        catch (ClusterTopologyException e) {
+            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+        }
+    }
+
+    /**
+     * Run client task.
+     *
+     * @param affinityFileId Affinity fileId.
+     * @param task Task.
+     * @return Result.
+     */
+    <T> T runClientTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
+        try {
+            return (cfg.isColocateMetadata()) ?
+                clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
+                clientCompute().call(task);
         }
         catch (ClusterTopologyException e) {
             throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
@@ -646,6 +665,14 @@ public class IgfsMetaManager extends IgfsManager {
     public void unlock(final IgniteUuid fileId, final IgniteUuid lockId, final long modificationTime,
         final boolean updateSpace, final long space, @Nullable final IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
+
+        if(client) {
+            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
+                updateSpace, space, affRange));
+
+            return;
+        }
+
         validTxState(false);
 
         if (busyLock.enterBusy()) {
@@ -1892,7 +1919,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         IgfsEntryInfo newInfo = IgfsUtils.createFile(
             IgniteUuid.randomUuid(),
-            status.blockSize(),
+            igfsCtx.configuration().getBlockSize(),
             status.length(),
             affKey,
             createFileLockId(false),
@@ -2199,7 +2226,6 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 assert fs != null;
                 assert path != null;
-                assert props != null;
 
                 if (path.parent() == null)
                     return true; // No additional handling for root directory is needed.
@@ -3051,28 +3077,18 @@ public class IgfsMetaManager extends IgfsManager {
                             if (secondaryCtx != null) {
                                 secondaryOut = secondaryCtx.create();
 
-                                IgfsFile secondaryFile = secondaryCtx.info();
-
-                                if (secondaryFile == null)
-                                    throw fsException("Failed to open output stream to the file created in " +
-                                        "the secondary file system because it no longer exists: " + path);
-                                else if (secondaryFile.isDirectory())
-                                    throw fsException("Failed to open output stream to the file created in " +
-                                        "the secondary file system because the path points to a directory: " + path);
-
-                                newAccessTime = secondaryFile.accessTime();
-                                newModificationTime = secondaryFile.modificationTime();
-                                newProps = secondaryFile.properties();
-                                newLen = secondaryFile.length();
-                                newBlockSize = secondaryFile.blockSize();
+                                newAccessTime = 0L;
+                                newModificationTime = 0L;
+                                newProps = null;
                             }
                             else {
                                 newAccessTime = System.currentTimeMillis();
                                 newModificationTime = newAccessTime;
                                 newProps = fileProps;
-                                newLen = 0L;
-                                newBlockSize = blockSize;
                             }
+
+                            newLen = 0L;
+                            newBlockSize = blockSize;
 
                             IgfsEntryInfo newInfo = invokeAndGet(overwriteId,
                                 new IgfsMetaFileCreateProcessor(newAccessTime, newModificationTime, newProps,
@@ -3254,18 +3270,9 @@ public class IgfsMetaManager extends IgfsManager {
             Map<String, String> props;
 
             if (secondaryCtx != null) {
-                IgfsFile secondaryInfo = secondaryCtx.fileSystem().info(lastCreatedPath);
-
-                if (secondaryInfo == null)
-                    throw new IgfsException("Failed to perform operation because secondary file system path was " +
-                        "modified concurrently: " + lastCreatedPath);
-                else if (secondaryInfo.isFile())
-                    throw new IgfsException("Failed to perform operation because secondary file system entity is " +
-                        "not directory: " + lastCreatedPath);
-
-                accessTime = secondaryInfo.accessTime();
-                modificationTime = secondaryInfo.modificationTime();
-                props = secondaryInfo.properties();
+                accessTime = 0L;
+                modificationTime = 0L;
+                props = null;
             }
             else {
                 accessTime = curTime;
@@ -3293,18 +3300,9 @@ public class IgfsMetaManager extends IgfsManager {
             Map<String, String> props;
 
             if (secondaryCtx != null) {
-                IgfsFile secondaryInfo = secondaryCtx.fileSystem().info(pathIds.path());
-
-                if (secondaryInfo == null)
-                    throw new IgfsException("Failed to perform operation because secondary file system path was " +
-                        "modified concurrnetly: " + pathIds.path());
-                else if (secondaryInfo.isFile())
-                    throw new IgfsException("Failed to perform operation because secondary file system entity is " +
-                        "not directory: " + lastCreatedPath);
-
-                accessTime = secondaryInfo.accessTime();
-                modificationTime = secondaryInfo.modificationTime();
-                props = secondaryInfo.properties();
+                accessTime = 0L;
+                modificationTime = 0L;
+                props = null;
             }
             else {
                 accessTime = curTime;
@@ -3322,28 +3320,18 @@ public class IgfsMetaManager extends IgfsManager {
             int newBlockSize;
 
             if (secondaryCtx != null) {
-                IgfsFile secondaryFile = secondaryCtx.info();
-
-                if (secondaryFile == null)
-                    throw fsException("Failed to open output stream to the file created in " +
-                        "the secondary file system because it no longer exists: " + pathIds.path());
-                else if (secondaryFile.isDirectory())
-                    throw fsException("Failed to open output stream to the file created in " +
-                        "the secondary file system because the path points to a directory: " + pathIds.path());
-
-                newAccessTime = secondaryFile.accessTime();
-                newModificationTime = secondaryFile.modificationTime();
-                newProps = secondaryFile.properties();
-                newLen = secondaryFile.length();
-                newBlockSize = secondaryFile.blockSize();
+                newAccessTime = 0L;
+                newModificationTime = 0L;
+                newProps = null;
             }
             else {
                 newAccessTime = curTime;
                 newModificationTime = curTime;
                 newProps = fileProps;
-                newLen = 0L;
-                newBlockSize = blockSize;
             }
+
+            newLen = 0L;
+            newBlockSize = blockSize;
 
             procMap.put(curId, new IgfsMetaFileCreateProcessor(newAccessTime, newModificationTime, newProps,
                 newBlockSize, affKey, createFileLockId(false), evictExclude, newLen));
