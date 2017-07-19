@@ -65,6 +65,7 @@ import org.apache.ignite.internal.GridTaskNameAnnotationSelfTest;
 import org.apache.ignite.internal.GridTaskResultCacheSelfTest;
 import org.apache.ignite.internal.GridTaskTimeoutSelfTest;
 import org.apache.ignite.internal.IgniteComputeEmptyClusterGroupTest;
+import org.apache.ignite.internal.IgniteComputeJobOneThreadTest;
 import org.apache.ignite.internal.IgniteComputeTopologyExceptionTest;
 import org.apache.ignite.internal.IgniteExecutorServiceTest;
 import org.apache.ignite.internal.IgniteExplicitImplicitDeploymentSelfTest;
@@ -162,6 +163,8 @@ public class IgniteComputeGridTestSuite {
 
         suite.addTestSuite(IgniteComputeCustomExecutorConfigurationSelfTest.class);
         suite.addTestSuite(IgniteComputeCustomExecutorSelfTest.class);
+
+        suite.addTestSuite(IgniteComputeJobOneThreadTest.class);
 
         return suite;
     }
