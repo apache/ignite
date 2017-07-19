@@ -24,7 +24,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-
 /**
  *
  */
