@@ -33,7 +33,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -59,6 +61,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
     /** Entry processors. */
     @GridDirectTransient
+    @GridToStringInclude
     private EntryProcessor<Object, Object, Object> entryProcessor;
 
     /** Entry processors bytes. */
@@ -281,5 +284,10 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     /** {@inheritDoc} */
     @Override public short directType() {
         return 126;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicSingleUpdateInvokeRequest.class, this, "parent", super.toString());
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,5 +100,10 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** {@inheritDoc} */
     @Nullable @Override public CacheEntryPredicate[] filter() {
         return NO_FILTER;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicAbstractSingleUpdateRequest.class, this, "parent", super.toString());
     }
 }
