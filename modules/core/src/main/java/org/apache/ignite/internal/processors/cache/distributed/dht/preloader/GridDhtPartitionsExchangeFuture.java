@@ -561,6 +561,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
+        System.out.println("GDPEF.onCacheChangeRequest():  Thread: "
+            + Thread.currentThread().getName()
+            + ", crd: " + crd
+            + "\n, AWAITING 1 sec...");
+        try {
+            Thread.sleep(1000);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
         if (clientOnly) {
