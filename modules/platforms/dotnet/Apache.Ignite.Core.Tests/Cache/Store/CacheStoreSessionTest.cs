@@ -60,6 +60,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         }
 
         /// <summary>
+        /// Gets the store count.
+        /// </summary>
+        protected virtual int StoreCount
+        {
+            get { return 2; }
+        }
+
+        /// <summary>
         /// Tear down routine.
         /// </summary>
         [TestFixtureTearDown]
@@ -91,11 +99,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Rollback();
             }
 
-            Assert.AreEqual(1, _dumps.Count);
-            var ops = _dumps.First();
-            Assert.AreEqual(1, ops.Count);
+            // SessionEnd is called once per store instance.
+            Assert.AreEqual(StoreCount, _dumps.Count);
 
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && !op.Commit));
+            foreach (var ops in _dumps)
+            {
+                var op = ops.Single();
+                Assert.AreEqual(OperationType.SesEnd, op.Type);
+                Assert.IsFalse(op.Commit);
+            }
 
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
@@ -108,15 +120,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Commit();
             }
 
-            Assert.AreEqual(1, _dumps.Count);
-            ops = _dumps.First();
-            Assert.AreEqual(3, ops.Count);
+            Assert.AreEqual(StoreCount, _dumps.Count);
 
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
-                                               && Cache1 == op.CacheName && 1 == op.Key && 1 == op.Value));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
-                                               && Cache2 == op.CacheName && 2 == op.Key && 2 == op.Value));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+            foreach (var ops in _dumps)
+            {
+                Assert.AreEqual(3, ops.Count);
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
+                                                   && Cache1 == op.CacheName && 1 == op.Key && 1 == op.Value));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Write
+                                                   && Cache2 == op.CacheName && 2 == op.Key && 2 == op.Value));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+            }
 
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
@@ -129,15 +143,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 tx.Commit();
             }
 
-            Assert.AreEqual(1, _dumps.Count);
-            ops = _dumps.First();
-            Assert.AreEqual(3, ops.Count);
+            Assert.AreEqual(StoreCount, _dumps.Count);
+            foreach (var ops in _dumps)
+            {
+                Assert.AreEqual(3, ops.Count);
 
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete
-                                               && Cache1 == op.CacheName && 1 == op.Key));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete
-                                               && Cache2 == op.CacheName && 2 == op.Key));
-            Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete
+                                                   && Cache1 == op.CacheName && 1 == op.Key));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.Delete
+                                                   && Cache2 == op.CacheName && 2 == op.Key));
+                Assert.AreEqual(1, ops.Count(op => op.Type == OperationType.SesEnd && op.Commit));
+            }
         }
 
         /// <summary>
