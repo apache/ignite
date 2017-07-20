@@ -624,10 +624,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         checkNoExchange(cnt - 1, topVer(topVer, 1));
 
         awaitPartitionMapExchange();
-
-        stopNode(0, topVer);
-
-        System.out.println();
     }
 
     /**
