@@ -76,6 +76,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Test basic session API.
         /// </summary>
         [Test]
+        [Timeout(30000)]
         public void TestSession()
         {
             _dumps = new ConcurrentBag<ICollection<Operation>>();
