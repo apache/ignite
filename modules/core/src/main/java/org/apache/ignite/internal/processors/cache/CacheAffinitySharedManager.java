@@ -1618,7 +1618,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         List<UUID> uuids = map.get(p);
 
-                        assert uuids != null;
+                        if (uuids == null)
+                            continue;
 
                         List<ClusterNode> nodes = new ArrayList<>(uuids.size());
 
