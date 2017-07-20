@@ -280,8 +280,10 @@ public abstract class AbstractMatrix implements Matrix {
      * @param row Row index.
      */
     private void checkRowIndex(int row) {
-        if (row < 0 || row >= rowSize())
+        if (row < 0 || row >= rowSize()) {
+            System.out.println("row size is " + rowSize() + "; wanted is " + row);
             throw new RowIndexException(row);
+        }
     }
 
     /**
@@ -290,8 +292,10 @@ public abstract class AbstractMatrix implements Matrix {
      * @param col Column index.
      */
     private void checkColumnIndex(int col) {
-        if (col < 0 || col >= columnSize())
+        if (col < 0 || col >= columnSize()) {
+            System.out.println("col size is " + columnSize() + "; wanted is " + col);
             throw new ColumnIndexException(col);
+        }
     }
 
     /**
