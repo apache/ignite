@@ -2971,9 +2971,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (isExtAddrsExist)
             addrs.addAll(extAddrs);
 
-        if (filterReachableAddresses) {
-            addrs = filterReachableAddresses(addrs, node);
-        }
+        if (filterReachableAddresses)
+            addrs = filterAddresses(addrs, node);
 
         boolean conn = false;
         GridCommunicationClient client = null;
@@ -3641,7 +3640,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @param node Cluster node.
      * @return Reachable addresses
      */
-    private Set<InetSocketAddress> filterReachableAddresses(Set<InetSocketAddress> addrs, ClusterNode node) {
+    private Set<InetSocketAddress> filterAddresses(Set<InetSocketAddress> addrs, ClusterNode node) {
         Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
 
         for (InetSocketAddress addr : addrs) {
