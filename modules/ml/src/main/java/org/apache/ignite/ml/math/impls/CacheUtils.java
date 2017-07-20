@@ -138,15 +138,17 @@ public class CacheUtils {
 
             double sum = 0.0;
 
-            if (v instanceof Map){
-                Map<Integer, Double> map = (Map<Integer, Double>) v;
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
 
                 sum = sum(map.values());
-            } else if (v instanceof BlockEntry){
-                BlockEntry be = (BlockEntry) v;
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
 
                 sum = be.sum();
-            } else
+            }
+            else
                 throw new UnsupportedOperationException();
 
             return acc == null ? sum : acc + sum;
@@ -211,15 +213,17 @@ public class CacheUtils {
 
             double min;
 
-            if (v instanceof Map){
-                Map<Integer, Double> map = (Map<Integer, Double>) v;
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
 
                 min = Collections.min(map.values());
-            } else if (v instanceof BlockEntry){
-                BlockEntry be = (BlockEntry) v;
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
 
                 min = be.minValue();
-            } else
+            }
+            else
                 throw new UnsupportedOperationException();
 
             if (acc == null)
@@ -250,15 +254,17 @@ public class CacheUtils {
 
             double max;
 
-            if (v instanceof Map){
-                Map<Integer, Double> map = (Map<Integer, Double>) v;
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
 
                 max = Collections.max(map.values());
-            } else if (v instanceof BlockEntry){
-                BlockEntry be = (BlockEntry) v;
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
 
                 max = be.maxValue();
-            } else
+            }
+            else
                 throw new UnsupportedOperationException();
 
             if (acc == null)
@@ -333,19 +339,20 @@ public class CacheUtils {
 
             V v = ce.entry().getValue();
 
-            if (v instanceof Map){
-                Map<Integer, Double> map = (Map<Integer, Double>) v;
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
 
                 for (Map.Entry<Integer, Double> e : (map.entrySet()))
                     e.setValue(mapper.apply(e.getValue()));
 
-            } else if (v instanceof BlockEntry){
-                BlockEntry be = (BlockEntry) v;
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
 
                 be.map(mapper);
-            } else
+            }
+            else
                 throw new UnsupportedOperationException();
-
 
             ce.cache().put(k, v);
         }, key -> {

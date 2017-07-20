@@ -27,12 +27,12 @@ public final class BlockEntry extends SparseLocalOnHeapMatrix {
     public static final int MAX_BLOCK_SIZE = 32;
 
     /** */
-    public BlockEntry(){
+    public BlockEntry() {
         // No-op.
     }
 
     /** */
-    public BlockEntry(int row, int col){
+    public BlockEntry(int row, int col) {
         super(row, col);
 
         assert col <= MAX_BLOCK_SIZE;
@@ -40,7 +40,7 @@ public final class BlockEntry extends SparseLocalOnHeapMatrix {
     }
 
     /** */
-    public BlockEntry(Matrix mtx){
+    public BlockEntry(Matrix mtx) {
         assert mtx.columnSize() <= MAX_BLOCK_SIZE;
         assert mtx.rowSize() <= MAX_BLOCK_SIZE;
 

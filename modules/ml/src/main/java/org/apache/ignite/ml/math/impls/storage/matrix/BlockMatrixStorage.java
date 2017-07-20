@@ -47,7 +47,7 @@ import static org.apache.ignite.ml.math.impls.matrix.BlockEntry.MAX_BLOCK_SIZE;
  * Storage for {@link SparseBlockDistributedMatrix}.
  */
 public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants {
-    /** Cache name used for all instances of {@link BlockMatrixStorage}.*/
+    /** Cache name used for all instances of {@link BlockMatrixStorage}. */
     public static final String ML_BLOCK_CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
     /** */
     private int blocksInCol;
@@ -226,11 +226,11 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      * @param storageC result storage.
      * @return The list of block entries.
      */
-    public List<BlockEntry> getRowForBlock(long blockId, BlockMatrixStorage storageC){
+    public List<BlockEntry> getRowForBlock(long blockId, BlockMatrixStorage storageC) {
         long blockRow = blockId / storageC.blocksInCol;
         long blockCol = blockId % storageC.blocksInRow;
 
-        long locBlock = this.blocksInRow * (blockRow) + (blockCol >= this.blocksInRow ? (blocksInRow - 1) :  blockCol);
+        long locBlock = this.blocksInRow * (blockRow) + (blockCol >= this.blocksInRow ? (blocksInRow - 1) : blockCol);
 
         return getRowForBlock(locBlock);
     }
@@ -242,11 +242,11 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      * @param storageC result storage.
      * @return The list of block entries.
      */
-    public List<BlockEntry> getColForBlock(long blockId, BlockMatrixStorage storageC){
+    public List<BlockEntry> getColForBlock(long blockId, BlockMatrixStorage storageC) {
         long blockRow = blockId / storageC.blocksInCol;
         long blockCol = blockId % storageC.blocksInRow;
 
-        long locBlock = this.blocksInRow * (blockRow) + (blockCol >= this.blocksInRow ? (blocksInRow - 1) :  blockCol);
+        long locBlock = this.blocksInRow * (blockRow) + (blockCol >= this.blocksInRow ? (blocksInRow - 1) : blockCol);
 
         return getColForBlock(locBlock);
     }
@@ -254,7 +254,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     /**
      * Build a keyset for this matrix storage.
      */
-    public Collection<BlockMatrixKey> getAllKeys(){
+    public Collection<BlockMatrixKey> getAllKeys() {
         long maxBlockId = numberOfBlocks();
         Collection<BlockMatrixKey> keys = new LinkedList<>();
 
@@ -265,7 +265,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /** */
-    private List<BlockEntry> getRowForBlock(long blockId){
+    private List<BlockEntry> getRowForBlock(long blockId) {
         List<BlockEntry> res = new LinkedList<>();
 
         boolean isFirstRow = blockId < blocksInRow;
@@ -280,7 +280,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /** */
-    private List<BlockEntry> getColForBlock(long blockId){
+    private List<BlockEntry> getColForBlock(long blockId) {
         List<BlockEntry> res = new LinkedList<>();
 
         long startBlock = blockId % blocksInRow;
@@ -295,14 +295,13 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     /**
      *
      */
-    private BlockEntry getEntryById(long blockId){
+    private BlockEntry getEntryById(long blockId) {
         BlockMatrixKey key = getCacheKey(blockId);
 
         BlockEntry entry = cache.localPeek(key);
         entry = entry != null ? entry : cache.get(key);
 
-
-        if (entry == null){
+        if (entry == null) {
             long colId = blockId == 0 ? 0 : blockId + 1;
 
             boolean isLastRow = (blockId) >= blocksInRow * (blocksInCol - 1);
@@ -317,7 +316,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     /**
      *
      */
-    private long numberOfBlocks(){
+    private long numberOfBlocks() {
         int rows = rowSize();
         int cols = columnSize();
 
@@ -366,12 +365,12 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /** */
-    private long getBlockId(int x, int y){
+    private long getBlockId(int x, int y) {
         return (y / maxBlockEdge) * blockShift(cols) + (x / maxBlockEdge);
     }
 
     /** */
-    private BlockEntry initBlockFor(int x, int y){
+    private BlockEntry initBlockFor(int x, int y) {
         int blockRows = rows - x >= maxBlockEdge ? maxBlockEdge : rows - x;
         int blockCols = cols - y >= maxBlockEdge ? maxBlockEdge : cols - y;
 
@@ -408,7 +407,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /**
-     *  Create new ML cache if needed.
+     * Create new ML cache if needed.
      */
     private IgniteCache<BlockMatrixKey, BlockEntry> newCache() {
         CacheConfiguration<BlockMatrixKey, BlockEntry> cfg = new CacheConfiguration<>();

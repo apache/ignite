@@ -46,9 +46,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         // No-op.
     }
 
-    /**
-     * @param map
-     */
+    /** */
     public SparseLocalOnHeapVectorStorage(Map<Integer, Double> map, boolean copy) {
         assert map.size() > 0;
 

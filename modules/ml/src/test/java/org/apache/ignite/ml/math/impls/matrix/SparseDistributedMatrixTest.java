@@ -51,7 +51,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     /** Precision. */
     private static final double PRECISION = 0.0;
     /** */
-    private static final int MATRIX_SIZE = 100;
+    private static final int MATRIX_SIZE = 10;
     /** Grid instance. */
     private Ignite ignite;
     /** Matrix rows */

@@ -280,7 +280,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
     public void testSquareMatrixTimes(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        int size = 1000;
+        int size = 100;
 
         Matrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size);
         Matrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size);

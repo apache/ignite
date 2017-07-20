@@ -41,7 +41,7 @@ import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
  *
  * Using separate cache with keys {@link BlockMatrixKey} and values {@link BlockEntry}.
  */
-public class SparseBlockDistributedMatrix  extends AbstractMatrix implements StorageConstants {
+public class SparseBlockDistributedMatrix extends AbstractMatrix implements StorageConstants {
     /**
      *
      */
@@ -182,8 +182,8 @@ public class SparseBlockDistributedMatrix  extends AbstractMatrix implements Sto
     }
 
     /** */
-    private IgniteUuid getUUID(){
-        return ((BlockMatrixStorage) getStorage()).getUUID();
+    private IgniteUuid getUUID() {
+        return ((BlockMatrixStorage)getStorage()).getUUID();
     }
 
     /**
