@@ -518,20 +518,20 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         int backups = partitionsByNodes.get(0).size();
 
         for (int i = 0; i < backups; ++i) {
-            Map<ClusterNode, AtomicInteger> map = new HashMap<>();
+            Map<ClusterNode, AtomicInteger> nodeMap = new HashMap<>();
 
-            for (List<ClusterNode> l : partitionsByNodes) {
-                ClusterNode node = l.get(i);
+            for (List<ClusterNode> partitionByNodes : partitionsByNodes) {
+                ClusterNode node = partitionByNodes.get(i);
 
                 if (node.isLocal()) {
-                    if (!map.containsKey(node))
-                        map.put(node, new AtomicInteger(1));
+                    if (!nodeMap.containsKey(node))
+                        nodeMap.put(node, new AtomicInteger(1));
                     else
-                        map.get(node).incrementAndGet();
+                        nodeMap.get(node).incrementAndGet();
                 }
             }
 
-            nodeMaps.add(map);
+            nodeMaps.add(nodeMap);
         }
 
         List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
@@ -563,12 +563,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
             int nodeNum = 0;
 
-            for (List<Integer> part : nodesParts) {
+            for (List<Integer> nodesPart : nodesParts) {
                 log.info("## Node " + nodeNum++ + ":");
 
                 int nr = 0;
 
-                for (int cnt : part) {
+                for (int cnt : nodesPart) {
                     int percentage = (int)Math.round((double)cnt / getPartitions() * 100);
 
                     log.info("cacheName=" + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " node=" + localNodeID +
