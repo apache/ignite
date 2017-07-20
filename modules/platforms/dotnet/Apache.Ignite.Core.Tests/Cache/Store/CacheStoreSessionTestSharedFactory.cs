@@ -19,6 +19,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 {
     using NUnit.Framework;
 
+    /// <summary>
+    /// Session test with shared PlatformDotNetCacheStoreFactory,
+    /// which causes the same store insance to be used for both caches.
+    /// </summary>
     [TestFixture]
     public class CacheStoreSessionTestSharedFactory : CacheStoreSessionTest
     {
