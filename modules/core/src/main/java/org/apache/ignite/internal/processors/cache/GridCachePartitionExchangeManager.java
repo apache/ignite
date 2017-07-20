@@ -105,6 +105,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -555,7 +556,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         super.stop0(cancel);
 
         // Do not allow any activity in exchange manager after stop.
-        busyLock.writeLock().lock();
+        try {
+            boolean b = busyLock.writeLock().tryLock(1, SECONDS);
+
+            if (!b)
+                System.out.println();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         exchFuts = null;
     }
@@ -1393,6 +1401,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private void processSinglePartitionRequest(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
         if (!enterBusy())
             return;
+
+        log.info("processSinglePartitionRequest from=" + node.id() + ", locNode=" + cctx.localNodeId() + ",exchId=" + msg.exchangeId());
 
         try {
             sendLocalPartitions(node, msg.exchangeId());

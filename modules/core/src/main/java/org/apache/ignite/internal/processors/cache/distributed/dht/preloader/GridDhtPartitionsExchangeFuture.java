@@ -589,7 +589,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             crd2 = srvNodes.size() <= 1 ? null : srvNodes.get(1);
 
-            acked = !(crd2 != null && crd2.isLocal());
+            acked = true;
+
+            if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
+                acked = !(crd2 != null && crd2.isLocal());
 
             boolean crdNode = crd != null && crd.isLocal();
 
@@ -1561,6 +1564,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             updateLastVersion(msg.lastVersion());
 
         if (isDone()) {
+            if (resend) {
+                initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                        try {
+                            if (!f.get())
+                                return;
+                        } catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to initialize exchange future: " + this, e);
+
+                            return;
+                        }
+
+                        processMessage(node, msg);
+                    }
+                });
+
+                return;
+            }
+
             if (log.isDebugEnabled())
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
@@ -2134,7 +2156,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
-                if (!enterBusy() || isDone())
+                if (isDone() || !enterBusy())
                     return;
 
                 try {
@@ -2193,8 +2215,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         exchLog.info("Ack onFinishExchangeAckMessage: [exchId=" + exchangeId() + ", from=" + node + ", to=" + cctx.localNode() + ']');
 
         onDiscoveryEvent(new IgniteRunnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (!enterBusy())
                     return;
 
@@ -2321,9 +2342,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 acked = notAcked.isEmpty();
                         }
 
+                        // Handle special case: some nodes haven't acked exchange finish.
                         if (crd0 != null && isDone()) {
                             if (acked)
                                 return;
+
+                            singleMsgs.clear();
 
                             if (reqFrom != null) {
                                 assert crd.equals(crd2);
