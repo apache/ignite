@@ -28,7 +28,7 @@ public class ByteBufferExpander {
     private ByteBuffer buf;
 
     public ByteBufferExpander(int initSize, ByteOrder order) {
-        ByteBuffer buffer = ByteBuffer.allocate(initSize);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(initSize);
         buffer.order(order);
 
         this.buf = buffer;
@@ -49,7 +49,7 @@ public class ByteBufferExpander {
      * @return ByteBuffer with requested size.
      */
     public ByteBuffer expand(int size) {
-        ByteBuffer newBuf = ByteBuffer.allocate(size);
+        ByteBuffer newBuf = ByteBuffer.allocateDirect(size);
 
         newBuf.order(buf.order());
 
