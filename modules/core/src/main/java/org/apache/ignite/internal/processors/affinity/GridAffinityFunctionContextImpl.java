@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.List;
-import java.util.UUID;
-
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -49,11 +47,14 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     private String cacheName;
 
     /** Node ID. */
-    private String nodeID;
+    private String nodeId;
 
     /**
      * @param topSnapshot Topology snapshot.
+     * @param prevAssignment Prevent Assignment.
+     * @param discoEvt Discovery Event.
      * @param topVer Topology version.
+     * @param backups Quantity of backups.
      */
     public GridAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
         DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups) {
@@ -66,14 +67,19 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
 
     /**
      * @param topSnapshot Topology snapshot.
+     * @param prevAssignment Prevent Assignment.
+     * @param discoEvt Discovery Event.
      * @param topVer Topology version.
+     * @param backups Quantity of backups.
+     * @param cacheName Name of cache.
+     * @param nodeId Node ID.
      */
     public GridAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
                                            DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups,
-                                           String cacheName, String nodeID) {
+                                           String cacheName, String nodeId) {
         this(topSnapshot, prevAssignment, discoEvt, topVer, backups);
         this.cacheName = cacheName;
-        this.nodeID = nodeID;
+        this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */
@@ -112,11 +118,11 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     }
 
     /** {@inheritDoc} */
-    @Override public String getNodeID() { return nodeID; }
+    @Override public String getNodeId() { return nodeId; }
 
     /** {@inheritDoc} */
-    @Override public void setNodeID(String nodeID) {
-        this.nodeID = nodeID;
+    @Override public void setNodeId(String nodeId) {
+        this.nodeId = nodeId;
     }
 
     /**

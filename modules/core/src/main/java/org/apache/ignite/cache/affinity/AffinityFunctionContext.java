@@ -86,10 +86,10 @@ public interface AffinityFunctionContext {
      *
      * @return Cache name.
      */
-    public String getNodeID();
+    public String getNodeId();
 
     /**
      * Sets node name.
      */
-    public void setNodeID(String nodeID);
+    public void setNodeId(String nodeId);
 }

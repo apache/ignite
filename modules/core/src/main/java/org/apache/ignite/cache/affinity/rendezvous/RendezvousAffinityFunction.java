@@ -493,7 +493,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
         List<List<Integer>> dist = freqDistribution(assignments, nodes);
 
-        printDistribution(dist, affCtx.getCacheName(), affCtx.getNodeID());
+        printDistribution(dist, affCtx.getCacheName(), affCtx.getNodeId());
 
         return assignments;
     }
@@ -507,19 +507,20 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      *
      * Rows correspond to the nodes.
      *
-     * @param lst Affinity result.
+     * @param partitionsByNodes Affinity result.
      * @param nodes Topology.
      * @return Frequency distribution: counts of partitions on node.
      */
-    private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> lst, Collection<ClusterNode> nodes) {
+    private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> partitionsByNodes,
+        Collection<ClusterNode> nodes) {
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
 
-        int backups = lst.get(0).size();
+        int backups = partitionsByNodes.get(0).size();
 
         for (int i = 0; i < backups; ++i) {
             Map<ClusterNode, AtomicInteger> map = new HashMap<>();
 
-            for (List<ClusterNode> l : lst) {
+            for (List<ClusterNode> l : partitionsByNodes) {
                 ClusterNode node = l.get(i);
 
                 if (node.isLocal()) {
@@ -537,6 +538,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
                 List<Integer> byBackups = new ArrayList<>(backups);
+
                 for (int j = 0; j < backups; ++j) {
                     if (nodeMaps.get(j).get(node) == null)
                         byBackups.add(0);
