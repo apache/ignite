@@ -190,7 +190,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
 
     /** Assignment changes received when coordinator fails to finish exchange with {@link GridDhtFinishExchangeMessage}. */
-    private final Map<Integer, Map<Integer, List<UUID>>> assignmentChanges = new ConcurrentHashMap8<>();
+    private Map<Integer, Map<Integer, List<UUID>>> assignmentChanges;
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -1522,7 +1522,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         crd = crd2 = null;
         partReleaseFut = null;
         changeGlobalStateE = null;
-        assignmentChanges.clear();
+        if (assignmentChanges != null) assignmentChanges.clear();
         delayedFinishExchangeMessage = null;
     }
 
@@ -1621,8 +1621,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         Map<Integer, Map<Integer, List<UUID>>> change = msg.assignmentChange();
 
-        if (change != null && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED))
-            assignmentChanges.putAll(change); // TODO validate equality.
+        if (change != null && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)) {
+            synchronized (mux) {
+                if (assignmentChanges == null)
+                    assignmentChanges = new HashMap<>();
+
+                assignmentChanges.putAll(change); // TODO validate equality.
+            }
+        }
 
         if (updateSingleMap)
             updatePartitionSingleMap(node, msg);
