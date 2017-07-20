@@ -311,6 +311,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default value for {@code TCP_NODELAY} socket option (value is <tt>true</tt>). */
     public static final boolean DFLT_TCP_NODELAY = true;
 
+    /** Default value for {@code FILTER_REACHABLE_ADDRESSES} socket option (value is <tt>false</tt>). */
+    public static final boolean DFLT_FILTER_REACHABLE_ADDRESSES = false;
+
     /** Default received messages threshold for sending ack. */
     public static final int DFLT_ACK_SND_THRESHOLD = 32;
 
@@ -1016,6 +1019,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
 
+    /** {@code FILTER_REACHABLE_ADDRESSES} option value for created sockets. */
+    private boolean filterReachableAddresses = DFLT_FILTER_REACHABLE_ADDRESSES;
+
     /** Number of received messages after which acknowledgment is sent. */
     private int ackSndThreshold = DFLT_ACK_SND_THRESHOLD;
 
@@ -1623,6 +1629,33 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public boolean isTcpNoDelay() {
         return tcpNoDelay;
+    }
+
+    /**
+     * Gets value for {@code FILTER_REACHABLE_ADDRESSES} socket option.
+     *
+     * @return {@code True} if needed to filter reachable addresses.
+     */
+    public boolean isFilterReachableAddresses() {
+        return filterReachableAddresses;
+    }
+
+    /**
+     * Setting this option to {@code true} enables filter for reachable
+     * addresses on creating tcp client.
+     * <p>
+     * Usually its advised to set this value to {@code false}.
+     * <p>
+     * If not provided, default value is {@link #DFLT_FILTER_REACHABLE_ADDRESSES}.
+     *
+     * @param filterReachableAddresses {@code True} to filter reachable addresses.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpCommunicationSpi setFilterReachableAddresses(boolean filterReachableAddresses) {
+        this.filterReachableAddresses = filterReachableAddresses;
+
+        return this;
     }
 
     /**
@@ -2933,7 +2966,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 "TCP communication addresses or mapped external addresses. Check configuration and make sure " +
                 "that you use the same communication SPI on all nodes. Remote node id: " + node.id());
 
-        LinkedHashSet<InetSocketAddress> addrs;
+        Set<InetSocketAddress> addrs;
 
         // Try to connect first on bound addresses.
         if (isRmtAddrsExist) {
@@ -2952,35 +2985,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (isExtAddrsExist)
             addrs.addAll(extAddrs);
 
-        Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
-
-        for (InetSocketAddress addr : addrs) {
-            // Skip unresolved as addr.getAddress() can return null.
-            if(!addr.isUnresolved())
-                allInetAddrs.add(addr.getAddress());
-        }
-
-        List<InetAddress> reachableInetAddrs = U.filterReachable(allInetAddrs);
-
-        if (reachableInetAddrs.size() < allInetAddrs.size()) {
-            LinkedHashSet<InetSocketAddress> addrs0 = U.newLinkedHashSet(addrs.size());
-
-            List<InetSocketAddress> unreachableInetAddr = new ArrayList<>(allInetAddrs.size() - reachableInetAddrs.size());
-
-            for (InetSocketAddress addr : addrs) {
-                if (reachableInetAddrs.contains(addr.getAddress()))
-                    addrs0.add(addr);
-                else
-                    unreachableInetAddr.add(addr);
-            }
-
-            addrs0.addAll(unreachableInetAddr);
-
-            addrs = addrs0;
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
+        if (filterReachableAddresses)
+            addrs = filterAddresses(addrs, node);
 
         boolean conn = false;
         GridCommunicationClient client = null;
@@ -3653,6 +3659,45 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     private void onException(String msg, Exception e) {
         getExceptionRegistry().onException(msg, e);
+    }
+
+    /**
+     * @param addrs Addresses to filter.
+     * @param node Cluster node.
+     * @return Reachable addresses
+     */
+    private Set<InetSocketAddress> filterAddresses(Set<InetSocketAddress> addrs, ClusterNode node) {
+        Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
+
+        for (InetSocketAddress addr : addrs) {
+            // Skip unresolved as addr.getAddress() can return null.
+            if (!addr.isUnresolved())
+                allInetAddrs.add(addr.getAddress());
+        }
+
+        List<InetAddress> reachableInetAddrs = U.filterReachable(allInetAddrs);
+
+        if (reachableInetAddrs.size() < allInetAddrs.size()) {
+            LinkedHashSet<InetSocketAddress> addrs0 = U.newLinkedHashSet(addrs.size());
+
+            List<InetSocketAddress> unreachableInetAddr = new ArrayList<>(allInetAddrs.size() - reachableInetAddrs.size());
+
+            for (InetSocketAddress addr : addrs) {
+                if (reachableInetAddrs.contains(addr.getAddress()))
+                    addrs0.add(addr);
+                else
+                    unreachableInetAddr.add(addr);
+            }
+
+            addrs0.addAll(unreachableInetAddr);
+
+            addrs = addrs0;
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
+
+        return addrs;
     }
 
     /**
