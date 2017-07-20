@@ -111,6 +111,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
             CacheStoreSession ses = grid.HandleRegistry.Get<CacheStoreSession>(sesId, true);
 
+            // TODO: This looks wrong!
             ses.CacheName = rawReader.ReadString();
 
             _sesProxy.SetSession(ses);
