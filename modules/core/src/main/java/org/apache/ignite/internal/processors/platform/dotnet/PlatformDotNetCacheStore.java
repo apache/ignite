@@ -90,6 +90,9 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** Key used to distinguish session deployment.  */
     private static final Object KEY_SES = new Object();
 
+    /** Key to designate that sessionEnd was already called.  */
+    private static final Object KEY_SES_ENDED = new Object();
+
     /** */
     @CacheStoreSessionResource
     private CacheStoreSession ses;
@@ -331,6 +334,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void sessionEnd(final boolean commit) {
         try {
+            if (ses.properties().get(KEY_SES_ENDED) != null) {
+                // This store session was already ended in native platform.
+                // When multiple stores (caches) participate in a single transaction,
+                // they share a single session, but sessionEnd is called on each store.
+                // Same thing happens on platform side: session is shared; each store must be notified,
+                // then session should be closed.
+                return;
+            }
+
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_SES_END);
