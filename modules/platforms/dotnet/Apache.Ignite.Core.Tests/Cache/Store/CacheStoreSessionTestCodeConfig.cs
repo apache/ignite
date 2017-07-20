@@ -17,11 +17,45 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
+    /// <summary>
+    /// Tests store session with programmatic configuration (uses different store factory on Java side).
+    /// </summary>
     [TestFixture]
     public class CacheStoreSessionTestCodeConfig : CacheStoreSessionTest
     {
-        
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration(Cache1)
+                    {
+                        AtomicityMode = CacheAtomicityMode.Transactional,
+                        ReadThrough = true,
+                        WriteThrough = true,
+                        CacheStoreFactory = new StoreFactory()
+                    }
+                }
+            };
+        }
+
+        /// <summary>
+        /// Store factory.
+        /// </summary>
+        private class StoreFactory : IFactory<ICacheStore>
+        {
+            /** <inheritdoc /> */
+            public ICacheStore CreateInstance()
+            {
+                return new Store();
+            }
+        }
     }
 }
