@@ -2132,7 +2132,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
-                if (isDone() || !enterBusy())
+                if (!enterBusy() || isDone())
                     return;
 
                 try {
@@ -2263,16 +2263,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     public void onNodeLeft(final ClusterNode node) {
         exchLog.info("onNodeLeft Node left: " + node.id() + " " + exchangeId());
 
-        if (!enterBusy() || isDone())
+        if (!enterBusy() || (acked && isDone()))
             return;
 
-        if (!isDone())
-            cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
-
         try {
+            if (!isDone())
+                cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
+
             onDiscoveryEvent(new IgniteRunnable() {
                 @Override public void run() {
-                    if (!enterBusy() || isDone())
+                    if (!enterBusy() || (acked && isDone()))
                         return;
 
                     try {
@@ -2318,31 +2318,36 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 acked = notAcked.isEmpty();
                         }
 
-//                        if (crd0 != null && isDone()) {
-//                            if (crdChanged && reqFrom != null) {
-//                                assert crd.equals(crd2);
-//
-//                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
-//
-//                                for (UUID nodeId : reqFrom) {
-//                                    log.info("Send GridDhtPartitionsSingleRequest [nodeId=" + nodeId +
-//                                        ", exchId=" + exchId + ']');
-//
-//                                    try {
-//                                        // It is possible that some nodes finished exchange with previous coordinator.
-//                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
-//                                    } catch (ClusterTopologyCheckedException e) {
-//                                        if (log.isDebugEnabled())
-//                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
-//                                                ", exchId=" + exchId + ']');
-//                                    } catch (IgniteCheckedException e) {
-//                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
-//                                    }
-//                                }
-//                            }
-//
-//                            return;
-//                        }
+                        if (crd0 != null && isDone()) {
+                            if (acked)
+                                return;
+
+                            if (reqFrom != null) {
+                                assert crd.equals(crd2);
+
+                                resend = true;
+
+                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
+
+                                for (UUID nodeId : reqFrom) {
+                                    log.info("Send GridDhtPartitionsSingleRequest [nodeId=" + nodeId +
+                                        ", exchId=" + exchId + ']');
+
+                                    try {
+                                        // It is possible that some nodes finished exchange with previous coordinator.
+                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
+                                    } catch (ClusterTopologyCheckedException e) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
+                                                ", exchId=" + exchId + ']');
+                                    } catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
+                                    }
+                                }
+                            }
+
+                            return;
+                        }
 
                         if (crd0 == null) {
                             assert cctx.kernalContext().clientNode() || cctx.localNode().isDaemon() : cctx.localNode();
@@ -2362,9 +2367,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             return;
                         }
-
-//                        if (acked && isDone())
-//                            return;
 
                         if (crd0.isLocal()) {
                             if (exchangeOnChangeGlobalState && changeGlobalStateE != null)
