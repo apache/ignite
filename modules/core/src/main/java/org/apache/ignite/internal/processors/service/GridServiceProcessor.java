@@ -1581,16 +1581,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 }
 
                 @Override public void onTimeout() {
-                    if (!busyLock.enterBusy())
-                        return;
-
-                    try {
-                        // Try again.
-                        onDeployment(dep, topVer);
-                    }
-                    finally {
-                        busyLock.leaveBusy();
-                    }
+                    depExe.execute(new DepRunnable() {
+                        @Override public void run0() {
+                            onDeployment(dep, topVer);
+                        }
+                    });
                 }
             });
         }
@@ -1779,7 +1774,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         @Override public void onTimeout() {
-                            onReassignmentFailed(topVer, retries);
+                            depExe.execute(new Runnable() {
+                                public void run() {
+                                    onReassignmentFailed(topVer, retries);
+                                }
+                            });
                         }
                     });
                 }

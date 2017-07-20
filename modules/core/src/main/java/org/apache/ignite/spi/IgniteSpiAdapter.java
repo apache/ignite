@@ -410,6 +410,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected final <T extends IgniteSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
         throws IgniteSpiException {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
         assert mbeanItf == null || mbeanItf.isInterface();
@@ -434,6 +436,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     protected final void unregisterMBean() throws IgniteSpiException {
         // Unregister SPI MBean.
         if (spiMBean != null) {
+            assert !U.IGNITE_MBEANS_DISABLED;
             MBeanServer jmx = ignite.configuration().getMBeanServer();
 
             assert jmx != null;
