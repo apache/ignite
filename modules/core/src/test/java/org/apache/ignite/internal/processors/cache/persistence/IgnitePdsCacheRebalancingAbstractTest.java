@@ -163,7 +163,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
-    public void testRebalancingOnRestart() throws Exception {
+    public void _testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
         ignite0.active(true);
@@ -280,7 +280,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
-    public void testDataCorrectnessAfterRestart() throws Exception {
+    public void _testDataCorrectnessAfterRestart() throws Exception {
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
@@ -327,7 +327,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
-    public void testPartitionLossAndRecover() throws Exception {
+    public void _testPartitionLossAndRecover() throws Exception {
         fail("IGNITE-5302");
 
         Ignite ignite1 = startGrid(0);
@@ -378,7 +378,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testTopologyChangesWithConstantLoad() throws Exception {
+    public void _testTopologyChangesWithConstantLoad() throws Exception {
         final long timeOut = U.currentTimeMillis() + 10 * 60 * 1000;
 
         final int entriesCnt = 10_000;
@@ -497,7 +497,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed
      */
-    public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
+    public void _testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
         final Ignite ig = startGrids(4);
 
         ig.active(true);
