@@ -30,9 +30,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// </summary>
     public class CacheStoreSessionTest
     {
-        /** Grid name. */
-        protected const string IgniteName = "grid";
-
         /** Cache 1 name. */
         protected const string Cache1 = "cache1";
 
@@ -58,7 +55,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                IgniteInstanceName = IgniteName,
                 SpringConfigUrl = @"config\cache\store\cache-store-session.xml"
             };
         }
@@ -81,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
-            var ignite = Ignition.GetIgnite(IgniteName);
+            var ignite = Ignition.GetIgnite();
 
             var cache1 = ignite.GetCache<int, int>(Cache1);
             var cache2 = ignite.GetCache<int, int>(Cache2);

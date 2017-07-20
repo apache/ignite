@@ -41,6 +41,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                         ReadThrough = true,
                         WriteThrough = true,
                         CacheStoreFactory = new StoreFactory()
+                    },
+                    new CacheConfiguration(Cache2)
+                    {
+                        AtomicityMode = CacheAtomicityMode.Transactional,
+                        ReadThrough = true,
+                        WriteThrough = true,
+                        CacheStoreFactory = new StoreFactory()
                     }
                 }
             };
