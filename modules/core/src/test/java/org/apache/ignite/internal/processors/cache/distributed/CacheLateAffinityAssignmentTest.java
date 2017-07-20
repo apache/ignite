@@ -624,6 +624,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         checkNoExchange(cnt - 1, topVer(topVer, 1));
 
         awaitPartitionMapExchange();
+
+        stopGrid(0);
+
+        System.out.println();
     }
 
     /**
@@ -1161,14 +1165,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> fut = futs.get(i);
 
             Ignite ignite = grids.get(i);
-
-            // New coord exchange always not finished if at least one node is blocked.
-            if (ignite.equals(newCoord)) {
-                assertTrue("Expected finished exchange: " + ignite.name(),
-                    blockedIds.length == 0 ? fut.isDone() : !fut.isDone());
-
-                continue;
-            }
 
             assertTrue("Expected finished exchange: " + ignite.name(),
                 blocked.contains(ignite.name()) ? !fut.isDone() : fut.isDone());

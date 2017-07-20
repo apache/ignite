@@ -1606,9 +1606,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 assert newAssignment != null;
 
-                // Some nodes have finished exchange.
-                if (changes != null) {
-                    // Override with ready assignments.
+                // Override with ready assignments.
+                if (fut.assignmentChanges() != null) {
                     for (int p = 0; p < newAssignment.size(); p++) {
                         List<ClusterNode> newNodes = newAssignment.get(p);
 
