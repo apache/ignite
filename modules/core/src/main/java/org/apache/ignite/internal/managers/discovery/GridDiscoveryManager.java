@@ -2071,11 +2071,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     + "\n, node: " + node
                     + "\n, data: " + data
                 );
-                try {
+                /*try {
                     throw new Exception();
                 } catch (Exception x) {
                     x.printStackTrace(System.out);
-                }
+                }*/
             }
 
             evts.add(new GridTuple5<>(type, topVer, node, topSnapshot, data));

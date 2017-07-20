@@ -269,14 +269,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchFut.onEvent(exchId, e);
 
                     if (e.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                        System.out.println("  Thread: " + Thread.currentThread().getName()
-                            + "\n, exchFut: " + exchFut
+                        System.out.println("GCPEM.GLEL.onEvent():  Thread: " + Thread.currentThread().getName()
+                            + "\n, before addFuture(exchFut): " + exchFut
                         );
-                        try {
+                        /*try {
                             throw new Exception();
                         } catch (Exception x) {
                             x.printStackTrace(System.out);
-                        }
+                        }*/
                     }
 
                     // Start exchange process.

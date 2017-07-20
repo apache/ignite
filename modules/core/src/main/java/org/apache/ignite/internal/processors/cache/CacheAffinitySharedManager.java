@@ -386,6 +386,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
                 }
 
+                System.out.println("CASM.onCacheChangeRequest():  Thread: "
+                    + Thread.currentThread().getName()
+                    + "\n, cache: " + GridCacheProcessor.withId(req.cacheName())
+                    + ", crd: " + crd
+                    + ", lateAffAssign: " + lateAffAssign
+                    + ", req: " + req
+                );
+
                 if (!crd || !lateAffAssign) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -411,6 +419,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
                 else {
                     try {
+                        System.out.println("CASM.initStartedCacheOnCoordinator():  Thread: "
+                            + Thread.currentThread().getName()
+                            + "\n, cacheId: " + cacheId
+                            + ", fut: " + fut);
                         initStartedCacheOnCoordinator(fut, cacheId);
                     } catch (IllegalStateException e) {
                         System.out.println("  Thread: " + Thread.currentThread().getName() + "\n"
