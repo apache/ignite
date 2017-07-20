@@ -809,12 +809,12 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(AffinityTopologyVersion topVer) {
-        GridCompoundFuture f = new GridCompoundFuture();
+        GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
-        f.add(mvcc().finishDataStreamerUpdates());
+        f.add(mvcc().finishDataStreamerUpdates(topVer));
 
         f.markInitialized();
 

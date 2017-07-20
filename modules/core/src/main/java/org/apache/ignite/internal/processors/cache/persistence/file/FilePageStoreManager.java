@@ -318,6 +318,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheId Cache ID to write.
      * @param pageId Page ID.
      * @param pageBuf Page buffer.
+     * @param tag Partition tag (growing 1-based partition file version). Used to validate page is not outdated
      * @return PageStore to which the page has been written.
      * @throws IgniteCheckedException If IO error occurred.
      */

@@ -938,11 +938,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 fut = finFut;
 
                 if (fut == null) {
-                    fut = new GridFutureAdapter<IgniteInternalTx>() {
-                        @Override public String toString() {
-                            return S.toString(GridFutureAdapter.class, this, "tx", IgniteTxAdapter.this);
-                        }
-                    };
+                    fut = new TxFinishFuture(this);
 
                     finFut = fut;
                 }
@@ -2285,6 +2281,44 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TxShadow.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TxFinishFuture extends GridFutureAdapter<IgniteInternalTx> {
+        /** */
+        @GridToStringInclude
+        private IgniteTxAdapter tx;
+
+        /** */
+        private volatile long completionTime;
+
+        /**
+         * @param tx Transaction being awaited.
+         */
+        private TxFinishFuture(IgniteTxAdapter tx) {
+            this.tx = tx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err) {
+            completionTime = U.currentTimeMillis();
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            long ct = completionTime;
+
+            if (ct == 0)
+                ct = U.currentTimeMillis();
+
+            long duration = ct - tx.startTime();
+
+            return S.toString(TxFinishFuture.class, this, "duration", duration);
         }
     }
 }
