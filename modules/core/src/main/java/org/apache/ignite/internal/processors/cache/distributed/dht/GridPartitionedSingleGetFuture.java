@@ -312,6 +312,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
+        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " affNodes for key " + key.value(null, false) + ": " + affNodes);
+
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(topVer));
 
