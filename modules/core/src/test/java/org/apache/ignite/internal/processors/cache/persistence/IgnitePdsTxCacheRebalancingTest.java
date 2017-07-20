@@ -50,12 +50,12 @@ public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAb
         explicitTx = false;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTopologyChangesWithConstantLoadExplicitTx() throws Exception {
-        explicitTx = true;
-
-        testTopologyChangesWithConstantLoad();
-    }
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTopologyChangesWithConstantLoadExplicitTx() throws Exception {
+//        explicitTx = true;
+//
+//        testTopologyChangesWithConstantLoad();
+//    }
 }
