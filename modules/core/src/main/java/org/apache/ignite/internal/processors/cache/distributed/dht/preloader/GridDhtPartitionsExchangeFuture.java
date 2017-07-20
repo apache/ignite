@@ -1855,19 +1855,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void onAllReceived() {
         try {
-//            if (centralizedAff && resend) {
-//                Map<Integer, Map<Integer, List<UUID>>> map = assignmentChanges();
-//
-//                // No nodes have finished exchange, use local node's ready assignment.
-//                if (map == null)
-//                    map = cctx.affinity().readyAssignmentChanges(this);
-//
-//                GridFinishedFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = new GridFinishedFuture<>(map);
-//
-//                onAffinityInitialized(fut);
-//
-//                return;
-//            }
+            if (centralizedAff && resend) {
+                Map<Integer, Map<Integer, List<UUID>>> map = assignmentChanges();
+
+                // No nodes have finished exchange, use local node's ready assignment.
+                if (map == null)
+                    map = cctx.affinity().readyAssignmentChanges(this);
+
+                GridFinishedFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = new GridFinishedFuture<>(map);
+
+                onAffinityInitialized(fut);
+
+                return;
+            }
 
             assert crd.isLocal();
 
@@ -2321,36 +2321,36 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 acked = notAcked.isEmpty();
                         }
 
-//                        if (crd0 != null && isDone()) {
-//                            if (acked)
-//                                return;
-//
-//                            if (reqFrom != null) {
-//                                assert crd.equals(crd2);
-//
-//                                resend = true;
-//
-//                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
-//
-//                                for (UUID nodeId : reqFrom) {
-//                                    log.info("Send GridDhtPartitionsSingleRequest [nodeId=" + nodeId +
-//                                        ", exchId=" + exchId + ']');
-//
-//                                    try {
-//                                        // It is possible that some nodes finished exchange with previous coordinator.
-//                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
-//                                    } catch (ClusterTopologyCheckedException e) {
-//                                        if (log.isDebugEnabled())
-//                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
-//                                                ", exchId=" + exchId + ']');
-//                                    } catch (IgniteCheckedException e) {
-//                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
-//                                    }
-//                                }
-//                            }
-//
-//                            return;
-//                        }
+                        if (crd0 != null && isDone()) {
+                            if (acked)
+                                return;
+
+                            if (reqFrom != null) {
+                                assert crd.equals(crd2);
+
+                                resend = true;
+
+                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
+
+                                for (UUID nodeId : reqFrom) {
+                                    log.info("Send GridDhtPartitionsSingleRequest [nodeId=" + nodeId +
+                                        ", exchId=" + exchId + ']');
+
+                                    try {
+                                        // It is possible that some nodes finished exchange with previous coordinator.
+                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
+                                    } catch (ClusterTopologyCheckedException e) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
+                                                ", exchId=" + exchId + ']');
+                                    } catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
+                                    }
+                                }
+                            }
+
+                            return;
+                        }
 
                         if (crd0 == null) {
                             assert cctx.kernalContext().clientNode() || cctx.localNode().isDaemon() : cctx.localNode();
