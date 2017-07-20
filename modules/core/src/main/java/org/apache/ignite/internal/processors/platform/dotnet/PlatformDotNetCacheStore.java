@@ -343,6 +343,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                 return;
             }
 
+            ses.properties().put(KEY_SES_ENDED, KEY_SES_ENDED);
+
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_SES_END);
