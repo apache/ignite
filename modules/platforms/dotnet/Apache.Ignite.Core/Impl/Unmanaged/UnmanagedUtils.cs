@@ -258,34 +258,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static IUnmanagedTarget ProcessorCompute(IUnmanagedTarget target, IUnmanagedTarget prj)
-        {
-            void* res = JNI.ProcessorCompute(target.Context, target.Target, prj.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProcessorMessage(IUnmanagedTarget target, IUnmanagedTarget prj)
-        {
-            void* res = JNI.ProcessorMessage(target.Context, target.Target, prj.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProcessorEvents(IUnmanagedTarget target, IUnmanagedTarget prj)
-        {
-            void* res = JNI.ProcessorEvents(target.Context, target.Target, prj.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProcessorServices(IUnmanagedTarget target, IUnmanagedTarget prj)
-        {
-            void* res = JNI.ProcessorServices(target.Context, target.Target, prj.Target);
-
-            return target.ChangeTarget(res);
-        }
-
         internal static IUnmanagedTarget ProcessorExtensions(IUnmanagedTarget target)
         {
             void* res = JNI.ProcessorExtensions(target.Context, target.Target);

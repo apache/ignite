@@ -176,8 +176,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             _events = new Lazy<IEvents>(() => ignite.GetEvents(this));
 
-            _services = new Lazy<IServices>(() => 
-                new Services(UU.ProcessorServices(proc, target), marsh, this, false, false));
+            _services = new Lazy<IServices>(() => ignite.GetServices(this));
         }
 
         /** <inheritDoc /> */

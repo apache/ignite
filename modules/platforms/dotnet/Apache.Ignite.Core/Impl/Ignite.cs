@@ -644,6 +644,16 @@ namespace Apache.Ignite.Core.Impl
             return _prj.ForServers().GetServices();
         }
 
+        /// <summary>
+        /// Gets the services.
+        /// </summary>
+        internal unsafe IServices GetServices(ClusterGroupImpl clusterGroup)
+        {
+            var svc = DoOutInOp((int) Op.GetServices, null, (s, o) => o, clusterGroup.Target.Target);
+
+            return new Services.Services(svc, Marshaller, clusterGroup, false, false);
+        }
+
         /** <inheritdoc /> */
         public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
         {
