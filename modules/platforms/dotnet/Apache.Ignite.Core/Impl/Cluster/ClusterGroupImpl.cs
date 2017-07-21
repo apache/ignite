@@ -32,9 +32,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
-    using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.PersistentStore;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -148,13 +146,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private volatile IList<IClusterNode> _nodes;
 
         /** Compute. */
-        private readonly Lazy<Compute> _comp;
+        private readonly Lazy<ICompute> _comp;
 
         /** Messaging. */
-        private readonly Lazy<Messaging> _msg;
+        private readonly Lazy<IMessaging> _msg;
 
         /** Events. */
-        private readonly Lazy<Events> _events;
+        private readonly Lazy<IEvents> _events;
 
         /** Services. */
         private readonly Lazy<IServices> _services;
@@ -172,11 +170,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
             _ignite = ignite;
             _pred = pred;
 
-            _comp = new Lazy<Compute>(() => ignite.GetCompute(this, false));
+            _comp = new Lazy<ICompute>(() => ignite.GetCompute(this, false));
 
-            _msg = new Lazy<Messaging>(() => new Messaging(UU.ProcessorMessage(proc, target), marsh, this));
+            _msg = new Lazy<IMessaging>(() => ignite.GetMessaging(this));
 
-            _events = new Lazy<Events>(() => new Events(UU.ProcessorEvents(proc, target), marsh, this));
+            _events = new Lazy<IEvents>(() => new Events(UU.ProcessorEvents(proc, target), marsh, this));
 
             _services = new Lazy<IServices>(() => 
                 new Services(UU.ProcessorServices(proc, target), marsh, this, false, false));

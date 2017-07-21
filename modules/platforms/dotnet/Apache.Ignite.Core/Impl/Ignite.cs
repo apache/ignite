@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the compute.
         /// </summary>
-        internal unsafe Compute.Compute GetCompute(ClusterGroupImpl clusterGroup, bool keepBinary)
+        internal unsafe ICompute GetCompute(ClusterGroupImpl clusterGroup, bool keepBinary)
         {
             var comp = DoOutInOp((int) Op.GetCompute, null, (s, o) => o, clusterGroup.Target.Target);
 
@@ -251,7 +251,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes)
         {
-            return ((IClusterGroup) _prj).ForNodes(nodes);
+            return _prj.ForNodes(nodes);
         }
 
         /** <inheritdoc /> */
@@ -262,12 +262,6 @@ namespace Apache.Ignite.Core.Impl
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(IEnumerable<Guid> ids)
-        {
-            return ((IClusterGroup) _prj).ForNodeIds(ids);
-        }
-
-        /** <inheritdoc /> */
-        public IClusterGroup ForNodeIds(ICollection<Guid> ids)
         {
             return _prj.ForNodeIds(ids);
         }
@@ -607,7 +601,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-
         public ITransactions GetTransactions()
         {
             return _transactions.Value;
@@ -617,6 +610,16 @@ namespace Apache.Ignite.Core.Impl
         public IMessaging GetMessaging()
         {
             return _prj.GetMessaging();
+        }
+
+        /// <summary>
+        /// Gets the compute.
+        /// </summary>
+        internal unsafe Messaging.Messaging GetMessaging(ClusterGroupImpl clusterGroup)
+        {
+            var msg = DoOutInOp((int)Op.GetMessaging, null, (s, o) => o, clusterGroup.Target.Target);
+
+            return new Messaging.Messaging(msg, Marshaller, clusterGroup);
         }
 
         /** <inheritdoc /> */
