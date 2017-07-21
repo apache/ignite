@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -42,17 +41,13 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtensi
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinity;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGroup;
-import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformDataStreamer;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicLong;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicReference;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicSequence;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
-import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
-import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.transactions.PlatformTransactions;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -105,18 +100,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_GET_CLUSTER_GROUP = 10;
-
-    /** */
-    private static final int OP_GET_COMPUTE = 11;
-
-    /** */
-    private static final int OP_GET_MESSAGING = 12;
-
-    /** */
-    private static final int OP_GET_EVENTS = 13;
-
-    /** */
-    private static final int OP_GET_SERVICES = 14;
 
     /** */
     private static final int OP_GET_EXTENSION = 15;
@@ -599,26 +582,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                                                                          BinaryRawReaderEx reader,
                                                                          BinaryRawWriterEx writer)
             throws IgniteCheckedException {
-
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)arg;
-        assert grp0 != null;
-        ClusterGroupEx projection = grp0.projection();
-
-        // TODO: These operations belong inside projection!
-        switch (type) {
-            case OP_GET_COMPUTE:
-                return new PlatformCompute(platformCtx, projection, PlatformUtils.ATTR_PLATFORM);
-
-            case OP_GET_MESSAGING:
-                return new PlatformMessaging(platformCtx, projection.ignite().message(projection));
-
-            case OP_GET_EVENTS:
-                return new PlatformEvents(platformCtx, projection.ignite().events(projection));
-
-            case OP_GET_SERVICES:
-                return new PlatformServices(platformCtx, projection.ignite().services(projection), false);
-        }
-
         return PlatformAbstractTarget.throwUnsupported(type);
     }
 
