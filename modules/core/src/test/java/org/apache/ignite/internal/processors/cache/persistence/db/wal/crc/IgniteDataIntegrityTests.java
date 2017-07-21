@@ -41,6 +41,9 @@ public class IgniteDataIntegrityTests extends TestCase {
     /** Random access file. */
     private RandomAccessFile randomAccessFile;
 
+    /** Buffer expander. */
+    private ByteBufferExpander expBuf;
+
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         super.setUp();
@@ -50,9 +53,11 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         randomAccessFile = new RandomAccessFile(file, "rw");
 
+        expBuf = new ByteBufferExpander(1024, ByteOrder.BIG_ENDIAN);
+
         fileInput = new FileInput(
             new RandomAccessFileIO(randomAccessFile),
-            new ByteBufferExpander(1024, ByteOrder.BIG_ENDIAN)
+            expBuf
         );
 
         ByteBuffer buf = ByteBuffer.allocate(1024);
@@ -68,6 +73,12 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         randomAccessFile.write(buf.array());
         randomAccessFile.getFD().sync();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void tearDown() throws Exception {
+        randomAccessFile.close();
+        expBuf.close();
     }
 
     /**

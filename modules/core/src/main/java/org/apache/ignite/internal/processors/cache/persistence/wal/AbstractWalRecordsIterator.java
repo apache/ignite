@@ -95,7 +95,6 @@ public abstract class AbstractWalRecordsIterator
         this.serializer = serializer;
         this.ioFactory = ioFactory;
 
-        // Do not allocate direct buffer for iterator.
         buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
     }
 
@@ -126,6 +125,16 @@ public abstract class AbstractWalRecordsIterator
     /** {@inheritDoc} */
     @Override protected boolean onHasNext() throws IgniteCheckedException {
         return curRec != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        try {
+            buf.close();
+        }
+        catch (Exception ex) {
+            throw new IgniteCheckedException(ex);
+        }
     }
 
     /**
