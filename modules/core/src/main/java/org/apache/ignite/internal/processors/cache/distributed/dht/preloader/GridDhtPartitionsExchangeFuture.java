@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheStoreCreationException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
@@ -93,7 +94,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -111,10 +111,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     implements Comparable<GridDhtPartitionsExchangeFuture>, CachePartitionExchangeWorkerTask, IgniteDiagnosticAware {
     /** */
     public static final String EXCHANGE_LOG = "org.apache.ignite.internal.exchange.time";
-
-    /** */
-    private static final int RELEASE_FUTURE_DUMP_THRESHOLD =
-        IgniteSystemProperties.getInteger(IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD, 0);
 
     /** */
     @GridToStringExclude
@@ -295,6 +291,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public DiscoCache discoCache() {
         return discoCache;
+    }
+
+    public void changeGlobalStateE(Exception exception){
+        changeGlobalStateE = exception;
+    }
+
+    public Exception changeGlobalStateE(){
+        return changeGlobalStateE;
+    }
+
+    public void changeGlobalStateExceptions(UUID uuid, Exception e) {
+        synchronized (this) {
+            changeGlobalStateExceptions.put(uuid, e);
+        }
     }
 
     /**
@@ -629,8 +639,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param crd Coordinator flag.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onClusterStateChangeRequest(boolean crd) {
+    private ExchangeType onClusterStateChangeRequest(boolean crd) throws IgniteCheckedException {
         assert exchActions != null && !exchActions.empty() : this;
 
         StateChangeRequest req = exchActions.stateChangeRequest();
@@ -899,15 +910,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             IgniteInternalFuture fut = cctx.snapshot()
                 .tryStartLocalSnapshotOperation(discoEvt);
 
-            if (fut != null) {
+            if (fut != null)
                 fut.get();
 
-                long end = U.currentTimeMillis();
+            long end = U.currentTimeMillis();
 
-                if (log.isInfoEnabled())
-                    log.info("Snapshot initialization completed [topVer=" + exchangeId().topologyVersion() +
-                        ", time=" + (end - start) + "ms]");
-            }
+            if (log.isInfoEnabled())
+                log.info("Snapshot initialization completed [topVer=" + exchangeId().topologyVersion() +
+                    ", time=" + (end - start) + "ms]");
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Error while starting snapshot operation", e);
@@ -961,15 +971,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         long waitEnd = U.currentTimeMillis();
 
-        if (log.isInfoEnabled()) {
-            long waitTime = (waitEnd - waitStart);
-
-            String futInfo = RELEASE_FUTURE_DUMP_THRESHOLD > 0 && waitTime > RELEASE_FUTURE_DUMP_THRESHOLD ?
-                partReleaseFut.toString() : "NA";
-
+        if (log.isInfoEnabled())
             log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
-                ", waitTime=" + (waitEnd - waitStart) + "ms, futInfo=" + futInfo + "]");
-        }
+                ", waitTime=" + (waitEnd - waitStart) + "ms]");
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 
@@ -1151,6 +1155,29 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (log.isDebugEnabled())
                 log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
         }
+    }
+
+    private boolean cacheStoreException2() {
+        return changeGlobalStateE != null && changeGlobalStateE instanceof CacheStoreCreationException;
+    }
+
+    /**
+     *
+     * @param map
+     */
+    private Exception cacheStoreCreationFailed(Map<UUID, Exception> map) {
+        for (Exception exception : map.values())
+            if (exception instanceof CacheStoreCreationException)
+                return exception;
+
+        return null;
+    }
+
+    /**
+     *
+     */
+    private boolean cacheStoreCreationFailed() {
+        return cacheStoreCreationFailed(changeGlobalStateExceptions) != null;
     }
 
     /**
@@ -1435,8 +1462,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     pendingSingleUpdates++;
 
-                    if (stateChangeExchange() && msg.getError() != null)
+                    if (msg.getError() != null && (stateChangeExchange() || msg.getError() instanceof CacheStoreCreationException)) {
+                        System.out.println("[1094]received single message. Node id: " + cctx.localNodeId() +
+                            ". Exception initiator id: " + ((CacheStoreCreationException)msg.getError()).getInitiatingNodeId() +
+                            ". Received from: " + node.id() +
+                            ". Xchange id: " + msg.exchangeId()
+                        );
+
                         changeGlobalStateExceptions.put(node.id(), msg.getError());
+                    }
 
                     allReceived = remaining.isEmpty();
                 }
@@ -1929,7 +1963,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         updatePartitionFullMap(msg);
 
-        IgniteCheckedException err = null;
+        Exception err = null;
 
         if (stateChangeExchange() && !F.isEmpty(msg.getErrorsMap())) {
             err = new IgniteCheckedException("Cluster state change failed");

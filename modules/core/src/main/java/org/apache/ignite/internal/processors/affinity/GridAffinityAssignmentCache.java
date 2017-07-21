@@ -191,6 +191,9 @@ public class GridAffinityAssignmentCache {
         affCache.put(topVer, new HistoryAffinityAssignment(assignment));
         head.set(assignment);
 
+        U.dumpStack("[1094]Initing cache\\cache group with version. Name: "+ cacheOrGroupName()
+        + ". Version: " + topVer);
+
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
                 if (log.isDebugEnabled())

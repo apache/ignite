@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.cache.CacheStoreCreationException;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -101,12 +102,20 @@ public class ExchangeActions {
     }
 
     /**
+     * @return New caches names.
+     */
+    public Collection<String> cacheNames() {
+        return cachesToStart != null ? cachesToStart.keySet() : Collections.<String>emptyList();
+    }
+
+    /**
      * @param ctx Context.
      */
-    public void completeRequestFutures(GridCacheSharedContext ctx) {
-        completeRequestFutures(cachesToStart, ctx);
-        completeRequestFutures(cachesToStop, ctx);
-        completeRequestFutures(cachesToResetLostParts, ctx);
+    public void completeRequestFutures(GridCacheSharedContext ctx, Throwable exception) {
+        //TODO: проверить, что узлы, которые не инициировали создание кэша не получат исключения во фьючи.
+        completeRequestFutures(cachesToStart, ctx, exception);
+        completeRequestFutures(cachesToStop, ctx, exception);
+        completeRequestFutures(cachesToResetLostParts, ctx, exception);
     }
 
     /**
@@ -127,10 +136,10 @@ public class ExchangeActions {
      * @param map Actions map.
      * @param ctx Context.
      */
-    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
+    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx, Throwable exception) {
         if (map != null) {
             for (CacheActionData req : map.values())
-                ctx.cache().completeCacheStartFuture(req.req, true, null);
+                ctx.cache().completeCacheStartFuture(req.req, true, exception);
         }
     }
 

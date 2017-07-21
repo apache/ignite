@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheStoreCreationException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -684,70 +685,71 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
-            DynamicCacheDescriptor cacheDesc = action.descriptor();
+            for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
+                DynamicCacheDescriptor cacheDesc = action.descriptor();
 
-            DynamicCacheChangeRequest req = action.request();
+                DynamicCacheChangeRequest req = action.request();
 
-            boolean startCache;
+                boolean startCache;
 
-            NearCacheConfiguration nearCfg = null;
+                NearCacheConfiguration nearCfg = null;
 
-            if (req.locallyConfigured() || (cctx.localNodeId().equals(req.initiatingNodeId()) && !exchActions.activate())) {
-                startCache = true;
-
-                nearCfg = req.nearCacheConfiguration();
-            }
-            else {
-                // Cache should not be started
-                assert cctx.cacheContext(cacheDesc.cacheId()) == null
-                    : "Starting cache has not null context: " + cacheDesc.cacheName();
-
-                IgniteCacheProxy cacheProxy = cctx.cache().jcacheProxy(req.cacheName());
-
-                // If it has proxy then try to start it
-                if (cacheProxy != null) {
-                    // Cache should be in restarting mode
-                    assert cacheProxy.isRestarting()
-                        : "Cache has non restarting proxy " + cacheProxy;
-
+                if (req.locallyConfigured() || (cctx.localNodeId().equals(req.initiatingNodeId()) && !exchActions.activate())) {
                     startCache = true;
+
+                    nearCfg = req.nearCacheConfiguration();
                 }
                 else {
-                    startCache = CU.affinityNode(cctx.localNode(),
-                        cacheDesc.groupDescriptor().config().getNodeFilter());
-                }
-            }
+                    // Cache should not be started
+                    assert cctx.cacheContext(cacheDesc.cacheId()) == null
+                        : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-            try {
-                // Save configuration before cache started.
-                if (cctx.pageStore() != null && !cctx.kernalContext().clientNode()) {
-                    cctx.pageStore().storeCacheData(
-                        new StoredCacheData(req.startCacheConfiguration())
-                    );
-                }
+                    IgniteCacheProxy cacheProxy = cctx.cache().jcacheProxy(req.cacheName());
 
-                if (startCache) {
-                    cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
-                        cacheDesc,
-                        nearCfg,
-                        fut.topologyVersion());
+                    // If it has proxy then try to start it
+                    if (cacheProxy != null) {
+                        // Cache should be in restarting mode
+                        assert cacheProxy.isRestarting()
+                            : "Cache has non restarting proxy " + cacheProxy;
 
-                    if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                        if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
-                            U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                        startCache = true;
+                    }
+                    else {
+                        startCache = CU.affinityNode(cctx.localNode(),
+                            cacheDesc.groupDescriptor().config().getNodeFilter());
                     }
                 }
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                    "[cacheName=" + req.cacheName() + ']', e);
 
-                cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
+                try {
+                    // Save configuration before cache started.
+                    if (cctx.pageStore() != null && !cctx.kernalContext().clientNode()) {
+                        cctx.pageStore().storeCacheData(
+                            new StoredCacheData(req.startCacheConfiguration())
+                        );
+                    }
 
-                cctx.cache().completeCacheStartFuture(req, false, e);
+                    if (startCache) {
+                        cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
+                            cacheDesc,
+                            nearCfg,
+                            fut.topologyVersion());
+
+                        if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
+                            if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
+                                U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                        "[cacheName=" + req.cacheName() + ']', e);
+
+                    cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
+
+                    cctx.cache().completeCacheStartFuture(req, false, e);
+                }
             }
-        }
+
 
         Set<Integer> gprs = new HashSet<>();
 
@@ -762,7 +764,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.topologyVersion())) {
                         assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
-
+//[1094]TODO: тут инициализируется версия кэша
                         initAffinity(caches.group(grp.groupId()), grp.affinity(), fut);
                     }
                 }
@@ -1250,13 +1252,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             fut.discoCache());
 
                         cache.affinity().initialize(topVer, newAff);
+
+                        System.err.println("Coordinator locally joins topology.Initing cache group. Version: " + cache.affinity().lastVersion());
                     }
                 });
             }
             else
                 fetchAffinityOnJoin(fut);
+
+            U.dumpStack("[1094]Init affinity. Local node id: " + cctx.localNodeId()
+                + ". Top version: " + fut.topologyVersion() +". Coord: " + crd);
         }
         else {
+            U.dumpStack("[1094]Init affinity2. Local node id: " + cctx.localNodeId()
+                + ". Top version: " + fut.topologyVersion());
             waitRebalanceInfo = initAffinityOnNodeJoin(fut.topologyVersion(),
                 fut.discoveryEvent(),
                 fut.discoCache(),

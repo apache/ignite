@@ -621,7 +621,7 @@ class ClusterCachesInfo {
                         continue;
                     }
 
-                    DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
+                    DynamicCacheDescriptor old = removeRegisteredCache(req.cacheName());
 
                     if (req.restart())
                         restartingCaches.add(req.cacheName());
@@ -708,6 +708,16 @@ class ClusterCachesInfo {
         }
 
         return res;
+    }
+
+    /**
+     * Removes cache from registered collection.
+     *
+     * @param cacheName Cache to remove.
+     * @return DynamicCacheDescriptor Descriptor of removed cache.
+     */
+    public DynamicCacheDescriptor removeRegisteredCache(String cacheName) {
+        return registeredCaches.remove(cacheName);
     }
 
     /**

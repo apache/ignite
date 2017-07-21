@@ -41,6 +41,7 @@ import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheStoreCreationException;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -1363,6 +1364,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheObjCtx Cache object context.
      * @param affNode {@code True} if local node affinity node.
      * @param updatesAllowed Updates allowed flag.
+     * @param initiatingNodeId node initiated cache creation
      * @return Cache context.
      * @throws IgniteCheckedException If failed to create cache.
      */
@@ -1373,7 +1375,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion locStartTopVer,
         CacheObjectContext cacheObjCtx,
         boolean affNode,
-        boolean updatesAllowed)
+            boolean updatesAllowed,
+            UUID initiatingNodeId)
         throws IgniteCheckedException {
         assert cfg != null;
 
@@ -1386,7 +1389,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             prepare(cfg, cfg.getCacheStoreFactory(), false);
 
-        CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
+        CacheStore cfgStore;
+
+        try {
+            cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
+        }
+        catch (Throwable e) {
+            desc.cacheStoreCreationFailed(true);
+            throw new CacheStoreCreationException(e, cfg.getName(), initiatingNodeId);
+        }
 
         validate(ctx.config(), cfg, desc.cacheType(), cfgStore);
 
@@ -1868,7 +1879,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchTopVer,
             cacheObjCtx,
             affNode,
-            true);
+                true,
+                desc.receivedFrom());
 
         cacheCtx.dynamicDeploymentId(desc.deploymentId());
 
@@ -1963,7 +1975,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Request.
      */
-    private void stopGateway(DynamicCacheChangeRequest req) {
+    public void stopGateway(DynamicCacheChangeRequest req) {
         assert req.stop() : req;
 
         IgniteCacheProxy<?, ?> proxy;
@@ -1987,7 +1999,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param destroy Cache destroy flag.
      * @return Stopped cache context.
      */
-    private GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
+    public GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
         GridCacheAdapter<?, ?> cache = caches.remove(cacheName);
 
         if (cache != null) {
@@ -2028,7 +2040,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param retClientCaches {@code True} if return IDs of closed client caches.
      * @return Closed client caches' IDs.
      */
-    Set<Integer> closeCaches(Set<String> cachesToClose, boolean retClientCaches) {
+    public Set<Integer> closeCaches(Set<String> cachesToClose, boolean retClientCaches) {
         Set<Integer> ids = null;
 
         boolean locked = false;
@@ -3751,6 +3763,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (objProc instanceof CacheObjectBinaryProcessorImpl)
                 GridBinaryMarshaller.popContext(oldCtx);
         }
+    }
+
+    /**
+     * Removing registered cache.
+     *
+     * @param cacheName Cache to remove.
+     * @return DynamicCacheDescriptor Descriptor of removed cache.
+     */
+    public DynamicCacheDescriptor removeRegisteredCache(String cacheName) {
+        return cachesInfo.removeRegisteredCache(cacheName);
     }
 
     /**
