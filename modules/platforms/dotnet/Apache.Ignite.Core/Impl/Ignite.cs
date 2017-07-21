@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
@@ -232,16 +231,6 @@ namespace Apache.Ignite.Core.Impl
         public ICompute GetCompute()
         {
             return _prj.ForServers().GetCompute();
-        }
-
-        /// <summary>
-        /// Gets the compute.
-        /// </summary>
-        internal unsafe ICompute GetCompute(ClusterGroupImpl clusterGroup, bool keepBinary)
-        {
-            var comp = DoOutInOp((int) Op.GetCompute, null, (s, o) => o, clusterGroup.Target.Target);
-
-            return new Compute.Compute(new ComputeImpl(comp, Marshaller, clusterGroup, keepBinary));
         }
 
         /** <inheritdoc /> */
@@ -608,46 +597,16 @@ namespace Apache.Ignite.Core.Impl
             return _prj.GetMessaging();
         }
 
-        /// <summary>
-        /// Gets the messaging.
-        /// </summary>
-        internal unsafe Messaging.Messaging GetMessaging(ClusterGroupImpl clusterGroup)
-        {
-            var msg = DoOutInOp((int) Op.GetMessaging, null, (s, o) => o, clusterGroup.Target.Target);
-
-            return new Messaging.Messaging(msg, Marshaller, clusterGroup);
-        }
-
         /** <inheritdoc /> */
         public IEvents GetEvents()
         {
             return _prj.GetEvents();
         }
 
-        /// <summary>
-        /// Gets the events.
-        /// </summary>
-        internal unsafe IEvents GetEvents(ClusterGroupImpl clusterGroup)
-        {
-            var evt = DoOutInOp((int) Op.GetEvents, null, (s, o) => o, clusterGroup.Target.Target);
-
-            return new Events.Events(evt, Marshaller, clusterGroup);
-        }
-
         /** <inheritdoc /> */
         public IServices GetServices()
         {
             return _prj.ForServers().GetServices();
-        }
-
-        /// <summary>
-        /// Gets the services.
-        /// </summary>
-        internal unsafe IServices GetServices(ClusterGroupImpl clusterGroup)
-        {
-            var svc = DoOutInOp((int) Op.GetServices, null, (s, o) => o, clusterGroup.Target.Target);
-
-            return new Services.Services(svc, Marshaller, clusterGroup, false, false);
         }
 
         /** <inheritdoc /> */

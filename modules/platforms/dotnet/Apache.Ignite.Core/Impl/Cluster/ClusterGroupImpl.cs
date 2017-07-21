@@ -32,7 +32,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Compute;
+    using Apache.Ignite.Core.Impl.Events;
+    using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.PersistentStore;
+    using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.PersistentStore;
@@ -131,6 +135,18 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpGetPersistentStoreMetrics = 30;
 
+        /** */
+        private const int OpGetCompute = 31;
+
+        /** */
+        private const int OpGetMessaging = 32;
+
+        /** */
+        private const int OpGetEvents = 33;
+
+        /** */
+        private const int OpGetServices = 34;
+
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -168,13 +184,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
             _ignite = ignite;
             _pred = pred;
 
-            _comp = new Lazy<ICompute>(() => ignite.GetCompute(this, false));
-
-            _msg = new Lazy<IMessaging>(() => ignite.GetMessaging(this));
-
-            _events = new Lazy<IEvents>(() => ignite.GetEvents(this));
-
-            _services = new Lazy<IServices>(() => ignite.GetServices(this));
+            _comp = new Lazy<ICompute>(() => CreateCompute());
+            _msg = new Lazy<IMessaging>(() => CreateMessaging());
+            _events = new Lazy<IEvents>(() => CreateEvents());
+            _services = new Lazy<IServices>(() => CreateServices());
         }
 
         /** <inheritDoc /> */
@@ -187,6 +200,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public ICompute GetCompute()
         {
             return _comp.Value;
+        }
+
+        /// <summary>
+        /// Creates the compute.
+        /// </summary>
+        private ICompute CreateCompute()
+        {
+            return new Compute(new ComputeImpl(DoOutOpObject(OpGetCompute), Marshaller, this, false));
         }
 
         /** <inheritDoc /> */
@@ -400,16 +421,40 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return _msg.Value;
         }
 
+        /// <summary>
+        /// Creates the messaging.
+        /// </summary>
+        private IMessaging CreateMessaging()
+        {
+            return new Messaging(DoOutOpObject(OpGetMessaging), Marshaller, this);
+        }
+
         /** <inheritDoc /> */
         public IEvents GetEvents()
         {
             return _events.Value;
         }
 
+        /// <summary>
+        /// Creates the events.
+        /// </summary>
+        private IEvents CreateEvents()
+        {
+            return new Events(DoOutOpObject(OpGetEvents), Marshaller, this);
+        }
+
         /** <inheritDoc /> */
         public IServices GetServices()
         {
             return _services.Value;
+        }
+
+        /// <summary>
+        /// Creates the services.
+        /// </summary>
+        private IServices CreateServices()
+        {
+            return new Services(DoOutOpObject(OpGetServices), Marshaller, this, false, false);
         }
 
         /// <summary>
