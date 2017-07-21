@@ -22,14 +22,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -491,93 +489,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             assignments.add(partAssignment);
         }
 
-        List<List<Integer>> dist = freqDistribution(assignments, nodes);
-
-        printDistribution(dist, affCtx.getCacheName(), affCtx.getNodeId());
-
         return assignments;
-    }
-
-    /**
-     * The table with count of partitions on node:
-     *
-     * column 0 - primary partitions counts
-     * column 1 - backup#0 partitions counts
-     * etc
-     *
-     * Rows correspond to the nodes.
-     *
-     * @param partitionsByNodes Affinity result.
-     * @param nodes Topology.
-     * @return Frequency distribution: counts of partitions on node.
-     */
-    private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> partitionsByNodes,
-        Collection<ClusterNode> nodes) {
-        List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
-
-        int backups = partitionsByNodes.get(0).size();
-
-        for (int i = 0; i < backups; ++i) {
-            Map<ClusterNode, AtomicInteger> nodeMap = new HashMap<>();
-
-            for (List<ClusterNode> partitionByNodes : partitionsByNodes) {
-                ClusterNode node = partitionByNodes.get(i);
-
-                if (node.isLocal()) {
-                    if (!nodeMap.containsKey(node))
-                        nodeMap.put(node, new AtomicInteger(1));
-                    else
-                        nodeMap.get(node).incrementAndGet();
-                }
-            }
-
-            nodeMaps.add(nodeMap);
-        }
-
-        List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
-        for (ClusterNode node : nodes) {
-            if (node.isLocal()) {
-                List<Integer> byBackups = new ArrayList<>(backups);
-
-                for (int j = 0; j < backups; ++j) {
-                    if (nodeMaps.get(j).get(node) == null)
-                        byBackups.add(0);
-                    else
-                        byBackups.add(nodeMaps.get(j).get(node).get());
-                }
-
-                byNodes.add(byBackups);
-            }
-        }
-        return byNodes;
-    }
-
-    /**
-     * @param nodesParts Frequency distribution.
-     * @param localNodeID
-     * @param cacheName
-     */
-    private void printDistribution(Collection<List<Integer>> nodesParts, String cacheName, String localNodeID) {
-        if (nodesParts.size() != 0) {
-            log.info(" #### NODES COUNT:" + nodesParts.size());
-
-            int nodeNum = 0;
-
-            for (List<Integer> nodesPart : nodesParts) {
-                log.info("## Node " + nodeNum++ + ":");
-
-                int nr = 0;
-
-                for (int cnt : nodesPart) {
-                    int percentage = (int)Math.round((double)cnt / getPartitions() * 100);
-
-                    log.info("cacheName=" + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " node=" + localNodeID +
-                        ", partitions count=" + cnt + " percentage of parts count=" + percentage + "% ");
-
-                    nr++;
-                }
-            }
-        }
     }
 
     /** {@inheritDoc} */
