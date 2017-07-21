@@ -24,9 +24,14 @@ namespace ignite
 {    
     namespace impl
     {
+        /** Operation: Get transactions. */
+        const int32_t OP_GET_TRANSACTIONS = 9;
+
+        /** Operation: Get cluster group. */
+        const int32_t OP_GET_CLUSTER_GROUP = 10;
+
         IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
-            env(env),
-            javaRef(javaRef)
+            InteropTarget(env, javaRef)
         {
             IgniteError err;
 
@@ -75,14 +80,10 @@ namespace ignite
         {
             SP_TransactionsImpl res;
 
-            JniErrorInfo jniErr;
-
-            jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+            jobject txJavaRef = InOpObject(OP_GET_TRANSACTIONS, err);
 
             if (txJavaRef)
                 res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
-            else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             return res;
         }
@@ -93,12 +94,10 @@ namespace ignite
 
             JniErrorInfo jniErr;
 
-            jobject txJavaRef = env.Get()->Context()->ProcessorProjection(javaRef, &jniErr);
+            jobject clusterGroupJavaRef = InOpObject(OP_GET_CLUSTER_GROUP, err);
 
-            if (txJavaRef)
-                res = cluster::SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, txJavaRef));
-            else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            if (clusterGroupJavaRef)
+                res = cluster::SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, clusterGroupJavaRef));
 
             return res;
         }

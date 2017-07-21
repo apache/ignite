@@ -35,7 +35,7 @@ namespace ignite
         /**
          * Ignite implementation.
          */
-        class IGNITE_FRIEND_EXPORT IgniteImpl
+        class IGNITE_FRIEND_EXPORT IgniteImpl : private interop::InteropTarget
         {
             typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
             typedef common::concurrent::SharedPointer<transactions::TransactionsImpl> SP_TransactionsImpl;
@@ -227,7 +227,7 @@ namespace ignite
             /** Environment. */
             SP_IgniteEnvironment env;
 
-            /** Native Java counterpart. */
+            /** Native Java counterpart: PlatformProcessorImpl. */
             jobject javaRef;
 
             /** Transactions implementaion. */
