@@ -39,11 +39,16 @@ import org.apache.ignite.ml.math.KeyMapper;
 import org.apache.ignite.ml.math.ValueMapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
+import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
+import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Distribution-related misc. support.
+ *
+ * TODO: IGNITE-5102, fix sparse key filters
  */
 public class CacheUtils {
     /**
@@ -127,19 +132,38 @@ public class CacheUtils {
      * @param matrixUuid Matrix UUID.
      * @return Sum obtained using sparse logic.
      */
-    public static <K, V> double sparseSum(IgniteUuid matrixUuid) {
-        Collection<Double> subSums = fold(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce, Double acc) -> {
-            Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> entry = ce.entry();
-            if (entry.getKey().get2().equals(matrixUuid)) {
-                Map<Integer, Double> map = entry.getValue();
+    @SuppressWarnings("unchecked")
+    public static <K, V> double sparseSum(IgniteUuid matrixUuid, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
 
-                double sum = sum(map.values());
+        Collection<Double> subSums = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+            V v = ce.entry().getValue();
 
-                return acc == null ? sum : acc + sum;
+            double sum = 0.0;
+
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
+
+                sum = sum(map.values());
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
+
+                sum = be.sum();
             }
             else
-                return acc;
-        }, key -> key.get2().equals(matrixUuid));
+                throw new UnsupportedOperationException();
+
+            return acc == null ? sum : acc + sum;
+        }, key -> {
+            if (key instanceof BlockMatrixKey)
+                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
+            else if (key instanceof IgniteBiTuple)
+                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
+            else
+                throw new UnsupportedOperationException();
+        });
 
         return sum(subSums);
     }
@@ -186,23 +210,42 @@ public class CacheUtils {
      * @param matrixUuid Matrix UUID.
      * @return Minimum value obtained using sparse logic.
      */
-    public static <K, V> double sparseMin(IgniteUuid matrixUuid) {
-        Collection<Double> mins = fold(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce, Double acc) -> {
-            Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> entry = ce.entry();
+    @SuppressWarnings("unchecked")
+    public static <K, V> double sparseMin(IgniteUuid matrixUuid, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
 
-            if (entry.getKey().get2().equals(matrixUuid)) {
-                Map<Integer, Double> map = entry.getValue();
+        Collection<Double> mins = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+            V v = ce.entry().getValue();
 
-                double min = Collections.min(map.values());
+            double min;
 
-                if (acc == null)
-                    return min;
-                else
-                    return Math.min(acc, min);
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
+
+                min = Collections.min(map.values());
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
+
+                min = be.minValue();
             }
             else
-                return acc;
-        }, key -> key.get2().equals(matrixUuid));
+                throw new UnsupportedOperationException();
+
+            if (acc == null)
+                return min;
+            else
+                return Math.min(acc, min);
+
+        }, key -> {
+            if (key instanceof BlockMatrixKey)
+                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
+            else if (key instanceof IgniteBiTuple)
+                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
+            else
+                throw new UnsupportedOperationException();
+        });
 
         return Collections.min(mins);
     }
@@ -211,22 +254,42 @@ public class CacheUtils {
      * @param matrixUuid Matrix UUID.
      * @return Maximum value obtained using sparse logic.
      */
-    public static <K, V> double sparseMax(IgniteUuid matrixUuid) {
-        Collection<Double> maxes = fold(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce, Double acc) -> {
-            Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> entry = ce.entry();
-            if (entry.getKey().get2().equals(matrixUuid)) {
-                Map<Integer, Double> map = entry.getValue();
+    @SuppressWarnings("unchecked")
+    public static <K, V> double sparseMax(IgniteUuid matrixUuid, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
 
-                double max = Collections.max(map.values());
+        Collection<Double> maxes = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+            V v = ce.entry().getValue();
 
-                if (acc == null)
-                    return max;
-                else
-                    return Math.max(acc, max);
+            double max;
+
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
+
+                max = Collections.max(map.values());
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
+
+                max = be.maxValue();
             }
             else
-                return acc;
-        }, key -> key.get2().equals(matrixUuid));
+                throw new UnsupportedOperationException();
+
+            if (acc == null)
+                return max;
+            else
+                return Math.max(acc, max);
+
+        }, key -> {
+            if (key instanceof BlockMatrixKey)
+                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
+            else if (key instanceof IgniteBiTuple)
+                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
+            else
+                throw new UnsupportedOperationException();
+        });
 
         return Collections.max(maxes);
     }
@@ -279,17 +342,41 @@ public class CacheUtils {
      * @param matrixUuid Matrix UUID.
      * @param mapper Mapping {@link IgniteFunction}.
      */
-    public static <K, V> void sparseMap(IgniteUuid matrixUuid, IgniteFunction<Double, Double> mapper) {
-        foreach(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce) -> {
-            IgniteBiTuple k = ce.entry().getKey();
+    @SuppressWarnings("unchecked")
+    public static <K, V> void sparseMap(IgniteUuid matrixUuid, IgniteDoubleFunction<Double> mapper, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
+        A.notNull(mapper, "mapper");
 
-            Map<Integer, Double> v = ce.entry().getValue();
+        foreach(cacheName, (CacheEntry<K, V> ce) -> {
+            K k = ce.entry().getKey();
 
-            for (Map.Entry<Integer, Double> e : v.entrySet())
-                e.setValue(mapper.apply(e.getValue()));
+            V v = ce.entry().getValue();
+
+            if (v instanceof Map) {
+                Map<Integer, Double> map = (Map<Integer, Double>)v;
+
+                for (Map.Entry<Integer, Double> e : (map.entrySet()))
+                    e.setValue(mapper.apply(e.getValue()));
+
+            }
+            else if (v instanceof BlockEntry) {
+                BlockEntry be = (BlockEntry)v;
+
+                be.map(mapper);
+            }
+            else
+                throw new UnsupportedOperationException();
 
             ce.cache().put(k, v);
-        }, key -> key.get2().equals(matrixUuid));
+        }, key -> {
+            if (key instanceof BlockMatrixKey)
+                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
+            else if (key instanceof IgniteBiTuple)
+                return ((IgniteBiTuple<Integer, IgniteUuid>)key).get2().equals(matrixUuid);
+            else
+                throw new UnsupportedOperationException();
+        });
     }
 
     /**
@@ -327,8 +414,7 @@ public class CacheUtils {
 
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
                     fun.accept(new CacheEntry<>(entry, cache));
             }
         });
@@ -387,12 +473,34 @@ public class CacheUtils {
         });
     }
 
+    /**
+     * Distributed version of fold operation.
+     *
+     * @param cacheName Cache name.
+     * @param folder Folder.
+     * @param keyFilter Key filter.
+     * @param accumulator Accumulator.
+     * @param zeroVal Zero value.
+     */
     public static <K, V, A> A distributedFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
         IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal) {
         return sparseFold(cacheName, folder, keyFilter, accumulator, zeroVal, null, null, 0,
             false);
     }
 
+    /**
+     * Sparse version of fold. This method also applicable to sparse zeroes.
+     *
+     * @param cacheName Cache name.
+     * @param folder Folder.
+     * @param keyFilter Key filter.
+     * @param accumulator Accumulator.
+     * @param zeroVal Zero value.
+     * @param defVal Def value.
+     * @param defKey Def key.
+     * @param defValCnt Def value count.
+     * @param isNilpotent Is nilpotent.
+     */
     private static <K, V, A> A sparseFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
         IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal, V defVal, K defKey, long defValCnt,
         boolean isNilpotent) {
@@ -411,7 +519,7 @@ public class CacheUtils {
 
             // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
             Affinity affinity = ignite.affinity(cacheName);
-            ClusterNode localNode = ignite.cluster().localNode();
+            ClusterNode locNode = ignite.cluster().localNode();
 
             A a = zeroVal;
 
@@ -422,7 +530,7 @@ public class CacheUtils {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == localNode && (keyFilter == null || keyFilter.apply(k)))))
+                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
                     a = folder.apply(entry, a);
             }
 

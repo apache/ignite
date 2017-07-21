@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.math;
 
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrixTest;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedBlockMatrixTest;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrixTest;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorageTest;
 import org.apache.ignite.ml.math.impls.vector.CacheVectorTest;
@@ -33,6 +34,7 @@ import org.junit.runners.Suite;
     CacheMatrixTest.class,
     SparseDistributedMatrixStorageTest.class,
     SparseDistributedMatrixTest.class,
+    SparseDistributedBlockMatrixTest.class
 })
 public class MathImplDistributedTestSuite {
     // No-op.
