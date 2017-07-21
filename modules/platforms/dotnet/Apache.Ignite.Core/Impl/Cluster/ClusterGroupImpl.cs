@@ -32,9 +32,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.PersistentStore;
-    using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.PersistentStore;
@@ -246,7 +244,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             var newPred = _pred == null ? p : node => _pred(node) && p(node);
 
-            return new ClusterGroupImpl(_proc, Target, Marshaller, _ignite, newPred);
+            return new ClusterGroupImpl(Target, _ignite, newPred);
         }
 
         /** <inheritDoc /> */
@@ -624,7 +622,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>New cluster group.</returns>
         private IClusterGroup GetClusterGroup(IUnmanagedTarget prj)
         {
-            return new ClusterGroupImpl(_proc, prj, Marshaller, _ignite, _pred);
+            return new ClusterGroupImpl(prj, _ignite, _pred);
         }
 
         /// <summary>
