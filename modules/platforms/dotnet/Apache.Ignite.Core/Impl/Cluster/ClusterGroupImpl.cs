@@ -163,13 +163,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        public ClusterGroupImpl(IUnmanagedTarget target, Marshaller marsh,
-            Ignite ignite, Func<IClusterNode, bool> pred)
-            : base(target, marsh)
+        public ClusterGroupImpl(IUnmanagedTarget target, Ignite ignite, Func<IClusterNode, bool> pred)
+            : base(target, ignite.Marshaller)
         {
             _ignite = ignite;
             _pred = pred;
