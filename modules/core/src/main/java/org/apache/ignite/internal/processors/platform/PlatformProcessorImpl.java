@@ -102,40 +102,40 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private static final int OP_GET_CLUSTER_GROUP = 10;
 
     /** */
-    private static final int OP_GET_EXTENSION = 15;
+    private static final int OP_GET_EXTENSION = 11;
 
     /** */
-    private static final int OP_GET_ATOMIC_LONG = 16;
+    private static final int OP_GET_ATOMIC_LONG = 12;
 
     /** */
-    private static final int OP_GET_ATOMIC_REFERENCE = 17;
+    private static final int OP_GET_ATOMIC_REFERENCE = 13;
 
     /** */
-    private static final int OP_GET_ATOMIC_SEQUENCE = 18;
+    private static final int OP_GET_ATOMIC_SEQUENCE = 14;
 
     /** */
-    private static final int OP_GET_IGNITE_CONFIGURATION = 19;
+    private static final int OP_GET_IGNITE_CONFIGURATION = 15;
 
     /** */
-    private static final int OP_GET_CACHE_NAMES = 20;
+    private static final int OP_GET_CACHE_NAMES = 16;
 
     /** */
-    private static final int OP_CREATE_NEAR_CACHE = 21;
+    private static final int OP_CREATE_NEAR_CACHE = 17;
 
     /** */
-    private static final int OP_GET_OR_CREATE_NEAR_CACHE = 22;
+    private static final int OP_GET_OR_CREATE_NEAR_CACHE = 18;
 
     /** */
-    private static final int OP_LOGGER_IS_LEVEL_ENABLED = 23;
+    private static final int OP_LOGGER_IS_LEVEL_ENABLED = 19;
 
     /** */
-    private static final int OP_LOGGER_LOG = 24;
+    private static final int OP_LOGGER_LOG = 20;
 
     /** */
-    private static final int OP_GET_BINARY_PROCESSOR = 25;
+    private static final int OP_GET_BINARY_PROCESSOR = 21;
 
     /** */
-    private static final int OP_RELEASE_START = 26;
+    private static final int OP_RELEASE_START = 22;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
