@@ -670,13 +670,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorCreateNearCache);
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, Op.CreateNearCache);
         }
 
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, Op.GetOrCreateNearCache);
         }
 
         /** <inheritdoc /> */
@@ -773,20 +773,17 @@ namespace Apache.Ignite.Core.Impl
         /// Gets or creates near cache.
         /// </summary>
         private ICache<TK, TV> GetOrCreateNearCache0<TK, TV>(string name, NearCacheConfiguration configuration,
-            Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
+            Op op)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            var cacheTarget = DoOutOpObject((int) op, w =>
             {
-                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+                w.WriteString(name);
+                configuration.Write(w);
+            });
 
-                configuration.Write(writer);
-
-                stream.SynchronizeOutput();
-
-                return GetCache<TK, TV>(func(_proc, name, stream.MemoryPointer));
-            }
+            return GetCache<TK, TV>(cacheTarget);
         }
 
         /// <summary>
