@@ -225,11 +225,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         break;
 
                     case OpSesEnd:
-                        grid.HandleRegistry.Release(sesId);
+                    {
+                        var commit = rawReader.ReadBoolean();
+                        var last = rawReader.ReadBoolean();
 
-                        _store.SessionEnd(rawReader.ReadBoolean());
+                        if (last)
+                        {
+                            grid.HandleRegistry.Release(sesId);
+                        }
+
+                        _store.SessionEnd(commit);
 
                         break;
+                    }
 
                     default:
                         throw new IgniteException("Invalid operation type: " + opType);
