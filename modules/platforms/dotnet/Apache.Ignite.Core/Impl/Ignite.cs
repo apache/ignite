@@ -431,31 +431,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration,
             NearCacheConfiguration nearConfiguration)
         {
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
-            IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
-            configuration.Validate(Logger);
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
-
-                configuration.Write(writer);
-
-                if (nearConfiguration != null)
-                {
-                    writer.WriteBoolean(true);
-                    nearConfiguration.Write(writer);
-                }
-                else
-                    writer.WriteBoolean(false);
-
-                stream.SynchronizeOutput();
-
-                return GetCache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
-            }
+            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, Op.GetOrCreateCacheFromConfig);
         }
 
         /** <inheritdoc /> */
@@ -463,7 +442,9 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            return GetCache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
+            var cacheTarget = DoOutOpObject((int) Op.CreateCache, w => w.WriteString(name));
+
+            return GetCache<TK, TV>(cacheTarget);
         }
 
         /** <inheritdoc /> */
@@ -476,29 +457,35 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
             NearCacheConfiguration nearConfiguration)
         {
+            return GetOrCreateCache<TK, TV>(configuration, nearConfiguration, Op.CreateCacheFromConfig);
+        }
+
+        /// <summary>
+        /// Gets or creates the cache.
+        /// </summary>
+        private ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration, Op op)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
             IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
             configuration.Validate(Logger);
 
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            var cacheTarget = DoOutOpObject((int) op, w =>
             {
-                // Use system marshaller: full footers, always unregistered mode.
-                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
-
-                configuration.Write(writer);
+                configuration.Write(w);
 
                 if (nearConfiguration != null)
                 {
-                    writer.WriteBoolean(true);
-                    nearConfiguration.Write(writer);
+                    w.WriteBoolean(true);
+                    nearConfiguration.Write(w);
                 }
                 else
-                    writer.WriteBoolean(false);
+                {
+                    w.WriteBoolean(false);
+                }
+            });
 
-                stream.SynchronizeOutput();
-
-                return GetCache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
-            }
+            return GetCache<TK, TV>(cacheTarget);
         }
 
         /** <inheritdoc /> */
@@ -506,7 +493,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            UU.ProcessorDestroyCache(_proc, name);
+            DoOutOp((int) Op.DestroyCache, w => w.WriteString(name));
         }
 
         /// <summary>
