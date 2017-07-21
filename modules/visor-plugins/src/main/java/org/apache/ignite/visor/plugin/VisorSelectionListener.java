@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.plugin;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
  * The listener interface for receiving "selection" events from standard Visor panels.

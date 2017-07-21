@@ -17,24 +17,25 @@
 
 package org.apache.ignite.messaging;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.Serializable;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -50,12 +51,12 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new BinaryMarshaller());
 
-        if (gridName.equals(getTestGridName(2))) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(2))) {
             cfg.setClientMode(true);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -77,8 +78,6 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
      * @throws Exception If failed.
      */
     public void testMessageSendWithClientJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-996");
-
         startGrid(0);
 
         Ignite ignite1 = startGrid(1);

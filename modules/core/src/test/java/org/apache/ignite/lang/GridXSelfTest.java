@@ -17,13 +17,13 @@
 
 package org.apache.ignite.lang;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.util.Arrays;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Tests for {@link X}.

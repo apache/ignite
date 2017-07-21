@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache.eviction.igfs;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.processors.igfs.*;
-
-import javax.cache.*;
+import javax.cache.Cache;
+import org.apache.ignite.cache.eviction.EvictionFilter;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 
 /**
  * IGFS eviction filter which will not evict blocks of particular files.

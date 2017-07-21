@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.managers.loadbalancer;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.loadbalancing.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeLoadBalancer;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTaskSessionImpl;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
+import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Load balancing manager.
@@ -69,7 +73,12 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
         assert top != null;
         assert job != null;
 
-        return getSpi(ses.getLoadBalancingSpi()).getBalancedNode(ses, top, job);
+        LoadBalancingSpi spi = getSpi(ses.getLoadBalancingSpi());
+
+        if (ses.isInternal() && !(spi instanceof RoundRobinLoadBalancingSpi))
+            return getSpi(RoundRobinLoadBalancingSpi.class.getSimpleName()).getBalancedNode(ses, top, job);
+
+        return spi.getBalancedNode(ses, top, job);
     }
 
     /**

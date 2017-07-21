@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cluster;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cluster start node result information.

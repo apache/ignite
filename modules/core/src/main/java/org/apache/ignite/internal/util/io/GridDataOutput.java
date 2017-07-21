@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.util.io;
 
-import java.io.*;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Extended data output.

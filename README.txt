@@ -17,9 +17,9 @@ The main feature set of Ignite In-Memory Data Fabric includes:
 
 For information on how to get started with Apache Ignite please visit:
 
-    http://apacheignite.readme.io/v1.0/docs/getting-started
+    http://apacheignite.readme.io/docs/getting-started
 
 
 You can find Apache Ignite documentation here:
 
-    http://apacheignite.readme.io/v1.0/docs/getting-started
+    http://apacheignite.readme.io/docs

@@ -17,32 +17,42 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test for distributed queries with replicated client cache and node restarts.
@@ -57,9 +67,9 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     /** */
     private static final P1<ClusterNode> DATA_NODES_FILTER = new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode clusterNode) {
-                String gridName = clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+                String igniteInstanceName = clusterNode.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
-                return !gridName.endsWith(String.valueOf(GRID_CNT - 1)); // The last one is client only.
+                return !igniteInstanceName.endsWith(String.valueOf(GRID_CNT - 1)); // The last one is client only.
             }
         };
 
@@ -85,10 +95,10 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        X.println("grid name: " + gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        X.println("Ignite instance name: " + igniteInstanceName);
 
-        IgniteConfiguration c = super.getConfiguration(gridName);
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -147,6 +157,13 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
         c.setCacheConfiguration(ccs);
 
         return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
@@ -305,7 +322,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
                         info("Executed queries: " + c);
                 }
             }
-        }, qryThreadNum);
+        }, qryThreadNum, "query-thread");
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
@@ -324,9 +341,13 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
                     }
                     while (!locks.compareAndSet(g, 0, -1));
 
+                    log.info("Stop node: " + g);
+
                     stopGrid(g);
 
                     Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                    log.info("Start node: " + g);
 
                     startGrid(g);
 
@@ -342,7 +363,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
 
                 return true;
             }
-        }, restartThreadsNum);
+        }, restartThreadsNum, "restart-thread");
 
         Thread.sleep(duration);
 

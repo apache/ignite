@@ -17,22 +17,50 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.executor.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.internal.IgniteEventsImpl;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteMessagingImpl;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgniteServicesImpl;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.executor.GridExecutorService;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
 /**
  *
@@ -56,8 +84,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Services. */
     private transient IgniteServices svcs;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Subject ID. */
     protected UUID subjId;
@@ -82,8 +110,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        @Nullable IgnitePredicate<ClusterNode> p)
-    {
+        @Nullable IgnitePredicate<ClusterNode> p) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -100,8 +127,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -122,8 +148,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -164,7 +189,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         this.ctx = ctx;
 
-        gridName = ctx.gridName();
+        igniteInstanceName = ctx.igniteInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -188,7 +213,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new IgniteComputeImpl(ctx, this, subjId, false);
+            compute = new IgniteComputeImpl(ctx, this, subjId);
         }
 
         return compute;
@@ -284,7 +309,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 }
             }
             else {
-                Collection<ClusterNode> all = ctx.discovery().allNodes();
+                Collection<ClusterNode> all;
+
+                if (p instanceof DaemonFilter)
+                    all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
+                else
+                    all = ctx.discovery().allNodes();
 
                 return p != null ? F.view(all, p) : all;
             }
@@ -547,32 +577,47 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forCacheNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forDataNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forDataNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, false, false));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forClientNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forClientNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, false, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
+    @Override public ClusterGroup forCacheNodes(String cacheName, boolean affNodes, boolean nearNodes,
         boolean clientNodes) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, String metaCacheName) {
+        assert metaCacheName != null;
+
+        return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
     }
 
     /** {@inheritDoc} */
@@ -600,7 +645,15 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forRandom() {
-        return ids != null ? forNodeId(F.rand(ids)) : forNode(F.rand(nodes()));
+        if (!F.isEmpty(ids))
+            return forNodeId(F.rand(ids));
+
+        Collection<ClusterNode> nodes = nodes();
+
+        if (nodes.isEmpty())
+            return new ClusterGroupAdapter(ctx, null, Collections.<UUID>emptySet());
+
+        return forNode(F.rand(nodes));
     }
 
     /** {@inheritDoc} */
@@ -657,7 +710,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName);
+        U.writeString(out, igniteInstanceName);
         U.writeUuid(out, subjId);
 
         out.writeBoolean(ids != null);
@@ -670,7 +723,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
+        igniteInstanceName = U.readString(in);
         subjId = U.readUuid(in);
 
         if (in.readBoolean())
@@ -687,7 +740,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteKernal g = IgnitionEx.gridx(gridName);
+            IgniteKernal g = IgnitionEx.localIgnite();
 
             return ids != null ? new ClusterGroupAdapter(g.context(), subjId, ids) :
                 new ClusterGroupAdapter(g.context(), subjId, p);
@@ -722,7 +775,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /**
          * @param cacheName Cache name.
          */
-        private CachesFilter(@Nullable String cacheName, boolean affNodes, boolean nearNodes, boolean clients) {
+        private CachesFilter(String cacheName, boolean affNodes, boolean nearNodes, boolean clients) {
             this.cacheName = cacheName;
             this.affNodes = affNodes;
             this.nearNodes = nearNodes;

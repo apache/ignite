@@ -17,9 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Closeable;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * This interface provides a rich API for working with distributed atomic stamped value.
@@ -28,25 +27,22 @@ import java.io.*;
  * Distributed atomic stamped includes the following main functionality:
  * <ul>
  * <li>
- * Method {@link #get()} synchronously gets both value and stamp of atomic.
+ * Method {@link #get()} gets both value and stamp of atomic.
  * </li>
  * <li>
- * Method {@link #value()} synchronously gets current value of atomic.
+ * Method {@link #value()} gets current value of atomic.
  * </li>
  * <li>
- * Method {@link #stamp()} synchronously gets current stamp of atomic.
+ * Method {@link #stamp()} gets current stamp of atomic.
  * </li>
  * <li>
- * Method {@link #set(Object, Object)} synchronously and unconditionally sets the value
+ * Method {@link #set(Object, Object)} unconditionally sets the value
  * and the stamp in the atomic.
  * </li>
  * <li>
- * Methods {@code compareAndSet(...)} synchronously and conditionally set the value
+ * Methods {@code compareAndSet(...)} conditionally set the value
  * and the stamp in the atomic.
  * </li>
- * </ul>
- * All previously described methods have asynchronous analogs.
- * <ul>
  * <li>
  * Method {@link #name()} gets name of atomic stamped.
  * </li>

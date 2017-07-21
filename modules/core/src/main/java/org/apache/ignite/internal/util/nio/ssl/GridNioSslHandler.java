@@ -17,19 +17,35 @@
 
 package org.apache.ignite.internal.util.nio.ssl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
+import org.apache.ignite.internal.util.nio.GridNioException;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 
-import javax.net.ssl.*;
-import java.nio.*;
-import java.util.*;
-import java.util.concurrent.locks.*;
-
-import static javax.net.ssl.SSLEngineResult.*;
-import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
-import static javax.net.ssl.SSLEngineResult.Status.*;
-import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.*;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
+import static javax.net.ssl.SSLEngineResult.Status;
+import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
+import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
+import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.HANDSHAKE_FUT_META_KEY;
 
 /**
  * Class that encapsulate the per-session SSL state, encoding and decoding logic.
@@ -43,6 +59,12 @@ class GridNioSslHandler extends ReentrantLock {
 
     /** SSL engine. */
     private SSLEngine sslEngine;
+
+    /** Order. */
+    private ByteOrder order;
+
+    /** Allocate direct buffer or heap buffer. */
+    private boolean directBuf;
 
     /** Session of this handler. */
     private GridNioSession ses;
@@ -81,10 +103,20 @@ class GridNioSslHandler extends ReentrantLock {
      * @param ses Session for which this handler was created.
      * @param engine SSL engine instance for this handler.
      * @param log Logger to use.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
+     * @param handshake is handshake required.
+     * @param encBuf encoded buffer to be used.
      * @throws SSLException If exception occurred when starting SSL handshake.
      */
-    GridNioSslHandler(GridNioSslFilter parent, GridNioSession ses, SSLEngine engine, IgniteLogger log)
-        throws SSLException {
+    GridNioSslHandler(GridNioSslFilter parent,
+        GridNioSession ses,
+        SSLEngine engine,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log,
+        boolean handshake,
+        ByteBuffer encBuf) throws SSLException {
         assert parent != null;
         assert ses != null;
         assert engine != null;
@@ -92,19 +124,37 @@ class GridNioSslHandler extends ReentrantLock {
 
         this.parent = parent;
         this.ses = ses;
+        this.order = order;
+        this.directBuf = directBuf;
         this.log = log;
 
         sslEngine = engine;
 
-        sslEngine.beginHandshake();
+        if (handshake)
+            sslEngine.beginHandshake();
+        else {
+            handshakeFinished = true;
+            initHandshakeComplete = true;
+        }
 
         handshakeStatus = sslEngine.getHandshakeStatus();
 
         // Allocate a little bit more so SSL engine would not return buffer overflow status.
         int netBufSize = sslEngine.getSession().getPacketBufferSize() + 50;
 
-        outNetBuf = ByteBuffer.allocate(netBufSize);
-        inNetBuf = ByteBuffer.allocate(netBufSize);
+        outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+
+        outNetBuf.order(order);
+
+        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+
+        inNetBuf.order(order);
+
+        if (encBuf != null) {
+            encBuf.flip();
+
+            inNetBuf.put(encBuf); // Buffer contains bytes read but not handled by sslEngine at BlockingSslHandler.
+        }
 
         // Initially buffer is empty.
         outNetBuf.position(0);
@@ -112,7 +162,9 @@ class GridNioSslHandler extends ReentrantLock {
 
         int appBufSize = Math.max(sslEngine.getSession().getApplicationBufferSize() + 50, netBufSize * 2);
 
-        appBuf = ByteBuffer.allocate(appBufSize);
+        appBuf = directBuf ? ByteBuffer.allocateDirect(appBufSize) : ByteBuffer.allocate(appBufSize);
+
+        appBuf.order(order);
 
         if (log.isDebugEnabled())
             log.debug("Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBufSize + ']');
@@ -224,7 +276,7 @@ class GridNioSslHandler extends ReentrantLock {
                             log.debug("Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
                                 handshakeStatus + ", ses=" + ses + ']');
 
-                        writeNetBuffer();
+                        writeNetBuffer(null);
 
                         break;
                     }
@@ -362,16 +414,17 @@ class GridNioSslHandler extends ReentrantLock {
      * Adds write request to the queue.
      *
      * @param buf Buffer to write.
+     * @param ackC Closure invoked when message ACK is received.
      * @return Write future.
      */
-    GridNioFuture<?> deferredWrite(ByteBuffer buf) {
+    GridNioFuture<?> deferredWrite(ByteBuffer buf, IgniteInClosure<IgniteException> ackC) {
         assert isHeldByCurrentThread();
 
         GridNioEmbeddedFuture<Object> fut = new GridNioEmbeddedFuture<>();
 
         ByteBuffer cp = copy(buf);
 
-        deferredWriteQueue.offer(new WriteRequest(fut, cp));
+        deferredWriteQueue.offer(new WriteRequest(fut, cp, ackC));
 
         return fut;
     }
@@ -387,7 +440,7 @@ class GridNioSslHandler extends ReentrantLock {
         while (!deferredWriteQueue.isEmpty()) {
             WriteRequest req = deferredWriteQueue.poll();
 
-            req.future().onDone((GridNioFuture<Object>)parent.proceedSessionWrite(ses, req.buffer()));
+            req.future().onDone((GridNioFuture<Object>)parent.proceedSessionWrite(ses, req.buffer(), true, req.ackC));
         }
     }
 
@@ -425,14 +478,15 @@ class GridNioSslHandler extends ReentrantLock {
      * Copies data from out net buffer and passes it to the underlying chain.
      *
      * @return Write future.
+     * @param ackC Closure invoked when message ACK is received.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer() throws IgniteCheckedException {
+    GridNioFuture<?> writeNetBuffer(IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert isHeldByCurrentThread();
 
         ByteBuffer cp = copy(outNetBuf);
 
-        return parent.proceedSessionWrite(ses, cp);
+        return parent.proceedSessionWrite(ses, cp, true, ackC);
     }
 
     /**
@@ -578,24 +632,69 @@ class GridNioSslHandler extends ReentrantLock {
     }
 
     /**
+     * Expands the given byte buffer to the requested capacity.
+     *
+     * @param original Original byte buffer.
+     * @param cap Requested capacity.
+     * @return Expanded byte buffer.
+     */
+    private ByteBuffer expandBuffer(ByteBuffer original, int cap) {
+        ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
+
+        res.order(order);
+
+        original.flip();
+
+        res.put(original);
+
+        return res;
+    }
+
+    /**
+     * Copies the given byte buffer.
+     *
+     * @param original Byte buffer to copy.
+     * @return Copy of the original byte buffer.
+     */
+    private ByteBuffer copy(ByteBuffer original) {
+        ByteBuffer cp = directBuf ? ByteBuffer.allocateDirect(original.remaining()) :
+            ByteBuffer.allocate(original.remaining());
+
+        cp.order(order);
+
+        cp.put(original);
+
+        cp.flip();
+
+        return cp;
+    }
+
+    /**
      * Write request for cases while handshake is not finished yet.
      */
     private static class WriteRequest {
         /** Future that should be completed. */
-        private GridNioEmbeddedFuture<Object> fut;
+        private final GridNioEmbeddedFuture<Object> fut;
 
         /** Buffer needed to be written. */
-        private ByteBuffer buf;
+        private final ByteBuffer buf;
+
+        /** */
+        private final IgniteInClosure<IgniteException> ackC;
 
         /**
          * Creates write request.
          *
          * @param fut Future.
          * @param buf Buffer to write.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        private WriteRequest(GridNioEmbeddedFuture<Object> fut, ByteBuffer buf) {
+        private WriteRequest(GridNioEmbeddedFuture<Object> fut,
+            ByteBuffer buf,
+            IgniteInClosure<IgniteException> ackC) {
             this.fut = fut;
             this.buf = buf;
+            this.ackC = ackC;
         }
 
         /**

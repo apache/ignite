@@ -17,25 +17,41 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.mxbean.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.jetbrains.annotations.*;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.configuration.CompleteConfiguration;
+import javax.cache.configuration.Configuration;
+import javax.cache.management.CacheMXBean;
+import javax.cache.management.CacheStatisticsMXBean;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalGateway;
+import org.apache.ignite.internal.GridKernalState;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.jetbrains.annotations.Nullable;
 
-import javax.cache.*;
-import javax.cache.configuration.*;
-import javax.cache.management.*;
-import javax.management.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JCACHE_DEFAULT_ISOLATED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * Implementation of JSR-107 {@link CacheManager}.
@@ -92,12 +108,14 @@ public class CacheManager implements javax.cache.CacheManager {
                     cfg.setDiscoverySpi(discoSpi);
                 }
 
-                cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
+                cfg.setIgniteInstanceName("CacheManager_" + igniteCnt.getAndIncrement());
+
+                cfg.setClassLoader(clsLdr);
 
                 ignite = (IgniteKernal)IgnitionEx.start(cfg);
             }
             else
-                ignite = (IgniteKernal)IgnitionEx.start(uri.toURL());
+                ignite = (IgniteKernal)IgnitionEx.start(uri.toURL(), clsLdr);
 
             kernalGateway = ignite.context().gateway();
         }
@@ -130,6 +148,7 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C cacheCfg)
         throws IllegalArgumentException {
         kernalGateway.readLock();
@@ -155,10 +174,10 @@ public class CacheManager implements javax.cache.CacheManager {
 
             IgniteCache<K, V> res = ignite.createCache(igniteCacheCfg);
 
-            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
-
             if (res == null)
                 throw new CacheException();
+
+            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
 
             if (igniteCacheCfg.isManagementEnabled())
                 enableManagement(cacheName, true);
@@ -219,6 +238,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /**
      * @param cacheName Cache name.
+     * @return Cache.
      */
     @Nullable private <K, V> IgniteCache<K, V> getCache0(String cacheName) {
         if (cacheName == null)
@@ -272,11 +292,13 @@ public class CacheManager implements javax.cache.CacheManager {
         }
 
         if (cache != null)
-            cache.close();
+            cache.destroy();
     }
 
     /**
      * @param cacheName Cache name.
+     * @param objName Object name.
+     * @return Object name instance.
      */
     private ObjectName getObjectName(String cacheName, String objName) {
         String mBeanName = "javax.cache:type=" + objName + ",CacheManager="
@@ -293,6 +315,9 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
+        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+            return;
+
         kernalGateway.readLock();
 
         try {
@@ -315,6 +340,9 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
+        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+            return;
+
         kernalGateway.readLock();
 
         try {
@@ -339,7 +367,8 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /**
      * @param mxbean MXBean.
-     * @param name cache name.
+     * @param name Cache name.
+     * @param beanType Bean type.
      */
     private void registerCacheObject(Object mxbean, String name, String beanType) {
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
@@ -367,6 +396,9 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param beanType Mxbean name.
      */
     private void unregisterCacheObject(String name, String beanType) {
+        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+            return;
+
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
         Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, beanType), null);

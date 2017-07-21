@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.plugin;
 
-import ro.fortsoft.pf4j.*;
+import ro.fortsoft.pf4j.ExtensionPoint;
 
 /**
  * Abstract base class for Visor plugin extension point.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 
 /**
  * Lock and Unlock callbacks.
@@ -37,11 +37,9 @@ public interface GridCacheMvccCallback {
      * can be made from this call.
      *
      * @param entry Entry.
-     * @param prev Previous candidate.
      * @param owner Current owner.
      */
-    public void onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate prev,
-        GridCacheMvccCandidate owner);
+    public void onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
 
     /**
      * Called when entry has no more candidates. This call happens

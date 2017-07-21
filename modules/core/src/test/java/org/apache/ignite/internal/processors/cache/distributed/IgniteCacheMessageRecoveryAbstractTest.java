@@ -17,24 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.nio.GridCommunicationClient;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
+import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests message delivery after reconnection.
@@ -44,13 +50,14 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     public static final int GRID_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSocketWriteTimeout(1000);
         commSpi.setSharedMemoryPort(-1);
+        commSpi.setConnectionsPerNode(connectionsPerNode());
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -59,13 +66,19 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setBackups(1);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setNearConfiguration(null);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Value for {@link TcpCommunicationSpi#setConnectionsPerNode(int)}.
+     */
+    protected int connectionsPerNode() {
+        return TcpCommunicationSpi.DFLT_CONN_PER_NODE;
     }
 
     /**
@@ -88,9 +101,9 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         for (int i = 0; i < GRID_CNT; i++) {
             final IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridTestUtils.retryAssert(log, 10, 100, new CA() {
+            GridTestUtils.retryAssert(log, 10, 500, new CA() {
                 @Override public void apply() {
-                    assertTrue(grid.internalCache().context().mvcc().atomicFutures().isEmpty());
+                    assertTrue(grid.internalCache(DEFAULT_CACHE_NAME).context().mvcc().atomicFutures().isEmpty());
                 }
             });
         }
@@ -102,7 +115,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     public void testMessageRecovery() throws Exception {
         final Ignite ignite = grid(0);
 
-        final IgniteCache<Object, String> cache = ignite.cache(null);
+        final IgniteCache<Object, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Map<Integer, String> map = new HashMap<>();
 
@@ -138,11 +151,19 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         });
 
         try {
+            boolean closed = false;
+
             for (int i = 0; i < 30; i++) {
                 Thread.sleep(1000);
 
-                closeSessions();
+                Ignite node0 = ignite(ThreadLocalRandom.current().nextInt(0, GRID_CNT));
+
+                log.info("Close sessions for: " + ignite.name());
+
+                closed |= closeSessions(node0);
             }
+
+            assertTrue(closed);
         }
         finally {
             stop.set(true);
@@ -152,25 +173,31 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     }
 
     /**
+     * @param ignite Node.
      * @throws Exception If failed.
+     * @return {@code True} if closed at least one session.
      */
-    private void closeSessions() throws Exception {
-        Ignite ignite = ignite(ThreadLocalRandom.current().nextInt(0, GRID_CNT));
-
-        log.info("Close sessions for: " + ignite.name());
-
+    static boolean closeSessions(Ignite ignite) throws Exception {
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-        Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
+        Map<UUID, GridCommunicationClient[]> clients = U.field(commSpi, "clients");
 
-        assertTrue(clients.size() > 0);
+        boolean closed = false;
 
-        for (GridCommunicationClient client : clients.values()) {
-            GridTcpNioCommunicationClient client0 = (GridTcpNioCommunicationClient)client;
+        for (GridCommunicationClient[] clients0 : clients.values()) {
+            for (GridCommunicationClient client : clients0) {
+                if (client != null) {
+                    GridTcpNioCommunicationClient client0 = (GridTcpNioCommunicationClient)client;
 
-            GridNioSession ses = client0.session();
+                    GridNioSession ses = client0.session();
 
-            ses.close();
+                    ses.close();
+
+                    closed = true;
+                }
+            }
         }
+
+        return closed;
     }
 }

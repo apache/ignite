@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Tests for fields queries.
@@ -38,22 +34,5 @@ public class IgniteCacheAtomicFieldsQuerySelfTest extends IgniteCachePartitioned
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
-    }
-
-    /**
-     *
-     */
-    public void testUnsupportedOperations() {
-        try {
-            QueryCursor<List<?>> qry = grid(0).cache(null).query(new SqlFieldsQuery(
-                "update Person set name = ?").setArgs("Mary Poppins"));
-
-            qry.getAll();
-
-            fail("We don't support updates.");
-        }
-        catch (Exception e) {
-            X.println("___ " + e.getMessage());
-        }
     }
 }

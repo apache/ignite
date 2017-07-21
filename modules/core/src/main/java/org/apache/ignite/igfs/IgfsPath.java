@@ -17,14 +17,26 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.internal.util.io.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.util.io.GridFilenameUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@code IGFS} path to file in the file system. For example, to get information about
@@ -37,7 +49,7 @@ import java.util.*;
  *     IgfsFile file = igfs.info(filePath);
  * </pre>
  */
-public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
+public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,13 +57,16 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     private static final char SLASH_CHAR = '/';
 
     /** The directory separator. */
-    private static final String SLASH = "/";
+    public static final String SLASH = "/";
 
     /** URI representing this path. Should never change after object creation or de-serialization. */
     private String path;
 
+    /** Root path. */
+    public static final IgfsPath ROOT = new IgfsPath(SLASH);
+
     /**
-     * Constructs default root path.
+     * Default constructor.
      */
     public IgfsPath() {
         path = SLASH;
@@ -131,15 +146,6 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     }
 
     /**
-     * Returns a root for this path.
-     *
-     * @return Root for this path.
-     */
-    public IgfsPath root() {
-        return new IgfsPath();
-    }
-
-    /**
      * Split full path on components.
      *
      * @return Path components.
@@ -151,6 +157,15 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
 
         // Path is short-living object, so we don't need to cache component's resolution result.
         return path.length() == 1 ? Collections.<String>emptyList() : Arrays.asList(path.substring(1).split(SLASH));
+    }
+
+    /**
+     * Get components in array form.
+     *
+     * @return Components array.
+     */
+    public String[] componentsArray() {
+        return path.length() == 1 ? new String[0] : path.substring(1).split(SLASH);
     }
 
     /**
@@ -218,19 +233,8 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
         return this.path.startsWith(path.path.endsWith(SLASH) ? path.path : path.path + SLASH);
     }
 
-    /**
-     * Checks if paths are identical.
-     *
-     * @param path Path to check.
-     * @return {@code True} if paths are identical.
-     */
-    public boolean isSame(IgfsPath path) {
-        A.notNull(path, "path");
-
-        return this == path || this.path.equals(path.path);
-    }
-
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public int compareTo(IgfsPath o) {
         return path.compareTo(o.path);
     }
@@ -243,6 +247,36 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         path = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        writeRawBinary(writer.rawWriter());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        readRawBinary(reader.rawReader());
+    }
+
+    /**
+     * Write raw binary.
+     *
+     * @param writer Raw writer.
+     * @throws BinaryObjectException If failed.
+     */
+    public void writeRawBinary(BinaryRawWriter writer) throws BinaryObjectException {
+        writer.writeString(path);
+    }
+
+    /**
+     * Read raw binary.
+     *
+     * @param reader Raw reader.
+     * @throws BinaryObjectException If failed.
+     */
+    public void readRawBinary(BinaryRawReader reader) throws BinaryObjectException {
+        path = reader.readString();
     }
 
     /** {@inheritDoc} */

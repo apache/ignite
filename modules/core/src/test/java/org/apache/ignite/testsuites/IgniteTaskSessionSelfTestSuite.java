@@ -17,8 +17,26 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.session.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.session.GridSessionCancelSiblingsFromFutureSelfTest;
+import org.apache.ignite.session.GridSessionCancelSiblingsFromJobSelfTest;
+import org.apache.ignite.session.GridSessionCancelSiblingsFromTaskSelfTest;
+import org.apache.ignite.session.GridSessionCheckpointSelfTest;
+import org.apache.ignite.session.GridSessionCollisionSpiSelfTest;
+import org.apache.ignite.session.GridSessionFutureWaitJobAttributeSelfTest;
+import org.apache.ignite.session.GridSessionFutureWaitTaskAttributeSelfTest;
+import org.apache.ignite.session.GridSessionJobFailoverSelfTest;
+import org.apache.ignite.session.GridSessionJobWaitTaskAttributeSelfTest;
+import org.apache.ignite.session.GridSessionLoadSelfTest;
+import org.apache.ignite.session.GridSessionSetFutureAttributeSelfTest;
+import org.apache.ignite.session.GridSessionSetFutureAttributeWaitListenerSelfTest;
+import org.apache.ignite.session.GridSessionSetJobAttribute2SelfTest;
+import org.apache.ignite.session.GridSessionSetJobAttributeOrderSelfTest;
+import org.apache.ignite.session.GridSessionSetJobAttributeSelfTest;
+import org.apache.ignite.session.GridSessionSetJobAttributeWaitListenerSelfTest;
+import org.apache.ignite.session.GridSessionSetTaskAttributeSelfTest;
+import org.apache.ignite.session.GridSessionTaskWaitJobAttributeSelfTest;
+import org.apache.ignite.session.GridSessionWaitAttributeSelfTest;
 
 /**
  * Task session test suite.

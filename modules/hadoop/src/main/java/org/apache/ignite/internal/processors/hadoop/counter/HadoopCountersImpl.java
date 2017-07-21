@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.hadoop.counter;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.lang.reflect.Constructor;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Default in-memory counters store.

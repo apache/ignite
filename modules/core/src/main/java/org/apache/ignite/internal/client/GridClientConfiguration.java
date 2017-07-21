@@ -17,18 +17,27 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.security.*;
-import org.jetbrains.annotations.*;
-
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
+import org.apache.ignite.internal.client.balancer.GridClientRandomBalancer;
+import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
+import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Java client configuration.
@@ -148,7 +157,6 @@ public class GridClientConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
-        marshaller = cfg.getMarshaller();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }
@@ -226,18 +234,24 @@ public class GridClientConfiguration {
      * Sets list of servers this client should connect to.
      *
      * @param srvs List of servers.
+     * @return {@code this} for chaining.
      */
-    public void setServers(Collection<String> srvs) {
+    public GridClientConfiguration setServers(Collection<String> srvs) {
         this.srvs = srvs != null ? srvs : Collections.<String>emptySet();
+
+        return this;
     }
 
     /**
      * Sets list of routers this client should connect to.
      *
      * @param routers List of routers.
+     * @return {@code this} for chaining.
      */
-    public void setRouters(Collection<String> routers) {
+    public GridClientConfiguration setRouters(Collection<String> routers) {
         this.routers = routers != null ? routers : Collections.<String>emptySet();
+
+        return this;
     }
 
     /**
@@ -256,9 +270,12 @@ public class GridClientConfiguration {
      *
      * @param proto Protocol type.
      * @see GridClientProtocol
+     * @return {@code this} for chaining.
      */
-    public void setProtocol(GridClientProtocol proto) {
+    public GridClientConfiguration setProtocol(GridClientProtocol proto) {
         this.proto = proto;
+
+        return this;
     }
 
     /**
@@ -288,18 +305,24 @@ public class GridClientConfiguration {
      * Sets whether {@code TCP_NODELAY} flag should be set on underlying socket connections.
      *
      * @param tcpNoDelay {@code True} if flag should be set.
+     * @return {@code this} for chaining.
      */
-    public void setTcpNoDelay(boolean tcpNoDelay) {
+    public GridClientConfiguration setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
+
+        return this;
     }
 
     /**
      * Sets timeout for socket connect operation.
      *
      * @param connectTimeout Connect timeout in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setConnectTimeout(int connectTimeout) {
+    public GridClientConfiguration setConnectTimeout(int connectTimeout) {
         this.connectTimeout = connectTimeout;
+
+        return this;
     }
 
     /**
@@ -317,9 +340,12 @@ public class GridClientConfiguration {
      * Sets SSL context factory that will be used for creation of secure connections.
      *
      * @param sslCtxFactory Context factory.
+     * @return {@code this} for chaining.
      */
-    public void setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+    public GridClientConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
+
+        return this;
     }
 
     /**
@@ -337,9 +363,12 @@ public class GridClientConfiguration {
      * Sets default compute balancer.
      *
      * @param balancer Balancer to use.
+     * @return {@code this} for chaining.
      */
-    public void setBalancer(GridClientLoadBalancer balancer) {
+    public GridClientConfiguration setBalancer(GridClientLoadBalancer balancer) {
         this.balancer = balancer;
+
+        return this;
     }
 
     /**
@@ -355,9 +384,12 @@ public class GridClientConfiguration {
      * Sets client credentials provider used in authentication process.
      *
      * @param credProvider Client credentials provider.
+     * @return {@code this} for chaining.
      */
-    public void setSecurityCredentialsProvider(SecurityCredentialsProvider credProvider) {
+    public GridClientConfiguration setSecurityCredentialsProvider(SecurityCredentialsProvider credProvider) {
         this.credProvider = credProvider;
+
+        return this;
     }
 
     /**
@@ -373,12 +405,15 @@ public class GridClientConfiguration {
      * Sets data configurations.
      *
      * @param dataCfgs Data configurations.
+     * @return {@code this} for chaining.
      */
-    public void setDataConfigurations(Collection<? extends GridClientDataConfiguration> dataCfgs) {
+    public GridClientConfiguration setDataConfigurations(Collection<? extends GridClientDataConfiguration> dataCfgs) {
         this.dataCfgs = U.newHashMap(dataCfgs.size());
 
         for (GridClientDataConfiguration dataCfg : dataCfgs)
             this.dataCfgs.put(dataCfg.getName(), new GridClientDataConfiguration(dataCfg));
+
+        return this;
     }
 
     /**
@@ -395,9 +430,12 @@ public class GridClientConfiguration {
      * Sets flag indicating whether node and cache metrics should be cached by client.
      *
      * @param enableMetricsCache {@code True} if cache should be enabled.
+     * @return {@code this} for chaining.
      */
-    public void setEnableMetricsCache(boolean enableMetricsCache) {
+    public GridClientConfiguration setEnableMetricsCache(boolean enableMetricsCache) {
         this.enableMetricsCache = enableMetricsCache;
+
+        return this;
     }
 
     /**
@@ -422,9 +460,12 @@ public class GridClientConfiguration {
      * Sets flag indicating whether node attributes should be cached by client.
      *
      * @param enableAttrsCache {@code True} if cache should be enabled.
+     * @return {@code this} for chaining.
      */
-    public void setEnableAttributesCache(boolean enableAttrsCache) {
+    public GridClientConfiguration setEnableAttributesCache(boolean enableAttrsCache) {
         this.enableAttrsCache = enableAttrsCache;
+
+        return this;
     }
 
     /**
@@ -449,9 +490,12 @@ public class GridClientConfiguration {
      * Sets flag indicating whether node metrics should be fetched by client automatically.
      *
      * @param autoFetchMetrics {@code True} if metrics should be fetched.
+     * @return {@code this} for chaining.
      */
-    public void setAutoFetchMetrics(boolean autoFetchMetrics) {
+    public GridClientConfiguration setAutoFetchMetrics(boolean autoFetchMetrics) {
         this.autoFetchMetrics = autoFetchMetrics;
+
+        return this;
     }
 
     /**
@@ -475,9 +519,12 @@ public class GridClientConfiguration {
      * Sets flag indicating whether node attributes should be fetched by client automatically.
      *
      * @param autoFetchAttrs {@code True} if attributes should be fetched.
+     * @return {@code this} for chaining.
      */
-    public void setAutoFetchAttributes(boolean autoFetchAttrs) {
+    public GridClientConfiguration setAutoFetchAttributes(boolean autoFetchAttrs) {
         this.autoFetchAttrs = autoFetchAttrs;
+
+        return this;
     }
 
     /**
@@ -508,9 +555,12 @@ public class GridClientConfiguration {
      * will be refreshed every {@code topRefreshFreq} milliseconds.
      *
      * @param topRefreshFreq Topology refresh frequency in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setTopologyRefreshFrequency(long topRefreshFreq) {
+    public GridClientConfiguration setTopologyRefreshFrequency(long topRefreshFreq) {
         this.topRefreshFreq = topRefreshFreq;
+
+        return this;
     }
 
     /**
@@ -527,9 +577,12 @@ public class GridClientConfiguration {
      * Sets maximum time in milliseconds which connection can be idle before it is closed by client.
      *
      * @param maxConnIdleTime Maximum time of connection idleness in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setMaxConnectionIdleTime(long maxConnIdleTime) {
+    public GridClientConfiguration setMaxConnectionIdleTime(long maxConnIdleTime) {
         this.maxConnIdleTime = maxConnIdleTime;
+
+        return this;
     }
 
     /**
@@ -549,9 +602,12 @@ public class GridClientConfiguration {
      * Sets ping interval in milliseconds.
      *
      * @param pingInterval Ping interval in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setPingInterval(long pingInterval) {
+    public GridClientConfiguration setPingInterval(long pingInterval) {
         this.pingInterval = pingInterval;
+
+        return this;
     }
 
     /**
@@ -572,9 +628,12 @@ public class GridClientConfiguration {
      * Sets ping timeout in milliseconds.
      *
      * @param pingTimeout Ping interval in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setPingTimeout(long pingTimeout) {
+    public GridClientConfiguration setPingTimeout(long pingTimeout) {
         this.pingTimeout = pingTimeout;
+
+        return this;
     }
 
     /**
@@ -595,9 +654,12 @@ public class GridClientConfiguration {
      * Sets executor service.
      *
      * @param executor Executor service to use in client.
+     * @return {@code this} for chaining.
      */
-    public void setExecutorService(ExecutorService executor) {
+    public GridClientConfiguration setExecutorService(ExecutorService executor) {
         this.executor = executor;
+
+        return this;
     }
 
     /**
@@ -606,7 +668,7 @@ public class GridClientConfiguration {
      * Options, that can be used out-of-the-box:
      * <ul>
      *     <li>{@link GridClientOptimizedMarshaller} (default) - Ignite's optimized marshaller.</li>
-     *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
+     *     <li>{@code GridClientBinaryMarshaller} - Marshaller that supports binary objects.</li>
      *     <li>{@link org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
      * </ul>
      *
@@ -620,9 +682,12 @@ public class GridClientConfiguration {
      * Sets the marshaller to use for communication.
      *
      * @param marshaller A marshaller to use.
+     * @return {@code this} for chaining.
      */
-    public void setMarshaller(GridClientMarshaller marshaller) {
+    public GridClientConfiguration setMarshaller(GridClientMarshaller marshaller) {
         this.marshaller = marshaller;
+
+        return this;
     }
 
     /**
@@ -828,9 +893,12 @@ public class GridClientConfiguration {
      * Set the daemon flag value. Communication threads will be created as daemons if this flag is set.
      *
      * @param daemon Daemon flag.
+     * @return {@code this} for chaining.
      */
-    public void setDaemon(boolean daemon) {
+    public GridClientConfiguration setDaemon(boolean daemon) {
         this.daemon = daemon;
+
+        return this;
     }
 
     /**

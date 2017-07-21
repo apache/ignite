@@ -17,11 +17,14 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
@@ -42,7 +45,7 @@ import java.util.*;
  *
  * @see IgniteCache#query(Query)
  */
-public final class SqlFieldsQuery extends Query<List<?>> {
+public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,6 +58,24 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
     /** Collocation flag. */
     private boolean collocated;
+
+    /** Query timeout in millis. */
+    private int timeout;
+
+    /** */
+    private boolean enforceJoinOrder;
+
+    /** */
+    private boolean distributedJoins;
+
+    /** */
+    private boolean replicatedOnly;
+
+    /** Partitions for query */
+    private int[] parts;
+
+    /** Schema. */
+    private String schema;
 
     /**
      * Constructs SQL fields query.
@@ -121,6 +142,27 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
+     * Gets the query execution timeout in milliseconds.
+     *
+     * @return Timeout value.
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+     * @param timeout Timeout value. Zero value disables timeout.
+     * @param timeUnit Time unit.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
+        this.timeout = QueryUtils.validateTimeout(timeout, timeUnit);
+
+        return this;
+    }
+
+    /**
      * Checks if this query is collocated.
      *
      * @return {@code true} If the query is collocated.
@@ -132,6 +174,12 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Sets flag defining if this query is collocated.
      *
+     * Collocation flag is used for optimization purposes of queries with GROUP BY statements.
+     * Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+     * If you know in advance that the elements of your query selection are collocated together on the same node and
+     * you group by collocated key (primary or affinity key), then Ignite can make significant performance and network
+     * optimizations by grouping data on remote nodes.
+     *
      * @param collocated Flag value.
      * @return {@code this} For chaining.
      */
@@ -139,6 +187,53 @@ public final class SqlFieldsQuery extends Query<List<?>> {
         this.collocated = collocated;
 
         return this;
+    }
+
+    /**
+     * Checks if join order of tables if enforced.
+     *
+     * @return Flag value.
+     */
+    public boolean isEnforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * Sets flag to enforce join order of tables in the query. If set to {@code true}
+     * query optimizer will not reorder tables in join. By default is {@code false}.
+     * <p>
+     * It is not recommended to enable this property until you are sure that
+     * your indexes and the query itself are correct and tuned as much as possible but
+     * query optimizer still produces wrong join order.
+     *
+     * @param enforceJoinOrder Flag value.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setEnforceJoinOrder(boolean enforceJoinOrder) {
+        this.enforceJoinOrder = enforceJoinOrder;
+
+        return this;
+    }
+
+    /**
+     * Specify if distributed joins are enabled for this query.
+     *
+     * @param distributedJoins Distributed joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setDistributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+
+        return this;
+    }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean isDistributedJoins() {
+        return distributedJoins;
     }
 
     /** {@inheritDoc} */
@@ -149,6 +244,75 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery setLocal(boolean loc) {
         return (SqlFieldsQuery)super.setLocal(loc);
+    }
+
+    /**
+     * Specify if the query contains only replicated tables.
+     * This is a hint for potentially more effective execution.
+     *
+     * @param replicatedOnly The query contains only replicated tables.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setReplicatedOnly(boolean replicatedOnly) {
+        this.replicatedOnly = replicatedOnly;
+
+        return this;
+    }
+
+    /**
+     * Check is the query contains only replicated tables.
+     *
+     * @return {@code true} If the query contains only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     * <p>
+     * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setPartitions(@Nullable int... parts) {
+        this.parts = prepare(parts);
+
+        return this;
+    }
+
+    /**
+     * Get schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @return Schema. Null if schema is not set.
+     */
+    @Nullable public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @param schema Schema. Null to unset schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setSchema(@Nullable String schema) {
+        this.schema = schema;
+
+        return this;
     }
 
     /** {@inheritDoc} */

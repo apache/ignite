@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFuture;
 
 /**
  * Future callback will be notified, when listened future finishes (both succeed or failed).

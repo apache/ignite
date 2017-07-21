@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheTransactionalAbstractMetricsSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Local cache metrics test.
@@ -30,8 +31,8 @@ public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstrac
     private static final int GRID_CNT = 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -39,8 +40,8 @@ public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(LOCAL);
 

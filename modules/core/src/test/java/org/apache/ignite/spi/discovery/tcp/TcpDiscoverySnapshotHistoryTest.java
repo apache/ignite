@@ -17,28 +17,31 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.*;
+import java.util.Collections;
+
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_TOP_HISTORY_SIZE;
 
 /**
  * Tests for topology snapshots history.
  */
 public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
-    /** */
-    public TcpDiscoverySnapshotHistoryTest() {
-        super(false);
-    }
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi());
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500"));
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
         cfg.setCacheConfiguration();
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);

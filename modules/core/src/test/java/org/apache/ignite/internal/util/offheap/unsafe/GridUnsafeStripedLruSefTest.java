@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Striped LRU test.

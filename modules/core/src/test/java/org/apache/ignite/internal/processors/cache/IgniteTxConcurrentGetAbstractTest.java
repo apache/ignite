@@ -17,22 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Checks multithreaded put/get cache operations on one node.
@@ -56,8 +55,8 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -73,7 +72,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
      * @return Near cache.
      */
     GridNearCacheAdapter<String, Integer> near(Ignite g) {
-        return (GridNearCacheAdapter<String, Integer>)((IgniteKernal)g).<String, Integer>internalCache();
+        return (GridNearCacheAdapter<String, Integer>)((IgniteKernal)g).<String, Integer>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -95,7 +94,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
 
         final Ignite ignite = grid();
 
-        ignite.cache(null).put(key, "val");
+        ignite.cache(DEFAULT_CACHE_NAME).put(key, "val");
 
         GridCacheEntryEx dhtEntry = dht(ignite).peekEx(key);
 
@@ -129,7 +128,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
                 info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", xid=" + tx.xid() +
                     ", entry=" + dhtEntry + ']');
 
-            String val = ignite.<String, String>cache(null).get(key);
+            String val = ignite.<String, String>cache(DEFAULT_CACHE_NAME).get(key);
 
             assertNotNull(val);
             assertEquals("val", val);

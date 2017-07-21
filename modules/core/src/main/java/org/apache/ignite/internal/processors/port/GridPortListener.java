@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.port;
 
-import java.util.*;
+import java.util.EventListener;
 
 /**
  * Listener for port change events.

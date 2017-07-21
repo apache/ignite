@@ -35,9 +35,27 @@
 
 package org.apache.ignite.internal.util.snaptree;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentNavigableMap;
 
 // TODO: optimized buildFromSorted
 // TODO: submap.clone()
@@ -88,7 +106,9 @@ import java.util.concurrent.*;
  *  @author Nathan Bronson
  */
 @SuppressWarnings("ALL")
-public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V>, Cloneable, Serializable {
+public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Cloneable,
+    Serializable {
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -2327,7 +2347,7 @@ public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavi
         return new SubMap(this, null, null, false, null, null, false, true);
     }
 
-    private static class SubMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V>, Serializable {
+    private static class SubMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

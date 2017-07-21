@@ -17,10 +17,10 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.lang.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * This class defines a handler for asynchronous task execution. It's similar in design

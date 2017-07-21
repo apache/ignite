@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
 
@@ -202,7 +204,8 @@ public class GridDhtPartitionsReservation implements GridReservable {
 
             if (reservations.compareAndSet(r, r - 1)) {
                 // If it was the last reservation and topology version changed -> attempt to evict partitions.
-                if (r == 1 && !topVer.equals(cctx.topology().topologyVersion()))
+                if (r == 1 && !cctx.kernalContext().isStopping() &&
+                    !topVer.equals(cctx.topology().topologyVersion()))
                     tryEvict(parts.get());
 
                 return;
@@ -237,7 +240,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
     }
 
     /**
-     * Must be checked in {@link GridDhtLocalPartition#tryEvict(boolean)}.
+     * Must be checked in {@link GridDhtLocalPartition#tryEvict()}.
      * If returns {@code true} this reservation object becomes invalid and partitions
      * can be evicted or at least cleared.
      * Also this means that after returning {@code true} here method {@link #reserve()} can not

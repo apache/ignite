@@ -17,12 +17,13 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.startup.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.startup.BasicWarmupClosure;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -37,8 +38,8 @@ public class IgniteWarmupClosureSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -56,7 +57,7 @@ public class IgniteWarmupClosureSelfTest extends GridCommonAbstractTest {
 
         cfg.setWarmupClosure(warmupClosure);
 
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);

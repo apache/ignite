@@ -17,11 +17,13 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners.file;
 
-import org.apache.ignite.spi.deployment.uri.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentAbstractSelfTest;
+import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 
 /**
  * Test file protocol scanner.

@@ -17,11 +17,15 @@
 
 package org.apache.ignite.examples.computegrid.montecarlo;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Random;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteReducer;
 
 /**
  * Monte-Carlo example. Demonstrates distributed credit risk calculation.

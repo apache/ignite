@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.affinity.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
  * Factory for cache entries.
@@ -28,17 +27,11 @@ public interface GridCacheMapEntryFactory {
      * @param ctx Cache registry.
      * @param topVer Topology version.
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Header id.
      * @return New cache entry.
      */
-    public GridCacheMapEntry create(GridCacheContext ctx,
+    public GridCacheMapEntry create(
+        GridCacheContext ctx,
         AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val,
-        @Nullable GridCacheMapEntry next,
-        int hdrId);
+        KeyCacheObject key
+    );
 }

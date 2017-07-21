@@ -17,9 +17,8 @@
 
 package org.apache.ignite.compute;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This enumeration provides different types of actions following the last
@@ -50,8 +49,7 @@ public enum ComputeJobResultPolicy {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable
-    public static ComputeJobResultPolicy fromOrdinal(byte ord) {
+    @Nullable public static ComputeJobResultPolicy fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

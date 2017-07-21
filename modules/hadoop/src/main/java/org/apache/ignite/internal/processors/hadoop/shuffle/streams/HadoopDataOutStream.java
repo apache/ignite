@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
 
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-
-import java.io.*;
-import java.nio.charset.*;
-
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.*;
+import java.io.DataOutput;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
  * Data output stream.
@@ -68,7 +67,7 @@ public class HadoopDataOutStream extends OutputStream implements DataOutput {
 
     /** {@inheritDoc} */
     @Override public void write(byte[] b, int off, int len) {
-        UNSAFE.copyMemory(b, BYTE_ARR_OFF + off, null, move(len), len);
+        GridUnsafe.copyHeapOffheap(b, GridUnsafe.BYTE_ARR_OFF + off, move(len), len);
     }
 
     /** {@inheritDoc} */

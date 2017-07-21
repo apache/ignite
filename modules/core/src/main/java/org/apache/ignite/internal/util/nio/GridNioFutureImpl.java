@@ -17,18 +17,27 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Default future implementation.
  */
 public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNioFuture<R> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private boolean msgThread;
 
     /** */
-    protected boolean msgThread;
+    protected final IgniteInClosure<IgniteException> ackC;
+
+    /**
+     * @param ackC Ack closure.
+     */
+    public GridNioFutureImpl(IgniteInClosure<IgniteException> ackC) {
+        this.ackC = ackC;
+    }
 
     /** {@inheritDoc} */
     @Override public void messageThread(boolean msgThread) {
@@ -43,6 +52,16 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
     /** {@inheritDoc} */
     @Override public boolean skipRecovery() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInClosure<IgniteException> ackClosure() {
+        return ackC;
     }
 
     /** {@inheritDoc} */

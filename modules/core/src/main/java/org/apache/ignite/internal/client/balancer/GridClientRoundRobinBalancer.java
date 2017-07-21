@@ -17,11 +17,17 @@
 
 package org.apache.ignite.internal.client.balancer;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
-import java.util.concurrent.locks.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientTopologyListener;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Simple balancer that implements round-robin balancing.

@@ -17,14 +17,17 @@
 
 package org.apache.ignite.lang;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.text.*;
-import java.util.*;
-import java.util.regex.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents node version.
@@ -40,7 +43,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
-        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
+        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
     private byte major;
@@ -156,7 +159,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @return Release date.
      */
     public Date releaseDate() {
-        return new Date(revTs);
+        return new Date(revTs * 1000);
     }
 
     /**
@@ -192,6 +195,24 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
             return res;
 
         return Long.compare(revTs, o.revTs);
+    }
+
+    /**
+     * @param o Other version.
+     * @return Compare result.
+     */
+    public int compareToIgnoreTimestamp(@NotNull IgniteProductVersion o) {
+        int res = Integer.compare(major, o.major);
+
+        if (res != 0)
+            return res;
+
+        res = Integer.compare(minor, o.minor);
+
+        if (res != 0)
+            return res;
+
+        return Integer.compare(maintenance, o.maintenance);
     }
 
     /** {@inheritDoc} */

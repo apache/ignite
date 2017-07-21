@@ -17,14 +17,19 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Test task for {@code GridCacheDeploymentSelfTest}.
@@ -45,7 +50,7 @@ public class CacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Ob
                     X.println("Executing CacheDeploymentTestTask1 job on node " +
                         ignite.cluster().localNode().id());
 
-                    IgniteCache<String, CacheDeploymentTestValue> cache = ignite.cache(null);
+                    IgniteCache<String, CacheDeploymentTestValue> cache = ignite.cache("default");
 
                     for (int i = 0; i < PUT_CNT; i++)
                         cache.put("1" + i, new CacheDeploymentTestValue());

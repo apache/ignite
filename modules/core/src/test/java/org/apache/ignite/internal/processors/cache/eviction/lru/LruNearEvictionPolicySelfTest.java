@@ -17,21 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.lru;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Random;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  * LRU near eviction tests (GG-8884).
@@ -50,16 +53,15 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(PARTITIONED);
+        cc.setAtomicityMode(atomicityMode);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setRebalanceMode(SYNC);
-        cc.setStartSize(100);
         cc.setBackups(0);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
@@ -112,7 +114,7 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }
@@ -124,7 +126,7 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(DEFAULT_CACHE_NAME);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

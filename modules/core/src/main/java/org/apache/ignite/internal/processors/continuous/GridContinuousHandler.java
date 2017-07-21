@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous routine handler.
@@ -33,7 +36,14 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * Listener registration status.
      */
     public enum RegisterStatus {
-        REGISTERED, NOT_REGISTERED, DELAYED
+        /** */
+        REGISTERED,
+
+        /** */
+        NOT_REGISTERED,
+
+        /** */
+        DELAYED
     }
 
     /**
@@ -46,14 +56,6 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @throws IgniteCheckedException In case of error.
      */
     public RegisterStatus register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
-
-    /**
-     * Callback called after listener is registered and acknowledgement is sent.
-     *
-     * @param routineId Routine ID.
-     * @param ctx Kernal context.
-     */
-    public void onListenerRegistered(UUID routineId, GridKernalContext ctx);
 
     /**
      * Unregisters listener.
@@ -91,6 +93,32 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
+     * Creates new batch.
+     *
+     * @return New batch.
+     */
+    public GridContinuousBatch createBatch();
+
+    /**
+     * Client node disconnected callback.
+     */
+    public void onClientDisconnected();
+
+    /**
+     * Called when ack for a batch is received from client.
+     *
+     * @param routineId Routine ID.
+     * @param batch Acknowledged batch.
+     * @param ctx Kernal context.
+     */
+    public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx);
+
+    /**
+     * Node which started routine leave topology.
+     */
+    public void onNodeLeft();
+
+    /**
      * @return Topic for ordered notifications. If {@code null}, notifications
      * will be sent in non-ordered messages.
      */
@@ -106,20 +134,33 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     /**
      * @return {@code True} if for events.
      */
-    public boolean isForEvents();
+    public boolean isEvents();
 
     /**
      * @return {@code True} if for messaging.
      */
-    public boolean isForMessaging();
+    public boolean isMessaging();
 
     /**
      * @return {@code True} if for continuous queries.
      */
-    public boolean isForQuery();
+    public boolean isQuery();
+
+    /**
+     * @return {@code True} if Ignite Binary objects should be passed to the listener and filter.
+     */
+    public boolean keepBinary();
 
     /**
      * @return Cache name if this is a continuous query handler.
      */
     public String cacheName();
+
+    /**
+     * @param cntrsPerNode Init state partition counters for node.
+     * @param cntrs Init state for partition counters.
+     * @param topVer Topology version.
+     */
+    public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
+        Map<Integer, T2<Long, Long>> cntrs);
 }

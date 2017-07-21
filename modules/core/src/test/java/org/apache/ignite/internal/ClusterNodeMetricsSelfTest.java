@@ -17,25 +17,31 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.messaging.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.Serializable;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.GridTestTask;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.messaging.MessagingListenActor;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * Grid node metrics self test.
@@ -51,6 +57,15 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Number of messages. */
     private static final int MSG_CNT = 3;
 
+    /** Size of value in bytes. */
+    private static final int VAL_SIZE = 512 * 1024;
+
+    /** Amount of cache entries. */
+    private static final int MAX_VALS_AMOUNT = 400;
+
+    /** Cache name. */
+    private final String CACHE_NAME = "cache1";
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid();
@@ -62,8 +77,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -72,9 +87,84 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         cfg.setCacheConfiguration();
-        cfg.setMetricsUpdateFrequency(0);
+        cfg.setMetricsUpdateFrequency(500);
 
-        return cfg;
+        CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration();
+        ccfg.setName(CACHE_NAME);
+        ccfg.setStatisticsEnabled(true);
+
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxMemorySize(MAX_VALS_AMOUNT * VAL_SIZE);
+        plc.setMaxSize(0);
+
+        ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
+
+        return cfg.setCacheConfiguration(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAllocatedMemory() throws Exception {
+        IgniteEx ignite = grid();
+
+        final IgniteCache cache = ignite.getOrCreateCache(CACHE_NAME);
+
+        MemoryMetricsImpl memMetrics = getDefaultMemoryPolicyMetrics(ignite);
+
+        memMetrics.enableMetrics();
+
+        int pageSize = getPageSize(ignite);
+
+        assertEquals(0, memMetrics.getTotalAllocatedPages());
+
+        fillCache(cache);
+
+        assertTrue(memMetrics.getTotalAllocatedPages() * pageSize > MAX_VALS_AMOUNT
+            * VAL_SIZE);
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     */
+    private MemoryMetricsImpl getDefaultMemoryPolicyMetrics(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().memoryPolicy(null).memoryMetrics();
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     */
+    private int getPageSize(IgniteEx ignite) {
+        return ignite.context().cache().context().database().pageSize();
+    }
+
+    /**
+     * Fill cache with values.
+     * @param cache Ignite cache.
+     * @throws Exception If failed.
+     */
+    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception{
+        final byte[] val = new byte[VAL_SIZE];
+
+        for (int i = 0; i < MAX_VALS_AMOUNT * 4; i++)
+            cache.put(i, val);
+
+        // Let metrics update twice.
+        final CountDownLatch latch = new CountDownLatch(2);
+
+        grid().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt.type() == EVT_NODE_METRICS_UPDATED;
+
+                latch.countDown();
+
+                return true;
+            }
+        }, EVT_NODE_METRICS_UPDATED);
+
+        // Wait for metrics update.
+        latch.await();
     }
 
     /**
@@ -83,16 +173,18 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     public void testSingleTaskMetrics() throws Exception {
         Ignite ignite = grid();
 
-        ignite.compute().execute(new GridTestTask(), "testArg");
+        final CountDownLatch taskLatch = new CountDownLatch(2);
+        ignite.compute().executeAsync(new GridTestTask(taskLatch), "testArg");
 
         // Let metrics update twice.
-        final CountDownLatch latch = new CountDownLatch(2);
 
+        final CountDownLatch latch = new CountDownLatch(3);
         ignite.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
                 latch.countDown();
+                taskLatch.countDown();
 
                 return true;
             }
@@ -113,7 +205,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getAverageWaitingJobs() == 0;
         assert metrics.getCurrentActiveJobs() == 0;
         assert metrics.getCurrentCancelledJobs() == 0;
-        assert metrics.getCurrentJobExecuteTime() == 0;
+        assert metrics.getCurrentJobExecuteTime() > 0;
         assert metrics.getCurrentJobWaitTime() == 0;
         assert metrics.getCurrentWaitingJobs() == 0;
         assert metrics.getMaximumActiveJobs() == 1;
@@ -249,8 +341,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         final Ignite ignite1 = startGrid(1);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return ignite0.cluster().nodes().size() == 2 && ignite1.cluster().nodes().size() == 2;
             }
         }, 3000L);
@@ -266,7 +357,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         assert metrics0.getHeapMemoryUsed() > 0;
         assert metrics0.getHeapMemoryTotal() > 0;
-        assert metrics0.getNonHeapMemoryMaximum() > 0;
     }
 
     /**

@@ -17,21 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheExistsException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
@@ -56,23 +61,23 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     private boolean addTemplate;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
         if (addTemplate) {
-            CacheConfiguration dfltCfg = new CacheConfiguration();
+            CacheConfiguration dfltCfg = new CacheConfiguration("*");
 
             dfltCfg.setAtomicityMode(TRANSACTIONAL);
             dfltCfg.setBackups(2);
 
-            CacheConfiguration templateCfg1 = new CacheConfiguration();
+            CacheConfiguration templateCfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             templateCfg1.setName(TEMPLATE1);
             templateCfg1.setBackups(3);
 
-            CacheConfiguration templateCfg2 = new CacheConfiguration();
+            CacheConfiguration templateCfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             templateCfg2.setName(TEMPLATE2);
             templateCfg2.setBackups(4);
@@ -128,7 +133,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         assertNotNull(ignite2.cache("org.apache.ignite1"));
         assertNotNull(ignite2.cache("org.apache1"));
 
-        CacheConfiguration template1 = new CacheConfiguration();
+        CacheConfiguration template1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         template1.setName(TEMPLATE3);
         template1.setBackups(5);
@@ -194,7 +199,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkGetOrCreate(ignite2, "org.apache.ignite.cache2", 3);
         checkGetOrCreate(ignite2, "org.apache2", 2);
 
-        CacheConfiguration template1 = new CacheConfiguration();
+        CacheConfiguration template1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         template1.setName(TEMPLATE3);
         template1.setBackups(5);
@@ -212,7 +217,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkNoTemplateCaches(4);
 
         // Template with non-wildcard name.
-        CacheConfiguration template2 = new CacheConfiguration();
+        CacheConfiguration template2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         template2.setName("org.apache.ignite");
         template2.setBackups(6);
@@ -223,19 +228,6 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkGetOrCreate(ignite1, "org.apache.ignite", 6);
         checkGetOrCreate(ignite2, "org.apache.ignite", 6);
         checkGetOrCreate(ignite3, "org.apache.ignite", 6);
-
-        // Test name '*'.
-        CacheConfiguration template3 = new CacheConfiguration();
-
-        template3.setName("*");
-        template3.setBackups(7);
-
-        ignite1.addCacheConfiguration(template3);
-
-        checkGetOrCreate(ignite0, "x", 7);
-        checkGetOrCreate(ignite1, "x", 7);
-        checkGetOrCreate(ignite2, "x", 7);
-        checkGetOrCreate(ignite3, "x", 7);
     }
 
     /**
@@ -289,7 +281,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
 
                     log.info("Add configuration using node: " + ignite.name());
 
-                    CacheConfiguration cfg = new CacheConfiguration();
+                    CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     cfg.setName("org.apache.ignite" + iter + "*");
 
@@ -340,7 +332,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = ignite(i);
 
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cfg-" + i);
 
@@ -358,6 +350,36 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         evt = evtLatch.await(3000, TimeUnit.MILLISECONDS);
 
         assertTrue(evt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTemplateCleanup() throws Exception {
+        startGridsMultiThreaded(3);
+
+        try {
+            CacheConfiguration ccfg = new CacheConfiguration("affTemplate-*");
+
+            ccfg.setAffinity(new RendezvousAffinityFunction());
+
+            ignite(0).addCacheConfiguration(ccfg);
+
+            ignite(0).getOrCreateCache("affTemplate-1");
+
+            IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache("affTemplate-2");
+
+            ignite(0).destroyCache("affTemplate-1");
+
+            startGrid(3);
+
+            cache.put(1, 1);
+
+            assertEquals(1, cache.get(1));
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -420,29 +442,9 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
                 }
             }, IllegalStateException.class, null);
 
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ignite.cache(TEMPLATE1);
-
-                    return null;
-                }
-            }, IllegalArgumentException.class, null);
-
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ignite.cache(TEMPLATE2);
-
-                    return null;
-                }
-            }, IllegalArgumentException.class, null);
-
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ignite.cache(TEMPLATE3);
-
-                    return null;
-                }
-            }, IllegalArgumentException.class, null);
+            assertNull(ignite.cache(TEMPLATE1));
+            assertNull(ignite.cache(TEMPLATE2));
+            assertNull(ignite.cache(TEMPLATE3));
         }
     }
 }

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message sent to check that transactions related to transaction were prepared on remote node.
@@ -64,14 +66,16 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
      * @param nearTxCheck {@code True} if should check only tx on near node.
      * @param futId Future ID.
      * @param miniId Mini future ID.
+     * @param addDepInfo Deployment info flag.
      */
     public GridCacheTxRecoveryRequest(IgniteInternalTx tx,
         int txNum,
         boolean nearTxCheck,
         IgniteUuid futId,
-        IgniteUuid miniId)
+        IgniteUuid miniId,
+        boolean addDepInfo)
     {
-        super(tx.xidVersion(), 0);
+        super(tx.xidVersion(), 0, addDepInfo);
 
         nearXidVer = tx.nearXidVersion();
         sys = tx.system();
@@ -122,6 +126,11 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
      */
     public boolean system() {
         return sys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txRecoveryMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -241,11 +250,11 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheTxRecoveryRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 16;
     }
 

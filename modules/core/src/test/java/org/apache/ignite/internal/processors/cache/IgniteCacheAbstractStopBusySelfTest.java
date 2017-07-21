@@ -17,31 +17,45 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -83,8 +97,8 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = cacheConfiguration(CACHE_NAME);
 
@@ -94,7 +108,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         commSpi.setTcpNoDelay(true);
 
-        if (gridName.endsWith(String.valueOf(CLN_GRD)))
+        if (igniteInstanceName.endsWith(String.valueOf(CLN_GRD)))
             cfg.setClientMode(true);
 
         cacheCfg.setRebalanceMode(SYNC);
@@ -194,13 +208,11 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
             @Override public Object call() throws Exception {
                 info("Start operation.");
 
-                IgniteCache<Object, Object> cache = clientCache().withAsync();
-
-                cache.getAndPut(1, 1);
+                IgniteFuture f = clientCache().getAndPutAsync(1, 1);
 
                 info("Stop operation.");
 
-                return cache.future().get();
+                return f.get();
             }
         });
     }
@@ -209,7 +221,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        bannedMsg.set(GridNearGetRequest.class);
+        bannedMsg.set(GridNearSingleGetRequest.class);
 
         executeTest(new Callable<Integer>() {
             /** {@inheritDoc} */
@@ -221,6 +233,28 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
                 info("Stop operation.");
 
                 return put;
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAll() throws Exception {
+        bannedMsg.set(GridNearGetRequest.class);
+
+        executeTest(new Callable<Integer>() {
+            /** {@inheritDoc} */
+            @Override public Integer call() throws Exception {
+                info("Start operation.");
+
+                Set<Integer> keys = F.asSet(1, 2, 3);
+
+                clientCache().getAll(keys);
+
+                info("Stop operation.");
+
+                return null;
             }
         });
     }
@@ -263,7 +297,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         e.printStackTrace(pw);
 
-        assertTrue(sw.toString().contains("grid is stopping"));
+        assertTrue(sw.toString().contains("node is stopping"));
     }
 
     /**
@@ -324,7 +358,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(cacheMode());
@@ -343,7 +377,8 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      */
     private class TestTpcCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
             if (suspended.get()) {
                 assert bannedMsg.get() != null;
 
@@ -355,7 +390,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
                 }
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
     }
 

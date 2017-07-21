@@ -17,42 +17,70 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.processors.rest.handlers.*;
-import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.ComputeTaskInternalFuture;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
+import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.GridClosureCallMode.*;
-import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
-import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
+import static org.apache.ignite.internal.GridTopic.TOPIC_REST;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
  * Command handler for API requests.
@@ -81,7 +109,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         super(ctx);
 
         ctx.io().addMessageListener(TOPIC_REST, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (!(msg instanceof GridTaskResultRequest)) {
                     U.warn(log, "Received unexpected message instead of task result request: " + msg);
 
@@ -107,15 +135,15 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             res.error(err.getMessage());
                         else {
                             res.result(desc.result());
-                            res.resultBytes(ctx.config().getMarshaller().marshal(desc.result()));
+                            res.resultBytes(U.marshal(ctx, desc.result()));
                         }
                     }
                     else
                         res.found(false);
 
-                    Object topic = ctx.config().getMarshaller().unmarshal(req.topicBytes(), null);
+                    Object topic = U.unmarshal(ctx, req.topicBytes(), U.resolveClassLoader(ctx.config()));
 
-                    ctx.io().send(nodeId, topic, res, SYSTEM_POOL);
+                    ctx.io().sendToCustomTopic(nodeId, topic, res, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send job task result response.", e);
@@ -391,13 +419,13 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             return F.t("Task result holder has left grid: " + resHolderId, null);
 
         // Tuple: error message-response.
-        final IgniteBiTuple<String, GridTaskResultResponse> t = F.t2();
+        final IgniteBiTuple<String, GridTaskResultResponse> t = new IgniteBiTuple<>();
 
         final Lock lock = new ReentrantLock();
         final Condition cond = lock.newCondition();
 
         GridMessageListener msgLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 String err = null;
                 GridTaskResultResponse res = null;
 
@@ -411,7 +439,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     res = (GridTaskResultResponse)msg;
 
                 try {
-                    res.result(ctx.config().getMarshaller().unmarshal(res.resultBytes(), null));
+                    res.result(U.unmarshal(ctx, res.resultBytes(), U.resolveClassLoader(ctx.config())));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal task result: " + res, e);
@@ -464,9 +492,9 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
             // 2. Send message.
             try {
-                byte[] topicBytes = ctx.config().getMarshaller().marshal(topic);
+                byte[] topicBytes = U.marshal(ctx, topic);
 
-                ctx.io().send(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
+                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 String errMsg = "Failed to send task result request [resHolderId=" + resHolderId +

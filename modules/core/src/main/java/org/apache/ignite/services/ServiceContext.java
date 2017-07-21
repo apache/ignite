@@ -17,10 +17,9 @@
 
 package org.apache.ignite.services;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Service execution context. Execution context is provided into {@link Service#execute(ServiceContext)}

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management bean for {@link UriDeploymentSpi}.

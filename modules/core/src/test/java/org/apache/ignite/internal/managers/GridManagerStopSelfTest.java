@@ -17,37 +17,36 @@
 
 package org.apache.ignite.internal.managers;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.checkpoint.*;
-import org.apache.ignite.internal.managers.collision.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.managers.failover.*;
-import org.apache.ignite.internal.managers.loadbalancer.*;
-import org.apache.ignite.internal.managers.swapspace.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.sharedfs.*;
-import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.spi.collision.fifoqueue.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.eventstorage.*;
-import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
+import org.apache.ignite.internal.managers.collision.GridCollisionManager;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.managers.failover.GridFailoverManager;
+import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
+import org.apache.ignite.spi.collision.CollisionSpi;
+import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Managers stop test.
@@ -68,6 +67,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
         ctx.config().setPeerClassLoadingEnabled(true);
 
+        ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridResourceProcessor(ctx));
 
         ctx.start();
@@ -124,7 +124,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         injectLogger(spi);
 
         ctx.config().setCommunicationSpi(spi);
-        ctx.config().setMarshaller(new OptimizedMarshaller());
+        ctx.config().setMarshaller(new BinaryMarshaller());
 
         GridIoManager mgr = new GridIoManager(ctx);
 
@@ -204,21 +204,6 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         ctx.config().setLoadBalancingSpi(spi);
 
         GridLoadBalancerManager mgr = new GridLoadBalancerManager(ctx);
-
-        mgr.stop(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testStopSwapSpaceManager() throws Exception {
-        SwapSpaceSpi spi = new FileSwapSpaceSpi();
-
-        injectLogger(spi);
-
-        ctx.config().setSwapSpaceSpi(spi);
-
-        GridSwapSpaceManager mgr = new GridSwapSpaceManager(ctx);
 
         mgr.stop(true);
     }

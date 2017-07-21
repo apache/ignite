@@ -17,7 +17,7 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 
 /**
  * Test mapper for P2P class loading tests.

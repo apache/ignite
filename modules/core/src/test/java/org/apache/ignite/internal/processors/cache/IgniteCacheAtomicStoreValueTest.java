@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
@@ -41,11 +41,6 @@ public class IgniteCacheAtomicStoreValueTest extends IgniteCacheStoreValueAbstra
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
     }
 
     /** {@inheritDoc} */

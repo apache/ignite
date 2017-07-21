@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.DataInput;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Multimap for hadoop intermediate results.

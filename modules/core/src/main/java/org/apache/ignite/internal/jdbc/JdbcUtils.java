@@ -17,20 +17,41 @@
 
 package org.apache.ignite.internal.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-
-import java.sql.*;
-import java.util.*;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
-import static java.sql.Types.*;
+import static java.sql.Types.BIGINT;
+import static java.sql.Types.BINARY;
+import static java.sql.Types.BOOLEAN;
+import static java.sql.Types.DATE;
+import static java.sql.Types.DOUBLE;
+import static java.sql.Types.FLOAT;
+import static java.sql.Types.INTEGER;
+import static java.sql.Types.OTHER;
+import static java.sql.Types.SMALLINT;
+import static java.sql.Types.TIME;
+import static java.sql.Types.TIMESTAMP;
+import static java.sql.Types.TINYINT;
+import static java.sql.Types.VARCHAR;
 
 /**
  * Utility methods for JDBC driver.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 class JdbcUtils {
     /** Marshaller. */
     private static final Marshaller MARSHALLER = new JdkMarshaller();
@@ -46,7 +67,7 @@ class JdbcUtils {
         assert args != null;
 
         try {
-            return MARSHALLER.marshal(args);
+            return U.marshal(MARSHALLER, args);
         }
         catch (IgniteCheckedException e) {
             throw new SQLException("Failed to unmarshal result.", e);
@@ -75,7 +96,7 @@ class JdbcUtils {
         assert bytes != null;
 
         try {
-            return MARSHALLER.unmarshal(bytes, null);
+            return U.unmarshal(MARSHALLER, bytes, null);
         }
         catch (IgniteCheckedException e) {
             throw new SQLException("Failed to unmarshal result.", e);

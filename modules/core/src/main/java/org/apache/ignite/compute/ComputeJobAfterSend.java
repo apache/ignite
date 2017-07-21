@@ -17,7 +17,11 @@
 
 package org.apache.ignite.compute;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * This annotation allows to call a method right after the job has been
@@ -31,7 +35,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     &#64;GridComputeJobAfterSend
+ *     &#64;ComputeJobAfterSend
  *     public void onJobAfterSend() {
  *          ...
  *     }

@@ -17,21 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.affinity;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Affinity interface implementation.
  */
 public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
+    /** */
+    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+        "yet or cache was already stopped): ";
+
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 
@@ -49,7 +63,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        return cctx.config().getAffinity().partitions();
+        return cctx.group().affinityFunction().partitions();
     }
 
     /** {@inheritDoc} */
@@ -63,21 +77,21 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public boolean isPrimary(ClusterNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().primary(n, key, topologyVersion());
+        return cctx.affinity().primaryByKey(n, key, topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isBackup(ClusterNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().backups(key, topologyVersion()).contains(n);
+        return cctx.affinity().backupsByKey(key, topologyVersion()).contains(n);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isPrimaryOrBackup(ClusterNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().belongs(n, cctx.affinity().partition(key), topologyVersion());
+        return cctx.affinity().partitionBelongs(n, cctx.affinity().partition(key), topologyVersion());
     }
 
     /** {@inheritDoc} */
@@ -107,7 +121,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         AffinityTopologyVersion topVer = topologyVersion();
 
         for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
-            for (ClusterNode affNode : cctx.affinity().nodes(part, topVer)) {
+            for (ClusterNode affNode : cctx.affinity().nodesByPartition(part, topVer)) {
                 if (n.id().equals(affNode.id())) {
                     parts.add(part);
 
@@ -123,7 +137,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public ClusterNode mapPartitionToNode(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
-        return F.first(cctx.affinity().nodes(part, topologyVersion()));
+        return F.first(cctx.affinity().nodesByPartition(part, topologyVersion()));
     }
 
     /** {@inheritDoc} */
@@ -144,10 +158,21 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
 
-        if (key instanceof CacheObject)
-            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
+        if (key instanceof CacheObject && !(key instanceof BinaryObject)) {
+            CacheObjectContext ctx = cctx.cacheObjectContext();
 
-        return cctx.config().getAffinityMapper().affinityKey(key);
+            if (ctx == null)
+                throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+            key = ((CacheObject)key).value(ctx, false);
+        }
+
+        CacheConfiguration ccfg = cctx.config();
+
+        if (ccfg == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return ccfg.getAffinityMapper().affinityKey(key);
     }
 
     /** {@inheritDoc} */
@@ -163,25 +188,31 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
         AffinityTopologyVersion topVer = topologyVersion();
 
-        int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
+        int nodesCnt;
+
+        if (!cctx.isLocal())
+            nodesCnt = cctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), topVer).size();
+        else
+            nodesCnt = 1;
 
         // Must return empty map if no alive nodes present or keys is empty.
         Map<ClusterNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);
 
         for (K key : keys) {
-            ClusterNode primary = cctx.affinity().primary(key, topVer);
+            ClusterNode primary = cctx.affinity().primaryByKey(key, topVer);
 
-            if (primary != null) {
-                Collection<K> mapped = res.get(primary);
+            if (primary == null)
+                throw new IgniteException("Failed to get primary node [topVer=" + topVer + ", key=" + key + ']');
 
-                if (mapped == null) {
-                    mapped = new ArrayList<>(Math.max(keys.size() / nodesCnt, 16));
+            Collection<K> mapped = res.get(primary);
 
-                    res.put(primary, mapped);
-                }
+            if (mapped == null) {
+                mapped = new ArrayList<>(Math.max(keys.size() / nodesCnt, 16));
 
-                mapped.add(key);
+                res.put(primary, mapped);
             }
+
+            mapped.add(key);
         }
 
         return res;
@@ -191,14 +222,14 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
         A.notNull(key, "key");
 
-        return cctx.affinity().nodes(partition(key), topologyVersion());
+        return cctx.affinity().nodesByPartition(partition(key), topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
-        return cctx.affinity().nodes(part, topologyVersion());
+        return cctx.affinity().nodesByPartition(part, topologyVersion());
     }
 
     /**

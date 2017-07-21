@@ -17,26 +17,64 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
-import java.util.*;
+import java.util.AbstractCollection;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.UUID;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheStoreBalancingWrapper;
+import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.GridSetWrapper;
+import org.apache.ignite.internal.util.lang.GridInClosure3;
+import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteAsyncSupport;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Store manager.
@@ -44,7 +82,7 @@ import java.util.*;
 @SuppressWarnings({"AssignmentToCatchBlockParameter", "unchecked"})
 public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapter implements CacheStoreManager {
     /** */
-    private static final UUID SES_ATTR = UUID.randomUUID();
+    private static final int SES_ATTR = GridMetadataAwareAdapter.EntryKey.CACHE_STORE_MANAGER_KEY.key();
 
     /** */
     protected CacheStore<Object, Object> store;
@@ -73,6 +111,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** */
     private boolean globalSesLsnrs;
 
+    /** Always keep binary. */
+    protected boolean alwaysKeepBinary;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void initialize(@Nullable CacheStore cfgStore, Map sesHolders) throws IgniteCheckedException {
@@ -85,7 +126,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         store = cacheStoreWrapper(ctx, cfgStore, cfg);
 
-        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
+        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store,
+            cfg.getStoreConcurrentLoadAllThreshold());
 
         ThreadLocal<SessionData> sesHolder0 = null;
 
@@ -107,6 +149,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder = sesHolder0;
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
+
+        if (cfgStore instanceof CacheJdbcPojoStore)
+            alwaysKeepBinary = true;
     }
 
     /** {@inheritDoc} */
@@ -131,7 +176,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             return cfgStore;
 
         GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(this,
-            ctx.gridName(),
+            ctx.igniteInstanceName(),
             cfg.getName(),
             ctx.log(GridCacheWriteBehindStore.class),
             cfgStore);
@@ -140,6 +185,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
         store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
         store.setBatchSize(cfg.getWriteBehindBatchSize());
+        store.setWriteCoalescing(cfg.getWriteBehindCoalescing());
 
         return store;
     }
@@ -161,12 +207,24 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         CacheConfiguration cfg = cctx.config();
 
-        if (cfgStore != null && !cfg.isWriteThrough() && !cfg.isReadThrough()) {
-            U.quietAndWarn(log,
-                "Persistence store is configured, but both read-through and write-through are disabled. This " +
-                "configuration makes sense if the store implements loadCache method only. If this is the " +
-                "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
-                "Persistence store is configured, but both read-through and write-through are disabled.");
+        if (cfgStore != null) {
+            if (!cfg.isWriteThrough() && !cfg.isReadThrough()) {
+                U.quietAndWarn(log,
+                    "Persistence store is configured, but both read-through and write-through are disabled. This " +
+                    "configuration makes sense if the store implements loadCache method only. If this is the " +
+                    "case, ignore this warning. Otherwise, fix the configuration for the cache: " + cfg.getName(),
+                    "Persistence store is configured, but both read-through and write-through are disabled " +
+                    "for cache: " + cfg.getName());
+            }
+
+            if (!cfg.isWriteThrough() && cfg.isWriteBehindEnabled()) {
+                U.quietAndWarn(log,
+                    "To enable write-behind mode for the cache store it's also required to set " +
+                    "CacheConfiguration.setWriteThrough(true) property, otherwise the persistence " +
+                    "store will be never updated. Consider fixing configuration for the cache: " + cfg.getName(),
+                    "Write-behind mode for the cache store also requires CacheConfiguration.setWriteThrough(true) " +
+                    "property. Fix configuration for the cache: " + cfg.getName());
+            }
         }
 
         sesLsnrs = CU.startStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
@@ -179,7 +237,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override protected void stop0(boolean cancel, boolean destroy) {
         if (store instanceof LifecycleAware) {
             try {
                 // Avoid second start() call on store in case when near cache is enabled.
@@ -219,7 +277,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key)
+    @Override @Nullable public final Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key)
         throws IgniteCheckedException {
         return loadFromStore(tx, key, true);
     }
@@ -242,13 +300,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            Object storeKey = key.value(cctx.cacheObjectContext(), false);
-
-            if (convertPortable())
-                storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);
+            Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Loading value from store for key: " + storeKey);
+                log.debug(S.toString("Loading value from store for key",
+                    "key", storeKey, true));
 
             sessionInit0(tx);
 
@@ -271,11 +327,18 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                sessionEnd0(tx, threwEx);
+                IgniteInternalTx tx0 = tx;
+
+                if (tx0 != null && (tx0.dht() && tx0.local()))
+                    tx0 = null;
+
+                sessionEnd0(tx0, threwEx);
             }
 
             if (log.isDebugEnabled())
-                log.debug("Loaded value from store [key=" + key + ", val=" + val + ']');
+                log.debug(S.toString("Loaded value from store",
+                    "key", key, true,
+                    "val", val, true));
 
             if (convert) {
                 val = convert(val);
@@ -311,7 +374,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public void localStoreLoadAll(@Nullable IgniteInternalTx tx, Collection keys, GridInClosure3 vis)
+    @Override public final void localStoreLoadAll(@Nullable IgniteInternalTx tx, Collection keys, GridInClosure3 vis)
         throws IgniteCheckedException {
         assert store != null;
         assert locStore;
@@ -320,7 +383,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean loadAll(@Nullable IgniteInternalTx tx, Collection keys, IgniteBiInClosure vis)
+    @Override public final boolean loadAll(@Nullable IgniteInternalTx tx, Collection keys, IgniteBiInClosure vis)
         throws IgniteCheckedException {
         if (store != null) {
             loadAllFromStore(tx, keys, vis, null);
@@ -369,22 +432,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 return;
             }
 
-            Collection<Object> keys0;
-
-            if (convertPortable()) {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
+            Collection<Object> keys0 = F.viewReadOnly(keys,
+                new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapPortableIfNeeded(key.value(cctx.cacheObjectContext(), false), false);
+                        return cctx.unwrapBinaryIfNeeded(key, !convertBinary());
                     }
                 });
-            }
-            else {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
-                    @Override public Object apply(KeyCacheObject key) {
-                        return key.value(cctx.cacheObjectContext(), false);
-                    }
-                });
-            }
 
             if (log.isDebugEnabled())
                 log.debug("Loading values from store for keys: " + keys0);
@@ -443,7 +496,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean loadCache(final GridInClosure3 vis, Object[] args) throws IgniteCheckedException {
+    @Override public final boolean loadCache(final GridInClosure3 vis, Object[] args) throws IgniteCheckedException {
         if (store != null) {
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");
@@ -491,34 +544,35 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             return true;
         }
 
-        LT.warn(log, null, "Calling Cache.loadCache() method will have no effect, " +
-            "CacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
+        LT.warn(log, "Calling Cache.loadCache() method will have no effect, " +
+            "CacheConfiguration.getStore() is not defined for cache: " + cctx.name());
 
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
+    @Override public final boolean put(@Nullable IgniteInternalTx tx, KeyCacheObject key, CacheObject val, GridCacheVersion ver)
         throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
             if (key instanceof GridCacheInternal)
                 return true;
 
-            if (convertPortable()) {
-                key = cctx.unwrapPortableIfNeeded(key, false);
-                val = cctx.unwrapPortableIfNeeded(val, false);
-            }
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+            Object val0 = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
-            if (log.isDebugEnabled())
-                log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
+            if (log.isDebugEnabled()) {
+                log.debug(S.toString("Storing value in cache store",
+                    "key", key0, true,
+                    "val", val0, true));
+            }
 
             sessionInit0(tx);
 
             boolean threwEx = true;
 
             try {
-                store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
+                store.write(new CacheEntryImpl<>(key0, locStore ? F.t(val0, ver) : val0));
 
                 threwEx = false;
             }
@@ -535,8 +589,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 sessionEnd0(tx, threwEx);
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Stored value in cache store [key=" + key + ", val=" + val + ']');
+            if (log.isDebugEnabled()) {
+                log.debug(S.toString("Stored value in cache store",
+                    "key", key0, true,
+                    "val", val0, true));
+            }
 
             return true;
         }
@@ -545,13 +602,16 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putAll(@Nullable IgniteInternalTx tx, Map map) throws IgniteCheckedException {
+    @Override public final boolean putAll(
+        @Nullable IgniteInternalTx tx,
+        Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> map
+    ) throws IgniteCheckedException {
         if (F.isEmpty(map))
             return true;
 
         if (map.size() == 1) {
-            Map.Entry<Object, IgniteBiTuple<Object, GridCacheVersion>> e =
-                ((Map<Object, IgniteBiTuple<Object, GridCacheVersion>>)map).entrySet().iterator().next();
+            Map.Entry<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> e =
+                ((Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>>)map).entrySet().iterator().next();
 
             return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
         }
@@ -604,24 +664,23 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(@Nullable IgniteInternalTx tx, Object key) throws IgniteCheckedException {
+    @Override public final boolean remove(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException {
         if (store != null) {
             // Never remove internal key from store as it is never persisted.
             if (key instanceof GridCacheInternal)
                 return false;
 
-            if (convertPortable())
-                key = cctx.unwrapPortableIfNeeded(key, false);
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Removing value from cache store [key=" + key + ']');
+                log.debug(S.toString("Removing value from cache store", "key", key0, true));
 
             sessionInit0(tx);
 
             boolean threwEx = true;
 
             try {
-                store.delete(key);
+                store.delete(key0);
 
                 threwEx = false;
             }
@@ -639,7 +698,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Removed value from cache store [key=" + key + ']');
+                log.debug(S.toString("Removed value from cache store", "key", key0, true));
 
             return true;
         }
@@ -648,21 +707,25 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAll(@Nullable IgniteInternalTx tx, Collection keys) throws IgniteCheckedException {
+    @Override public final boolean removeAll(
+        @Nullable IgniteInternalTx tx,
+        Collection<? extends KeyCacheObject> keys
+    ) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
         if (keys.size() == 1) {
-            Object key = keys.iterator().next();
+            KeyCacheObject key = keys.iterator().next();
 
             return remove(tx, key);
         }
 
         if (store != null) {
-            Collection<Object> keys0 = convertPortable() ? cctx.unwrapPortablesIfNeeded(keys, false) : keys;
+            Collection<Object> keys0 = cctx.unwrapBinariesIfNeeded(keys, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Removing values from cache store [keys=" + keys0 + ']');
+                log.debug(S.toString("Removing values from cache store",
+                    "keys", keys0, true));
 
             sessionInit0(tx);
 
@@ -690,7 +753,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Removed values from cache store [keys=" + keys0 + ']');
+                log.debug(S.toString("Removed values from cache store",
+                    "keys", keys0, true));
 
             return true;
         }
@@ -710,7 +774,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last) throws IgniteCheckedException {
+    @Override public final void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last) throws IgniteCheckedException {
         assert store != null;
 
         sessionInit0(tx);
@@ -746,15 +810,15 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         assert e != null;
 
         if (e.getMessage() != null) {
-            throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
-                "enabled for cache [cacheName=" + cctx.namex() + ']', e);
+            throw new IgniteCheckedException("Cache store must work with binary objects if binary are " +
+                "enabled for cache [cacheName=" + cctx.name() + ']', e);
         }
         else
             throw e;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBehindSessionInit() {
+    @Override public void writeBehindSessionInit() throws IgniteCheckedException {
         sessionInit0(null);
     }
 
@@ -765,8 +829,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /**
      * @param tx Current transaction.
+     * @throws IgniteCheckedException If failed.
      */
-    private void sessionInit0(@Nullable IgniteInternalTx tx) {
+    private void sessionInit0(@Nullable IgniteInternalTx tx) throws IgniteCheckedException {
         assert sesHolder != null;
 
         SessionData ses;
@@ -788,9 +853,14 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         sesHolder.set(ses);
 
-        if (sesLsnrs != null && !ses.started(this)) {
-            for (CacheStoreSessionListener lsnr : sesLsnrs)
-                lsnr.onSessionStart(locSes);
+        try {
+            if (sesLsnrs != null && !ses.started(this)) {
+                for (CacheStoreSessionListener lsnr : sesLsnrs)
+                    lsnr.onSessionStart(locSes);
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to start store session: " + e, e);
         }
     }
 
@@ -831,17 +901,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     protected abstract CacheConfiguration cacheConfiguration();
 
     /**
-     * @return Convert-portable flag.
-     */
-    protected abstract boolean convertPortable();
-
-    /**
      *
      */
     private static class SessionData {
         /** */
         @GridToStringExclude
-        private final IgniteInternalTx tx;
+        private final TxProxy tx;
 
         /** */
         private String cacheName;
@@ -851,7 +916,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Map<Object, Object> props;
 
         /** */
-        private Object attachment;
+        private Object attach;
 
         /** */
         private final Set<CacheStoreManager> started =
@@ -864,8 +929,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          * @param tx Current transaction.
          * @param cacheName Cache name.
          */
-        private SessionData(@Nullable IgniteInternalTx tx, @Nullable String cacheName) {
-            this.tx = tx;
+        private SessionData(@Nullable final IgniteInternalTx tx, @Nullable String cacheName) {
+            this.tx = tx != null ? new TxProxy(tx) : null;
             this.cacheName = cacheName;
         }
 
@@ -873,7 +938,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          * @return Transaction.
          */
         @Nullable private Transaction transaction() {
-            return tx != null ? tx.proxy() : null;
+            return tx;
         }
 
         /**
@@ -887,12 +952,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /**
-         * @param attachment Attachment.
+         * @param attach Attachment.
          */
-        private Object attach(Object attachment) {
-            Object prev = this.attachment;
+        private Object attach(Object attach) {
+            Object prev = this.attach;
 
-            this.attachment = attachment;
+            this.attach = attach;
 
             return prev;
         }
@@ -901,7 +966,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          * @return Attachment.
          */
         private Object attachment() {
-            return attachment;
+            return attach;
         }
 
         /**
@@ -935,7 +1000,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SessionData.class, this, "tx", CU.txString(tx));
+            return S.toString(SessionData.class, this, "tx", CU.txString(tx != null ? tx.tx : null));
         }
     }
 
@@ -1004,7 +1069,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      */
     private class EntriesView extends AbstractCollection<Cache.Entry<?, ?>> {
         /** */
-        private final Map<?, IgniteBiTuple<?, GridCacheVersion>> map;
+        private final Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> map;
 
         /** */
         private Set<Object> rmvd;
@@ -1015,7 +1080,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /**
          * @param map Map.
          */
-        private EntriesView(Map<?, IgniteBiTuple<?, GridCacheVersion>> map) {
+        private EntriesView(Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> map) {
             assert map != null;
 
             this.map = map;
@@ -1044,7 +1109,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Cache.Entry<?, ?>> iterator() {
             if (cleared)
-                return F.emptyIterator();
+                return new GridEmptyIterator<>();
 
             final Iterator<Map.Entry<?, IgniteBiTuple<?, GridCacheVersion>>> it0 = (Iterator)map.entrySet().iterator();
 
@@ -1071,15 +1136,13 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object k = e.getKey();
 
-                        if (rmvd != null && rmvd.contains(k))
-                            continue;
-
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        if (convertPortable()) {
-                            k = cctx.unwrapPortableIfNeeded(k, false);
-                            v = cctx.unwrapPortableIfNeeded(v, false);
-                        }
+                        k = cctx.unwrapBinaryIfNeeded(k, !convertBinary());
+                        v = cctx.unwrapBinaryIfNeeded(v, !convertBinary());
+
+                        if (rmvd != null && rmvd.contains(k))
+                            continue;
 
                         next = new CacheEntryImpl<>(k, v);
 
@@ -1215,6 +1278,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         public String toString() {
+            if (!S.INCLUDE_SENSITIVE)
+                return "[size=" + size() + "]";
+
             Iterator<Cache.Entry<?, ?>> it = iterator();
 
             if (!it.hasNext())
@@ -1232,6 +1298,128 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                 sb.a(", ");
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TxProxy implements Transaction {
+        /** */
+        private final IgniteInternalTx tx;
+
+        /**
+         * @param tx Transaction.
+         */
+        TxProxy(IgniteInternalTx tx) {
+            assert tx != null;
+
+            this.tx = tx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid xid() {
+            return tx.xid();
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID nodeId() {
+            return tx.nodeId();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long threadId() {
+            return tx.threadId();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long startTime() {
+            return tx.startTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public TransactionIsolation isolation() {
+            return tx.isolation();
+        }
+
+        /** {@inheritDoc} */
+        @Override public TransactionConcurrency concurrency() {
+            return tx.concurrency();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean implicit() {
+            return tx.implicit();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInvalidate() {
+            return tx.isInvalidate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public TransactionState state() {
+            return tx.state();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long timeout() {
+            return tx.timeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long timeout(long timeout) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean setRollbackOnly() {
+            return tx.setRollbackOnly();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRollbackOnly() {
+            return tx.isRollbackOnly();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void commit() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rollback() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteAsyncSupport withAsync() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAsync() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <R> IgniteFuture<R> future() {
+            throw new UnsupportedOperationException();
         }
     }
 }

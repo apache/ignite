@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCountDownLatch;
 
 /**
  * Grid cache count down latch ({@code 'Ex'} stands for external).

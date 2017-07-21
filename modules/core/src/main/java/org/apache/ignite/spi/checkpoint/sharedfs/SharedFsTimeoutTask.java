@@ -17,14 +17,19 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.checkpoint.CheckpointListener;
 
 /**
  * Implementation of {@link org.apache.ignite.spi.IgniteSpiThread} that takes care about outdated files.
@@ -54,12 +59,12 @@ class SharedFsTimeoutTask extends IgniteSpiThread {
     /**
      * Creates new instance of task that looks after files.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param marshaller Messages marshaller.
      * @param log Messages logger.
      */
-    SharedFsTimeoutTask(String gridName, Marshaller marshaller, IgniteLogger log) {
-        super(gridName, "grid-sharedfs-timeout-worker", log);
+    SharedFsTimeoutTask(String igniteInstanceName, Marshaller marshaller, IgniteLogger log) {
+        super(igniteInstanceName, "grid-sharedfs-timeout-worker", log);
 
         assert marshaller != null;
         assert log != null;

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.job;
 
-import java.util.*;
+import java.util.EventListener;
 
 /**
  * Job hold listener to notify job processor on {@code hold}

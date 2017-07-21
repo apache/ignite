@@ -17,7 +17,7 @@
 
 package org.apache.ignite;
 
-import java.io.*;
+import java.io.Closeable;
 
 /**
  * This interface provides a rich API for working with distributedly cached atomic long value.
@@ -26,29 +26,26 @@ import java.io.*;
  * Distributed atomic long includes the following main functionality:
  * <ul>
  * <li>
- * Method {@link #get()} synchronously gets current value of atomic long.
+ * Method {@link #get()} gets current value of atomic long.
  * </li>
  * <li>
- * Various {@code get..(..)} methods synchronously get current value of atomic long
+ * Various {@code get..(..)} methods get current value of atomic long
  * and increase or decrease value of atomic long.
  * </li>
  * <li>
- * Method {@link #addAndGet(long l)} synchronously sums {@code l} with current value of atomic long
+ * Method {@link #addAndGet(long l)} sums {@code l} with current value of atomic long
  * and returns result.
  * </li>
  * <li>
- * Method {@link #incrementAndGet()} synchronously increases value of atomic long and returns result.
+ * Method {@link #incrementAndGet()} increases value of atomic long and returns result.
  * </li>
  * <li>
- * Method {@link #decrementAndGet()} synchronously decreases value of atomic long and returns result.
+ * Method {@link #decrementAndGet()} decreases value of atomic long and returns result.
  * </li>
  * <li>
- * Method {@link #getAndSet(long l)} synchronously gets current value of atomic long and sets {@code l}
+ * Method {@link #getAndSet(long l)} gets current value of atomic long and sets {@code l}
  * as value of atomic long.
  * </li>
- * </ul>
- * All previously described methods have asynchronous analogs.
- * <ul>
  * <li>
  * Method {@link #name()} gets name of atomic long.
  * </li>

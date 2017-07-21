@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Isolated nodes LOCAL cache self test.
@@ -66,7 +66,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         assert !nid1.equals(nid3);
 
         // Local cache on first node only.
-        CacheConfiguration<String, String> ccfg1 = new CacheConfiguration<>("A");
+        CacheConfiguration<String, String> ccfg1 = new CacheConfiguration<>("A1");
         ccfg1.setCacheMode(LOCAL);
         ccfg1.setNodeFilter(new NodeIdFilter(nid1));
 
@@ -74,7 +74,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         c1.put("g1", "c1");
 
         // Local cache on second node only.
-        CacheConfiguration<String, String> ccfg2 = new CacheConfiguration<>("A");
+        CacheConfiguration<String, String> ccfg2 = new CacheConfiguration<>("A2");
         ccfg2.setCacheMode(LOCAL);
         ccfg2.setNodeFilter(new NodeIdFilter(nid2));
 
@@ -82,7 +82,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         c2.put("g2", "c2");
 
         // Local cache on third node only.
-        CacheConfiguration<String, String> ccfg3 = new CacheConfiguration<>("A");
+        CacheConfiguration<String, String> ccfg3 = new CacheConfiguration<>("A3");
         ccfg3.setCacheMode(LOCAL);
         ccfg3.setNodeFilter(new NodeIdFilter(nid3));
 

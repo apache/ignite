@@ -17,9 +17,10 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Wrapper of all checkpoint that are saved to the S3. It

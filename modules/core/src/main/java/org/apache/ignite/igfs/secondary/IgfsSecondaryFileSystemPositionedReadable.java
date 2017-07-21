@@ -17,7 +17,8 @@
 
 package org.apache.ignite.igfs.secondary;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * The simplest data input interface to read from secondary file system.

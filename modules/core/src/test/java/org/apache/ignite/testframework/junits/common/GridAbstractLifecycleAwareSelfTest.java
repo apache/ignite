@@ -17,12 +17,12 @@
 
 package org.apache.ignite.testframework.junits.common;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.CacheNameResource;
 
 /**
  * Base class for tests against {@link LifecycleAware} support.

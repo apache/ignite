@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.rest.request.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 
 /**
  * Command protocol handler.

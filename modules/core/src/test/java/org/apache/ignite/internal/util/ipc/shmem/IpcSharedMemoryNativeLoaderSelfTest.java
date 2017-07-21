@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Collections;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Test shared memory native loader.

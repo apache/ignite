@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Queue item key.
  */
-class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
+class GridCacheQueueItemKey implements Externalizable, QueueItemKey {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -107,11 +109,11 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = queueId.hashCode();
+        int res = queueId.hashCode();
 
-        result = 31 * result + (int)(idx ^ (idx >>> 32));
+        res = 31 * res + (int)(idx ^ (idx >>> 32));
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

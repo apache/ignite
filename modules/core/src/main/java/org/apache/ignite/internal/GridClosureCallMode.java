@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Distribution modes for one or more closures executed via {@code Grid.call(...)} methods.

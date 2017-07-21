@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.collision;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Tes

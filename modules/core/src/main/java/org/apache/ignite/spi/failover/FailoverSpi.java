@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.failover;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.spi.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.spi.IgniteSpi;
 
 /**
  * Failover SPI provides developer with ability to supply custom logic for handling

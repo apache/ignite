@@ -17,12 +17,12 @@
 
 package org.apache.ignite.lang.utils;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.SortedMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
+import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Test for {@link GridBoundedConcurrentOrderedMap}.

@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.CIX2;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiInClosure;
 
 /**
  * Convenient in-closure subclass that allows for thrown grid exception. This class

@@ -17,18 +17,33 @@
 
 package org.apache.ignite.session;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobSibling;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Tests waiting for session attributes.
@@ -73,8 +88,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -190,19 +205,15 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     private void checkWaitAttributeMethod(WaitAttributeType type) throws Exception {
         assert type != null;
 
-        Ignite ignite1 = G.ignite(getTestGridName() + '1');
-        Ignite ignite2 = G.ignite(getTestGridName() + '2');
+        Ignite ignite1 = G.ignite(getTestIgniteInstanceName() + '1');
+        Ignite ignite2 = G.ignite(getTestIgniteInstanceName() + '2');
 
         assert ignite1 != null;
         assert ignite2 != null;
 
         ignite1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
 
-        IgniteCompute comp = ignite1.compute().withAsync();
-
-        comp.execute(TestSessionTask.class.getName(), type);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite1.compute().executeAsync(TestSessionTask.class.getName(), type);
 
         fut.getTaskSession().mapFuture().get();
 
@@ -237,7 +248,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param ses Session.
      * @param prefix Prefix.
      * @param type Type.
-     * @throws IgniteCheckedException If failed.
      */
     private static void checkSessionAttributes(ComputeTaskSession ses, String prefix, WaitAttributeType type) {
         assert ses != null;

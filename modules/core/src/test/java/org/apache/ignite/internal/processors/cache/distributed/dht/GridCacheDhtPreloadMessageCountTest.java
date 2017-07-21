@@ -17,27 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -53,8 +50,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         assert preloadMode != null;
 
@@ -69,12 +66,16 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
 
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 
-        c.setCommunicationSpi(new TestCommunicationSpi());
+        TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
+
+        commSpi.record(GridDhtPartitionsSingleMessage.class);
+
+        c.setCommunicationSpi(commSpi);
 
         return c;
     }
@@ -92,7 +93,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -102,14 +103,16 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         U.sleep(1000);
 
-        IgniteCache<String, Integer> c1 = g1.cache(null);
-        IgniteCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
 
-        TestCommunicationSpi spi0 = (TestCommunicationSpi)g0.configuration().getCommunicationSpi();
-        TestCommunicationSpi spi1 = (TestCommunicationSpi)g1.configuration().getCommunicationSpi();
-        TestCommunicationSpi spi2 = (TestCommunicationSpi)g2.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi0 = (TestRecordingCommunicationSpi)g0.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi)g1.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)g2.configuration().getCommunicationSpi();
 
-        info(spi0.sentMessages().size() + " " + spi1.sentMessages().size() + " " + spi2.sentMessages().size());
+        info(spi0.recordedMessages(false).size() + " " +
+            spi1.recordedMessages(false).size() + " " +
+            spi2.recordedMessages(false).size());
 
         checkCache(c0, cnt);
         checkCache(c1, cnt);
@@ -130,42 +133,6 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
             if (affinity(c).isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals(Integer.valueOf(i), c.localPeek(key, CachePeekMode.ONHEAP));
-        }
-    }
-
-    /**
-     * Communication SPI that will count single partition update messages.
-     */
-    private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** Recorded messages. */
-        private Collection<GridDhtPartitionsSingleMessage> sentMsgs = new ConcurrentLinkedQueue<>();
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
-            throws IgniteSpiException {
-            recordMessage((GridIoMessage)msg);
-
-            super.sendMessage(node, msg);
-        }
-
-        /**
-         * @return Collection of sent messages.
-         */
-        public Collection<GridDhtPartitionsSingleMessage> sentMessages() {
-            return sentMsgs;
-        }
-
-        /**
-         * Adds message to a list if message is of correct type.
-         *
-         * @param msg Message.
-         */
-        private void recordMessage(GridIoMessage msg) {
-            if (msg.message() instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage partSingleMsg = (GridDhtPartitionsSingleMessage)msg.message();
-
-                sentMsgs.add(partSingleMsg);
-            }
         }
     }
 }

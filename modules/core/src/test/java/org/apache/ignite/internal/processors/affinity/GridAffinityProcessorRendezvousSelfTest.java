@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 
 /**
  * Tests affinity processor with rendezvous affinity function.

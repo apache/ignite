@@ -17,13 +17,13 @@
 
 package org.apache.ignite.examples.streaming.wordcount;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.configuration.*;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import org.apache.ignite.cache.affinity.AffinityUuid;
+import org.apache.ignite.configuration.CacheConfiguration;
 
-import javax.cache.configuration.*;
-import javax.cache.expiry.*;
-
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Configuration for the streaming cache to store the stream of words.

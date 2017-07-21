@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid deployment mode. Deployment mode is specified at grid startup via

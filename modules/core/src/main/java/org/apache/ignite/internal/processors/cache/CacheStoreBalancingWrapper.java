@@ -17,25 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Cache store wrapper that ensures that there will be no more that one thread loading value from underlying store.
  */
 public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     /** */
-    public static final int DFLT_LOAD_ALL_THRESHOLD = 5;
+    public static final int DFLT_LOAD_ALL_THRESHOLD = CacheConfiguration.DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
 
     /** Delegate store. */
     private CacheStore<K, V> delegate;
@@ -222,13 +228,15 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
         delegate.sessionEnd(commit);
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheStoreBalancingWrapper.class, this);
+    }
+
     /**
      *
      */
     private class LoadFuture extends GridFutureAdapter<Map<K, V>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Collection of keys for pending cleanup. */
         private volatile Collection<K> keys;
 

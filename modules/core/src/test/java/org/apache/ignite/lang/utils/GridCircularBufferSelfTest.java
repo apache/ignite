@@ -17,12 +17,11 @@
 
 package org.apache.ignite.lang.utils;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.util.GridCircularBuffer;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  *

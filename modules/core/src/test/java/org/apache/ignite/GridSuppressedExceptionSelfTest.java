@@ -17,10 +17,9 @@
 
 package org.apache.ignite;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.io.*;
+import java.io.IOException;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  *
@@ -86,28 +85,6 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
             assertNotNull(X.cause(e, IllegalArgumentException.class));
             assertTrue(X.cause(e, IllegalArgumentException.class) instanceof IllegalArgumentException);
         }
-    }
-
-    /**
-     * Made to demonstrate stack printing for {@link IgniteCheckedException}. Do not enable.
-     *
-     * @throws Exception If failed.
-     */
-    public void testStackTrace() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-818");
-
-        IgniteCheckedException me = new IgniteCheckedException("Test message.");
-
-        for (int i = 5; i < 20; i++) {
-            try {
-                generateException(i, null);
-            }
-            catch (IgniteCheckedException e) {
-                me.addSuppressed(e);
-            }
-        }
-
-        me.printStackTrace();
     }
 
     /**

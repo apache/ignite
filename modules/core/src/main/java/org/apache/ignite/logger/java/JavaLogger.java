@@ -17,19 +17,31 @@
 
 package org.apache.ignite.logger.java;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.logger.*;
-import org.jetbrains.annotations.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.UUID;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.logging.*;
-
-import static java.util.logging.Level.*;
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.INFO;
+import static java.util.logging.Level.SEVERE;
+import static java.util.logging.Level.WARNING;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSOLE_APPENDER;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  * Logger to use with Java logging. Implementation simply delegates to Java Logging.
@@ -74,7 +86,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
- * Please take a look at <a target=_new href="http://java.sun.com/j2se/1.4.2/docs/api20/java/util/logging/Logger.html">Logger javadoc</a>
+ * Please take a look at <a target=_new href="http://docs.oracle.com/javase/7/docs/api/java/util/logging/Logger.html">Logger javadoc</a>
  * for additional information.
  * <p>
  * It's recommended to use Ignite logger injection instead of using/instantiating
@@ -100,6 +112,9 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** Quiet flag. */
     private final boolean quiet;
+
+    /** Work directory. */
+    private volatile String workDir;
 
     /** Node ID. */
     private volatile UUID nodeId;
@@ -328,6 +343,15 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         }
     }
 
+    /**
+     * Set work directory.
+     *
+     * @param workDir Work directory.
+     */
+    public void setWorkDirectory(String workDir) {
+        this.workDir = workDir;
+    }
+
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
         A.notNull(nodeId, "nodeId");
@@ -349,7 +373,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
             return;
 
         try {
-            fileHnd.nodeId(nodeId);
+            fileHnd.nodeId(nodeId, workDir);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);

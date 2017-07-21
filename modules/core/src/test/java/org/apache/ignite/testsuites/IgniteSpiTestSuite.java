@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.managers.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
+import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
 
 /**
  * Grid SPI test suite.
@@ -43,9 +44,6 @@ public class IgniteSpiTestSuite extends TestSuite {
         // Load Balancing.
         suite.addTest(IgniteSpiLoadBalancingSelfTestSuite.suite());
 
-        // Swap space.
-        suite.addTest(IgniteSpiSwapSpaceSelfTestSuite.suite());
-
         // Checkpoints.
         suite.addTest(IgniteSpiCheckpointSelfTestSuite.suite());
 
@@ -63,6 +61,9 @@ public class IgniteSpiTestSuite extends TestSuite {
 
         // All other tests.
         suite.addTestSuite(GridNoopManagerSelfTest.class);
+
+        // Local Message Listener tests.
+        suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
 
         return suite;
     }

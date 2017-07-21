@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache entry transactional update result.
@@ -32,6 +32,9 @@ public class GridCacheUpdateTxResult {
     @GridToStringInclude
     private final CacheObject oldVal;
 
+    /** Partition idx. */
+    private long updateCntr;
+
     /**
      * Constructor.
      *
@@ -41,6 +44,25 @@ public class GridCacheUpdateTxResult {
     GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal) {
         this.success = success;
         this.oldVal = oldVal;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
+     * @param oldVal Old value (if any),
+     */
+    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, long updateCntr) {
+        this.success = success;
+        this.oldVal = oldVal;
+        this.updateCntr = updateCntr;
+    }
+
+    /**
+     * @return Partition idx.
+     */
+    public long updatePartitionCounter() {
+        return updateCntr;
     }
 
     /**

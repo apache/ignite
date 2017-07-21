@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners;
 
-import java.io.*;
+import java.io.File;
 
 /**
  * File handler interface. It somehow handles given file.

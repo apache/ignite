@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.UUID;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests flags correctness.
@@ -67,13 +67,13 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
      *
      */
     public void testAllTrueFlags() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
         UUID id = UUID.randomUUID();
 
-        GridCacheVersion ver = new GridCacheVersion(1, 0, 0, 0, 0);
+        GridCacheVersion ver = new GridCacheVersion(1, 0, 0, 0);
 
         GridCacheMvccCandidate c = new GridCacheMvccCandidate(
             entry,
@@ -82,13 +82,14 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
             ver,
             1,
             ver,
-            0,
             true,
             true,
             true,
             true,
             true,
-            true
+            true,
+            null,
+            false
         );
 
         c.setOwner();
@@ -107,13 +108,13 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
      *
      */
     public void testAllFalseFlags() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
         UUID id = UUID.randomUUID();
 
-        GridCacheVersion ver = new GridCacheVersion(1, 0, 0, 0, 0);
+        GridCacheVersion ver = new GridCacheVersion(1, 0, 0, 0);
 
         GridCacheMvccCandidate c = new GridCacheMvccCandidate(
             entry,
@@ -122,12 +123,13 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
             ver,
             1,
             ver,
-            0,
             false,
             false,
             false,
             false,
             false,
+            false,
+            null,
             false
         );
 

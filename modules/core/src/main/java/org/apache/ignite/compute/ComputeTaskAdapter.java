@@ -17,23 +17,22 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterTopologyException;
 
 /**
  * Convenience adapter for {@link ComputeTask} interface. Here is an example of
- * how {@code GridComputeTaskAdapter} can be used:
+ * how {@code ComputeTaskAdapter} can be used:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
+ * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
  *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
- *     public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
- *         Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
+ *     public Map&lt;? extends ComputeJob, ClusterNode&gt; map(List&lt;ClusterNode&gt; subgrid, String arg) throws IgniteCheckedException {
+ *         Map&lt;MyFooBarJob, ClusterNode&gt; jobs = new HashMap&lt;MyFooBarJob, ClusterNode&gt;(subgrid.size());
  *
  *         // In more complex cases, you can actually do
  *         // more complicated assignments of jobs to nodes.

@@ -17,25 +17,50 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.logger.java.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage;
+import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.net.*;
-import java.nio.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET_ALL;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.METRICS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.PREPEND;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.PUT_ALL;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.REPLACE;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV_ALL;
 
 /**
  * Test client.
@@ -296,7 +321,7 @@ final class TestBinaryClient {
      * @return If value was actually put.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> boolean cachePut(@Nullable String cacheName, K key, V val)
+    public <K, V> boolean cachePut(@NotNull String cacheName, K key, V val)
         throws IgniteCheckedException {
         return cachePutAll(cacheName, Collections.singletonMap(key, val));
     }
@@ -308,7 +333,7 @@ final class TestBinaryClient {
      *      {@code false} otherwise
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> boolean cachePutAll(@Nullable String cacheName, Map<K, V> entries)
+    public <K, V> boolean cachePutAll(@NotNull String cacheName, Map<K, V> entries)
         throws IgniteCheckedException {
         assert entries != null;
 
@@ -327,7 +352,7 @@ final class TestBinaryClient {
      * @return Value.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> V cacheGet(@Nullable String cacheName, K key)
+    public <K, V> V cacheGet(@NotNull String cacheName, K key)
         throws IgniteCheckedException {
         assert key != null;
 
@@ -347,7 +372,7 @@ final class TestBinaryClient {
      * @return Entries.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> Map<K, V> cacheGetAll(@Nullable String cacheName, K... keys)
+    public <K, V> Map<K, V> cacheGetAll(@NotNull String cacheName, K... keys)
         throws IgniteCheckedException {
         assert keys != null;
 
@@ -367,7 +392,7 @@ final class TestBinaryClient {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public <K> boolean cacheRemove(@Nullable String cacheName, K key) throws IgniteCheckedException {
+    public <K> boolean cacheRemove(@NotNull String cacheName, K key) throws IgniteCheckedException {
         assert key != null;
 
         GridClientCacheRequest req = new GridClientCacheRequest(RMV);
@@ -385,7 +410,7 @@ final class TestBinaryClient {
      * @return Whether entries were actually removed
      * @throws IgniteCheckedException In case of error.
      */
-    public <K> boolean cacheRemoveAll(@Nullable String cacheName, K... keys)
+    public <K> boolean cacheRemoveAll(@NotNull String cacheName, K... keys)
         throws IgniteCheckedException {
         assert keys != null;
 
@@ -405,7 +430,7 @@ final class TestBinaryClient {
      * @return Whether value was actually replaced.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> boolean cacheReplace(@Nullable String cacheName, K key, V val)
+    public <K, V> boolean cacheReplace(@NotNull String cacheName, K key, V val)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -428,7 +453,7 @@ final class TestBinaryClient {
      * @return Whether new value was actually set.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> boolean cacheCompareAndSet(@Nullable String cacheName, K key, @Nullable V val1, @Nullable V val2)
+    public <K, V> boolean cacheCompareAndSet(@NotNull String cacheName, K key, @Nullable V val1, @Nullable V val2)
         throws IgniteCheckedException {
         assert key != null;
 
@@ -448,7 +473,7 @@ final class TestBinaryClient {
      * @return Metrics.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws IgniteCheckedException {
+    public <K> Map<String, Long> cacheMetrics(@NotNull String cacheName) throws IgniteCheckedException {
         GridClientCacheRequest metrics = new GridClientCacheRequest(METRICS);
 
         metrics.requestId(idCntr.getAndIncrement());
@@ -464,7 +489,7 @@ final class TestBinaryClient {
      * @return Whether entry was appended.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> boolean cacheAppend(@Nullable String cacheName, K key, V val)
+    public <K, V> boolean cacheAppend(@NotNull String cacheName, K key, V val)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -486,7 +511,7 @@ final class TestBinaryClient {
      * @return Whether entry was prepended.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> boolean cachePrepend(@Nullable String cacheName, K key, V val)
+    public <K, V> boolean cachePrepend(@NotNull String cacheName, K key, V val)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;

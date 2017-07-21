@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jsr166.*;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jsr166.LongAdder8;
 
 /**
  * Value object holding all local IGFS metrics which cannot be determined using file system traversal.

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractRemoveFailureTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests that removes are not lost when topology changes.
@@ -40,17 +40,7 @@ public class GridCacheAtomicRemoveFailureTest extends GridCacheAbstractRemoveFai
     }
 
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
+    @Override protected NearCacheConfiguration nearCache() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setBackups(1);
-        cfg.setAtomicWriteOrderMode(CLOCK);
-
-        return cfg;
     }
 }

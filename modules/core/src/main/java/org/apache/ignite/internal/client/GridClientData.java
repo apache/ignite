@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.client;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * A data projection of grid client. Contains various methods for cache operations and metrics retrieval.

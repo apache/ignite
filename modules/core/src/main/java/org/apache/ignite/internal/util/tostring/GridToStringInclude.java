@@ -17,7 +17,13 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import java.lang.annotation.*;
+import org.apache.ignite.IgniteSystemProperties;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Attach this annotation to a field or a class to indicate that this field or fields of this
@@ -28,5 +34,13 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.TYPE})
 public @interface GridToStringInclude {
-    // No-op.
+    /**
+     * A flag indicating a sensitive information stored in the field or fields of the class.<br/>
+     * Such information will be included in {@code toString()} output ONLY when the system property
+     * {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE IGNITE_TO_STRING_INCLUDE_SENSITIVE}
+     * is set to {@code true}.
+     *
+     * @return Attribute value.
+     */
+    boolean sensitive() default false;
 }

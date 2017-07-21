@@ -17,19 +17,32 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
+import org.apache.ignite.compute.ComputeUserUndeclaredException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.spi.failover.FailoverContext;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Test failover of a task with Node filter predicate.
@@ -48,7 +61,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     /** Predicate to exclude the second node from topology */
     private final IgnitePredicate<ClusterNode> p = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode e) {
-            return !NODE2.equals(e.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
+            return !NODE2.equals(e.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME));
         }
     };
 
@@ -59,8 +72,8 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     private final AtomicBoolean failed = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setFailoverSpi(new AlwaysFailoverSpi() {
             /** {@inheritDoc} */

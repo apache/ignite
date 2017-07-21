@@ -17,17 +17,26 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for grid node discovery events. See
  * {@link DiscoverySpi} for information on how grid nodes get discovered.
  */
 public interface DiscoverySpiListener {
+    /**
+     *  Notification of local node initialization. At the time this method is called, it is guaranteed that
+     *  local node consistent ID is available, but the discovery process is not started yet.
+     *  This method should not block for a long time since it blocks discovery.
+     *
+     * @param locNode Initialized local node.
+     */
+    public void onLocalNodeInitialized(ClusterNode locNode);
+
     /**
      * Notification for grid node discovery events.
      *

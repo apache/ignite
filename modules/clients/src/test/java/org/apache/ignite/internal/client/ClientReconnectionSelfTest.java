@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.impl.connection.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.nio.channels.*;
-import java.util.*;
+import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 
 /**
  *
@@ -182,9 +183,8 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-590", forceFailure = true)
     public void testIdleConnection() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-590");
-
         int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.
         
         for (int i = 0; i < srvsCnt; i++)

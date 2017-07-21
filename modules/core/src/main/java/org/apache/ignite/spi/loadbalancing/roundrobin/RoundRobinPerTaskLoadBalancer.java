@@ -17,9 +17,11 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
-import org.apache.ignite.cluster.*;
-
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Load balancer for per-task configuration.

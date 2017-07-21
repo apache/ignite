@@ -17,20 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Affinity assignment request.
  */
-public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
+public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int SND_PART_STATE_MASK = 0x01;
+
+    /** */
+    private byte flags;
+
+    /** */
+    private long futId;
 
     /** Topology version being queried. */
     private AffinityTopologyVersion topVer;
@@ -43,17 +51,43 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param futId Future ID.
+     * @param grpId Cache group ID.
      * @param topVer Topology version.
+     * @param sndPartMap {@code True} if need send in response cache partitions state.
      */
-    public GridDhtAffinityAssignmentRequest(int cacheId, @NotNull AffinityTopologyVersion topVer) {
-        this.cacheId = cacheId;
+    public GridDhtAffinityAssignmentRequest(
+        long futId,
+        int grpId,
+        AffinityTopologyVersion topVer,
+        boolean sndPartMap) {
+        assert topVer != null;
+
+        this.futId = futId;
+        this.grpId = grpId;
         this.topVer = topVer;
+
+        if (sndPartMap)
+            flags |= SND_PART_STATE_MASK;
+    }
+
+    /**
+     * @return {@code True} if need send in response cache partitions state.
+     */
+    public boolean sendPartitionsState() {
+        return (flags & SND_PART_STATE_MASK) != 0;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -69,13 +103,13 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 28;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 6;
     }
 
     /** {@inheritDoc} */
@@ -94,6 +128,18 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -116,6 +162,22 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -125,11 +187,11 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtAffinityAssignmentRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAffinityAssignmentRequest.class, this);
+        return S.toString(GridDhtAffinityAssignmentRequest.class, this, super.toString());
     }
 }

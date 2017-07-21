@@ -17,9 +17,11 @@
 
 package org.apache.ignite.loadtests.colocation;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Lifecycle bean.

@@ -15,10 +15,20 @@
 
 package org.jsr166;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
  * A hash table supporting full concurrency of retrievals and
@@ -3253,7 +3263,7 @@ public class ConcurrentHashMap8<K, V>
     }
 
     /**
-     * Returns exportable snapshot entry for the given key and value
+     * Returns exbinary snapshot entry for the given key and value
      * when write-through can't or shouldn't be used.
      */
     static <K,V> AbstractMap.SimpleEntry<K,V> entryFor(K k, V v) {

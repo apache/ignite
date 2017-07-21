@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.GridClientNodeMetrics;
 
 /**
  * Node metrics adapter.

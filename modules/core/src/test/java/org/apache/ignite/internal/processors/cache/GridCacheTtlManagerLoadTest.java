@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.TouchedExpiryPolicy;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import javax.cache.expiry.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Check ttl manager for memory leak.
@@ -45,7 +46,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteCache<Object,Object> cache = g.cache(null).
+                    IgniteCache<Object,Object> cache = g.cache(DEFAULT_CACHE_NAME).
                         withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
 
                     long key = 0;
@@ -60,7 +61,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
                 }
             }, 1);
 
-            GridCacheTtlManager ttlMgr = g.internalCache().context().ttl();
+            GridCacheTtlManager ttlMgr = g.internalCache(DEFAULT_CACHE_NAME).context().ttl();
 
             for (int i = 0; i < 300; i++) {
                 U.sleep(1000);

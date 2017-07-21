@@ -17,24 +17,30 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.compute.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 
-import java.util.*;
-
-import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 
 /**
  * Test task summarizes length of all strings in the arguments list.
  * <p>
  * The argument of the task is a collection of objects to calculate string length sum of.
  */
-public class ClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
+public class ClientTcpTask extends ComputeTaskSplitAdapter<List<String>, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list) {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, List<String> list) {
         Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
         if (list != null)
-            for (final Object val : list)
+            for (final String val : list)
                 jobs.add(new ComputeJobAdapter() {
                     @Override public Object execute() {
                         try {
@@ -44,7 +50,7 @@ public class ClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer
                             Thread.currentThread().interrupt();
                         }
 
-                        return val == null ? 0 : val.toString().length();
+                        return val == null ? 0 : val.length();
                     }
                 });
 

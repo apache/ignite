@@ -17,14 +17,26 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
+import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Tests for node attributes consistency checks.
@@ -42,12 +54,18 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /** */
     private static boolean p2pEnabled;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    /** */
+    private static boolean binaryMarshallerEnabled;
 
-        if (gridName.equals(getTestGridName(1)))
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
             cfg.setClientMode(true);
+
+        if (binaryMarshallerEnabled)
+            cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
@@ -115,6 +133,223 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    public void testUseDefaultSuid() throws Exception {
+        try {
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
+
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.TRUE.toString(), false);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.FALSE.toString(), false);
+        }
+        finally {
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID,
+                String.valueOf(OptimizedMarshaller.USE_DFLT_SUID));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUseDefaultSuid(String first, String second, boolean fail) throws Exception {
+        try {
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, first);
+
+            startGrid(0);
+
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node should not join");
+            }
+            catch (Exception ignored) {
+                if (!fail)
+                    fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    public void testUseStringSerVer2() throws Exception {
+        String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+        binaryMarshallerEnabled = true;
+
+        try {
+            doTestUseStrSerVer2(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
+            doTestUseStrSerVer2(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
+
+            doTestUseStrSerVer2(Boolean.TRUE.toString(), Boolean.TRUE.toString(), false);
+            doTestUseStrSerVer2(Boolean.FALSE.toString(), Boolean.FALSE.toString(), false);
+        }
+        finally {
+            if (old != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, old);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            binaryMarshallerEnabled = false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUseStrSerVer2(String first, String second, boolean fail) throws Exception {
+        try {
+            if (first != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, first);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            startGrid(0);
+
+            if (second != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, second);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node should not join");
+            }
+            catch (Exception ignored) {
+                if (!fail)
+                    fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceCompatibilityEnabled() throws Exception {
+        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+        try {
+            doTestServiceCompatibilityEnabled(true, null, true);
+            doTestServiceCompatibilityEnabled(false, null, true);
+            doTestServiceCompatibilityEnabled(null, false, true);
+            doTestServiceCompatibilityEnabled(true, false, true);
+            doTestServiceCompatibilityEnabled(null, true, true);
+            doTestServiceCompatibilityEnabled(false, true, true);
+
+            doTestServiceCompatibilityEnabled(true, true, false);
+            doTestServiceCompatibilityEnabled(false, false, false);
+            doTestServiceCompatibilityEnabled(null, null, false);
+        }
+        finally {
+            if (backup != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+        }
+    }
+
+    /**
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
+        doTestCompatibilityEnabled(IGNITE_SERVICES_COMPATIBILITY_MODE, first, second, fail);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSecurityCompatibilityEnabled() throws Exception {
+        TestReconnectPluginProvider.enabled = true;
+        TestReconnectProcessor.enabled = true;
+
+        try {
+            doTestSecurityCompatibilityEnabled(true, null, true);
+            doTestSecurityCompatibilityEnabled(true, false, true);
+            doTestSecurityCompatibilityEnabled(false, true, true);
+            doTestSecurityCompatibilityEnabled(null, true, true);
+
+            doTestSecurityCompatibilityEnabled(null, null, false);
+            doTestSecurityCompatibilityEnabled(null, false, false);
+            doTestSecurityCompatibilityEnabled(false, false, false);
+            doTestSecurityCompatibilityEnabled(false, null, false);
+            doTestSecurityCompatibilityEnabled(true, true, false);
+        }
+        finally {
+            TestReconnectPluginProvider.enabled = false;
+            TestReconnectProcessor.enabled = false;
+        }
+    }
+
+    /**
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestSecurityCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
+        doTestCompatibilityEnabled(IGNITE_SECURITY_COMPATIBILITY_MODE, first, second, fail);
+    }
+
+    /**
+     * @param prop System property.
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestCompatibilityEnabled(String prop, Object first, Object second, boolean fail) throws Exception {
+        String backup = System.getProperty(prop);
+        try {
+            if (first != null)
+                System.setProperty(prop, String.valueOf(first));
+            else
+                System.clearProperty(prop);
+
+            IgniteEx ignite = startGrid(0);
+
+            // Ignore if disabled security plugin used.
+            if (IGNITE_SECURITY_COMPATIBILITY_MODE.equals(prop) && !ignite.context().security().enabled())
+                return;
+
+            if (second != null)
+                System.setProperty(prop, String.valueOf(second));
+            else
+                System.clearProperty(prop);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node must not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node must join: " + e.getMessage());
+            }
+        }
+        finally {
+            stopAllGrids();
+
+            if (backup != null)
+                System.setProperty(prop, backup);
+            else
+                System.clearProperty(prop);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDifferentDeploymentModes() throws Exception {
         startGrid(0);
 
@@ -171,8 +406,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
+        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 

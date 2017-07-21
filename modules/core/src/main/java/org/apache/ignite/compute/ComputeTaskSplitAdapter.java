@@ -17,13 +17,14 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoadBalancerResource;
 
 /**
  * This class defines simplified adapter for {@link ComputeTask}. This adapter can be used
@@ -31,9 +32,9 @@ import java.util.*;
  * in most homogeneous environments where all nodes are equally suitable for executing grid
  * job. See {@link #split(int, Object)} method for more details.
  * <p>
- * Below is a coding example of how you would use {@code GridComputeTaskSplitAdapter}:
+ * Below is a coding example of how you would use {@code ComputeTaskSplitAdapter}:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, String&gt; {
+ * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
  *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *         List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
@@ -48,13 +49,13 @@ import java.util.*;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *     public String reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *         // For the purpose of this example we simply
  *         // concatenate string representation of every
  *         // job result
  *         StringBuilder buf = new StringBuilder();
  *
- *         for (GridComputeJobResult res : results) {
+ *         for (ComputeJobResult res : results) {
  *             // Append string representation of result
  *             // returned by every job.
  *             buf.append(res.getData().string());

@@ -17,15 +17,17 @@
 
 package org.apache.ignite.events;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * In-memory database (cache) event.
@@ -67,14 +69,11 @@ import java.util.*;
  * @see EventType#EVT_CACHE_ENTRY_DESTROYED
  * @see EventType#EVT_CACHE_ENTRY_EVICTED
  * @see EventType#EVT_CACHE_OBJECT_EXPIRED
- * @see EventType#EVT_CACHE_OBJECT_FROM_OFFHEAP
  * @see EventType#EVT_CACHE_OBJECT_LOCKED
  * @see EventType#EVT_CACHE_OBJECT_PUT
  * @see EventType#EVT_CACHE_OBJECT_READ
  * @see EventType#EVT_CACHE_OBJECT_REMOVED
- * @see EventType#EVT_CACHE_OBJECT_SWAPPED
  * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
- * @see EventType#EVT_CACHE_OBJECT_UNSWAPPED
  * @see EventType#EVTS_CACHE
  */
 public class CacheEvent extends EventAdapter {
@@ -88,7 +87,7 @@ public class CacheEvent extends EventAdapter {
     private int part;
 
     /** Cache entry. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object key;
 
     /** Event ID. */
@@ -100,11 +99,11 @@ public class CacheEvent extends EventAdapter {
     private final Object lockId;
 
     /** New value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final Object newVal;
 
     /** Old value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final Object oldVal;
 
     /**

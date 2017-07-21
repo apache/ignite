@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.util.ipc;
 
-import org.apache.ignite.*;
-
-import java.io.*;
+import java.io.Closeable;
+import java.io.InputStream;
+import java.io.OutputStream;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * IGFS IPC endpoint used for point-to-point communication.

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.multicast;
 
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.testframework.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * GridTcpDiscoveryMulticastIpFinder test.
@@ -58,14 +58,20 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
 
         try {
             ipFinder1 = ipFinder();
+            ipFinder1.setResponseWaitTime(1000);
+            ipFinder1.setAddressRequestAttempts(5);
 
             ipFinder2 = new TcpDiscoveryMulticastIpFinder();
 
+            ipFinder2.setResponseWaitTime(1000);
+            ipFinder2.setAddressRequestAttempts(5);
             ipFinder2.setMulticastGroup(ipFinder1.getMulticastGroup());
             ipFinder2.setMulticastPort(ipFinder1.getMulticastPort());
 
             ipFinder3 = new TcpDiscoveryMulticastIpFinder();
 
+            ipFinder3.setResponseWaitTime(1000);
+            ipFinder3.setAddressRequestAttempts(5);
             ipFinder3.setMulticastGroup(ipFinder1.getMulticastGroup());
             ipFinder3.setMulticastPort(ipFinder1.getMulticastPort());
 
@@ -78,28 +84,28 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             ipFinder3.setLocalAddress(locAddr);
 
             ipFinder1.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host1", 1001)));
+
+            Collection<InetSocketAddress> addrs1 = ipFinder1.getRegisteredAddresses();
+
             ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
+
+            Collection<InetSocketAddress> addrs2 = ipFinder2.getRegisteredAddresses();
+
             ipFinder3.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host3", 1003)));
 
-            for (int i = 0; i < 5; i++) {
-                Collection<InetSocketAddress> addrs1 = ipFinder1.getRegisteredAddresses();
-                Collection<InetSocketAddress> addrs2 = ipFinder2.getRegisteredAddresses();
-                Collection<InetSocketAddress> addrs3 = ipFinder3.getRegisteredAddresses();
+            Collection<InetSocketAddress> addrs3 = ipFinder3.getRegisteredAddresses();
 
-                if (addrs1.size() != 1 || addrs2.size() != 2 || addrs3.size() != 3) {
-                    info("Addrs1: " + addrs1);
-                    info("Addrs2: " + addrs2);
-                    info("Addrs2: " + addrs3);
+            info("Addrs1: " + addrs1);
+            info("Addrs2: " + addrs2);
+            info("Addrs2: " + addrs3);
 
-                    Thread.sleep(1000);
-                }
-                else
-                    break;
-            }
+            assertEquals(1, addrs1.size());
+            assertEquals(2, addrs2.size());
+            assertTrue("Unexpected number of addresses: " + addrs3, addrs3.size() == 2 || addrs3.size() == 3);
 
-            assertEquals(1, ipFinder1.getRegisteredAddresses().size());
-            assertEquals(2, ipFinder2.getRegisteredAddresses().size());
-            assertEquals(3, ipFinder3.getRegisteredAddresses().size());
+            checkRequestAddresses(ipFinder1, 3);
+            checkRequestAddresses(ipFinder2, 3);
+            checkRequestAddresses(ipFinder3, 3);
         }
         finally {
             if (ipFinder1 != null)
@@ -111,5 +117,18 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             if (ipFinder3 != null)
                 ipFinder3.close();
         }
+    }
+
+    /**
+     * @param ipFinder IP finder.
+     * @param exp Expected number of addresses.
+     */
+    private void checkRequestAddresses(TcpDiscoveryMulticastIpFinder ipFinder, int exp) {
+        for (int i = 0; i < 10; i++) {
+            if (ipFinder.getRegisteredAddresses().size() == exp)
+                return;
+        }
+
+        assertEquals(exp, ipFinder.getRegisteredAddresses().size());
     }
 }

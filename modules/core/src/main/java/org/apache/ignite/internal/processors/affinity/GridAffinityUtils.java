@@ -17,21 +17,30 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Affinity utility methods.
@@ -68,7 +77,7 @@ class GridAffinityUtils {
             throw new IgniteDeploymentCheckedException("Failed to deploy affinity object with class: " + cls.getName());
 
         return new GridAffinityMessage(
-            ctx.config().getMarshaller().marshal(o),
+            U.marshal(ctx, o),
             cls.getName(),
             dep.classLoaderId(),
             dep.deployMode(),
@@ -101,7 +110,8 @@ class GridAffinityUtils {
             throw new IgniteDeploymentCheckedException("Failed to obtain affinity object (is peer class loading turned on?): " +
                 msg);
 
-        Object src = ctx.config().getMarshaller().unmarshal(msg.source(), dep.classLoader());
+        Object src = U.unmarshal(ctx, msg.source(),
+            U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
         // Resource injection.
         ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()), src);
@@ -140,6 +150,7 @@ class GridAffinityUtils {
 
         /**
          * @param cacheName Cache name.
+         * @param topVer Topology version.
          */
         private AffinityJob(@Nullable String cacheName, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
@@ -169,10 +180,16 @@ class GridAffinityUtils {
 
             cctx.affinity().affinityReadyFuture(topVer).get();
 
+            AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
+
+            GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
+                (GridAffinityAssignment)assign0 :
+                new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
+
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
-                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
+                assign);
         }
 
         /** {@inheritDoc} */

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.loadtests.direct.session;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.TaskSessionResource;
 
 /**
  * Session load test job.

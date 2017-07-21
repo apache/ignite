@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.text.*;
-import java.util.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Timer to use mostly for debugging purposes.

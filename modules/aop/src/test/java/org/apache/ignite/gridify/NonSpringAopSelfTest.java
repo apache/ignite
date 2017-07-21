@@ -17,7 +17,7 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * To run this test with JBoss AOP make sure of the following:
@@ -51,7 +51,7 @@ public class NonSpringAopSelfTest extends AbstractAopTest {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "TestAopTarget";
     }
 }

@@ -17,21 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-
-import java.nio.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Lock request message.
@@ -39,6 +44,15 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Skip store flag bit mask. */
+    private static final int SKIP_STORE_FLAG_MASK = 0x01;
+
+    /** Keep binary flag. */
+    private static final int KEEP_BINARY_FLAG_MASK = 0x02;
+
+    /** */
+    private static final int STORE_USED_FLAG_MASK = 0x04;
 
     /** Sender node ID. */
     private UUID nodeId;
@@ -82,10 +96,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** Key count. */
     private int txSize;
 
-    /**
-     * Additional flags.
-     * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
-     */
+    /** Additional flags. */
     private byte flags;
 
     /**
@@ -110,6 +121,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -125,9 +137,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         long timeout,
         int keyCnt,
         int txSize,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary,
+        boolean addDepInfo
     ) {
-        super(lockVer, keyCnt);
+        super(lockVer, keyCnt, addDepInfo);
 
         assert keyCnt > 0;
         assert futId != null;
@@ -148,6 +162,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         retVals = new boolean[keyCnt];
 
         skipStore(skipStore);
+        keepBinary(keepBinary);
     }
 
     /**
@@ -210,18 +225,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Return flags.
-     */
-    public boolean[] returnFlags() {
-        return retVals;
-    }
-
-    /**
      * Sets skip store flag value.
      *
      * @param skipStore Skip store flag.
      */
-    private void skipStore(boolean skipStore){
+    private void skipStore(boolean skipStore) {
         flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
     }
 
@@ -230,6 +238,37 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public boolean skipStore() {
         return (flags & SKIP_STORE_FLAG_MASK) == 1;
+    }
+
+    /**
+     * @param keepBinary Keep binary flag.
+     */
+    public void keepBinary(boolean keepBinary) {
+        flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * @return Keep binary.
+     */
+    public boolean keepBinary() {
+        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @return Flag indicating whether transaction use cache store.
+     */
+    public boolean storeUsed() {
+        return (flags & STORE_USED_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @param storeUsed Store used value.
+     */
+    public void storeUsed(boolean storeUsed) {
+        if (storeUsed)
+            flags = (byte)(flags | STORE_USED_FLAG_MASK);
+        else
+            flags &= ~STORE_USED_FLAG_MASK;
     }
 
     /**
@@ -251,22 +290,18 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      *
      * @param key Key.
      * @param retVal Flag indicating whether value should be returned.
-     * @param cands Candidates.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
         KeyCacheObject key,
         boolean retVal,
-        @Nullable Collection<GridCacheMvccCandidate> cands,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
         keys.add(key);
-
-        candidatesByIndex(idx, cands);
 
         retVals[idx] = retVal;
 
@@ -280,11 +315,21 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return keys;
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
+    }
+
     /**
      * @return Max lock wait time.
      */
     public long timeout() {
         return timeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txLockMessageLogger();
     }
 
     /** {@inheritDoc}
@@ -525,11 +570,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDistributedLockRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 21;
     }
 

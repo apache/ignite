@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -63,6 +64,11 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void entryLocked(boolean locked) {
         assert p != null;
 
@@ -74,7 +80,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
         assert p != null || bytes != null;
 
         if (p == null) {
-            p = ctx.marshaller().unmarshal(bytes, ldr);
+            p = U.unmarshal(ctx.marshaller(), bytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
             p.finishUnmarshal(ctx, ldr);
         }
@@ -86,7 +92,8 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
         p.prepareMarshal(ctx);
 
-        bytes = ctx.marshaller().marshal(p);
+        if (bytes == null)
+            bytes = U.marshal(ctx.marshaller(), p);
     }
 
     /** {@inheritDoc} */
@@ -137,11 +144,11 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
         }
 
-        return true;
+        return reader.afterMessageRead(CacheEntrySerializablePredicate.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 99;
     }
 

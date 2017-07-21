@@ -17,19 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.query.CacheQuery;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Multithreaded reduce query tests with lots of data.
@@ -52,8 +53,8 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
@@ -74,7 +75,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         final int logFreq = 50;
         final String txt = "Value";
 
-        final GridCacheAdapter<Integer, H2TextValue> c = ((IgniteKernal)grid(0)).internalCache(null);
+        final GridCacheAdapter<Integer, H2TextValue> c = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {

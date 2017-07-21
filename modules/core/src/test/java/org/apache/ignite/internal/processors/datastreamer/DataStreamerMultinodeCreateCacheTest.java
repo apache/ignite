@@ -17,17 +17,18 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -37,8 +38,8 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -57,6 +58,8 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testCreateCacheAndStream() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1603");
+
         final int THREADS = 5;
 
         startGrids(THREADS);
@@ -76,14 +79,16 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
                 while (System.currentTimeMillis() < stopTime) {
                     String cacheName = "cache-" + threadIdx + "-" + (iter % 10);
 
-                    try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName)) {
-                        try (IgniteDataStreamer<Object, Object> stmr = ignite.dataStreamer(cacheName)) {
-                            ((DataStreamerImpl<Object, Object>)stmr).maxRemapCount(0);
+                    IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName);
 
-                            for (int i = 0; i < 1000; i++)
-                                stmr.addData(i, i);
-                        }
+                    try (IgniteDataStreamer<Object, Object> stmr = ignite.dataStreamer(cacheName)) {
+                        ((DataStreamerImpl<Object, Object>)stmr).maxRemapCount(0);
+
+                        for (int i = 0; i < 1000; i++)
+                            stmr.addData(i, i);
                     }
+
+                    cache.destroy();
 
                     iter++;
                 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  * Tests for atomic cache with near cache enabled.

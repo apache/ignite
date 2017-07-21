@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Simple injector which wraps only one resource object.

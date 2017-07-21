@@ -17,12 +17,15 @@
 
 package org.apache.ignite.spi.indexing.noop;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.indexing.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import javax.cache.Cache;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiNoop;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Default implementation of {@link IndexingSpi} which does not index cache.
@@ -30,39 +33,36 @@ import java.util.*;
 @IgniteSpiNoop
 public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
     /** {@inheritDoc} */
-    @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
+    @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String cacheName, Collection<Object> params,
         @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
         throw new IgniteSpiException("You have to configure custom GridIndexingSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
+    @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
         throws IgniteSpiException {
         assert false;
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
+    @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
         assert false;
     }
 
     /** {@inheritDoc} */
-    @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoopIndexingSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 }

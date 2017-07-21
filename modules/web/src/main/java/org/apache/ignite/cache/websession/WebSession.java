@@ -17,15 +17,25 @@
 
 package org.apache.ignite.cache.websession;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import javax.servlet.*;
-import javax.servlet.http.*;
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionContext;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Session implementation.
@@ -34,6 +44,9 @@ import java.util.*;
 class WebSession implements HttpSession, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Flag indicating if the session is valid. */
+    private volatile transient boolean isValid = true;
 
     /** Empty session context. */
     private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {
@@ -66,15 +79,18 @@ class WebSession implements HttpSession, Externalizable {
     @GridToStringExclude
     private transient ServletContext ctx;
 
-    /** Listener. */
+    /** Web session filter. */
     @GridToStringExclude
-    private transient WebSessionListener lsnr;
+    private transient WebSessionFilter filter;
 
     /** New session flag. */
     private transient boolean isNew;
 
     /** Updates list. */
     private transient Collection<T2<String, Object>> updates;
+
+    /** Genuine http session. */
+    private transient HttpSession genSes;
 
     /**
      * Required by {@link Externalizable}.
@@ -84,12 +100,15 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
+     * @param id Session ID.
      * @param ses Session.
      */
-    WebSession(HttpSession ses) {
+    WebSession(String id, HttpSession ses) {
+        assert id != null;
         assert ses != null;
 
-        id = ses.getId();
+        this.id = id;
+
         createTime = ses.getCreationTime();
         accessTime = ses.getLastAccessedTime();
         maxInactiveInterval = ses.getMaxInactiveInterval();
@@ -107,20 +126,23 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
+     * @param id Session ID.
      * @param ses Session.
      * @param isNew Is new flag.
      */
-    WebSession(HttpSession ses, boolean isNew) {
-        this(ses);
+    WebSession(String id, HttpSession ses, boolean isNew) {
+        this(id, ses);
 
         this.isNew = isNew;
     }
 
     /**
-     * @param accessTime Last access time.
+     * Sets the genuine http session.
+     *
+     * @param genSes Genuine http session.
      */
-    void accessTime(long accessTime) {
-        this.accessTime = accessTime;
+    protected void genSes(HttpSession genSes) {
+        this.genSes = genSes;
     }
 
     /**
@@ -133,12 +155,21 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
-     * @param lsnr Listener.
+     * @param filter Filter.
      */
-    public void listener(WebSessionListener lsnr) {
-        assert lsnr != null;
+    public void filter(final WebSessionFilter filter) {
+        assert filter != null;
 
-        this.lsnr = lsnr;
+        this.filter = filter;
+    }
+
+    /**
+     * Checks if the session is valid.
+     *
+     * @return True is valid, otherwise false.
+     */
+    protected boolean isValid() {
+        return this.isValid;
     }
 
     /**
@@ -164,6 +195,15 @@ class WebSession implements HttpSession, Externalizable {
         return id;
     }
 
+    /**
+     * Sets a session id.
+     *
+     * @param id Session id.
+     */
+    protected void setId(String id) {
+        this.id = id;
+    }
+
     /** {@inheritDoc} */
     @Override public ServletContext getServletContext() {
         return ctx;
@@ -171,11 +211,17 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public long getCreationTime() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return createTime;
     }
 
     /** {@inheritDoc} */
     @Override public long getLastAccessedTime() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return accessTime;
     }
 
@@ -191,26 +237,43 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Object getAttribute(String name) {
-        return attrs.get(name);
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
+        Object val = attrs.get(name);
+
+        if (val != null && updates != null)
+            updates.add(new T2<>(name, val));
+
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public Object getValue(String name) {
-        return attrs.get(name);
+        return getAttribute(name);
     }
 
     /** {@inheritDoc} */
     @Override public Enumeration<String> getAttributeNames() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return Collections.enumeration(attrs.keySet());
     }
 
     /** {@inheritDoc} */
     @Override public String[] getValueNames() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return attrs.keySet().toArray(new String[attrs.size()]);
     }
 
     /** {@inheritDoc} */
     @Override public void setAttribute(String name, Object val) {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         attrs.put(name, val);
 
         if (updates != null)
@@ -224,6 +287,9 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void removeAttribute(String name) {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         attrs.remove(name);
 
         if (updates != null)
@@ -237,22 +303,25 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void invalidate() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         attrs.clear();
 
         updates = null;
 
-        lsnr.destroySession(id);
-    }
+        filter.destroySession(id);
 
-    /**
-     * @param isNew New session flag.
-     */
-    void setNew(boolean isNew) {
-        this.isNew = isNew;
+        genSes.invalidate();
+
+        isValid = false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isNew() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return isNew;
     }
 

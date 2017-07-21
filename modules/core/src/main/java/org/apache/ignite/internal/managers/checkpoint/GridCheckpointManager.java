@@ -17,31 +17,44 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTaskSessionScope;
+import org.apache.ignite.events.CheckpointEvent;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTaskSessionImpl;
+import org.apache.ignite.internal.GridTaskSessionInternal;
+import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.checkpoint.CheckpointListener;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.GridTopic.*;
-import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_LOADED;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_REMOVED;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_SAVED;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CHECKPOINT;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
  * This class defines a checkpoint manager.
@@ -160,7 +173,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         try {
             switch (scope) {
                 case GLOBAL_SCOPE: {
-                    byte[] data = state == null ? null : marsh.marshal(state);
+                    byte[] data = state == null ? null : U.marshal(marsh, state);
 
                     saved = getSpi(ses.getCheckpointSpi()).saveCheckpoint(key, data, timeout, override);
 
@@ -172,16 +185,20 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
                 case SESSION_SCOPE: {
                     if (closedSess.contains(ses.getId())) {
-                        U.warn(log, "Checkpoint will not be saved due to session invalidation [key=" + key +
-                            ", val=" + state + ", ses=" + ses + ']',
+                        U.warn(log, S.toString("Checkpoint will not be saved due to session invalidation",
+                            "key", key, true,
+                            "val", state, true,
+                            "ses", ses, false),
                             "Checkpoint will not be saved due to session invalidation.");
 
                         break;
                     }
 
                     if (now > ses.getEndTime()) {
-                        U.warn(log, "Checkpoint will not be saved due to session timeout [key=" + key +
-                            ", val=" + state + ", ses=" + ses + ']',
+                        U.warn(log, S.toString("Checkpoint will not be saved due to session timeout",
+                            "key", key, true,
+                            "val", state, true,
+                            "ses", ses, false),
                             "Checkpoint will not be saved due to session timeout.");
 
                         break;
@@ -191,7 +208,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                         timeout = ses.getEndTime() - now;
 
                     // Save it first to avoid getting null value on another node.
-                    byte[] data = state == null ? null : marsh.marshal(state);
+                    byte[] data = state == null ? null : U.marshal(marsh, state);
 
                     Set<String> keys = keyMap.get(ses.getId());
 
@@ -204,8 +221,10 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
                         // Double check.
                         if (closedSess.contains(ses.getId())) {
-                            U.warn(log, "Checkpoint will not be saved due to session invalidation [key=" + key +
-                                ", val=" + state + ", ses=" + ses + ']',
+                            U.warn(log, S.toString("Checkpoint will not be saved due to session invalidation",
+                                "key", key, true,
+                                "val", state, true,
+                                "ses", ses, false),
                                 "Checkpoint will not be saved due to session invalidation.");
 
                             keyMap.remove(ses.getId(), keys);
@@ -215,8 +234,10 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                     }
 
                     if (log.isDebugEnabled())
-                        log.debug("Resolved keys for session [keys=" + keys + ", ses=" + ses +
-                            ", keyMap=" + keyMap + ']');
+                        log.debug(S.toString("Resolved keys for session",
+                            "keys", keys, true,
+                            "ses", ses, false,
+                            "keyMap", keyMap, false));
 
                     // Note: Check that keys exists because session may be invalidated during saving
                     // checkpoint from GridFuture.
@@ -226,7 +247,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                             ClusterNode node = ctx.discovery().node(ses.getTaskNodeId());
 
                             if (node != null)
-                                ctx.io().send(
+                                ctx.io().sendToGridTopic(
                                     node,
                                     TOPIC_CHECKPOINT,
                                     new GridCheckpointRequest(ses.getId(), key, ses.getCheckpointSpi()),
@@ -250,8 +271,11 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             }
         }
         catch (IgniteSpiException e) {
-            throw new IgniteCheckedException("Failed to save checkpoint [key=" + key + ", val=" + state + ", scope=" +
-                scope + ", timeout=" + timeout + ']', e);
+            throw new IgniteCheckedException(S.toString("Failed to save checkpoint",
+                "key", key, true,
+                "val", state, true,
+                "scope", scope, false,
+                "timeout", timeout, false), e);
         }
 
         return saved;
@@ -300,7 +324,8 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             rmv = getSpi(ses.getCheckpointSpi()).removeCheckpoint(key);
         }
         else if (log.isDebugEnabled())
-            log.debug("Checkpoint will not be removed (key map not found) [key=" + key + ", ses=" + ses + ']');
+            log.debug(S.toString("Checkpoint will not be removed (key map not found)",
+                "key", key, true, "ses", ses, false));
 
         return rmv;
     }
@@ -325,14 +350,15 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
             // Always deserialize with task/session class loader.
             if (data != null)
-                state = marsh.unmarshal(data, ses.getClassLoader());
+                state = U.unmarshal(marsh, data, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
 
             record(EVT_CHECKPOINT_LOADED, key);
 
             return state;
         }
         catch (IgniteSpiException e) {
-            throw new IgniteCheckedException("Failed to load checkpoint: " + key, e);
+            throw new IgniteCheckedException(S.INCLUDE_SENSITIVE ?
+                ("Failed to load checkpoint: " + key) : "Failed to load checkpoint", e);
         }
     }
 
@@ -376,14 +402,16 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             String msg;
 
             if (type == EVT_CHECKPOINT_SAVED)
-                msg = "Checkpoint saved: " + key;
+                msg = "Checkpoint saved";
             else if (type == EVT_CHECKPOINT_LOADED)
-                msg = "Checkpoint loaded: " + key;
+                msg = "Checkpoint loaded";
             else {
                 assert type == EVT_CHECKPOINT_REMOVED : "Invalid event type: " + type;
 
-                msg = "Checkpoint removed: " + key;
+                msg = "Checkpoint removed";
             }
+            if (S.INCLUDE_SENSITIVE)
+                msg += ": " + key;
 
             ctx.event().record(new CheckpointEvent(ctx.discovery().localNode(), msg, type, key));
         }
@@ -392,7 +420,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Checkpoint manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Checkpoint manager memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  keyMap: " + (keyMap != null ? keyMap.size() : 0));
     }
 
@@ -436,7 +464,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
          * @param msg Received message.
          */
         @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridCheckpointRequest req = (GridCheckpointRequest)msg;
 
             if (log.isDebugEnabled())

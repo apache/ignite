@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.expression.*;
+import org.h2.expression.Function;
 
 /**
  * Full list of available functions see at {@link Function}
@@ -60,6 +60,9 @@ public enum GridSqlFunctionType {
 
     /** */
     SYSTEM_RANGE,
+
+    /** TABLE and TABLE_DISTINCT */
+    TABLE,
 
     /** Constant for all other functions. */
     UNKNOWN_FUNCTION;

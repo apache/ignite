@@ -17,10 +17,10 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-
-import java.io.*;
+import java.io.IOException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.igfs.IgfsInputStream;
 
 /**
  * Defines executable unit for {@link IgfsTask}. Before this job is executed, it is assigned one of the

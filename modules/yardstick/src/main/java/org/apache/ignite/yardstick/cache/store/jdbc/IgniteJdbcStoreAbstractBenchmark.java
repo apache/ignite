@@ -17,14 +17,16 @@
 
 package org.apache.ignite.yardstick.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.yardstick.*;
-import org.yardstickframework.*;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.store.jdbc.CacheAbstractJdbcStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Abstract class for Ignite benchmarks which use cache.

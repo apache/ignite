@@ -17,18 +17,25 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.lang.management.*;
-import java.nio.charset.*;
-import java.text.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.management.ManagementFactory;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class for debugging.
@@ -63,7 +70,7 @@ public class GridDebug {
     /** */
     static {
         if (LOGS_PATH != null) {
-            File log = new File(LOGS_PATH + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-").format(new Date()) +
+            File log = new File(new File(LOGS_PATH), new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-").format(new Date()) +
                     ManagementFactory.getRuntimeMXBean().getName() + ".log");
 
             assert !log.exists();

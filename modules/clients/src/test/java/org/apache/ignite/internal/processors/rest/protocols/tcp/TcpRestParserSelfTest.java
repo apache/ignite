@@ -17,24 +17,29 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_REQ_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.MEMCACHE_REQ_FLAG;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
  * This class tests that parser confirms memcache extended specification.

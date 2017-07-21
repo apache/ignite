@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests affinity mapping.
@@ -40,21 +44,21 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(IP_FINDER);
-        disco.setForceServerMode(true);
 
         cfg.setDiscoverySpi(disco);
 
-        if (gridName.endsWith("1"))
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
+
+        if (igniteInstanceName.endsWith("1"))
             cfg.setClientMode(true);
         else {
-            assert gridName.endsWith("2");
+            assert igniteInstanceName.endsWith("2");
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -69,7 +73,9 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(1, 2);
+        startGrid(2);
+
+        startGrid(1);
     }
 
     /** {@inheritDoc} */
@@ -80,25 +86,27 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testAffinity() throws IgniteCheckedException {
+    public void testAffinity() throws Exception {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 
         assert caches(g1).size() == 0;
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
 
-        Map<ClusterNode, Collection<String>> map = g1.cluster().mapKeysToNodes(null, F.asList("1"));
+        awaitPartitionMapExchange();
+
+        Map<ClusterNode, Collection<String>> map = g1.<String>affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(F.asList("1"));
 
         assertNotNull(map);
         assertEquals("Invalid map size: " + map.size(), 1, map.size());
         assertEquals(F.first(map.keySet()), g2.cluster().localNode());
 
-        UUID id1 = g1.cluster().mapKeyToNode(null, "2").id();
+        UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode("2").id();
 
         assertNotNull(id1);
         assertEquals(g2.cluster().localNode().id(), id1);
 
-        UUID id2 = g1.cluster().mapKeyToNode(null, "3").id();
+        UUID id2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode("3").id();
 
         assertNotNull(id2);
         assertEquals(g2.cluster().localNode().id(), id2);
@@ -111,8 +119,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     private Collection<CacheConfiguration> caches(Ignite g) {
         return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
             @Override public boolean apply(CacheConfiguration c) {
-                return !CU.MARSH_CACHE_NAME.equals(c.getName()) && !CU.UTILITY_CACHE_NAME.equals(c.getName()) &&
-                    !CU.ATOMICS_CACHE_NAME.equals(c.getName());
+                return !CU.UTILITY_CACHE_NAME.equals(c.getName()) && !CU.SYS_CACHE_HADOOP_MR.equals(c.getName());
             }
         });
     }

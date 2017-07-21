@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.collision.priorityqueue;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Priority queue collision SPI config test.

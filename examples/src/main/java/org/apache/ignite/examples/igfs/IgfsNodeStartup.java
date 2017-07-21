@@ -17,7 +17,8 @@
 
 package org.apache.ignite.examples.igfs;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 
 /**
  * Starts up an empty node with IGFS configuration.

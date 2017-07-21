@@ -17,11 +17,13 @@
 
 package org.apache.ignite.examples.computegrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteCallable;
 
 /**
  * Demonstrates using of {@link IgniteCallable} job execution on the cluster.

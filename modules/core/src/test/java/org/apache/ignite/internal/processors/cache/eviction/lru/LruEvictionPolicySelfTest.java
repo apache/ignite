@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.lru;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.eviction.*;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
+import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest;
 
 /**
  * LRU Eviction policy tests.

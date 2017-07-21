@@ -17,16 +17,16 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.spring.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-
-import javax.cache.configuration.*;
-import javax.sql.*;
+import javax.cache.configuration.Factory;
+import javax.sql.DataSource;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteComponentType;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.SpringApplicationContextResource;
 
 /**
  * {@link Factory} implementation for {@link CacheJdbcBlobStore}.
@@ -35,7 +35,7 @@ import javax.sql.*;
  *
  * <h2 class="header">Spring Example</h2>
  * <pre name="code" class="xml">
- *     &lt;bean id= "simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
+ *     &lt;bean id= "myDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
  *
  *     &lt;bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *          ...
@@ -45,8 +45,8 @@ import javax.sql.*;
  *                      ...
  *                      &lt;property name="cacheStoreFactory"&gt;
  *                          &lt;bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory"&gt;
- *                              &lt;property name="user" value = "GridGain" /&gt;
- *                              &lt;property name="dataSourceBean" value = "simpleDataSource" /&gt;
+ *                              &lt;property name="user" value = "Ignite" /&gt;
+ *                              &lt;property name="dataSourceBean" value = "myDataSource" /&gt;
  *                          &lt;/bean&gt;
  *                      &lt;/property&gt;
  *                  &lt;/bean&gt;
@@ -55,7 +55,7 @@ import javax.sql.*;
  *     &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
@@ -99,7 +99,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
 
     /** Application context. */
     @SpringApplicationContextResource
-    private Object appContext;
+    private Object appCtx;
 
     /** {@inheritDoc} */
     @Override public CacheJdbcBlobStore<K, V> create() {
@@ -118,7 +118,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
         if (dataSrc != null)
             store.setDataSource(dataSrc);
         else if (dataSrcBean != null) {
-            if (appContext == null)
+            if (appCtx == null)
                 throw new IgniteException("Spring application context resource is not injected.");
 
             IgniteSpringHelper spring;
@@ -126,13 +126,13 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
             try {
                 spring = IgniteComponentType.SPRING.create(false);
 
-                DataSource data = spring.loadBeanFromAppContext(appContext, dataSrcBean);
+                DataSource data = spring.loadBeanFromAppContext(appCtx, dataSrcBean);
 
                 store.setDataSource(data);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException ignored) {
                 throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
-                    ", igniteConfig=" + appContext + ']');
+                    ", igniteConfig=" + appCtx + ']');
             }
         }
 

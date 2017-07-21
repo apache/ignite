@@ -17,11 +17,11 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Load balancer is used for finding the best balanced node according
@@ -39,7 +39,7 @@ import java.util.*;
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;String> {
+ * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;String> {
  *     &#64;Override
  *     protected Collection&lt;? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
  *         List&lt;MyFooBarJob> jobs = new ArrayList&lt;MyFooBarJob>(gridSize);
@@ -61,14 +61,14 @@ import java.util.*;
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String> {
+ * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String> {
  *     // Inject load balancer.
  *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
- *     public Map&lt;? extends ComputeJob, GridNode> map(List&lt;GridNode> subgrid, String arg) throws IgniteCheckedException {
- *         Map&lt;MyFooBarJob, GridNode> jobs = new HashMap&lt;MyFooBarJob, GridNode>(subgrid.size());
+ *     public Map&lt;? extends ComputeJob, ClusterNode> map(List&lt;ClusterNode> subgrid, String arg) throws IgniteCheckedException {
+ *         Map&lt;MyFooBarJob, ClusterNode> jobs = new HashMap&lt;MyFooBarJob, ClusterNode>(subgrid.size());
  *
  *         // In more complex cases, you can actually do
  *         // more complicated assignments of jobs to nodes.
@@ -83,13 +83,13 @@ import java.util.*;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *     public String reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *         // For the purpose of this example we simply
  *         // concatenate string representation of every
  *         // job result
  *         StringBuilder buf = new StringBuilder();
  *
- *         for (GridComputeJobResult res : results) {
+ *         for (ComputeJobResult res : results) {
  *             // Append string representation of result
  *             // returned by every job.
  *             buf.append(res.getData().toString());

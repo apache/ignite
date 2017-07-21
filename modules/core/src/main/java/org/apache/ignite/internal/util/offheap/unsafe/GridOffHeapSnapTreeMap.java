@@ -35,15 +35,33 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  *  A concurrent AVL tree with fast cloning, based on the algorithm of Bronson,
@@ -92,8 +110,9 @@ import java.util.concurrent.locks.*;
  *  @author Nathan Bronson
  */
 @SuppressWarnings("ALL")
-public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends GridOffHeapSmartPointer>
-    extends AbstractMap<K,V> implements ConcurrentNavigableMap<K, V>, Cloneable, Closeable {
+public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends GridOffHeapSmartPointer>
+    extends AbstractMap<K, V>
+    implements ConcurrentNavigableMap<K, V>, Cloneable, AutoCloseable, GridReservable {
     /** This is a special value that indicates that an optimistic read failed. */
     private static final GridOffHeapSmartPointer SpecialRetry = new GridOffHeapSmartPointer() {
         @Override public long pointer() {
@@ -923,17 +942,17 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
         /** */
-        private final AtomicBoolean stopped = new AtomicBoolean(false);
+        private boolean stopped;
 
         /** {@inheritDoc} */
         @Override public boolean add(long node) {
-            ReentrantReadWriteLock.ReadLock l =  lock.readLock();
+            Lock l =  lock.readLock();
 
             if (!l.tryLock())
                 return false;
 
             try {
-                return super.add(node);
+                return !stopped && super.add(node);
             }
             finally {
                 l.unlock();
@@ -942,13 +961,13 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
 
         /** {@inheritDoc} */
         @Override public boolean add(RecycleQueue que) {
-            ReentrantReadWriteLock.ReadLock l =  lock.readLock();
+            Lock l =  lock.readLock();
 
             if (!l.tryLock())
                 return false;
 
             try {
-                return super.add(que);
+                return !stopped && super.add(que);
             }
             finally {
                 l.unlock();
@@ -966,20 +985,21 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
          * @return {@code true} If we stopped this queue.
          */
         public boolean stop() {
-            if (stopped.compareAndSet(false, true)) {
-                lock.writeLock().lock();
+            Lock l = lock.writeLock();
+
+            l.lock();
+
+            try {
+                if (stopped)
+                    return false;
+
+                stopped = true;
 
                 return true;
             }
-
-            return false;
-        }
-
-        /**
-         * @return {@code true} If this queue is stopped..
-         */
-        public boolean isStopped() {
-            return stopped.get();
+            finally {
+                l.unlock();
+            }
         }
     }
 
@@ -1032,6 +1052,12 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
     /** Recycle queue for this snapshot. */
     private volatile StoppableRecycleQueue recycleBin;
 
+    /** */
+    private AtomicInteger reservations;
+
+    /** */
+    private volatile boolean closing;
+
     /**
      * @param keyFactory Key factory.
      * @param valFactory Value factory.
@@ -1065,10 +1091,53 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         this.holderRef = rootHolder();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean reserve() {
+        for (;;) {
+            int r = reservations.get();
+
+            if (r == -1)
+                return false;
+
+            assert r >= 0 : r;
+
+            if (reservations.compareAndSet(r, r + 1))
+                return true;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void release() {
+        for (;;) {
+            int r = reservations.get();
+
+            assert r > 0 : r;
+
+            int z = r == 1 && closing ? -1 : r - 1;
+
+            if (reservations.compareAndSet(r, z)) {
+                if (z == -1)
+                    doClose();
+
+                return;
+            }
+        }
+    }
+
     /**
      * Closes tree map and reclaims memory.
      */
-    public void close() {
+    @Override public void close() {
+        closing = true;
+
+        if (reservations == null || reservations.compareAndSet(0, -1))
+            doClose();
+    }
+
+    /**
+     *
+     */
+    private void doClose() {
         RecycleQueue q;
 
         if (snapshotId.longValue() == 0) {
@@ -1128,6 +1197,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         copy.holderRef = rootHolder(holderRef);
         markShared(root());
 
+        copy.reservations = new AtomicInteger();
         copy.size = new AtomicInteger(size());
         copy.recycleBin = new StoppableRecycleQueue();
 
@@ -3758,7 +3828,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
     /**
      * Submap.
      */
-    private class SubMap extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V> {
+    private class SubMap extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V> {
         /** */
         private final GridOffHeapSnapTreeMap<K,V> m;
 
@@ -4380,8 +4450,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
          * @param key Key.
          * @return Taken lock.
          */
-        @Nullable
-        public Lock lock(Object key) {
+        @Nullable public Lock lock(Object key) {
             Thread th = Thread.currentThread();
 
             Lock l = new Lock(key, th);
@@ -4452,6 +4521,5 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         }
     }
 }
-
 
 

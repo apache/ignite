@@ -17,28 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test cases for preload tests.
@@ -64,8 +67,8 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -75,7 +78,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
         c.setCacheConfiguration(cc);
 
-        TestCommunicationSpi commSpi = new TestCommunicationSpi(gridName.equals(NO_COMMIT));
+        TestCommunicationSpi commSpi = new TestCommunicationSpi(igniteInstanceName.equals(NO_COMMIT));
 
         c.setCommunicationSpi(commSpi);
 
@@ -104,7 +107,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
         try {
             Ignite firstIgnite = startGrid("1");
 
-            IgniteCache<Integer, String> firstCache = firstIgnite.cache(null);
+            IgniteCache<Integer, String> firstCache = firstIgnite.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < ADDITION_CACHE_NUMBER; i++)
                 startGrid(String.valueOf(i + 2));
@@ -116,7 +119,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
             for (TestCommunicationSpi commSpi : commSpis)
                 cnt += commSpi.messagesCount();
 
-            assert cnt == ADDITION_CACHE_NUMBER;
+            assertEquals(ADDITION_CACHE_NUMBER, cnt);
         }
         finally {
             stopAllGrids();
@@ -134,8 +137,8 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
             Ignite ignite3 = startGrid("3");
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
-            IgniteCache<Integer, String> cache3 = ignite3.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, String> cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
@@ -185,7 +188,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             Object obj = ((GridIoMessage)msg).message();
 
@@ -196,7 +199,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
                     return;
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
     }
 }

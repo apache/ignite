@@ -17,28 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache.query.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.resources.*;
-
-import java.math.*;
-import java.net.*;
-import java.sql.*;
-import java.util.*;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 
 /**
  * Task for JDBC adapter.
@@ -56,6 +75,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     /** Scheduler. */
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
+    /** Ignite. */
     @IgniteInstanceResource
     private Ignite ignite;
 
@@ -64,7 +84,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         try {
             assert arg != null;
 
-            Map<String, Object> args = MARSHALLER.unmarshal(arg, null);
+            Map<String, Object> args = U.unmarshal(MARSHALLER, arg, null);
 
             boolean first = true;
 
@@ -86,19 +106,54 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 String cache = (String)args.get("cache");
 
-                GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
+                Map<? extends ComputeJob, ClusterNode> node = null;
 
-                for (ClusterNode n : subgrid) {
-                    if (discoMgr.cacheAffinityNode(n, cache))
-                        return F.asMap(new JdbcDriverJob(args, first), n);
+                if (cache == null) {
+                    boolean start = ignite.configuration().isClientMode();
+
+                    IgniteCache<?, ?> cache0 =
+                            ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, false);
+
+                    if (cache0 != null)
+                        node = mapToNode(subgrid, args, first, cache0.getName());
                 }
+                else
+                    node = mapToNode(subgrid, args, first, cache);
 
-                throw new IgniteException("Can't find node with cache: " + cache);
+                if (node != null)
+                    return node;
+                else
+                    throw new IgniteException("Can't find node with cache: " + cache);
             }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /**
+     * @param subgrid Subgrid.
+     * @param args Args.
+     * @param first First.
+     * @param cache Cache.
+     */
+    @Nullable private Map<? extends ComputeJob, ClusterNode> mapToNode(
+        List<ClusterNode> subgrid,
+        Map<String, Object> args,
+        boolean first,
+        String cache
+    ) {
+        GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
+
+        for (ClusterNode n : subgrid) {
+            if (discoMgr.cacheAffinityNode(n, cache)) {
+                args.put("cache", cache);
+
+                return F.asMap(new JdbcDriverJob(args, first), n);
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -112,12 +167,12 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             if (res.getException() == null) {
                 status = 0;
 
-                bytes = MARSHALLER.marshal(res.getData());
+                bytes = U.marshal(MARSHALLER, res.getData());
             }
             else {
                 status = 1;
 
-                bytes = MARSHALLER.marshal(new SQLException(res.getException().getMessage()));
+                bytes = U.marshal(MARSHALLER, new SQLException(res.getException().getMessage()));
             }
 
             byte[] packet = new byte[bytes.length + 1];
@@ -197,11 +252,25 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
                 IgniteCache<?, ?> cache = ignite.cache(cacheName);
 
+                if (cache == null && cacheName == null) {
+                    try {
+                        boolean start = ignite.configuration().isClientMode();
+
+                        cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, false);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                if (cache == null)
+                    throw new IgniteException(new SQLException("Cache not found [cacheName=" + cacheName + ']'));
+
                 SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(args.toArray());
 
                 qry.setPageSize(pageSize);
 
-                QueryCursor<List<?>> cursor = cache.query(qry);
+                QueryCursor<List<?>> cursor = cache.withKeepBinary().query(qry);
 
                 Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)cursor).fieldsMeta();
 

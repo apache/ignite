@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.mxbean.*;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 
 /**
  * Local node metrics MBean.

@@ -17,20 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Queue multi node test.
  */
 public class GridCachePartitionedAtomicQueueMultiNodeSelfTest extends GridCachePartitionedQueueMultiNodeSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;

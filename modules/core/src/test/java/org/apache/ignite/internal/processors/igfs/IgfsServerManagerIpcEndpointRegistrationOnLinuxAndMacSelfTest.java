@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Tests for {@link IgfsServer} that checks all IPC endpoint registration types
@@ -31,12 +33,15 @@ public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
      * @throws Exception If failed.
      */
     public void testLoopbackAndShmemEndpointsRegistration() throws Exception {
-        IgniteConfiguration cfg = gridConfiguration();
+        IgniteConfiguration cfg = gridConfigurationManyIgfsCaches(3);
 
         cfg.setFileSystemConfiguration(
-            igfsConfiguration(null, null, null), // Check null IPC endpoint config won't bring any hassles.
-            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1, null),
-            igfsConfiguration(IgfsIpcEndpointType.SHMEM, IgfsIpcEndpointConfiguration.DFLT_PORT + 2, null));
+            // Check null IPC endpoint config won't bring any hassles.
+            igfsConfiguration(null, null, null, "partitioned0", "replicated0"),
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1, null,
+                "partitioned1", "replicated1"),
+            igfsConfiguration(IgfsIpcEndpointType.SHMEM, IgfsIpcEndpointConfiguration.DFLT_PORT + 2, null,
+                "partitioned2", "replicated2"));
 
         G.start(cfg);
 

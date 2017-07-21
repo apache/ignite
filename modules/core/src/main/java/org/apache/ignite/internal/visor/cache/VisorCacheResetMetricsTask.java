@@ -17,28 +17,29 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * Reset compute grid metrics.
  */
 @GridInternal
-public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
+public class VisorCacheResetMetricsTask extends VisorOneNodeTask<VisorCacheResetMetricsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheResetMetricsJob job(String arg) {
+    @Override protected VisorCacheResetMetricsJob job(VisorCacheResetMetricsTaskArg arg) {
         return new VisorCacheResetMetricsJob(arg, debug);
     }
 
     /**
      * Job that reset cache metrics.
      */
-    private static class VisorCacheResetMetricsJob extends VisorJob<String, Void> {
+    private static class VisorCacheResetMetricsJob extends VisorJob<VisorCacheResetMetricsTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -46,16 +47,16 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
          * @param arg Cache name to reset metrics for.
          * @param debug Debug flag.
          */
-        private VisorCacheResetMetricsJob(String arg, boolean debug) {
+        private VisorCacheResetMetricsJob(VisorCacheResetMetricsTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String cacheName) {
-            IgniteInternalCache cache = ignite.cachex(cacheName);
+        @Override protected Void run(VisorCacheResetMetricsTaskArg arg) {
+            IgniteInternalCache cache = ignite.cachex(arg.getCacheName());
 
             if (cache != null)
-                cache.mxBean().clear();
+                cache.localMxBean().clear();
 
             return null;
         }

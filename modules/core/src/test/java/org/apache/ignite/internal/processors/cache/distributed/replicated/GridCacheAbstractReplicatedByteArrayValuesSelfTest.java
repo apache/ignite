@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractDistributedByteArrayValuesSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for byte array values in REPLICATED caches.
@@ -31,8 +31,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -41,39 +41,11 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setSwapEnabled(true);
-        cfg.setEvictSynchronized(false);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration offheapCacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setCacheMode(REPLICATED);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setMemoryMode(OFFHEAP_VALUES);
-        cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration offheapTieredCacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setCacheMode(REPLICATED);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setMemoryMode(OFFHEAP_TIERED);
-        cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
 
         return cfg;
     }

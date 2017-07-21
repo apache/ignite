@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.secondary.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * Secondary file system over native IGFS.
@@ -84,7 +88,7 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
     /** {@inheritDoc} */
     @Override public IgfsSecondaryFileSystemPositionedReadable open(IgfsPath path, int bufSize)
         throws IgniteException {
-        return igfs.open(path, bufSize);
+        return (IgfsSecondaryFileSystemPositionedReadable)igfs.open(path, bufSize);
     }
 
     /** {@inheritDoc} */
@@ -115,12 +119,13 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, String> properties() {
-        return Collections.emptyMap();
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
+        igfs.setTimes(path, modificationTime, accessTime);
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteException {
-        // No-op.
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen) throws IgniteException {
+        return igfs.affinity(path, start, len, maxLen);
     }
 }

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.testframework;
 
-import org.apache.ignite.internal.util.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringBufferInputStream;
+import java.util.Map;
+import org.apache.ignite.internal.util.GridByteArrayList;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Test class loader.

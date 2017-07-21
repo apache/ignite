@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteReducer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query execution bean.
@@ -32,7 +33,7 @@ public class GridCacheQueryBean {
     private final IgniteReducer<Object, Object> rdc;
 
     /** */
-    private final IgniteClosure<Object, Object> trans;
+    private final IgniteClosure<?, ?> trans;
 
     /** */
     private final Object[] args;
@@ -44,7 +45,7 @@ public class GridCacheQueryBean {
      * @param args Optional arguments.
      */
     public GridCacheQueryBean(GridCacheQueryAdapter<?> qry, @Nullable IgniteReducer<Object, Object> rdc,
-        @Nullable IgniteClosure<Object, Object> trans, @Nullable Object[] args) {
+        @Nullable IgniteClosure<?, ?> trans, @Nullable Object[] args) {
         assert qry != null;
 
         this.qry = qry;
@@ -70,7 +71,7 @@ public class GridCacheQueryBean {
     /**
      * @return Transformer.
      */
-    @Nullable public IgniteClosure<Object, Object> transform() {
+    @Nullable public IgniteClosure<?, ?> transform() {
 
 
         return trans;

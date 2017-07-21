@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 
 /**
  * @param <K> Key type.

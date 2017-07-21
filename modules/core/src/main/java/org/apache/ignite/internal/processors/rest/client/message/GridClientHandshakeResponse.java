@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import java.io.*;
+import java.io.Externalizable;
 
 /**
  * A client handshake response, containing result

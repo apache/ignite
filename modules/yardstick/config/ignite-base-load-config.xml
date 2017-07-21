@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    Ignite Spring configuration file to startup grid.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <bean id="base-ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
+        <property name="peerClassLoadingEnabled" value="false"/>
+
+        <property name="metricsLogFrequency" value="5000"/>
+
+        <property name="includeEventTypes">
+            <list/>
+        </property>
+
+        <property name="loadBalancingSpi">
+            <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
+                <property name="perTask" value="false"/>
+            </bean>
+        </property>
+
+        <property name="memoryConfiguration">
+            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+                <property name="defaultMemoryPolicyName" value="default"/>
+                <property name="memoryPolicies">
+                    <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+                        <property name="name" value="default"/>
+                        <property name="size" value="#{8L * 1024 * 1024 * 1024}"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <bean name="atomic" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="atomic-fat-values"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="ATOMIC"/>
+    </bean>
+
+    <bean name="tx" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="tx-fat-values"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+    </bean>
+
+    <bean name="atomic-onheap" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="atomic-fat-values-onheap"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="ATOMIC"/>
+
+        <property name="onheapCacheEnabled" value="true"/>
+    </bean>
+
+    <bean name="tx-onheap" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="tx-fat-values-onheap"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+        <property name="onheapCacheEnabled" value="true"/>
+    </bean>
+
+    <bean name="atomic-index" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="atomic-index"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="ATOMIC"/>
+
+        <property name="indexedTypes">
+            <list>
+                <value>java.lang.Integer</value>
+                <value>org.apache.ignite.yardstick.cache.model.Person8</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean name="query" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="query"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="ATOMIC"/>
+
+        <!-- Configure query entities -->
+        <property name="queryEntities">
+            <list>
+                <bean class="org.apache.ignite.cache.QueryEntity">
+                    <property name="keyType" value="java.lang.Integer"/>
+                    <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Person"/>
+
+                    <property name="fields">
+                        <map>
+                            <entry key="id" value="java.lang.Integer"/>
+                            <entry key="orgId" value="java.lang.Integer"/>
+                            <entry key="firstName" value="java.lang.String"/>
+                            <entry key="lastName" value="java.lang.String"/>
+                            <entry key="salary" value="java.lang.Double"/>
+                        </map>
+                    </property>
+
+                    <property name="indexes">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryIndex">
+                                <constructor-arg value="id"/>
+                            </bean>
+                            <!-- Group index. -->
+                            <bean class="org.apache.ignite.cache.QueryIndex">
+                                <constructor-arg>
+                                    <list>
+                                        <value>id</value>
+                                        <value>salary</value>
+                                    </list>
+                                </constructor-arg>
+                                <constructor-arg value="SORTED"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <bean name="orgCache" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="orgCache"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="ATOMIC"/>
+
+        <!-- Configure query entities -->
+        <property name="queryEntities">
+            <list>
+                <bean class="org.apache.ignite.cache.QueryEntity">
+                    <property name="keyType" value="java.lang.Integer"/>
+                    <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Organization"/>
+
+                    <property name="fields">
+                        <map>
+                            <entry key="id" value="java.lang.Integer"/>
+                            <entry key="name" value="java.lang.String"/>
+                        </map>
+                    </property>
+
+                    <property name="indexes">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryIndex">
+                                <constructor-arg value="id"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.QueryIndex">
+                                <constructor-arg value="name"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <bean name="compute" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="compute"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+    </bean>
+</beans>

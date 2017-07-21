@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * {@code Task} command request.
@@ -34,8 +35,8 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     /** Task parameter. */
     private Object arg;
 
-    /** Keep portables flag. */
-    private boolean keepPortables;
+    /** Keep binary flag. */
+    private boolean keepBinaries;
 
     /**
      * @return Task name.
@@ -66,17 +67,17 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * @return Keep portables flag.
+     * @return Keep binary flag.
      */
-    public boolean keepPortables() {
-        return keepPortables;
+    public boolean keepBinaries() {
+        return keepBinaries;
     }
 
     /**
-     * @param keepPortables Keep portables flag.
+     * @param keepBinaries Keep binary flag.
      */
-    public void keepPortables(boolean keepPortables) {
-        this.keepPortables = keepPortables;
+    public void keepBinaries(boolean keepBinaries) {
+        this.keepBinaries = keepBinaries;
     }
 
     /** {@inheritDoc} */

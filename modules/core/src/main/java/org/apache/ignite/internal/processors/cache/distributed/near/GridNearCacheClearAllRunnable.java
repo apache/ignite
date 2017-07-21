@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Runnable for {@link GridCacheAdapter#clearLocally()} routine for near cache.
+ * Runnable for {@link IgniteInternalCache#clearLocally(boolean, boolean, boolean)} routine for near cache.
  */
 public class GridNearCacheClearAllRunnable<K, V> extends GridCacheClearAllRunnable<K, V> {
     /** Runnable for DHT cache. */
@@ -37,9 +39,7 @@ public class GridNearCacheClearAllRunnable<K, V> extends GridCacheClearAllRunnab
      */
     public GridNearCacheClearAllRunnable(GridCacheAdapter<K, V> cache, GridCacheVersion obsoleteVer,
         GridCacheClearAllRunnable<K, V> dhtJob) {
-        super(cache, obsoleteVer, dhtJob.id(), dhtJob.totalCount());
-
-        assert dhtJob != null;
+        super(cache, obsoleteVer, dhtJob.id(), dhtJob.totalCount(), dhtJob.readers());
 
         this.dhtJob = dhtJob;
     }

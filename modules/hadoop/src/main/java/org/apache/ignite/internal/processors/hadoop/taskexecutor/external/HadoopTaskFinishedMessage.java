@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
 
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.hadoop.message.*;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskStatus;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Task finished message. Sent when local task finishes execution.

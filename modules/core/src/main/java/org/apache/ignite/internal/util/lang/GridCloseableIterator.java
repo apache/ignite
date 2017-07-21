@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 
 /**
  * Defines "rich" closeable iterator interface that is also acts like lambda function and iterable.

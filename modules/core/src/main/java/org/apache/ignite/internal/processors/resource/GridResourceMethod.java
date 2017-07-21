@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.lang.annotation.*;
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Wrapper for data where resource should be injected.

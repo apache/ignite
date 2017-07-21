@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management bean for {@link RoundRobinLoadBalancingSpi} SPI.

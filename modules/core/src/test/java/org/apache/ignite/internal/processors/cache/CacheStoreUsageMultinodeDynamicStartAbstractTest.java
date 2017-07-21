@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  *
@@ -155,15 +157,15 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
 
         try {
             if (nearCache)
-                client.createNearCache(null, new NearCacheConfiguration<>());
+                client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
             checkStoreUpdate(true);
         }
         finally {
-            cache = srv.cache(null);
+            cache = srv.cache(DEFAULT_CACHE_NAME);
 
             if (cache != null)
-                cache.close();
+                cache.destroy();
         }
     }
 }

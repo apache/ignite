@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
@@ -26,6 +27,9 @@ import org.jetbrains.annotations.*;
 public class ClusterTopologyCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Next topology version to wait. */
+    private transient IgniteInternalFuture<?> readyFut;
 
     /**
      * Creates new topology exception with given error message.
@@ -45,5 +49,19 @@ public class ClusterTopologyCheckedException extends IgniteCheckedException {
      */
     public ClusterTopologyCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
+    }
+
+    /**
+     * @return Retry ready future.
+     */
+    public IgniteInternalFuture<?> retryReadyFuture() {
+        return readyFut;
+    }
+
+    /**
+     * @param readyFut Retry ready future.
+     */
+    public void retryReadyFuture(IgniteInternalFuture<?> readyFut) {
+        this.readyFut = readyFut;
     }
 }

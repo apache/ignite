@@ -17,13 +17,20 @@
 
 package org.apache.ignite.examples.computegrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.examples.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Demonstrates a simple use of Ignite with
@@ -52,7 +59,7 @@ public class ComputeTaskMapExample {
             System.out.println("Compute task map example started.");
 
             // Execute task on the cluster and wait for its completion.
-            int cnt = ignite.compute().execute(CharacterCountTask.class, "Hello Ignite Enabled World!");
+            int cnt = ignite.compute().execute(MapExampleCharacterCountTask.class, "Hello Ignite Enabled World!");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + cnt + "'.");
@@ -63,7 +70,7 @@ public class ComputeTaskMapExample {
     /**
      * Task to count non-white-space characters in a phrase.
      */
-    private static class CharacterCountTask extends ComputeTaskAdapter<String, Integer> {
+    private static class MapExampleCharacterCountTask extends ComputeTaskAdapter<String, Integer> {
         /**
          * Splits the received string to words, creates a child job for each word, and sends
          * these jobs to other nodes for processing. Each such job simply prints out the received word.
@@ -73,8 +80,6 @@ public class ComputeTaskMapExample {
          * @return Map of jobs to nodes.
          */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> nodes, String arg) {
-            String[] words = arg.split(" ");
-
             Map<ComputeJob, ClusterNode> map = new HashMap<>();
 
             Iterator<ClusterNode> it = nodes.iterator();

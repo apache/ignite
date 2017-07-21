@@ -17,12 +17,19 @@
 
 package org.apache.ignite.yardstick.cache.model;
 
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 
 /**
  * Key class for benchmark.
  */
-public class SampleKey implements Externalizable {
+public class SampleKey implements Externalizable, Binarylizable {
     /** */
     private int id;
 
@@ -63,6 +70,16 @@ public class SampleKey implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        writer.writeInt("id", id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        id = reader.readInt("id");
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -83,6 +100,6 @@ public class SampleKey implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Key [id=" + id + ']';
+        return "SampleKey [id=" + id + ']';
     }
 }

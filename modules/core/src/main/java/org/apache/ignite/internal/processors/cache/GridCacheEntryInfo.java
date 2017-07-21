@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Entry information that gets passed over wire.
@@ -39,9 +41,6 @@ public class GridCacheEntryInfo implements Message {
     /** Cache key. */
     @GridToStringInclude
     private KeyCacheObject key;
-
-    /** Key bytes, set when entry is read from swap and there is no key instance. */
-    private byte[] keyBytes;
 
     /** Cache ID. */
     private int cacheId;
@@ -85,20 +84,6 @@ public class GridCacheEntryInfo implements Message {
      */
     public void key(KeyCacheObject key) {
         this.key = key;
-    }
-
-    /**
-     * @param bytes Key bytes.
-     */
-    public void keyBytes(byte[] bytes) {
-        this.keyBytes = bytes;
-    }
-
-    /**
-     * @return Key bytes.
-     */
-    public byte[] keyBytes() {
-        return keyBytes;
     }
 
     /**
@@ -193,6 +178,11 @@ public class GridCacheEntryInfo implements Message {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -223,24 +213,18 @@ public class GridCacheEntryInfo implements Message {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("keyBytes", keyBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
                 if (!writer.writeLong("ttl", ttl))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -284,14 +268,6 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 3:
-                keyBytes = reader.readByteArray("keyBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
                 ttl = reader.readLong("ttl");
 
                 if (!reader.isLastRead())
@@ -299,7 +275,7 @@ public class GridCacheEntryInfo implements Message {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -307,7 +283,7 @@ public class GridCacheEntryInfo implements Message {
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -317,17 +293,17 @@ public class GridCacheEntryInfo implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheEntryInfo.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 91;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 6;
     }
 
     /**
@@ -341,23 +317,17 @@ public class GridCacheEntryInfo implements Message {
     }
 
     /**
+     * @param ctx Cache object context.
      * @return Marshalled size.
+     * @throws IgniteCheckedException If failed.
      */
-    public int marshalledSize(GridCacheContext ctx) throws IgniteCheckedException {
+    public int marshalledSize(CacheObjectContext ctx) throws IgniteCheckedException {
         int size = 0;
 
-        CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
-
         if (val != null)
-            size += val.valueBytes(cacheObjCtx).length;
+            size += val.valueBytes(ctx).length;
 
-        if (key == null) {
-            assert keyBytes != null;
-
-            size += keyBytes.length;
-        }
-        else
-            size += key.valueBytes(cacheObjCtx).length;
+        size += key.valueBytes(ctx).length;
 
         return SIZE_OVERHEAD + size;
     }
@@ -367,13 +337,20 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
-        assert key != null ^ keyBytes != null;
+        marshal(ctx.cacheObjectContext());
+    }
 
-        if (key != null)
-            key.prepareMarshal(ctx.cacheObjectContext());
+    /**
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void marshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        assert key != null;
+
+        key.prepareMarshal(ctx);
 
         if (val != null)
-            val.prepareMarshal(ctx.cacheObjectContext());
+            val.prepareMarshal(ctx);
 
         if (expireTime == 0)
             expireTime = -1;
@@ -393,20 +370,21 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (key == null) {
-            assert keyBytes != null;
+        unmarshal(ctx.cacheObjectContext(), clsLdr);
+    }
 
-            CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
-
-            Object key0 = ctx.cacheObjects().unmarshal(cacheObjCtx, keyBytes, clsLdr);
-
-            key = ctx.cacheObjects().toCacheKeyObject(cacheObjCtx, key0, false);
-        }
-        else
-            key.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+    /**
+     * Unmarshalls entry.
+     *
+     * @param ctx Cache context.
+     * @param clsLdr Class loader.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public void unmarshal(CacheObjectContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
+        key.finishUnmarshal(ctx, clsLdr);
 
         if (val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+            val.finishUnmarshal(ctx, clsLdr);
 
         long remaining = expireTime;
 

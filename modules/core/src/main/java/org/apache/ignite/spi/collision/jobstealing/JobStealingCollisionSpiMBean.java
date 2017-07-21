@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Map;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management MBean for job stealing based collision SPI.
@@ -53,7 +52,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
     @MXBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
-    /*
+    /**
      * Gets number of currently running (not {@code 'held}) jobs.
      *
      * @return Number of currently running (not {@code 'held}) jobs.
@@ -88,10 +87,10 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Sets number of jobs that can be executed in parallel.
      *
-     * @param activeJobsTreshold Number of jobs that can be executed in parallel.
+     * @param activeJobsThreshold Number of jobs that can be executed in parallel.
      */
     @MXBeanDescription("Number of jobs that can be executed in parallel.")
-    public void setActiveJobsThreshold(int activeJobsTreshold);
+    public void setActiveJobsThreshold(int activeJobsThreshold);
 
     /**
      * Gets job count threshold at which this node will

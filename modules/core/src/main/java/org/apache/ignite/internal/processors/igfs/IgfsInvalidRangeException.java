@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Internal exception thrown when attempted to update range that is no longer present
  * in file affinity map.
  */
-public class IgfsInvalidRangeException extends IgniteCheckedException {
+public class IgfsInvalidRangeException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

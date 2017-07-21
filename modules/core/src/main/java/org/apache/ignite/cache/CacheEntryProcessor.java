@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import javax.cache.processor.*;
-import java.io.*;
+import java.io.Serializable;
+import javax.cache.processor.EntryProcessor;
 
 /**
  * This processor adds {@link Serializable} interface to {@link EntryProcessor} object.

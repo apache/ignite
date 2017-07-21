@@ -17,11 +17,14 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines a distributed session for particular task execution.
@@ -83,7 +86,7 @@ import java.util.*;
  * ...
  * // This field will be injected with distributed task session.
  * &#64TaskSessionResource
- * private GridComputeTaskSession ses;
+ * private ComputeTaskSession ses;
  * ...
  * </pre>
  * or from a setter method:
@@ -91,7 +94,7 @@ import java.util.*;
  * // This setter method will be automatically called by the system
  * // to set grid task session.
  * &#64TaskSessionResource
- * void setSession(GridComputeTaskSession ses) {
+ * void setSession(ComputeTaskSession ses) {
  *     this.ses = ses;
  * }
  * </pre>

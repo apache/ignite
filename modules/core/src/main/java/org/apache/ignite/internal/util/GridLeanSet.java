@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Lean set implementation. Internally this set is based on {@link GridLeanMap}.
@@ -57,6 +57,7 @@ public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
      *
      * @param c Collection to add.
      */
+    @Deprecated
     public GridLeanSet(Collection<E> c) {
         super(new GridLeanMap<>(F.zip(c, VAL)));
     }

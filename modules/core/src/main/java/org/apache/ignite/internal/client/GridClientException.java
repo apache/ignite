@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client exception is a common super class of all client exceptions.

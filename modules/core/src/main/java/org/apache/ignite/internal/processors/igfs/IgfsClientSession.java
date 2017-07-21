@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Closeable;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentMap;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * IGFS client session. Effectively used to manage lifecycle of opened resources and close them on

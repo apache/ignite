@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -53,6 +56,11 @@ public class CacheEntryInfoCollection implements Message {
      */
     public void add(GridCacheEntryInfo info) {
         infos.add(info);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -96,11 +104,11 @@ public class CacheEntryInfoCollection implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(CacheEntryInfoCollection.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 92;
     }
 

@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test remove all method.
@@ -44,7 +43,7 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testRemoveAll() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10_000; ++i)
             cache.put(i, "val");
@@ -67,12 +66,11 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
         U.sleep(5000);
 
         for (int i = 0; i < igniteId.get(); ++i) {
-            IgniteCache locCache = grid(i).cache(null);
+            IgniteCache locCache = grid(i).cache(DEFAULT_CACHE_NAME);
 
             assertEquals("Local size: " + locCache.localSize() + "\n" +
                 "On heap: " + locCache.localSize(CachePeekMode.ONHEAP) + "\n" +
                 "Off heap: " + locCache.localSize(CachePeekMode.OFFHEAP) + "\n" +
-                "Swap: " + locCache.localSize(CachePeekMode.SWAP) + "\n" +
                 "Primary: " + locCache.localSize(CachePeekMode.PRIMARY) + "\n" +
                 "Backup: " + locCache.localSize(CachePeekMode.BACKUP),
                 0, locCache.localSize());

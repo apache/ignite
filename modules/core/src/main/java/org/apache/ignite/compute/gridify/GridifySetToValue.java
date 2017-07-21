@@ -17,8 +17,12 @@
 
 package org.apache.ignite.compute.gridify;
 
-import java.io.*;
-import java.lang.annotation.*;
+import java.io.Serializable;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * {@code GridifySetToValue} annotation is the way to grid-enable existing code with specific semantics.
@@ -192,6 +196,16 @@ public @interface GridifySetToValue {
     /**
      * Name of the grid to use. By default, no-name default grid is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named grids.
+     *
+     * @deprecated Use {@link #igniteInstanceName()}. Nonempty {@link #igniteInstanceName()} takes precedence.
      */
+    @Deprecated
     String gridName() default "";
+
+    /**
+     * Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
+     * Refer to {@link org.apache.ignite.Ignition} for information about named Ignite instances.
+     */
+    @SuppressWarnings({"JavaDoc"})
+    String igniteInstanceName() default "";
 }

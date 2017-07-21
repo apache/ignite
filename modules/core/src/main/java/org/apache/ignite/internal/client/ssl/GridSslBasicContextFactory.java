@@ -17,13 +17,23 @@
 
 package org.apache.ignite.internal.client.ssl;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import javax.net.ssl.*;
-import java.io.*;
-import java.security.*;
-import java.security.cert.*;
-import java.util.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Basic ssl context factory that provides ssl context configuration with specified key
@@ -37,7 +47,9 @@ import java.util.*;
  *     factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
  *     // Rest of initialization.
  * </pre>
+ * @deprecated Use {@link Factory} instead.
  */
+@Deprecated
 public class GridSslBasicContextFactory implements GridSslContextFactory {
     /** Default key store type. */
     public static final String DFLT_STORE_TYPE = "JKS";

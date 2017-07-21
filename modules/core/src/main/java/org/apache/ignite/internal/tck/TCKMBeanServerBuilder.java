@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal.tck;
 
-import com.sun.jmx.mbeanserver.*;
-
-import javax.management.*;
+import com.sun.jmx.mbeanserver.JmxMBeanServer;
+import javax.management.ListenerNotFoundException;
+import javax.management.MBeanNotificationInfo;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerBuilder;
+import javax.management.MBeanServerDelegate;
+import javax.management.Notification;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
 
 /**
  * This class is needed for JCache TCK tests.

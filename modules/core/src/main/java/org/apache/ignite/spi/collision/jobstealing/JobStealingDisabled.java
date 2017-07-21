@@ -17,7 +17,11 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * This annotation disables job stealing if corresponding feature is configured.
@@ -27,7 +31,7 @@ import java.lang.annotation.*;
  * Here is an example of how this annotation can be attached to a job class:
  * <pre name="code" class="java">
  * &#64;GridJobStealingDisabled
- * public class MyJob extends GridComputeJobAdapter&lt;Object&gt; {
+ * public class MyJob extends ComputeJobAdapter&lt;Object&gt; {
  *     public Serializable execute() throws IgniteCheckedException {
  *         // Job logic goes here.
  *         ...

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.cluster.ClusterMetrics;
 
 /**
  * MBean for local node metrics.

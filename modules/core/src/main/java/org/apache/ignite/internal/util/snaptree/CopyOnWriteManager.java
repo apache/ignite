@@ -35,8 +35,8 @@
 
 package org.apache.ignite.internal.util.snaptree;
 
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /** Manages copy-on-write behavior for a concurrent tree structure.  It is
  *  assumed that the managed structure allows concurrent mutation, but that no

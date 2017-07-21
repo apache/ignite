@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /** Internal exception class for proper timeout handling. */
 class HadoopHandshakeTimeoutException extends IgniteCheckedException {

@@ -17,12 +17,16 @@
 
 package org.apache.ignite.examples.misc.lifecycle;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
-import static org.apache.ignite.lifecycle.LifecycleEventType.*;
+import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
+import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_STOP;
 
 /**
  * This example shows how to provide your own {@link LifecycleBean} implementation

@@ -17,20 +17,59 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.LongAdder8;
 
 /**
  * Tests unsafe memory.
  */
 public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
+    /** */
+    public void testBuffers() {
+        ByteBuffer b1 = GridUnsafe.allocateBuffer(10);
+        ByteBuffer b2 = GridUnsafe.allocateBuffer(20);
+
+        assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b2.order());
+        assertTrue(b2.isDirect());
+        assertEquals(20, b2.capacity());
+        assertEquals(20, b2.limit());
+        assertEquals(0, b2.position());
+
+        assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b1.order());
+        assertTrue(b1.isDirect());
+        assertEquals(10, b1.capacity());
+        assertEquals(10, b1.limit());
+        assertEquals(0, b1.position());
+
+        b1.putLong(1L);
+        b1.putShort((short)7);
+
+        b2.putLong(2L);
+
+        GridUnsafe.freeBuffer(b1);
+
+        b2.putLong(3L);
+        b2.putInt(9);
+
+        for (int i = 0; i <= 16; i++)
+            b2.putInt(i, 100500);
+
+        GridUnsafe.freeBuffer(b2);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -236,8 +275,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
         guard.begin();
 
         guard.finalizeLater(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 i.incrementAndGet();
             }
         });
@@ -252,44 +290,6 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
         X.println("__ " + guard);
 
         assertEquals(1, i.get());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGuardedOpsPerformance() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-823");
-
-        final GridUnsafeGuard guard = new GridUnsafeGuard();
-
-        final AtomicInteger i = new AtomicInteger();
-
-        final AtomicBoolean run = new AtomicBoolean(true);
-
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                int x = 0;
-
-                while (run.get()) {
-                    guard.begin();
-                    guard.end();
-
-                    x++;
-                }
-
-                i.addAndGet(x);
-            }
-        }, 4);
-
-        int time = 60;
-
-        Thread.sleep(time * 1000);
-
-        run.set(false);
-
-        fut.get();
-
-        X.println("Op/sec: " + (float)i.get() / time);
     }
 
     /**
@@ -541,4 +541,3 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
         assertEquals(mem.allocatedSize(), 0);
     }
 }
-

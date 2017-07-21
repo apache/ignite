@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.http.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test for dynamic cache start from config file.
@@ -62,15 +66,13 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.REPLICATED);
 
@@ -201,7 +203,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteException e) {
+        catch (IgniteException ignored) {
             // No-op.
         }
     }

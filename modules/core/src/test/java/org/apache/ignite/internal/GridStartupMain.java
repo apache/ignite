@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.swing.*;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import org.apache.ignite.internal.util.typedef.G;
 
 /**
  * Ignite startup.

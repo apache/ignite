@@ -17,17 +17,18 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 
 /**
  * Tests for continuous deployment with cache and changing topology.
@@ -39,8 +40,8 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     /** Number of grids cache. */
     private static final int GRID_CNT = 2;
 
-    /** Name for grid without cache. */
-    private static final String GRID_NAME = "grid-no-cache";
+    /** Name for Ignite instance without cache. */
+    private static final String IGNITE_INSTANCE_NAME = "grid-no-cache";
 
     /** First test task name. */
     private static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.GridP2PContinuousDeploymentTask1";
@@ -49,12 +50,12 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     private static final String TEST_TASK_2 = "org.apache.ignite.tests.p2p.GridP2PContinuousDeploymentTask2";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(CONTINUOUS);
 
-        if (GRID_NAME.equals(gridName))
+        if (IGNITE_INSTANCE_NAME.equals(igniteInstanceName))
             cfg.setCacheConfiguration();
         else
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -98,20 +99,20 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      */
     @SuppressWarnings("unchecked")
     public void testDeployment() throws Exception {
-        Ignite ignite = startGrid(GRID_NAME);
+        Ignite ignite = startGrid(IGNITE_INSTANCE_NAME);
 
         Class cls = getExternalClassLoader().loadClass(TEST_TASK_1);
 
         compute(ignite.cluster().forRemotes()).execute(cls, null);
 
-        stopGrid(GRID_NAME);
+        stopGrid(IGNITE_INSTANCE_NAME);
 
-        ignite = startGrid(GRID_NAME);
+        ignite = startGrid(IGNITE_INSTANCE_NAME);
 
         cls = getExternalClassLoader().loadClass(TEST_TASK_2);
 
         compute(ignite.cluster().forRemotes()).execute(cls, null);
 
-        stopGrid(GRID_NAME);
+        stopGrid(IGNITE_INSTANCE_NAME);
     }
 }

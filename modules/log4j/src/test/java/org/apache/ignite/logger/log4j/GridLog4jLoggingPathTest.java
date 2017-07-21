@@ -17,9 +17,9 @@
 
 package org.apache.ignite.logger.log4j;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.testframework.junits.common.*;
+import junit.framework.TestCase;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Grid Log4j SPI test.

@@ -17,22 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Queue failover test.
@@ -72,8 +79,8 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMetricsLogFrequency(0);
 
@@ -350,16 +357,21 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @param queue Queue.
      * @return Primary node for queue's header.
+     * @throws Exception If failed.
      */
-    private int primaryQueueNode(IgniteQueue queue) {
+    private int primaryQueueNode(IgniteQueue queue) throws Exception {
         GridCacheContext cctx = GridTestUtils.getFieldValue(queue, "cctx");
 
         GridCacheAffinityManager aff = cctx.affinity();
 
+        CachePeekMode[] modes = new CachePeekMode[]{CachePeekMode.ALL};
+
         for (int i = 0; i < gridCount(); i++) {
-            for (GridCacheEntryEx e : ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0()) {
-                if (aff.primary(grid(i).localNode(), e.key(), AffinityTopologyVersion.NONE)
-                    && e.key().value(cctx.cacheObjectContext(), false) instanceof GridCacheQueueHeaderKey)
+            for (Cache.Entry e : grid(i).context().cache().internalCache(cctx.name()).localEntries(modes)) {
+                Object key = e.getKey();
+
+                if (aff.primaryByKey(grid(i).localNode(), key, AffinityTopologyVersion.NONE)
+                    && key instanceof GridCacheQueueHeaderKey)
                     return i;
             }
         }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.security.*;
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 
 /**
  * Node authenticator.

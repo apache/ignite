@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-
-import java.util.*;
+import java.util.Arrays;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  * Tests for local cache.
@@ -36,8 +37,8 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         cfg.setClientMode(true);
@@ -49,14 +50,14 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
      *
      */
     public void testMapKeysToNodes() {
-        grid(0).affinity(null).mapKeysToNodes(Arrays.asList("1", "2"));
+        grid(0).affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(Arrays.asList("1", "2"));
     }
 
     /**
      *
      */
     public void testMapKeyToNode() {
-        assert grid(0).affinity(null).mapKeyToNode("1") == null;
+        assert grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode("1") == null;
     }
 
     /**

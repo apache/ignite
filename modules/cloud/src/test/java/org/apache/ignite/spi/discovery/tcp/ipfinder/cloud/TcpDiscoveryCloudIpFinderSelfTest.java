@@ -17,13 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
-import com.google.common.collect.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.testsuites.*;
+import com.google.common.collect.ImmutableList;
+import java.net.InetSocketAddress;
+import java.util.Collection;
 
-import java.net.*;
-import java.util.*;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testsuites.IgniteCloudTestSuite;
+import org.apache.ignite.testsuites.IgniteIgnore;
 
 /**
  * TcpDiscoveryCloudIpFinder test.
@@ -59,6 +60,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-845")
     public void testAmazonWebServices() throws Exception {
         testCloudProvider("aws-ec2");
     }
@@ -68,6 +70,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-1585")
     public void testGoogleComputeEngine() throws Exception {
         testCloudProvider("google-compute-engine");
     }

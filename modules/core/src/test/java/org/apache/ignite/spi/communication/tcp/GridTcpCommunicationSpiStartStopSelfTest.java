@@ -17,9 +17,10 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 
 /**
  * TCP communication SPI config start-stop test.

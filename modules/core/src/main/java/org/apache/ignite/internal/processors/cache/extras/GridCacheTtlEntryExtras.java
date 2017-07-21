@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.extras;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Extras where TTL and expire time are set.
@@ -41,15 +39,10 @@ public class GridCacheTtlEntryExtras extends GridCacheEntryExtrasAdapter {
      * @param expireTime Expire time.
      */
     public GridCacheTtlEntryExtras(long ttl, long expireTime) {
-        assert ttl != 0;
+        assert expireTime != CU.EXPIRE_TIME_ETERNAL;
 
         this.ttl = ttl;
         this.expireTime = expireTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesTtlEntryExtras(attrData, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */
@@ -74,7 +67,7 @@ public class GridCacheTtlEntryExtras extends GridCacheEntryExtrasAdapter {
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
-        if (ttl != 0) {
+        if (expireTime != CU.EXPIRE_TIME_ETERNAL) {
             this.ttl = ttl;
             this.expireTime = expireTime;
 

@@ -50,13 +50,16 @@ formatPatch () {
     cd ${GIT_HOME}
 
     git checkout ${DEFAULT_BRANCH}
+
+    DEF_BRANCH_REV="$(git rev-parse --short HEAD)"
+
     git checkout -b tmppatch
 
     # Merge to make only one commit.
     git merge --squash ${PATCHED_BRANCH}
     git commit -a -m "# ${PATCHED_BRANCH}"
 
-    PATCH_FILE=${PATCHES_HOME}'/'${DEFAULT_BRANCH}_${PATCHED_BRANCH}${PATCH_SUFFIX}
+    PATCH_FILE=${PATCHES_HOME}'/'${DEFAULT_BRANCH}_${DEF_BRANCH_REV}_${PATCHED_BRANCH}${PATCH_SUFFIX}
 
     git format-patch ${DEFAULT_BRANCH}  --stdout > ${PATCH_FILE}
     echo "Patch file created."
@@ -125,55 +128,4 @@ requireCleanWorkTree () {
     fi
 }
 
-#
-# Applies patch. Applies patch file created by formatPatch method.
-#
-# Params:
-# - Git home.
-# - Default branch.
-# - File with patch.
-#
-applyPatch () {
-    GIT_HOME=$1
-    DEFAULT_BRANCH=$2
-    PATCH_FILE=$3
 
-    cd ${GIT_HOME}
-
-    if [ ! -f ${PATCH_FILE} ]
-    then
-        echo $0", ERROR:"
-        echo "Expected patch file not found: $PATCH_FILE."
-
-        exit 1
-    fi
-
-    echo "Patch $PATCH_FILE will be applied to $DEFAULT_BRANCH branch."
-
-    git am ${PATCH_FILE}
-}
-
-#
-# Checks that given Default branch and Current branch are equal.
-# Exit with code 1 in error case.
-#
-# Params:
-# - Git home.
-# - Default branch.
-#
-currentAndDefaultBranchesShouldBeEqual () {
-    GIT_HOME=$1
-    DEFAULT_BRANCH=$2
-
-    cd ${GIT_HOME}
-
-    CURRENT_BRANCH=$( determineCurrentBranch ${GIT_HOME} )
-
-    if [ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]
-    then
-        echo $0", ERROR:"
-        echo "You are not on an expected branch. Your current branch at $GIT_HOME is $CURRENT_BRANCH, should be $DEFAULT_BRANCH."
-
-        exit 1
-    fi
-}

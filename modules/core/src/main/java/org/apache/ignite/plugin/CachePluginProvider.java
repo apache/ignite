@@ -17,10 +17,12 @@
 
 package org.apache.ignite.plugin;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
 
 /**
  * Cache plugin provider is a point for processing of properties 
@@ -39,7 +41,6 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      *
      * @param cancel If {@code true}, then all ongoing tasks or jobs for relevant
      *      components need to be cancelled.
-     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void stop(boolean cancel);
 
@@ -65,6 +66,15 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
     @Nullable public <T> T createComponent(Class<T> cls);
 
     /**
+     * Unwrap entry to specified type. For details see {@code javax.cache.Cache.Entry.unwrap(Class)}.
+     *
+     * @param entry Mutable entry to unwrap.
+     * @param cls Type of the expected component.
+     * @return New instance of underlying type or {@code null} if it's not available.
+     */
+    @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls);
+
+    /**
      * Validates cache plugin configuration in process of cache creation. Throw exception if validation failed.
      *
      * @throws IgniteCheckedException If validation failed.
@@ -75,10 +85,9 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      * Checks that remote caches has configuration compatible with the local.
      *
      * @param locCfg Local configuration.
-     * @param locPluginCcfg Local plugin configuration.
      * @param rmtCfg Remote configuration.
      * @param rmtNode Remote node.
      */
-    public void validateRemote(CacheConfiguration locCfg, C locPluginCcfg, CacheConfiguration rmtCfg, ClusterNode rmtNode)
+    public void validateRemote(CacheConfiguration locCfg, CacheConfiguration rmtCfg, ClusterNode rmtNode)
         throws IgniteCheckedException;
 }

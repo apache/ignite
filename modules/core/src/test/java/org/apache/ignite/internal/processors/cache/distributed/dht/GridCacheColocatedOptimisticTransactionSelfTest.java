@@ -17,21 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test ensuring that values are visible inside OPTIMISTIC transaction in co-located cache.
@@ -59,8 +60,8 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     private static IgniteCache<Integer, String>[] caches;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -68,7 +69,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
 
         disco.setIpFinder(IP_FINDER);
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setName(CACHE);
         cc.setCacheMode(PARTITIONED);
@@ -76,12 +77,9 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         cc.setNearConfiguration(null);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(true);
-        cc.setEvictSynchronized(false);
 
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return c;
     }

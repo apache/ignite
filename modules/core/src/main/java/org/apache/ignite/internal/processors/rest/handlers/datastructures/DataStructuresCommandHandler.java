@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.handlers.*;
-import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
+import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_INCREMENT;
 
 /**
  *

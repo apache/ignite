@@ -17,44 +17,18 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.net.*;
+import java.net.URI;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Internal API extension for {@link org.apache.ignite.IgniteFileSystem}.
  */
 public interface IgfsEx extends IgniteFileSystem {
-    /** File property: user name. */
-    public static final String PROP_USER_NAME = "usrName";
-
-    /** File property: group name. */
-    public static final String PROP_GROUP_NAME = "grpName";
-
-    /** File property: permission. */
-    public static final String PROP_PERMISSION = "permission";
-
-    /** File property: prefer writes to local node. */
-    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
-
-    /** Property name for path to Hadoop configuration. */
-    public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
-
-    /** Property name for URI of file system. */
-    public static final String SECONDARY_FS_URI = "SECONDARY_FS_URI";
-
-    /** Property name for default user name of file system.
-     * NOTE: for secondary file system this is just a default user name, which is used
-     * when the 2ndary filesystem is used outside of any user context.
-     * If another user name is set in the context, 2ndary file system will work on behalf
-     * of that user, which is different from the default. */
-     public static final String SECONDARY_FS_USER_NAME = "SECONDARY_FS_USER_NAME";
-
     /**
      * Stops IGFS cleaning all used resources.
      *
@@ -66,23 +40,6 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return IGFS context.
      */
     public IgfsContext context();
-
-    /**
-     * Get handshake message.
-     *
-     * @return Handshake message.
-     */
-    public IgfsPaths proxyPaths();
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
-        throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path) throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) throws IgniteException;
 
     /**
      * Gets global space counters.
@@ -110,26 +67,11 @@ public interface IgfsEx extends IgniteFileSystem {
     @Nullable public Boolean globalSampling();
 
     /**
-     * Get local metrics.
-     *
-     * @return Local metrics.
-     */
-    public IgfsLocalMetrics localMetrics();
-
-    /**
      * Gets group block size, i.e. block size multiplied by group size in affinity mapper.
      *
      * @return Group block size.
      */
     public long groupBlockSize();
-
-    /**
-     * Asynchronously await for all entries existing in trash to be removed.
-     *
-     * @return Future which will be completed when all entries existed in trash by the time of invocation are removed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException;
 
     /**
      * Gets client file system log directory.
@@ -175,4 +117,11 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return Secondary file system wrapper.
      */
     public IgfsSecondaryFileSystem asSecondary();
+
+    /**
+     * Await for any pending finished writes on the children paths.
+     *
+     * @param paths Paths to check.
+     */
+    public void await(IgfsPath... paths);
 }

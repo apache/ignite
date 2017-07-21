@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.util.test;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Print stream that prints each thread group into a separate buffer. Use

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Node disconnect listener interface.

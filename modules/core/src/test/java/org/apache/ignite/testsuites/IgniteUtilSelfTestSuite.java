@@ -17,21 +17,37 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.nio.impl.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.thread.*;
-import org.apache.ignite.util.*;
-import org.apache.ignite.util.mbeans.*;
-
-import java.util.*;
+import java.util.Set;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
+import org.apache.ignite.internal.util.GridArraysSelfTest;
+import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
+import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
+import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
+import org.apache.ignite.internal.util.nio.GridNioSelfTest;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKeySelfTest;
+import org.apache.ignite.internal.util.nio.GridNioSslSelfTest;
+import org.apache.ignite.internal.util.nio.impl.GridNioFilterChainSelfTest;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMapSelfTest;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemorySelfTest;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapSelfTest;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTest;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
+import org.apache.ignite.lang.GridByteArrayListSelfTest;
+import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
+import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
+import org.apache.ignite.util.GridIntListSelfTest;
+import org.apache.ignite.util.GridLongListSelfTest;
+import org.apache.ignite.util.GridMessageCollectionTest;
+import org.apache.ignite.util.GridPartitionMapSelfTest;
+import org.apache.ignite.util.GridQueueSelfTest;
+import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
+import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
+import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
+import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 
 /**
  * Test suite for Ignite utility classes.
@@ -54,6 +70,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Util Test Suite");
 
         suite.addTestSuite(GridThreadPoolExecutorServiceSelfTest.class);
+        suite.addTestSuite(IgniteThreadPoolSizeTest.class);
         GridTestUtils.addTestIfNeeded(suite, IgniteUtilsSelfTest.class, ignoredTests);
         suite.addTestSuite(GridSpinReadWriteLockSelfTest.class);
         suite.addTestSuite(GridQueueSelfTest.class);
@@ -61,9 +78,13 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridToStringBuilderSelfTest.class);
         suite.addTestSuite(GridByteArrayListSelfTest.class);
         suite.addTestSuite(GridMBeanSelfTest.class);
+        suite.addTestSuite(GridMBeanDisableSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
+        suite.addTestSuite(GridIntListSelfTest.class);
+        suite.addTestSuite(GridArraysSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
+        suite.addTestSuite(GridMessageCollectionTest.class);
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
@@ -80,6 +101,11 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridNioFilterChainSelfTest.class);
         GridTestUtils.addTestIfNeeded(suite, GridNioSslSelfTest.class, ignoredTests);
         suite.addTestSuite(GridNioDelimitedBufferSelfTest.class);
+
+        suite.addTestSuite(GridPartitionMapSelfTest.class);
+
+        //dbx
+        suite.addTestSuite(PageIdUtilsSelfTest.class);
 
         return suite;
     }

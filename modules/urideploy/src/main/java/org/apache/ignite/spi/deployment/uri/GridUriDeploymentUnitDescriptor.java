@@ -17,16 +17,22 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import java.io.File;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.spi.deployment.uri.GridUriDeploymentUnitDescriptor.Type.*;
+import static org.apache.ignite.spi.deployment.uri.GridUriDeploymentUnitDescriptor.Type.CLASS;
+import static org.apache.ignite.spi.deployment.uri.GridUriDeploymentUnitDescriptor.Type.FILE;
 
 /**
  * Container for information about tasks and file where classes placed. It also contains tasks instances.

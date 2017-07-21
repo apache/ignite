@@ -17,12 +17,15 @@
 
 package org.test.gridify;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.gridify.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.gridify.TestGridifyException;
+import org.apache.ignite.gridify.TestGridifyTask;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * To run this test with JBoss AOP make sure of the following:
@@ -69,7 +72,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void deployTask() throws Exception {
-        G.ignite(getTestGridName()).compute().localDeployTask(TestGridifyTask.class,
+        G.ignite(getTestIgniteInstanceName()).compute().localDeployTask(TestGridifyTask.class,
             TestGridifyTask.class.getClassLoader());
     }
 
@@ -521,9 +524,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration();
         cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
-
-        cfg.setDeploymentMode(depMode);
+        cfg.setMetricsUpdateFrequency(500);
 
         cfg.setDeploymentMode(depMode);
 
@@ -531,9 +532,9 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Test grid name.
+     * @return Test Ignite instance name.
      */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "ExternalAopTarget";
     }
 }

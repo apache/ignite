@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.PluginValidationException;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -59,8 +61,18 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         plugin.onIgniteStart();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -74,12 +86,22 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
-        return null;
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         // No-op.
     }
 

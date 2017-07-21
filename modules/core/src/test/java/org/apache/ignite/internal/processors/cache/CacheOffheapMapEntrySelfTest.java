@@ -17,18 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.local.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Cache map entry self test.
@@ -61,7 +63,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
     /**
      * @param gridName Grid name.
-     * @param memoryMode Memory mode.
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.
      * @param cacheName Cache name.
@@ -69,7 +70,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private CacheConfiguration cacheConfiguration(String gridName,
-        CacheMemoryMode memoryMode,
         CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
         String cacheName)
@@ -79,7 +79,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
         cfg.setCacheMode(cacheMode);
         cfg.setAtomicityMode(atomicityMode);
-        cfg.setMemoryMode(memoryMode);
         cfg.setName(cacheName);
 
         return cfg;
@@ -89,70 +88,43 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCacheMapEntry() throws Exception {
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_TIERED, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_VALUES, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_TIERED, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_VALUES, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, PARTITIONED, GridNearCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_TIERED, ATOMIC, PARTITIONED, GridNearOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_VALUES, ATOMIC, PARTITIONED, GridNearOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_TIERED, TRANSACTIONAL, PARTITIONED, GridNearOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_VALUES, TRANSACTIONAL, PARTITIONED, GridNearOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, REPLICATED, GridDhtAtomicCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_TIERED, ATOMIC, REPLICATED, GridDhtAtomicOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_VALUES, ATOMIC, REPLICATED, GridDhtAtomicOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, REPLICATED, GridDhtColocatedCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_TIERED, TRANSACTIONAL, REPLICATED, GridDhtColocatedOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_VALUES, TRANSACTIONAL, REPLICATED, GridDhtColocatedOffHeapCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtCacheEntry.class);
     }
 
     /**
-     * @param memoryMode Cache memory mode.
      * @param atomicityMode Cache atomicity mode.
      * @param cacheMode Cache mode.
      * @param entryCls Class of cache map entry.
      * @throws Exception If failed.
      */
-    private void checkCacheMapEntry(CacheMemoryMode memoryMode,
-        CacheAtomicityMode atomicityMode,
+    private void checkCacheMapEntry(CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
         Class<?> entryCls)
         throws Exception
     {
-        log.info("Test cache [memMode=" + memoryMode +
-            ", atomicityMode=" + atomicityMode +
-            ", cacheMode=" + cacheMode + ']');
+        log.info("Test cache [atomicityMode=" + atomicityMode + ", cacheMode=" + cacheMode + ']');
 
         CacheConfiguration cfg = cacheConfiguration(grid(0).name(),
-            memoryMode,
             atomicityMode,
             cacheMode,
             "Cache");
 
-        try (IgniteCache jcache = grid(0).getOrCreateCache(cfg)) {
+        IgniteCache jcache = grid(0).getOrCreateCache(cfg);
+
+        try {
             GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(0)).internalCache(jcache.getName());
 
-            Integer key = primaryKey(grid(0).cache(null));
+            Integer key = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
 
             cache.put(key, "val");
 
@@ -162,7 +134,10 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
             assertNotNull(entry);
 
-            assertEquals(entry.getClass(), entryCls);
+            assertEquals(entryCls, entry.getClass());
+        }
+        finally {
+            jcache.destroy();
         }
     }
 }

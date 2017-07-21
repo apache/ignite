@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lang;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Closure that does not take any parameters and returns a value.

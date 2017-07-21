@@ -17,19 +17,22 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.net.*;
+import java.net.URL;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestExternalClassLoader;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  *
@@ -58,8 +61,8 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Override P2P configuration to exclude Task and Job classes
         cfg.setPeerClassLoadingLocalClassPathExclude(GridP2PTestTask.class.getName(), GridP2PTestJob.class.getName());
@@ -186,8 +189,8 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 //
 //            g1.deployTask(task1);
 //            g1.deployTask(task2);
-//            g1.queryEvents(filter1, 0, F.<GridNode>localNode(g1)); // Deploy filter1.
-//            g1.queryEvents(filter2, 0, F.<GridNode>localNode(g2)); // Deploy filter2.
+//            g1.queryEvents(filter1, 0, F.<ClusterNode>localNode(g1)); // Deploy filter1.
+//            g1.queryEvents(filter2, 0, F.<ClusterNode>localNode(g2)); // Deploy filter2.
 //
 //            ldr.setExcludeClassNames(TASK_NAME1, TASK_NAME2, FILTER_NAME1, FILTER_NAME2);
 //
@@ -209,7 +212,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 //            executeFail(g1, filter2);
 //            executeFail(g1, g2, task2);
 //
-//            g1.queryEvents(filter1, 0, F.<GridNode>alwaysTrue());
+//            g1.queryEvents(filter1, 0, F.<ClusterNode>alwaysTrue());
 //
 //            g1.execute(task1, g2.localNode().id()).get();
 //        }

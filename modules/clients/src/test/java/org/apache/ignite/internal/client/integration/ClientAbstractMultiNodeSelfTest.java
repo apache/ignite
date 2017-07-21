@@ -17,40 +17,72 @@
 
 package org.apache.ignite.internal.client.integration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDataConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientPartitionAffinity;
+import org.apache.ignite.internal.client.GridClientPredicate;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.GridClientTopologyListener;
+import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
+import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests basic client behavior with multiple nodes.
@@ -124,8 +156,8 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setLocalHost(HOST);
 
@@ -158,7 +190,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         c.setCommunicationSpi(spi);
 
-        c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
+        c.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
 
         c.setPublicThreadPoolSize(40);
@@ -173,20 +205,24 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setAtomicityMode(TRANSACTIONAL);
 
-        if (cacheName == null)
-            cfg.setCacheMode(LOCAL);
-        else if (PARTITIONED_CACHE_NAME.equals(cacheName)) {
-            cfg.setCacheMode(PARTITIONED);
+        switch (cacheName) {
+            case DEFAULT_CACHE_NAME:
+                cfg.setCacheMode(LOCAL);
+                break;
+            case PARTITIONED_CACHE_NAME:
+                cfg.setCacheMode(PARTITIONED);
 
-            cfg.setBackups(0);
+                cfg.setBackups(0);
+                break;
+            default:
+                cfg.setCacheMode(REPLICATED);
+                break;
         }
-        else
-            cfg.setCacheMode(REPLICATED);
 
         cfg.setName(cacheName);
 
@@ -239,12 +275,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         final GridClientNode second = iter.next();
 
-        final GridClientPredicate<GridClientNode> noneFilter = new GridClientPredicate<GridClientNode>() {
-            @Override public boolean apply(GridClientNode node) {
-                return false;
-            }
-        };
-
         final GridClientPredicate<GridClientNode> targetFilter = new GridClientPredicate<GridClientNode>() {
             @Override public boolean apply(GridClientNode node) {
                 return node.nodeId().equals(second.nodeId());
@@ -258,8 +288,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         }, GridClientException.class, null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return singleNodePrj.projection(targetFilter);
             }
         }, GridClientException.class, null);
@@ -456,11 +485,11 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             checkSyncFlags((GridIoMessage)msg);
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackC);
         }
 
         /**
@@ -488,13 +517,13 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             IgniteInternalTx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x1"))))
-                assertFalse("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, ((IgniteTxLocalAdapter)t).syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x2"))))
-            assertTrue("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_SYNC, ((IgniteTxLocalAdapter)t).syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x3"))))
-                assertFalse("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, ((IgniteTxLocalAdapter)t).syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x4"))))
-                assertTrue("Invalid tx flags: " + t, t.syncCommit());
+                assertEquals("Invalid tx flags: " + t, FULL_SYNC, ((IgniteTxLocalAdapter)t).syncMode());
         }
     }
 }

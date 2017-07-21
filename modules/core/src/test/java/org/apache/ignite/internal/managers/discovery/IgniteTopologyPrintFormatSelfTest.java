@@ -17,21 +17,21 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.testframework.junits.logger.*;
-import org.apache.log4j.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.log4j.Level;
 
 /**
  *
@@ -50,16 +50,16 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
         disc.setIpFinder(IP_FINDER);
 
-        if (gridName.endsWith("client"))
+        if (igniteInstanceName.endsWith("client"))
             cfg.setClientMode(true);
 
-        if (gridName.endsWith("client_force_server")) {
+        if (igniteInstanceName.endsWith("client_force_server")) {
             cfg.setClientMode(true);
             disc.setForceServerMode(true);
         }
@@ -124,7 +124,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=2, server nodes=2, client nodes=0,")
+                return s.contains("Topology snapshot [ver=2, servers=2, clients=0,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 0"));
             }
         }));
@@ -174,7 +174,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=4, server nodes=2, client nodes=2,")
+                return s.contains("Topology snapshot [ver=4, servers=2, clients=2,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 2"));
             }
         }));
@@ -225,7 +225,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=5, server nodes=2, client nodes=3,")
+                return s.contains("Topology snapshot [ver=5, servers=2, clients=3,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 3"));
             }
         }));

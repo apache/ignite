@@ -17,21 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeJobFailoverException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Affinity routing tests.
@@ -47,6 +56,9 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     private static final int KEY_CNT = 50;
 
     /** */
+    private static final int MAX_FAILOVER_ATTEMPTS = 5;
+
+    /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
@@ -57,8 +69,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -66,7 +78,11 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        if (!gridName.equals(getTestGridName(GRID_CNT))) {
+        AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
+        failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
+        cfg.setFailoverSpi(failSpi);
+
+        if (!igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT))) {
             // Default cache configuration.
             CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
@@ -102,7 +118,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         assert G.allGrids().size() == GRID_CNT;
 
         for (int i = 0; i < KEY_CNT; i++) {
-            grid(0).cache(null).put(i, i);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
 
             grid(0).cache(NON_DFLT_CACHE_NAME).put(i, i);
         }
@@ -126,6 +142,48 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     public void testAffinityRun() throws Exception {
         for (int i = 0; i < KEY_CNT; i++)
             grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, i, new CheckRunnable(i, i));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCallRestartFails() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, "key",
+                    new FailedCallable("key", MAX_FAILOVER_ATTEMPTS + 1));
+                return null;
+            }
+        }, ClusterTopologyException.class, "Failed to failover a job to another node");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCallRestart() throws Exception {
+        assertEquals(MAX_FAILOVER_ATTEMPTS,
+            grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, "key",
+                new FailedCallable("key", MAX_FAILOVER_ATTEMPTS)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityRunRestartFails() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, "key",
+                    new FailedRunnable("key", MAX_FAILOVER_ATTEMPTS + 1));
+                return null;
+            }
+        }, ClusterTopologyException.class, "Failed to failover a job to another node");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityRunRestart() throws Exception {
+        grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, "key", new FailedRunnable("key", MAX_FAILOVER_ATTEMPTS));
     }
 
     /**
@@ -218,8 +276,110 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void applyx() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id());
+        }
+    }
+
+    /**
+     * Test runnable.
+     */
+    private static class FailedCallable implements IgniteCallable<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private static final String ATTR_ATTEMPT = "Attempt";
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        @JobContextResource
+        private ComputeJobContext jobCtx;
+
+        /** Key. */
+        private final Object key;
+
+        /** Call attempts. */
+        private final Integer callAttempt;
+
+        /**
+         * @param key Key.
+         * @param callAttempt Call attempts.
+         */
+        public FailedCallable(Object key, Integer callAttempt) {
+            this.key = key;
+            this.callAttempt = callAttempt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws IgniteCheckedException {
+            Integer attempt = jobCtx.getAttribute(ATTR_ATTEMPT);
+
+            if (attempt == null)
+                attempt = 1;
+
+            assertEquals(ignite.affinity(NON_DFLT_CACHE_NAME).mapKeyToNode(key), ignite.cluster().localNode());
+
+            jobCtx.setAttribute(ATTR_ATTEMPT, attempt + 1);
+
+            if (attempt < callAttempt)
+                throw new ComputeJobFailoverException("Failover exception.");
+            else
+                return attempt;
+        }
+    }
+
+    /**
+     * Test runnable.
+     */
+    private static class FailedRunnable implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private static final String ATTR_ATTEMPT = "Attempt";
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        @JobContextResource
+        private ComputeJobContext jobCtx;
+
+        /** Key. */
+        private final Object key;
+
+        /** Call attempts. */
+        private final Integer callAttempt;
+
+        /**
+         * @param key Key.
+         * @param callAttempt Call attempts.
+         */
+        public FailedRunnable(Object key, Integer callAttempt) {
+            this.key = key;
+            this.callAttempt = callAttempt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            Integer attempt = jobCtx.getAttribute(ATTR_ATTEMPT);
+
+            if (attempt == null)
+                attempt = 1;
+
+            assertEquals(ignite.affinity(NON_DFLT_CACHE_NAME).mapKeyToNode(key), ignite.cluster().localNode());
+
+            jobCtx.setAttribute(ATTR_ATTEMPT, attempt + 1);
+
+            if (attempt < callAttempt)
+                throw new ComputeJobFailoverException("Failover exception.");
+            else
+                assertEquals(callAttempt, attempt);
         }
     }
 
@@ -252,8 +412,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id());
 
             return null;
         }

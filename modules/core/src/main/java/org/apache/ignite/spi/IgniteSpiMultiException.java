@@ -17,10 +17,11 @@
 
 package org.apache.ignite.spi;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid SPI exception which may contain more than one failure.

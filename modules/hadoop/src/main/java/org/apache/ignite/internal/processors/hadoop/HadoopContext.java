@@ -17,16 +17,20 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.hadoop.jobtracker.*;
-import org.apache.ignite.internal.processors.hadoop.shuffle.*;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
+import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
+import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskExecutorAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Hadoop accelerator context.
@@ -119,8 +123,7 @@ public class HadoopContext {
      * @return Hadoop-enabled nodes.
      */
     public Collection<ClusterNode> nodes() {
-        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR,
-            new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
+        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR, ctx.discovery().topologyVersionEx());
     }
 
     /**

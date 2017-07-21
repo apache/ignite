@@ -17,71 +17,99 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Parser for direct messages.
  */
 public class GridDirectParser implements GridNioParser {
     /** Message metadata key. */
-    private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Reader metadata key. */
-    private static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** */
+    private final IgniteLogger log;
 
     /** */
     private final MessageFactory msgFactory;
 
     /** */
-    private final MessageFormatter formatter;
+    private final GridNioMessageReaderFactory readerFactory;
 
     /**
+     * @param log Logger.
      * @param msgFactory Message factory.
-     * @param formatter Formatter.
+     * @param readerFactory Message reader factory.
      */
-    public GridDirectParser(MessageFactory msgFactory, MessageFormatter formatter) {
+    public GridDirectParser(IgniteLogger log, MessageFactory msgFactory, GridNioMessageReaderFactory readerFactory) {
         assert msgFactory != null;
-        assert formatter != null;
+        assert readerFactory != null;
 
+        this.log = log;
         this.msgFactory = msgFactory;
-        this.formatter = formatter;
+        this.readerFactory = readerFactory;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
         throws IOException, IgniteCheckedException {
+        MessageReader reader = ses.meta(READER_META_KEY);
+
+        if (reader == null)
+            ses.addMeta(READER_META_KEY, reader = readerFactory.reader(ses, msgFactory));
+
         Message msg = ses.removeMeta(MSG_META_KEY);
 
-        MessageReader reader = null;
+        try {
+            if (msg == null && buf.remaining() >= Message.DIRECT_TYPE_SIZE) {
+                byte b0 = buf.get();
+                byte b1 = buf.get();
 
-        if (msg == null && buf.hasRemaining()) {
-            msg = msgFactory.create(buf.get());
+                short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
 
-            ses.addMeta(READER_META_KEY, reader = formatter.reader(msgFactory));
+                msg = msgFactory.create(type);
+            }
+
+            boolean finished = false;
+
+            if (msg != null && buf.hasRemaining()) {
+                if (reader != null)
+                    reader.setCurrentReadClass(msg.getClass());
+
+                finished = msg.readFrom(buf, reader);
+            }
+
+            if (finished) {
+                if (reader != null)
+                    reader.reset();
+
+                return msg;
+            }
+            else {
+                ses.addMeta(MSG_META_KEY, msg);
+
+                return null;
+            }
         }
+        catch (Throwable e) {
+            U.error(log, "Failed to read message [msg=" + msg +
+                ", buf=" + buf +
+                ", reader=" + reader +
+                ", ses=" + ses + "]",
+                e);
 
-        boolean finished = false;
-
-        if (buf.hasRemaining()) {
-            if (reader == null)
-                reader = ses.meta(READER_META_KEY);
-
-            assert reader != null;
-
-            finished = msg.readFrom(buf, reader);
-        }
-
-        if (finished)
-            return msg;
-        else {
-            ses.addMeta(MSG_META_KEY, msg);
-
-            return null;
+            throw e;
         }
     }
 

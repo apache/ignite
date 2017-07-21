@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  * Tests {@link CacheInterceptor}.

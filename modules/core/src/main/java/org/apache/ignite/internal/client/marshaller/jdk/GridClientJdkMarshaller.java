@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.client.marshaller.jdk;
 
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.util.io.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 
 /**
  * Simple marshaller that utilize JDK serialization features.

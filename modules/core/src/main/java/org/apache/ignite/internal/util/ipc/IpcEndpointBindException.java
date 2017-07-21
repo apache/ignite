@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.ipc;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Represents exception occurred during IPC endpoint binding.

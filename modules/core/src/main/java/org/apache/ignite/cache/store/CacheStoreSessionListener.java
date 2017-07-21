@@ -17,11 +17,11 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.configuration.*;
-
-import javax.cache.configuration.*;
-import javax.sql.*;
+import javax.cache.configuration.Factory;
+import javax.sql.DataSource;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Cache store session listener that allows to implement callbacks
@@ -35,11 +35,12 @@ import javax.sql.*;
  * rollback when session is finished.
  * <p>
  * Cache store session listener allows to implement this and other
- * scenarios providing to callback methods:
+ * scenarios providing two callback methods:
  * <ul>
  *     <li>
  *         {@link #onSessionStart(CacheStoreSession)} - called
- *         before any store operation within a session is invoked.
+ *         when a session is created prior to all operations
+ *         within his session.
  *     </li>
  *     <li>
  *         {@link #onSessionEnd(CacheStoreSession, boolean)} - called
@@ -47,7 +48,7 @@ import javax.sql.*;
  *     </li>
  * </ul>
  * <h2>Implementations</h2>
- * Ignites provides several out-of-the-box implementations
+ * Ignite provides several out-of-the-box implementations
  * of session listener (refer to individual JavaDocs for more
  * details):
  * <ul>

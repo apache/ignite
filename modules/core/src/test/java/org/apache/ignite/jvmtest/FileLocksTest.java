@@ -17,11 +17,11 @@
 
 package org.apache.ignite.jvmtest;
 
-import junit.framework.*;
-
-import javax.swing.*;
-import java.io.*;
-import java.nio.channels.*;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileLock;
+import javax.swing.JOptionPane;
+import junit.framework.TestCase;
 
 /**
  * Java file locks test.

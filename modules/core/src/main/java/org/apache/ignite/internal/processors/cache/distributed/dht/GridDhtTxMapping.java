@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * DHT transaction mapping.
@@ -32,12 +34,6 @@ public class GridDhtTxMapping {
     /** Transaction nodes mapping (primary node -> related backup nodes). */
     private final Map<UUID, Collection<UUID>> txNodes = new GridLeanMap<>();
 
-    /** */
-    private final List<TxMapping> mappings = new ArrayList<>();
-
-    /** */
-    private TxMapping last;
-
     /**
      * Adds information about next mapping.
      *
@@ -45,24 +41,26 @@ public class GridDhtTxMapping {
      */
     @SuppressWarnings("ConstantConditions")
     public void addMapping(List<ClusterNode> nodes) {
-        ClusterNode primary = F.first(nodes);
+        assert !F.isEmpty(nodes) : nodes;
 
-        Collection<ClusterNode> backups = F.view(nodes, F.notEqualTo(primary));
+        ClusterNode primary = nodes.get(0);
 
-        if (last == null || !last.primary.equals(primary.id())) {
-            last = new TxMapping(primary, backups);
+        int size = nodes.size();
 
-            mappings.add(last);
+        if (size > 1) {
+            Collection<UUID> backups = txNodes.get(primary.id());
+
+            if (backups == null) {
+                backups = U.newHashSet(size - 1);
+
+                txNodes.put(primary.id(), backups);
+            }
+
+            for (int i = 1; i < size; i++)
+                backups.add(nodes.get(i).id());
         }
         else
-            last.add(backups);
-
-        Collection<UUID> storedBackups = txNodes.get(last.primary);
-
-        if (storedBackups == null)
-            txNodes.put(last.primary, storedBackups = new HashSet<>());
-
-        storedBackups.addAll(last.backups);
+            txNodes.put(primary.id(), new GridLeanSet<UUID>());
     }
 
     /**
@@ -70,100 +68,5 @@ public class GridDhtTxMapping {
      */
     public Map<UUID, Collection<UUID>> transactionNodes() {
         return txNodes;
-    }
-
-    /**
-     * For each mapping sets flags indicating if mapping is last for node.
-     *
-     * @param mappings Mappings.
-     */
-    public void initLast(Collection<GridDistributedTxMapping> mappings) {
-        assert this.mappings.size() == mappings.size();
-
-        int idx = 0;
-
-        for (GridDistributedTxMapping map : mappings) {
-            TxMapping mapping = this.mappings.get(idx);
-
-            map.lastBackups(lastBackups(mapping, idx));
-
-            boolean last = true;
-
-            for (int i = idx + 1; i < this.mappings.size(); i++) {
-                TxMapping nextMap = this.mappings.get(i);
-
-                if (nextMap.primary.equals(mapping.primary)) {
-                    last = false;
-
-                    break;
-                }
-            }
-
-            map.last(last);
-
-            idx++;
-        }
-    }
-
-    /**
-     * @param mapping Mapping.
-     * @param idx Mapping index.
-     * @return IDs of backup nodes receiving last prepare request during this mapping.
-     */
-    @Nullable private Collection<UUID> lastBackups(TxMapping mapping, int idx) {
-        Collection<UUID> res = null;
-
-        for (UUID backup : mapping.backups) {
-            boolean foundNext = false;
-
-            for (int i = idx + 1; i < mappings.size(); i++) {
-                TxMapping nextMap = mappings.get(i);
-
-                if (nextMap.primary.equals(mapping.primary) && nextMap.backups.contains(backup)) {
-                    foundNext = true;
-
-                    break;
-                }
-            }
-
-            if (!foundNext) {
-                if (res == null)
-                    res = new ArrayList<>(mapping.backups.size());
-
-                res.add(backup);
-            }
-        }
-
-        return res;
-    }
-
-    /**
-     */
-    private static class TxMapping {
-        /** */
-        private final UUID primary;
-
-        /** */
-        private final Set<UUID> backups;
-
-        /**
-         * @param primary Primary node.
-         * @param backups Backup nodes.
-         */
-        private TxMapping(ClusterNode primary, Iterable<ClusterNode> backups) {
-            this.primary = primary.id();
-
-            this.backups = new HashSet<>();
-
-            add(backups);
-        }
-
-        /**
-         * @param backups Backup nodes.
-         */
-        private void add(Iterable<ClusterNode> backups) {
-            for (ClusterNode n : backups)
-                this.backups.add(n.id());
-        }
     }
 }

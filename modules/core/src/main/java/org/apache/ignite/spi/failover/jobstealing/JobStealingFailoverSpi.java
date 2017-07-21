@@ -17,17 +17,29 @@
 
 package org.apache.ignite.spi.failover.jobstealing;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.failover.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.failover.FailoverContext;
+import org.apache.ignite.spi.failover.FailoverSpi;
 
-import java.util.*;
-
-import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.*;
+import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.THIEF_NODE_ATTR;
 
 /**
  * Job stealing failover SPI needs to always be used in conjunction with
@@ -80,15 +92,14 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * &lt;/property&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.failover.FailoverSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class JobStealingFailoverSpi extends IgniteSpiAdapter implements FailoverSpi,
-    JobStealingFailoverSpiMBean {
+public class JobStealingFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */
     public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 5;
 
@@ -125,8 +136,12 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     /** Number of jobs that were stolen. */
     private int totalStolenJobs;
 
-    /** {@inheritDoc} */
-    @Override public int getMaximumFailoverAttempts() {
+    /**
+     * See {@link #setMaximumFailoverAttempts(int)}.
+     *
+     * @return Maximum number of attempts to execute a failed job on another node.
+     */
+    public int getMaximumFailoverAttempts() {
         return maxFailoverAttempts;
     }
 
@@ -140,19 +155,30 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
      *
      * @param maxFailoverAttempts Maximum number of attempts to execute a failed
      *      job on another node.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMaximumFailoverAttempts(int maxFailoverAttempts) {
+    public JobStealingFailoverSpi setMaximumFailoverAttempts(int maxFailoverAttempts) {
         this.maxFailoverAttempts = maxFailoverAttempts;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalFailedOverJobsCount() {
+    /**
+     * Get total number of jobs that were failed over including stolen ones.
+     *
+     * @return Total number of failed over jobs.
+     */
+    public int getTotalFailedOverJobsCount() {
         return totalFailedOverJobs;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalStolenJobsCount() {
+    /**
+     * Get total number of jobs that were stolen.
+     *
+     * @return Total number of stolen jobs.
+     */
+    public int getTotalStolenJobsCount() {
         return totalStolenJobs;
     }
 
@@ -162,7 +188,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -171,7 +197,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
         if (log.isDebugEnabled())
             log.debug(configInfo("maxFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, JobStealingFailoverSpiMBean.class);
+        registerMBean(igniteInstanceName, new JobStealingFailoverSpiMBeanImpl(this), JobStealingFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -344,7 +370,40 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     }
 
     /** {@inheritDoc} */
+    @Override public JobStealingFailoverSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JobStealingFailoverSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for JobStealingFailoverSpi.
+     */
+    private class JobStealingFailoverSpiMBeanImpl extends IgniteSpiMBeanAdapter implements JobStealingFailoverSpiMBean {
+        /** {@inheritDoc} */
+        public JobStealingFailoverSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaximumFailoverAttempts() {
+            return JobStealingFailoverSpi.this.getMaximumFailoverAttempts();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalFailedOverJobsCount() {
+            return JobStealingFailoverSpi.this.getTotalFailedOverJobsCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalStolenJobsCount() {
+            return JobStealingFailoverSpi.this.getTotalStolenJobsCount();
+        }
+
     }
 }

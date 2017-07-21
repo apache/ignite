@@ -17,23 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePartialUpdateException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.typedef.CIX1;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
-import javax.cache.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Failover tests for cache.
@@ -43,7 +52,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
 
     /** */
-    private static final String NEW_GRID_NAME = "newGrid";
+    private static final String NEW_IGNITE_INSTANCE_NAME = "newGrid";
 
     /** */
     private static final int ENTRY_CNT = 100;
@@ -65,29 +74,32 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(60_000);
-
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
+        cfg.setMetricsUpdateFrequency(5_000);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoSpi.setSocketTimeout(30_000);
         discoSpi.setAckTimeout(30_000);
         discoSpi.setNetworkTimeout(60_000);
-        discoSpi.setHeartbeatFrequency(30_000);
         discoSpi.setReconnectCount(2);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setRebalanceMode(SYNC);
+
+        if (cfg.getCacheMode() == CacheMode.PARTITIONED)
+            cfg.setBackups(TOP_CHANGE_THREAD_CNT);
 
         return cfg;
     }
@@ -142,7 +154,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         else
             put(jcache(), ENTRY_CNT);
 
-        Ignite g = startGrid(NEW_GRID_NAME);
+        Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
         check(cache(g), ENTRY_CNT);
 
@@ -157,7 +169,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
             put(cache(g), half);
         }
 
-        stopGrid(NEW_GRID_NAME);
+        stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
         check(jcache(), ENTRY_CNT);
     }
@@ -195,14 +207,12 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                         try {
                             final Ignite g = startGrid(name);
 
-                            IgniteCache<String, Object> cache = g.<String, Object>cache(null).withAsync();
+                            IgniteCache<String, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
                             for (int k = half; k < ENTRY_CNT; k++) {
                                 String key = "key" + k;
 
-                                cache.get(key);
-
-                                assertNotNull("Failed to get key: 'key" + k + "'", cache.future().get(30_000));
+                                assertNotNull("Failed to get key: 'key" + k + "'", cache.getAsync(key).get(30_000));
                             }
                         }
                         finally {
@@ -321,14 +331,21 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws IgniteCheckedException If failed.
      */
     private void remove(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
-        TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+        TransactionConcurrency concurrency, final TransactionIsolation isolation) throws Exception {
         try {
             info("Removing values form cache [0," + cnt + ')');
 
             CU.inTx(ignite, cache, concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
                 @Override public void applyx(IgniteCache<String, Integer> cache) {
-                    for (int i = 0; i < cnt; i++)
-                        cache.remove("key" + i);
+                    for (int i = 0; i < cnt; i++) {
+                        String key = "key" + i;
+
+                        // Use removeAll for serializable tx to avoid version check.
+                        if (isolation == TransactionIsolation.SERIALIZABLE)
+                            cache.removeAll(Collections.singleton(key));
+                        else
+                            cache.remove(key);
+                    }
                 }
             });
         }
@@ -367,6 +384,6 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @return Cache.
      */
     private IgniteCache<String,Integer> cache(Ignite g) {
-        return g.cache(null);
+        return g.cache(DEFAULT_CACHE_NAME);
     }
 }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 
 /**
  * Defines executable unit for {@link ComputeTask}.
@@ -102,7 +102,7 @@ import java.util.*;
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
- * <h1 class="header">GridComputeJobAdapter</h1>
+ * <h1 class="header">ComputeJobAdapter</h1>
  * Ignite comes with convenience {@link ComputeJobAdapter} adapter that provides
  * default empty implementation for {@link ComputeJob#cancel()} method and also
  * allows user to set and get job argument, if there is one.
@@ -142,7 +142,7 @@ public interface ComputeJob extends Serializable {
      * {@link ComputeTaskFuture#cancel()} is called.
      * <p>
      * Note that job cancellation is only a hint, and just like with
-     * {@link Thread#interrupt()}  method, it is really up to the actual job
+     * {@link Thread#interrupt()} method, it is really up to the actual job
      * instance to gracefully finish execution and exit.
      */
     public void cancel();

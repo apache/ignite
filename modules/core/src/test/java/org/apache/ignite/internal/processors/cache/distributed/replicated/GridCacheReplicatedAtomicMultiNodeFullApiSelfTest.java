@@ -17,23 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Multi-node tests for replicated atomic cache.
  */
 public class GridCacheReplicatedAtomicMultiNodeFullApiSelfTest extends GridCacheReplicatedMultiNodeFullApiSelfTest {
-    /**
-     * @return Write order mode for atomic cache.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -47,14 +38,5 @@ public class GridCacheReplicatedAtomicMultiNodeFullApiSelfTest extends GridCache
     /** {@inheritDoc} */
     @Override protected boolean lockingEnabled() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
-
-        return ccfg;
     }
 }

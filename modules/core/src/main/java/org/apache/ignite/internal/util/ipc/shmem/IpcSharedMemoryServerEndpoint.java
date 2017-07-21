@@ -17,25 +17,43 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.thread.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.net.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.channels.FileLock;
+import java.nio.channels.FileLockInterruptionException;
+import java.nio.channels.OverlappingFileLockException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.ipc.IpcEndpoint;
+import org.apache.ignite.internal.util.ipc.IpcEndpointBindException;
+import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Server shared memory IPC endpoint.
@@ -99,8 +117,11 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** Local node ID. */
     private UUID locNodeId;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
+
+    /** Work directory. */
+    private final String workDir;
 
     /** Flag allowing not to print out of resources warning. */
     private boolean omitOutOfResourcesWarn;
@@ -121,9 +142,11 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /**
      * Use this constructor when dependencies could be injected
      * with {@link GridResourceProcessor#injectGeneric(Object)}.
+     *
+     * @param workDir Work directory.
      */
-    public IpcSharedMemoryServerEndpoint() {
-        // No-op.
+    public IpcSharedMemoryServerEndpoint(String workDir) {
+        this.workDir = workDir;
     }
 
     /**
@@ -131,12 +154,14 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      *
      * @param log Log.
      * @param locNodeId Node id.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
+     * @param workDir Work directory.
      */
-    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
+    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String igniteInstanceName, String workDir) {
         this.log = log;
         this.locNodeId = locNodeId;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
+        this.workDir = workDir;
     }
 
     /** @param omitOutOfResourcesWarn If {@code true}, out of resources warning will not be printed by server. */
@@ -163,7 +188,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + IpcSharedMemoryUtils.pid();
 
-        tokDir = U.resolveWorkDirectory(tokDirPath, false);
+        tokDir = U.resolveWorkDirectory(workDir, tokDirPath, false);
 
         if (port <= 0 || port >= 0xffff)
             throw new IpcEndpointBindException("Port value is illegal: " + port);
@@ -182,7 +207,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 "in use?): " + port, e);
         }
 
-        gcWorker = new GcWorker(gridName, "ipc-shmem-gc", log);
+        gcWorker = new GcWorker(igniteInstanceName, "ipc-shmem-gc", log);
 
         new IgniteThread(gcWorker).start();
 
@@ -279,13 +304,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                     String msg = "Failed to process incoming connection (most probably, shared memory " +
                         "rest endpoint has been configured by mistake).";
 
-                    LT.warn(log, null, msg);
+                    LT.warn(log, msg);
 
                     sendErrorResponse(out, e);
                 }
                 catch (IpcOutOfSystemResourcesException e) {
                     if (!omitOutOfResourcesWarn)
-                        LT.warn(log, null, OUT_OF_RESOURCES_MSG);
+                        LT.warn(log, OUT_OF_RESOURCES_MSG);
 
                     sendErrorResponse(out, e);
                 }
@@ -330,12 +355,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private void injectResources(Ignite ignite){
         if (ignite != null) {
             // Inject resources.
-            gridName = ignite.name();
+            igniteInstanceName = ignite.name();
             locNodeId = ignite.configuration().getNodeId();
         }
         else {
             // Cleanup resources.
-            gridName = null;
+            igniteInstanceName = null;
             locNodeId = null;
         }
     }
@@ -363,8 +388,10 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
             long idx = tokIdxGen.get();
 
             if (tokIdxGen.compareAndSet(idx, idx + 2))
-                return F.pair(new File(tokDir, TOKEN_FILE_NAME + idx + "-" + pid + "-" + size).getAbsolutePath(),
-                    new File(tokDir, TOKEN_FILE_NAME + (idx + 1) + "-" + pid + "-" + size).getAbsolutePath());
+                return new IgnitePair<>(
+                    new File(tokDir, TOKEN_FILE_NAME + idx + "-" + pid + "-" + size).getAbsolutePath(),
+                    new File(tokDir, TOKEN_FILE_NAME + (idx + 1) + "-" + pid + "-" + size).getAbsolutePath()
+                );
         }
     }
 
@@ -510,12 +537,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      */
     private class GcWorker extends GridWorker {
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Name.
          * @param log Log.
          */
-        protected GcWorker(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected GcWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
+            super(igniteInstanceName, name, log);
         }
 
         /** {@inheritDoc} */

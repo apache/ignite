@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.*;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_ACK;
 
 /**
  * Continuous processor message.
@@ -44,7 +48,7 @@ public class GridContinuousMessage implements Message {
     private UUID routineId;
 
     /** Optional message data. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Object data;
 
@@ -138,6 +142,11 @@ public class GridContinuousMessage implements Message {
      */
     public void dataBytes(byte[] dataBytes) {
         this.dataBytes = dataBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /**
@@ -248,11 +257,11 @@ public class GridContinuousMessage implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridContinuousMessage.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 61;
     }
 

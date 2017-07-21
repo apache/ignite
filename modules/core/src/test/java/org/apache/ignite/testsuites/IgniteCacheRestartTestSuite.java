@@ -17,14 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteCacheCreateRestartSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheNearRestartRollbackSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOptimisticTxNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
 
 /**
- * In-Memory Data Grid stability test suite on changing topology.
+ * Cache stability test suite on changing topology.
  */
 public class IgniteCacheRestartTestSuite extends TestSuite {
     /**
@@ -34,19 +36,13 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Restart Test Suite");
 
-        suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
-
         suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
         suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
         suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
+        suite.addTestSuite(IgniteCacheNearRestartRollbackSelfTest.class);
 
-        suite.addTestSuite(IgniteCacheAtomicNodeRestartTest.class);
-        suite.addTestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheAtomicPutAllFailoverSelfTest.class);
-        suite.addTestSuite(IgniteCachePutAllRestartTest.class);
-        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
-        suite.addTestSuite(CacheGetFromJobTest.class);
+        suite.addTestSuite(IgniteCacheCreateRestartSelfTest.class);
 
         return suite;
     }

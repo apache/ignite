@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Exception thrown by SPI implementations.

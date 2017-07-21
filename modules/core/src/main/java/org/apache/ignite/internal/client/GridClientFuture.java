@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client;
 
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Future for asynchronous operations.

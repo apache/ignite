@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Object wrapper containing serialized byte array of original object and deployment information.

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.igfs;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@code IGFS} file or directory descriptor. For example, to get information about

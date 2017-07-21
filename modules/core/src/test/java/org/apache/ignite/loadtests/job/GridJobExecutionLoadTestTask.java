@@ -17,14 +17,17 @@
 
 package org.apache.ignite.loadtests.job;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
 
 /**
  *
@@ -45,4 +48,3 @@ public class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object>
         return null;
     }
 }
-

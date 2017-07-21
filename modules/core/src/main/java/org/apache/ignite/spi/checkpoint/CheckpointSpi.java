@@ -17,8 +17,9 @@
 
 package org.apache.ignite.spi.checkpoint;
 
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Checkpoint SPI provides an ability to save an intermediate job state. It can

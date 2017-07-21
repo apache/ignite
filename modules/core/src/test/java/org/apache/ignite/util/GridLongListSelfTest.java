@@ -17,10 +17,10 @@
 
 package org.apache.ignite.util;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.*;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.util.GridLongList;
 
-import static org.apache.ignite.internal.util.GridLongList.*;
+import static org.apache.ignite.internal.util.GridLongList.asList;
 
 /**
  *

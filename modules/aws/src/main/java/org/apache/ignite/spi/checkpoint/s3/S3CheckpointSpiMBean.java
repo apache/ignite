@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management bean for {@link S3CheckpointSpi}.

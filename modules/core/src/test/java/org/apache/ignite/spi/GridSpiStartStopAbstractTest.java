@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 
 /**
  * Base SPI start-stop test class.
@@ -55,7 +55,7 @@ public abstract class GridSpiStartStopAbstractTest<T extends IgniteSpi> extends 
                 // Call to get node attributes as part of life cycle.
                 getSpi().getNodeAttributes();
 
-                getSpi().spiStart(getTestGridName());
+                getSpi().spiStart(getTestIgniteInstanceName());
                 getSpi().onContextInitialized(getSpiContext());
             }
         }

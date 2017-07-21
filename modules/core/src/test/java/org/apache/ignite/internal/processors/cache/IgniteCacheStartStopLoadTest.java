@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.Date;
+import java.util.WeakHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test for dynamic cache start.
@@ -62,8 +64,8 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +91,7 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(CACHE_NAMES[idx.getAndIncrement()]);
 

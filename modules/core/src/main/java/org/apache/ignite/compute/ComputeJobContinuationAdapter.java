@@ -17,8 +17,8 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.resources.JobContextResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenience adapter for {@link ComputeJob} implementations. It provides the
@@ -33,21 +33,21 @@ import org.jetbrains.annotations.*;
  *      and {@link #argument(int)} methods.
  * </li>
  * </ul>
- * Here is an example of how {@code GridComputeJobAdapter} can be used from task logic
+ * Here is an example of how {@code ComputeJobAdapter} can be used from task logic
  * to create jobs. The example creates job adapter as anonymous class, but you
  * are free to create a separate class for it.
  * <pre name="code" class="java">
- * public class TestGridTask extends GridComputeTaskSplitAdapter&lt;String, Integer&gt; {
+ * public class TestGridTask extends ComputeTaskSplitAdapter&lt;String, Integer&gt; {
  *     // Used to imitate some logic for the
  *     // sake of this example
  *     private int multiplier = 3;
  *
  *     &#64;Override
  *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, final String arg) throws IgniteCheckedException {
- *         List&lt;GridComputeJobAdapter&lt;String&gt;&gt; jobs = new ArrayList&lt;GridComputeJobAdapter&lt;String&gt;&gt;(gridSize);
+ *         List&lt;ComputeJobAdapter&lt;String&gt;&gt; jobs = new ArrayList&lt;ComputeJobAdapter&lt;String&gt;&gt;(gridSize);
  *
  *         for (int i = 0; i < gridSize; i++) {
- *             jobs.add(new GridComputeJobAdapter() {
+ *             jobs.add(new ComputeJobAdapter() {
  *                 // Job execution logic.
  *                 public Object execute() throws IgniteCheckedException {
  *                     return multiplier * arg.length();
@@ -60,11 +60,11 @@ import org.jetbrains.annotations.*;
  *
  *     // Aggregate multiple job results into
  *     // one task result.
- *     public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *     public Integer reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *         int sum = 0;
  *
  *         // For the sake of this example, let's sum all results.
- *         for (GridComputeJobResult res : results) {
+ *         for (ComputeJobResult res : results) {
  *             sum += (Integer)res.getData();
  *         }
  *

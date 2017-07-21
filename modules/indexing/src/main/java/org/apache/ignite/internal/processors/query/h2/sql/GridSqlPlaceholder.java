@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.Collections;
+
 /**
  * Placeholder.
  */
@@ -31,6 +33,8 @@ public class GridSqlPlaceholder extends GridSqlElement {
      * @param sql SQL.
      */
     public GridSqlPlaceholder(String sql) {
+        super(Collections.<GridSqlAst>emptyList());
+
         this.sql = sql;
     }
 
@@ -40,12 +44,7 @@ public class GridSqlPlaceholder extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSqlElement addChild(GridSqlElement expr) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSqlElement child(int idx) {
+    @Override public GridSqlElement resultType(GridSqlType type) {
         throw new IllegalStateException();
     }
 }

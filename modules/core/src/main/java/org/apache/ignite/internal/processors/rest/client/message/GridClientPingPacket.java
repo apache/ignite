@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_REQ_FLAG;
 
 /**
  * Fictive ping packet.

@@ -17,11 +17,10 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.URL;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterGroup;
 
 /**
  *

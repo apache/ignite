@@ -17,29 +17,38 @@
 
 package org.apache.ignite.loadtests.communication;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.LongAdder8;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  *
@@ -68,8 +77,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -121,9 +130,9 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         rcv.addMessageListener(
             topic,
             new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     try {
-                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
+                        rcv.sendToCustomTopic(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -132,7 +141,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             });
 
         snd.addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 msgCntr.increment();
 
                 sem.release();
@@ -167,7 +176,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                     while (!finish.get()) {
                         sem.acquire();
 
-                        snd.send(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
+                        snd.sendToCustomTopic(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
                     }
                 }
                 catch (IgniteCheckedException e) {
@@ -215,9 +224,9 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         rcv.addMessageListener(
             topic,
             new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     try {
-                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
+                        rcv.sendToCustomTopic(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -226,7 +235,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             });
 
         snd.addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 map.get(((GridTestMessage)msg).id()).countDown();
             }
         });
@@ -261,7 +270,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
                         map.put(msgId, latch);
 
-                        snd.send(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
+                        snd.sendToCustomTopic(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
 
                         latch.await();
 
@@ -315,9 +324,9 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         rcv.addMessageListener(
             topic,
             new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     try {
-                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
+                        rcv.sendToCustomTopic(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -326,7 +335,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             });
 
         snd.addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 msgCntr.increment();
 
                 sem.release();
@@ -353,7 +362,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
                     sem.acquire();
 
-                    snd.send(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
+                    snd.sendToCustomTopic(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
                 }
 
                 return null;
@@ -423,7 +432,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
                     latches.put(msgId, latch);
 
-                    snd.send(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
+                    snd.sendToCustomTopic(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
 
                     long start = System.currentTimeMillis();
 
@@ -454,7 +463,6 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setTcpNoDelay(true);
-        spi.setConnectionBufferSize(0);
         spi.setSharedMemoryPort(-1);
 
         info("Comm SPI: " + spi);

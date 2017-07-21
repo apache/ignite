@@ -17,63 +17,91 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridNodeOrderComparator;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
 /**
  * Future that fetches affinity assignment from remote cache nodes.
  */
-public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<ClusterNode>>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffinityAssignmentResponse> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
 
-    /** Cache context. */
-    private final GridCacheContext ctx;
+    /** */
+    private static final AtomicLong idGen = new AtomicLong();
+
+    /** */
+    private final GridCacheSharedContext ctx;
 
     /** List of available nodes this future can fetch data from. */
+    @GridToStringInclude
     private Queue<ClusterNode> availableNodes;
-
-    /** Topology version. */
-    private final AffinityTopologyVersion topVer;
 
     /** Pending node from which response is being awaited. */
     private ClusterNode pendingNode;
 
+    /** */
+    private final long id;
+
+    /** */
+    private final AffinityTopologyVersion topVer;
+
+    /** */
+    private final int grpId;
+
+    /** */
+    private boolean needPartState;
+
     /**
-     * @param ctx Cache context.
-     * @param availableNodes Available nodes.
+     * @param ctx Context.
+     * @param grpId Group ID.
+     * @param topVer Topology version.
+     * @param discoCache Discovery cache.
      */
     public GridDhtAssignmentFetchFuture(
-        GridCacheContext ctx,
+        GridCacheSharedContext ctx,
+        int grpId,
         AffinityTopologyVersion topVer,
-        Collection<ClusterNode> availableNodes
+        DiscoCache discoCache
     ) {
-        this.ctx = ctx;
         this.topVer = topVer;
+        this.grpId = grpId;
+        this.ctx = ctx;
+
+        id = idGen.getAndIncrement();
+
+        Collection<ClusterNode> availableNodes = discoCache.cacheGroupAffinityNodes(grpId);
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
         for (ClusterNode node : availableNodes) {
-            if (!node.isLocal())
+            if (!node.isLocal() && ctx.discovery().alive(node))
                 tmp.add(node);
         }
 
@@ -86,36 +114,46 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     }
 
     /**
-     * Initializes fetch future.
+     * @return Cache group ID.
      */
-    public void init() {
-        ((GridDhtPreloader)ctx.preloader()).addDhtAssignmentFetchFuture(topVer, this);
+    public int groupId() {
+        return grpId;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long id() {
+        return id;
+    }
+
+    /**
+     * Initializes fetch future.
+     *
+     * @param needPartState {@code True} if also need fetch partitions state.
+     */
+    public void init(boolean needPartState) {
+        this.needPartState = needPartState;
+
+        ctx.affinity().addDhtAssignmentFetchFuture(this);
 
         requestFromNextNode();
     }
 
     /**
-     * @param node Node.
+     * @param nodeId Node ID.
      * @param res Response.
      */
-    public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
-        if (!res.topologyVersion().equals(topVer)) {
-            if (log.isDebugEnabled())
-                log.debug("Received affinity assignment for wrong topology version (will ignore) " +
-                    "[node=" + node + ", res=" + res + ", topVer=" + topVer + ']');
-
-            return;
-        }
-
-        List<List<ClusterNode>> assignment = null;
+    public void onResponse(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+        GridDhtAffinityAssignmentResponse res0 = null;
 
         synchronized (this) {
-            if (pendingNode != null && pendingNode.equals(node))
-                assignment = res.affinityAssignment();
+            if (pendingNode != null && pendingNode.id().equals(nodeId))
+                res0 = res;
         }
 
-        if (assignment != null)
-            onDone(assignment);
+        if (res0 != null)
+            onDone(res);
     }
 
     /**
@@ -134,9 +172,9 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable List<List<ClusterNode>> res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable GridDhtAffinityAssignmentResponse res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
-            ((GridDhtPreloader)ctx.preloader()).removeDhtAssignmentFetchFuture(topVer, this);
+            ctx.affinity().removeDhtAssignmentFetchFuture(this);
 
             return true;
         }
@@ -162,7 +200,8 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
                         log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
                             ", node=" + node + ']');
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(ctx.cacheId(), topVer),
+                    ctx.io().send(node,
+                        new GridDhtAffinityAssignmentRequest(id, grpId, topVer, needPartState),
                         AFFINITY_POOL);
 
                     // Close window for listener notification.
@@ -182,8 +221,14 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
                         "continue to another node): " + node);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log0, "Failed to request affinity assignment from remote node (will " +
-                        "continue to another node): " + node, e);
+                    if (ctx.discovery().reconnectSupported() && X.hasCause(e, IOException.class)) {
+                        onDone(new IgniteNeedReconnectException(ctx.localNode(), e));
+
+                        return;
+                    }
+
+                    U.warn(log0, "Failed to request affinity assignment from remote node (will " +
+                        "continue to another node): " + node);
                 }
             }
 
@@ -193,6 +238,11 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
         // No more nodes left, complete future with null outside of synchronization.
         // Affinity should be calculated from scratch.
         if (complete)
-            onDone((List<List<ClusterNode>>)null);
+            onDone((GridDhtAffinityAssignmentResponse)null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtAssignmentFetchFuture.class, this);
     }
 }

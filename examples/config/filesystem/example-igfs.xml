@@ -50,22 +50,14 @@
         Configuration below demonstrates how to setup a IgniteFs node with file data.
     -->
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to true to enable cluster-aware class loading for examples, default is false. -->
-        <property name="peerClassLoadingEnabled" value="true"/>
-
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <property name="fileSystemConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <property name="name" value="igfs"/>
-                    <property name="metaCacheName" value="igfs-meta"/>
-                    <property name="dataCacheName" value="igfs-data"/>
 
                     <!-- Must correlate with cache affinity mapper. -->
                     <property name="blockSize" value="#{128 * 1024}"/>
@@ -74,13 +66,6 @@
 
                     <!-- Set number of prefetch blocks. -->
                     <property name="prefetchBlocks" value="32"/>
-
-                    <!--
-                        This will disable IPC endpoint binding thus preventing Hadoop clients from connecting to IgniteFs.
-                        With this option set to false the only possible way to interact with IgniteFs is through
-                        Ignite API.
-                    -->
-                    <property name="ipcEndpointEnabled" value="false"/>
 
                     <!--
                         Example of configured IPC loopback endpoint.
@@ -103,31 +88,6 @@
                         </bean>
                     </property>
                     -->
-                </bean>
-            </list>
-        </property>
-
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="igfs-data"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                    <property name="backups" value="0"/>
-                    <property name="affinityMapper">
-                        <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
-                            <!-- Haw many blocks in row will be stored on the same node. -->
-                            <constructor-arg value="512"/>
-                        </bean>
-                    </property>
-                </bean>
-
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="igfs-meta"/>
-                    <property name="cacheMode" value="REPLICATED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>
             </list>
         </property>

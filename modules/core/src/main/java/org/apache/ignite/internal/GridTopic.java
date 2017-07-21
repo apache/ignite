@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.charset.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.nio.charset.Charset;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication topic.
@@ -87,7 +91,31 @@ public enum GridTopic {
     TOPIC_HADOOP,
 
     /** */
-    TOPIC_QUERY;
+    TOPIC_QUERY,
+
+    /** */
+    TOPIC_TX,
+
+    /** */
+    TOPIC_SNAPSHOT,
+
+    /** */
+    TOPIC_IO_TEST,
+
+    /** */
+    TOPIC_MAPPING_MARSH,
+
+    /** */
+    TOPIC_HADOOP_MSG,
+
+    /** */
+    TOPIC_METADATA_REQ,
+
+    /** */
+    TOPIC_SCHEMA,
+
+    /** */
+    TOPIC_INTERNAL_DIAGNOSTIC;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

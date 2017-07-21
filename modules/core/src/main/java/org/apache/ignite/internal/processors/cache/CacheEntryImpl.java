@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.*;
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import javax.cache.Cache;
+import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  *
@@ -32,6 +37,9 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
 
     /** */
     private V val;
+
+    /** Entry version. */
+    private GridCacheVersion ver;
 
     /**
      * Required by {@link Externalizable}.
@@ -49,6 +57,17 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
         this.val = val;
     }
 
+    /**
+     * @param key Key.
+     * @param val Value.
+     * @param ver Entry version.
+     */
+    public CacheEntryImpl(K key, V val, GridCacheVersion ver) {
+        this.key = key;
+        this.val = val;
+        this.ver = ver;
+    }
+
     /** {@inheritDoc} */
     @Override public K getKey() {
         return key;
@@ -62,8 +81,11 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if(cls.isAssignableFrom(getClass()))
+        if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);
+
+        if (cls.isAssignableFrom(CacheEntry.class))
+            return (T)new CacheEntryImplEx<>(key, val, ver);
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }

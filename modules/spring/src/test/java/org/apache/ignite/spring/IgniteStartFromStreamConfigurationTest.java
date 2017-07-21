@@ -17,34 +17,38 @@
 
 package org.apache.ignite.spring;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.FileInputStream;
+import java.net.URL;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Checks starts from Stream.
  */
 public class IgniteStartFromStreamConfigurationTest extends GridCommonAbstractTest {
-    /** Tests starts from Stream. */
+    /**
+     * Tests starts from stream.
+     *
+     * @throws Exception If failed.
+     */
     public void testStartFromStream() throws Exception {
         String cfg = "examples/config/example-cache.xml";
 
         URL cfgLocation = U.resolveIgniteUrl(cfg);
 
-        Ignite grid = Ignition.start(new FileInputStream(cfgLocation.getFile()));
+        try (Ignite grid = Ignition.start(new FileInputStream(cfgLocation.getFile()))) {
+            grid.cache(DEFAULT_CACHE_NAME).put("1", "1");
 
-        grid.cache(null).put("1", "1");
+            assert grid.cache(DEFAULT_CACHE_NAME).get("1").equals("1");
 
-        assert grid.cache(null).get("1").equals("1");
+            IgniteConfiguration icfg = Ignition.loadSpringBean(new FileInputStream(cfgLocation.getFile()), "ignite.cfg");
 
-        IgniteConfiguration icfg = Ignition.loadSpringBean(new FileInputStream(cfgLocation.getFile()), "ignite.cfg");
-
-        assert icfg.getCacheConfiguration()[0].getAtomicityMode() == CacheAtomicityMode.ATOMIC;
+            assert icfg.getCacheConfiguration()[0].getAtomicityMode() == CacheAtomicityMode.ATOMIC;
+        }
     }
 
 }

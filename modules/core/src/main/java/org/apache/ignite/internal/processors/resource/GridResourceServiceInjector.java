@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.services.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.resources.ServiceResource;
+import org.apache.ignite.services.Service;
 
 /**
  * Grid service injector.

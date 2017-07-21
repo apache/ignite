@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobSibling;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
+import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
+import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  * This class provides implementation for job sibling.
@@ -139,40 +147,30 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
     @Override public void cancel() {
         GridTaskSessionImpl ses = ctx.session().getSession(sesId);
 
-        if (ses == null) {
-            Collection<ClusterNode> nodes = ctx.discovery().remoteNodes();
+        Collection<ClusterNode> nodes = ses == null ? ctx.discovery().remoteNodes() : ctx.discovery().nodes(ses.getTopology());
 
-            if (!nodes.isEmpty()) {
+        for (ClusterNode node : nodes) {
+            if (!ctx.localNodeId().equals(node.id())) {
                 try {
-                    ctx.io().send(nodes, TOPIC_JOB_CANCEL, new GridJobCancelRequest(sesId, jobId), SYSTEM_POOL);
+                    ctx.io().sendToGridTopic(node, TOPIC_JOB_CANCEL, new GridJobCancelRequest(sesId, jobId), SYSTEM_POOL);
                 }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
-                }
-            }
+                catch (ClusterTopologyCheckedException e) {
+                    IgniteLogger log = ctx.log(GridJobSiblingImpl.class);
 
-            // Cancel local jobs directly.
-            ctx.job().cancelJob(sesId, jobId, false);
-
-            return;
-        }
-
-        for (ClusterNode node : ctx.discovery().nodes(ses.getTopology())) {
-            if (ctx.localNodeId().equals(node.id()))
-                // Cancel local jobs directly.
-                ctx.job().cancelJob(ses.getId(), jobId, false);
-            else {
-                try {
-                    ctx.io().send(node, TOPIC_JOB_CANCEL, new GridJobCancelRequest(ses.getId(), jobId), SYSTEM_POOL);
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send cancel request, node left [nodeId=" + node.id() + ", ses=" + ses + ']');
                 }
                 catch (IgniteCheckedException e) {
                     // Avoid stack trace for left nodes.
-                    if (ctx.discovery().node(node.id()) != null && ctx.discovery().pingNode(node.id()))
+                    if (ctx.discovery().node(node.id()) != null && ctx.discovery().pingNodeNoError(node.id()))
                         U.error(ctx.log(GridJobSiblingImpl.class), "Failed to send cancel request to node " +
                             "[nodeId=" + node.id() + ", ses=" + ses + ']', e);
                 }
             }
         }
+
+        // Cancel local jobs directly.
+        ctx.job().cancelJob(sesId, jobId, false);
     }
 
     /** {@inheritDoc} */

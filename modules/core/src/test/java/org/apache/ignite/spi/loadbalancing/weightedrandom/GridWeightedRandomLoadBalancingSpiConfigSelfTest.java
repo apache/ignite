@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.loadbalancing.weightedrandom;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  *

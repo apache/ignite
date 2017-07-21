@@ -17,11 +17,15 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * This example demonstrates some of the cache rich API capabilities.
@@ -47,32 +51,28 @@ public class CacheAsyncApiExample {
             System.out.println();
             System.out.println(">>> Cache asynchronous API example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
-                // Enable asynchronous mode.
-                IgniteCache<Integer, String> asyncCache = cache.withAsync();
-
                 Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
                 // Execute several puts asynchronously.
-                for (int i = 0; i < 10; i++) {
-                    asyncCache.put(i, String.valueOf(i));
-
-                    futs.add(asyncCache.future());
-                }
+                for (int i = 0; i < 10; i++)
+                    futs.add(cache.putAsync(i, String.valueOf(i)));
 
                 // Wait for completion of all futures.
                 for (IgniteFuture<?> fut : futs)
                     fut.get();
 
-                // Execute get operation asynchronously.
-                asyncCache.get(1);
-
-                // Asynchronously wait for result.
-                asyncCache.<String>future().listen(new IgniteInClosure<IgniteFuture<String>>() {
+                // Execute get operation asynchronously and wait for result.
+                cache.getAsync(1).listen(new IgniteInClosure<IgniteFuture<String>>() {
                     @Override public void apply(IgniteFuture<String> fut) {
                         System.out.println("Get operation completed [value=" + fut.get() + ']');
                     }
                 });
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

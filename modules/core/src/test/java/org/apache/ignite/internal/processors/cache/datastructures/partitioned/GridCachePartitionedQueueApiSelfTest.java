@@ -17,25 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueApiSelfAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Queue tests with partitioned cache.
  */
 public class GridCachePartitionedQueueApiSelfTest extends GridCacheQueueApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode collectionCacheMode() {
-        return PARTITIONED;
+    @Override protected int gridCount() {
+        return 4;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */

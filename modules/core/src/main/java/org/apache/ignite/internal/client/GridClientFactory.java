@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.impl.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.internal.client.impl.GridClientImpl;
 
 /**
  * Client factory opens and closes clients. It also tracks all currently opened clients as well.

@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.igfs.secondary.*;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 
 /**
  * Descriptor of an input stream opened to the secondary file system.
  */
 public class IgfsSecondaryInputStreamDescriptor {
     /** File info in the primary file system. */
-    private final IgfsFileInfo info;
+    private final IgfsEntryInfo info;
 
     /** Secondary file system input stream wrapper. */
     private final IgfsSecondaryFileSystemPositionedReadable secReader;
@@ -35,7 +35,7 @@ public class IgfsSecondaryInputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param secReader Secondary file system reader.
      */
-    IgfsSecondaryInputStreamDescriptor(IgfsFileInfo info, IgfsSecondaryFileSystemPositionedReadable secReader) {
+    IgfsSecondaryInputStreamDescriptor(IgfsEntryInfo info, IgfsSecondaryFileSystemPositionedReadable secReader) {
         assert info != null;
         assert secReader != null;
 
@@ -46,7 +46,7 @@ public class IgfsSecondaryInputStreamDescriptor {
     /**
      * @return File info in the primary file system.
      */
-    IgfsFileInfo info() {
+    IgfsEntryInfo info() {
         return info;
     }
 

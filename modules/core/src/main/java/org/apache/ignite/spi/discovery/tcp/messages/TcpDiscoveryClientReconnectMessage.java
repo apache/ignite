@@ -17,15 +17,17 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Message telling that client node is reconnecting to topology.
  */
+@TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -92,6 +94,21 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
      */
     public boolean success() {
         return getFlag(CLIENT_RECON_SUCCESS_FLAG_POS);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        // NOTE!
+        // Do not call super. As IDs will differ, but we can ignore this.
+
+        if (!(obj instanceof TcpDiscoveryClientReconnectMessage))
+            return false;
+
+        TcpDiscoveryClientReconnectMessage other = (TcpDiscoveryClientReconnectMessage)obj;
+
+        return F.eq(creatorNodeId(), other.creatorNodeId()) &&
+            F.eq(routerNodeId, other.routerNodeId) &&
+            F.eq(lastMsgId, other.lastMsgId);
     }
 
     /** {@inheritDoc} */

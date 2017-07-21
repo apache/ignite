@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.expiry.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for {@link ExpiryPolicy} used to track information about cache entries

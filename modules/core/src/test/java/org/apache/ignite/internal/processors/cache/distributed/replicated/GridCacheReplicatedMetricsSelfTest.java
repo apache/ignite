@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheTransactionalAbstractMetricsSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Replicated cache metrics test.
@@ -29,17 +29,9 @@ public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAb
     /** */
     private static final int GRID_CNT = 2;
 
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        return c;
-    }
-
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(REPLICATED);
 

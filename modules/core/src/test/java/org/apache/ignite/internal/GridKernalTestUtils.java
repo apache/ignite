@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
+import org.apache.ignite.Ignite;
 
 /**
  * Test kernal utils.

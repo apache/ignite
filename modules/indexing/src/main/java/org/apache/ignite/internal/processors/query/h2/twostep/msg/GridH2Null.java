@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.h2.value.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.h2.value.Value;
+import org.h2.value.ValueNull;
 
 /**
  * Message for {@link Value#NULL}.
@@ -63,16 +64,27 @@ public class GridH2Null extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        return reader.beforeMessageRead() && super.readFrom(buf, reader);
+        if (!reader.beforeMessageRead())
+            return false;
+
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        return reader.afterMessageRead(GridH2Null.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -4;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "NULL";
     }
 }

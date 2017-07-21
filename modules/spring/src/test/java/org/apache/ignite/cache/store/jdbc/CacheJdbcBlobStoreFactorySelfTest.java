@@ -17,19 +17,24 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.h2.jdbcx.*;
-
-import java.io.*;
-import java.sql.*;
-import java.util.concurrent.*;
-import java.util.logging.*;
+import java.io.PrintWriter;
+import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.concurrent.Callable;
+import java.util.logging.Logger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.jdbcx.JdbcDataSource;
 
 /**
- * Test for Cache jdbc blob store factory.
+ * Test for Cache JDBC blob store factory.
  */
 public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /** Cache name. */
@@ -87,7 +92,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
      * @return Cache configuration with store.
      */
     private CacheConfiguration<Integer, String> cacheConfiguration() {
-        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         CacheJdbcBlobStoreFactory<Integer, String> factory = new CacheJdbcBlobStoreFactory();
 
@@ -102,16 +107,16 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
 
     /**
      * @param cache Ignite cache.
-     * @param dataSrcClass Data source class.
+     * @param dataSrcCls Data source class.
      * @throws Exception If store parameters is not the same as in configuration xml.
      */
-    private void checkStore(IgniteCache<Integer, String> cache, Class<?> dataSrcClass) throws Exception {
+    private void checkStore(IgniteCache<Integer, String> cache, Class<?> dataSrcCls) throws Exception {
         CacheJdbcBlobStore store = (CacheJdbcBlobStore) cache.getConfiguration(CacheConfiguration.class).
             getCacheStoreFactory().create();
 
         assertEquals(USER_NAME, GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
 
-        assertEquals(dataSrcClass,
+        assertEquals(dataSrcCls,
             GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
     }
 
@@ -130,7 +135,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Connection getConnection(String username, String password) throws SQLException {
+        @Override public Connection getConnection(String username, String pwd) throws SQLException {
             return null;
         }
 

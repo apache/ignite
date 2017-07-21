@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.rest.handlers;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.request.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 
 /**
  * Command handler.

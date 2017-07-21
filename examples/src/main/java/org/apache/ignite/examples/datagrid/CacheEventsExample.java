@@ -17,14 +17,19 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 
 /**
  * This examples demonstrates events API. Note that ignite events are disabled by default and
@@ -51,6 +56,7 @@ public class CacheEventsExample {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // This optional local callback is called for each event notification
                 // that passed remote predicate listener.
@@ -86,6 +92,10 @@ public class CacheEventsExample {
 
                 // Wait for a while while callback is notified about remaining puts.
                 Thread.sleep(2000);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

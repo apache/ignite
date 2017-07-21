@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 
-import java.util.concurrent.*;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Multithreaded update test with off heap enabled.
@@ -61,7 +63,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     private void testTransformTx(final Integer key, final TransactionConcurrency txConcurrency) throws Exception {
-        final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(key, 0);
 
@@ -88,7 +90,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         }, THREADS, "transform");
 
         for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
+            Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
             if (txConcurrency == PESSIMISTIC)
                 assertEquals("Unexpected value for grid " + i, (Integer)(ITERATIONS_PER_THREAD * THREADS), val);
@@ -98,7 +100,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
 
         if (failed) {
             for (int g = 0; g < gridCount(); g++)
-                info("Value for cache [g=" + g + ", val=" + grid(g).cache(null).get(key) + ']');
+                info("Value for cache [g=" + g + ", val=" + grid(g).cache(DEFAULT_CACHE_NAME).get(key) + ']');
 
             assertFalse(failed);
         }
@@ -113,10 +115,10 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         if (gridCount() > 1)
             testPutTx(keyForNode(1), PESSIMISTIC);
     }
-    
+
     /**
      * TODO: IGNITE-592.
-     *  
+     *
      * @throws Exception If failed.
      */
     public void testPutTxOptimistic() throws Exception {
@@ -132,7 +134,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     private void testPutTx(final Integer key, final TransactionConcurrency txConcurrency) throws Exception {
-        final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(key, 0);
 
@@ -159,7 +161,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         }, THREADS, "put");
 
         for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
+            Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
             assertNotNull("Unexpected value for grid " + i, val);
         }
@@ -193,7 +195,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     private void testPutxIfAbsentTx(final Integer key, final TransactionConcurrency txConcurrency) throws Exception {
-        final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(key, 0);
 
@@ -218,7 +220,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         }, THREADS, "putxIfAbsent");
 
         for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
+            Integer val = (Integer)grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
             assertEquals("Unexpected value for grid " + i, (Integer)0, val);
         }

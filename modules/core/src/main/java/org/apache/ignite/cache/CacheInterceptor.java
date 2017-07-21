@@ -17,13 +17,12 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.io.*;
+import java.io.Serializable;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache interceptor. Cache interceptor can be used for getting callbacks before
@@ -64,6 +63,11 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * from sensitive synchronization blocks.
      * <p>
      * This method should not throw any exception.
+     * <p>
+     * <b>IMPORTANT:</b> for this method to take affect, {@code newVal} and
+     * the returned value have to be different instances. I.e., you should
+     * not mutate {@code newVal} directly, but instead create a copy, update
+     * it and then return from the interceptor.
      *
      * @param entry Old entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true}, then is copy.
      * @param newVal New value.

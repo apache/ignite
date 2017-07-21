@@ -17,20 +17,20 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * This class provides convenient adapter for threads used by SPIs.
- * This class adds necessary plumbing on top of the {@link Thread} class:
+ * This class adds necessary plumbing on top of the {@link IgniteThread} class:
  * <ul>
- * <li>Consistent naming of threads</li>
- * <li>Dedicated parent thread group</li>
+ *      <li>Proper exception handling in {@link #body()}</li>
  * </ul>
  */
-public abstract class IgniteSpiThread extends Thread {
+public abstract class IgniteSpiThread extends IgniteThread {
     /** Default thread's group. */
     public static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite-spi");
 
@@ -43,12 +43,12 @@ public abstract class IgniteSpiThread extends Thread {
     /**
      * Creates thread with given {@code name}.
      *
-     * @param gridName Name of grid this thread is created in.
+     * @param igniteInstanceName Name of grid this thread is created in.
      * @param name Thread's name.
      * @param log Grid logger to use.
      */
-    protected IgniteSpiThread(String gridName, String name, IgniteLogger log) {
-        super(DFLT_GRP, name + "-#" + cntr.incrementAndGet() + '%' + gridName);
+    protected IgniteSpiThread(String igniteInstanceName, String name, IgniteLogger log) {
+        super(igniteInstanceName, DFLT_GRP, createName(cntr.incrementAndGet(), name, igniteInstanceName));
 
         assert log != null;
 

@@ -17,14 +17,17 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.gridify.Gridify;
+import org.apache.ignite.compute.gridify.GridifyArgument;
+import org.apache.ignite.compute.gridify.GridifyTaskSplitAdapter;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tries to execute dummy gridified task. It should fail because grid is not started.

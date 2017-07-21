@@ -17,20 +17,43 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.p2p.*;
+import java.util.Set;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
+import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
+import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PDifferentClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PDoubleDeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PHotRedeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PJobClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PMissedResourceCacheSizeSelfTest;
+import org.apache.ignite.p2p.GridP2PNodeLeftSelfTest;
+import org.apache.ignite.p2p.GridP2PRecursionTaskSelfTest;
+import org.apache.ignite.p2p.GridP2PRemoteClassLoadersSelfTest;
+import org.apache.ignite.p2p.GridP2PSameClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PTimeoutSelfTest;
+import org.apache.ignite.p2p.GridP2PUndeploySelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * P2P test suite.
  */
 public class IgniteP2PSelfTestSuite extends TestSuite {
     /**
+     * @return Suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
      * @return P2P tests suite.
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite P2P Test Suite");
 
         suite.addTest(new TestSuite(GridP2PDoubleDeploymentSelfTest.class));
@@ -47,7 +70,7 @@ public class IgniteP2PSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridP2PTimeoutSelfTest.class));
         suite.addTest(new TestSuite(GridP2PMissedResourceCacheSizeSelfTest.class));
         suite.addTest(new TestSuite(GridP2PContinuousDeploymentSelfTest.class));
-        suite.addTest(new TestSuite(GridDeploymentMessageCountSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
 
         return suite;
     }

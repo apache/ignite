@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
@@ -88,6 +90,11 @@ public class IgniteTxKey implements Message {
         assert key != null;
 
         key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -167,11 +174,11 @@ public class IgniteTxKey implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgniteTxKey.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 94;
     }
 

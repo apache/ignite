@@ -17,10 +17,10 @@
 
 package org.apache.ignite.thread;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.worker.GridWorker;
 
 /**
  * This class adds some necessary plumbing on top of the {@link Thread} class.
@@ -29,18 +29,28 @@ import java.util.concurrent.atomic.*;
  *      <li>Consistent naming of threads</li>
  *      <li>Dedicated parent thread group</li>
  *      <li>Backing interrupted flag</li>
+ *      <li>Name of the grid this thread belongs to</li>
  * </ul>
  * <b>Note</b>: this class is intended for internal use only.
  */
 public class IgniteThread extends Thread {
+    /** Index for unassigned thread. */
+    public static final int GRP_IDX_UNASSIGNED = -1;
+
     /** Default thread's group. */
     private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
 
     /** Number of all grid threads in the system. */
-    private static final AtomicLong threadCntr = new AtomicLong(0);
+    private static final AtomicLong cntr = new AtomicLong();
 
-    /** Boolean flag indicating of this thread is currently processing message. */
-    private boolean procMsg;
+    /** The name of the Ignite instance this thread belongs to. */
+    protected final String igniteInstanceName;
+
+    /** */
+    private int compositeRwLockIdx;
+
+    /** */
+    private final int stripe;
 
     /**
      * Creates thread with given worker.
@@ -48,31 +58,95 @@ public class IgniteThread extends Thread {
      * @param worker Runnable to create thread with.
      */
     public IgniteThread(GridWorker worker) {
-        this(DFLT_GRP, worker.gridName(), worker.name(), worker);
+        this(DFLT_GRP, worker.igniteInstanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED, -1);
     }
 
     /**
-     * Creates grid thread with given name for a given grid.
+     * Creates grid thread with given name for a given Ignite instance.
      *
-     * @param gridName Name of grid this thread is created for.
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      */
-    public IgniteThread(String gridName, String threadName, Runnable r) {
-        this(DFLT_GRP, gridName, threadName, r);
+    public IgniteThread(String igniteInstanceName, String threadName, Runnable r) {
+        this(igniteInstanceName, threadName, r, GRP_IDX_UNASSIGNED, -1);
     }
 
     /**
-     * Creates grid thread with given name for a given grid with specified
+     * Creates grid thread with given name for a given Ignite instance.
+     *
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
+     * @param threadName Name of thread.
+     * @param r Runnable to execute.
+     * @param grpIdx Index within a group.
+     * @param stripe Non-negative stripe number if this thread is striped pool thread.
+     */
+    public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
+        this(DFLT_GRP, igniteInstanceName, threadName, r, grpIdx, stripe);
+    }
+
+    /**
+     * Creates grid thread with given name for a given Ignite instance with specified
      * thread group.
      *
      * @param grp Thread group.
-     * @param gridName Name of grid this thread is created for.
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
+     * @param grpIdx Thread index within a group.
+     * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
-    public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r) {
-        super(grp, r, createName(threadCntr.incrementAndGet(), threadName, gridName));
+    public IgniteThread(ThreadGroup grp, String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
+        super(grp, r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
+
+        A.ensure(grpIdx >= -1, "grpIdx >= -1");
+
+        this.igniteInstanceName = igniteInstanceName;
+        this.compositeRwLockIdx = grpIdx;
+        this.stripe = stripe;
+    }
+
+    /**
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
+     * @param threadGrp Thread group.
+     * @param threadName Name of thread.
+     */
+    protected IgniteThread(String igniteInstanceName, ThreadGroup threadGrp, String threadName) {
+        super(threadGrp, threadName);
+
+        this.igniteInstanceName = igniteInstanceName;
+        this.compositeRwLockIdx = GRP_IDX_UNASSIGNED;
+        this.stripe = -1;
+    }
+
+    /**
+     * @return Non-negative stripe number if this thread is striped pool thread.
+     */
+    public int stripe() {
+        return stripe;
+    }
+
+    /**
+     * Gets name of the Ignite instance this thread belongs to.
+     *
+     * @return Name of the Ignite instance this thread belongs to.
+     */
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
+    }
+
+    /**
+     * @return Composite RW lock index.
+     */
+    public int compositeRwLockIndex() {
+        return compositeRwLockIdx;
+    }
+
+    /**
+     * @param compositeRwLockIdx Composite RW lock index.
+     */
+    public void compositeRwLockIndex(int compositeRwLockIdx) {
+        this.compositeRwLockIdx = compositeRwLockIdx;
     }
 
     /**
@@ -80,25 +154,11 @@ public class IgniteThread extends Thread {
      *
      * @param num Thread number.
      * @param threadName Thread name.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return New thread name.
      */
-    private static String createName(long num, String threadName, String gridName) {
-        return threadName + "-#" + num + '%' + gridName + '%';
-    }
-
-    /**
-     * @param procMsg Flag indicating whether thread is currently processing message.
-     */
-    public void processingMessage(boolean procMsg) {
-        this.procMsg = procMsg;
-    }
-
-    /**
-     * @return Flag indicating whether thread is currently processing message.
-     */
-    public boolean processingMessage() {
-        return procMsg;
+    protected static String createName(long num, String threadName, String igniteInstanceName) {
+        return threadName + "-#" + num + '%' + igniteInstanceName + '%';
     }
 
     /** {@inheritDoc} */

@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Near transaction finish request.
@@ -37,22 +40,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     private static final long serialVersionUID = 0L;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
-
-    /** Explicit lock flag. */
-    private boolean explicitLock;
-
-    /** Store enabled flag. */
-    private boolean storeEnabled;
-
-    /** Topology version. */
-    private AffinityTopologyVersion topVer;
-
-    /** Subject ID. */
-    private UUID subjId;
-
-    /** Task name hash. */
-    private int taskNameHash;
+    private int miniId;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -68,6 +56,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
      * @param sys System flag.
+     * @param plc IO policy.
+     * @param syncMode Write synchronization mode.
      * @param explicitLock Explicit lock flag.
      * @param storeEnabled Store enabled flag.
      * @param topVer Topology version.
@@ -75,6 +65,9 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
@@ -84,8 +77,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean invalidate,
         boolean sys,
         byte plc,
-        boolean syncCommit,
-        boolean syncRollback,
+        CacheWriteSynchronizationMode syncMode,
         boolean explicitLock,
         boolean storeEnabled,
         @NotNull AffinityTopologyVersion topVer,
@@ -94,64 +86,74 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash) {
-        super(xidVer, futId, null, threadId, commit, invalidate, sys, plc, syncCommit, syncRollback, baseVer,
-            committedVers, rolledbackVers, txSize);
+        int taskNameHash,
+        boolean addDepInfo) {
+        super(
+            xidVer,
+            futId,
+            topVer,
+            null,
+            threadId,
+            commit,
+            invalidate,
+            sys,
+            plc,
+            syncMode,
+            baseVer,
+            committedVers,
+            rolledbackVers,
+            subjId,
+            taskNameHash,
+            txSize,
+            addDepInfo
+        );
 
-        this.explicitLock = explicitLock;
-        this.storeEnabled = storeEnabled;
-        this.topVer = topVer;
-        this.subjId = subjId;
-        this.taskNameHash = taskNameHash;
+        explicitLock(explicitLock);
+        storeEnabled(storeEnabled);
     }
 
     /**
      * @return Explicit lock flag.
      */
     public boolean explicitLock() {
-        return explicitLock;
+        return isFlag(EXPLICIT_LOCK_FLAG_MASK);
+    }
+
+    /**
+     * @param explicitLock Explicit lock flag.
+     */
+    private void explicitLock(boolean explicitLock) {
+        setFlag(explicitLock, EXPLICIT_LOCK_FLAG_MASK);
     }
 
     /**
      * @return Store enabled flag.
      */
     public boolean storeEnabled() {
-        return storeEnabled;
+        return isFlag(STORE_ENABLED_FLAG_MASK);
+    }
+
+    /**
+     * @param storeEnabled Store enabled flag.
+     */
+    private void storeEnabled(boolean storeEnabled) {
+        setFlag(storeEnabled, STORE_ENABLED_FLAG_MASK);
     }
 
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future ID.
      */
-    public void miniId(IgniteUuid miniId) {
+    public void miniId(int miniId) {
+        assert miniId > 0;
+
         this.miniId = miniId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
-     * @return Task name hash.
-     */
-    public int taskNameHash() {
-        return taskNameHash;
-    }
-
-    /**
-     * @return Topology version.
-     */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -169,38 +171,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         }
 
         switch (writer.state()) {
-            case 18:
-                if (!writer.writeBoolean("explicitLock", explicitLock))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeBoolean("storeEnabled", storeEnabled))
-                    return false;
-
-                writer.incrementState();
-
             case 21:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -221,48 +193,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         switch (reader.state()) {
-            case 18:
-                explicitLock = reader.readBoolean("explicitLock");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                storeEnabled = reader.readBoolean("storeEnabled");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 21:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                topVer = reader.readMessage("topVer");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -271,17 +203,17 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridNearTxFinishRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 53;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 24;
+        return 22;
     }
 
     /** {@inheritDoc} */

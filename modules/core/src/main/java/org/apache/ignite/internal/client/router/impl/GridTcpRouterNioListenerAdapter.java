@@ -17,19 +17,35 @@
 
 package org.apache.ignite.internal.client.router.impl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.client.marshaller.jdk.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFuture;
+import org.apache.ignite.internal.client.GridClientFutureListener;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterResponse;
+import org.apache.ignite.internal.util.nio.GridNioServerListener;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.PluginProvider;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER_ID;
 
 /**
  * Nio listener for the router. Extracts necessary meta information from messages
@@ -65,7 +81,11 @@ public abstract class GridTcpRouterNioListenerAdapter implements GridNioServerLi
 
         marshMap = new HashMap<>();
 
-        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller(U.allPluginProviders()));
+        List<PluginProvider> providers = U.allPluginProviders();
+        GridClientOptimizedMarshaller optdMarsh = new GridClientOptimizedMarshaller(providers);
+
+        marshMap.put(GridClientOptimizedMarshaller.ID, optdMarsh);
+        marshMap.put(GridClientZipOptimizedMarshaller.ID, new GridClientZipOptimizedMarshaller(optdMarsh, providers));
         marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
 
         init();

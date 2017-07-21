@@ -17,14 +17,20 @@
 
 package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Person record used for query test.
  */
-public class Person implements Externalizable {
+public class Person implements Externalizable, Binarylizable {
     /** Person ID. */
     @QuerySqlField(index = true)
     private int id;
@@ -167,6 +173,24 @@ public class Person implements Externalizable {
         firstName = in.readUTF();
         lastName = in.readUTF();
         salary = in.readDouble();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        writer.writeInt("id", id);
+        writer.writeInt("orgId", orgId);
+        writer.writeString("firstName", firstName);
+        writer.writeString("lastName", lastName);
+        writer.writeDouble("salary", salary);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        id = reader.readInt("id");
+        orgId = reader.readInt("orgId");
+        firstName = reader.readString("firstName");
+        lastName = reader.readString("lastName");
+        salary = reader.readDouble("salary");
     }
 
     /** {@inheritDoc} */

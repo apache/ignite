@@ -17,19 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.lru;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  * LRU near eviction tests for NEAR_ONLY distribution mode (GG-8884).
@@ -61,19 +67,18 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         if (cnt == 0)
             c.setClientMode(true);
         else {
-            CacheConfiguration cc = new CacheConfiguration();
+            CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-            cc.setAtomicityMode(atomicityMode);
             cc.setCacheMode(cacheMode);
+            cc.setAtomicityMode(atomicityMode);
             cc.setWriteSynchronizationMode(PRIMARY_SYNC);
             cc.setRebalanceMode(SYNC);
-            cc.setStartSize(100);
             cc.setBackups(0);
 
             c.setCacheConfiguration(cc);
@@ -140,13 +145,13 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
 
             nearCfg.setNearEvictionPolicy(plc);
 
-            grid(0).createNearCache(null, nearCfg);
+            grid(0).createNearCache(DEFAULT_CACHE_NAME, nearCfg);
 
             int cnt = 1000;
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataStreamer<Integer, String> ldr = grid(1).dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(1).dataStreamer(DEFAULT_CACHE_NAME)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }
@@ -157,7 +162,7 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(0).cache(null);
+                IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

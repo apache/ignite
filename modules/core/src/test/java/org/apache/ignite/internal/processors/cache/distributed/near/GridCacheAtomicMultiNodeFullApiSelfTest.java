@@ -17,24 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Multi-node tests for partitioned cache.
  */
 public class GridCacheAtomicMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /**
-     * @return Write order mode for atomic cache.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -46,12 +39,11 @@ public class GridCacheAtomicMultiNodeFullApiSelfTest extends GridCachePartitione
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cc = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cc = super.cacheConfiguration(igniteInstanceName);
 
         cc.setRebalanceMode(SYNC);
         cc.setBackups(1);
-        cc.setAtomicWriteOrderMode(atomicWriteOrderMode());
 
         return cc;
     }

@@ -17,12 +17,19 @@
 
 package org.apache.ignite.internal.mxbean;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.mxbean.*;
-
-import javax.management.*;
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanParameterInfo;
+import javax.management.NotCompliantMBeanException;
+import javax.management.StandardMBean;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
+import org.apache.ignite.mxbean.MXBeanParametersNames;
 
 /**
  * Extension of standard Java MBean. Overrides some hooks to return
@@ -98,7 +105,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 }
             }
         }
-        catch (SecurityException e) {
+        catch (SecurityException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -146,7 +153,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert str.charAt(str.length() - 1) == '.' : str;
             }
         }
-        catch (SecurityException | ClassNotFoundException e) {
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -176,7 +183,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert str.charAt(str.length() - 1) == '.' : str;
             }
         }
-        catch (SecurityException | ClassNotFoundException e) {
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -202,7 +209,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert str.trim().length() > 0;
             }
         }
-        catch (SecurityException | ClassNotFoundException e) {
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -258,7 +265,7 @@ public class IgniteStandardMXBean extends StandardMBean {
             if (res != null)
                 return res;
         }
-        catch (NoSuchMethodException e) {
+        catch (NoSuchMethodException ignored) {
             // No-op. Default value will be returned.
         }
 

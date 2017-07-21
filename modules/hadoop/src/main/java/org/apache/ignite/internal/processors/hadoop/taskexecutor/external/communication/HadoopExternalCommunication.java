@@ -17,28 +17,58 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.hadoop.message.*;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.thread.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.net.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.SocketChannel;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
+import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.GridKeyLock;
+import org.apache.ignite.internal.util.ipc.IpcEndpoint;
+import org.apache.ignite.internal.util.ipc.shmem.IpcOutOfSystemResourcesException;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryClientEndpoint;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
+import org.apache.ignite.internal.util.nio.GridBufferedParser;
+import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
+import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioServerListener;
+import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Hadoop external communication class.
@@ -146,8 +176,11 @@ public class HadoopExternalCommunication {
     /** Message notification executor service. */
     private ExecutorService execSvc;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
+
+    /** Work directory. */
+    private String workDir;
 
     /** Complex variable that represents this node IP address. */
     private volatile InetAddress locHost;
@@ -225,7 +258,8 @@ public class HadoopExternalCommunication {
      * @param marsh Marshaller to use.
      * @param log Logger.
      * @param execSvc Executor service for message notification.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
+     * @param workDir Work directory.
      */
     public HadoopExternalCommunication(
         UUID parentNodeId,
@@ -233,14 +267,16 @@ public class HadoopExternalCommunication {
         Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
-        String gridName
+        String igniteInstanceName,
+        String workDir
     ) {
         locProcDesc = new HadoopProcessDescriptor(parentNodeId, procId);
 
         this.marsh = marsh;
         this.log = log.getLogger(HadoopExternalCommunication.class);
         this.execSvc = execSvc;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
+        this.workDir = workDir;
     }
 
     /**
@@ -575,7 +611,7 @@ public class HadoopExternalCommunication {
      */
     private GridNioFilter[] filters() {
         return new GridNioFilter[] {
-            new GridNioAsyncNotifyFilter(gridName, execSvc, log),
+            new GridNioAsyncNotifyFilter(igniteInstanceName, execSvc, log),
             new HandshakeAndBackpressureFilter(),
             new HadoopMarshallerFilter(marsh),
             new GridNioCodecFilter(new GridBufferedParser(directBuf, ByteOrder.nativeOrder()), log, false)
@@ -604,7 +640,8 @@ public class HadoopExternalCommunication {
                         .listener(srvLsnr)
                         .logger(log.getLogger(GridNioServer.class))
                         .selectorCount(selectorsCnt)
-                        .gridName(gridName)
+                        .igniteInstanceName(igniteInstanceName)
+                        .serverName("hadoop")
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
                         .byteOrder(ByteOrder.nativeOrder())
@@ -657,7 +694,7 @@ public class HadoopExternalCommunication {
             try {
                 IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(
                     log.getLogger(IpcSharedMemoryServerEndpoint.class),
-                    locProcDesc.processId(), gridName);
+                    locProcDesc.processId(), igniteInstanceName, workDir);
 
                 srv.setPort(port);
 
@@ -822,7 +859,7 @@ public class HadoopExternalCommunication {
             catch (IgniteCheckedException e) {
                 if (e.hasCause(IpcOutOfSystemResourcesException.class))
                     // Has cause or is itself the IpcOutOfSystemResourcesException.
-                    LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
+                    LT.warn(log, OUT_OF_RESOURCES_TCP_MSG);
                 else if (log.isDebugEnabled())
                     log.debug("Failed to establish shared memory connection with local hadoop process: " +
                         desc);
@@ -1025,7 +1062,7 @@ public class HadoopExternalCommunication {
                         ", err=" + e + ']');
 
                 if (X.hasCause(e, SocketTimeoutException.class))
-                    LT.warn(log, null, "Connect timed out (consider increasing 'connTimeout' " +
+                    LT.warn(log, "Connect timed out (consider increasing 'connTimeout' " +
                         "configuration property) [addr=" + addr + ", port=" + port + ']');
 
                 if (errs == null)
@@ -1050,7 +1087,7 @@ public class HadoopExternalCommunication {
             assert errs != null;
 
             if (X.hasCause(errs, ConnectException.class))
-                LT.warn(log, null, "Failed to connect to a remote Hadoop process (is process still running?). " +
+                LT.warn(log, "Failed to connect to a remote Hadoop process (is process still running?). " +
                     "Make sure operating system firewall is disabled on local and remote host) " +
                     "[addrs=" + addr + ", port=" + port + ']');
 
@@ -1095,7 +1132,7 @@ public class HadoopExternalCommunication {
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
+            super(igniteInstanceName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
 
             this.srv = srv;
         }
@@ -1142,7 +1179,7 @@ public class HadoopExternalCommunication {
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint, boolean accepted) {
-            super(gridName, "shmem-worker", HadoopExternalCommunication.this.log);
+            super(igniteInstanceName, "shmem-worker", HadoopExternalCommunication.this.log);
 
             this.endpoint = endpoint;
 
@@ -1271,11 +1308,14 @@ public class HadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+            Object msg,
+            boolean fut,
+            IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
             if (ses.meta(PROCESS_META) == null && !(msg instanceof ProcessHandshakeMessage))
                 log.warning("Writing message before handshake has finished [ses=" + ses + ", msg=" + msg + ']');
 
-            return proceedSessionWrite(ses, msg);
+            return proceedSessionWrite(ses, msg, fut, ackC);
         }
 
         /** {@inheritDoc} */

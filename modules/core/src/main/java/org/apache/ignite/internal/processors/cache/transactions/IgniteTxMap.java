@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.AbstractMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import org.apache.ignite.internal.util.GridSerializableIterator;
+import org.apache.ignite.internal.util.GridSerializableSet;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid cache transaction read or write set.
@@ -163,8 +170,7 @@ public class IgniteTxMap extends AbstractMap<IgniteTxKey, IgniteTxEntry> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public IgniteTxEntry get(Object key) {
+    @Nullable @Override public IgniteTxEntry get(Object key) {
         IgniteTxEntry e = txMap.get(key);
 
         return e == null ? null : filter.apply(e) ? e : null;

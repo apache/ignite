@@ -17,10 +17,11 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.marshaller.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines own object output stream.
@@ -42,4 +43,3 @@ class JdkMarshallerObjectOutputStream extends ObjectOutputStream {
             o.getClass().equals(Object.class) ? new JdkMarshallerDummySerializable() : super.replaceObject(o);
     }
 }
-

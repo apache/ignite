@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.nio.ssl.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-
-import javax.net.ssl.*;
-import java.net.*;
-import java.nio.*;
+import java.net.Socket;
+import java.nio.ByteOrder;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for new NIO server with SSL enabled.
@@ -52,15 +51,18 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected GridNioServer<?> startServer(int port, GridNioParser parser, GridNioServerListener lsnr)
-        throws Exception {
-        GridNioServer<?> srvr = GridNioServer.builder()
+    @Override protected GridNioServer.Builder<?> serverBuilder(int port,
+        GridNioParser parser,
+        GridNioServerListener lsnr)
+        throws Exception
+    {
+        return GridNioServer.builder()
             .address(U.getLocalHost())
             .port(port)
             .listener(lsnr)
             .logger(log)
             .selectorCount(2)
-            .gridName("nio-test-grid")
+            .igniteInstanceName("nio-test-grid")
             .tcpNoDelay(false)
             .directBuffer(true)
             .byteOrder(ByteOrder.nativeOrder())
@@ -69,12 +71,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .sendQueueLimit(0)
             .filters(
                 new GridNioCodecFilter(parser, log, false),
-                new GridNioSslFilter(sslCtx, log))
-            .build();
-
-        srvr.start();
-
-        return srvr;
+                new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), log));
     }
 
     /** {@inheritDoc} */

@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.concurrent.Executor;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Implementation of public API future for cache.
@@ -36,7 +43,22 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, null));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, exec));
+    }
+
+    /** {@inheritDoc} */
     @Override protected RuntimeException convertException(IgniteCheckedException e) {
+        if (e instanceof IgniteFutureCancelledCheckedException ||
+            e instanceof IgniteInterruptedCheckedException ||
+            e instanceof IgniteFutureTimeoutCheckedException)
+            return U.convertException(e);
+
         return CU.convertToCacheException(e);
     }
 }

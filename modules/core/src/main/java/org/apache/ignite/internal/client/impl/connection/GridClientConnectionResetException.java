@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client.impl.connection;
 
-import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.GridClientException;
 
 /**
  * This exception is thrown when ongoing packet should be sent, but network connection is broken.

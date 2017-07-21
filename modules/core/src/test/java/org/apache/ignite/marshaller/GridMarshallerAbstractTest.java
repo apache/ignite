@@ -17,30 +17,66 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.executor.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.service.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.p2p.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteScheduler;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridKernalTestUtils;
+import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.internal.IgniteEventsImpl;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteMessagingImpl;
+import org.apache.ignite.internal.IgniteSchedulerImpl;
+import org.apache.ignite.internal.IgniteServicesImpl;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.cluster.ClusterNodeLocalMapImpl;
+import org.apache.ignite.internal.executor.GridExecutorService;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.p2p.GridP2PTestJob;
+import org.apache.ignite.p2p.GridP2PTestTask;
+import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.events.EventType.EVTS_CACHE;
 
 /**
  * Common test for marshallers.
@@ -51,6 +87,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
     /** */
     private static Marshaller marsh;
+
+    /** */
+    private static String igniteInstanceName;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -90,16 +129,16 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration namedCache = new CacheConfiguration();
+        CacheConfiguration namedCache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setMarshaller(marshaller());
-        cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), namedCache);
 
         return cfg;
     }
@@ -112,13 +151,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         marsh = grid().configuration().getMarshaller();
+        igniteInstanceName = grid().configuration().getIgniteInstanceName();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        IgniteCache<String, String> cache = grid().cache(null);
+        IgniteCache<String, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         cache.put("key", "val");
 
@@ -138,7 +178,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         IgniteCache<String, String> cache0 = (IgniteCache<String, String>)outBean.getObjectField();
 
-        assertNull(cache0.getName());
+        assertEquals(DEFAULT_CACHE_NAME, cache0.getName());
         assertEquals("val", cache0.get("key"));
 
         outBean.checkNullResources();
@@ -441,8 +481,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         final Ignite ignite = grid();
 
         GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override
-            public boolean apply(ClusterNode n) {
+            @Override public boolean apply(ClusterNode n) {
                 return n.id().equals(ignite.cluster().localNode().id());
             }
         }));
@@ -621,8 +660,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             IgniteCompute compute = compute(grid().cluster().forNode(g1.cluster().localNode()));
 
             compute.run(new IgniteRunnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     // No-op.
                 }
             });
@@ -667,7 +705,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 }
             }, EVTS_CACHE);
 
-            grid().cache(null).put(1, 1);
+            grid().cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             GridMarshallerTestBean inBean = newTestBean(evts);
 
@@ -799,8 +837,27 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws IgniteCheckedException Thrown if any exception occurs while unmarshalling.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    protected static <T> T unmarshal(byte[] buf) throws IgniteCheckedException {
-        return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
+    protected static <T> T unmarshal(final byte[] buf) throws IgniteCheckedException {
+        RunnableFuture<T> f = new FutureTask<>(new Callable<T>() {
+            @Override public T call() throws IgniteCheckedException {
+                return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
+            }
+        });
+
+        // Any deserialization has to be executed under a thread, that contains the Ignite instance name.
+        new IgniteThread(igniteInstanceName, "unmarshal-thread", f).start();
+
+        try {
+            return f.get();
+        }
+        catch (Exception e) {
+            if (e.getCause() instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e.getCause();
+
+            fail(e.getCause().getMessage());
+        }
+
+        return null;
     }
 
     /**

@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * {@link org.apache.ignite.IgniteQueue} implementation using transactional cache.
+ * {@link IgniteQueue} implementation using transactional cache.
  */
 public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /**
@@ -48,13 +53,11 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         A.notNull(item, "item");
 
         try {
-            boolean retVal;
+            return retryTopologySafe(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    boolean retVal;
 
-            int cnt = 0;
-
-            while (true) {
-                try {
-                    try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                         Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, 1)).get();
 
                         if (idx != null) {
@@ -69,27 +72,19 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                         tx.commit();
 
-                        break;
+                        return retVal;
                     }
                 }
-                catch (ClusterTopologyCheckedException e) {
-                    if (e instanceof ClusterGroupEmptyCheckedException)
-                        throw e;
-
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
-
-            return retVal;
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e.getMessage(), e);
         }
     }
 
@@ -97,46 +92,44 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws IgniteException {
         try {
-            int cnt = 0;
+            return retryTopologySafe(new Callable<T>() {
+                @Override public T call() throws Exception {
+                    T retVal;
 
-            T retVal;
+                    while (true) {
+                        try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                            Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id)).get();
 
-            while (true) {
-                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id)).get();
+                            if (idx != null) {
+                                checkRemoved(idx);
 
-                    if (idx != null) {
-                        checkRemoved(idx);
+                                retVal = (T)cache.getAndRemove(itemKey(idx));
 
-                        retVal = (T)cache.getAndRemove(itemKey(idx));
+                                if (retVal == null) { // Possible if data was lost.
+                                    tx.commit();
 
-                        assert retVal != null : idx;
-                    }
-                    else
-                        retVal = null;
+                                    continue;
+                                }
+                            }
+                            else
+                                retVal = null;
 
-                    tx.commit();
+                            tx.commit();
 
-                    break;
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    if (e instanceof ClusterGroupEmptyCheckedException)
-                        throw e;
-
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
+                            return retVal;
+                        }
                     }
                 }
-            }
-
-            return retVal;
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e.getMessage(), e);
         }
     }
 
@@ -146,54 +139,46 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         A.notNull(items, "items");
 
         try {
-            boolean retVal;
+            return retryTopologySafe(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    boolean retVal;
 
-            int cnt = 0;
+                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                        Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, items.size())).get();
 
-            while (true) {
-                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, items.size())).get();
+                        if (idx != null) {
+                            checkRemoved(idx);
 
-                    if (idx != null) {
-                        checkRemoved(idx);
+                            Map<QueueItemKey, T> putMap = new HashMap<>();
 
-                        Map<GridCacheQueueItemKey, T> putMap = new HashMap<>();
+                            for (T item : items) {
+                                putMap.put(itemKey(idx), item);
 
-                        for (T item : items) {
-                            putMap.put(itemKey(idx), item);
+                                idx++;
+                            }
 
-                            idx++;
+                            cache.putAll(putMap);
+
+                            retVal = true;
                         }
+                        else
+                            retVal = false;
 
-                        cache.putAll(putMap);
+                        tx.commit();
 
-                        retVal = true;
-                    }
-                    else
-                        retVal = false;
-
-                    tx.commit();
-
-                    break;
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    if (e instanceof ClusterGroupEmptyCheckedException)
-                        throw e;
-
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
+                        return retVal;
                     }
                 }
-            }
-
-            return retVal;
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e.getMessage(), e);
         }
     }
 
@@ -201,40 +186,29 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @SuppressWarnings("unchecked")
     @Override protected void removeItem(final long rmvIdx) throws IgniteCheckedException {
         try {
-            int cnt = 0;
+            retryTopologySafe(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                        Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx)).get();
 
-            while (true) {
-                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx)).get();
+                        if (idx != null) {
+                            checkRemoved(idx);
 
-                    if (idx != null) {
-                        checkRemoved(idx);
+                            cache.remove(itemKey(idx));
+                        }
 
-                        boolean rmv = cache.remove(itemKey(idx));
-
-                        assert rmv : idx;
+                        tx.commit();
                     }
 
-                    tx.commit();
-
-                    break;
+                    return null;
                 }
-                catch (ClusterTopologyCheckedException e) {
-                    if (e instanceof ClusterGroupEmptyCheckedException)
-                        throw e;
-
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
+            });
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
         }
     }
 }

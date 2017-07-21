@@ -17,22 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Grid cache utils test.
  */
 public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final String EXTERNALIZABLE_WARNING = "For best performance you should implement " +
-        "java.io.Externalizable";
-
     /**
      * Does not override equals and hashCode.
      */
@@ -68,7 +75,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
          * @return {@code False}.
          */
         @SuppressWarnings("CovariantEquals")
-        public boolean equals(String obj) {
+        @Override public boolean equals(Object obj) {
             return false;
         }
     }
@@ -85,38 +92,6 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
             return super.equals(obj);
-        }
-    }
-
-    /**
-     * Overrides equals and hashCode and implements {@link Externalizable}.
-     */
-    private static class ExternalizableEqualsAndHashCode implements Externalizable {
-        /**
-         * Constructor required by {@link Externalizable}.
-         */
-        public ExternalizableEqualsAndHashCode() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return super.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            return super.equals(obj);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            // No-op.
         }
     }
 
@@ -142,59 +117,20 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Does not implement {@link Externalizable}.
      */
-    private static class NoImplExternalizable {
-    }
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void testCacheKeyValidation() throws IgniteCheckedException {
+        CU.validateCacheKey("key");
 
-    /**
-     * Implements {@link Externalizable}.
-     */
-    private static class ImplExternalizable implements Externalizable  {
-        /**
-         * Constructor required by {@link Externalizable}.
-         */
-        public ImplExternalizable() {
-            // No-op.
-        }
+        CU.validateCacheKey(1);
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            // No-op.
-        }
+        CU.validateCacheKey(1L);
 
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            // No-op.
-        }
-    }
+        CU.validateCacheKey(1.0);
 
-    /**
-     * Extends class which implements {@link Externalizable}.
-     */
-    private static class ExtendsImplExternalizable extends ImplExternalizable {
-        /**
-         * Constructor required by {@link Externalizable}.
-         */
-        public ExtendsImplExternalizable() {
-            // No-op.
-        }
-    }
+        CU.validateCacheKey(new ExtendsClassWithEqualsAndHashCode());
 
-    /**
-     */
-    public void testCacheKeyValidation() {
-        CU.validateCacheKey(log, "key");
-
-        CU.validateCacheKey(log, 1);
-
-        CU.validateCacheKey(log, 1L);
-
-        CU.validateCacheKey(log, 1.0);
-
-        CU.validateCacheKey(log, new ExtendsClassWithEqualsAndHashCode());
-
-        CU.validateCacheKey(log, new ExtendsClassWithEqualsAndHashCode2());
+        CU.validateCacheKey(new ExtendsClassWithEqualsAndHashCode2());
 
         assertThrowsForInvalidKey(new NoEqualsAndHashCode());
 
@@ -204,45 +140,48 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
         assertThrowsForInvalidKey(new WrongEquals());
 
-        IgniteLogger log = new GridStringLogger(false);
+        BinaryObjectBuilderImpl binBuilder = new BinaryObjectBuilderImpl(binaryContext(),
+            EqualsAndHashCode.class.getName());
 
-        CU.validateCacheKey(log, new ExternalizableEqualsAndHashCode());
+        BinaryObject binObj = binBuilder.build();
 
-        assertFalse(log.toString().contains(EXTERNALIZABLE_WARNING));
+        CU.validateCacheKey(binObj);
 
-        CU.validateCacheKey(log, "key");
+        BinaryObjectBuilderImpl binBuilder2 = new BinaryObjectBuilderImpl((BinaryObjectImpl) binObj);
 
-        assertFalse(log.toString().contains(EXTERNALIZABLE_WARNING));
-
-        CU.validateCacheKey(log, new EqualsAndHashCode());
-
-        assertTrue(log.toString().contains(EXTERNALIZABLE_WARNING));
+        CU.validateCacheKey(binBuilder2.build());
     }
 
     /**
+     * @return Binary marshaller.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testCacheValueValidation() {
-        IgniteLogger log = new GridStringLogger(false);
+    private BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
+        IgniteConfiguration iCfg = new IgniteConfiguration();
 
-        CU.validateCacheValue(log, new ImplExternalizable());
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        assertFalse(log.toString().contains(EXTERNALIZABLE_WARNING));
+        iCfg.setBinaryConfiguration(bCfg);
 
-        CU.validateCacheValue(log, new ExtendsImplExternalizable());
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
 
-        assertFalse(log.toString().contains(EXTERNALIZABLE_WARNING));
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
-        CU.validateCacheValue(log, "val");
+        marsh.setContext(new MarshallerContextTestImpl(null));
 
-        assertFalse(log.toString().contains(EXTERNALIZABLE_WARNING));
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
-        CU.validateCacheValue(log, new byte[10]);
+        return marsh;
+    }
 
-        assertFalse(log.toString().contains(EXTERNALIZABLE_WARNING));
+    /**
+     * @return Binary context.
+     * @throws IgniteCheckedException if failed.
+     */
+    private BinaryContext binaryContext() throws IgniteCheckedException {
+        GridBinaryMarshaller impl = U.field(binaryMarshaller(), "impl");
 
-        CU.validateCacheValue(log, new NoImplExternalizable());
-
-        assertTrue(log.toString().contains(EXTERNALIZABLE_WARNING));
+        return impl.context();
     }
 
     /**
@@ -251,11 +190,10 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
     private void assertThrowsForInvalidKey(final Object key) {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                CU.validateCacheKey(log, key);
+                CU.validateCacheKey(key);
 
                 return null;
             }
         }, IllegalArgumentException.class, null);
     }
 }
-

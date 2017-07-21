@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.log4j.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.IgniteTxMultiThreadedAbstractTest;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Tests for local transactions.
@@ -32,8 +35,8 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
-import org.apache.ignite.internal.processors.cache.local.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedIteratorsSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedIteratorsSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIteratorsSelfTest;
 
 /**
  * Cache iterators test suite.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.NoSuchElementException;
+import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Empty iterator.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  * Tests cache value consistency for ATOMIC mode with near cache enabled.

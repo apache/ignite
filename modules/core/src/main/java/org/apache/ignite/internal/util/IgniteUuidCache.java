@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
  *
@@ -29,7 +31,7 @@ public final class IgniteUuidCache {
 
     /** Cache. */
     private static final ConcurrentMap<UUID, UUID> cache =
-        new GridBoundedConcurrentLinkedHashMap<>(MAX, 1024, 0.75f, 64);
+        new GridBoundedConcurrentLinkedHashMap<>(MAX, 1024, 0.75f, 64, PER_SEGMENT_Q);
 
     /**
      * Gets cached UUID to preserve memory.

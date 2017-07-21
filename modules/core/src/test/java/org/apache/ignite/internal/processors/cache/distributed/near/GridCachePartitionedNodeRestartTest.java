@@ -17,45 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractNodeRestartSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
  * Test node restart.
  */
 public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRestartSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-882");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 
+        return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(CACHE_NAME);
         cc.setAtomicityMode(atomicityMode());
         cc.setCacheMode(PARTITIONED);
-        cc.setWriteSynchronizationMode(FULL_ASYNC);
+        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setNearConfiguration(null);
-        cc.setStartSize(20);
         cc.setRebalanceMode(rebalancMode);
         cc.setRebalanceBatchSize(rebalancBatchSize);
         cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cc;
     }
 
     /** {@inheritDoc} */

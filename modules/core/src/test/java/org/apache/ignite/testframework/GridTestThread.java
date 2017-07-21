@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testframework;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
 
 /**
  * Test thread that has convenience failure checks.

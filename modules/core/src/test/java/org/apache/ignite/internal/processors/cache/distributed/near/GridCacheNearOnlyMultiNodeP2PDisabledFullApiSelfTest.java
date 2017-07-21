@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
  */
 public class GridCacheNearOnlyMultiNodeP2PDisabledFullApiSelfTest extends GridCacheNearOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setPeerClassLoadingEnabled(false);
 

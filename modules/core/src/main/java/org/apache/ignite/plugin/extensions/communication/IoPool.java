@@ -17,9 +17,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import org.apache.ignite.plugin.Extension;
 
 /**
  * The interface of IO Messaging Pool Extension.

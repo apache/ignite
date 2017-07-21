@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * No-op utils processor adapter.

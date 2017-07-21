@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -38,12 +37,12 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -66,30 +65,9 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
 
         assertTrue(ignite.configuration().isClientMode());
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return ignite.internalCache(CU.MARSH_CACHE_NAME) != null;
-            }
-        }, 5000);
-
-        GridCacheAdapter marshCache = ignite.internalCache(CU.MARSH_CACHE_NAME);
-
-        assertNotNull(marshCache);
-
-        assertFalse(marshCache.context().isNear());
-
-        marshCache = ((IgniteKernal)ignite(0)).internalCache(CU.MARSH_CACHE_NAME);
-
-        assertFalse(marshCache.context().isNear());
-
-        Collection<ClusterNode> affNodes = marshCache.affinity().mapKeyToPrimaryAndBackups(1);
-
-        assertEquals(1, affNodes.size());
-        assertTrue(affNodes.contains(ignite(0).cluster().localNode()));
-
         GridCacheAdapter utilityCache = ((IgniteKernal)ignite(0)).internalCache(CU.UTILITY_CACHE_NAME);
 
-        affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackups(1);
+        Collection<ClusterNode> affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackups(1);
 
         assertEquals(1, affNodes.size());
         assertTrue(affNodes.contains(ignite(0).cluster().localNode()));

@@ -17,30 +17,39 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.nio.*;
-import java.security.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.nio.ByteBuffer;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.testframework.GridTestUtils.sleepAndIncrement;
 
 /**
  * {@link IgfsDataManager} test case.
@@ -48,12 +57,6 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
 public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "meta";
-
-    /** Data cache name. */
-    private static final String DATA_CACHE_NAME = "partitioned";
 
     /** Groups count for data blocks. */
     private static final int DATA_BLOCK_GROUP_CNT = 2;
@@ -84,10 +87,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -97,8 +98,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration("meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration("data"));
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
@@ -109,12 +110,12 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if ("meta".equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
@@ -133,9 +134,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            grid(i).cachex(META_CACHE_NAME).clear();
+            grid(i).cachex(grid(i).igfsx("igfs").configuration().getMetaCacheConfiguration().getName()).clear();
 
-            grid(i).cachex(DATA_CACHE_NAME).clear();
+            grid(i).cachex(grid(i).igfsx("igfs").configuration().getDataCacheConfiguration().getName()).clear();
         }
     }
 
@@ -157,8 +158,12 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     @SuppressWarnings("ConstantConditions")
     public void testDataStoring() throws Exception {
         for (int i = 0; i < 10; i++) {
-            IgfsPath path = new IgfsPath();
-            IgfsFileInfo info = new IgfsFileInfo(200, null, false, null);
+            IgfsPath path = IgfsPath.ROOT;
+
+            long t = System.currentTimeMillis();
+
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), 200, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -166,15 +171,15 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info.id());
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
-            info = new IgfsFileInfo(info, info.length() + data.length - 3);
+            info = info.length(info.length() + data.length - 3);
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
-            info = new IgfsFileInfo(info, info.length() + 3);
+            info = info.length(info.length() + 3);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
@@ -183,12 +188,13 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             assert remainder == null;
 
-            mgr.writeClose(info);
+            mgr.writeClose(info.id());
 
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
+                    grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -238,8 +244,12 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int blockSize = IGFS_BLOCK_SIZE;
 
         for (int i = 0; i < 10; i++) {
-            IgfsPath path = new IgfsPath();
-            IgfsFileInfo info = new IgfsFileInfo(blockSize, null, false, null);
+            IgfsPath path = IgfsPath.ROOT;
+
+            long t = System.currentTimeMillis();
+
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -251,9 +261,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             rnd.nextBytes(remainder);
 
-            info = new IgfsFileInfo(info, info.length() + data.length + remainder.length);
+            info = info.length(info.length() + data.length + remainder.length);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info.id());
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
@@ -264,19 +274,20 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             byte[] remainder2 = new byte[blockSize / 2];
 
-            info = new IgfsFileInfo(info, info.length() + remainder2.length);
+            info = info.length(info.length() + remainder2.length);
 
             byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length, ByteBuffer.wrap(remainder2),
                 false, range, null);
 
             assert left2 == null;
 
-            mgr.writeClose(info);
+            mgr.writeClose(info.id());
 
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(
+                    grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -325,8 +336,12 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int writesCnt = 64;
 
         for (int i = 0; i < 10; i++) {
-            IgfsPath path = new IgfsPath();
-            IgfsFileInfo info = new IgfsFileInfo(blockSize, null, false, null);
+            IgfsPath path = IgfsPath.ROOT;
+
+            long t = System.currentTimeMillis();
+
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
@@ -336,9 +351,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             byte[] data = new byte[chunkSize];
 
-            info = new IgfsFileInfo(info, info.length() + data.length * writesCnt);
+            info = info.length(info.length() + data.length * writesCnt);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info.id());
 
             for (int j = 0; j < 64; j++) {
                 Arrays.fill(data, (byte)(j / 4));
@@ -349,14 +364,15 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
             }
 
-            mgr.writeClose(info);
+            mgr.writeClose(info.id());
 
             assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
 
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
+                    grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -393,8 +409,11 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int blockSize = 10;
         final int grpSize = blockSize * DATA_BLOCK_GROUP_CNT;
 
+        long t = System.currentTimeMillis();
+
         //IgfsFileInfo info = new IgfsFileInfo(blockSize, 0);
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
+        IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
+            null, t, t);
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {
             assertEquals("Expects no affinity for zero length.", Collections.<IgfsBlockLocation>emptyList(),
@@ -442,7 +461,10 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     public void testAffinity2() throws Exception {
         int blockSize = BLOCK_SIZE;
 
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
+        long t = System.currentTimeMillis();
+
+        IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
+            null, t, t);
 
         Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
@@ -456,7 +478,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             do {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(), null, false, block);
 
-                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(grid(0).igfsx("igfs").configuration()
+                    .getDataCacheConfiguration().getName()).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
@@ -473,7 +496,10 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     public void testAffinityFileMap() throws Exception {
         int blockSize = BLOCK_SIZE;
 
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
+        long t = System.currentTimeMillis();
+
+        IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
+            null, t, t);
 
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
@@ -482,7 +508,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         map.addRange(new IgfsFileAffinityRange(3 * BLOCK_SIZE, 5 * BLOCK_SIZE - 1, affKey));
         map.addRange(new IgfsFileAffinityRange(13 * BLOCK_SIZE, 17 * BLOCK_SIZE - 1, affKey));
 
-        info.fileMap(map);
+        info = info.fileMap(map);
 
         Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
@@ -516,7 +542,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param info File info.
      * @param affinity Affinity block locations to check.
      */
-    private void checkAffinity(int blockSize, IgfsFileInfo info, Iterable<IgfsBlockLocation> affinity) {
+    private void checkAffinity(int blockSize, IgfsEntryInfo info, Iterable<IgfsBlockLocation> affinity) {
         for (IgfsBlockLocation loc : affinity) {
             info("Going to check IGFS block location: " + loc);
 
@@ -528,7 +554,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(),
                     info.fileMap().affinityKey(block * blockSize, false), false, block);
 
-                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(grid(0).igfsx("igfs").configuration()
+                    .getDataCacheConfiguration().getName()).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
@@ -548,7 +575,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param data Data to store.
      * @param msg Expected failure message.
      */
-    private void expectsStoreFail(final IgfsFileInfo reserved, final byte[] data, @Nullable String msg) {
+    private void expectsStoreFail(final IgfsEntryInfo reserved, final byte[] data, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
                 IgfsFileAffinityRange range = new IgfsFileAffinityRange();
@@ -566,7 +593,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param fileInfo File to delete data for.
      * @param msg Expected failure message.
      */
-    private void expectsDeleteFail(final IgfsFileInfo fileInfo, @Nullable String msg) {
+    private void expectsDeleteFail(final IgfsEntryInfo fileInfo, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
                 mgr.delete(fileInfo);
@@ -584,7 +611,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param len File part length to get affinity for.
      * @param msg Expected failure message.
      */
-    private void expectsAffinityFail(final IgfsFileInfo info, final long start, final long len,
+    private void expectsAffinityFail(final IgfsEntryInfo info, final long start, final long len,
         @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {

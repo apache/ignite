@@ -17,11 +17,13 @@
 
 package org.apache.ignite.examples.java8.messaging;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.examples.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
 
 /**
  * Demonstrates simple message exchange between local and remote nodes.

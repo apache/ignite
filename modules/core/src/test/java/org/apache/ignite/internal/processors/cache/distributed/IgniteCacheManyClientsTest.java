@@ -17,26 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import junit.framework.AssertionFailedError;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  *
@@ -55,12 +63,19 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     private boolean clientDiscovery;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setFailureDetectionTimeout(20_000);
 
         cfg.setConnectorConfiguration(null);
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setTimeServerPortRange(200);
+
+        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
+        eventSpi.setExpireCount(100);
+
+        cfg.setEventStorageSpi(eventSpi);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -74,7 +89,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(ATOMIC);
@@ -106,13 +121,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testManyClients() throws Throwable {
-        manyClientsPutGet();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testManyClientsClientDiscovery() throws Throwable {
         clientDiscovery = true;
 
@@ -126,6 +134,13 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         clientDiscovery = true;
 
         manyClientsSequentially();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testManyClientsForceServerMode() throws Throwable {
+        manyClientsPutGet();
     }
 
     /**
@@ -151,7 +166,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
             clients.add(ignite);
 
-            IgniteCache<Object, Object> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             Integer key = rnd.nextInt(0, 1000);
 
@@ -226,7 +241,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
                             assertTrue(ignite.configuration().isClientMode());
 
-                            IgniteCache<Object, Object> cache = ignite.cache(null);
+                            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

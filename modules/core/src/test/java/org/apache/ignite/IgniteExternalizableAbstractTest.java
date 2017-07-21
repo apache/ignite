@@ -17,32 +17,27 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Base externalizable test class.
  */
 public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final MarshallerContext CTX = new MarshallerContextTestImpl();
-
     /**
      * @return Marshallers.
      */
-    protected List<Marshaller> getMarshallers() {
+    protected List<Marshaller> getMarshallers() throws IgniteCheckedException {
         List<Marshaller> marshallers = new ArrayList<>();
 
-        OptimizedMarshaller opt = new OptimizedMarshaller();
-
-        opt.setContext(CTX);
+        BinaryMarshaller bin = createStandaloneBinaryMarshaller();
 
         marshallers.add(new JdkMarshaller());
-        marshallers.add(opt);
+        marshallers.add(bin);
 
         return marshallers;
     }

@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.typedef.X;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * General grid exception. This exception is used to indicate any error condition
@@ -52,6 +52,18 @@ public class IgniteCheckedException extends Exception {
      */
     public IgniteCheckedException(Throwable cause) {
         this(cause.getMessage(), cause);
+    }
+
+    /**
+     * Creates new exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
+     * @param writableStackTrace whether or not the stack trace should
+     *                           be writable
+     */
+    public IgniteCheckedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
+        super(msg, cause, true, writableStackTrace);
     }
 
     /**

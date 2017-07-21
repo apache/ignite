@@ -17,19 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests {@link TcpDiscoverySpi} in client mode with multiple client nodes that interact with a cache concurrently.
@@ -65,8 +68,8 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Filling configuration for client nodes
         if (client) {
@@ -118,7 +121,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
             // Explicitly create near cache for even client nodes
             for (int i = srvNodesCnt; i < gridCount(); i++)
-                grid(i).createNearCache(null, new NearCacheConfiguration<>());
+                grid(i).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
             final AtomicInteger threadsCnt = new AtomicInteger();
 
@@ -131,7 +134,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
                             assert node.configuration().isClientMode();
 
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                             boolean isNearCacheNode = clientIdx % 2 == 0;
 
@@ -142,7 +145,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
                                 assertEquals(i, (int) cache.get(i));
 
                                 if (isNearCacheNode)
-                                    assertEquals(i, (int) cache.localPeek(i, CachePeekMode.ONHEAP));
+                                    assertEquals((Integer)i, cache.localPeek(i, CachePeekMode.ONHEAP));
                             }
 
                             stopGrid(clientIdx);

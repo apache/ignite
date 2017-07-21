@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jsr166.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
 
 /**
  * Concurrent map with an upper bound. Once map reaches its maximum capacity,
@@ -116,9 +116,6 @@ public class GridBoundedConcurrentLinkedHashMap<K, V> extends ConcurrentLinkedHa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        // TODO GG-4788
-        return policy() != SINGLE_Q ?
-            S.toString(GridBoundedConcurrentLinkedHashMap.class, this) :
-            S.toString(GridBoundedConcurrentLinkedHashMap.class, this, "entrySet", keySet());
+        return S.toString(GridBoundedConcurrentLinkedHashMap.class, this, "entrySet", keySet());
     }
 }

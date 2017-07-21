@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.fifo;
 
-import org.apache.ignite.cache.eviction.fifo.*;
-import org.apache.ignite.internal.processors.cache.eviction.*;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest;
 
 /**
  * FIFO eviction policy tests.

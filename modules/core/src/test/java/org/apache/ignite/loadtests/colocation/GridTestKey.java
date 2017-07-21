@@ -17,15 +17,23 @@
 
 package org.apache.ignite.loadtests.colocation;
 
-import org.apache.ignite.cache.affinity.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
 /**
  * Accenture key.
  */
 public class GridTestKey implements Externalizable {
+    /** */
     private long id;
+
+    /** */
+    @AffinityKeyMapped
+    private int affKey;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -34,19 +42,33 @@ public class GridTestKey implements Externalizable {
         // No-op.
     }
 
-    public GridTestKey(long id) {
+    /**
+     * @param id ID.
+     */
+    GridTestKey(long id) {
         this.id = id;
+
+        affKey = affinityKey(id);
     }
 
+    /**
+     * @return ID.
+     */
     public long getId() {
         return id;
     }
 
-    @AffinityKeyMapped
+    /**
+     * @return Affinity key.
+     */
     public int affinityKey() {
-        return affinityKey(id);
+        return affKey;
     }
 
+    /**
+     * @param id ID.
+     * @return Affinity key.
+     */
     public static int affinityKey(long id) {
         return (int)(id % GridTestConstants.MOD_COUNT);
     }
@@ -73,6 +95,7 @@ public class GridTestKey implements Externalizable {
         out.writeLong(id);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -82,10 +105,12 @@ public class GridTestKey implements Externalizable {
         return id == key.id;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return (int)(id ^ (id >>> 32));
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "AccentureKey [id=" + id + ']';
     }

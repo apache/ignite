@@ -17,26 +17,27 @@
 
 package org.apache.ignite.internal.processors.timeout;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Closeable;
+import java.util.Comparator;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Detects timeout events and processes them.
  */
 public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** */
-    private final IgniteThread timeoutWorker;
+    private final TimeoutWorker timeoutWorker;
 
     /** Time-based sorted set for timeout objects. */
     private final GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjs =
@@ -61,13 +62,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     public GridTimeoutProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        timeoutWorker = new IgniteThread(ctx.config().getGridName(), "grid-timeout-worker",
-            new TimeoutWorker());
+        timeoutWorker = new TimeoutWorker();
     }
 
     /** {@inheritDoc} */
     @Override public void start() {
-        timeoutWorker.start();
+        new IgniteThread(timeoutWorker).start();
 
         if (log.isDebugEnabled())
             log.debug("Timeout processor started.");
@@ -75,7 +75,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        U.interrupt(timeoutWorker);
+        timeoutWorker.cancel();
         U.join(timeoutWorker);
 
         if (log.isDebugEnabled())
@@ -137,7 +137,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getGridName(), "grid-timeout-worker", GridTimeoutProcessor.this.log);
+            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log);
         }
 
         /** {@inheritDoc} */
@@ -158,6 +158,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             timeoutObj.onTimeout();
                         }
                         catch (Throwable e) {
+                            if (isCancelled() && !(e instanceof Error)){
+                                if (log.isDebugEnabled())
+                                    log.debug("Error when executing timeout callback: " + timeoutObj);
+
+                                return;
+                            }
+
                             U.error(log, "Error when executing timeout callback: " + timeoutObj, e);
 
                             if (e instanceof Error)
@@ -169,7 +176,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 }
 
                 synchronized (mux) {
-                    while (true) {
+                    while (!isCancelled()) {
                         // Access of the first element must be inside of
                         // synchronization block, so we don't miss out
                         // on thread notification events sent from
@@ -195,7 +202,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Timeout processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Timeout processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   timeoutObjsSize: " + timeoutObjs.size());
     }
 

@@ -93,7 +93,7 @@ object ScalarCachePopularNumbersExample extends App {
             }
         }
         finally {
-            cache.close()
+            cache.destroy()
         }
     }
 

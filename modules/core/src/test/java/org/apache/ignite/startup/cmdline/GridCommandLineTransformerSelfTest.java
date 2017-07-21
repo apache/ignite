@@ -17,10 +17,9 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * GridCommandLineTransformer test.
@@ -32,7 +31,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     public void testTransformIfNoArguments() throws Exception {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DIGNITE_QUIET=true\" \"NO_PAUSE=0\" " +
-            "\"JVM_XOPTS=\" \"CONFIG=\"",
+                "\"NO_JMX=0\" \"JVM_XOPTS=\" \"CONFIG=\"",
             CommandLineTransformer.transform());
     }
 
@@ -101,7 +100,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
      */
     public void testTransformIfOnlyPathToConfigSpecified() throws Exception {
         assertEquals(
-            "\"INTERACTIVE=0\" \"QUIET=-DIGNITE_QUIET=true\" \"NO_PAUSE=0\" " +
+            "\"INTERACTIVE=0\" \"QUIET=-DIGNITE_QUIET=true\" \"NO_PAUSE=0\" \"NO_JMX=0\" " +
             "\"JVM_XOPTS=\" \"CONFIG=c:\\qw.xml\"",
             CommandLineTransformer.transform("c:\\qw.xml"));
     }
@@ -111,10 +110,10 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
      */
     public void testTransformIfAllSupportedArguments() throws Exception {
         assertEquals(
-            "\"INTERACTIVE=1\" \"QUIET=-DIGNITE_QUIET=false\" \"NO_PAUSE=1\" " +
-            "\"JVM_XOPTS=-Xmx1g -Xms1m\" " +
-            "\"CONFIG=\"c:\\path to\\русский каталог\"\"",
-            CommandLineTransformer.transform("-i", "-np", "-v", "-J-Xmx1g", "-J-Xms1m",
+            "\"INTERACTIVE=1\" \"QUIET=-DIGNITE_QUIET=false\" \"NO_PAUSE=1\" \"NO_JMX=1\" " +
+                "\"JVM_XOPTS=-Xmx1g -Xms1m\" " +
+                "\"CONFIG=\"c:\\path to\\русский каталог\"\"",
+            CommandLineTransformer.transform("-i", "-np", "-v", "-J-Xmx1g", "-J-Xms1m", "-nojmx",
                 "\"c:\\path to\\русский каталог\""));
     }
 }

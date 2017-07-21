@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Exception thrown if service is not found.
@@ -30,7 +30,7 @@ public class GridServiceNotFoundException extends IgniteCheckedException {
      * @param name Service name.
      */
     public GridServiceNotFoundException(String name) {
-        super("Service node found: " + name);
+        super("Service not found: " + name);
     }
 
     /** {@inheritDoc} */

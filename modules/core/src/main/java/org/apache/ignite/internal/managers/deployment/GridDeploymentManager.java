@@ -17,23 +17,34 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.deployment.protocol.gg.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.deployment.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.deployment.protocol.gg.GridProtocolHandler;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.IgnoreIfPeerClassLoadingDisabled;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
+import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
+import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Deployment manager.
@@ -94,13 +105,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
 
         comm.start();
 
-        locStore = new GridDeploymentLocalStore(getSpi(), ctx, comm);
-        ldrStore = new GridDeploymentPerLoaderStore(getSpi(), ctx, comm);
-        verStore = new GridDeploymentPerVersionStore(getSpi(), ctx, comm);
-
-        locStore.start();
-        ldrStore.start();
-        verStore.start();
+        startStores();
 
         if (log.isDebugEnabled()) {
             log.debug("Local deployment: " + locDep);
@@ -110,17 +115,26 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        storesOnKernalStop();
+
+        storesStop();
+
+        startStores();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        storesOnKernalStart();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         GridProtocolHandler.deregisterDeploymentManager();
 
-        if (verStore != null)
-            verStore.stop();
-
-        if (ldrStore != null)
-            ldrStore.stop();
-
-        if (locStore != null)
-            locStore.stop();
+        storesStop();
 
         if (comm != null)
             comm.stop();
@@ -135,21 +149,12 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart0() throws IgniteCheckedException {
-        locStore.onKernalStart();
-        ldrStore.onKernalStart();
-        verStore.onKernalStart();
+        storesOnKernalStart();
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
-        if (verStore != null)
-            verStore.onKernalStop();
-
-        if (ldrStore != null)
-            ldrStore.onKernalStop();
-
-        if (locStore != null)
-            locStore.onKernalStop();
+        storesOnKernalStop();
     }
 
     /** {@inheritDoc} */
@@ -545,6 +550,57 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      */
     public boolean isGlobalLoader(ClassLoader ldr) {
         return ldr instanceof GridDeploymentClassLoader;
+    }
+
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void startStores() throws IgniteCheckedException {
+        locStore = new GridDeploymentLocalStore(getSpi(), ctx, comm);
+        ldrStore = new GridDeploymentPerLoaderStore(getSpi(), ctx, comm);
+        verStore = new GridDeploymentPerVersionStore(getSpi(), ctx, comm);
+
+        locStore.start();
+        ldrStore.start();
+        verStore.start();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void storesOnKernalStart() throws IgniteCheckedException {
+        locStore.onKernalStart();
+        ldrStore.onKernalStart();
+        verStore.onKernalStart();
+    }
+
+    /**
+     *
+     */
+    private void storesOnKernalStop() {
+        if (verStore != null)
+            verStore.onKernalStop();
+
+        if (ldrStore != null)
+            ldrStore.onKernalStop();
+
+        if (locStore != null)
+            locStore.onKernalStop();
+    }
+
+    /**
+     *
+     */
+    private void storesStop() {
+        if (verStore != null)
+            verStore.stop();
+
+        if (ldrStore != null)
+            ldrStore.stop();
+
+        if (locStore != null)
+            locStore.stop();
     }
 
     /**

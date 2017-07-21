@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.local;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSequenceApiSelfAbstractTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Cache sequence basic tests.

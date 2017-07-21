@@ -17,17 +17,34 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.compute.ComputeTaskTimeoutException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.collision.CollisionContext;
+import org.apache.ignite.spi.collision.CollisionExternalListener;
+import org.apache.ignite.spi.collision.CollisionJobContext;
+import org.apache.ignite.spi.collision.CollisionSpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Job collision cancel test.
@@ -63,7 +80,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings( {"AssignmentToCatchBlockParameter"})
     public void testCancel() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().localDeployTask(GridCancelTestTask.class, GridCancelTestTask.class.getClassLoader());
 
@@ -85,7 +102,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
                 // Should be exactly the same as Jobs number.
                 assert cancelCnt <= SPLIT_COUNT : "Invalid cancel count: " + cancelCnt;
 
-                // One per start and one per stop and some that come with heartbeats.
+                // One per start and one per stop and some that come with metrics update.
                 assert colResolutionCnt > SPLIT_COUNT + 1:
                     "Invalid collision resolution count: " + colResolutionCnt;
             }
@@ -252,7 +269,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 

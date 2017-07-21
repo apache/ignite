@@ -35,7 +35,7 @@
 
         <!-- The default pattern: Date Priority [Category] Message\n -->
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </layout>
 
         <!-- Do not log beyond INFO level. -->
@@ -57,7 +57,7 @@
 
         <!-- The default pattern: Date Priority [Category] Message\n -->
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </layout>
     </appender>
 
@@ -71,7 +71,7 @@
         <param name="MaxFileSize" value="10MB"/>
         <param name="MaxBackupIndex" value="10"/>
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </layout>
     </appender>
 
@@ -96,6 +96,12 @@
      </category>
     -->
 
+    <!--
+    <category name="org.apache.ignite.cache.msg">
+        <level value="DEBUG"/>
+    </category>
+    -->
+
     <!-- Disable all open source debugging. -->
     <category name="org">
         <level value="INFO"/>
@@ -107,7 +113,7 @@
 
     <!-- Default settings. -->
     <root>
-        <!-- Print out all debug by default. -->
+        <!-- Print at info by default. -->
         <level value="INFO"/>
 
         <!-- Append to file and console. -->

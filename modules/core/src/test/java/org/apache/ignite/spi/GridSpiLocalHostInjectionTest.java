@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class tests injection of {@code localHost} property to various SPIs.

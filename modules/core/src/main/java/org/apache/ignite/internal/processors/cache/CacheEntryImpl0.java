@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.*;
-import java.util.*;
+import java.util.Map;
+import javax.cache.Cache;
+import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionAware;
 
 /**
  *
@@ -49,6 +51,8 @@ public class CacheEntryImpl0<K, V> implements Cache.Entry<K, V> {
     @Override public <T> T unwrap(Class<T> cls) {
         if(cls.isAssignableFrom(getClass()))
             return cls.cast(this);
+        else if (cls.isAssignableFrom(CacheEntry.class) && e instanceof GridCacheVersionAware)
+            return (T)new CacheEntryImplEx<>(e.getKey(), e.getValue(), ((GridCacheVersionAware)e).version());
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }

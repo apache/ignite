@@ -17,24 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 
 /**
  *
@@ -44,8 +47,8 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(ipFinder);
@@ -95,7 +98,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     public void testPreloadEvents() throws Exception {
         Ignite g1 = startGrid("g1");
 
-        IgniteCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache = g1.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, "val1");
         cache.put(2, "val2");
@@ -119,7 +122,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
         for (Event evt : evts) {
             CacheEvent cacheEvt = (CacheEvent)evt;
             assertEquals(EVT_CACHE_REBALANCE_OBJECT_LOADED, cacheEvt.type());
-            assertEquals(g.cache(null).getName(), cacheEvt.cacheName());
+            assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue(cacheEvt.hasNewValue());

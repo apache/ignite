@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Annotation for local {@link org.apache.ignite.cache.store.CacheStore} implementation. "Local" here means that there is no global

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.transactions;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache transaction state.

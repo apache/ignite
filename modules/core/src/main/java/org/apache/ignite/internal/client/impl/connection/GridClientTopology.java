@@ -17,19 +17,35 @@
 
 package org.apache.ignite.internal.client.impl.connection;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.*;
-import org.apache.ignite.internal.client.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Logger;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.GridClientTopologyListener;
+import org.apache.ignite.internal.client.impl.GridClientNodeImpl;
+import org.apache.ignite.internal.client.impl.GridClientThreadFactory;
+import org.apache.ignite.internal.client.util.GridClientUtils;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
-import java.util.logging.*;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
 /**
  * Client topology cache.
@@ -44,12 +60,18 @@ public class GridClientTopology {
     /** Cached last error prevented topology from update. */
     private GridClientException lastError;
 
+    /** Router addresses from configuration.  */
+    private final String routers;
+
     /**
      * Set of router addresses to infer direct connectivity
      * when client is working in router connection mode.
      * {@code null} when client is working in direct connection node.
      */
-    private final Set<String> routerAddrs;
+    private final Set<InetSocketAddress> routerAddrs;
+
+    /** List of all known local MACs */
+    private final Collection<String> macsCache;
 
     /** Protocol. */
     private final GridClientProtocol prot;
@@ -79,8 +101,38 @@ public class GridClientTopology {
         metricsCache = cfg.isEnableMetricsCache();
         attrCache = cfg.isEnableAttributesCache();
         prot = cfg.getProtocol();
-        routerAddrs = (!cfg.getRouters().isEmpty() && cfg.getServers().isEmpty()) ?
-            new HashSet<>(cfg.getRouters()) : null;
+
+        if (!cfg.getRouters().isEmpty() && cfg.getServers().isEmpty()) {
+            routers = cfg.getRouters().toString();
+
+            routerAddrs = U.newHashSet(cfg.getRouters().size());
+
+            for (String router : cfg.getRouters()) {
+                int portIdx = router.lastIndexOf(":");
+
+                if (portIdx > 0) {
+                    String hostName = router.substring(0, portIdx);
+
+                    try {
+                        int port = Integer.parseInt(router.substring(portIdx + 1));
+
+                        InetSocketAddress inetSockAddr = new InetSocketAddress(hostName, port);
+
+                        routerAddrs.add(inetSockAddr);
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+                }
+            }
+        }
+        else {
+            routers = null;
+
+            routerAddrs = Collections.emptySet();
+        }
+
+        macsCache = U.allLocalMACs();
     }
 
     /**
@@ -262,7 +314,7 @@ public class GridClientTopology {
         try {
             if (lastError != null)
                 throw new GridClientDisconnectedException(
-                    "Topology is failed [protocol=" + prot + ", routers=" + routerAddrs + ']', lastError);
+                    "Topology is failed [protocol=" + prot + ", routers=" + routers + ']', lastError);
             else
                 return nodes.get(id);
         }
@@ -359,19 +411,17 @@ public class GridClientTopology {
             (metricsCache && attrCache) || (node.attributes().isEmpty() && node.metrics() == null);
 
         // Try to bypass object copying.
-        if (noAttrsAndMetrics && routerAddrs == null && node.connectable())
+        if (noAttrsAndMetrics && routerAddrs.isEmpty() && node.connectable())
             return node;
 
         // Return a new node instance based on the original one.
         GridClientNodeImpl.Builder nodeBuilder = GridClientNodeImpl.builder(node, !attrCache, !metricsCache);
 
         for (InetSocketAddress addr : node.availableAddresses(prot, true)) {
-            boolean router = routerAddrs == null ||
-                routerAddrs.contains(addr.getHostName() + ":" + addr.getPort()) ||
-                routerAddrs.contains(addr.getAddress().getHostAddress() + ":" + addr.getPort());
+            boolean router = routerAddrs.isEmpty() || routerAddrs.contains(addr);
 
             boolean reachable = noAttrsAndMetrics || !addr.getAddress().isLoopbackAddress() ||
-                F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+                F.containsAny(macsCache, node.<String>attribute(ATTR_MACS).split(", "));
 
             if (router && reachable) {
                 nodeBuilder.connectable(true);

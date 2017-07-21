@@ -17,9 +17,13 @@
 
 package org.apache.ignite;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Closeable;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
  * This interface provides a rich API for working with distributed queues based on In-Memory Data Grid.
@@ -32,7 +36,6 @@ import java.util.concurrent.*;
  * {@link Collection} methods in the queue may throw {@link IgniteException} in case
  * of failure.
  * <p>
- * All queue operations have synchronous and asynchronous counterparts.
  * <h1 class="header">Bounded vs Unbounded</h1>
  * Queues can be {@code unbounded} or {@code bounded}. {@code Bounded} queues can
  * have maximum capacity. Queue capacity can be set at creation time and cannot be
@@ -179,4 +182,26 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * @return {@code true} if queue was removed from cache {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Executes given job on collocated queue on the node where the queue is located
+     * (a.k.a. affinity co-location).
+     * <p>
+     * This is not supported for non-collocated queues.
+     *
+     * @param job Job which will be co-located with the queue.
+     * @throws IgniteException If job failed.
+     */
+    public void affinityRun(IgniteRunnable job) throws IgniteException;
+
+    /**
+     * Executes given job on collocated queue on the node where the queue is located
+     * (a.k.a. affinity co-location).
+     * <p>
+     * This is not supported for non-collocated queues.
+     *
+     * @param job Job which will be co-located with the queue.
+     * @throws IgniteException If job failed.
+     */
+    public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
 }

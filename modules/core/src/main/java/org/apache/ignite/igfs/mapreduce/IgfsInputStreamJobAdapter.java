@@ -17,11 +17,11 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.*;
-
-import java.io.*;
+import java.io.IOException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.internal.util.GridFixedSizeInputStream;
 
 /**
  * Convenient {@link IgfsJob} adapter. It limits data returned from {@link IgfsInputStream} to bytes within

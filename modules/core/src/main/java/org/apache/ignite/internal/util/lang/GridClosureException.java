@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 
 /**
  * This exception provides closures with facility to throw exceptions. Closures can't

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.loadtests.dsi.cacheget;
 
-import org.apache.ignite.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 
 /**
  * Benchmark cache get load test.

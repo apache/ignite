@@ -17,9 +17,11 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.igfs.IgfsBaseBlockKey;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * {@code IGFS} class providing ability to group file's data blocks together on one node.
@@ -30,12 +32,12 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * {@code 64kb * 256 = 16Mb}. Larger group sizes would reduce number of splits required to run map-reduce
  * tasks, but will increase inequality of data size being stored on different nodes.
  * <p>
- * Note that {@link #groupSize()} parameter must correlate to Hadoop split size parameter defined
+ * Note that {@link #getGroupSize()} parameter must correlate to Hadoop split size parameter defined
  * in Hadoop via {@code mapred.max.split.size} property. Ideally you want all blocks accessed
  * within one split to be mapped to {@code 1} group, so they can be located on the same grid node.
  * For example, default Hadoop split size is {@code 64mb} and default {@code IGFS} block size
  * is {@code 64kb}. This means that to make sure that each split goes only through blocks on
- * the same node (without hopping between nodes over network), we have to make the {@link #groupSize()}
+ * the same node (without hopping between nodes over network), we have to make the {@link #getGroupSize()}
  * value be equal to {@code 64mb / 64kb = 1024}.
  * <p>
  * It is required for {@code IGFS} data cache to be configured with this mapper. Here is an
@@ -46,7 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  *     &lt;property name="affinityMapper"&gt;
  *         &lt;bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper"&gt;
  *             &lt;!-- How many sequential blocks will be stored on the same node. --&gt;
- *             &lt;constructor-arg value="512"/&gt;
+ *             &lt;property name="groupSize" value="512"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
  *     ...
@@ -57,8 +59,18 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default group size.*/
+    public static final int DFLT_GRP_SIZE = 1024;
+
     /** Size of the group. */
-    private final int grpSize;
+    private int grpSize = DFLT_GRP_SIZE;
+
+    /**
+     * Default constructor.
+     */
+    public IgfsGroupDataBlocksKeyMapper() {
+        // No-op.
+    }
 
     /***
      * Constructs affinity mapper to group several data blocks with the same key.
@@ -73,25 +85,51 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
 
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
-        if (key != null && IgfsBlockKey.class.equals(key.getClass())) {
-            IgfsBlockKey blockKey = (IgfsBlockKey)key;
+        if (key instanceof IgfsBaseBlockKey) {
+            IgfsBaseBlockKey blockKey = (IgfsBaseBlockKey)key;
 
-            if (blockKey.affinityKey() != null)
-                return blockKey.affinityKey();
+            IgniteUuid affKey = blockKey.affinityKey();
 
-            long grpId = blockKey.getBlockId() / grpSize;
+            if (affKey != null)
+                return affKey;
 
-            return blockKey.getFileId().hashCode() + (int)(grpId ^ (grpId >>> 32));
+            long grpId = blockKey.blockId() / grpSize;
+
+            return blockKey.fileHash() + (int)(grpId ^ (grpId >>> 32));
         }
 
         return super.affinityKey(key);
     }
 
     /**
-     * @return Size of the group.
+     * Get group size.
+     * <p>
+     * Group size defines how many sequential file blocks will reside on the same node. This parameter
+     * must correlate to Hadoop split size parameter defined in Hadoop via {@code mapred.max.split.size}
+     * property. Ideally you want all blocks accessed within one split to be mapped to {@code 1} group,
+     * so they can be located on the same grid node. For example, default Hadoop split size is {@code 64mb}
+     * and default {@code IGFS} block size is {@code 64kb}. This means that to make sure that each split
+     * goes only through blocks on the same node (without hopping between nodes over network), we have to
+     * make the group size be equal to {@code 64mb / 64kb = 1024}.
+     * <p>
+     * Defaults to {@link #DFLT_GRP_SIZE}.
+     *
+     * @return Group size.
      */
-    public int groupSize() {
+    public int getGroupSize() {
         return grpSize;
+    }
+
+    /**
+     * Set group size. See {@link #getGroupSize()} for more information.
+     *
+     * @param grpSize Group size.
+     * @return {@code this} for chaining.
+     */
+    public IgfsGroupDataBlocksKeyMapper setGroupSize(int grpSize) {
+        this.grpSize = grpSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -17,16 +17,24 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.io.DataInput;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Skip list.
@@ -273,6 +281,9 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private final Comparator<Object> cmp;
 
         /** */
+        private final PartiallyOffheapRawComparatorEx<Object> partialRawCmp;
+
+        /** */
         private final Random rnd = new GridRandom();
 
         /** */
@@ -291,6 +302,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
             keyReader = new Reader(keySer);
 
             cmp = ctx.sortComparator();
+            partialRawCmp = ctx.partialRawSortComparator();
         }
 
         /** {@inheritDoc} */
@@ -468,7 +480,14 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private int cmp(Object key, long meta) {
             assert meta != 0;
 
-            return cmp.compare(key, keyReader.readKey(meta));
+            if (partialRawCmp != null) {
+                long keyPtr = key(meta);
+                int keySize = keySize(keyPtr);
+
+                return partialRawCmp.compare(key, keyPtr + 4, keySize);
+            }
+            else
+                return cmp.compare(key, keyReader.readKey(meta));
         }
 
         /**

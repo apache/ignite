@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Examples", "Apache.Ignite.Examples\Apache.Ignite.Examples.csproj", "{069FA680-3C4D-43A9-B84F-E67513B87827}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.ExamplesDll", "Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj", "{DFB08363-202E-412D-8812-349EF10A8702}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{069FA680-3C4D-43A9-B84F-E67513B87827}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{069FA680-3C4D-43A9-B84F-E67513B87827}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{069FA680-3C4D-43A9-B84F-E67513B87827}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{069FA680-3C4D-43A9-B84F-E67513B87827}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DFB08363-202E-412D-8812-349EF10A8702}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFB08363-202E-412D-8812-349EF10A8702}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFB08363-202E-412D-8812-349EF10A8702}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFB08363-202E-412D-8812-349EF10A8702}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

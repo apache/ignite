@@ -17,39 +17,68 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T5;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -71,18 +100,18 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /** */
     private static final IgnitePredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String igniteInstanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("server");
+            return igniteInstanceName != null && igniteInstanceName.contains("server");
         }
     };
 
     /** */
     private static final IgnitePredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String igniteInstanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("client");
+            return igniteInstanceName != null && igniteInstanceName.contains("client");
         }
     };
 
@@ -93,8 +122,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private boolean cacheOn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
@@ -115,8 +144,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             plc.setMaxSize(1000);
 
             cc.setEvictionPolicy(plc);
-            cc.setEvictSynchronized(false);
-            cc.setSwapEnabled(false);
+            cc.setOnheapCacheEnabled(true);
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setRebalanceMode(NONE);
 
@@ -132,9 +160,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         c.setDiscoverySpi(disco);
 
         c.setPeerClassLoadingEnabled(false);
-
-        // Enable tracing.
-//        Logger.getLogger("org.apache.ignite.kernal.processors.cache.GridCacheDgcManager.trace").setLevel(Level.DEBUG);
 
         return c;
     }
@@ -202,7 +227,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     String terminalId = String.valueOf(++tid);
 
                     // Server partition cache
-                    UUID mappedId = srvr1.cluster().mapKeyToNode(null, terminalId).id();
+                    UUID mappedId = srvr1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(terminalId).id();
 
                     if (!srvrId.equals(mappedId))
                         continue;
@@ -316,11 +341,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     long submitTime1 = t0;
 
-                    IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode)).withAsync();
+                    IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode));
 
-                    comp.execute(RequestTask.class, new Message(terminalId, nodeId));
-
-                    ComputeTaskFuture<Void> f1 = comp.future();
+                    ComputeTaskFuture<Void> f1 = comp.executeAsync(RequestTask.class, new Message(terminalId, nodeId));
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -328,9 +351,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     submitTime1 = System.currentTimeMillis();
 
-                    comp.execute(ResponseTask.class, new Message(terminalId, nodeId));
-
-                    ComputeTaskFuture<Void> f2 = comp.future();
+                    ComputeTaskFuture<Void> f2 = comp.executeAsync(ResponseTask.class, new Message(terminalId, nodeId));
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -406,14 +427,20 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private static final long MAX = 5000;
 
         /** */
+        @AffinityKeyMapped
+        private String affKey;
+
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /**
          * @param msg Message.
          */
-        PerfJob(@Nullable Message msg) {
+        PerfJob(Message msg) {
             super(msg);
+
+            affKey = msg.getTerminalId();
         }
 
         /**
@@ -426,7 +453,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         /**
          * @return Terminal ID.
          */
-        @AffinityKeyMapped
         public String terminalId() {
             return message().getTerminalId();
         }
@@ -449,7 +475,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             doWork();
 
-            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache();
+            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache(DEFAULT_CACHE_NAME);
             GridDhtCacheAdapter dht = near.dht();
 
             long start = cntrs.get2().get();
@@ -578,30 +604,17 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                         if (g.name().contains("server")) {
                             GridNearCacheAdapter<AffinityKey<String>, Object> near =
                                 (GridNearCacheAdapter<AffinityKey<String>, Object>)((IgniteKernal)g).
-                                    <AffinityKey<String>, Object>internalCache();
+                                    <AffinityKey<String>, Object>internalCache(DEFAULT_CACHE_NAME);
                             GridDhtCacheAdapter<AffinityKey<String>, Object> dht = near.dht();
 
                             for (AffinityKey<String> k : keys) {
                                 GridNearCacheEntry nearEntry = (GridNearCacheEntry)near.peekEx(k);
                                 GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(k);
 
-                                X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
-                                X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
-
-                                GridCacheMvccCandidate nearCand =
-                                    nearEntry == null ? null : F.first(nearEntry.localCandidates());
-
-                                if (nearCand != null)
-                                    X.println("Near futures: " +
-                                        nearEntry.context().mvcc().futures(nearCand.version()));
-
-                                GridCacheMvccCandidate dhtCand =
-                                    dhtEntry == null ? null : F.first(dhtEntry.localCandidates());
-
-                                if (dhtCand != null)
-                                    X.println("Dht futures: " +
-                                        dhtEntry.context().mvcc().futures(dhtCand.version()));
-
+                                X.println("Near entry [igniteInstanceName="+ g.name() + ", key=" + k + ", entry=" +
+                                    nearEntry);
+                                X.println("DHT entry [igniteInstanceName=" + g.name() + ", key=" + k + ", entry=" +
+                                    dhtEntry);
                             }
                         }
                     }
@@ -679,7 +692,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param terminalId Terminal ID.
          */
         private void put(Object o, String cacheKey, String terminalId) {
-//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
+//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(DEFAULT_CACHE_NAME);
 //
 //            AffinityKey<String> affinityKey = new AffinityKey<>(cacheKey, terminalId);
 //
@@ -698,7 +711,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) {
             Object key = new AffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.cache(null).get(key);
+            return (T) ignite.cache(DEFAULT_CACHE_NAME).get(key);
         }
     }
 

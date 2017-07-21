@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.util;
 
-import org.jsr166.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Synchronized map for cache values that is safe to update in-place. Main reason for this map

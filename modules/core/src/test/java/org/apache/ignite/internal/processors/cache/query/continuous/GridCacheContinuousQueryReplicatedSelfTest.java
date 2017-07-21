@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.Cache;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
 
-import javax.cache.*;
-import javax.cache.event.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Continuous queries tests for replicated cache.
@@ -48,8 +49,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      * @throws Exception If failed.
      */
     public void testRemoteNodeCallback() throws Exception {
-        IgniteCache<Integer, Integer> cache1 = grid(0).cache(null);
-        IgniteCache<Integer, Integer> cache2 = grid(1).cache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache2 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
@@ -88,8 +89,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      */
     public void testCrossCallback() throws Exception {
         // Prepare.
-        IgniteCache<Integer, Integer> cache1 = grid(0).cache(null);
-        IgniteCache<Integer, Integer> cache2 = grid(1).cache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache2 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         final int key1 = primaryKey(cache1);
         final int key2 = primaryKey(cache2);

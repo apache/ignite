@@ -17,7 +17,8 @@
 
 package org.apache.ignite.visor.plugin;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Standart Visor panel with nodes.

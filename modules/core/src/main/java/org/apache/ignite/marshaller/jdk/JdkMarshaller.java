@@ -17,12 +17,18 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} based on JDK serialization mechanism.
@@ -31,7 +37,8 @@ import java.io.*;
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
- * {@code JdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller}.
+ * {@code JdkMarshaller} needs to be explicitly configured to override default <b>binary marshaller</b> -
+ * see {@link IgniteBinary}.
  * <pre name="code" class="java">
  * JdkMarshaller marshaller = new JdkMarshaller();
  *
@@ -55,13 +62,13 @@ import java.io.*;
  * &lt;/bean&gt;
  * </pre>
  *  <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class JdkMarshaller extends AbstractMarshaller {
+public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     /** {@inheritDoc} */
-    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         ObjectOutputStream objOut = null;
@@ -74,7 +81,7 @@ public class JdkMarshaller extends AbstractMarshaller {
 
             objOut.flush();
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally{
@@ -83,8 +90,24 @@ public class JdkMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
+    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+        GridByteArrayOutputStream out = null;
+
+        try {
+            out = new GridByteArrayOutputStream(DFLT_BUFFER_SIZE);
+
+            marshal(obj, out);
+
+            return out.toByteArray();
+        }
+        finally {
+            U.close(out, null);
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         if (clsLdr == null)
@@ -97,17 +120,36 @@ public class JdkMarshaller extends AbstractMarshaller {
 
             return (T)objIn.readObject();
         }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
-        }
         catch (ClassNotFoundException e) {
             throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
-                "(make sure same versions of all classes are available on all nodes or enable peer-class-loading): " +
-                clsLdr, e);
+                "(make sure same versions of all classes are available on all nodes or enable peer-class-loading) " +
+                "[clsLdr=" + clsLdr + ", cls=" + e.getMessage() + "]", e);
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         finally{
             U.closeQuiet(objIn);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        GridByteArrayInputStream in = null;
+
+        try {
+            in = new GridByteArrayInputStream(arr, 0, arr.length);
+
+            return unmarshal(in, clsLdr);
+        }
+        finally {
+            U.close(in, null);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onUndeploy(ClassLoader ldr) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

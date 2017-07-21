@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCache;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed
@@ -35,7 +35,6 @@ import org.jetbrains.annotations.*;
  * <li>{@link #BACKUP}</li>
  * <li>{@link #ONHEAP}</li>
  * <li>{@link #OFFHEAP}</li>
- * <li>{@link #SWAP}</li>
  * </ul>
  */
 public enum CachePeekMode {
@@ -64,10 +63,7 @@ public enum CachePeekMode {
     ONHEAP,
 
     /** Peeks value from the off-heap storage only, without loading off-heap value into cache. */
-    OFFHEAP,
-
-    /** Peeks value from the swap storage only, without loading swapped value into cache. */
-    SWAP;
+    OFFHEAP;
 
     /** Enumerated values. */
     private static final CachePeekMode[] VALS = values();

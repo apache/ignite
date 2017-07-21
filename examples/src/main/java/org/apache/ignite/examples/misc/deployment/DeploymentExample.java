@@ -17,13 +17,22 @@
 
 package org.apache.ignite.examples.misc.deployment;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.examples.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Demonstrates how to explicitly deploy a task. Note that

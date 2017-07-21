@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -75,6 +76,11 @@ public class DataStreamerResponse implements Message {
      */
     public boolean forceLocalDeployment() {
         return forceLocDep;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -151,11 +157,11 @@ public class DataStreamerResponse implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(DataStreamerResponse.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 63;
     }
 

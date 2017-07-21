@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.client.ssl;
 
-import javax.net.ssl.*;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 
 /**
  * This interface provides creation of SSL context both for server and client use.
  * <p>
  * Usually, it is enough to configure context from a particular key and trust stores, this functionality is provided
- * in {@link org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory}.
+ * in {@link GridSslBasicContextFactory}.
+ * @deprecated Use {@link Factory} instead.
  */
+@Deprecated
 public interface GridSslContextFactory {
     /**
      * Creates SSL context based on factory settings.

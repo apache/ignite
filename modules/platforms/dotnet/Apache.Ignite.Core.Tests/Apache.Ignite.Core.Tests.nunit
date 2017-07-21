@@ -1,0 +1,7 @@
+﻿<NUnitProject>
+  <Settings activeconfig="Debug" />
+  <Config name="Debug" binpathtype="Auto">
+    <assembly path="bin\x64\Debug\Apache.Ignite.Core.Tests.exe" />
+  </Config>
+  <Config name="Release" binpathtype="Auto" />
+</NUnitProject>

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Synchronization primitive allowing concurrent updates and taking consistent snapshots.

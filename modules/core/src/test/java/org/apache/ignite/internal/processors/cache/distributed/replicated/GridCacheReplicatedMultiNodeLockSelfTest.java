@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheMultiNodeLockAbstractTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Test cases for multi-threaded tests.
@@ -32,15 +32,11 @@ public class GridCacheReplicatedMultiNodeLockSelfTest extends GridCacheMultiNode
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-
+    @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+        return cacheCfg;
     }
 }

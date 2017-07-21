@@ -17,12 +17,15 @@
 
 package org.apache.ignite.spi.collision.fifoqueue;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.spi.collision.CollisionJobContext;
+import org.apache.ignite.spi.collision.GridCollisionTestContext;
+import org.apache.ignite.spi.collision.GridTestCollisionJobContext;
+import org.apache.ignite.spi.collision.GridTestCollisionTaskSession;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Unit tests for {@link FifoQueueCollisionSpi}.

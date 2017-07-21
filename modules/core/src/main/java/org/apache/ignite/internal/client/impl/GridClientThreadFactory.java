@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Delegating thread factory which forces all spawned thread to be daemons.

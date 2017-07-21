@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.processors;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
-
-import javax.cache.*;
-import javax.cache.configuration.*;
-import javax.cache.integration.*;
-import java.io.*;
+import java.io.Serializable;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  *
@@ -40,8 +46,8 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -82,7 +88,7 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void checkLoadedValue(int backups) throws Exception {
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -92,31 +98,33 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
         cacheCfg.setBackups(backups);
         cacheCfg.setLoadPreviousValue(true);
 
-        try (IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg)) {
-            for (int i = 0; i < 10; i++)
-                assertEquals((Integer)i, cache.get(i));
+        IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg);
 
-            cache.removeAll();
+        for (int i = 0; i < 10; i++)
+            assertEquals((Integer)i, cache.get(i));
 
-            assertEquals(0, cache.size());
+        cache.removeAll();
 
-            for (TransactionConcurrency conc : TransactionConcurrency.values()) {
-                for (TransactionIsolation iso : TransactionIsolation.values()) {
-                    info("Checking transaction [conc=" + conc + ", iso=" + iso + ']');
+        assertEquals(0, cache.size());
 
-                    try (Transaction tx = ignite(0).transactions().txStart(conc, iso)) {
-                        for (int i = 0; i < 10; i++)
-                            assertEquals("Invalid value for transaction [conc=" + conc + ", iso=" + iso + ']',
-                                (Integer)i, cache.get(i));
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+            for (TransactionIsolation iso : TransactionIsolation.values()) {
+                info("Checking transaction [conc=" + conc + ", iso=" + iso + ']');
 
-                        tx.commit();
-                    }
+                try (Transaction tx = ignite(0).transactions().txStart(conc, iso)) {
+                    for (int i = 0; i < 10; i++)
+                        assertEquals("Invalid value for transaction [conc=" + conc + ", iso=" + iso + ']',
+                            (Integer)i, cache.get(i));
 
-                    cache.removeAll();
-                    assertEquals(0, cache.size());
+                    tx.commit();
                 }
+
+                cache.removeAll();
+                assertEquals(0, cache.size());
             }
         }
+
+        cache.destroy();
     }
 
     /**

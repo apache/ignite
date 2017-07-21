@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 
 /**
  *

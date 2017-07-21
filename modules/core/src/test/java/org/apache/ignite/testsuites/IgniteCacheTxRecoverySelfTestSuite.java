@@ -17,10 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxPessimisticOriginatingNodeFailureSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedTxOriginatingNodeFailureSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheCommitDelayTxRecoveryTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedPrimaryNodeFailureRecoveryTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedTwoBackupsPrimaryNodeFailureRecoveryTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTxRecoveryRollbackTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.TxRecoveryStoreEnabledTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxOriginatingNodeFailureSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest;
 
 /**
  * Tx recovery self test suite.
@@ -33,6 +42,8 @@ public class IgniteCacheTxRecoverySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache tx recovery test suite");
 
+        suite.addTestSuite(IgniteCacheCommitDelayTxRecoveryTest.class);
+
         suite.addTestSuite(IgniteCachePartitionedPrimaryNodeFailureRecoveryTest.class);
         suite.addTestSuite(IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest.class);
         suite.addTestSuite(IgniteCachePartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class);
@@ -44,6 +55,9 @@ public class IgniteCacheTxRecoverySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheColocatedTxPessimisticOriginatingNodeFailureSelfTest.class);
         suite.addTestSuite(GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheTxRecoveryRollbackTest.class);
+        suite.addTestSuite(TxRecoveryStoreEnabledTest.class);
 
         return suite;
     }

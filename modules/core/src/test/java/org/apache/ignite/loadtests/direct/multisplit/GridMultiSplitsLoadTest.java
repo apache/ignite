@@ -17,20 +17,20 @@
 
 package org.apache.ignite.loadtests.direct.multisplit;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.loadtest.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.loadtest.GridLoadTestStatistics;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Multi-splits load test.
@@ -45,7 +45,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return null;
     }
 
@@ -90,7 +90,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Ignite ignite = G.ignite(getTestGridName());
+        final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
@@ -105,8 +105,6 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                IgniteCompute comp = ignite.compute().withAsync();
-
                 while (end - System.currentTimeMillis() > 0) {
                     int levels = 3;
 
@@ -115,9 +113,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
                     long start = System.currentTimeMillis();
 
                     try {
-                        comp.execute(GridLoadTestTask.class, levels);
-
-                        ComputeTaskFuture<Integer> fut = comp.future();
+                        ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(GridLoadTestTask.class, levels);
 
                         int res = fut.get();
 

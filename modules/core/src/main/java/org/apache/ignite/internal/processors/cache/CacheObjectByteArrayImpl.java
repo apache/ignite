@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache object over byte array.
@@ -53,12 +57,12 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         if (cpy)
             return (T)Arrays.copyOf(val, val.length);
 
@@ -66,13 +70,42 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Override public byte type() {
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        assert val != null : "Value is not initialized";
+
+        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(val.length));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), val, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        assert val != null : "Value is not initialized";
+
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, val, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        return CacheObjectAdapter.objectPutSize(val.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte cacheObjectType() {
         return TYPE_BYTE_ARR;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -81,7 +114,12 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
         // No-op.
     }
 
@@ -126,7 +164,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
         }
 
-        return true;
+        return reader.afterMessageRead(CacheObjectByteArrayImpl.class);
     }
 
     /** {@inheritDoc} */
@@ -140,7 +178,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 105;
     }
 
@@ -151,6 +189,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheObjectByteArrayImpl [arrLen" + (val != null ? val.length : 0) + ']';
+        return "CacheObjectByteArrayImpl [arrLen=" + (val != null ? val.length : 0) + ']';
     }
 }

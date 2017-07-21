@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSequenceMultiNodeAbstractSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Sequence multi node tests.

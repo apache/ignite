@@ -17,17 +17,27 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link IgniteMessaging} implementation.
@@ -69,6 +79,17 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
 
     /** {@inheritDoc} */
     @Override public void send(@Nullable Object topic, Object msg) {
+       send0(topic, msg, isAsync());
+    }
+
+    /**
+     * Implementation of send.
+     * @param topic Topic.
+     * @param msg Message.
+     * @param async Async flag.
+     * @throws IgniteException On error.
+     */
+    private void send0(@Nullable Object topic, Object msg, boolean async) throws IgniteException {
         A.notNull(msg, "msg");
 
         guard();
@@ -79,7 +100,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();
 
-            ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
+            ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, async);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -91,6 +112,17 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
 
     /** {@inheritDoc} */
     @Override public void send(@Nullable Object topic, Collection<?> msgs) {
+        send0(topic, msgs, isAsync());
+    }
+
+    /**
+     * Implementation of send.
+     * @param topic Topic.
+     * @param msgs Messages.
+     * @param async Async flag.
+     * @throws IgniteException On error.
+     */
+    private void send0(@Nullable Object topic, Collection<?> msgs, boolean async) throws IgniteException {
         A.ensure(!F.isEmpty(msgs), "msgs cannot be null or empty");
 
         guard();
@@ -104,7 +136,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             for (Object msg : msgs) {
                 A.notNull(msg, "msg");
 
-                ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
+                ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, async);
             }
         }
         catch (IgniteCheckedException e) {
@@ -130,7 +162,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             if (timeout == 0)
                 timeout = ctx.config().getNetworkTimeout();
 
-            ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout);
+            ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout, false);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -177,10 +209,37 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         try {
             GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
 
-            return saveOrGet(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
+            return saveOrGet(ctx.continuous().startRoutine(hnd,
+                false,
+                1,
+                0,
+                false,
+                prj.predicate()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<UUID> remoteListenAsync(@Nullable Object topic,
+        IgniteBiPredicate<UUID, ?> p) throws IgniteException {
+        A.notNull(p, "p");
+
+        guard();
+
+        try {
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
+
+            return new IgniteFutureImpl<>(ctx.continuous().startRoutine(hnd,
+                false,
+                1,
+                0,
+                false,
+                prj.predicate()));
         }
         finally {
             unguard();
@@ -198,6 +257,20 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException {
+        A.notNull(opId, "opId");
+
+        guard();
+
+        try {
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.continuous().stopRoutine(opId));
         }
         finally {
             unguard();

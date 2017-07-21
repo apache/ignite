@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Grid checkpoint test state

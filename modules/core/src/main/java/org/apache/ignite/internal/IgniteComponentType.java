@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Component type.
@@ -39,6 +38,13 @@ public enum IgniteComponentType {
     HADOOP(
         "org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor",
         "org.apache.ignite.internal.processors.hadoop.HadoopProcessor",
+        "ignite-hadoop"
+    ),
+
+    /** Hadoop Helper component. */
+    HADOOP_HELPER(
+        "org.apache.ignite.internal.processors.hadoop.HadoopNoopHelper",
+        "org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl",
         "ignite-hadoop"
     ),
 
@@ -161,7 +167,7 @@ public enum IgniteComponentType {
      * @return Created component.
      * @throws IgniteCheckedException If failed.
      */
-    public <T extends GridComponent> T create(GridKernalContext ctx, boolean noOp) throws IgniteCheckedException {
+    public <T> T create(GridKernalContext ctx, boolean noOp) throws IgniteCheckedException {
         return create0(ctx, noOp ? noOpClsName : clsName);
     }
 
@@ -173,7 +179,7 @@ public enum IgniteComponentType {
      * @return Created component.
      * @throws IgniteCheckedException If failed.
      */
-    public <T extends GridComponent> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
+    public <T> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
         throws IgniteCheckedException {
         String cls = clsName;
 
@@ -286,7 +292,7 @@ public enum IgniteComponentType {
                 return (T)ctor.newInstance(ctx);
             }
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             throw componentException(e);
         }
     }
@@ -310,7 +316,7 @@ public enum IgniteComponentType {
      * @param err Creation error.
      * @return Component creation exception.
      */
-    private IgniteCheckedException componentException(Exception err) {
+    private IgniteCheckedException componentException(Throwable err) {
         return new IgniteCheckedException("Failed to create Ignite component (consider adding " + module +
             " module to classpath) [component=" + this + ", cls=" + clsName + ']', err);
     }

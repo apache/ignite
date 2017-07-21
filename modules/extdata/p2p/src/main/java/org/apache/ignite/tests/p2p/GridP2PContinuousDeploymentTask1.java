@@ -17,13 +17,17 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Test task for {@code GridP2PContinuousDeploymentSelfTest}.
@@ -38,7 +42,7 @@ public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Ob
             @Override public Object execute() {
                 X.println(">>> Executing GridP2PContinuousDeploymentTask1 job.");
 
-                ignite.cache(null).put("key", new TestUserResource());
+                ignite.cache("default").put("key", new TestUserResource());
 
                 return null;
             }

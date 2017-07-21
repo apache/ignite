@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nodestart;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
 
 /**
  * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.

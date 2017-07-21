@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
+import java.util.TimerTask;
 
 /**
  * Utility extension for {@link TimerTask}.

@@ -17,7 +17,11 @@
 
 package org.apache.ignite.spi;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Annotates {@code NO-OP} SPI implementations. {@code NO-OP} implementations are empty implementations

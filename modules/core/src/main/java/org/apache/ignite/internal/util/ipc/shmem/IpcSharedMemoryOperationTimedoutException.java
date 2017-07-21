@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Thrown when IPC operation (such as {@link IpcSharedMemorySpace#wait(long)})

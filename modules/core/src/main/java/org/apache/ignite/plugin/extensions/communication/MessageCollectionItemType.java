@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Enum representing possible types of collection items.

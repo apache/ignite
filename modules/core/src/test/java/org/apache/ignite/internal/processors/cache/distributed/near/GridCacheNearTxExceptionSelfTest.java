@@ -17,20 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.IgniteTxExceptionAbstractSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests near cache.
  */
 public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-257");
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;

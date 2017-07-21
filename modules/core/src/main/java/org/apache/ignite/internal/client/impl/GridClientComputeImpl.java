@@ -17,23 +17,31 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.client.impl.connection.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFuture;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientPredicate;
+import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
-import static org.apache.ignite.internal.client.util.GridClientUtils.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
+import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter;
 
 /**
  * Compute projection implementation.
  */
 class GridClientComputeImpl extends GridClientAbstractProjection<GridClientComputeImpl> implements GridClientCompute {
     /** */
-    private static final ThreadLocal<Boolean> KEEP_PORTABLES = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
@@ -117,14 +125,14 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     @Override public <R> GridClientFuture<R> executeAsync(final String taskName, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
-        final boolean keepPortables = KEEP_PORTABLES.get();
+        final boolean keepBinaries = KEEP_BINARIES.get();
 
-        KEEP_PORTABLES.set(false);
+        KEEP_BINARIES.set(false);
 
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId, keepPortables);
+                return conn.execute(taskName, taskArg, destNodeId, keepBinaries);
             }
         });
     }
@@ -140,14 +148,14 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         Object affKey, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
-        final boolean keepPortables = KEEP_PORTABLES.get();
+        final boolean keepBinaries = KEEP_BINARIES.get();
 
-        KEEP_PORTABLES.set(false);
+        KEEP_BINARIES.set(false);
 
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId, keepPortables);
+                return conn.execute(taskName, taskArg, destNodeId, keepBinaries);
             }
         }, cacheName, affKey);
     }
@@ -246,8 +254,8 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientCompute withKeepPortables() {
-        KEEP_PORTABLES.set(true);
+    @Override public GridClientCompute withKeepBinaries() {
+        KEEP_BINARIES.set(true);
 
         return this;
     }

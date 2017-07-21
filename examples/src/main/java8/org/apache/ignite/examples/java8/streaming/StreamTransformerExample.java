@@ -17,13 +17,17 @@
 
 package org.apache.ignite.examples.java8.streaming;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.stream.*;
-
-import java.util.*;
+import java.util.List;
+import java.util.Random;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.apache.ignite.stream.StreamTransformer;
 
 /**
  * Stream random numbers into the streaming cache.
@@ -42,6 +46,9 @@ public class StreamTransformerExample {
     /** Range within which to generate numbers. */
     private static final int RANGE = 1000;
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "randomNumbers";
+
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -50,7 +57,7 @@ public class StreamTransformerExample {
             if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
 
-            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
+            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>(CACHE_NAME);
 
             // Index key and value.
             cfg.setIndexedTypes(Integer.class, Long.class);
@@ -91,6 +98,10 @@ public class StreamTransformerExample {
 
                 // Print top 10 words.
                 ExamplesUtils.printQueryResults(top10);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.transactions.Transaction;
 
 /**
  * Marker interface for transaction proxy.

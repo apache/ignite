@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Meta keys for {@link GridNioSession}.
@@ -26,8 +26,8 @@ public enum GridNioSessionMetaKey {
     /** NIO parser state. */
     PARSER_STATE,
 
-    /** SSL handler. */
-    SSL_HANDLER,
+    /** SSL Meta. */
+    SSL_META,
 
     /** NIO operation (request type). */
     NIO_OPERATION,

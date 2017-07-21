@@ -17,16 +17,22 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.h2.jdbcx.*;
-
-import javax.cache.*;
-import javax.cache.configuration.*;
-import javax.cache.integration.*;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Map;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.store.CacheStoreSessionListenerAbstractSelfTest;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
  * Tests for {@link CacheJdbcStoreSessionListener}.

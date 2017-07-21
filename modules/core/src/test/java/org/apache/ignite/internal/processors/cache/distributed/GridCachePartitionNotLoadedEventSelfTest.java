@@ -17,24 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.util.*;
-import org.eclipse.jetty.util.*;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.TestTcpCommunicationSpi;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 
-import java.util.*;
-import java.util.concurrent.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -47,31 +56,33 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     private int backupCnt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(disco);
 
-        if (gridName.matches(".*\\d")) {
+        if (igniteInstanceName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();
 
             char[] chars = idStr.toCharArray();
 
             chars[chars.length - 3] = '0';
             chars[chars.length - 2] = '0';
-            chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+            chars[chars.length - 1] = igniteInstanceName.charAt(igniteInstanceName.length() - 1);
 
             cfg.setNodeId(UUID.fromString(new String(chars)));
         }
 
         cfg.setCommunicationSpi(new TestTcpCommunicationSpi());
 
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(backupCnt);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -84,7 +95,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testPrimaryAndBackupDead() throws Exception {
         backupCnt = 1;
@@ -92,12 +103,17 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(0);
         startGrid(1);
         startGrid(2);
+        startGrid(3);
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        awaitPartitionMapExchange();
 
-        ignite(2).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
+        final PartitionNotFullyLoadedListener lsnr1 = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr2 = new PartitionNotFullyLoadedListener();
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        ignite(2).events().localListen(lsnr1, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
+        ignite(3).events().localListen(lsnr2, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
+
+        Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         int key = 0;
 
@@ -115,6 +131,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         TestTcpCommunicationSpi.stop(ignite(0));
         TestTcpCommunicationSpi.stop(ignite(1));
 
+        info(">>>>> About to stop grids");
+
         stopGrid(0, true);
         stopGrid(1, true);
 
@@ -122,17 +140,29 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         assert !cache.containsKey(key);
 
-        assert !lsnr.lostParts.isEmpty();
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr1.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr2.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testPrimaryDead() throws Exception {
         startGrid(0);
         startGrid(1);
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        awaitPartitionMapExchange();
+
+        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         ignite(1).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
@@ -150,7 +180,11 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         assert !jcache(1).containsKey(key);
 
-        assert !lsnr.lostParts.isEmpty();
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
     }
 
     /**
@@ -165,7 +199,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         startGrid(0);
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         grid(1).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
@@ -199,7 +233,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         startGrid(1);
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         grid(1).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
@@ -218,7 +252,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         try {
             fut.get(1, TimeUnit.SECONDS);
         }
-        catch (IgniteFutureTimeoutCheckedException e) {
+        catch (IgniteFutureTimeoutCheckedException ignored) {
             timeout = true;
         }
 
@@ -228,7 +262,11 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         awaitPartitionMapExchange();
 
-        assert !lsnr.lostParts.isEmpty();
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
     }
 
     /**

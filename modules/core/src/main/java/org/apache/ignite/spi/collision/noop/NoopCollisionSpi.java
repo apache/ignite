@@ -17,10 +17,15 @@
 
 package org.apache.ignite.spi.collision.noop;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.collision.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.IgniteSpiNoop;
+import org.apache.ignite.spi.collision.CollisionContext;
+import org.apache.ignite.spi.collision.CollisionExternalListener;
+import org.apache.ignite.spi.collision.CollisionSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op implementation of {@link org.apache.ignite.spi.collision.CollisionSpi}. This is default implementation
@@ -34,7 +39,7 @@ import org.jetbrains.annotations.*;
 @IgniteSpiMultipleInstancesSupport(true)
 public class NoopCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         // No-op.
     }
 
@@ -51,6 +56,13 @@ public class NoopCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /** {@inheritDoc} */
     @Override public void setExternalCollisionListener(@Nullable CollisionExternalListener lsnr) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoopCollisionSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Cancel request.
@@ -51,6 +52,11 @@ public class GridQueryCancelRequest implements Message {
      */
     public long queryRequestId() {
         return qryReqId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -99,11 +105,11 @@ public class GridQueryCancelRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridQueryCancelRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 106;
     }
 

@@ -17,23 +17,32 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.jetbrains.annotations.*;
+import java.io.DataInput;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataInStream;
+import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOutStream;
+import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopOffheapBuffer;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.*;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_OFFHEAP_PAGE_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
 /**
  * Base class for all multimaps.
  */
 public abstract class HadoopMultimapBase implements HadoopMultimap {
+    /** Default offheap page size. */
+    private static final int DFLT_OFFHEAP_PAGE_SIZE = 1024 * 1024;
+
     /** */
     protected final GridUnsafeMemory mem;
 
@@ -41,7 +50,7 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
     protected final int pageSize;
 
     /** */
-    private final Collection<GridLongList> allPages = new ConcurrentLinkedQueue<>();
+    private final Collection<Page> allPages = new ConcurrentLinkedQueue<>();
 
     /**
      * @param jobInfo Job info.
@@ -53,15 +62,16 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
 
         this.mem = mem;
 
-        pageSize = get(jobInfo, SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024);
+        pageSize = get(jobInfo, SHUFFLE_OFFHEAP_PAGE_SIZE, DFLT_OFFHEAP_PAGE_SIZE);
     }
 
     /**
-     * @param ptrs Page pointers.
+     * @param page Page.
      */
-    private void deallocate(GridLongList ptrs) {
-        while (!ptrs.isEmpty())
-            mem.release(ptrs.remove(), ptrs.remove());
+    private void deallocate(Page page) {
+        assert page != null;
+
+        mem.release(page.ptr, page.size);
     }
 
     /**
@@ -98,8 +108,8 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        for (GridLongList list : allPages)
-            deallocate(list);
+        for (Page page : allPages)
+            deallocate(page);
     }
 
     /**
@@ -183,8 +193,8 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
         /** */
         private long writeStart;
 
-        /** Size and pointer pairs list. */
-        private final GridLongList pages = new GridLongList(16);
+        /** Current page. */
+        private Page curPage;
 
         /**
          * @param ctx Task context.
@@ -215,11 +225,8 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
         private long allocateNextPage(long requestedSize) {
             int writtenSize = writtenSize();
 
-            long newPageSize = Math.max(writtenSize + requestedSize, pageSize);
+            long newPageSize = nextPageSize(writtenSize + requestedSize);
             long newPagePtr = mem.allocate(newPageSize);
-
-            pages.add(newPageSize);
-            pages.add(newPagePtr);
 
             HadoopOffheapBuffer b = out.buffer();
 
@@ -233,7 +240,47 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
 
             writeStart = newPagePtr;
 
+            // At this point old page is not needed, so we release it.
+            Page oldPage = curPage;
+
+            curPage = new Page(newPagePtr, newPageSize);
+
+            if (oldPage != null)
+                allPages.add(oldPage);
+
             return b.move(requestedSize);
+        }
+
+        /**
+         * Get next page size.
+         *
+         * @param required Required amount of data.
+         * @return Next page size.
+         */
+        private long nextPageSize(long required) {
+            long pages = (required / pageSize) + 1;
+
+            long pagesPow2 = nextPowerOfTwo(pages);
+
+            return pagesPow2 * pageSize;
+        }
+
+        /**
+         * Get next power of two which greater or equal to the given number. Naive implementation.
+         *
+         * @param val Number
+         * @return Nearest pow2.
+         */
+        private long nextPowerOfTwo(long val) {
+            long res = 1;
+
+            while (res < val)
+                res = res << 1;
+
+            if (res < 0)
+                throw new IllegalArgumentException("Value is too big to find positive pow2: " + val);
+
+            return res;
         }
 
         /**
@@ -310,7 +357,8 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
 
         /** {@inheritDoc} */
         @Override public void close() throws IgniteCheckedException {
-            allPages.add(pages);
+            if (curPage != null)
+                allPages.add(curPage);
 
             keySer.close();
             valSer.close();
@@ -363,6 +411,28 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
         /** {@inheritDoc} */
         @Override public void remove() {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Page.
+     */
+    private static class Page {
+        /** Pointer. */
+        private final long ptr;
+
+        /** Size. */
+        private final long size;
+
+        /**
+         * Constructor.
+         *
+         * @param ptr Pointer.
+         * @param size Size.
+         */
+        public Page(long ptr, long size) {
+            this.ptr = ptr;
+            this.size = size;
         }
     }
 }

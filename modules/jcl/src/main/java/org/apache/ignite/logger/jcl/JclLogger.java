@@ -17,9 +17,12 @@
 
 package org.apache.ignite.logger.jcl;
 
-import org.apache.commons.logging.*;
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.ignite.IgniteLogger;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  * This logger wraps any JCL (<a target=_blank href="http://jakarta.apache.org/commons/logging/">Jakarta Commons Logging</a>)
@@ -76,6 +79,9 @@ public class JclLogger implements IgniteLogger {
     /** JCL implementation proxy. */
     private Log impl;
 
+    /** Quiet flag. */
+    private final boolean quiet;
+
     /**
      * Creates new logger.
      */
@@ -92,6 +98,8 @@ public class JclLogger implements IgniteLogger {
         assert impl != null;
 
         this.impl = impl;
+
+        quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
     }
 
     /** {@inheritDoc} */
@@ -132,7 +140,7 @@ public class JclLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        return !isInfoEnabled() && !isDebugEnabled();
+        return quiet;
     }
 
     /** {@inheritDoc} */

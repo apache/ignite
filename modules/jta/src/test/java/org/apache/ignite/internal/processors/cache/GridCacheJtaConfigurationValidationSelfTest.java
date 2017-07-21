@@ -17,27 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.jta.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.util.concurrent.Callable;
+import javax.transaction.TransactionManager;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.jta.CacheTmLookup;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import javax.transaction.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Configuration validation test.
  */
 public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(ATOMIC);
 
@@ -49,6 +49,8 @@ public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstr
     }
 
     /**
+     * Tests that a user did not set 'transactionManagerLookupClassName' property for atomic cache.
+     *
      * @throws Exception If failed.
      */
     public void testAtomicWithTmLookup() throws Exception {

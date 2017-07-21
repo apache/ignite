@@ -17,17 +17,36 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.checkpoint.CheckpointListener;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines shared file system {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} implementation for
@@ -93,15 +112,14 @@ import java.util.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi,
-    SharedFsCheckpointSpiMBean {
+public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /**
      * Default checkpoint directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
      * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
@@ -140,14 +158,17 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     /** Local host name. */
     private String host;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Task that takes care about outdated files. */
     private SharedFsTimeoutTask timeoutTask;
 
     /** Listener. */
     private CheckpointListener lsnr;
+
+    /** Marshaller. */
+    private Marshaller marsh;
 
     /**
      * Initializes default directory paths.
@@ -156,13 +177,21 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         dirPaths.offer(DFLT_DIR_PATH);
     }
 
-     /** {@inheritDoc} */
-    @Override public Collection<String> getDirectoryPaths() {
+    /**
+     * Gets collection of all configured paths where checkpoints can be saved.
+     *
+     * @return Collection of all configured paths.
+     */
+    public Collection<String> getDirectoryPaths() {
         return dirPaths;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getCurrentDirectoryPath() {
+    /**
+     * Gets path to the directory where all checkpoints are saved.
+     *
+     * @return Path to the checkpoints directory.
+     */
+    public String getCurrentDirectoryPath() {
         return curDirPath;
     }
 
@@ -175,23 +204,31 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
      *
      * @param dirPaths Absolute or Ignite installation home folder relative path where checkpoints
      * will be stored.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setDirectoryPaths(Collection<String> dirPaths) {
+    public SharedFsCheckpointSpi setDirectoryPaths(Collection<String> dirPaths) {
         A.ensure(!F.isEmpty(dirPaths), "!F.isEmpty(dirPaths)");
 
         this.dirPaths.clear();
         this.dirPaths.addAll(dirPaths);
+
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
         assertParameter(!F.isEmpty(dirPaths), "!F.isEmpty(dirPaths)");
 
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
+
+        if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller)
+            marsh = MarshallerUtils.jdkMarshaller(ignite.name());
+        else
+            marsh = ignite.configuration().getMarshaller();
 
         folder = getNextSharedPath();
 
@@ -201,7 +238,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         if (!folder.isDirectory())
             throw new IgniteSpiException("Checkpoint directory path is not a valid directory: " + curDirPath);
 
-        registerMBean(gridName, this, SharedFsCheckpointSpiMBean.class);
+        registerMBean(igniteInstanceName, new SharedFsCheckpointSpiMBeanImpl(this), SharedFsCheckpointSpiMBean.class);
 
         // Ack parameters.
         if (log.isDebugEnabled()) {
@@ -264,7 +301,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                 folder = new File(curDirPath);
             else {
                 try {
-                    folder = U.resolveWorkDirectory(curDirPath, false);
+                    folder = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), curDirPath, false);
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
@@ -290,8 +327,6 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         if (folder != null) {
             Map<File, SharedFsTimeData> files = new HashMap<>();
-
-            Marshaller marsh = ignite.configuration().getMarshaller();
 
             // Track expiration for only those files that are made by this node
             // to avoid file access conflicts.
@@ -321,7 +356,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                 }
             }
 
-            timeoutTask = new SharedFsTimeoutTask(gridName, marsh, log);
+            timeoutTask = new SharedFsTimeoutTask(igniteInstanceName, marsh, log);
 
             timeoutTask.setCheckpointListener(lsnr);
 
@@ -364,7 +399,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         if (file.exists())
             try {
-                SharedFsCheckpointData data = SharedFsUtils.read(file, ignite.configuration().getMarshaller(), log);
+                SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
 
                 return data != null ?
                     data.getExpireTime() == 0 || data.getExpireTime() > U.currentTimeMillis() ?
@@ -412,7 +447,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
             try {
                 SharedFsUtils.write(file, new SharedFsCheckpointData(state, expireTime, host, key),
-                    ignite.configuration().getMarshaller(), log);
+                    marsh, log);
             }
             catch (IOException e) {
                 // Select next shared directory if exists, otherwise throw exception
@@ -482,7 +517,34 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     }
 
     /** {@inheritDoc} */
+    @Override public SharedFsCheckpointSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SharedFsCheckpointSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for SharedFsCheckpointSpi.
+     */
+    private class SharedFsCheckpointSpiMBeanImpl extends IgniteSpiMBeanAdapter implements SharedFsCheckpointSpiMBean {
+        /** {@inheritDoc} */
+        SharedFsCheckpointSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> getDirectoryPaths() {
+            return SharedFsCheckpointSpi.this.getDirectoryPaths();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getCurrentDirectoryPath() {
+            return SharedFsCheckpointSpi.this.getCurrentDirectoryPath();
+        }
     }
 }

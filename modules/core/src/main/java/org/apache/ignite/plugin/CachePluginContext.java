@@ -17,9 +17,11 @@
 
 package org.apache.ignite.plugin;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
@@ -31,11 +33,6 @@ public interface CachePluginContext<C extends CachePluginConfiguration> {
      */
     public IgniteConfiguration igniteConfiguration();
     
-    /**
-     * @return Plugin cache configuration.
-     */
-    public C cacheConfiguration();
-
     /**
      * @return Ignite cache configuration.
      */

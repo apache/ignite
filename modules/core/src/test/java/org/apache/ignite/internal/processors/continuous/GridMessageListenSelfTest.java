@@ -17,23 +17,30 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.messaging.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.messaging.MessagingListenActor;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Message listen test.
@@ -82,8 +89,8 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private static CountDownLatch latch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (include)
             cfg.setUserAttributes(F.asMap(INC_ATTR, true));
@@ -334,7 +341,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testListenActor() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
-        grid(0).message().remoteListen(null, new Actor(grid(0).cluster()));
+        grid(0).message().remoteListen(null, new Actor(grid(0).localNode().id()));
 
         try {
             Ignite g = startGrid("anotherGrid");
@@ -369,7 +376,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private void listen(final ClusterGroup prj, @Nullable Object topic, final boolean ret) throws Exception {
         assert prj != null;
 
-        message(prj).remoteListen(topic, new Listener(prj, ret));
+        message(prj).remoteListen(topic, new Listener(grid(0).localNode().id(), ret));
     }
 
     /**
@@ -421,23 +428,21 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class Listener implements P2<UUID, Object> {
-        /** */
-        private final ClusterGroup prj;
-
+        /** Source node id. */
+        private final UUID sourceNodeId;
         /** */
         private final boolean ret;
-
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /**
-         * @param prj Projection.
          * @param ret Return value.
+         * @param sourceNodeId expected source node id
          */
-        private Listener(ClusterGroup prj, boolean ret) {
-            this.prj = prj;
+        private Listener(UUID sourceNodeId, boolean ret) {
             this.ret = ret;
+            this.sourceNodeId = sourceNodeId;
         }
 
         /** {@inheritDoc} */
@@ -447,7 +452,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() + ']');
 
-            assertEquals(prj.ignite().cluster().localNode().id(), nodeId);
+            assertEquals(sourceNodeId, nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(ignite.configuration().getNodeId());
@@ -460,14 +465,14 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class Actor extends MessagingListenActor<Object> {
-        /** */
-        private final ClusterGroup prj;
+        /** Source node id. */
+        private final UUID sourceNodeId;
 
         /**
-         * @param prj Projection.
+         * @param sourceNodeId expected source node id
          */
-        private Actor(ClusterGroup prj) {
-            this.prj = prj;
+        private Actor(UUID sourceNodeId) {
+            this.sourceNodeId = sourceNodeId;
         }
 
         /** {@inheritDoc} */
@@ -478,7 +483,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + locNodeId + ']');
 
-            assertEquals(prj.ignite().cluster().localNode().id(), nodeId);
+            assertEquals(sourceNodeId, nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(locNodeId);

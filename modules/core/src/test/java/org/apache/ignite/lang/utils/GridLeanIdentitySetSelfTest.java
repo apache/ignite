@@ -17,10 +17,10 @@
 
 package org.apache.ignite.lang.utils;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.Set;
+import org.apache.ignite.internal.util.GridLeanIdentitySet;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Tests for {@link org.apache.ignite.internal.util.GridLeanMap}.

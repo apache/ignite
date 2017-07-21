@@ -17,22 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
-import javax.cache.processor.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
  * Tests transaction during cache preloading.
@@ -58,6 +66,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -71,7 +80,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     public void testRemoteTxPreloading() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 10_000; i++)
             cache.put(String.valueOf(i), 0);
 
         final AtomicInteger gridIdx = new AtomicInteger(1);
@@ -97,31 +106,36 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
         for (int i = 0; i < 10; i++)
             keys.add(String.valueOf(i * 1000));
 
-        cache.invokeAll(keys, new EntryProcessor<String, Integer, Void>() {
-            @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
-                Integer val = e.getValue();
+        Map<String, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys,
+            new EntryProcessor<String, Integer, Integer>() {
+                @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+                    Integer val = e.getValue();
 
-                if (val == null) {
-                    keyNotLoaded = true;
+                    if (val == null) {
+                        keyNotLoaded = true;
 
-                    e.setValue(1);
+                        e.setValue(1);
 
-                    return null;
+                        return null;
+                    }
+
+                    e.setValue(val + 1);
+
+                    return val;
                 }
-
-                e.setValue(val + 1);
-
-                return null;
             }
-        });
+        );
 
         assertFalse(keyNotLoaded);
 
-        fut.get();
+        for (String key : keys) {
+            EntryProcessorResult<Integer> res = resMap.get(key);
 
-        for (int i = 0; i < GRID_CNT; i++)
-            // Wait for preloader.
-            jcache(i).rebalance().get();
+            assertNotNull(res);
+            assertEquals(0, (Object)res.get());
+        }
+
+        fut.get();
 
         for (int i = 0; i < GRID_CNT; i++) {
             for (String key : keys)
@@ -206,14 +220,14 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setRebalanceMode(ASYNC);
-
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-
         cfg.setCacheStoreFactory(null);
+        cfg.setReadThrough(false);
+        cfg.setWriteThrough(false);
 
         return cfg;
     }

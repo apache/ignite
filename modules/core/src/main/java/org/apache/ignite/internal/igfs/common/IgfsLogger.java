@@ -17,16 +17,27 @@
 
 package org.apache.ignite.internal.igfs.common;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * IGFS client logger writing data to the file.
@@ -156,6 +167,7 @@ public final class IgfsLogger {
      * Get logger instance for the given endpoint.
      *
      * @param endpoint Endpoint.
+     * @param igfsName IGFS name.
      * @param dir Path.
      * @param batchSize Batch size.
      *
@@ -252,12 +264,11 @@ public final class IgfsLogger {
      *
      * @param streamId Stream ID.
      * @param path Path.
-     * @param mode Mode.
      * @param bufSize Buffer size.
      * @param dataLen Data length.
      */
-    public void logOpen(long streamId, IgfsPath path, IgfsMode mode, int bufSize, long dataLen) {
-        addEntry(new Entry(TYPE_OPEN_IN, path.toString(), mode, streamId, bufSize, dataLen, null, null, null, null,
+    public void logOpen(long streamId, IgfsPath path, int bufSize, long dataLen) {
+        addEntry(new Entry(TYPE_OPEN_IN, path.toString(), streamId, bufSize, dataLen, null, null, null, null,
             null, null, null, null, null, null, null, null, null, null));
     }
 
@@ -266,15 +277,14 @@ public final class IgfsLogger {
      *
      * @param streamId Stream ID.
      * @param path Path.
-     * @param mode Mode.
      * @param overwrite Overwrite flag.
      * @param bufSize Buffer size.
      * @param replication Replication factor.
      * @param blockSize Block size.
      */
-    public void logCreate(long streamId, IgfsPath path, IgfsMode mode, boolean overwrite, int bufSize,
+    public void logCreate(long streamId, IgfsPath path, boolean overwrite, int bufSize,
         int replication, long blockSize) {
-        addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), mode, streamId, bufSize, null, false, overwrite, replication,
+        addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), streamId, bufSize, null, false, overwrite, replication,
             blockSize, null, null, null, null, null, null, null, null, null, null));
     }
 
@@ -283,11 +293,10 @@ public final class IgfsLogger {
      *
      * @param streamId Stream ID.
      * @param path Path.
-     * @param mode Mode.
      * @param bufSize Buffer size.
      */
-    public void logAppend(long streamId, IgfsPath path, IgfsMode mode, int bufSize) {
-        addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), mode, streamId, bufSize, null, true, null, null, null, null,
+    public void logAppend(long streamId, IgfsPath path, int bufSize) {
+        addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), streamId, bufSize, null, true, null, null, null, null,
             null, null, null, null, null, null, null, null, null));
     }
 
@@ -299,7 +308,7 @@ public final class IgfsLogger {
      * @param readLen Read bytes count.
      */
     public void logRandomRead(long streamId, long pos, int readLen) {
-        addEntry(new Entry(TYPE_RANDOM_READ, null, null, streamId, null, null, null, null, null, null, pos, readLen,
+        addEntry(new Entry(TYPE_RANDOM_READ, null, streamId, null, null, null, null, null, null, pos, readLen,
             null, null, null, null, null, null, null, null));
     }
 
@@ -310,7 +319,7 @@ public final class IgfsLogger {
      * @param pos Position.
      */
     public void logSeek(long streamId, long pos) {
-        addEntry(new Entry(TYPE_SEEK, null, null, streamId, null, null, null, null, null, null, pos, null, null, null,
+        addEntry(new Entry(TYPE_SEEK, null, streamId, null, null, null, null, null, null, pos, null, null, null,
             null, null, null, null, null, null));
     }
 
@@ -321,7 +330,7 @@ public final class IgfsLogger {
      * @param skipCnt Skip bytes count.
      */
     public void logSkip(long streamId, long skipCnt) {
-        addEntry(new Entry(TYPE_SKIP, null, null, streamId, null, null, null, null, null, null, null, null, skipCnt,
+        addEntry(new Entry(TYPE_SKIP, null, streamId, null, null, null, null, null, null, null, null, skipCnt,
             null, null, null, null, null, null, null));
     }
 
@@ -332,7 +341,7 @@ public final class IgfsLogger {
      * @param readLimit Read limit.
      */
     public void logMark(long streamId, long readLimit) {
-        addEntry(new Entry(TYPE_MARK, null, null, streamId, null, null, null, null, null, null, null, null, null,
+        addEntry(new Entry(TYPE_MARK, null, streamId, null, null, null, null, null, null, null, null, null,
             readLimit, null, null, null, null, null, null));
     }
 
@@ -342,7 +351,7 @@ public final class IgfsLogger {
      * @param streamId Stream ID.
      */
     public void logReset(long streamId) {
-        addEntry(new Entry(TYPE_RESET, null, null, streamId, null, null, null, null, null, null, null, null, null, null,
+        addEntry(new Entry(TYPE_RESET, null, streamId, null, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null));
     }
 
@@ -355,7 +364,7 @@ public final class IgfsLogger {
      * @param total Total bytes read.
      */
     public void logCloseIn(long streamId, long userTime, long readTime, long total) {
-        addEntry(new Entry(TYPE_CLOSE_IN, null, null, streamId, null, null, null, null, null, null, null, null, null,
+        addEntry(new Entry(TYPE_CLOSE_IN, null, streamId, null, null, null, null, null, null, null, null, null,
             null, userTime, readTime, total ,null, null, null));
     }
 
@@ -368,7 +377,7 @@ public final class IgfsLogger {
      * @param total Total bytes read.
      */
     public void logCloseOut(long streamId, long userTime, long writeTime, long total) {
-        addEntry(new Entry(TYPE_CLOSE_OUT, null, null, streamId, null, null, null, null, null, null, null, null, null,
+        addEntry(new Entry(TYPE_CLOSE_OUT, null, streamId, null, null, null, null, null, null, null, null, null,
             null, userTime, writeTime, total, null, null, null));
     }
 
@@ -376,10 +385,9 @@ public final class IgfsLogger {
      * Log directory creation event.
      *
      * @param path Path.
-     * @param mode Mode.
      */
-    public void logMakeDirectory(IgfsPath path, IgfsMode mode) {
-        addEntry(new Entry(TYPE_DIR_MAKE, path.toString(), mode, null, null, null, null, null, null, null, null, null,
+    public void logMakeDirectory(IgfsPath path) {
+        addEntry(new Entry(TYPE_DIR_MAKE, path.toString(), null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, null, null));
     }
 
@@ -387,11 +395,10 @@ public final class IgfsLogger {
      * Log directory listing event.
      *
      * @param path Path.
-     * @param mode Mode.
      * @param files Files.
      */
-    public void logListDirectory(IgfsPath path, IgfsMode mode, String[] files) {
-        addEntry(new Entry(TYPE_DIR_LIST, path.toString(), mode, null, null, null, null, null, null, null, null, null,
+    public void logListDirectory(IgfsPath path, String[] files) {
+        addEntry(new Entry(TYPE_DIR_LIST, path.toString(), null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, null, files));
     }
 
@@ -399,11 +406,10 @@ public final class IgfsLogger {
      * Log rename event.
      *
      * @param path Path.
-     * @param mode Mode.
      * @param destPath Destination path.
      */
-    public void logRename(IgfsPath path, IgfsMode mode, IgfsPath destPath) {
-        addEntry(new Entry(TYPE_RENAME, path.toString(), mode, null, null, null, null, null, null, null, null, null,
+    public void logRename(IgfsPath path, IgfsPath destPath) {
+        addEntry(new Entry(TYPE_RENAME, path.toString(), null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, destPath.toString(), null, null));
     }
 
@@ -411,11 +417,10 @@ public final class IgfsLogger {
      * Log delete event.
      *
      * @param path Path.
-     * @param mode Mode.
      * @param recursive Recursive flag.
      */
-    public void logDelete(IgfsPath path, IgfsMode mode, boolean recursive) {
-        addEntry(new Entry(TYPE_DELETE, path.toString(), mode, null, null, null, null, null, null, null, null, null,
+    public void logDelete(IgfsPath path, boolean recursive) {
+        addEntry(new Entry(TYPE_DELETE, path.toString(), null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, recursive, null));
     }
 
@@ -500,9 +505,6 @@ public final class IgfsLogger {
         /** File/dir path. */
         private final String path;
 
-        /** Path mode. */
-        private IgfsMode mode;
-
         /** Stream ID. */
         private final long streamId;
 
@@ -559,7 +561,6 @@ public final class IgfsLogger {
          *
          * @param type Event type.
          * @param path Path.
-         * @param mode Path mode.
          * @param streamId Stream ID.
          * @param bufSize Buffer size.
          * @param dataLen Data length.
@@ -578,7 +579,7 @@ public final class IgfsLogger {
          * @param recursive Recursive flag.
          * @param list Listed directories.
          */
-        Entry(int type, String path, IgfsMode mode, Long streamId, Integer bufSize, Long dataLen, Boolean append,
+        Entry(int type, String path, Long streamId, Integer bufSize, Long dataLen, Boolean append,
             Boolean overwrite, Integer replication, Long blockSize, Long pos, Integer readLen, Long skipCnt,
             Long readLimit, Long userTime, Long sysTime, Long total, String destPath, Boolean recursive,
             String[] list) {
@@ -587,7 +588,6 @@ public final class IgfsLogger {
 
             this.type = type;
             this.path = path;
-            this.mode = mode;
             this.streamId = streamId != null ? streamId : -1;
             this.bufSize = bufSize != null ? bufSize : -1;
             this.dataLen = dataLen != null ? dataLen : -1;
@@ -667,7 +667,7 @@ public final class IgfsLogger {
             SB res = new SB();
 
             res.a(ts).a(DELIM_FIELD).a(threadId).a(DELIM_FIELD).a(pid).a(DELIM_FIELD).a(type).a(DELIM_FIELD)
-                .a(string(path)).a(DELIM_FIELD).a(string(mode)).a(DELIM_FIELD).a(string(streamId)).a(DELIM_FIELD)
+                .a(string(path)).a(DELIM_FIELD).a(DELIM_FIELD).a(string(streamId)).a(DELIM_FIELD)
                 .a(string(bufSize)).a(DELIM_FIELD).a(string(dataLen)).a(DELIM_FIELD).a(string(append)).a(DELIM_FIELD)
                 .a(string(overwrite)).a(DELIM_FIELD).a(string(replication)).a(DELIM_FIELD).a(string(blockSize))
                 .a(DELIM_FIELD).a(string(pos)).a(DELIM_FIELD).a(string(readLen)).a(DELIM_FIELD).a(string(skipCnt))

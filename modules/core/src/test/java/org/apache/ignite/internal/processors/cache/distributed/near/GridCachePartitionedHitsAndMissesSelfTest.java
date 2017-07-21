@@ -17,21 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.stream.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.Collection;
+import java.util.Map;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.processor.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test for issue GG-3997 Total Hits and Misses display wrong value for in-memory database.
@@ -47,21 +53,21 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        // DiscoverySpi
+        // DiscoverySpi.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(IP_FINDER);
         cfg.setDiscoverySpi(disco);
 
         // Cache.
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         TransactionConfiguration tCfg = new TransactionConfiguration();
 
-        tCfg.setDefaultTxConcurrency(TransactionConcurrency.PESSIMISTIC);
-        tCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
+        tCfg.setDefaultTxConcurrency(PESSIMISTIC);
+        tCfg.setDefaultTxIsolation(REPEATABLE_READ);
 
         cfg.setTransactionConfiguration(tCfg);
 
@@ -71,20 +77,17 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /**
      * Cache configuration.
      *
-     * @param gridName Grid name.
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+    protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
+
         cfg.setCacheMode(PARTITIONED);
-        cfg.setStartSize(700000);
         cfg.setWriteSynchronizationMode(FULL_ASYNC);
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);
         cfg.setNearConfiguration(null);
-        cfg.setRebalanceDelay(-1);
-        cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
 
         return cfg;
@@ -96,9 +99,9 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testHitsAndMisses() throws Exception {
-        assert(GRID_CNT > 0);
-
         startGrids(GRID_CNT);
+
+        awaitPartitionMapExchange();
 
         try {
             final Ignite g = grid(0);
@@ -110,15 +113,15 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             long misses = 0;
 
             for (int i = 0; i < GRID_CNT; i++) {
-                CacheMetrics m = grid(i).cache(null).metrics();
+                CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
                 hits += m.getCacheHits();
                 misses += m.getCacheMisses();
             }
 
             // Check that invoke and loader updated metrics
-            assertEquals(CNT, hits);
-            assertEquals(CNT, misses);
+            assertEquals(CNT / 2, hits);
+            assertEquals(CNT / 2, misses);
         }
         finally {
             stopAllGrids();
@@ -131,7 +134,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @param g Grid.
      */
     private static void realTimePopulate(final Ignite g) {
-        try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(DEFAULT_CACHE_NAME)) {
             // Sets max values to 1 so cache metrics have correct values.
             ldr.perNodeParallelOperations(1);
 

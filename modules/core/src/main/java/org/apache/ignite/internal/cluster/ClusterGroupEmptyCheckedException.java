@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This exception defines illegal call on empty projection. Thrown by projection when operation

@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Future that delegates to some other future.
  */
 public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
-    /** */
-    private static final long serialVersionUID = 0L;
+    /**
+     *
+     */
+    public GridNioEmbeddedFuture() {
+        super(null);
+    }
 
     /**
      * Callback to notify that future is finished.

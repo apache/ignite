@@ -17,7 +17,7 @@
 
 package org.apache.ignite.compute;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines continuation support for grid job context.

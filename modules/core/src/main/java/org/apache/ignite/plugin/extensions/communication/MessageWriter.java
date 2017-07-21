@@ -17,10 +17,12 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.lang.*;
-
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Communication message writer.
@@ -36,12 +38,20 @@ public interface MessageWriter {
     public void setBuffer(ByteBuffer buf);
 
     /**
+     * Sets type of message currently written.
+     *
+     * @param msgCls Message type.
+     */
+    public void setCurrentWriteClass(Class<? extends Message> msgCls);
+
+    /**
      * Writes message header.
      *
      * @param type Message type.
-     * @param fieldCnt Fields count.ß
+     * @param fieldCnt Fields count.
+     * @return {@code true} if successfully. Otherwise returns {@code false}.
      */
-    public boolean writeHeader(byte type, byte fieldCnt);
+    public boolean writeHeader(short type, byte fieldCnt);
 
     /**
      * Writes {@code byte} value.

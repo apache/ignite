@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.misc.springbean.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.misc.springbean.SpringBeanExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Spring bean examples self test.

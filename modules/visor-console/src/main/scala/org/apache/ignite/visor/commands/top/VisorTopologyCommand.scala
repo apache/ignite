@@ -152,7 +152,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
 
             val all = hasArgFlag("a", argLst)
 
-            var f: NodeFilter = (GridNode) => true
+            var f: NodeFilter = (ClusterNode) => true
 
             try {
                 argLst foreach (arg => {
@@ -263,12 +263,13 @@ class VisorTopologyCommand extends VisorConsoleCommand {
 
         val hostsT = VisorTextTable()
 
-        hostsT #= ("Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
+        hostsT #= ("Int./Ext. IPs", "Node ID8(@)","Node Type", "OS", "CPUs", "MACs", "CPU Load")
 
         neighborhood.foreach {
             case (_, neighbors) =>
                 var ips = Set.empty[String]
                 var id8s = List.empty[String]
+                var nodeTypes = List.empty[String]
                 var macs = Set.empty[String]
                 var cpuLoadSum = 0.0
 
@@ -287,6 +288,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
                 neighbors.foreach(n => {
                     id8s = id8s :+ (i.toString + ": " + nodeId8(n.id))
 
+                    nodeTypes = nodeTypes :+ (if (n.isClient) "Client" else "Server")
                     i += 1
 
                     ips = ips ++ n.addresses()
@@ -300,6 +302,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
                 hostsT += (
                     ips.toSeq,
                     id8s,
+                    nodeTypes,
                     os,
                     cpus,
                     macs.toSeq,

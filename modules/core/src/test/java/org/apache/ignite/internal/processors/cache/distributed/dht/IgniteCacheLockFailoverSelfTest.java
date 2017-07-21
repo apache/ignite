@@ -17,16 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -36,6 +40,15 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -56,8 +69,8 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setNearConfiguration(null);
 
@@ -73,7 +86,7 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testLockFailover() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Integer key = backupKey(cache);
 
@@ -104,7 +117,7 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
 
                 iter++;
 
-                GridCacheAdapter<Object, Object> adapter = ((IgniteKernal)grid(0)).internalCache(null);
+                GridCacheAdapter<Object, Object> adapter = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
                 IgniteInternalFuture<Boolean> fut = adapter.lockAsync(key, 0);
 
@@ -137,9 +150,9 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUnlockPrimaryLeft() throws Exception {
-        GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)grid(0)).internalCache(null);
+        GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
-        Integer key = backupKey(grid(0).cache(null));
+        Integer key = backupKey(grid(0).cache(DEFAULT_CACHE_NAME));
 
         cache.lock(key, 0);
 

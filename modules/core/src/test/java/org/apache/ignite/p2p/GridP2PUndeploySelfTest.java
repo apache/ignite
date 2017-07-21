@@ -17,17 +17,20 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  *
@@ -45,13 +48,13 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     private Map<String, LocalDeploymentSpi> spis = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName,
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
         IgniteTestResources rsrcs) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, rsrcs);
 
         LocalDeploymentSpi spi = new LocalDeploymentSpi();
 
-        spis.put(gridName, spi);
+        spis.put(igniteInstanceName, spi);
 
         cfg.setDeploymentSpi(spi);
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMode;
 
 /**
  * Topology validator test

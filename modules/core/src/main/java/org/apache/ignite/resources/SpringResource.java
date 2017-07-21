@@ -17,8 +17,12 @@
 
 package org.apache.ignite.resources;
 
-import java.io.*;
-import java.lang.annotation.*;
+import java.io.Serializable;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Annotates a field or a setter method for injection of resource
@@ -108,5 +112,18 @@ public @interface SpringResource {
      *
      * @return Resource bean name.
      */
-    String resourceName();
+    String resourceName() default "";
+
+    /**
+     * Resource bean class in provided {@code ApplicationContext} to look up
+     * a Spring bean.
+     *
+     * @return Resource bean class.
+     */
+    Class<?> resourceClass() default DEFAULT.class;
+
+    /** Dummy class to compensate for impossibility of having default null value for annotation method. */
+    final class DEFAULT {
+        // No-op.
+    }
 }

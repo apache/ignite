@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.*;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.*;
-import org.h2.message.*;
-import org.h2.util.*;
-import org.h2.value.*;
-
-import java.sql.*;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.h2.message.DbException;
+import org.h2.util.JdbcUtils;
+import org.h2.util.Utils;
+import org.h2.value.CompareMode;
+import org.h2.value.Value;
+import org.h2.value.ValueJavaObject;
 
 /**
  * H2 Value over {@link CacheObject}. Replacement for {@link ValueJavaObject}.
@@ -33,18 +37,20 @@ public class GridH2ValueCacheObject extends Value {
     /** */
     private CacheObject obj;
 
-    /** */
-    private GridCacheContext<?,?> cctx;
+    /** Object value context. */
+    private CacheObjectValueContext valCtx;
 
     /**
-     * @param cctx Cache context.
+     * Constructor.
+     *
      * @param obj Object.
+     * @param valCtx Object value context.
      */
-    public GridH2ValueCacheObject(GridCacheContext<?,?> cctx, CacheObject obj) {
+    public GridH2ValueCacheObject(CacheObject obj, CacheObjectValueContext valCtx) {
         assert obj != null;
 
         this.obj = obj;
-        this.cctx = cctx; // Allowed to be null in tests.
+        this.valCtx = valCtx;
     }
 
     /**
@@ -55,10 +61,10 @@ public class GridH2ValueCacheObject extends Value {
     }
 
     /**
-     * @return Cache context.
+     * @return Value context.
      */
-    public GridCacheContext<?,?> getCacheContext() {
-        return cctx;
+    public CacheObjectValueContext valueContext() {
+        return valCtx;
     }
 
     /** {@inheritDoc} */
@@ -91,32 +97,33 @@ public class GridH2ValueCacheObject extends Value {
         return Utils.cloneByteArray(getBytesNoCopy());
     }
 
-    /**
-     * @return Cache object context.
-     */
-    private CacheObjectContext objectContext() {
-        return cctx == null ? null : cctx.cacheObjectContext();
-    }
-
     /** {@inheritDoc} */
     @Override public byte[] getBytesNoCopy() {
-        if (obj.type() == CacheObject.TYPE_REGULAR) {
+        if (obj.cacheObjectType() == CacheObject.TYPE_REGULAR) {
             // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
             try {
-                return obj.valueBytes(objectContext());
+                return obj.valueBytes(valCtx);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
             }
         }
 
-        // For portables and byte array cache object types.
-        return Utils.serialize(obj.value(objectContext(), false), null);
+        // For user-provided and array types.
+        return JdbcUtils.serialize(obj, null);
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject() {
-        return obj.value(objectContext(), false);
+        return getObject(false);
+    }
+
+    /**
+     * @param cpy Copy flag.
+     * @return Value.
+     */
+    public Object getObject(boolean cpy) {
+        return obj.isPlatformType() ? obj.value(valCtx, cpy) : obj;
     }
 
     /** {@inheritDoc} */
@@ -188,4 +195,3 @@ public class GridH2ValueCacheObject extends Value {
         return 0;
     }
 }
-

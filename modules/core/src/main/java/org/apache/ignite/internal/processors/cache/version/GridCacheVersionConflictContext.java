@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Conflict context implementation.
@@ -32,6 +35,9 @@ public class GridCacheVersionConflictContext<K, V> {
     /** New entry. */
     @GridToStringInclude
     private final GridCacheVersionedEntry<K, V> newEntry;
+
+    /** Object context. */
+    private final CacheObjectValueContext ctx;
 
     /** Current state. */
     private State state;
@@ -52,13 +58,14 @@ public class GridCacheVersionConflictContext<K, V> {
      * @param oldEntry Old entry.
      * @param newEntry New entry.
      */
-    public GridCacheVersionConflictContext(GridCacheVersionedEntry<K, V> oldEntry,
+    public GridCacheVersionConflictContext(CacheObjectValueContext ctx, GridCacheVersionedEntry<K, V> oldEntry,
         GridCacheVersionedEntry<K, V> newEntry) {
         assert oldEntry != null && newEntry != null;
         assert oldEntry.ttl() >= 0 && newEntry.ttl() >= 0;
 
         this.oldEntry = oldEntry;
         this.newEntry = newEntry;
+        this.ctx = ctx;
 
         // Set initial state.
         useNew();
@@ -80,6 +87,15 @@ public class GridCacheVersionConflictContext<K, V> {
      */
     public GridCacheVersionedEntry<K, V> newEntry() {
         return newEntry;
+    }
+
+    /**
+     * Gets cache object context.
+     *
+     * @return Cache object context.
+     */
+    public CacheObjectValueContext valueContext() {
+        return ctx;
     }
 
     /**
@@ -176,7 +192,7 @@ public class GridCacheVersionConflictContext<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return state == State.MERGE ?
-            S.toString(GridCacheVersionConflictContext.class, this, "mergeValue", mergeVal) :
+            S.toString(GridCacheVersionConflictContext.class, this, "mergeValue", mergeVal, true) :
             S.toString(GridCacheVersionConflictContext.class, this);
     }
 

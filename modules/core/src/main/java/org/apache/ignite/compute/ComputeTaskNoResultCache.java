@@ -17,15 +17,19 @@
 
 package org.apache.ignite.compute;
 
-import java.lang.annotation.*;
-import java.util.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.List;
 
 /**
  * This annotation disables caching of task results when attached to {@link ComputeTask} class
  * being executed. Use it when number of jobs within task grows too big, or jobs themselves
  * are too large to keep in memory throughout task execution. By default all results are cached and passed into
- * {@link ComputeTask#result(ComputeJobResult,List) GridComputeTask.result(GridComputeJobResult, List&lt;GridComputeJobResult&gt;)}
- * method or {@link ComputeTask#reduce(List) GridComputeTask.reduce(List&lt;GridComputeJobResult&gt;)} method.
+ * {@link ComputeTask#result(ComputeJobResult,List) ComputeTask.result(ComputeJobResult, List&lt;ComputeJobResult&gt;)}
+ * method or {@link ComputeTask#reduce(List) ComputeTask.reduce(List&lt;ComputeJobResult&gt;)} method.
  * When this annotation is attached to a task class, then this list of job results will always be empty.
  * <p>
  * Note that if this annotation is attached to a task class, then job siblings list is not maintained
@@ -40,7 +44,7 @@ import java.util.*;
  *
  * Use this annotation when job results are too large to hold in memory and can be discarded
  * after being processed in
- * {@link ComputeTask#result(ComputeJobResult, List) GridComputeTask.result(GridComputeJobResult, List&lt;GridComputeJobResult&gt;)}
+ * {@link ComputeTask#result(ComputeJobResult, List) ComputeTask.result(ComputeJobResult, List&lt;ComputeJobResult&gt;)}
  * method.
  */
 @Documented

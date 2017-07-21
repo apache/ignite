@@ -17,9 +17,11 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinderSelfTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  * Ignite Cloud integration test.
@@ -30,10 +32,10 @@ public class IgniteCloudTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Cloud Integration Test Suite");
+        TestSuite suite = new IgniteTestSuite("Cloud Integration Test Suite");
 
         // Cloud Nodes IP finder.
-        suite.addTest(new TestSuite(TcpDiscoveryCloudIpFinderSelfTest.class));
+        suite.addTestSuite(TcpDiscoveryCloudIpFinderSelfTest.class);
 
         return suite;
     }

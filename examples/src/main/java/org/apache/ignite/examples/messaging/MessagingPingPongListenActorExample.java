@@ -17,13 +17,17 @@
 
 package org.apache.ignite.examples.messaging;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.messaging.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.apache.ignite.messaging.MessagingListenActor;
 
 /**
  * Demonstrates messaging with {@link MessagingListenActor} convenience adapter.

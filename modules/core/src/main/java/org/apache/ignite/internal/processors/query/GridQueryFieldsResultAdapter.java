@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenience adapter for {@link GridQueryFieldsResult}.
@@ -51,7 +52,7 @@ public class GridQueryFieldsResultAdapter implements GridQueryFieldsResult {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<List<?>> iterator() {
+    @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException{
         return it;
     }
 }

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.util.*;
+import java.util.Collections;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  *

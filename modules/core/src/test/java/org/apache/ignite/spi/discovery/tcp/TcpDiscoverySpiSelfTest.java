@@ -17,10 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.spi.discovery.AbstractDiscoverySelfTest;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * TCP discovery spi test.

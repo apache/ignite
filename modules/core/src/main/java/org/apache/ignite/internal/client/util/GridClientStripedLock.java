@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client.util;
 
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This is an utility class for 'splitting' locking of some

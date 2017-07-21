@@ -17,19 +17,32 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.commons.io.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.springframework.context.support.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDataConfiguration;
+import org.apache.ignite.internal.client.GridClientPartitionAffinity;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.balancer.GridClientRandomBalancer;
+import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.client.GridClientConfiguration.*;
+import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_MAX_CONN_IDLE_TIME;
+import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_TOP_REFRESH_FREQ;
 
 /**
  * Properties-based configuration self test.

@@ -17,19 +17,30 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiContext;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
  * Load balancer that works in global (not-per-task) mode.
@@ -90,6 +101,16 @@ class RoundRobinGlobalLoadBalancer {
                                 nodeList = new GridNodeList(0, newNodes);
                             }
                         }
+                        else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                            Collection<ClusterNode> nodes = ((DiscoveryEvent)evt).topologyNodes();
+
+                            List<UUID> newNodes = new ArrayList<>(nodes.size());
+
+                            for (ClusterNode node : nodes)
+                                newNodes.add(node.id());
+
+                            nodeList = new GridNodeList(0, newNodes);
+                        }
                         else {
                             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
@@ -108,7 +129,7 @@ class RoundRobinGlobalLoadBalancer {
                     }
                 }
             },
-            EVT_NODE_FAILED, EVT_NODE_JOINED, EVT_NODE_LEFT
+            EVT_NODE_FAILED, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_CLIENT_NODE_RECONNECTED
         );
 
         synchronized (mux) {
@@ -136,7 +157,7 @@ class RoundRobinGlobalLoadBalancer {
      *
      * @param top Topology to pick from.
      * @return Best balanced node.
-     * @throws IgniteCheckedException Thrown in case of any error.
+     * @throws IgniteException Thrown in case of any error.
      */
     ClusterNode getBalancedNode(Collection<ClusterNode> top) throws IgniteException {
         assert !F.isEmpty(top);

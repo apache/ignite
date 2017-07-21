@@ -52,7 +52,10 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * {{{
  *     -id8=<node-id8>
  *         ID8 of the node.
- *         Note that either '-id8' or '-id' can be specified.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
  *     -id=<node-id>
  *         ID of the node.
  *         Note that either '-id8' or '-id' can be specified.
@@ -101,8 +104,8 @@ class VisorGcCommand extends VisorConsoleCommand {
 
                 res.foreach {
                     case (nid, stat) =>
-                        val roundHb = stat.get1() / (1024L * 1024L)
-                        val roundHa = stat.get2() / (1024L * 1024L)
+                        val roundHb = stat.getSizeBefore / (1024L * 1024L)
+                        val roundHa = stat.getSizeAfter / (1024L * 1024L)
 
                         val sign = if (roundHa > roundHb) "+" else ""
 
@@ -159,8 +162,10 @@ object VisorGcCommand {
         args = List(
             "-id8=<node-id8>" -> List(
                 "ID8 of the node.",
-                "Note that either '-id8' or '-id' can be specified and " +
-                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>."
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'."
             ),
             "-id=<node-id>" -> List(
                 "ID of the node.",

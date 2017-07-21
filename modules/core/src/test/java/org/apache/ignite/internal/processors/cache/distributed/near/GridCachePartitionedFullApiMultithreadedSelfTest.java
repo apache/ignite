@@ -17,20 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiMultithreadedSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Multithreaded partitioned cache API tests.
  */
 public class GridCachePartitionedFullApiMultithreadedSelfTest extends GridCacheAbstractFullApiMultithreadedSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-805");
-    }
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;

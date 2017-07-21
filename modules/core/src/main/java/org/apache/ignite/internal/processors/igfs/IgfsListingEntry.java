@@ -17,39 +17,35 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * Directory listing entry.
  */
-public class IgfsListingEntry implements Externalizable {
+public class IgfsListingEntry implements Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** File id. */
-    private IgniteUuid fileId;
+    /** ID. */
+    private IgniteUuid id;
 
-    /** File affinity key. */
-    private IgniteUuid affKey;
-
-    /** Positive block size if file, 0 if directory. */
-    private int blockSize;
-
-    /** File length. */
-    private long len;
-
-    /** Last access time. */
-    private long accessTime;
-
-    /** Last modification time. */
-    private long modificationTime;
-
-    /** File properties. */
-    private Map<String, String> props;
+    /** Directory marker. */
+    private boolean dir;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -59,135 +55,83 @@ public class IgfsListingEntry implements Externalizable {
     }
 
     /**
+     * Constructor.
+     *
      * @param fileInfo File info to construct listing entry from.
      */
-    public IgfsListingEntry(IgfsFileInfo fileInfo) {
-        fileId = fileInfo.id();
-        affKey = fileInfo.affinityKey();
-
-        if (fileInfo.isFile()) {
-            blockSize = fileInfo.blockSize();
-            len = fileInfo.length();
-        }
-
-        props = fileInfo.properties();
-        accessTime = fileInfo.accessTime();
-        modificationTime = fileInfo.modificationTime();
+    public IgfsListingEntry(IgfsEntryInfo fileInfo) {
+        id = fileInfo.id();
+        dir = fileInfo.isDirectory();
     }
 
     /**
-     * Creates listing entry with updated length.
+     * Constructor.
      *
-     * @param entry Entry.
-     * @param len New length.
+     * @param id File ID.
+     * @param dir Directory marker.
      */
-    public IgfsListingEntry(IgfsListingEntry entry, long len, long accessTime, long modificationTime) {
-        fileId = entry.fileId;
-        affKey = entry.affKey;
-        blockSize = entry.blockSize;
-        props = entry.props;
-        this.accessTime = accessTime;
-        this.modificationTime = modificationTime;
-
-        this.len = len;
+    public IgfsListingEntry(IgniteUuid id, boolean dir) {
+        this.id = id;
+        this.dir = dir;
     }
 
     /**
      * @return Entry file ID.
      */
     public IgniteUuid fileId() {
-        return fileId;
-    }
-
-    /**
-     * @return File affinity key, if specified.
-     */
-    public IgniteUuid affinityKey() {
-        return affKey;
+        return id;
     }
 
     /**
      * @return {@code True} if entry represents file.
      */
     public boolean isFile() {
-        return blockSize > 0;
+        return !dir;
     }
 
     /**
      * @return {@code True} if entry represents directory.
      */
     public boolean isDirectory() {
-        return blockSize == 0;
-    }
-
-    /**
-     * @return Block size.
-     */
-    public int blockSize() {
-        return blockSize;
-    }
-
-    /**
-     * @return Length.
-     */
-    public long length() {
-        return len;
-    }
-
-    /**
-     * @return Last access time.
-     */
-    public long accessTime() {
-        return accessTime;
-    }
-
-    /**
-     * @return Last modification time.
-     */
-    public long modificationTime() {
-        return modificationTime;
-    }
-
-    /**
-     * @return Properties map.
-     */
-    public Map<String, String> properties() {
-        return props;
+        return dir;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, fileId);
-        out.writeInt(blockSize);
-        out.writeLong(len);
-        U.writeStringMap(out, props);
-        out.writeLong(accessTime);
-        out.writeLong(modificationTime);
+        U.writeGridUuid(out, id);
+        out.writeBoolean(dir);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        fileId = U.readGridUuid(in);
-        blockSize = in.readInt();
-        len = in.readLong();
-        props = U.readStringMap(in);
-        accessTime = in.readLong();
-        modificationTime = in.readLong();
+        id = U.readGridUuid(in);
+        dir = in.readBoolean();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof IgfsListingEntry)) return false;
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
 
-        IgfsListingEntry that = (IgfsListingEntry)o;
+        BinaryUtils.writeIgniteUuid(out, id);
+        out.writeBoolean(dir);
+    }
 
-        return fileId.equals(that.fileId);
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        id = BinaryUtils.readIgniteUuid(in);
+        dir = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object other) {
+        return this == other || other instanceof IgfsListingEntry && F.eq(id, ((IgfsListingEntry)other).id);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return fileId.hashCode();
+        return id.hashCode();
     }
 
     /** {@inheritDoc} */

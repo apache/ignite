@@ -17,33 +17,49 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
-import static org.apache.ignite.transactions.TransactionState.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
  *
@@ -65,8 +81,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
@@ -158,7 +174,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
         IgniteCache<Integer, Integer> cache2 = jcache(2);
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         Integer key0 = null;
 
@@ -195,11 +211,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
             log.info("Start prepare.");
 
-            IgniteInternalTx txEx = ((TransactionProxyImpl)tx).tx();
+            GridNearTxLocal txEx = ((TransactionProxyImpl)tx).tx();
 
             commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-            IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
+            IgniteInternalFuture<?> prepFut = txEx.prepareNearTxLocal();
 
             waitPrepared(ignite(1));
 
@@ -315,7 +331,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
         IgniteCache<Integer, Integer> cache2 = jcache(2);
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         Integer key0 = null;
 
@@ -356,11 +372,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
         log.info("Start prepare.");
 
-        IgniteInternalTx txEx = ((TransactionProxyImpl)tx).tx();
+        GridNearTxLocal txEx = ((TransactionProxyImpl)tx).tx();
 
         commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-        IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
+        IgniteInternalFuture<?> prepFut = txEx.prepareNearTxLocal();
 
         waitPrepared(ignite(1));
 
@@ -406,13 +422,13 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     private void checkKey(Integer key, Collection<ClusterNode> keyNodes) {
         if (keyNodes == null) {
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
             }
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertNull("Unexpected value for: " + ignite.name(), cache.get(key));
             }
@@ -426,7 +442,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
                     found = true;
 
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    ignite.cache(DEFAULT_CACHE_NAME);
 
                     assertEquals("Unexpected value for: " + ignite.name(), key, key);
                 }
@@ -438,7 +454,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             assertTrue("Failed to find key node.", found);
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertEquals("Unexpected value for: " + ignite.name(), key, cache.get(key));
             }
@@ -488,7 +504,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         private List<T2<ClusterNode, GridIoMessage>> blockedMsgs = new ArrayList<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 Object msg0 = ((GridIoMessage)msg).message();
 
@@ -505,7 +522,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
                 }
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
 
         /**

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Convenient adapter for "rich" iterable interface.

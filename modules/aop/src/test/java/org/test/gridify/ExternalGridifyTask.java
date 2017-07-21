@@ -17,13 +17,17 @@
 
 package org.test.gridify;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.resources.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.compute.gridify.GridifyArgument;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  * External gridify task.

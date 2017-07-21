@@ -17,9 +17,11 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectStreamClass;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This class defines custom JDK object input stream.
@@ -60,4 +62,3 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
         return super.resolveObject(o);
     }
 }
-

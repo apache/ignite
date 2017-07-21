@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Process descriptor used to identify process for which task is running.

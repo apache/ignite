@@ -17,12 +17,14 @@
 
 package org.apache.ignite.examples.computegrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Demonstrates broadcasting computations within cluster.

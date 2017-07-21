@@ -30,4 +30,9 @@ public interface GridOffHeapEvictListener {
      * @param valBytes Value bytes.
      */
     public void onEvict(int part, int hash, byte[] keyBytes, byte[] valBytes);
+
+    /**
+     * @return {@code True} if entry selected for eviction should be immediately removed.
+     */
+    public boolean removeEvicted();
 }

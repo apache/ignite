@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 
 /**
  * TODO: GG-4036: include it to cache suite once it is fixed properly.

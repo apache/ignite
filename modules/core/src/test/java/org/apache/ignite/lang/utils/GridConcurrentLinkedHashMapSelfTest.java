@@ -17,10 +17,19 @@
 
 package org.apache.ignite.lang.utils;
 
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentLinkedHashMap;
 
-import java.util.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
 /**
  * This class tests basic contracts of {@code ConcurrentLinkedHashMap}.
@@ -259,5 +268,60 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
         }
 
         assert nextVal == -1 : "Unexpected value: " + nextVal;
+    }
+
+    /**
+     *
+     */
+    public void testIterationInPerSegmentModes() {
+        checkIteration(PER_SEGMENT_Q);
+        checkIteration(PER_SEGMENT_Q_OPTIMIZED_RMV);
+    }
+
+    /**
+     * @param plc Policy.
+     */
+    private void checkIteration(ConcurrentLinkedHashMap.QueuePolicy plc) {
+        ConcurrentLinkedHashMap<Integer, Integer> map =
+            new ConcurrentLinkedHashMap<>(10,
+                0.75f,
+                16,
+                0,
+                plc);
+
+        Map<Integer, Integer> map0 = new HashMap<>();
+
+        int cnt = 0;
+
+        for (int i = 0; i < 100_000; i++) {
+            int key = ThreadLocalRandom.current().nextInt(15000);
+            int val = ThreadLocalRandom.current().nextInt(15000);
+
+            Integer rmv0 = map0.put(key, val);
+
+            if (rmv0 == null)
+                cnt++;
+
+            Integer rmv = map.put(key, val);
+
+            assertEquals(rmv0, rmv);
+        }
+
+        int checkCnt = 0;
+
+        for (Map.Entry<Integer, Integer> e : map.entrySet()) {
+            checkCnt++;
+
+            Integer rmv = map0.remove(e.getKey());
+
+            assertNotNull(rmv);
+            assertEquals(rmv, e.getValue());
+        }
+
+        assertEquals(cnt, checkCnt);
+
+        info("Puts count: " + cnt);
+
+        assert map0.isEmpty() : map0;
     }
 }

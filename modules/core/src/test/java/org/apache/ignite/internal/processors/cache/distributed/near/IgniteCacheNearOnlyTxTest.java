@@ -17,19 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -56,10 +61,10 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(1).equals(gridName)) {
+        if (getTestIgniteInstanceName(1).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
@@ -76,20 +81,33 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
-        GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgniteCache cache = ignite1.cache(null);
+        final Integer key = 1;
 
-                int key = 1;
+        final AtomicInteger idx = new AtomicInteger();
 
-                for (int i = 0; i < 100; i++)
-                    cache.put(key, 1);
+        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
-                return null;
-            }
-        }, 5, "put-thread");
+        for (int i = 0; i < 5; i++) {
+            log.info("Iteration: " + i);
+
+            GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int val = idx.getAndIncrement();
+
+                    IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
+
+                    for (int i = 0; i < 100; i++)
+                        cache.put(key, val);
+
+                    return null;
+                }
+            }, 5, "put-thread").get();
+
+            assertEquals(cache0.localPeek(key), cache1.localPeek(key));
+        }
     }
 
     /**
@@ -107,6 +125,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     }
 
     /**
+     * @param optimistic If {@code true} uses optimistic transaction.
      * @throws Exception If failed.
      */
     private void txMultithreaded(final boolean optimistic) throws Exception {
@@ -114,29 +133,42 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
-        GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgniteCache cache = ignite1.cache(null);
+        final AtomicInteger idx = new AtomicInteger();
 
-                int key = 1;
+        final Integer key = 1;
 
-                IgniteTransactions txs = ignite1.transactions();
+        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
-                for (int i = 0; i < 100; i++) {
-                    try (Transaction tx = txs.txStart(optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ)) {
-                        cache.get(key);
+        for (int i = 0; i < 5; i++) {
+            log.info("Iteration: " + i);
 
-                        cache.put(key, 1);
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
-                        tx.commit();
+                    IgniteTransactions txs = ignite1.transactions();
+
+                    int val = idx.getAndIncrement();
+
+                    for (int i = 0; i < 100; i++) {
+                        try (Transaction tx = txs.txStart(optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ)) {
+                            cache.get(key);
+
+                            cache.put(key, val);
+
+                            tx.commit();
+                        }
                     }
-                }
 
-                return null;
-            }
-        }, 5, "put-thread");
+                    return null;
+                }
+            }, 5, "put-thread");
+
+            assertEquals(cache0.localPeek(key), cache1.localPeek(key));
+        }
     }
 
     /**
@@ -147,13 +179,13 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
+
+        final Integer key = 1;
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache cache = ignite1.cache(null);
-
-                int key = 1;
+                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < 100; i++)
                     cache.put(key, 1);
@@ -164,9 +196,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache cache = ignite1.cache(null);
-
-                int key = 1;
+                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                 IgniteTransactions txs = ignite1.transactions();
 

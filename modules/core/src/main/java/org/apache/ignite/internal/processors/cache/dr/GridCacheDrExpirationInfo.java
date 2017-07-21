@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.dr;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache DR info used as argument in PUT cache internal interfaces with expiration info added.

@@ -17,21 +17,25 @@
 
 package org.apache.ignite.internal.processors.rest.protocols;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-import sun.misc.*;
-
-import java.io.*;
-import java.net.*;
-import java.nio.charset.*;
-import java.security.*;
-import java.util.*;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.StringTokenizer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.rest.GridRestProtocol;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.BASE64Encoder;
 
 /**
  * Abstract protocol adapter.

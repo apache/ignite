@@ -17,29 +17,52 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.events.EventType.EVTS_ALL;
+import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
+import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
+import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
 
 /**
  * Event consume test.
@@ -73,14 +96,16 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     private boolean noAutoUnsubscribe;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
         disc.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disc);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         if (include)
             cfg.setUserAttributes(F.asMap("include", true));
@@ -94,7 +119,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         include = true;
 
-        startGridsMultiThreaded(GRID_CNT - 1);
+        startGrids(GRID_CNT - 1);
 
         include = false;
 
@@ -125,6 +150,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
                 assertEquals(0, U.<Map>field(proc, "startFuts").size());
                 assertEquals(0, U.<Map>field(proc, "stopFuts").size());
+                assertEquals(0, U.<Map>field(proc, "bufCheckThreads").size());
             }
         }
         finally {
@@ -140,7 +166,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         return F.view(U.<Map<UUID, LocalRoutineInfo>>field(proc, "locInfos").values(),
             new IgnitePredicate<LocalRoutineInfo>() {
                 @Override public boolean apply(LocalRoutineInfo info) {
-                    return info.handler().isForEvents();
+                    return info.handler().isEvents();
                 }
             });
     }
@@ -219,6 +245,175 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         }
         finally {
             grid(0).events().stopRemoteListen(consumeId);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testApiAsyncOld() throws Exception {
+        IgniteEvents evtAsync = grid(0).events().withAsync();
+
+        try {
+            evtAsync.stopRemoteListen(null);
+            evtAsync.future().get();
+        }
+        catch (NullPointerException ignored) {
+            // No-op.
+        }
+
+        evtAsync.stopRemoteListen(UUID.randomUUID());
+        evtAsync.future().get();
+
+        UUID consumeId = null;
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                },
+                EVTS_DISCOVERY
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                }
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
+                        return false;
+                    }
+                },
+                new P1<Event>() {
+                    @Override public boolean apply(Event e) {
+                        return false;
+                    }
+                }
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testApiAsync() throws Exception {
+        IgniteEvents evt = grid(0).events();
+
+        try {
+            evt.stopRemoteListenAsync(null).get();
+        }
+        catch (NullPointerException ignored) {
+            // No-op.
+        }
+
+        evt.stopRemoteListenAsync(UUID.randomUUID()).get();
+
+        UUID consumeId = null;
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                },
+                EVTS_DISCOVERY
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                }
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
+                        return false;
+                    }
+                },
+                new P1<Event>() {
+                    @Override public boolean apply(Event e) {
+                        return false;
+                    }
+                }
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
         }
     }
 
@@ -397,7 +592,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRemoteProjection() throws Exception {
-        final Collection<UUID> nodeIds = new HashSet<>();
+        final Collection<UUID> nodeIds = new ConcurrentSkipListSet<>();
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
@@ -754,7 +949,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     public void testNodeJoinWithP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-585");
-        
+
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT + 1);
@@ -855,33 +1050,37 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMasterNodeLeave() throws Exception {
-        Ignite g = startGrid("anotherGrid");
-
-        final UUID nodeId = g.cluster().localNode().id();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
-                        latch.countDown();
+        Ignite g = startGrid("anotherGrid");
 
-                    return true;
-                }
-            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        try {
+            final UUID nodeId = g.cluster().localNode().id();
+            for (int i = 0; i < GRID_CNT; i++) {
+                grid(i).events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (nodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
+                            latch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+            }
+
+            g.events().remoteListen(
+                null,
+                new P1<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        return true;
+                    }
+                },
+                EVTS_ALL
+            );
+
         }
-
-        g.events().remoteListen(
-            null,
-            new P1<Event>() {
-                @Override public boolean apply(Event evt) {
-                    return true;
-                }
-            },
-            EVTS_ALL
-        );
-
-        stopGrid("anotherGrid");
+        finally {
+            stopGrid("anotherGrid");
+        }
 
         assert latch.await(3000, MILLISECONDS);
     }
@@ -892,42 +1091,47 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     public void testMasterNodeLeaveNoAutoUnsubscribe() throws Exception {
         Ignite g = startGrid("anotherGrid");
 
-        final UUID nodeId = g.cluster().localNode().id();
-        final CountDownLatch discoLatch = new CountDownLatch(GRID_CNT);
+        final CountDownLatch discoLatch;
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
-                        discoLatch.countDown();
+        try {
+            final UUID nodeId = g.cluster().localNode().id();
+            discoLatch = new CountDownLatch(GRID_CNT);
 
-                    return true;
-                }
-            }, EVT_NODE_LEFT);
+            for (int i = 0; i < GRID_CNT; i++) {
+                grid(0).events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
+                            discoLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_LEFT);
+            }
+
+            consumeLatch = new CountDownLatch(GRID_CNT * 2 + 1);
+            consumeCnt = new AtomicInteger();
+
+            noAutoUnsubscribe = true;
+
+            g.events().remoteListen(
+                1, 0, false,
+                null,
+                new P1<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        consumeLatch.countDown();
+                        consumeCnt.incrementAndGet();
+
+                        return true;
+                    }
+                },
+                EVT_JOB_STARTED
+            );
+
+            grid(0).compute().broadcast(F.noop());
         }
-
-        consumeLatch = new CountDownLatch(GRID_CNT * 2 + 1);
-        consumeCnt = new AtomicInteger();
-
-        noAutoUnsubscribe = true;
-
-        g.events().remoteListen(
-            1, 0, false,
-            null,
-            new P1<Event>() {
-                @Override public boolean apply(Event evt) {
-                    consumeLatch.countDown();
-                    consumeCnt.incrementAndGet();
-
-                    return true;
-                }
-            },
-            EVT_JOB_STARTED
-        );
-
-        grid(0).compute().broadcast(F.noop());
-
-        stopGrid("anotherGrid");
+        finally {
+            stopGrid("anotherGrid");
+        }
 
         discoLatch.await(3000, MILLISECONDS);
 
@@ -955,15 +1159,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        IgniteEvents evts = grid(idx).events().withAsync();
+                        IgniteEvents evts = grid(idx).events();
 
-                        evts.remoteListen(new P2<UUID, Event>() {
+                        UUID consumeId = evts.remoteListenAsync(new P2<UUID, Event>() {
                             @Override public boolean apply(UUID uuid, Event evt) {
                                 return true;
                             }
-                        }, null, EVT_JOB_STARTED);
-
-                        UUID consumeId = evts.<UUID>future().get(3000);
+                        }, null, EVT_JOB_STARTED).get(3000);
 
                         started.add(consumeId);
 
@@ -994,11 +1196,9 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     UUID consumeId = t.get2();
 
                     try {
-                        IgniteEvents evts = grid(idx).events().withAsync();
+                        IgniteEvents evts = grid(idx).events();
 
-                        evts.stopRemoteListen(consumeId);
-
-                        evts.future().get(3000);
+                        evts.stopRemoteListenAsync(consumeId).get(3000);
 
                         stopped.add(consumeId);
                     }
@@ -1028,11 +1228,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        IgniteCompute comp = grid(idx).compute().withAsync();
-
-                        comp.run(F.noop());
-
-                        comp.future().get(3000);
+                        grid(idx).compute().runAsync(F.noop()).get(3000);
                     }
                     catch (IgniteException ignored) {
                         // Ignore all job execution related errors.
@@ -1054,11 +1250,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             int idx = t.get1();
             UUID consumeId = t.get2();
 
-            IgniteEvents evts = grid(idx).events().withAsync();
-
-            evts.stopRemoteListen(consumeId);
-
-            evts.future().get(3000);
+            grid(idx).events().stopRemoteListenAsync(consumeId).get(3000);
 
             stopped.add(consumeId);
         }

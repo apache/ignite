@@ -17,13 +17,17 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.integration.*;
-import java.util.*;
+import java.util.Collection;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriter;
+import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * API for cache persistent storage for read-through and write-through behavior.

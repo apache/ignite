@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.ssl.*;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 
 /**
  * Runs multi-threaded tests on tcp binary protocol (ssl is disabled).

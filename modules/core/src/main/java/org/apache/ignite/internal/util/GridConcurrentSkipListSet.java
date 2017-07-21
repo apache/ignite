@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.util;
 
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.lang.Boolean.*;
+import static java.lang.Boolean.TRUE;
 
 /**
  * This class provided the same logic as {@link ConcurrentSkipListSet}. It adds

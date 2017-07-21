@@ -17,25 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
-import javax.cache.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Basic store test.
@@ -71,8 +77,8 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -84,7 +90,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
         cc.setRebalanceMode(SYNC);
 
@@ -521,7 +526,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         load(cache, 1, true);
 
-        String val = cache.localPeek(1, CachePeekMode.ONHEAP);
+        String val = cache.localPeek(1);
 
         assert val != null;
         assert "1".equals(val);
@@ -552,7 +557,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         for (int i = 1; i <= 10; i++) {
             load(cache, i, true);
 
-            val = cache.localPeek(i, CachePeekMode.ONHEAP);
+            val = cache.localPeek(i);
 
             checkLastMethod("load");
 
@@ -564,7 +569,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
             assert cached != null;
 
-            assert cached == val : "Cached value mismatch [expected=" + val + ", cached=" + cached + ']';
+            assert cached.equals(val) : "Cached value mismatch [expected=" + val + ", cached=" + cached + ']';
 
             // Make sure that value is coming from cache, not from store.
             checkLastMethod(null);

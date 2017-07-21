@@ -17,18 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Transactions recovery check response.
  */
-public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
+public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,6 +45,10 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
 
     /** Flag indicating if all remote transactions were prepared. */
     private boolean success;
+
+    /** Transient TX state. */
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Empty constructor required by {@link Externalizable}
@@ -53,17 +62,20 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param success {@code True} if all remote transactions were prepared, {@code false} otherwise.
+     * @param addDepInfo Deployment info flag.
      */
     public GridCacheTxRecoveryResponse(GridCacheVersion txId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        boolean success)
-    {
-        super(txId, 0);
+        boolean success,
+        boolean addDepInfo) {
+        super(txId, 0, addDepInfo);
 
         this.futId = futId;
         this.miniId = miniId;
         this.success = success;
+
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -85,6 +97,21 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
      */
     public boolean success() {
         return success;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTxState txState() {
+        return txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void txState(IgniteTxState txState) {
+        this.txState = txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txRecoveryMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -162,11 +189,11 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheTxRecoveryResponse.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 17;
     }
 

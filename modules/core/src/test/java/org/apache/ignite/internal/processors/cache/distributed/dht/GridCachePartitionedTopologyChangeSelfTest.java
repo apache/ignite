@@ -17,32 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Lock;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests that new transactions do not start until partition exchange is completed.
@@ -66,8 +77,8 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         // Discovery.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -154,7 +165,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
                             try {
-                                Lock lock = node.cache(null).lock(key);
+                                Lock lock = node.cache(DEFAULT_CACHE_NAME).lock(key);
 
                                 lock.lock();
 
@@ -166,7 +177,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Acquiring explicit lock for key: " + key * 10);
 
-                                    Lock lock10 = node.cache(null).lock(key * 10);
+                                    Lock lock10 = node.cache(DEFAULT_CACHE_NAME).lock(key * 10);
 
                                     lock10.lock();
 
@@ -262,7 +273,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -331,7 +342,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.cache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -416,7 +427,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -457,7 +468,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             // Now stop the node.
-            stopGrid(getTestGridName(3), true);
+            stopGrid(getTestIgniteInstanceName(3), true);
 
             leaveLatch.await();
 
@@ -467,7 +478,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.cache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -502,7 +513,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {
-                Affinity affinity = grid(i).affinity(null);
+                Affinity affinity = grid(i).affinity(DEFAULT_CACHE_NAME);
 
                 ConcurrentMap addedNodes = U.field(affinity, "addedNodes");
 
@@ -543,7 +554,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      * @return Map from partition to key.
      */
     private Map<Integer, Integer> keysFor(IgniteKernal node, Iterable<Integer> parts) {
-        GridCacheContext<Object, Object> ctx = node.internalCache().context();
+        GridCacheContext<Object, Object> ctx = node.internalCache(DEFAULT_CACHE_NAME).context();
 
         Map<Integer, Integer> res = new HashMap<>();
 
@@ -568,7 +579,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     private List<Integer> partitions(Ignite node, int partType) {
         List<Integer> res = new LinkedList<>();
 
-        Affinity<Object> aff = node.affinity(null);
+        Affinity<Object> aff = node.affinity(DEFAULT_CACHE_NAME);
 
         for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
             ClusterNode locNode = node.cluster().localNode();

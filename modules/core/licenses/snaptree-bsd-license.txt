@@ -1,4 +1,4 @@
-SNAPTREE LICENSE
+This product sources bundles SnapTree classes, which is available under a SNAPTREE LICENSE:
 
 Copyright (c) 2009 Stanford University, unless otherwise specified.
 All rights reserved.

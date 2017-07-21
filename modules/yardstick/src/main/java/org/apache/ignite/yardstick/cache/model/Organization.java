@@ -17,14 +17,20 @@
 
 package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Organization record used for query test.
  */
-public class Organization implements Externalizable {
+public class Organization implements Externalizable, Binarylizable {
     /** Organization ID. */
     @QuerySqlField(index = true)
     private int id;
@@ -92,9 +98,20 @@ public class Organization implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        writer.writeInt("id", id);
+        writer.writeString("name", name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        id = reader.readInt("id");
+        name = reader.readString("name");
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o || (o instanceof Organization) && id == ((Organization)o).id;
-
     }
 
     /** {@inheritDoc} */

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractMetricsSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Local atomic cache metrics test.
@@ -32,12 +31,11 @@ public class GridCacheAtomicLocalMetricsSelfTest extends GridCacheAbstractMetric
     private static final int GRID_CNT = 1;
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(LOCAL);
         cfg.setAtomicityMode(ATOMIC);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }

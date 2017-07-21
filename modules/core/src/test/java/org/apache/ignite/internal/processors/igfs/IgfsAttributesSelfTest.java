@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.igfs.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.igfs.IgfsMode;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
-
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * {@link IgfsAttributes} test case.

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message telling nodes that new node should be added to topology.
@@ -40,24 +42,28 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** Added node. */
     private final TcpDiscoveryNode node;
 
+    /** */
+    private DiscoveryDataPacket dataPacket;
+
     /** Pending messages from previous node. */
     private Collection<TcpDiscoveryAbstractMessage> msgs;
 
     /** Discarded message ID. */
     private IgniteUuid discardMsgId;
 
+    /** Discarded message ID. */
+    private IgniteUuid discardCustomMsgId;
+
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private Collection<TcpDiscoveryNode> top;
 
+    /** */
+    @GridToStringInclude
+    private transient Collection<TcpDiscoveryNode> clientTop;
+
     /** Topology snapshots history. */
     private Map<Long, Collection<ClusterNode>> topHist;
-
-    /** Discovery data from new node. */
-    private Map<Integer, byte[]> newNodeDiscoData;
-
-    /** Discovery data from old nodes. */
-    private Map<UUID, Map<Integer, byte[]>> oldNodesDiscoData;
 
     /** Start time of the first grid node. */
     private final long gridStartTime;
@@ -67,12 +73,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId Creator node ID.
      * @param node Node to add to topology.
-     * @param newNodeDiscoData New Node discovery data.
+     * @param dataPacket container for collecting discovery data across the cluster.
      * @param gridStartTime Start time of the first grid node.
      */
     public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
         TcpDiscoveryNode node,
-        Map<Integer, byte[]> newNodeDiscoData,
+        DiscoveryDataPacket dataPacket,
         long gridStartTime)
     {
         super(creatorNodeId);
@@ -81,10 +87,25 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         assert gridStartTime > 0;
 
         this.node = node;
-        this.newNodeDiscoData = newNodeDiscoData;
+        this.dataPacket = dataPacket;
         this.gridStartTime = gridStartTime;
+    }
 
-        oldNodesDiscoData = new LinkedHashMap<>();
+    /**
+     * @param msg Message.
+     */
+    public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
+        super(msg);
+
+        this.node = msg.node;
+        this.msgs = msg.msgs;
+        this.discardMsgId = msg.discardMsgId;
+        this.discardCustomMsgId = msg.discardCustomMsgId;
+        this.top = msg.top;
+        this.clientTop = msg.clientTop;
+        this.topHist = msg.topHist;
+        this.dataPacket = msg.dataPacket;
+        this.gridStartTime = msg.gridStartTime;
     }
 
     /**
@@ -115,14 +136,29 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * Gets discarded custom message ID.
+     *
+     * @return Discarded message ID.
+     */
+    @Nullable public IgniteUuid discardedCustomMessageId() {
+        return discardCustomMsgId;
+    }
+
+    /**
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.
      * @param discardMsgId Discarded message ID.
+     * @param discardCustomMsgId Discarded custom message ID.
      */
-    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
+    public void messages(
+        @Nullable Collection<TcpDiscoveryAbstractMessage> msgs,
+        @Nullable IgniteUuid discardMsgId,
+        @Nullable IgniteUuid discardCustomMsgId
+    ) {
         this.msgs = msgs;
         this.discardMsgId = discardMsgId;
+        this.discardCustomMsgId = discardCustomMsgId;
     }
 
     /**
@@ -144,6 +180,22 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * @param top Topology at the moment when client joined.
+     */
+    public void clientTopology(Collection<TcpDiscoveryNode> top) {
+        assert top != null && !top.isEmpty() : top;
+
+        this.clientTop = top;
+    }
+
+    /**
+     * @return Topology at the moment when client joined.
+     */
+    public Collection<TcpDiscoveryNode> clientTopology() {
+        return clientTop;
+    }
+
+    /**
      * Gets topology snapshots history.
      *
      * @return Map with topology snapshots history.
@@ -162,36 +214,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
-     * @return Discovery data from new node.
+     * @return {@link DiscoveryDataPacket} carried by this message.
      */
-    public Map<Integer, byte[]> newNodeDiscoveryData() {
-        return newNodeDiscoData;
-    }
-
-    /**
-     * @return Discovery data from old nodes.
-     */
-    public Map<UUID, Map<Integer, byte[]>> oldNodesDiscoveryData() {
-        return oldNodesDiscoData;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param discoData Discovery data to add.
-     */
-    public void addDiscoveryData(UUID nodeId, Map<Integer, byte[]> discoData) {
-        // Old nodes disco data may be null if message
-        // makes more than 1 pass due to stopping of the nodes in topology.
-        if (oldNodesDiscoData != null)
-            oldNodesDiscoData.put(nodeId, discoData);
+    public DiscoveryDataPacket gridDiscoveryData() {
+        return dataPacket;
     }
 
     /**
      * Clears discovery data to minimize message size.
      */
     public void clearDiscoveryData() {
-        newNodeDiscoData = null;
-        oldNodesDiscoData = null;
+        dataPacket = null;
     }
 
     /**

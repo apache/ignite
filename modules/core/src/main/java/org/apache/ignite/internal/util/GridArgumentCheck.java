@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class encapsulates argument check (null and range) for public facing APIs. Unlike asserts
@@ -34,6 +33,9 @@ public class GridArgumentCheck {
 
     /** Not empty argument error message suffix. */
     private static final String NOT_EMPTY_SUFFIX = " must not be empty.";
+
+    /** Not null or empty error message suffix. */
+    private static final String NOT_NULL_OR_EMPTY_SUFFIX = " must not be null or empty.";
 
     /**
      * Checks if given argument value is not {@code null}. Otherwise - throws {@link NullPointerException}.
@@ -144,5 +146,18 @@ public class GridArgumentCheck {
 
         if (arr.length == 0)
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that a String is not null or empty.
+     *
+     * @param value Value to check.
+     * @param name Argument name.
+     */
+    public static void notNullOrEmpty(String value, String name) {
+        notNull(value, name);
+
+        if (value.trim().length() == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_NULL_OR_EMPTY_SUFFIX);
     }
 }

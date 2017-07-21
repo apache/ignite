@@ -17,7 +17,8 @@
 
 package org.apache.ignite.visor.plugin;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
+import javax.swing.JPanel;
 
 /**
  * Abstract base class for Visor pluggable tabs.

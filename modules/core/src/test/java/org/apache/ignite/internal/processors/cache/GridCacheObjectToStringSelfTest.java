@@ -17,23 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.eviction.fifo.*;
-import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests that common cache objects' toString() methods do not lead to stack overflow.
@@ -52,8 +57,8 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(ipFinder);
@@ -63,6 +68,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setEvictionPolicy(evictionPlc);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -151,13 +157,13 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(0);
 
         try {
-            IgniteCache<Object, Object> cache = g.cache(null);
+            IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
 
             for (int i = 0; i < 10; i++) {
-                GridCacheEntryEx entry = ((IgniteKernal)g).context().cache().internalCache().peekEx(i);
+                GridCacheEntryEx entry = ((IgniteKernal)g).context().cache().internalCache(DEFAULT_CACHE_NAME).peekEx(i);
 
                 if (entry != null)
                     assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());

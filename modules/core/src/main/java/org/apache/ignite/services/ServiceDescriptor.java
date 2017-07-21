@@ -17,10 +17,10 @@
 
 package org.apache.ignite.services;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Map;
+import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Service deployment descriptor. Contains all service deployment configuration, and also

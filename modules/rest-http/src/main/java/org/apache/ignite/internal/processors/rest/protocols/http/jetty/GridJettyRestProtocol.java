@@ -17,27 +17,42 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.protocols.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.util.*;
-import org.eclipse.jetty.util.log.*;
-import org.eclipse.jetty.util.thread.*;
-import org.eclipse.jetty.xml.*;
-import org.jetbrains.annotations.*;
-import org.xml.sax.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Properties;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
+import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.eclipse.jetty.server.AbstractNetworkConnector;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.xml.XmlConfiguration;
+import org.jetbrains.annotations.Nullable;
+import org.xml.sax.SAXException;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.spi.IgnitePortProtocol.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
 /**
  * Jetty REST protocol implementation.
@@ -153,8 +168,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
 
         int initPort = connector.getPort();
-
-        int lastPort = initPort + config().getPortRange() - 1;
+        int portRange = config().getPortRange();
+        int lastPort = portRange == 0 ? initPort : initPort + portRange - 1;
 
         for (port = initPort; port <= lastPort; port++) {
             connector.setPort(port);
@@ -265,14 +280,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             int srvPort;
 
             try {
-                srvPort = Integer.valueOf(srvPortStr);
+                srvPort = Integer.parseInt(srvPortStr);
             }
             catch (NumberFormatException ignore) {
                 throw new IgniteCheckedException("Failed to start Jetty server because IGNITE_JETTY_PORT system property " +
                     "cannot be cast to integer: " + srvPortStr);
             }
 
-            httpSrv = new Server(new QueuedThreadPool(20, 200));
+            httpSrv = new Server(new QueuedThreadPool(200, 20));
 
             ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 

@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Extended cache version which also has additional DR version.
@@ -43,15 +46,14 @@ public class GridCacheVersionEx extends GridCacheVersion {
      * Constructor.
      *
      * @param topVer Topology version.
-     * @param globalTime Global time.
      * @param order Order.
      * @param nodeOrder Node order.
      * @param dataCenterId Data center ID.
      * @param drVer DR version.
      */
-    public GridCacheVersionEx(int topVer, long globalTime, long order, int nodeOrder, byte dataCenterId,
+    public GridCacheVersionEx(int topVer, long order, int nodeOrder, byte dataCenterId,
         GridCacheVersion drVer) {
-        super(topVer, globalTime, order, nodeOrder, dataCenterId);
+        super(topVer, order, nodeOrder, dataCenterId);
 
         assert drVer != null && !(drVer instanceof GridCacheVersionEx); // DR version can only be plain here.
 
@@ -63,12 +65,11 @@ public class GridCacheVersionEx extends GridCacheVersion {
      *
      * @param topVer Topology version.
      * @param nodeOrderDrId Node order and DR ID.
-     * @param globalTime Globally adjusted time.
      * @param order Version order.
      * @param drVer DR version.
      */
-    public GridCacheVersionEx(int topVer, int nodeOrderDrId, long globalTime, long order, GridCacheVersion drVer) {
-        super(topVer, nodeOrderDrId, globalTime, order);
+    public GridCacheVersionEx(int topVer, int nodeOrderDrId, long order, GridCacheVersion drVer) {
+        super(topVer, nodeOrderDrId, order);
 
         assert drVer != null && !(drVer instanceof GridCacheVersionEx); // DR version can only be plain here.
 
@@ -81,13 +82,13 @@ public class GridCacheVersionEx extends GridCacheVersion {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 104;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -105,7 +106,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
         }
 
         switch (writer.state()) {
-            case 4:
+            case 3:
                 if (!writer.writeMessage("drVer", drVer))
                     return false;
 
@@ -127,7 +128,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 3:
                 drVer = reader.readMessage("drVer");
 
                 if (!reader.isLastRead())
@@ -137,7 +138,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheVersionEx.class);
     }
 
     /** {@inheritDoc} */
@@ -154,5 +155,13 @@ public class GridCacheVersionEx extends GridCacheVersion {
         super.writeExternal(out);
 
         drVer.writeExternal(out);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "GridCacheVersionEx [topVer=" + topologyVersion() +
+            ", order=" + order() +
+            ", nodeOrder=" + nodeOrder() +
+            ", drVer=" + drVer + ']';
     }
 }

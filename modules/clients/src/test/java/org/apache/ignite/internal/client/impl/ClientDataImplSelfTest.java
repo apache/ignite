@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.internal.client.GridClientData;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.concurrent.*;
-
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Simple unit test for GridClientDataImpl which checks method parameters.

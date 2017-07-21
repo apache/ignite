@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-
-import java.util.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -37,8 +34,6 @@ public class CacheConfigurationP2PTestServer {
         System.out.println("Starting test server node.");
 
         IgniteConfiguration cfg = CacheConfigurationP2PTest.createConfiguration();
-
-        U.setWorkDirectory(null, U.getIgniteHome());
 
         try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println(CacheConfigurationP2PTest.NODE_START_MSG);

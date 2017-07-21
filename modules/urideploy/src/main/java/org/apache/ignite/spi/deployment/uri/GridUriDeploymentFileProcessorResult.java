@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.List;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Deployment file processing result.

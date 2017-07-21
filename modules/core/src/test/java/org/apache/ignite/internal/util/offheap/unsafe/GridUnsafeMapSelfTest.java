@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.internal.util.offheap.*;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMapAbstractSelfTest;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
 
 /**
  * Unsafe map test.
  */
 public class GridUnsafeMapSelfTest extends GridOffHeapMapAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected <K> GridOffHeapMap<K> newMap() {
+    @Override protected GridOffHeapMap newMap() {
         return GridOffHeapMapFactory.unsafeMap(concurrency, load, initCap, mem, lruStripes, evictLsnr);
     }
 }

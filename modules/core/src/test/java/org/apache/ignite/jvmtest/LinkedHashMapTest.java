@@ -17,10 +17,10 @@
 
 package org.apache.ignite.jvmtest;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Test for {@link LinkedHashMap}.

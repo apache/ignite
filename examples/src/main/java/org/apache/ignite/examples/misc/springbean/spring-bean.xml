@@ -35,13 +35,6 @@
                 <!-- Set to true to enable ignite-aware class loading for examples, default is false. -->
                 <property name="peerClassLoadingEnabled" value="true"/>
 
-                <property name="marshaller">
-                    <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                        <!-- Set to false to allow non-serializable objects in examples, default is true. -->
-                        <property name="requireSerializable" value="false"/>
-                    </bean>
-                </property>
-
                 <!-- Enable task execution events for examples. -->
                 <property name="includeEventTypes">
                     <util:constant static-field="org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION"/>

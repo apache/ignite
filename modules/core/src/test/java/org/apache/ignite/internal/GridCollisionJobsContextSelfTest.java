@@ -17,15 +17,23 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.GridTestJob;
+import org.apache.ignite.GridTestTask;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.collision.CollisionContext;
+import org.apache.ignite.spi.collision.CollisionExternalListener;
+import org.apache.ignite.spi.collision.CollisionJobContext;
+import org.apache.ignite.spi.collision.CollisionSpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Collision job context test.
@@ -39,14 +47,14 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         assert ignite != null;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCollisionSpi(new TestCollisionSpi());
 
@@ -57,7 +65,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testCollisionJobContext() throws Exception {
-        G.ignite(getTestGridName()).compute().execute(new GridTestTask(), "some-arg");
+        G.ignite(getTestIgniteInstanceName()).compute().execute(new GridTestTask(), "some-arg");
     }
 
     /** */
@@ -89,7 +97,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 

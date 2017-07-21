@@ -17,13 +17,20 @@
 
 package org.apache.ignite.examples.computegrid.failover;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.compute.ComputeJobFailoverException;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.TaskSessionResource;
 
 /**
  * Demonstrates the usage of checkpoints in Ignite.

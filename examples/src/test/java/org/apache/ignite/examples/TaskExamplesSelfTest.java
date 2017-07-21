@@ -17,8 +17,9 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.computegrid.ComputeTaskMapExample;
+import org.apache.ignite.examples.computegrid.ComputeTaskSplitExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Hello world examples self test.

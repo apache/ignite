@@ -17,24 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -50,8 +59,8 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     private static final int RANGE = 100_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -59,17 +68,17 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(cacheMode());
@@ -99,7 +108,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     public void testTxConsistency() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(null);
+        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < RANGE; i++) {
             ldr.addData(i, 0);
@@ -145,7 +154,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             try {
                 IgniteKernal grid = (IgniteKernal)grid(idx);
 
-                IgniteCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 List<Integer> keys = new ArrayList<>();
 
@@ -183,9 +192,9 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
 
-                IgniteCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
 
-                if (grid.affinity(null).isPrimaryOrBackup(grid.localNode(), k)) {
+                if (grid.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {
                         val = cache.localPeek(k, CachePeekMode.ONHEAP);
 
@@ -193,7 +202,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
                     }
                     else
                         assertEquals("Failed to find value in cache [primary=" +
-                            grid.affinity(null).isPrimary(grid.localNode(), k) + ']',
+                            grid.affinity(DEFAULT_CACHE_NAME).isPrimary(grid.localNode(), k) + ']',
                             val, cache.localPeek(k, CachePeekMode.ONHEAP));
                 }
             }

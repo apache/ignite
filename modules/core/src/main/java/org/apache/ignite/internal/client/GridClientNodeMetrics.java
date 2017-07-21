@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Node metrics for remote grid node. Metrics can be retrieved via

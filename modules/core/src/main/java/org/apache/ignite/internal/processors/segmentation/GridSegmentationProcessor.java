@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.segmentation;
 
-import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.GridProcessor;
 
 /**
  * Kernal processor responsible for checking network segmentation issues.

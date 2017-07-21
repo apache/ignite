@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
+import java.util.Collection;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Future that implements a barrier after which dht topology is safe to use. Topology is considered to be
@@ -33,18 +33,6 @@ import org.apache.ignite.internal.processors.cache.*;
  */
 public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopologyVersion> {
     /**
-     * Gets a topology snapshot for the topology version represented by the future. Note that by the time
-     * partition exchange completes some nodes from the snapshot may leave the grid. One should use discovery
-     * service to check if the node is valid.
-     * <p/>
-     * This method will block until the topology future is ready.
-     *
-     * @return Topology snapshot for particular topology version.
-     * @throws IgniteCheckedException If topology future failed.
-     */
-    public GridDiscoveryTopologySnapshot topologySnapshot() throws IgniteCheckedException;
-
-    /**
      * Gets topology version of this future.
      *
      * @return Topology version.
@@ -52,9 +40,20 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
     public AffinityTopologyVersion topologyVersion();
 
     /**
-     * Returns is cache topology valid.
+     * Returns error is cache topology is not valid.
+     *
      * @param cctx Cache context.
+     * @param recovery {@code True} if cache operation is done in recovery mode. Then it will only check
+     *      for cache active state and topology validator result.
+     * @param read {@code True} if validating read operation, {@code false} if validating write.
+     * @param key Key (optimization to avoid collection creation).
+     * @param keys Keys involved in a cache operation.
      * @return valid ot not.
      */
-    public boolean isCacheTopologyValid(GridCacheContext cctx);
+    @Nullable public Throwable validateCache(
+        GridCacheContext cctx,
+        boolean recovery,
+        boolean read,
+        @Nullable Object key,
+        @Nullable Collection<?> keys);
 }

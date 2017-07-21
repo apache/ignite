@@ -17,15 +17,15 @@
 
 package org.apache.ignite.cache.jta;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
-
-import javax.transaction.*;
+import javax.transaction.TransactionManager;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Allows grid to use different transactional systems. Implement this interface
  * to look up native transaction manager within your environment. Transaction
- * manager lookup is configured via {@link org.apache.ignite.configuration.CacheConfiguration#getTransactionManagerLookupClassName()}
+ * manager lookup is configured via {@link TransactionConfiguration#getTxManagerLookupClassName()}
  * method.
  * <p>
  * The following implementations are provided out of the box:

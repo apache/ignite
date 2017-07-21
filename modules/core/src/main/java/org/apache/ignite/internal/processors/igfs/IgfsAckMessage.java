@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Block write request acknowledgement message.
@@ -87,19 +88,24 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         super.prepareMarshal(marsh);
 
-        if (err != null)
-            errBytes = marsh.marshal(err);
+        if (err != null && errBytes == null)
+            errBytes = U.marshal(marsh, err);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(marsh, ldr);
 
-        if (errBytes != null)
-            err = marsh.unmarshal(errBytes, ldr);
+        if (errBytes != null && err == null)
+            err = U.unmarshal(marsh, errBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -177,11 +183,11 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsAckMessage.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 64;
     }
 

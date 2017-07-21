@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import net.spy.memcached.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import net.spy.memcached.BinaryConnectionFactory;
+import net.spy.memcached.MemcachedClient;
+import net.spy.memcached.MemcachedClientIF;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  */

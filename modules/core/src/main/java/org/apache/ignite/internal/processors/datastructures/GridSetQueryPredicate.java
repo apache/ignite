@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.IgniteSet;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Predicate for query over {@link IgniteSet} items.
@@ -86,7 +91,7 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean apply(K k, V v) {
-        return !filter || ctx.affinity().primary(ctx.localNode(), k, ctx.affinity().affinityTopologyVersion());
+        return !filter || ctx.affinity().primaryByKey(ctx.localNode(), k, ctx.affinity().affinityTopologyVersion());
     }
 
     /**

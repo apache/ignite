@@ -17,25 +17,37 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.spi.*;
-import org.eclipse.jetty.util.*;
-
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.net.BindException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.CO;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.CommunicationListener;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.testframework.GridSpiTestContext;
+import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 
 /**
  *
@@ -73,7 +85,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     }
 
     /** */
-    @SuppressWarnings({"deprecation"})
     private class TestListener implements CommunicationListener<Message> {
         /** */
         private ConcurrentHashSet<Long> msgIds = new ConcurrentHashSet<>();
@@ -122,6 +133,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @param msgPerIter Messages per iteration.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void checkAck(int ackCnt, int idleTimeout, int msgPerIter) throws Exception {
         createSpis(ackCnt, idleTimeout, TcpCommunicationSpi.DFLT_MSG_QUEUE_LIMIT);
 
@@ -136,6 +148,8 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             int expMsgs = 0;
 
+            long totAcked = 0;
+
             for (int i = 0; i < 5; i++) {
                 info("Iteration: " + i);
 
@@ -147,6 +161,8 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
                 expMsgs += msgPerIter;
 
+                final long totAcked0 = totAcked;
+
                 for (TcpCommunicationSpi spi : spis) {
                     GridNioServer srv = U.field(spi, "nioSrvr");
 
@@ -157,19 +173,27 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                     boolean found = false;
 
                     for (GridNioSession ses : sessions) {
-                        final GridNioRecoveryDescriptor recoveryDesc = ses.recoveryDescriptor();
+                        final GridNioRecoveryDescriptor recoveryDesc = ses.outRecoveryDescriptor();
 
                         if (recoveryDesc != null) {
                             found = true;
 
                             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                                 @Override public boolean apply() {
-                                    return recoveryDesc.messagesFutures().isEmpty();
+                                    long acked = GridTestUtils.getFieldValue(recoveryDesc, "acked");
+
+                                    return acked > totAcked0;
+                                }
+                            }, 5000);
+
+                            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                                @Override public boolean apply() {
+                                    return recoveryDesc.messagesRequests().isEmpty();
                                 }
                             }, 10_000);
 
-                            assertEquals("Unexpected messages: " + recoveryDesc.messagesFutures(), 0,
-                                recoveryDesc.messagesFutures().size());
+                            assertEquals("Unexpected messages: " + recoveryDesc.messagesRequests(), 0,
+                                recoveryDesc.messagesRequests().size());
 
                             break;
                         }
@@ -184,14 +208,15 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                     final TestListener lsnr = (TestListener)spi.getListener();
 
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                        @Override
-                        public boolean apply() {
+                        @Override public boolean apply() {
                             return lsnr.rcvCnt.get() >= expMsgs0;
                         }
                     }, 5000);
 
                     assertEquals(expMsgs, lsnr.rcvCnt.get());
                 }
+
+                totAcked += msgPerIter;
             }
         }
         finally {
@@ -235,6 +260,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void checkOverflow() throws Exception {
         TcpCommunicationSpi spi0 = spis.get(0);
         TcpCommunicationSpi spi1 = spis.get(1);
@@ -254,8 +280,20 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         final GridNioSession ses0 = communicationSession(spi0);
 
-        for (int i = 0; i < 150; i++)
-            spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
+        int sentMsgs = 1;
+
+        for (int i = 0; i < 150; i++) {
+            try {
+                spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
+
+                sentMsgs++;
+            }
+            catch (IgniteSpiException e) {
+                log.info("Send error [err=" + e + ", sentMsgs=" + sentMsgs + ']');
+
+                break;
+            }
+        }
 
         // Wait when session is closed because of queue overflow.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -271,13 +309,12 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         for (int i = 0; i < 100; i++)
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
 
-        final int expMsgs = 251;
+        final int expMsgs = sentMsgs + 100;
 
         final TestListener lsnr = (TestListener)spi1.getListener();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return lsnr.rcvCnt.get() >= expMsgs;
             }
         }, 5000);
@@ -295,8 +332,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         final GridNioServer srv = U.field(spi, "nioSrvr");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
 
                 return !sessions.isEmpty();
@@ -325,6 +361,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         spi.setAckSendThreshold(ackCnt);
         spi.setMessageQueueLimit(queueLimit);
         spi.setSharedMemoryPort(-1);
+        spi.setConnectionsPerNode(1);
 
         return spi;
     }
@@ -345,7 +382,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         for (int i = 0; i < SPI_CNT; i++) {
             TcpCommunicationSpi spi = getSpi(ackCnt, idleTimeout, queueLimit);
 
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName", "grid-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 
@@ -365,7 +402,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             nodes.add(node);
 
-            spi.spiStart(getTestGridName() + (i + 1));
+            spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
             spis.add(spi);
 

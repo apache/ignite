@@ -17,10 +17,9 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenience adapter for {@link ComputeJob} implementations. It provides the
@@ -124,7 +123,7 @@ public abstract class ComputeJobAdapter implements ComputeJob, Callable<Object> 
      *
      * @return Array of job arguments.
      */
-    @Nullable Object[] arguments() {
+    @Nullable protected Object[] arguments() {
         return args;
     }
 

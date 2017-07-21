@@ -17,13 +17,13 @@
 
 package org.apache.ignite.cache.jta.jndi;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.jta.*;
-import org.jetbrains.annotations.*;
-
-import javax.naming.*;
-import javax.transaction.*;
-import java.util.*;
+import java.util.List;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.transaction.TransactionManager;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.jta.CacheTmLookup;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link org.apache.ignite.cache.jta.CacheTmLookup} interface that is using list of JNDI names to find TM.

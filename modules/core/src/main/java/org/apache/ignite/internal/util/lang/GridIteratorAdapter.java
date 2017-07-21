@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 
 /**
  * Convenient adapter for "rich" iterator interface.

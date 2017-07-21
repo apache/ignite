@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef.internal;
 
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.GridDebug;
 
 /**
  * Convenience alias for {@link GridDebug} class.

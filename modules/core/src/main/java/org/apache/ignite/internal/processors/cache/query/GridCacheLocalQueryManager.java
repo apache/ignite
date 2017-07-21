@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
- * Local query manager.
+ * Local query manager (for cache in LOCAL cache mode).
  */
 public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V> {
     /** {@inheritDoc} */
@@ -79,32 +81,20 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
-        assert cctx.config().getCacheMode() == LOCAL;
-
-        if (log.isDebugEnabled())
-            log.debug("Executing query on local node: " + qry);
-
-        GridCacheLocalQueryFuture<K, V, ?> fut = new GridCacheLocalQueryFuture<>(cctx, qry);
-
-        try {
-            qry.query().validate();
-
-            fut.execute();
-        }
-        catch (IgniteCheckedException e) {
-            fut.onDone(e);
-        }
-
-        return fut;
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new IgniteException("Distributed queries are not available for local cache " +
             "(use 'CacheQuery.execute(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCloseableIterator scanQueryDistributed(GridCacheQueryAdapter qry,
+        Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        assert cctx.isLocal() : cctx.name();
+
+        throw new IgniteException("Distributed scan query are not available for local cache " +
+            "(use 'CacheQuery.executeScanQuery(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
     }
 
     /** {@inheritDoc} */

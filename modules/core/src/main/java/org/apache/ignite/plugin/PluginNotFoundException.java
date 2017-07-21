@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Exception thrown if plugin is not found.

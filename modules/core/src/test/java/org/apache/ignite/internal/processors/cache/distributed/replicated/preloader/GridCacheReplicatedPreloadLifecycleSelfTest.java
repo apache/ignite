@@ -17,26 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.resources.*;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.GridCachePreloadLifecycleAbstractTest;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
-import javax.cache.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  * Tests for replicated cache preloader.
@@ -50,8 +47,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     private int gridCnt = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(READ_COMMITTED);
@@ -63,7 +60,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         cc1.setWriteSynchronizationMode(FULL_SYNC);
         cc1.setRebalanceMode(preloadMode);
         cc1.setEvictionPolicy(null);
-        cc1.setSwapEnabled(false);
         cc1.setCacheStoreFactory(null);
 
         // Identical configuration.
@@ -161,79 +157,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         }
     }
 
-
-    /**
-     * @param keys Keys.
-     * @throws Exception If failed.
-     */
-    public void checkScanQuery(Object[] keys) throws Exception {
-        preloadMode = SYNC;
-
-        lifecycleBean = lifecycleBean(keys);
-
-        for (int i = 0; i < gridCnt; i++) {
-            startGrid(i);
-
-            info("Checking '" + (i + 1) + "' nodes...");
-
-            for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCacheAdapter<Object, MyValue> c2 = ((IgniteKernal)grid(j)).internalCache("two");
-
-                CacheQuery<Map.Entry<Object, MyValue>> qry = c2.context().queries().createScanQuery(null, null, false);
-
-                final int i0 = j;
-                final int j0 = i;
-
-                qry = qry.projection(grid(j).cluster());
-
-                int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
-                    @IgniteInstanceResource
-                    private Ignite grid;
-
-                    @LoggerResource
-                    private IgniteLogger log0;
-
-                    private int cnt;
-
-                    @Override public boolean collect(Map.Entry<Object, MyValue> e) {
-                        if (!quiet && log0.isInfoEnabled())
-                            log0.info("Collecting entry: " + e);
-
-                        Object key = e.getKey();
-
-                        assertNotNull(e.getValue());
-
-                        try {
-                            Object v1 = e.getValue();
-                            Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
-
-                            assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 + ", missedKey=" +
-                                key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
-                            assertEquals(v1, v2);
-                        }
-                        catch (IgniteCheckedException e1) {
-                            e1.printStackTrace();
-
-                            assert false;
-                        }
-
-                        cnt++;
-
-                        return true;
-                    }
-
-                    @Override public Integer reduce() {
-                        return cnt;
-                    }
-                }).get());
-
-                info("Total entry count [grid=" + j + ", totalCnt=" + totalCnt + ']');
-
-                assertEquals(keys.length * (i + 1) / 2, totalCnt);
-            }
-        }
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -260,33 +183,5 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
      */
     public void testLifecycleBean4() throws Exception {
         checkCache(keys(false, 500));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery1() throws Exception {
-        checkScanQuery(keys(true, DFLT_KEYS.length, DFLT_KEYS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery2() throws Exception {
-        checkScanQuery(keys(false, DFLT_KEYS.length, DFLT_KEYS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery3() throws Exception {
-        checkScanQuery(keys(true, 500));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery4() throws Exception {
-        checkScanQuery(keys(false, 500));
     }
 }

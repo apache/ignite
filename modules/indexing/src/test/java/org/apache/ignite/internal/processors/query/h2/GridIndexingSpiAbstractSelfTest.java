@@ -17,24 +17,48 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.h2.util.*;
-import org.jetbrains.annotations.*;
-
-import java.nio.*;
-import java.util.*;
-import java.util.concurrent.*;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.util.JdbcUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for all SQL based indexing SPI implementations.
@@ -44,68 +68,101 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     private static final TextIndex textIdx = new TextIndex(F.asList("txt"));
 
     /** */
-    private static final Map<String, Class<?>> fieldsAA = new HashMap<>();
+    private static final LinkedHashMap<String, String> fieldsAA = new LinkedHashMap<>();
 
     /** */
-    private static final Map<String, Class<?>> fieldsAB = new HashMap<>();
+    private static final LinkedHashMap<String, String> fieldsAB = new LinkedHashMap<>();
 
     /** */
-    private static final Map<String, Class<?>> fieldsBA = new HashMap<>();
-
-    /**
-     * Fields initialization.
-     */
-    static {
-        fieldsAA.put("id", Long.class);
-        fieldsAA.put("name", String.class);
-        fieldsAA.put("age", Integer.class);
-
-        fieldsAB.putAll(fieldsAA);
-        fieldsAB.put("txt", String.class);
-
-        fieldsBA.putAll(fieldsAA);
-        fieldsBA.put("sex", Boolean.class);
-    }
+    private static final LinkedHashMap<String, String> fieldsBA = new LinkedHashMap<>();
 
     /** */
-    private static TypeDesc typeAA = new TypeDesc("A", "A", fieldsAA, null);
-
-    /** */
-    private static TypeDesc typeAB = new TypeDesc("A", "B", fieldsAB, textIdx);
-
-    /** */
-    private static TypeDesc typeBA = new TypeDesc("B", "A", fieldsBA, null);
-
-    /** */
-    private IgniteH2Indexing idx = new IgniteH2Indexing();
+    private IgniteEx ignite0;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        getTestResources().inject(idx);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        startIndexing(idx);
-    }
-
-    /** {@inheritDoc} */
-    protected void startIndexing(IgniteH2Indexing spi) throws Exception {
-        spi.start(null, null);
-
-        spi.registerCache(cacheCfg("A"));
-        spi.registerCache(cacheCfg("B"));
-    }
-
-    private CacheConfiguration cacheCfg(String name) {
-        CacheConfiguration<?,?> cfg = new CacheConfiguration<>();
-
-        cfg.setName(name);
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }
 
-    @Override protected void afterTest() throws Exception {
-        idx.stop();
+    /*
+     * Fields initialization.
+     */
+    static {
+        fieldsAA.put("id", Long.class.getName());
+        fieldsAA.put("name", String.class.getName());
+        fieldsAA.put("age", Integer.class.getName());
 
-        idx = null;
+        fieldsAB.putAll(fieldsAA);
+        fieldsAB.put("txt", String.class.getName());
+
+        fieldsBA.putAll(fieldsAA);
+        fieldsBA.put("sex", Boolean.class.getName());
+    }
+
+    /** */
+    private static TypeDesc typeAA = new TypeDesc("A", "A", Collections.<String, Class<?>>emptyMap(), null);
+
+    /** */
+    private static TypeDesc typeAB = new TypeDesc("A", "B", Collections.<String, Class<?>>emptyMap(), textIdx);
+
+    /** */
+    private static TypeDesc typeBA = new TypeDesc("B", "A", Collections.<String, Class<?>>emptyMap(), null);
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        ignite0 = startGrid(0);
+    }
+
+    /**
+     */
+    private CacheConfiguration cacheACfg() {
+        CacheConfiguration<?,?> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        cfg.setName("A");
+
+        QueryEntity eA = new QueryEntity(Integer.class.getName(), "A");
+        eA.setFields(fieldsAA);
+
+        QueryEntity eB = new QueryEntity(Integer.class.getName(), "B");
+        eB.setFields(fieldsAB);
+
+        List<QueryEntity> list = new ArrayList<>(2);
+
+        list.add(eA);
+        list.add(eB);
+
+        QueryIndex idx = new QueryIndex("txt");
+        idx.setIndexType(QueryIndexType.FULLTEXT);
+        eB.setIndexes(Collections.singleton(idx));
+
+        cfg.setQueryEntities(list);
+
+        return cfg;
+    }
+
+    /**
+     *
+     */
+    private CacheConfiguration cacheBCfg() {
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        cfg.setName("B");
+
+        QueryEntity eA = new QueryEntity(Integer.class.getName(), "A");
+        eA.setFields(fieldsBA);
+
+        cfg.setQueryEntities(Collections.singleton(eA));
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -114,14 +171,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param age Age.
      * @return AA.
      */
-    private CacheObject aa(long id, String name, int age) {
-        Map<String, Object> map = new HashMap<>();
+    private BinaryObjectBuilder aa(String typeName, long id, String name, int age) {
+        BinaryObjectBuilder aBuilder = ignite0.binary().builder(typeName)
+                .setField("id", id)
+                .setField("name", name)
+                .setField("age", age);
 
-        map.put("id", id);
-        map.put("name", name);
-        map.put("age", age);
-
-        return new TestCacheObject(map);
+        return aBuilder;
     }
 
     /**
@@ -131,12 +187,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param txt Text.
      * @return AB.
      */
-    private CacheObject ab(long id, String name, int age, String txt) {
-        Map<String, Object> map = aa(id, name, age).value(null, false);
+    private BinaryObjectBuilder ab(long id, String name, int age, String txt) {
+        BinaryObjectBuilder aBuilder = aa("B", id, name, age);
 
-        map.put("txt", txt);
+        aBuilder.setField("txt", txt);
 
-        return new TestCacheObject(map);
+        return aBuilder;
     }
 
     /**
@@ -146,12 +202,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param sex Sex.
      * @return BA.
      */
-    private CacheObject ba(long id, String name, int age, boolean sex) {
-        Map<String, Object> map = aa(id, name, age).value(null, false);
+    private BinaryObjectBuilder ba(long id, String name, int age, boolean sex) {
+        BinaryObjectBuilder builder = aa("A", id, name, age);
 
-        map.put("sex", sex);
+        builder.setField("sex", sex);
 
-        return new TestCacheObject(map);
+        return builder;
     }
 
     /**
@@ -159,7 +215,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @return Value.
      * @throws IgniteSpiException If failed.
      */
-    private Map<String, Object> value(IgniteBiTuple<Integer, Map<String, Object>> row) throws IgniteSpiException {
+    private BinaryObjectImpl value(IgniteBiTuple<Integer, BinaryObjectImpl> row) throws IgniteSpiException {
         return row.get2();
     }
 
@@ -167,9 +223,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @return Indexing.
      */
     private IgniteH2Indexing getIndexing() {
-        return idx;
+        return U.field(ignite0.context().query(), "idx");
     }
 
+    /**
+     * @return {@code true} if OFF-HEAP mode should be tested.
+     */
     protected boolean offheap() {
         return false;
     }
@@ -178,7 +237,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param key Key.
      * @return Cache object.
      */
-    private CacheObject key(int key) {
+    private KeyCacheObject key(int key) {
         return new TestCacheObject(key);
     }
 
@@ -188,126 +247,111 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     public void testSpi() throws Exception {
         IgniteH2Indexing spi = getIndexing();
 
-        assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(-1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(-1, spi.size(typeBA.space(), typeBA, null));
+        IgniteCache<Integer, BinaryObject> cacheA = ignite0.createCache(cacheACfg());
 
-        spi.registerType(typeAA.space(), typeAA);
+        IgniteCache<Integer, BinaryObject> cacheB = ignite0.createCache(cacheBCfg());
 
-        assertEquals(0, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(-1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(-1, spi.size(typeBA.space(), typeBA, null));
+        assertFalse(spi.queryLocalSql(spi.schema(typeAA.cacheName()), "select * from A.A", null, Collections.emptySet(),
+            typeAA.name(), null, null).hasNext());
 
-        spi.registerType(typeAB.space(), typeAB);
+        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select * from A.B", null, Collections.emptySet(),
+            typeAB.name(), null, null).hasNext());
 
-        assertEquals(0, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(0, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(-1, spi.size(typeBA.space(), typeBA, null));
+        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select * from B.A", null, Collections.emptySet(),
+            typeBA.name(), null, null).hasNext());
 
-        spi.registerType(typeBA.space(), typeBA);
+        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select * from B.A, A.B, A.A", null,
+            Collections.emptySet(), typeBA.name(), null, null).hasNext());
 
-        // Initially all is empty.
-        assertEquals(0, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(0, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(0, spi.size(typeBA.space(), typeBA, null));
+        try {
+            spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select aa.*, ab.*, ba.* from A.A aa, A.B ab, B.A ba",
+                null, Collections.emptySet(), typeBA.name(), null, null).hasNext();
 
-        assertFalse(spi.query(typeAA.space(), "select * from A.A", Collections.emptySet(), typeAA, null).hasNext());
-        assertFalse(spi.query(typeAB.space(), "select * from A.B", Collections.emptySet(), typeAB, null).hasNext());
-        assertFalse(spi.query(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA, null).hasNext());
+            fail("Enumerations of aliases in select block must be prohibited");
+        }
+        catch (IgniteCheckedException ignored) {
+            // all fine
+        }
 
-        // Nothing to remove.
-        spi.remove("A", key(1), aa(1, "", 10));
-        spi.remove("B", key(1), ba(1, "", 10, true));
+        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select ab.* from A.B ab", null,
+            Collections.emptySet(), typeAB.name(), null, null).hasNext());
 
-        spi.store(typeAA.space(), typeAA, key(1), aa(1, "Vasya", 10), "v1".getBytes(), 0);
+        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select   ba.*   from B.A  as ba", null,
+            Collections.emptySet(), typeBA.name(), null, null).hasNext());
 
-        assertEquals(1, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(0, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(0, spi.size(typeBA.space(), typeBA, null));
-
-        spi.store(typeAB.space(), typeAB, key(1), ab(1, "Vasya", 20, "Some text about Vasya goes here."),
-            "v2".getBytes(), 0);
-
-        // In one space all keys must be unique.
-        assertEquals(0, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(0, spi.size(typeBA.space(), typeBA, null));
-
-        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Petya", 25, true), "v3".getBytes(), 0);
-
-        // No replacement because of different space.
-        assertEquals(0, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(1, spi.size(typeBA.space(), typeBA, null));
-
-        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Kolya", 25, true), "v4".getBytes(), 0);
-
-        // Replacement in the same table.
-        assertEquals(0, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(1, spi.size(typeBA.space(), typeBA, null));
-
-        spi.store(typeAA.space(), typeAA, key(2), aa(2, "Valera", 19), "v5".getBytes(), 0);
-
-        assertEquals(1, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(1, spi.size(typeBA.space(), typeBA, null));
-
-        spi.store(typeAA.space(), typeAA, key(3), aa(3, "Borya", 18), "v6".getBytes(), 0);
-
-        assertEquals(2, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(1, spi.size(typeBA.space(), typeBA, null));
-
-        spi.store(typeAB.space(), typeAB, key(4), ab(4, "Vitalya", 20, "Very Good guy"), "v7".getBytes(), 0);
-
-        assertEquals(2, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(2, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(1, spi.size(typeBA.space(), typeBA, null));
+        cacheA.put(1, aa("A", 1, "Vasya", 10).build());
+        cacheA.put(1, ab(1, "Vasya", 20, "Some text about Vasya goes here.").build());
+        cacheB.put(1, ba(2, "Petya", 25, true).build());
+        cacheB.put(1, ba(2, "Kolya", 25, true).build());
+        cacheA.put(2, aa("A", 2, "Valera", 19).build());
+        cacheA.put(3, aa("A", 3, "Borya", 18).build());
+        cacheA.put(4, ab(4, "Vitalya", 20, "Very Good guy").build());
 
         // Query data.
-        Iterator<IgniteBiTuple<Integer, Map<String, Object>>> res =
-            spi.query(typeAA.space(), "from a order by age", Collections.emptySet(), typeAA, null);
+        Iterator<IgniteBiTuple<Integer, BinaryObjectImpl>> res = spi.queryLocalSql(spi.schema(typeAA.cacheName()),
+            "from a order by age", null, Collections.emptySet(), typeAA.name(), null, null);
 
         assertTrue(res.hasNext());
-        assertEquals(aa(3, "Borya", 18).value(null, false), value(res.next()));
+        assertEquals(aa("A", 3, "Borya", 18).build(), value(res.next()));
         assertTrue(res.hasNext());
-        assertEquals(aa(2, "Valera", 19).value(null, false), value(res.next()));
+        assertEquals(aa("A", 2, "Valera", 19).build(), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.query(typeAB.space(), "from b order by name", Collections.emptySet(), typeAB, null);
+        res = spi.queryLocalSql(spi.schema(typeAA.cacheName()), "select aa.* from a aa order by aa.age", null,
+            Collections.emptySet(), typeAA.name(), null, null);
 
         assertTrue(res.hasNext());
-        assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").value(null, false), value(res.next()));
+        assertEquals(aa("A", 3, "Borya", 18).build(), value(res.next()));
         assertTrue(res.hasNext());
-        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").value(null, false), value(res.next()));
+        assertEquals(aa("A", 2, "Valera", 19).build(), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.query(typeBA.space(), "from a", Collections.emptySet(), typeBA, null);
+        res = spi.queryLocalSql(spi.schema(typeAB.cacheName()), "from b order by name", null, Collections.emptySet(),
+            typeAB.name(), null, null);
 
         assertTrue(res.hasNext());
-        assertEquals(ba(2, "Kolya", 25, true).value(null, false), value(res.next()));
+        assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").build(), value(res.next()));
+        assertTrue(res.hasNext());
+        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(res.next()));
+        assertFalse(res.hasNext());
+
+        res = spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select bb.* from b as bb order by bb.name", null,
+            Collections.emptySet(), typeAB.name(), null, null);
+
+        assertTrue(res.hasNext());
+        assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").build(), value(res.next()));
+        assertTrue(res.hasNext());
+        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(res.next()));
+        assertFalse(res.hasNext());
+
+        res = spi.queryLocalSql(spi.schema(typeBA.cacheName()), "from a", null, Collections.emptySet(), typeBA.name(),
+            null, null);
+
+        assertTrue(res.hasNext());
+        assertEquals(ba(2, "Kolya", 25, true).build(), value(res.next()));
         assertFalse(res.hasNext());
 
         // Text queries
-        Iterator<IgniteBiTuple<Integer, Map<String, Object>>> txtRes = spi.queryText(typeAB.space(), "good",
-            typeAB, null);
+        Iterator<IgniteBiTuple<Integer, BinaryObjectImpl>> txtRes = spi.queryLocalText(spi.schema(typeAB.cacheName()),
+            "good", typeAB.name(), null);
 
         assertTrue(txtRes.hasNext());
-        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").value(null, false), value(txtRes.next()));
+        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(txtRes.next()));
         assertFalse(txtRes.hasNext());
 
         // Fields query
         GridQueryFieldsResult fieldsRes =
-            spi.queryFields("A", "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null);
+            spi.queryLocalSqlFields(spi.schema("A"), "select a.a.name n1, a.a.age a1, b.a.name n2, " +
+            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, false, 0, null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
 
-        assertTrue(fieldsRes.iterator().hasNext());
+        IgniteSpiCloseableIterator<List<?>> it = fieldsRes.iterator();
 
-        List<?> fields = fieldsRes.iterator().next();
+        assertTrue(it.hasNext());
+
+        List<?> fields = it.next();
 
         assertEquals(4, fields.size());
 
@@ -318,57 +362,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             assertEquals(vals[i++], f);
         }
 
-        assertFalse(fieldsRes.iterator().hasNext());
+        assertFalse(it.hasNext());
 
         // Remove
-        spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19));
-
-        assertEquals(1, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(2, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(1, spi.size(typeBA.space(), typeBA, null));
-
-        spi.remove(typeBA.space(), key(1), ba(2, "Kolya", 25, true));
-
-        assertEquals(1, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(2, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(0, spi.size(typeBA.space(), typeBA, null));
-
-        boolean h2IdxOffheap = offheap();
-
-        // At the time of this writing index rebuilding is not supported for GridH2Indexing with off-heap storage.
-        if (!h2IdxOffheap) {
-            // Rebuild
-
-            spi.rebuildIndexes(typeAB.space(), typeAB);
-
-            assertEquals(1, spi.size(typeAA.space(), typeAA, null));
-            assertEquals(2, spi.size(typeAB.space(), typeAB, null));
-            assertEquals(0, spi.size(typeBA.space(), typeBA, null));
-
-            // For invalid space name/type should not fail.
-            spi.rebuildIndexes("not_existing_space", typeAA);
-            spi.rebuildIndexes(typeAA.space(), new TypeDesc("C", "C", fieldsAA, null));
-        }
-
-        // Unregister.
-        spi.unregisterType(typeAA.space(), typeAA);
-
-        assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(2, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(0, spi.size(typeBA.space(), typeBA, null));
-
-        spi.unregisterType(typeAB.space(), typeAB);
-
-        assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
-        assertEquals(-1, spi.size(typeAB.space(), typeAB, null));
-        assertEquals(0, spi.size(typeBA.space(), typeBA, null));
-
-        spi.unregisterType(typeBA.space(), typeBA);
-
-        // Should not store but should not fail as well.
-        spi.store(typeAA.space(), typeAA, key(10), aa(1, "Fail", 100500), "v220".getBytes(), 0);
-
-        assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
+        cacheA.remove(2);
+        cacheB.remove(1);
     }
 
     /**
@@ -379,7 +377,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     public void testLongQueries() throws Exception {
         IgniteH2Indexing spi = getIndexing();
 
-        long longQryExecTime = CacheConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
+        ignite0.createCache(cacheACfg());
+
+        long longQryExecTime = IgniteConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
 
         GridStringLogger log = new GridStringLogger(false, this.log);
 
@@ -399,7 +399,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryFields("A", sql, Arrays.<Object>asList(1, range), null);
+                GridQueryFieldsResult res = spi.queryLocalSqlFields(spi.schema("A"), sql, Arrays.<Object>asList(1,
+                    range), null, false, 0, null);
 
                 assert res.iterator().hasNext();
 
@@ -408,26 +409,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
             String res = log.toString();
 
-            F.println(res);
-
-            assert res.contains("/* PUBLIC.RANGE_INDEX */");
+            assertTrue(res.contains("/* PUBLIC.RANGE_INDEX */"));
         }
         finally {
             GridTestUtils.setFieldValue(spi, "log", oldLog);
         }
-    }
-
-    public void testResultReuse() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-828");
-
-        final IgniteH2Indexing spi = getIndexing();
-
-        multithreaded(new Callable<Object>() {
-              @Override public Object call() throws Exception {
-                  return spi.queryFields(null, "SELECT sum(x) + sum(x) + sum(x) + sum(x) FROM SYSTEM_RANGE(?, ?)",
-                      F.<Object>asList(0, 7000000), null);
-              }
-          }, 5);
     }
 
     /**
@@ -445,6 +431,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<String> fields() {
             return fields;
         }
@@ -455,8 +446,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public GridQueryIndexType type() {
-            return GridQueryIndexType.FULLTEXT;
+        @Override public QueryIndexType type() {
+            return QueryIndexType.FULLTEXT;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int inlineSize() {
+            return 0;
         }
     }
 
@@ -468,7 +464,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         private final String name;
 
         /** */
-        private final String space;
+        private final String cacheName;
 
         /** */
         private final Map<String, Class<?>> valFields;
@@ -477,16 +473,21 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         private final GridQueryIndexDescriptor textIdx;
 
         /**
-         * @param space Space name.
+         * @param cacheName Cache name.
          * @param name Type name.
          * @param valFields Fields.
          * @param textIdx Fulltext index.
          */
-        private TypeDesc(String space, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
+        private TypeDesc(String cacheName, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
             this.name = name;
-            this.space = space;
+            this.cacheName = cacheName;
             this.valFields = Collections.unmodifiableMap(valFields);
             this.textIdx = textIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String affinityKey() {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -494,16 +495,56 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             return name;
         }
 
+        /** {@inheritDoc} */
+        @Override public String tableName() {
+            return null;
+        }
+
         /**
-         * @return Space name.
+         * @return Cache name.
          */
-        public String space() {
-            return space;
+        String cacheName() {
+            return cacheName;
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, Class<?>> fields() {
             return valFields;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryProperty property(final String name) {
+            return new GridQueryProperty() {
+                /** */
+                @Override public Object value(Object key, Object val) throws IgniteCheckedException {
+                    return TypeDesc.this.value(name, key, val);
+                }
+
+                /** */
+                @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+                    throw new UnsupportedOperationException();
+                }
+
+                /** */
+                @Override public String name() {
+                    return name;
+                }
+
+                /** */
+                @Override public Class<?> type() {
+                    return Object.class;
+                }
+
+                /** */
+                @Override public boolean key() {
+                    return false;
+                }
+
+                /** */
+                @Override public GridQueryProperty parent() {
+                    return null;
+                }
+            };
         }
 
         /** {@inheritDoc} */
@@ -521,10 +562,26 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             return null;
         }
 
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException {
+            assert !F.isEmpty(field);
+
+            assert key instanceof Integer;
+
+            Map<String, Object> m = (Map<String, Object>)val;
+
+            m.put(field, propVal);
+        }
+
         /** */
         @Override public Map<String, GridQueryIndexDescriptor> indexes() {
-            return textIdx == null ? Collections.<String, GridQueryIndexDescriptor>emptyMap() :
-                Collections.singletonMap("index", textIdx);
+            return Collections.emptyMap();
+        }
+
+        /** */
+        @Override public GridQueryIndexDescriptor textIndex() {
+            return textIdx;
         }
 
         /** */
@@ -538,16 +595,54 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** */
+        @Override public String keyTypeName() {
+            return null;
+        }
+
+        /** */
+        @Override public String valueTypeName() {
+            return null;
+        }
+
+        /** */
         @Override public boolean valueTextIndex() {
             return textIdx == null;
+        }
+
+        /** */
+        @Override public int typeId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String keyFieldName() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String valueFieldName() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String keyFieldAlias() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String valueFieldAlias() {
+            return null;
         }
     }
 
     /**
      */
-    private static class TestCacheObject implements CacheObject {
+    private static class TestCacheObject implements KeyCacheObject {
         /** */
         private Object val;
+
+        /** */
+        private int part;
 
         /**
          * @param val Value.
@@ -557,18 +652,64 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
             return (T)val;
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
-            return Utils.serialize(val, null);
+        @Override public int partition() {
+            return part;
         }
 
         /** {@inheritDoc} */
-        @Override public byte type() {
+        @Override public void partition(int part) {
+            this.part = part;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+            return JdbcUtils.serialize(val, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int putValue(long addr) throws IgniteCheckedException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
+            throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte cacheObjectType() {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isPlatformType() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public KeyCacheObject copy(int part) {
+            return this;
         }
 
         /** {@inheritDoc} */
@@ -577,12 +718,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
@@ -597,13 +738,18 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean internal() {
+            return false;
         }
     }
 }

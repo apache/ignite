@@ -17,26 +17,34 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.extensions.communication.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteNotPeerDeployable;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
 
 /**
  * Communication helper class. Provides request and response sending methods.
@@ -75,7 +83,7 @@ class GridDeploymentCommunication {
         this.log = log.getLogger(getClass());
 
         peerLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 processDeploymentRequest(nodeId, msg);
             }
         };
@@ -175,7 +183,7 @@ class GridDeploymentCommunication {
 
         if (req.responseTopic() == null) {
             try {
-                req.responseTopic(marsh.unmarshal(req.responseTopicBytes(), null));
+                req.responseTopic(U.unmarshal(marsh, req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to process deployment request (will ignore): " + req, e);
@@ -287,13 +295,18 @@ class GridDeploymentCommunication {
 
         if (node != null) {
             try {
-                ctx.io().send(node, topic, res, GridIoPolicy.P2P_POOL);
+                ctx.io().sendToCustomTopic(node, topic, res, GridIoPolicy.P2P_POOL);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent peer class loading response [node=" + node.id() + ", res=" + res + ']');
             }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send peer class loading response to node " +
+                        "(node does not exist): " + nodeId);
+            }
             catch (IgniteCheckedException e) {
-                if (ctx.discovery().pingNode(nodeId))
+                if (ctx.discovery().pingNodeNoError(nodeId))
                     U.error(log, "Failed to send peer class loading response to node: " + nodeId, e);
                 else if (log.isDebugEnabled())
                     log.debug("Failed to send peer class loading response to node " +
@@ -317,7 +330,7 @@ class GridDeploymentCommunication {
         Message req = new GridDeploymentRequest(null, null, rsrcName, true);
 
         if (!rmtNodes.isEmpty()) {
-            ctx.io().send(
+            ctx.io().sendToGridTopic(
                 rmtNodes,
                 TOPIC_CLASSLOAD,
                 req,
@@ -372,7 +385,7 @@ class GridDeploymentCommunication {
 
         final Object qryMux = new Object();
 
-        final GridTuple<GridDeploymentResponse> res = F.t1();
+        final GridTuple<GridDeploymentResponse> res = new GridTuple<>();
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -409,7 +422,7 @@ class GridDeploymentCommunication {
         };
 
         GridMessageListener resLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert nodeId != null;
                 assert msg != null;
 
@@ -436,9 +449,9 @@ class GridDeploymentCommunication {
             long start = U.currentTimeMillis();
 
             if (req.responseTopic() != null && !ctx.localNodeId().equals(dstNode.id()))
-                req.responseTopicBytes(marsh.marshal(req.responseTopic()));
+                req.responseTopicBytes(U.marshal(marsh, req.responseTopic()));
 
-            ctx.io().send(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
+            ctx.io().sendToGridTopic(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 
             if (log.isDebugEnabled())
                 log.debug("Sent peer class loading request [node=" + dstNode.id() + ", req=" + req + ']');

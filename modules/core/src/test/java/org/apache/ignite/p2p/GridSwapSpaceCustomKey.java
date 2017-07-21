@@ -17,9 +17,8 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  */

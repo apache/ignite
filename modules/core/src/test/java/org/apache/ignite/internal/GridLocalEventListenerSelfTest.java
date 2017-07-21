@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test ensuring that event listeners are picked by started node.
@@ -33,10 +35,10 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
     private final CountDownLatch fired = new CountDownLatch(1);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        int idx = getTestGridIndex(gridName);
+        int idx = getTestIgniteInstanceIndex(igniteInstanceName);
 
         if (idx == 0) {
             Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();

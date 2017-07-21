@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Adaptive load balancing SPI start-stop test.

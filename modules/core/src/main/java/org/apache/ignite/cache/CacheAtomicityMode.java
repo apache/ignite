@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache atomicity mode controls whether cache should maintain fully transactional semantics
@@ -33,11 +33,6 @@ public enum CacheAtomicityMode {
     /**
      * Specified fully {@code ACID}-compliant transactional cache behavior. See
      * {@link Transaction} for more information about transactions.
-     * <p>
-     * This mode is currently the default cache atomicity mode. However, cache
-     * atomicity mode will be changed to {@link #ATOMIC} starting from version {@code 5.2},
-     * so it is recommended that desired atomicity mode is explicitly configured
-     * instead of relying on default value.
      */
     TRANSACTIONAL,
 
@@ -49,18 +44,16 @@ public enum CacheAtomicityMode {
      * In addition to transactions and locking, one of the main differences in {@code ATOMIC} mode
      * is that bulk writes, such as {@code putAll(...)}, {@code removeAll(...)}, and {@code transformAll(...)}
      * methods, become simple batch operations which can partially fail. In case of partial
-     * failure {@link org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException} will be thrown which will contain a list of keys
-     * for which the update failed. It is recommended that bulk writes are used whenever multiple keys
-     * need to be inserted or updated in cache, as they reduce number of network trips and provide
-     * better performance.
+     * failure {@link org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException} will be thrown
+     * which will contain a list of keys for which the update failed. It is recommended that bulk writes are used
+     * whenever multiple keys need to be inserted or updated in cache, as they reduce number of network trips and
+     * provide better performance.
      * <p>
      * Note that even without locking and transactions, {@code ATOMIC} mode still provides
      * full consistency guarantees across all cache nodes.
      * <p>
      * Also note that all data modifications in {@code ATOMIC} mode are guaranteed to be atomic
      * and consistent with writes to the underlying persistent store, if one is configured.
-     * <p>
-     * This mode is currently implemented for {@link CacheMode#PARTITIONED} caches only.
      */
     ATOMIC;
 

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.jetbrains.annotations.*;
-
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Buffer with message delimiter support.

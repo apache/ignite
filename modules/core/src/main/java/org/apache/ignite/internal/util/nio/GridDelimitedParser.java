@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * This class implements stream parser based on {@link GridNioDelimitedBuffer}.

@@ -17,13 +17,20 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Test P2P deployment tasks which loaded from different class loaders.
@@ -36,6 +43,9 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
 
     /** Class Name of task 2. */
     private static final String TEST_TASK2_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath2";
+
+    /** */
+    private static final TcpDiscoveryIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final ClassLoader CLASS_LOADER;
@@ -57,12 +67,13 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
+        cfg.setMetricsUpdateFrequency(500);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(FINDER);
 
         cfg.setCacheConfiguration();
 
@@ -71,16 +82,20 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
 
     /**
      * Test.
-     * @param isIsolatedDifferentTask Isolated different task flag.
-     * @param isIsolatedDifferentNode Isolated different mode flag.
      * @throws Exception if error occur
      */
     @SuppressWarnings({"unchecked"})
-    private void processTest(boolean isIsolatedDifferentTask, boolean isIsolatedDifferentNode) throws Exception {
+    private void processTest() throws Exception {
         try {
-            Ignite ignite1 = startGrid(1);
+            final Ignite ignite1 = startGrid(1);
             Ignite ignite2 = startGrid(2);
             Ignite ignite3 = startGrid(3);
+
+            assert GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return ignite1.cluster().nodes().size() == 3;
+                }
+            }, 20000L);
 
             Class task1 = CLASS_LOADER.loadClass(TEST_TASK1_NAME);
             Class task2 = CLASS_LOADER.loadClass(TEST_TASK2_NAME);
@@ -111,7 +126,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
-        processTest(true, true);
+        processTest();
     }
 
     /**
@@ -122,7 +137,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
-        processTest(false, true);
+        processTest();
     }
 
     /**
@@ -133,7 +148,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
-        processTest(false, false);
+        processTest();
     }
 
     /**
@@ -144,7 +159,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 
-        processTest(false, false);
+        processTest();
     }
 
     /**

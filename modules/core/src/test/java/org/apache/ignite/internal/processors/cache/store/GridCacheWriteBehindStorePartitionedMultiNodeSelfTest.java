@@ -17,24 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests write-behind store with near and dht commit option.
@@ -53,12 +59,12 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private GridCacheTestStore[] stores = new GridCacheTestStore[GRID_CNT];
 
     /** Start grid counter. */
-    private int idx;
+    private AtomicInteger idx = new AtomicInteger();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -74,7 +80,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setNearConfiguration(new NearCacheConfiguration());
 
-        CacheStore store = stores[idx] = new GridCacheTestStore();
+        CacheStore store = stores[idx.getAndIncrement()] = new GridCacheTestStore();
 
         cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
@@ -82,8 +88,6 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
-
-        idx++;
 
         return c;
     }
@@ -99,9 +103,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
      * @throws Exception If failed.
      */
     private void prepare() throws Exception {
-        idx = 0;
-
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT, true);
     }
 
     /** {@inheritDoc} */
@@ -138,7 +140,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkSingleWrites() throws Exception {
         prepare();
 
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++)
             cache.put(i, String.valueOf(i));
@@ -157,7 +159,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         for (int i = 0; i < 100; i++)
             map.put(i, String.valueOf(i));
 
-        grid(0).cache(null).putAll(map);
+        grid(0).cache(DEFAULT_CACHE_NAME).putAll(map);
 
         checkWrites();
     }
@@ -168,7 +170,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkTxWrites() throws Exception {
         prepare();
 
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < 100; i++)

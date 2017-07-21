@@ -19,7 +19,8 @@ package org.apache.ignite.java8.examples;
 
 //import org.apache.ignite.examples.java8.igfs.*;
 //import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
+
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * IGFS examples self test.
@@ -32,7 +33,7 @@ public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
     private static final String IGFS_LOOPBACK_CFG = "modules/core/src/test/config/igfs-loopback.xml";
 
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8 
+     * TODO: IGNITE-711 next example(s) should be implemented for java 8
      * or testing method(s) should be removed if example(s) does not applicable for java 8.
      *
      * @throws Exception If failed.

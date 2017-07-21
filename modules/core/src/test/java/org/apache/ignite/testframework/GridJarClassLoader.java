@@ -17,10 +17,18 @@
 
 package org.apache.ignite.testframework;
 
-import java.io.*;
-import java.security.*;
-import java.util.*;
-import java.util.jar.*;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.CodeSource;
+import java.security.SecureClassLoader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 /**
  * Jar class loader.

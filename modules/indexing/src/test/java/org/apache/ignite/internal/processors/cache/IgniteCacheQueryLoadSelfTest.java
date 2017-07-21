@@ -17,29 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.Cache;
+import javax.cache.integration.CompletionListenerFuture;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import javax.cache.*;
-import javax.cache.integration.*;
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test that entries are indexed on load/reload methods.
@@ -61,8 +65,8 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -105,18 +109,16 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private long size(Class<?> cls) throws IgniteCheckedException {
-        GridCacheQueryManager<Object, Object> qryMgr = ((IgniteKernal)grid()).internalCache().context().queries();
-
-        assert qryMgr != null;
-
-        return qryMgr.size(cls);
+        return (Long)grid().cache(DEFAULT_CACHE_NAME).query(
+            new SqlFieldsQuery("select count(*) from " + QueryUtils.typeName(cls)).setLocal(true))
+            .getAll().get(0).get(0);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         cache.loadCache(null);
 
@@ -134,13 +136,9 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.loadCache(null, 0);
-
-        asyncCache.future().get();
+        cache.loadCacheAsync(null, 0).get();
 
         assert cache.size() == PUT_CNT;
 
@@ -156,7 +154,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheFiltered() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         cache.loadCache(new P2<Integer,ValueObject>() {
             @Override
@@ -179,18 +177,14 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsyncFiltered() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.loadCache(new P2<Integer, ValueObject>() {
+        cache.loadCacheAsync(new P2<Integer, ValueObject>() {
             @Override
             public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0);
-
-        asyncCache.future().get();
+        }, 0).get();
 
         assert cache.localSize() == PUT_CNT - 5;
 
@@ -210,11 +204,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, ValueObject> cache = jcache();
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.get(1);
-
-        assert ((ValueObject)asyncCache.future().get()).value() == 1;
+        assert cache.getAsync(1).get().value() == 1;
 
         assert cache.size() == 1;
 
@@ -242,7 +232,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         CompletionListenerFuture fut = new CompletionListenerFuture();
 
-        grid().<Integer, Integer>cache(null).loadAll(F.asSet(keys), true, fut);
+        grid().<Integer, Integer>cache(DEFAULT_CACHE_NAME).loadAll(F.asSet(keys), true, fut);
 
         fut.get();
 
@@ -262,7 +252,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         fut = new CompletionListenerFuture();
 
-        grid().<Integer, Integer>cache(null).loadAll(F.asSet(keys), true, fut);
+        grid().<Integer, Integer>cache(DEFAULT_CACHE_NAME).loadAll(F.asSet(keys), true, fut);
 
         fut.get();
 

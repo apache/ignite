@@ -17,18 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Lock;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestThread;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Test cases for multi-threaded tests.
@@ -78,7 +81,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If test failed.
      */
     public void testLockReentry() throws IgniteCheckedException {
-        IgniteCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assert !cache.isLocalLocked(1, false);
         assert !cache.isLocalLocked(1, true);
@@ -123,7 +126,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLock() throws Throwable {
-        final IgniteCache<Integer, String> cache = ignite.cache(null);
+        final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -241,7 +244,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLockAndPut() throws Throwable {
-        final IgniteCache<Integer, String> cache = ignite.cache(null);
+        final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
 

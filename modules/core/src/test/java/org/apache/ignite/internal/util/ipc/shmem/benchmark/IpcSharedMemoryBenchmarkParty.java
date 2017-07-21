@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.ipc.shmem.benchmark;
 
-import java.io.*;
+import java.io.File;
 
 /**
  *

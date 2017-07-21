@@ -17,20 +17,21 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 
 /**
  *
  */
 public class GridHomePathSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost(getTestResources().getLocalHost());
 
@@ -45,7 +46,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
             startGrid(0);
 
             // Test home override.
-            IgniteConfiguration c = getConfiguration(getTestGridName(1));
+            IgniteConfiguration c = getConfiguration(getTestIgniteInstanceName(1));
 
             c.setIgniteHome("/new/path");
 
@@ -62,7 +63,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
             }
 
             // Test no override.
-            IgniteConfiguration c1 = getConfiguration(getTestGridName(1));
+            IgniteConfiguration c1 = getConfiguration(getTestIgniteInstanceName(1));
 
             c1.setIgniteHome(System.getProperty(IGNITE_HOME));
 
