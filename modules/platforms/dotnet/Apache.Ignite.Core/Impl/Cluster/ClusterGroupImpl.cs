@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             _msg = new Lazy<IMessaging>(() => ignite.GetMessaging(this));
 
-            _events = new Lazy<IEvents>(() => new Events(UU.ProcessorEvents(proc, target), marsh, this));
+            _events = new Lazy<IEvents>(() => ignite.GetEvents(this));
 
             _services = new Lazy<IServices>(() => 
                 new Services(UU.ProcessorServices(proc, target), marsh, this, false, false));

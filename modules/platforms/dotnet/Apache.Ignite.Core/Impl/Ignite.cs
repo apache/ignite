@@ -613,11 +613,11 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Gets the compute.
+        /// Gets the messaging.
         /// </summary>
         internal unsafe Messaging.Messaging GetMessaging(ClusterGroupImpl clusterGroup)
         {
-            var msg = DoOutInOp((int)Op.GetMessaging, null, (s, o) => o, clusterGroup.Target.Target);
+            var msg = DoOutInOp((int) Op.GetMessaging, null, (s, o) => o, clusterGroup.Target.Target);
 
             return new Messaging.Messaging(msg, Marshaller, clusterGroup);
         }
@@ -626,6 +626,16 @@ namespace Apache.Ignite.Core.Impl
         public IEvents GetEvents()
         {
             return _prj.GetEvents();
+        }
+
+        /// <summary>
+        /// Gets the events.
+        /// </summary>
+        internal unsafe IEvents GetEvents(ClusterGroupImpl clusterGroup)
+        {
+            var evt = DoOutInOp((int) Op.GetEvents, null, (s, o) => o, clusterGroup.Target.Target);
+
+            return new Events.Events(evt, Marshaller, clusterGroup);
         }
 
         /** <inheritdoc /> */

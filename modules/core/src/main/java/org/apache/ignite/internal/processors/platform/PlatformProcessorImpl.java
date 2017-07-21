@@ -604,6 +604,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         assert grp0 != null;
         ClusterGroupEx projection = grp0.projection();
 
+        // TODO: These operations belong inside projection!
         switch (type) {
             case OP_GET_COMPUTE:
                 return new PlatformCompute(platformCtx, projection, PlatformUtils.ATTR_PLATFORM);
