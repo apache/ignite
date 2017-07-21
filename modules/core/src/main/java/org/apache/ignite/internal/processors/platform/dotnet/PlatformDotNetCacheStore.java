@@ -336,20 +336,21 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void sessionEnd(final boolean commit) {
         try {
-            // When multiple stores (caches) participate in a single transaction,
-            // they share a single session, but sessionEnd is called on each store.
-            // Same thing happens on platform side: session is shared; each store must be notified,
-            // then session should be closed.
-            Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
-            stores.remove(ptr);
-            boolean last = stores.isEmpty();
-
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_SES_END);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
                     writer.writeBoolean(commit);
+
+                    // When multiple stores (caches) participate in a single transaction,
+                    // they share a single session, but sessionEnd is called on each store.
+                    // Same thing happens on platform side: session is shared; each store must be notified,
+                    // then session should be closed.
+                    Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+                    stores.remove(ptr);
+                    boolean last = stores.isEmpty();
+
                     writer.writeBoolean(last);
                 }
             }, null);
