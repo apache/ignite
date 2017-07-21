@@ -61,14 +61,14 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateAndDestroyCaches() throws Exception {
-        final IgniteEx i1 = startGrid(1);
+        final IgniteEx ignite = startGrid(1);
 
-        log().info("Cluster nodes count: " + i1.cluster().forServers().nodes().size());
+        final GridWorker exchangeWorker = getExchangeWorker(ignite.context().cache().context().exchange());
 
-        final GridWorker exchangeWorker = getExchangeWorker(i1.context().cache().context().exchange());
-        addExchangeWorkerDelay(exchangeWorker, 1000);
+        addCustomTask(exchangeWorker, new ExchangeWorkerDelay(1000));
 
         final String cacheName = "cache-1";
+
         final long destroyTimeout = 500;
 
         final Runnable destroyCacheRunnable = new Runnable() {
@@ -79,7 +79,7 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
 
                 log().info("Destroying cache['" + cacheName + "']...");
 
-                i1.destroyCache(cacheName);
+                ignite.destroyCache(cacheName);
 
                 log().info("Cache[" + cacheName + "] destroyed.");
             }
@@ -91,17 +91,9 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
 
                 executor.submit(destroyCacheRunnable);
 
-                final long startMillis = System.currentTimeMillis();
-                final long startNanos = System.nanoTime();
+                ignite.getOrCreateCache(cacheName);
 
-                i1.getOrCreateCache(cacheName);
-
-                final long elapsedNanos = System.nanoTime() - startNanos;
-                final long elapsedMillis = System.currentTimeMillis() - startMillis;
-
-                log().info("Cache[" + cacheName + "] created in "
-                    + elapsedMillis + " ms ("
-                    + elapsedNanos + " ns)");
+                log().info("Cache[" + cacheName + "] created.");
             }
         });
 
@@ -157,15 +149,6 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
         CachePartitionExchangeWorkerTask task) throws Exception {
 
         GridTestUtils.invoke(exchangeWorker, "addCustomTask", task);
-    }
-
-    /**
-     * @param exchangeWorker Exchange worker.
-     * @param millis Milliseconds for delay.
-     * @throws Exception If failed.
-     */
-    static void addExchangeWorkerDelay(GridWorker exchangeWorker, long millis) throws Exception {
-        addCustomTask(exchangeWorker, new ExchangeWorkerDelay(millis));
     }
 
     /**
