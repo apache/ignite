@@ -42,6 +42,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
@@ -911,6 +912,14 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteString(category);
                 w.WriteString(err);
             });
+        }
+
+        /// <summary>
+        /// Gets the platform plugin extension.
+        /// </summary>
+        internal IPlatformTarget GetExtension(int id)
+        {
+            return InStreamOutObject((int) Op.GetExtension, w => w.WriteInt(id));
         }
     }
 }
