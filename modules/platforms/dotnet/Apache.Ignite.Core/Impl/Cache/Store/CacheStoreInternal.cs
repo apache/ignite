@@ -111,7 +111,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
             CacheStoreSession ses = grid.HandleRegistry.Get<CacheStoreSession>(sesId, true);
 
-            // TODO: This looks wrong!
+            // Session cache name may change in cross-cache transaction.
+            // Single session is used for all stores in cross-cache transactions.
             ses.CacheName = rawReader.ReadString();
 
             _sesProxy.SetSession(ses);
