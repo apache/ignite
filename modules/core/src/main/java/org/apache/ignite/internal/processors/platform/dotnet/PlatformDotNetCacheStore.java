@@ -47,7 +47,9 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Wrapper for .NET cache store implementations.
@@ -90,8 +92,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** Key used to distinguish session deployment.  */
     private static final Object KEY_SES = new Object();
 
-    /** Key to designate that sessionEnd was already called.  */
-    private static final Object KEY_SES_ENDED = new Object();
+    /** Key to designate a set of stores that share current session.  */
+    private static final Object KEY_SES_STORES = new Object();
 
     /** */
     @CacheStoreSessionResource
@@ -334,16 +336,13 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void sessionEnd(final boolean commit) {
         try {
-            if (ses.properties().get(KEY_SES_ENDED) != null) {
-                // This store session was already ended in native platform.
-                // When multiple stores (caches) participate in a single transaction,
-                // they share a single session, but sessionEnd is called on each store.
-                // Same thing happens on platform side: session is shared; each store must be notified,
-                // then session should be closed.
-                return;
-            }
-
-            ses.properties().put(KEY_SES_ENDED, KEY_SES_ENDED);
+            // When multiple stores (caches) participate in a single transaction,
+            // they share a single session, but sessionEnd is called on each store.
+            // Same thing happens on platform side: session is shared; each store must be notified,
+            // then session should be closed.
+            Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+            stores.remove(ptr);
+            boolean last = stores.isEmpty();
 
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
@@ -351,6 +350,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
                     writer.writeBoolean(commit);
+                    writer.writeBoolean(last);
                 }
             }, null);
         }
@@ -420,7 +420,6 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
     private long session() throws IgniteCheckedException {
-        // TODO: Track stores in KEY_SES somehow; call sessionEnd with a parameter (remove).
         Long sesPtr = (Long)ses.properties().get(KEY_SES);
 
         if (sesPtr == null) {
@@ -429,6 +428,16 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             ses.properties().put(KEY_SES, sesPtr);
         }
+
+        // Keep track of all stores that use current session (cross-cache tx uses single session for all caches).
+        Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+
+        if (stores == null) {
+            stores = new HashSet<>();
+            ses.properties().put(KEY_SES_STORES, stores);
+        }
+
+        stores.add(ptr);
 
         return sesPtr;
     }
