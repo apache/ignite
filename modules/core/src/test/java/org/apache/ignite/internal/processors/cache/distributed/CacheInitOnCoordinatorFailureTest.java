@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -41,9 +39,6 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private final ExecutorService exec = Executors.newFixedThreadPool(2);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -52,60 +47,43 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(ipFinder);
 
-        return cfg
-            .setDiscoverySpi(discoSpi)
-            .setPeerClassLoadingEnabled(false);
+        cfg.setDiscoverySpi(discoSpi);
+        cfg.setPeerClassLoadingEnabled(false);
+
+        return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateAndDestroyCaches() throws Exception {
-        final IgniteEx ignite = startGrid(1);
+        final IgniteEx ignite = startGrid(0);
 
-        final GridWorker exchangeWorker = getExchangeWorker(ignite.context().cache().context().exchange());
+        final GridWorker exchangeWorker =
+            GridTestUtils.getFieldValue(
+                ignite.context().cache().context().exchange(),
+                GridCachePartitionExchangeManager.class,
+                "exchWorker");
 
-        addCustomTask(exchangeWorker, new ExchangeWorkerDelay(1000));
+        GridTestUtils.invoke(exchangeWorker, "addCustomTask", new ExchangeWorkerDelay(1000));
 
-        final String cacheName = "cache-1";
+        new Thread() {
+            final String cacheName = "cache";
 
-        final long destroyTimeout = 500;
-
-        final Runnable destroyRunnable = new Runnable() {
             @Override public void run() {
-                log().info("Awaiting " + destroyTimeout + " ms...");
+                new Thread() {
+                    @Override public void run() {
+                        uncheckedSleep(500);
 
-                uncheckedSleep(destroyTimeout);
-
-                log().info("Destroying cache['" + cacheName + "']...");
-
-                ignite.destroyCache(cacheName);
-
-                log().info("Cache[" + cacheName + "] destroyed.");
-            }
-        };
-
-        final Runnable createRunnable = new Runnable() {
-            @Override public void run() {
-                log().info("Creating cache['" + cacheName + "']...");
-
-                exec.submit(destroyRunnable);
+                        ignite.destroyCache(cacheName);
+                    }
+                }.start();
 
                 ignite.getOrCreateCache(cacheName);
-
-                log().info("Cache[" + cacheName + "] created.");
             }
-        };
+        }.start();
 
-        exec.submit(createRunnable);
-
-        final long completeTimeout = 2000;
-
-        log().info("Awaiting " + completeTimeout + " ms...");
-
-        uncheckedSleep(completeTimeout);
-
-        log().info("Complete.");
+        uncheckedSleep(2000);
 
         assert !exchangeWorker.isDone();
     }
@@ -128,29 +106,6 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
 
             throw new IgniteInterruptedException(e);
         }
-    }
-
-    /**
-     * @param exchangeManager Exchange manager.
-     * @return Exchange worker.
-     */
-    private static GridWorker getExchangeWorker(GridCachePartitionExchangeManager<?, ?> exchangeManager) {
-        return GridTestUtils.getFieldValue(
-            exchangeManager,
-            GridCachePartitionExchangeManager.class,
-            "exchWorker");
-    }
-
-    /**
-     * @param exchangeWorker Exchange worker.
-     * @param task Custom task for exchange worker.
-     * @throws Exception If failed.
-     */
-    private static void addCustomTask(
-        GridWorker exchangeWorker,
-        CachePartitionExchangeWorkerTask task) throws Exception {
-
-        GridTestUtils.invoke(exchangeWorker, "addCustomTask", task);
     }
 
     /**
