@@ -17,10 +17,9 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Job sibling interface defines a job from the same split. In other words a sibling is a job returned

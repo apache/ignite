@@ -17,14 +17,15 @@
 
 package org.apache.ignite.tests.p2p.startcache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-
-import java.util.*;
+import java.util.Arrays;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
  *
@@ -52,8 +53,6 @@ public class CacheConfigurationP2PTestClient {
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
-
-        U.setWorkDirectory(null, U.getIgniteHome());
 
         try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println("Test external node started");
@@ -109,9 +108,9 @@ public class CacheConfigurationP2PTestClient {
             if (cnt != 600)
                 throw new Exception("Unexpected query result: " + cnt);
 
-            cache1.close();
+            cache1.destroy();
 
-            cache2.close();
+            cache2.destroy();
         }
     }
 }

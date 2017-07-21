@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -36,14 +38,24 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private final Map<UUID, IgniteCheckedException> errs = new HashMap<>();
 
+    /** */
+    private Map<Integer, T2<Long, Long>> updateCntrs;
+
+    /** */
+    private Map<UUID, Map<Integer, T2<Long, Long>>> updateCntrsPerNode;
+
+    /** Keep binary flag. */
+    private boolean keepBinary;
+
     /**
      * @param routineId Routine id.
      * @param startReqData Start request data.
      */
-    public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData) {
+    public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData, boolean keepBinary) {
         super(routineId);
 
         this.startReqData = startReqData;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -62,10 +74,48 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     }
 
     /**
+     * @param cntrs Update counters.
+     */
+    private void addUpdateCounters(Map<Integer, T2<Long, Long>> cntrs) {
+        if (updateCntrs == null)
+            updateCntrs = new HashMap<>();
+
+        for (Map.Entry<Integer, T2<Long, Long>> e : cntrs.entrySet()) {
+            T2<Long, Long> cntr0 = updateCntrs.get(e.getKey());
+            T2<Long, Long> cntr1 = e.getValue();
+
+            if (cntr0 == null || cntr1.get2() > cntr0.get2())
+                updateCntrs.put(e.getKey(), cntr1);
+        }
+    }
+
+    /**
+     * @param nodeId Local node ID.
+     * @param cntrs Update counters.
+     */
+    public void addUpdateCounters(UUID nodeId, Map<Integer, T2<Long, Long>> cntrs) {
+        addUpdateCounters(cntrs);
+
+        if (updateCntrsPerNode == null)
+            updateCntrsPerNode = new HashMap<>();
+
+        Map<Integer, T2<Long, Long>> old = updateCntrsPerNode.put(nodeId, cntrs);
+
+        assert old == null : old;
+    }
+
+    /**
      * @return Errs.
      */
     public Map<UUID, IgniteCheckedException> errs() {
         return errs;
+    }
+
+    /**
+     * @return {@code True} if keep binary flag was set on continuous handler.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +125,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartRoutineAckDiscoveryMessage(routineId, errs);
+        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs, updateCntrsPerNode);
     }
 
     /** {@inheritDoc} */

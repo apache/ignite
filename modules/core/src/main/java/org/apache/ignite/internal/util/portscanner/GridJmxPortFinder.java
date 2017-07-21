@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.util.portscanner;
 
-import org.apache.ignite.*;
-
-import java.io.*;
-import java.net.*;
-import java.nio.channels.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.UnknownHostException;
+import java.nio.channels.FileLock;
+import org.apache.ignite.IgniteSystemProperties;
 
 /**
  * Ignite port scanner.

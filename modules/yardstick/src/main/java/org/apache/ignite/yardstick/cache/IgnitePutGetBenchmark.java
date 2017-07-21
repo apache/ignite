@@ -17,18 +17,19 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.yardstick.cache.model.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.yardstick.cache.model.SampleValue;
 
 /**
  * Ignite benchmark that performs put and get operations.
  */
-public class IgnitePutGetBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgnitePutGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
 
         Object val = cache.get(key);
 

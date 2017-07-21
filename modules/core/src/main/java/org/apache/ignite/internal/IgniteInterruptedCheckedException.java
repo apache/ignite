@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteCheckedException}.

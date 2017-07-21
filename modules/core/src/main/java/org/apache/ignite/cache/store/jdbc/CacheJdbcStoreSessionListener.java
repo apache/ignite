@@ -17,15 +17,17 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lifecycle.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
-import javax.sql.*;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import javax.cache.Cache;
+import javax.cache.integration.CacheWriterException;
+import javax.sql.DataSource;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  * Cache store session listener based on JDBC connection.
@@ -35,12 +37,12 @@ import java.sql.*;
  * back) it when session ends.
  * <p>
  * The connection is saved as a store session
-  * {@link CacheStoreSession#attachment() attachment}.
+ * {@link CacheStoreSession#attachment() attachment}.
  * The listener guarantees that the connection will be
  * available for any store operation. If there is an
  * ongoing cache transaction, all operations within this
  * transaction will be committed or rolled back only when
- * session ends.
+ * the session ends.
  * <p>
  * As an example, here is how the {@link CacheStore#write(Cache.Entry)}
  * method can be implemented if {@link CacheJdbcStoreSessionListener}
@@ -131,7 +133,7 @@ public class CacheJdbcStoreSessionListener implements CacheStoreSessionListener,
                     conn.rollback();
             }
             catch (SQLException e) {
-                throw new CacheWriterException("Failed to start store session [tx=" + ses.transaction() + ']', e);
+                throw new CacheWriterException("Failed to end store session [tx=" + ses.transaction() + ']', e);
             }
             finally {
                 U.closeQuiet(conn);

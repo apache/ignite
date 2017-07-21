@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 
+import org.apache.ignite.configuration.CacheConfiguration;
+
 /**
- * Tests expire events when {@link GridCacheConfiguration#isEagerTtl()} is disabled.
+ * Tests expire events when {@link CacheConfiguration#isEagerTtl()} is disabled.
  */
 public class IgniteCacheEntryListenerEagerTtlDisabledTest extends IgniteCacheEntryListenerTxTest {
     /** {@inheritDoc} */

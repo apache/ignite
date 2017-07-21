@@ -17,26 +17,35 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DeploymentEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.PAX;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestExternalClassLoader;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 
-import javax.cache.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.EventType.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 
 /**
  * The test does the following:
@@ -80,8 +89,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
         cfg.setNetworkTimeout(10000);
@@ -92,8 +101,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (gridName.contains("testCacheRedeployVersionChangeContinuousMode")) {
-            CacheConfiguration cacheCfg = new CacheConfiguration();
+        if (igniteInstanceName.contains("testCacheRedeployVersionChangeContinuousMode")) {
+            CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             cacheCfg.setCacheMode(CacheMode.REPLICATED);
 
@@ -274,14 +283,10 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: IGNITE-604.
-     *
      * @throws Exception If failed.
      */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-604", forceFailure = true)
     public void testCacheRedeployVersionChangeContinuousMode() throws Exception {
-        // Build execution timeout if try to run test on TC.
-        fail("https://issues.apache.org/jira/browse/IGNITE-604");
-        
         depMode = DeploymentMode.CONTINUOUS;
 
         try {
@@ -294,13 +299,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
-            IgniteCache<Long, Object> cache1 = ignite1.cache(null);
+            IgniteCache<Long, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache1);
 
             cache1.put(1L, rcrsCls.newInstance());
 
-            final IgniteCache<Long, Object> cache2 = ignite2.cache(null);
+            final IgniteCache<Long, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache2);
 
@@ -320,7 +325,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
-            cache1 = ignite1.cache(null);
+            cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache1);
 

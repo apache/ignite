@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.jsr166.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentMap;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * For tests.
@@ -44,6 +43,7 @@ public class HadoopSharedMap {
      * @param key Key.
      * @param val Value.
      */
+    @SuppressWarnings("unchecked")
     public <T> T put(String key, T val) {
         Object old = map.putIfAbsent(key, val);
 

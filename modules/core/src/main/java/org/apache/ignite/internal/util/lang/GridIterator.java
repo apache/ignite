@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-
-import java.util.*;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridSerializableIterator;
 
 /**
  * Defines "rich" iterator interface that is also acts like lambda function and iterable.

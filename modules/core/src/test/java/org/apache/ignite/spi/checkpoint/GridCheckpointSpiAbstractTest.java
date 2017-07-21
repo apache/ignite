@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.checkpoint;
 
-import org.apache.ignite.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.GridTestIoUtils;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 
 /**
  * Grid checkpoint SPI abstract test.

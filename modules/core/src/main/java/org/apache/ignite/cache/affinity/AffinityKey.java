@@ -17,11 +17,14 @@
 
 package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Optional wrapper for cache keys to provide support
@@ -57,11 +60,12 @@ public class AffinityKey<K> implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private K key;
 
     /** Affinity key. */
-    @GridToStringInclude
+    @AffinityKeyMapped
+    @GridToStringInclude(sensitive = true)
     private Object affKey;
 
     /**
@@ -123,7 +127,6 @@ public class AffinityKey<K> implements Externalizable {
      *
      * @return Affinity key to use for affinity mapping.
      */
-    @AffinityKeyMapped
     @SuppressWarnings({"unchecked"})
     public <T> T affinityKey() {
         A.notNull(key, "key");

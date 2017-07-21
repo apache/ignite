@@ -17,27 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests partition scan query fallback.
@@ -47,7 +67,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     private static final int GRID_CNT = 3;
 
     /** Keys count. */
-    private static final int KEYS_CNT = 5000;
+    private static final int KEYS_CNT = 50 * RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 
     /** Ip finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -64,21 +84,18 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /** Expected first node ID. */
     private static UUID expNodeId;
 
-    /** Expected fallback node ID. */
-    private static UUID expFallbackNodeId;
-
     /** Communication SPI factory. */
     private CommunicationSpiFactory commSpiFactory;
-
-    /** Latch. */
-    private static CountDownLatch latch;
 
     /** Test entries. */
     private Map<Integer, Map<Integer, Integer>> entries = new HashMap<>();
 
+    /** */
+    private boolean syncRebalance;
+
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(clientMode);
 
@@ -93,6 +110,10 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setBackups(backups);
+
+        if (syncRebalance)
+            ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+
         ccfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(ccfg);
@@ -117,9 +138,10 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             int part = anyLocalPartition(cache.context());
 
-            CacheQuery<Map.Entry<Integer, Integer>> qry = cache.context().queries().createScanQuery(null, part, false);
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
 
-            doTestScanQuery(qry);
+            doTestScanQuery(qry, part);
         }
         finally {
             stopAllGrids();
@@ -147,9 +169,10 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             expNodeId = tup.get2();
 
-            CacheQuery<Map.Entry<Integer, Integer>> qry = cache.context().queries().createScanQuery(null, part, false);
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
 
-            doTestScanQuery(qry);
+            doTestScanQuery(qry, part);
         }
         finally {
             stopAllGrids();
@@ -157,99 +180,183 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * Scan should try first remote node and fallbacks to second remote node.
-     *
-     * @throws Exception If failed.
+     * @throws Exception In case of error.
      */
-    public void testScanFallback() throws Exception {
+    public void testScanFallbackOnRebalancing() throws Exception {
+        scanFallbackOnRebalancing(false);
+    }
+
+    /**
+     * @param cur If {@code true} tests query cursor.
+     * @throws Exception In case of error.
+     */
+    private void scanFallbackOnRebalancing(final boolean cur) throws Exception {
         cacheMode = CacheMode.PARTITIONED;
-        backups = 1;
-        commSpiFactory = new TestFallbackCommunicationSpiFactory();
+        clientMode = false;
+        backups = 2;
+        commSpiFactory = new TestFallbackOnRebalancingCommunicationSpiFactory();
+        syncRebalance = true;
 
-        final Set<Integer> candidates = new TreeSet<>();
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
 
-        final AtomicBoolean test = new AtomicBoolean(false);
+            fillCache(ignite);
 
-        for(int j = 0; j < 2; j++) {
-            clientMode = true;
+            final AtomicBoolean done = new AtomicBoolean(false);
 
-            latch = new CountDownLatch(1);
+            final AtomicInteger idx = new AtomicInteger(GRID_CNT);
 
-            try {
-                final Ignite ignite0 = startGrid(0);
+            IgniteInternalFuture fut1 = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        int id = idx.getAndIncrement();
 
-                clientMode = false;
+                        while (!done.get()) {
+                            startGrid(id);
 
-                final IgniteEx ignite1 = startGrid(1);
-                final IgniteEx ignite2 = startGrid(2);
-                startGrid(3);
+                            Thread.sleep(3000);
 
-                if (test.get()) {
-                    expNodeId = ignite1.localNode().id();
-                    expFallbackNodeId = ignite2.localNode().id();
-                }
+                            info("Will stop grid: " + getTestIgniteInstanceName(id));
 
-                final IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite0);
+                            stopGrid(id);
 
-                if (!test.get()) {
-                    candidates.addAll(localPartitions(ignite1));
+                            if (done.get())
+                                return null;
 
-                    candidates.retainAll(localPartitions(ignite2));
-                }
-
-                Runnable run = new Runnable() {
-                    @Override public void run() {
-                        try {
-                            startGrid(4);
-                            startGrid(5);
-
-                            awaitPartitionMapExchange();
-
-                            if (!test.get()) {
-                                candidates.removeAll(localPartitions(ignite1));
-
-                                F.retain(candidates, false, localPartitions(ignite2));
-                            }
-
-                            latch.countDown();
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
+                            Thread.sleep(3000);
                         }
 
+                        return null;
                     }
-                };
+                }, 2);
 
-                int part;
-                CacheQuery<Map.Entry<Integer, Integer>> qry = null;
+            final AtomicInteger nodeIdx = new AtomicInteger();
 
-                if (test.get()) {
-                    part = F.first(candidates);
+            IgniteInternalFuture fut2 = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        int nodeId = nodeIdx.getAndIncrement();
 
-                    qry = cache.context().queries().createScanQuery(null, part, false);
-                }
+                        IgniteCache<Integer, Integer> cache = grid(nodeId).cache(DEFAULT_CACHE_NAME);
 
-                new Thread(run).start();
+                        int cntr = 0;
 
-                if (test.get())
-                    doTestScanQuery(qry);
-                else
-                    latch.await();
-            }
-            finally {
-                test.set(true);
+                        while (!done.get()) {
+                            int part = ThreadLocalRandom.current().nextInt(ignite(nodeId).affinity(DEFAULT_CACHE_NAME).partitions());
 
-                stopAllGrids();
-            }
+                            if (cntr++ % 100 == 0)
+                                info("Running query [node=" + nodeId + ", part=" + part + ']');
+
+                            try (QueryCursor<Cache.Entry<Integer, Integer>> cur0 =
+                                     cache.query(new ScanQuery<Integer, Integer>(part))) {
+
+                                if (cur)
+                                    doTestScanQueryCursor(cur0, part);
+                                else
+                                    doTestScanQuery(cur0, part);
+                            }
+                        }
+
+                        return null;
+                    }
+                }, GRID_CNT);
+
+            Thread.sleep(60 * 1000); // Test for one minute
+
+            done.set(true);
+
+            fut2.get();
+            fut1.get();
+        }
+        finally {
+            stopAllGrids();
         }
     }
 
     /**
+     * Scan should activate fallback mechanism when new nodes join topology and rebalancing happens in parallel with
+     * scan query.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testScanFallbackOnRebalancingCursor1() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        clientMode = false;
+        backups = 1;
+        commSpiFactory = new TestFallbackOnRebalancingCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            fillCache(ignite);
+
+            final AtomicBoolean done = new AtomicBoolean(false);
+
+            IgniteInternalFuture fut1 = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        for (int i = 0; i < 5; i++) {
+                            startGrid(GRID_CNT + i);
+
+                            U.sleep(500);
+                        }
+
+                        done.set(true);
+
+                        return null;
+                    }
+                }, 1);
+
+            final AtomicInteger nodeIdx = new AtomicInteger();
+
+            IgniteInternalFuture fut2 = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        int nodeId = nodeIdx.getAndIncrement();
+
+                        IgniteCache<Integer, Integer> cache = grid(nodeId).cache(DEFAULT_CACHE_NAME);
+
+                        int cntr = 0;
+
+                        while (!done.get()) {
+                            int part = ThreadLocalRandom.current().nextInt(ignite(nodeId).affinity(DEFAULT_CACHE_NAME).partitions());
+
+                            if (cntr++ % 100 == 0)
+                                info("Running query [node=" + nodeId + ", part=" + part + ']');
+
+                            try (QueryCursor<Cache.Entry<Integer, Integer>> cur =
+                                     cache.query(new ScanQuery<Integer, Integer>(part).setPageSize(5))) {
+
+                                doTestScanQueryCursor(cur, part);
+                            }
+                        }
+
+                        return null;
+                    }
+                }, GRID_CNT);
+
+            fut1.get();
+            fut2.get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testScanFallbackOnRebalancingCursor2() throws Exception {
+        scanFallbackOnRebalancing(true);
+    }
+
+    /**
      * @param ignite Ignite.
+     * @return Cache.
      */
     protected IgniteCacheProxy<Integer, Integer> fillCache(Ignite ignite) {
         IgniteCacheProxy<Integer, Integer> cache =
-            (IgniteCacheProxy<Integer, Integer>)ignite.<Integer, Integer>cache(null);
+            (IgniteCacheProxy<Integer, Integer>)ignite.<Integer, Integer>cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEYS_CNT; i++) {
             cache.put(i, i);
@@ -269,25 +376,44 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
     /**
      * @param qry Query.
+     * @param part Partition.
      */
-    protected void doTestScanQuery(
-        CacheQuery<Map.Entry<Integer, Integer>> qry) throws IgniteCheckedException {
-        CacheQueryFuture<Map.Entry<Integer, Integer>> fut = qry.execute();
+    protected void doTestScanQuery(QueryCursor<Cache.Entry<Integer, Integer>> qry, int part) {
+        Collection<Cache.Entry<Integer, Integer>> qryEntries = qry.getAll();
 
-        Collection<Map.Entry<Integer, Integer>> expEntries = fut.get();
+        Map<Integer, Integer> map = entries.get(part);
 
-        for (Map.Entry<Integer, Integer> e : expEntries) {
-            Map<Integer, Integer> map = entries.get(((GridCacheQueryAdapter)qry).partition());
+        for (Cache.Entry<Integer, Integer> e : qryEntries)
+            assertEquals(map.get(e.getKey()), e.getValue());
 
-            if (map == null)
-                assertTrue(expEntries.isEmpty());
-            else
-                assertEquals(map.get(e.getKey()), e.getValue());
+        assertEquals("Invalid number of entries for partition: " + part, map.size(), qryEntries.size());
+    }
+
+    /**
+     * @param cur Query cursor.
+     * @param part Partition number.
+     */
+    protected void doTestScanQueryCursor(
+        QueryCursor<Cache.Entry<Integer, Integer>> cur, int part) {
+
+        Map<Integer, Integer> map = entries.get(part);
+
+        assert map != null;
+
+        int cnt = 0;
+
+        for (Cache.Entry<Integer, Integer> e : cur) {
+            assertEquals(map.get(e.getKey()), e.getValue());
+
+            cnt++;
         }
+
+        assertEquals("Invalid number of entries for partition: " + part, map.size(), cnt);
     }
 
     /**
      * @param cctx Cctx.
+     * @return Local partition.
      */
     private static int anyLocalPartition(GridCacheContext<?, ?> cctx) {
         return F.first(cctx.topology().localPartitions()).id();
@@ -295,6 +421,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
     /**
      * @param cctx Cctx.
+     * @return Remote partition.
      */
     private IgniteBiTuple<Integer, UUID> remotePartition(final GridCacheContext cctx) {
         ClusterNode node = F.first(cctx.kernalContext().grid().cluster().forRemotes().nodes());
@@ -310,9 +437,10 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
     /**
      * @param ignite Ignite.
+     * @return Local partitions.
      */
     private Set<Integer> localPartitions(Ignite ignite) {
-        GridCacheContext cctx = ((IgniteCacheProxy)ignite.cache(null)).context();
+        GridCacheContext cctx = ((IgniteCacheProxy)ignite.cache(DEFAULT_CACHE_NAME)).context();
 
         Collection<GridDhtLocalPartition> owningParts = F.view(cctx.topology().localPartitions(),
             new IgnitePredicate<GridDhtLocalPartition>() {
@@ -333,7 +461,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      */
     private interface CommunicationSpiFactory {
         /**
-         * Creates communication SPI instance.
+         * @return Communication SPI instance.
          */
         TcpCommunicationSpi create();
     }
@@ -345,13 +473,14 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public TcpCommunicationSpi create() {
             return new TcpCommunicationSpi() {
-                @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+                @Override public void sendMessage(ClusterNode node, Message msg,
+                    IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
                     Object origMsg = ((GridIoMessage)msg).message();
 
                     if (origMsg instanceof GridCacheQueryRequest)
                         fail(); //should use local node
 
-                    super.sendMessage(node, msg);
+                    super.sendMessage(node, msg, ackC);
                 }
             };
         }
@@ -364,13 +493,14 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public TcpCommunicationSpi create() {
             return new TcpCommunicationSpi() {
-                @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+                @Override public void sendMessage(ClusterNode node, Message msg,
+                    IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
                     Object origMsg = ((GridIoMessage)msg).message();
 
                     if (origMsg instanceof GridCacheQueryRequest)
                         assertEquals(expNodeId, node.id());
 
-                    super.sendMessage(node, msg);
+                    super.sendMessage(node, msg, ackC);
                 }
             };
         }
@@ -379,30 +509,10 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /**
      *
      */
-    private static class TestFallbackCommunicationSpiFactory implements CommunicationSpiFactory {
+    private static class TestFallbackOnRebalancingCommunicationSpiFactory implements CommunicationSpiFactory {
         /** {@inheritDoc} */
         @Override public TcpCommunicationSpi create() {
-            return new TcpCommunicationSpi() {
-                @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-                    Object origMsg = ((GridIoMessage)msg).message();
-
-                    if (origMsg instanceof GridCacheQueryRequest) {
-                        if (latch.getCount() > 0)
-                            assertEquals(expNodeId, node.id());
-                        else
-                            assertEquals(expFallbackNodeId, node.id());
-
-                        try {
-                            latch.await();
-                        }
-                        catch (InterruptedException e) {
-                            throw new IgniteSpiException(e);
-                        }
-                    }
-
-                    super.sendMessage(node, msg);
-                }
-            };
+            return new TcpCommunicationSpi();
         }
     }
 }

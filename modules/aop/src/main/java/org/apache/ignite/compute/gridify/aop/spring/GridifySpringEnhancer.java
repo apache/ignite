@@ -17,8 +17,8 @@
 
 package org.apache.ignite.compute.gridify.aop.spring;
 
-import org.springframework.aop.framework.*;
-import org.springframework.aop.support.*;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
 
 /**
  * Spring AOP enhancer. Use it to grid-enable methods annotated with

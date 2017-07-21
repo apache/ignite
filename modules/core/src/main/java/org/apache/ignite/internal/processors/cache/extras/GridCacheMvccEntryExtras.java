@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.extras;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Extras where MVCC is set.
@@ -40,11 +38,6 @@ public class GridCacheMvccEntryExtras extends GridCacheEntryExtrasAdapter {
         assert mvcc != null;
 
         this.mvcc = mvcc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesMvccEntryExtras(attrData, mvcc) : this;
     }
 
     /** {@inheritDoc} */
@@ -70,7 +63,7 @@ public class GridCacheMvccEntryExtras extends GridCacheEntryExtrasAdapter {
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
-        return ttl != 0 ? new GridCacheMvccTtlEntryExtras(mvcc, ttl, expireTime) : this;
+        return expireTime != CU.EXPIRE_TIME_ETERNAL ? new GridCacheMvccTtlEntryExtras(mvcc, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */

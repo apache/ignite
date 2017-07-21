@@ -17,7 +17,7 @@
 
 package org.apache.ignite.transactions;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Transaction metrics, shared across all caches.

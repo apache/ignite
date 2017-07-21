@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!-- 
+
+Creating NuGet package:
+1) Build Java: mvn clean package -DskipTests -U -Plgpl
+2) Build Apache.Ignite.sln (AnyCPU configuration)
+3) Create package (use csproj instead of nuspec so that template substitution works): 
+   nuget pack Apache.Ignite.Core.csproj -Prop Configuration=Release -Prop Platform=AnyCPU
+
+-->
+
+<package >
+    <metadata>
+        <id>Apache.Ignite</id>
+        <title>Apache Ignite</title>
+        <!-- -->
+        <version>$version$</version>
+        <authors>Apache Ignite</authors>
+        <owners>Apache Software Foundation</owners>
+        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <projectUrl>https://ignite.apache.org/</projectUrl>
+        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>
+Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+            
+More info: https://apacheignite-net.readme.io/
+        </description>
+        <releaseNotes></releaseNotes>
+        <copyright>Copyright 2017</copyright>
+        <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
+    </metadata>
+    <files>
+        <!-- Install script should be in tools -->
+        <file src="NuGet\Install.ps1" target="tools" />
+        <file src="NuGet\Uninstall.ps1" target="tools" />
+        <file src="NuGet\PostBuild.ps1" target="tools" />
+
+        <!-- Include Apache.Ignite.exe -->
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe" target="lib\net40" />
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe.config" target="lib\net40" />
+        
+        <!-- 
+            Library files (jars) should not be included in project, so that NuGet package restore works properly.
+            We keep jars in NuGet dir and copy them over in PostBuild event.
+        -->
+        <file src="..\bin\Libs\*.jar" target="Libs" />
+    
+        <!-- LINQPad samples -->
+        <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
+    </files>
+</package>

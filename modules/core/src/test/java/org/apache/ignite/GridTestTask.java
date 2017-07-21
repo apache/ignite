@@ -17,10 +17,15 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
-import java.util.*;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Test task.
@@ -30,6 +35,20 @@ public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
     @LoggerResource
     private IgniteLogger log;
 
+    /**
+     * Optional latch to wait for
+     */
+    CountDownLatch latch;
+
+    public GridTestTask (CountDownLatch latch) {
+        super();
+        this.latch = latch;
+    }
+
+    public GridTestTask() {
+        super();
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         if (log.isDebugEnabled())
@@ -38,7 +57,7 @@ public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         Collection<ComputeJob> refs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++)
-            refs.add(new GridTestJob(arg.toString() + i + 1));
+            refs.add(new GridTestJob(arg.toString() + i + 1, latch));
 
         return refs;
     }

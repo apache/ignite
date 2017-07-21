@@ -17,30 +17,51 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeleteProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
+import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_INITIAL;
+import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_MOVED;
+import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_MOVING;
 
 /**
  * IGFS fragmentizer manager.
@@ -164,7 +185,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
     private void sendWithRetries(UUID nodeId, IgfsCommunicationMessage msg) throws IgniteCheckedException {
         for (int i = 0; i < MESSAGE_SEND_RETRY_COUNT; i++) {
             try {
-                igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
+                igfsCtx.send(nodeId, topic, msg, IGFS_POOL);
 
                 return;
             }
@@ -246,7 +267,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
         Collection<IgfsFileAffinityRange> ranges = req.fragmentRanges();
         IgniteUuid fileId = req.fileId();
 
-        IgfsFileInfo fileInfo = igfsCtx.meta().info(fileId);
+        IgfsEntryInfo fileInfo = igfsCtx.meta().info(fileId);
 
         if (fileInfo == null) {
             if (log.isDebugEnabled())
@@ -260,12 +281,13 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
         for (IgfsFileAffinityRange range : ranges) {
             try {
-                IgfsFileInfo updated;
+                IgfsEntryInfo updated;
 
                 switch (range.status()) {
                     case RANGE_STATUS_INITIAL: {
                         // Mark range as moving.
-                        updated = igfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVING));
+                        updated = igfsCtx.meta().updateInfo(
+                            fileId, new IgfsMetaFileRangeUpdateProcessor(range, RANGE_STATUS_MOVING));
 
                         if (updated == null) {
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -281,7 +303,8 @@ public class IgfsFragmentizerManager extends IgfsManager {
                         igfsCtx.data().spreadBlocks(fileInfo, range);
 
                         // Mark range as moved.
-                        updated = igfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVED));
+                        updated = igfsCtx.meta().updateInfo(
+                            fileId, new IgfsMetaFileRangeUpdateProcessor(range, RANGE_STATUS_MOVED));
 
                         if (updated == null) {
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -297,7 +320,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                         igfsCtx.data().cleanBlocks(fileInfo, range, false);
 
                         // Remove range from map.
-                        updated = igfsCtx.meta().updateInfo(fileId, deleteRange(range));
+                        updated = igfsCtx.meta().updateInfo(fileId, new IgfsMetaFileRangeDeleteProcessor(range));
 
                         if (updated == null)
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -310,60 +333,6 @@ public class IgfsFragmentizerManager extends IgfsManager {
                         "[range=" + range + "fileId=" + fileId + ", err=" + e.getMessage() + ']');
             }
         }
-    }
-
-    /**
-     * Creates update info closure that will mark given range as moving.
-     *
-     * @param range Range to mark as moving.
-     * @param status Status.
-     * @return Update closure.
-     */
-    private IgniteClosure<IgfsFileInfo, IgfsFileInfo> updateRange(final IgfsFileAffinityRange range,
-        final int status) {
-        return new CX1<IgfsFileInfo, IgfsFileInfo>() {
-            @Override public IgfsFileInfo applyx(IgfsFileInfo info) throws IgniteCheckedException {
-                IgfsFileMap map = new IgfsFileMap(info.fileMap());
-
-                map.updateRangeStatus(range, status);
-
-                if (log.isDebugEnabled())
-                    log.debug("Updated file map for range [fileId=" + info.id() + ", range=" + range +
-                        ", status=" + status + ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
-
-                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
-
-                updated.fileMap(map);
-
-                return updated;
-            }
-        };
-    }
-
-    /**
-     * Creates update info closure that will mark given range as moving.
-     *
-     * @param range Range to mark as moving.
-     * @return Update closure.
-     */
-    private IgniteClosure<IgfsFileInfo, IgfsFileInfo> deleteRange(final IgfsFileAffinityRange range) {
-        return new CX1<IgfsFileInfo, IgfsFileInfo>() {
-            @Override public IgfsFileInfo applyx(IgfsFileInfo info) throws IgniteCheckedException {
-                IgfsFileMap map = new IgfsFileMap(info.fileMap());
-
-                map.deleteRange(range);
-
-                if (log.isDebugEnabled())
-                    log.debug("Deleted range from file map [fileId=" + info.id() + ", range=" + range +
-                        ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
-
-                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
-
-                updated.fileMap(map);
-
-                return updated;
-            }
-        };
     }
 
     /**
@@ -386,7 +355,8 @@ public class IgfsFragmentizerManager extends IgfsManager {
          * Constructor.
          */
         protected FragmentizerCoordinator() {
-            super(igfsCtx.kernalContext().gridName(), "fragmentizer-coordinator", igfsCtx.kernalContext().log());
+            super(igfsCtx.kernalContext().igniteInstanceName(), "fragmentizer-coordinator",
+                igfsCtx.kernalContext().log(IgfsFragmentizerManager.class));
 
             igfsCtx.kernalContext().event().addLocalEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
             igfsCtx.kernalContext().io().addMessageListener(topic, this);
@@ -401,7 +371,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 // If we have room for files, add them to fragmentizer.
                 try {
                     while (fragmentingFiles.size() < igfsCtx.configuration().getFragmentizerConcurrentFiles()) {
-                        IgfsFileInfo fileInfo = fileForFragmentizer(fragmentingFiles.keySet());
+                        IgfsEntryInfo fileInfo = fileForFragmentizer(fragmentingFiles.keySet());
 
                         // If no colocated files found, exit loop.
                         if (fileInfo == null)
@@ -412,7 +382,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 }
                 catch (IgniteCheckedException | IgniteException e) {
                     if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedCheckedException.class))
-                        LT.warn(log, e, "Failed to get fragmentizer file info (will retry).");
+                        LT.error(log, e, "Failed to get fragmentizer file info (will retry).");
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Got interrupted exception in fragmentizer coordinator (grid is stopping).");
@@ -483,7 +453,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (msg instanceof IgfsFragmentizerResponse) {
                 IgfsFragmentizerResponse res = (IgfsFragmentizerResponse)msg;
 
@@ -609,7 +579,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
          *
          * @param fileInfo File info to process.
          */
-        private void requestFragmenting(IgfsFileInfo fileInfo) {
+        private void requestFragmenting(IgfsEntryInfo fileInfo) {
             IgfsFileMap map = fileInfo.fileMap();
 
             assert map != null && !map.ranges().isEmpty();
@@ -683,7 +653,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
      * @return File ID to process or {@code null} if there are no such files.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable private IgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
+    @Nullable private IgfsEntryInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
         return fragmentizerEnabled ? igfsCtx.meta().fileForFragmentizer(exclude) : null;
     }
 
@@ -698,11 +668,12 @@ public class IgfsFragmentizerManager extends IgfsManager {
          * Constructor.
          */
         protected FragmentizerWorker() {
-            super(igfsCtx.kernalContext().gridName(), "fragmentizer-worker", igfsCtx.kernalContext().log());
+            super(igfsCtx.kernalContext().igniteInstanceName(), "fragmentizer-worker",
+                igfsCtx.kernalContext().log(IgfsFragmentizerManager.class));
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (msg instanceof IgfsFragmentizerRequest ||
                 msg instanceof IgfsSyncMessage) {
                 if (log.isDebugEnabled())

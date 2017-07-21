@@ -17,7 +17,7 @@
 
 package org.apache.ignite.transactions;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines different cache transaction isolation levels. See {@link Transaction}
@@ -42,8 +42,7 @@ public enum TransactionIsolation {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable
-    public static TransactionIsolation fromOrdinal(int ord) {
+    @Nullable public static TransactionIsolation fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

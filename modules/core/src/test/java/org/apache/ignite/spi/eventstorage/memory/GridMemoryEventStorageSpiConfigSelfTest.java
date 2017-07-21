@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.eventstorage.memory;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Memory event storage SPI config test.

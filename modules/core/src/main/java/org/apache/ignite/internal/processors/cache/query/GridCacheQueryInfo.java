@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteReducer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query information (local or distributed).
@@ -31,7 +31,7 @@ class GridCacheQueryInfo {
     private boolean loc;
 
     /** */
-    private IgniteClosure<Object, Object> trans;
+    private IgniteClosure<?, ?> trans;
 
     /** */
     private IgniteReducer<Object, Object> rdc;
@@ -71,7 +71,7 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryInfo(
         boolean loc,
-        IgniteClosure<Object, Object> trans,
+        IgniteClosure<?, ?> trans,
         IgniteReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
         GridCacheLocalQueryFuture<?, ?, ?> locFut,
@@ -117,7 +117,7 @@ class GridCacheQueryInfo {
     /**
      * @return Transformer.
      */
-    IgniteClosure<?, Object> transformer() {
+    IgniteClosure<?, ?> transformer() {
         return trans;
     }
 

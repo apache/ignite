@@ -35,6 +35,18 @@
 
     <files>
         <file>
+            <source>assembly/LICENSE_HADOOP</source>
+            <destName>LICENSE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>assembly/NOTICE_HADOOP</source>
+            <destName>NOTICE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
             <source>modules/hadoop/config/core-site.ignite.xml</source>
             <outputDirectory>/config/hadoop</outputDirectory>
         </file>
@@ -45,6 +57,11 @@
         <file>
             <source>modules/hadoop/config/hive-site.ignite.xml</source>
             <outputDirectory>/config/hadoop</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/hadoop/docs/HADOOP_README.txt</source>
+            <outputDirectory>/</outputDirectory>
         </file>
     </files>
 

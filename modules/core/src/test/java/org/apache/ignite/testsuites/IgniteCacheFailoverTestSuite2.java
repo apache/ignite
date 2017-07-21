@@ -17,11 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheGetFromJobTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverAtomicTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverAtomicTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheCrossCacheTxFailoverTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicReplicatedFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxSalvageSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
 
 /**
  *
@@ -34,13 +42,23 @@ public class IgniteCacheFailoverTestSuite2 {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite2");
 
+        suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
+        suite.addTestSuite(CacheGetFromJobTest.class);
+
         suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfTest.class);
         suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
         suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheCrossCacheTxFailoverTest.class);
+
+        suite.addTestSuite(CacheAsyncOperationsFailoverAtomicTest.class);
+        suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
+
+        suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
+        suite.addTestSuite(CachePutAllFailoverTxTest.class);
 
         return suite;
     }

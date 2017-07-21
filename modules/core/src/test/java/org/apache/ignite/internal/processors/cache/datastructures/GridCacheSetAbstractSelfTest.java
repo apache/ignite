@@ -17,22 +17,45 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import junit.framework.AssertionFailedError;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Cache set tests.
@@ -782,17 +805,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
         for (int i = 0; i < gridCount(); i++) {
-            Iterator<GridCacheEntryEx> entries =
-                (grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
+            GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
-            while (entries.hasNext()) {
-                GridCacheEntryEx entry = entries.next();
+            for (Object e : cache.localEntries(new CachePeekMode[]{CachePeekMode.ALL})) {
+                cnt++;
 
-                if (entry.hasValue()) {
-                    cnt++;
-
-                    log.info("Unexpected entry: " + entry);
-                }
+                log.info("Unexpected entry: " + e);
             }
         }
 
@@ -832,6 +850,259 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         for (Integer size : c)
             assertEquals((Integer)10, size);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityRun() throws Exception {
+        final CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(false);
+        colCfg.setCacheMode(CacheMode.PARTITIONED);
+        colCfg.setGroupName("testGroup");
+
+        try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        set1.affinityRun(new IgniteRunnable() {
+                            @Override public void run() {
+                                // No-op.
+                            }
+                        });
+
+                        return null;
+                    }
+                },
+                IgniteException.class,
+                "Failed to execute affinityRun() for non-collocated set: " + set1.name() +
+                    ". This operation is supported only for collocated sets.");
+        }
+
+        colCfg.setCollocated(true);
+
+        try (final IgniteSet<Integer> set2 = grid(0).set("Set2", colCfg)) {
+            set2.add(100);
+
+            final String cacheName = cctx(set2).name();
+
+            set2.affinityRun(new IgniteRunnable() {
+                @IgniteInstanceResource
+                private IgniteEx ignite;
+
+                @Override public void run() {
+                    assertTrue(ignite.cachex(cacheName).affinity().isPrimaryOrBackup(
+                        ignite.cluster().localNode(), "Set2"));
+
+                    assertEquals(100, set2.iterator().next().intValue());
+                }
+            });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCall() throws Exception {
+        final CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(false);
+        colCfg.setCacheMode(CacheMode.PARTITIONED);
+        colCfg.setGroupName("testGroup");
+
+        try (final IgniteSet<Integer> set1 = grid(0).set("Set1", colCfg)) {
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        set1.affinityCall(new IgniteCallable<Object>() {
+                            @Override public Object call() {
+                                return null;
+                            }
+                        });
+
+                        return null;
+                    }
+                },
+                IgniteException.class,
+                "Failed to execute affinityCall() for non-collocated set: " + set1.name() +
+                    ". This operation is supported only for collocated sets.");
+        }
+
+        colCfg.setCollocated(true);
+
+        try (final IgniteSet<Integer> set2 = grid(0).set("Set2", colCfg)) {
+            set2.add(100);
+
+            final String cacheName = cctx(set2).name();
+
+            Integer res = set2.affinityCall(new IgniteCallable<Integer>() {
+                @IgniteInstanceResource
+                private IgniteEx ignite;
+
+                @Override public Integer call() {
+                    assertTrue(ignite.cachex(cacheName).affinity().isPrimaryOrBackup(
+                        ignite.cluster().localNode(), "Set2"));
+
+                    return set2.iterator().next();
+                }
+            });
+
+            assertEquals(100, res.intValue());
+        }
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            IgniteSet<Integer> set0 = ignite.set(SET_NAME, colCfg);
+
+            assertNotNull(set0);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                Collection<Integer> items = new ArrayList<>(100);
+
+                for (int i = 0; i < 100; i++)
+                    items.add(i);
+
+                set0.addAll(items);
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertEquals(100, set0.size());
+
+            set0.close();
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
+        }
+    }
+
+    /**
+     * Test that sets within the same group and compatible configurations are stored in the same cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheReuse() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setAtomicityMode(ATOMIC);
+        colCfg.setGroupName("grp1");
+
+        IgniteSet set1 = ignite.set("set1", colCfg);
+        IgniteSet set2 = ignite.set("set2", colCfg);
+
+        assert cctx(set1).cacheId() == cctx(set2).cacheId();
+
+        colCfg.setAtomicityMode(TRANSACTIONAL);
+
+        IgniteSet set3 = ignite.set("set3", colCfg);
+        IgniteSet set4 = ignite.set("set4", colCfg);
+
+        assert cctx(set3).cacheId() == cctx(set4).cacheId();
+        assert cctx(set1).cacheId() != cctx(set3).cacheId();
+        assert cctx(set1).groupId() == cctx(set3).groupId();
+
+        colCfg.setGroupName("gtp2");
+
+        IgniteSet set5 = ignite.set("set5", colCfg);
+        IgniteSet set6 = ignite.set("set6", colCfg);
+
+        assert cctx(set5).cacheId() == cctx(set6).cacheId();
+        assert cctx(set1).groupId() != cctx(set5).groupId();
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void _testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration cfg1 = collectionConfiguration();
+        CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");
+
+        IgniteSet<String> set1 = ignite.set("set1", cfg1);
+        IgniteSet<String> set2 = ignite.set("set2", cfg1);
+        IgniteSet<String> set3 = ignite.set("set3", cfg2);
+        IgniteSet<String> set4 = ignite.set("set4", cfg2);
+
+        assertTrue(set1.add("a"));
+        assertTrue(set2.add("b"));
+        assertTrue(set3.add("c"));
+        assertTrue(set4.add("d"));
+
+        assertFalse(set1.add("a"));
+        assertFalse(set2.add("b"));
+        assertFalse(set3.add("c"));
+        assertFalse(set4.add("d"));
+
+        assertTrue(set1.contains("a"));
+        assertTrue(set2.contains("b"));
+        assertTrue(set3.contains("c"));
+        assertTrue(set4.contains("d"));
+
+        assertEquals(1, set1.size());
+        assertEquals(1, set2.size());
+        assertEquals(1, set3.size());
+        assertEquals(1, set4.size());
+
+        assertFalse(set1.remove("z"));
+        assertFalse(set2.remove("z"));
+        assertFalse(set3.remove("z"));
+        assertFalse(set4.remove("z"));
+
+        assertTrue(set1.remove("a"));
+        assertTrue(set2.remove("b"));
+        assertTrue(set3.remove("c"));
+        assertTrue(set4.remove("d"));
+
+        assertTrue(set1.isEmpty());
+        assertTrue(set2.isEmpty());
+        assertTrue(set3.isEmpty());
+        assertTrue(set4.isEmpty());
+
+        set2.close();
+        set4.close();
+
+        assertTrue(set2.removed());
+        assertTrue(set4.removed());
+
+        assertFalse(set1.removed());
+        assertFalse(set3.removed());
+
+        assertNotNull(ignite.set("set1", null));
+        assertNull(ignite.set("set2", null));
+
+        set1.close();
+        set3.close();
     }
 
     /**

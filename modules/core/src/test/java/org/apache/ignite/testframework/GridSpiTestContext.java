@@ -17,26 +17,57 @@
 
 package org.apache.ignite.testframework;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.direct.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.TaskEvent;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.direct.DirectMessageReader;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.IgnitePortProtocol;
+import org.apache.ignite.spi.IgniteSpiContext;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.jetbrains.annotations.Nullable;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 
 /**
  * Test SPI context.
@@ -66,6 +97,16 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** */
     private MessageFactory factory;
+
+    /** */
+    private GridTimeoutProcessor timeoutProcessor;
+
+    /**
+     * @param timeoutProcessor Timeout processor.
+     */
+    public void timeoutProcessor(GridTimeoutProcessor timeoutProcessor) {
+        this.timeoutProcessor = timeoutProcessor;
+    }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> remoteNodes() {
@@ -207,7 +248,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param nodeId Node ID.
      */
     public void removeNode(UUID nodeId) {
-        for (Iterator<ClusterNode> iter = rmtNodes.iterator(); iter.hasNext();) {
+        for (Iterator<ClusterNode> iter = rmtNodes.iterator(); iter.hasNext(); ) {
             ClusterNode node = iter.next();
 
             if (node.id().equals(nodeId)) {
@@ -288,7 +329,28 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @SuppressWarnings("deprecation")
     public void triggerMessage(ClusterNode node, Object msg) {
         for (GridMessageListener lsnr : msgLsnrs)
-            lsnr.onMessage(node.id(), msg);
+            lsnr.onMessage(node.id(), msg, GridIoPolicy.SYSTEM_POOL);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
+    @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+        try {
+            addMessageListener(TOPIC_COMM_USER,
+                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param topic Listener's topic.
+     * @param lsnr Listener to add.
+     */
+    @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
+    public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
+        addMessageListener(lsnr, ((Object)topic).toString());
     }
 
     /** {@inheritDoc} */
@@ -301,6 +363,28 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @SuppressWarnings("deprecation")
     @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
         return msgLsnrs.remove(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
+    @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+        try {
+            removeMessageListener(TOPIC_COMM_USER,
+                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param topic Listener's topic.
+     * @param lsnr Listener to remove.
+     * @return Whether or not the lsnr was removed.
+     */
+    @SuppressWarnings("deprecation")
+    public boolean removeMessageListener(GridTopic topic, @Nullable GridMessageListener lsnr) {
+        return removeMessageListener(lsnr, ((Object)topic).toString());
     }
 
     /**
@@ -437,7 +521,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         boolean res = false;
 
         try {
-            res =  get(cacheName, key) != null;
+            res = get(cacheName, key) != null;
         }
         catch (IgniteException ignored) {
 
@@ -470,12 +554,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @Override public MessageFormatter messageFormatter() {
         if (formatter == null) {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer() {
-                    return new DirectMessageWriter();
+                @Override public MessageWriter writer(UUID rmtNodeId) {
+                    return new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
                 }
 
-                @Override public MessageReader reader(MessageFactory factory) {
-                    return new DirectMessageReader(factory, this);
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                    return new DirectMessageReader(msgFactory, GridIoManager.DIRECT_PROTO_VER);
                 }
             };
         }
@@ -508,12 +592,19 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
-        // No-op.
+        if (timeoutProcessor != null)
+            timeoutProcessor.addTimeoutObject(new GridSpiTimeoutObject(obj));
     }
 
     /** {@inheritDoc} */
     @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
-        // No-op.
+        if (timeoutProcessor != null)
+            timeoutProcessor.removeTimeoutObject(new GridSpiTimeoutObject(obj));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> nodeAttributes() {
+        return Collections.emptyMap();
     }
 
     /**
@@ -549,6 +640,67 @@ public class GridSpiTestContext implements IgniteSpiContext {
         private CachedObject(long expire, V obj) {
             this.expire = expire;
             this.obj = obj;
+        }
+    }
+
+    /**
+     * This class represents a message listener wrapper that knows about peer deployment.
+     */
+    private class GridLocalMessageListener implements GridMessageListener {
+        /** Predicate listeners. */
+        private final IgniteBiPredicate<UUID, Object> predLsnr;
+
+        /** User message topic. */
+        private final Object topic;
+
+        /**
+         * @param topic User topic.
+         * @param predLsnr Predicate listener.
+         * @throws IgniteCheckedException If failed to inject resources to predicates.
+         */
+        GridLocalMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
+            throws IgniteCheckedException {
+            this.topic = topic;
+            this.predLsnr = predLsnr;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings({
+            "SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
+            "OverlyStrongTypeCast"})
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+            GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
+
+            Object msgBody = ioMsg.body();
+
+            assert msgBody != null || ioMsg.bodyBytes() != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            GridLocalMessageListener l = (GridLocalMessageListener)o;
+
+            return F.eq(predLsnr, l.predLsnr) && F.eq(topic, l.topic);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = predLsnr != null ? predLsnr.hashCode() : 0;
+
+            res = 31 * res + (topic != null ? topic.hashCode() : 0);
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(GridLocalMessageListener.class, this);
         }
     }
 }

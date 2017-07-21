@@ -17,9 +17,13 @@
 
 package org.apache.ignite.spi.collision;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.GridTestJob;
+import org.apache.ignite.GridTestJobContext;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Test implementation for job collision context.

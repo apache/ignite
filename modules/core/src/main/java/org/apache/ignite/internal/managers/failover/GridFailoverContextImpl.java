@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.managers.failover;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.loadbalancer.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.failover.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.GridTaskSessionImpl;
+import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.failover.FailoverContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * GridFailoverContext implementation.
@@ -41,15 +43,31 @@ public class GridFailoverContextImpl implements FailoverContext {
     @GridToStringExclude
     private final GridLoadBalancerManager loadMgr;
 
+    /** Partition key for affinityCall. */
+    private final int partId;
+
+    /** Affinity cache name for affinityCall. */
+    private final String affCacheName;
+
+    /** Affinity topology version. */
+    private final AffinityTopologyVersion topVer;
+
     /**
      * Initializes failover context.
      *
      * @param taskSes Grid task session.
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
+     * @param partId Partition.
+     * @param affCacheName Affinity cache name.
+     * @param topVer Affinity topology version.
      */
-    public GridFailoverContextImpl(GridTaskSessionImpl taskSes, ComputeJobResult jobRes,
-        GridLoadBalancerManager loadMgr) {
+    public GridFailoverContextImpl(GridTaskSessionImpl taskSes,
+        ComputeJobResult jobRes,
+        GridLoadBalancerManager loadMgr,
+        int partId,
+        @Nullable String affCacheName,
+        @Nullable AffinityTopologyVersion topVer) {
         assert taskSes != null;
         assert jobRes != null;
         assert loadMgr != null;
@@ -57,6 +75,9 @@ public class GridFailoverContextImpl implements FailoverContext {
         this.taskSes = taskSes;
         this.jobRes = jobRes;
         this.loadMgr = loadMgr;
+        this.partId = partId;
+        this.affCacheName = affCacheName;
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -72,6 +93,23 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** {@inheritDoc} */
     @Override public ClusterNode getBalancedNode(List<ClusterNode> top) {
         return loadMgr.getBalancedNode(taskSes, top, jobRes.getJob());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String affinityCacheName() {
+        return affCacheName;
+    }
+
+    /** {@inheritDoc} */
+    public int partition() {
+        return partId;
+    }
+
+    /**
+     * @return Affinity topology version.
+     */
+    @Nullable public AffinityTopologyVersion affinityTopologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */

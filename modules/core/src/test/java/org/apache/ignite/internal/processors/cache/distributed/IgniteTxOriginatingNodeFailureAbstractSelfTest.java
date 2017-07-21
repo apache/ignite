@@ -17,27 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.testframework.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /**
  * Abstract test for originating node failure.
@@ -121,7 +133,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).cache(DEFAULT_CACHE_NAME).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
@@ -133,7 +145,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(grid(1).affinity(null).mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(txNode);
 
@@ -150,20 +162,20 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> cache = txIgniteNode.cache(null);
+                IgniteCache<Integer, String> cache = txIgniteNode.cache(DEFAULT_CACHE_NAME);
 
                 assertNotNull(cache);
 
                 TransactionProxyImpl tx = (TransactionProxyImpl)txIgniteNode.transactions().txStart();
 
-                IgniteInternalTx txEx = tx.tx();
+                GridNearTxLocal txEx = tx.tx();
 
                 assertTrue(txEx.optimistic());
 
                 cache.putAll(map);
 
                 try {
-                    txEx.prepareAsync().get(3, TimeUnit.SECONDS);
+                    txEx.prepareNearTxLocal().get(3, TimeUnit.SECONDS);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
                     info("Failed to wait for prepare future completion: " + partial);
@@ -212,11 +224,11 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        IgniteCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                         assertNotNull(cache);
 
-                        assertEquals(partial ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                        assertEquals(partial ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }
@@ -229,20 +241,20 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                 UUID locNodeId = g.cluster().localNode().id();
 
                 assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),
-                    g.cache(null).get(e.getKey()));
+                    g.cache(DEFAULT_CACHE_NAME).get(e.getKey()));
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, Message msg)
-                throws IgniteSpiException {
+            @Override public void sendMessage(ClusterNode node, Message msg,
+                IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
                 if (!F.eq(ignoreMsgNodeId, node.id()) || !ignoredMessage((GridIoMessage)msg))
-                    super.sendMessage(node, msg);
+                    super.sendMessage(node, msg, ackClosure);
             }
         });
 
@@ -252,8 +264,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);

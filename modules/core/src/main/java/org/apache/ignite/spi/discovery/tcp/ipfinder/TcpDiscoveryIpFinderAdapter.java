@@ -17,16 +17,17 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiContext;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  * IP finder interface implementation adapter.
@@ -70,10 +71,13 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
      * with IP finder will be seen by IP finders on all other nodes.
      *
      * @param shared {@code true} if this IP finder is shared.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setShared(boolean shared) {
+    public TcpDiscoveryIpFinderAdapter setShared(boolean shared) {
         this.shared = shared;
+
+        return this;
     }
 
     /** {@inheritDoc} */

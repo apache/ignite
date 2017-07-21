@@ -17,14 +17,24 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
-import java.io.*;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Path summary: total files count, total directories count, total length.
  */
-public class IgfsPathSummary implements Externalizable {
+public class IgfsPathSummary implements Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -127,8 +137,29 @@ public class IgfsPathSummary implements Externalizable {
         dirCnt = in.readInt();
         totalLen = in.readLong();
 
-        path = new IgfsPath();
-        path.readExternal(in);
+        path = IgfsUtils.readPath(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter rawWriter = writer.rawWriter();
+
+        rawWriter.writeInt(filesCnt);
+        rawWriter.writeInt(dirCnt);
+        rawWriter.writeLong(totalLen);
+
+        IgfsUtils.writePath(rawWriter, path);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader rawReader = reader.rawReader();
+
+        filesCnt = rawReader.readInt();
+        dirCnt = rawReader.readInt();
+        totalLen = rawReader.readLong();
+
+        path = IgfsUtils.readPath(rawReader);
     }
 
     /** {@inheritDoc} */

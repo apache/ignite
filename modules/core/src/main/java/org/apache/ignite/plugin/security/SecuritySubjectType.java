@@ -17,14 +17,15 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Supported security subject types. Subject type can be retrieved form {@link SecuritySubject#type()} method.
  */
 public enum SecuritySubjectType {
     /**
-     * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
+     * Subject type for a remote {@link ClusterNode}.
      */
     REMOTE_NODE,
 

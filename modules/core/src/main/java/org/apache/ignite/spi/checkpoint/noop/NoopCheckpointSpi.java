@@ -17,12 +17,17 @@
 
 package org.apache.ignite.spi.checkpoint.noop;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.IgniteSpiNoop;
+import org.apache.ignite.spi.checkpoint.CheckpointListener;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op implementation of {@link org.apache.ignite.spi.checkpoint.CheckpointSpi}. This is default implementation
@@ -36,7 +41,7 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         U.warn(log, "Checkpoints are disabled (to enable configure any GridCheckpointSpi implementation)");
     }
 
@@ -63,6 +68,13 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     /** {@inheritDoc} */
     @Override public void setCheckpointListener(CheckpointListener lsnr) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoopCheckpointSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */

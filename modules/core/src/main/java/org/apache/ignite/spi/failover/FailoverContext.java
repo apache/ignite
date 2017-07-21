@@ -17,11 +17,16 @@
 
 package org.apache.ignite.spi.failover;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface defines a set of operations available to failover SPI
@@ -52,4 +57,20 @@ public interface FailoverContext {
      * @throws IgniteException If anything failed.
      */
     public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteException;
+
+    /**
+     * Gets partition for {@link IgniteCompute#affinityRun(Collection, int, IgniteRunnable)}
+     * and {@link IgniteCompute#affinityCall(Collection, int, IgniteCallable)}.
+     *
+     * @return Partition number.
+     */
+    public int partition();
+
+    /**
+     * Returns affinity cache name {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}
+     * and {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)}.
+     *
+     * @return Cache name.
+     */
+    @Nullable public String affinityCacheName();
 }

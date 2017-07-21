@@ -17,25 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Near-only cache node startup test.
@@ -51,8 +54,8 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     private boolean cache = true;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (cilent)
             cfg.setClientMode(true);
@@ -114,11 +117,11 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createNearCache(null, new NearCacheConfiguration());
+                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
             }
 
             for (int i = 0; i < 100; i++)
-                assertFalse("For key: " + i, grid(0).affinity(null).isPrimaryOrBackup(grid(0).localNode(), i));
+                assertFalse("For key: " + i, grid(0).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(0).localNode(), i));
         }
         finally {
             stopAllGrids();
@@ -136,7 +139,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createNearCache(null, new NearCacheConfiguration());
+                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
             }
 
             cache = false;
@@ -145,7 +148,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             Ignite compute = startGrid(4);
 
             for (int i = 0; i < 100; i++) {
-                ClusterNode node = compute.cluster().mapKeyToNode(null, i);
+                ClusterNode node = compute.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i);
 
                 assertFalse("For key: " + i, node.id().equals(compute.cluster().localNode().id()));
                 assertFalse("For key: " + i, node.id().equals(grid(0).localNode().id()));
@@ -167,14 +170,14 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createNearCache(null, new NearCacheConfiguration());
+                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
             }
 
             for (int i = 0; i < 10; i++)
-                grid(1).cache(null).put(i, i);
+                grid(1).cache(DEFAULT_CACHE_NAME).put(i, i);
 
             final Ignite igniteNearOnly = grid(0);
-            final IgniteCache<Object, Object> nearOnly = igniteNearOnly.cache(null);
+            final IgniteCache<Object, Object> nearOnly = igniteNearOnly.cache(DEFAULT_CACHE_NAME);
 
             // Populate near cache.
             for (int i = 0; i < 10; i++) {
@@ -198,7 +201,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             }
 
             // Test optimistic transaction.
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try (Transaction tx = igniteNearOnly.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                         nearOnly.put("key", "val");
@@ -208,7 +211,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, ClusterTopologyException.class, null);
+            }, ClusterTopologyCheckedException.class);
 
             // Test pessimistic transaction.
             GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
@@ -240,7 +243,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createNearCache(null, new NearCacheConfiguration());
+                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
             }
         }
         finally {

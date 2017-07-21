@@ -17,17 +17,28 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link IgniteEvents} implementation.
@@ -67,8 +78,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
-        @Nullable int... types) {
+    @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
@@ -85,9 +95,31 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<List<T>> remoteQueryAsync(IgnitePredicate<T> p, long timeout,
+        @Nullable int... types) throws IgniteException {
+
+        guard();
+
+        try {
+            return new IgniteFutureImpl<>(ctx.event().remoteEventsAsync(compoundPredicate(p, types),
+                prj.nodes(), timeout));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<UUID> remoteListenAsync(
+        @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types) throws IgniteException {
+        return remoteListenAsync(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
@@ -100,12 +132,45 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         guard();
 
         try {
+            GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
+                (IgnitePredicate<Event>)rmtFilter, types);
+
             return saveOrGet(ctx.continuous().startRoutine(
-                new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
-                    (IgnitePredicate<Event>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
+                hnd,
+                false,
+                bufSize,
+                interval,
+                autoUnsubscribe,
+                prj.predicate()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<UUID> remoteListenAsync(int bufSize, long interval,
+        boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types) throws IgniteException {
+        A.ensure(bufSize > 0, "bufSize > 0");
+        A.ensure(interval >= 0, "interval >= 0");
+
+        guard();
+
+        try {
+            GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
+                (IgnitePredicate<Event>)rmtFilter, types);
+
+            return new IgniteFutureImpl<>(ctx.continuous().startRoutine(
+                hnd,
+                false,
+                bufSize,
+                interval,
+                autoUnsubscribe,
+                prj.predicate()));
         }
         finally {
             unguard();
@@ -130,6 +195,21 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException {
+        A.notNull(opId, "consumeId");
+
+        guard();
+
+        try {
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.continuous().stopRoutine(opId));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter,
         @Nullable int... types) {
         guard();
@@ -146,6 +226,19 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Event> IgniteFuture<T> waitForLocalAsync(@Nullable IgnitePredicate<T> filter,
+        @Nullable int... types) throws IgniteException {
+        guard();
+
+        try {
+            return new IgniteFutureImpl<>(ctx.event().waitForEvent(filter, types));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
         A.notNull(p, "p");
 
@@ -153,6 +246,9 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
         try {
             return ctx.event().localEvents(compoundPredicate(p, types));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();

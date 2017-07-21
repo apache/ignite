@@ -17,27 +17,53 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.http.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.lang.annotation.*;
-import java.math.*;
-import java.net.*;
-import java.nio.*;
-import java.util.*;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Grid utils tests.
@@ -303,7 +329,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             col = Arrays.asList(this, this, this);
 
-            GridTestKernalContext ctx = newContext();
+            newContext();
 
             subGrid = ignite.cluster().forNodes(Collections.singleton(node));
         }
@@ -717,6 +743,82 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 return hostName.contains("localhost") || hostName.contains("0:0:0:0:0:0:0:1");
             }
         }));
+    }
+
+    /**
+     *
+     */
+    public void testToSocketAddressesNoDuplicates() {
+        Collection<String> addrs = new ArrayList<>();
+
+        addrs.add("127.0.0.1");
+        addrs.add("localhost");
+
+        Collection<String> hostNames = new ArrayList<>();
+        int port = 1234;
+
+        assertEquals(1, U.toSocketAddresses(addrs, hostNames, port).size());
+    }
+
+    /**
+     * Composes a test String of given tlength.
+     *
+     * @param len The length.
+     * @return The String.
+     */
+    private static String composeString(int len) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i=0; i<len; i++)
+            sb.append((char)i);
+
+        String x = sb.toString();
+
+        assertEquals(len, x.length());
+
+        return x;
+    }
+
+    /**
+     * Writes the given String to a DataOutput, reads from DataInput, then checks if they are the same.
+     *
+     * @param s0 The String to check serialization for.
+     * @throws Exception On error.
+     */
+    private static void checkString(String s0) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutput dout = new DataOutputStream(baos);
+
+        IgfsUtils.writeUTF(dout, s0);
+
+        DataInput din = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
+
+        String s1 = IgfsUtils.readUTF(din);
+
+        assertEquals(s0, s1);
+    }
+
+    /**
+     * Tests long String serialization/deserialization,
+     *
+     * @throws Exception If failed.
+     */
+    public void testLongStringWriteUTF() throws Exception {
+        checkString(null);
+        checkString("");
+
+        checkString("a");
+
+        checkString("Quick brown fox jumps over the lazy dog.");
+
+        String x = composeString(0xFFFF / 4 - 1);
+        checkString(x);
+
+        x = composeString(0xFFFF / 4);
+        checkString(x);
+
+        x = composeString(0xFFFF / 4 + 1);
+        checkString(x);
     }
 
     /**

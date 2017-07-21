@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Future that represents already completed result.
@@ -54,6 +56,16 @@ public class GridNioFinishedFuture<R> extends GridFinishedFuture<R> implements G
     /** {@inheritDoc} */
     @Override public boolean skipRecovery() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInClosure<IgniteException> ackClosure() {
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.testframework.*;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePeekMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 
 /**
  *
@@ -53,11 +54,13 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
      * @throws Exception If failed.
      */
     public void testNearUpdateTopologyChange() throws Exception {
-        final Affinity<Integer> aff = grid(0).affinity(null);
+        awaitPartitionMapExchange();
+
+        final Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         final Integer key = 9;
 
-        IgniteCache<Integer, Integer> primaryCache = primaryCache(key, null);
+        IgniteCache<Integer, Integer> primaryCache = primaryCache(key, DEFAULT_CACHE_NAME);
 
         final Ignite primaryIgnite = primaryCache.unwrap(Ignite.class);
 
@@ -101,7 +104,7 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
                 gotNewPrimary = true;
 
-                primary.cache(null).put(key, 2);
+                primary.cache(DEFAULT_CACHE_NAME).put(key, 2);
 
                 break;
             }
@@ -127,7 +130,7 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
         assertTrue(wait);
 
-        log.info("Primary node: " + primaryNode(key, null).name());
+        log.info("Primary node: " + primaryNode(key, DEFAULT_CACHE_NAME).name());
 
         assertTrue(aff.isPrimary(primaryIgnite.cluster().localNode(), key));
 

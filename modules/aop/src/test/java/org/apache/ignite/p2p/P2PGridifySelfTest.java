@@ -17,15 +17,17 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.gridify.Gridify;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  *
@@ -37,8 +39,8 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
     private DeploymentMode depMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Override P2P configuration to exclude Task and Job classes
         cfg.setPeerClassLoadingLocalClassPathExclude(GridP2PTestTask.class.getName(), GridP2PTestJob.class.getName());
@@ -91,7 +93,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @return The same value as parameter has.
      */
     @Gridify(taskName = "org.apache.ignite.p2p.GridP2PTestTask",
-        gridName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+        igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public int executeGridify(int res) {
         return res;
     }
@@ -127,7 +129,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @param res Result.
      * @return The same value as parameter has.
      */
-    @Gridify(gridName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+    @Gridify(igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public Integer executeGridifyResource(int res) {
         String path = "org/apache/ignite/p2p/p2p.properties";
 

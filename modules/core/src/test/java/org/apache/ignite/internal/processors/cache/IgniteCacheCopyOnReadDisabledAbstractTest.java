@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-
-import javax.cache.processor.*;
-import java.io.*;
+import java.io.Serializable;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  *
@@ -33,8 +33,8 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         assertTrue(ccfg.isCopyOnRead());
 
@@ -47,7 +47,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
      * @throws Exception If failed.
      */
     public void testCopyOnReadDisabled() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(null);
+        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++) {
             TestKey key = new TestKey(i);
@@ -56,6 +56,8 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
             cache.put(key, val);
 
             TestValue val0 = cache.get(key);
+
+            assertSame(val0, cache.get(key));
 
             assertNotSame(val, val0); // Original user value is always copied.
 

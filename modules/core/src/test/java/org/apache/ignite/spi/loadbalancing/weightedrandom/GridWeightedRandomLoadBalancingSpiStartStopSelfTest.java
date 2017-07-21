@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.loadbalancing.weightedrandom;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Wighted random load balancing SPI start-stop test.

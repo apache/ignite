@@ -17,23 +17,33 @@
 
 package org.apache.ignite.spi.communication;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.util.typedef.CO;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.nio.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -79,8 +89,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -90,7 +100,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes((int[])null);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
@@ -129,7 +139,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(SAMPLE_CNT);
 
         mgr1.addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 try {
                     latch.countDown();
 
@@ -184,7 +194,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             msg.add(mes2);
         }
 
-        mgr0.send(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
+        mgr0.sendToCustomTopic(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
 
         assert latch.await(3, SECONDS);
     }
@@ -192,7 +202,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestMessage extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte)202;
+        public static final short DIRECT_TYPE = 202;
 
         /** */
         @GridDirectCollection(TestMessage1.class)
@@ -205,6 +215,21 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             entries.add(entry);
         }
 
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addDeploymentInfo() {
+            return false;
+        }
+
         /**
          * @return COllection of test messages.
          */
@@ -213,7 +238,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
@@ -278,7 +303,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     */
     static class TestMessage1 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 203;
+        public static final short DIRECT_TYPE = 203;
 
         /** Body. */
         private String body;
@@ -287,12 +312,27 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         private Message msg;
 
         /**
-         * @param mes Message.
+         * @param msg Message.
+         * @param body Message body.
          */
-        public void init(Message mes, String body) {
-            this.msg = mes;
-
+        public void init(Message msg, String body) {
+            this.msg = msg;
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addDeploymentInfo() {
+            return false;
         }
 
         /**
@@ -310,7 +350,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
@@ -389,7 +429,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
      */
     static class TestMessage2 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 205;
+        public static final short DIRECT_TYPE = 201;
 
         /** Node id. */
         private UUID nodeId;
@@ -411,6 +451,21 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             this.id = id;
             this.msg = mes;
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addDeploymentInfo() {
+            return false;
         }
 
         /**
@@ -442,7 +497,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 

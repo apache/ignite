@@ -17,22 +17,30 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.resources.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test that compute and service run only on server nodes by default.
@@ -48,16 +56,16 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder).setForceServerMode(true));
 
         cfg.setCacheConfiguration();
 
-        if (gridName.equals(getTestGridName(0)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -81,7 +89,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         Set<String> srvNames = new HashSet<>(NODES_CNT - 1);
 
         for (int i = 1; i < NODES_CNT; ++i)
-            srvNames.add(getTestGridName(i));
+            srvNames.add(getTestIgniteInstanceName(i));
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -129,7 +137,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, res.size());
 
-            assertEquals(getTestGridName(0), F.first(res));
+            assertEquals(getTestIgniteInstanceName(0), F.first(res));
         }
     }
 
@@ -165,13 +173,19 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
 
-            Ignite ignite = grid(i);
+            final Ignite ignite = grid(i);
 
             ignite.services().deployNodeSingleton(SINGLETON_NAME, new TestService());
 
-            ClusterGroup grp = ignite.cluster();
+            final ClusterGroup grp = ignite.cluster();
 
             assertEquals(NODES_CNT, grp.nodes().size());
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.services(grp).serviceDescriptors().size() == 1;
+                }
+            }, 5000);
 
             Collection<ServiceDescriptor> srvDscs = ignite.services(grp).serviceDescriptors();
 
@@ -200,13 +214,19 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
 
-            Ignite ignite = grid(i);
+            final Ignite ignite = grid(i);
 
             ignite.services(ignite.cluster().forClients()).deployNodeSingleton(SINGLETON_NAME, new TestService());
 
-            ClusterGroup grp = ignite.cluster();
+            final ClusterGroup grp = ignite.cluster();
 
             assertEquals(NODES_CNT, grp.nodes().size());
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.services(grp).serviceDescriptors().size() == 1;
+                }
+            }, 5000);
 
             Collection<ServiceDescriptor> srvDscs = ignite.services(grp).serviceDescriptors();
 

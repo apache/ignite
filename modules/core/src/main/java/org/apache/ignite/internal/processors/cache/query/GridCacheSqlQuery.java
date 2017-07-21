@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Query.
@@ -38,19 +41,38 @@ public class GridCacheSqlQuery implements Message {
     public static final Object[] EMPTY_PARAMS = {};
 
     /** */
-    private String alias;
-
-    /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private String qry;
 
     /** */
     @GridToStringInclude
-    @GridDirectTransient
-    private Object[] params;
+    private int[] paramIdxs;
 
     /** */
-    private byte[] paramsBytes;
+    @GridToStringInclude
+    @GridDirectTransient
+    private LinkedHashMap<String, ?> cols;
+
+    /** Field kept for backward compatibility. */
+    private String alias;
+
+    /** Sort columns. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient List<?> sort;
+
+    /** If we have partitioned tables in this query. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient boolean partitioned;
+
+    /** Single node to execute the query on. */
+    private UUID node;
+
+    /** Derived partition info. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient Object[] derivedPartitions;
 
     /**
      * For {@link Message}.
@@ -60,24 +82,29 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /**
-     * @param alias Alias.
      * @param qry Query.
-     * @param params Query parameters.
      */
-    public GridCacheSqlQuery(String alias, String qry, Object[] params) {
+    public GridCacheSqlQuery(String qry) {
         A.ensure(!F.isEmpty(qry), "qry must not be empty");
 
-        this.alias = alias;
         this.qry = qry;
-
-        this.params = F.isEmpty(params) ? EMPTY_PARAMS : params;
     }
 
     /**
-     * @return Alias.
+     * @return Columns.
      */
-    public String alias() {
-        return alias;
+    public LinkedHashMap<String, ?> columns() {
+        return cols;
+    }
+
+    /**
+     * @param columns Columns.
+     * @return {@code this}.
+     */
+    public GridCacheSqlQuery columns(LinkedHashMap<String, ?> columns) {
+        this.cols = columns;
+
+        return this;
     }
 
     /**
@@ -88,36 +115,35 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /**
-     * @return Parameters.
+     * @param qry Query.
+     * @return {@code this}.
      */
-    public Object[] parameters() {
-        return params;
+    public GridCacheSqlQuery query(String qry) {
+        this.qry = qry;
+
+        return this;
     }
 
     /**
-     * @param m Marshaller.
-     * @throws IgniteCheckedException If failed.
+     * @return Parameter indexes.
      */
-    public void marshallParams(Marshaller m) throws IgniteCheckedException {
-        if (paramsBytes != null)
-            return;
-
-        assert params != null;
-
-        paramsBytes = m.marshal(params);
+    public int[] parameterIndexes() {
+        return paramIdxs;
     }
 
     /**
-     * @param m Marshaller.
-     * @throws IgniteCheckedException If failed.
+     * @param paramIdxs Parameter indexes.
+     * @return {@code this}.
      */
-    public void unmarshallParams(Marshaller m) throws IgniteCheckedException {
-        if (params != null)
-            return;
+    public GridCacheSqlQuery parameterIndexes(int[] paramIdxs) {
+        this.paramIdxs = paramIdxs;
 
-        assert paramsBytes != null;
+        return this;
+    }
 
-        params = m.unmarshal(paramsBytes, null);
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -144,12 +170,18 @@ public class GridCacheSqlQuery implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("paramsBytes", paramsBytes))
+                if (!writer.writeUuid("node", node))
                     return false;
 
                 writer.incrementState();
 
             case 2:
+                if (!writer.writeIntArray("paramIdxs", paramIdxs))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
                 if (!writer.writeString("qry", qry))
                     return false;
 
@@ -177,7 +209,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 1:
-                paramsBytes = reader.readByteArray("paramsBytes");
+                node = reader.readUuid("node");
 
                 if (!reader.isLastRead())
                     return false;
@@ -185,6 +217,14 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 2:
+                paramIdxs = reader.readIntArray("paramIdxs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 qry = reader.readString("qry");
 
                 if (!reader.isLastRead())
@@ -194,16 +234,117 @@ public class GridCacheSqlQuery implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheSqlQuery.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 112;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
+    }
+
+    /**
+     * @return Copy.
+     */
+    public GridCacheSqlQuery copy() {
+        GridCacheSqlQuery cp = new GridCacheSqlQuery();
+
+        cp.qry = qry;
+        cp.cols = cols;
+        cp.paramIdxs = paramIdxs;
+        cp.sort = sort;
+        cp.partitioned = partitioned;
+        cp.derivedPartitions = derivedPartitions;
+
+        return cp;
+    }
+
+    /**
+     * @param sort Sort columns.
+     */
+    public void sortColumns(List<?> sort) {
+        this.sort = sort;
+    }
+
+    /**
+     * @return Sort columns.
+     */
+    public List<?> sortColumns() {
+        return sort;
+    }
+
+    /**
+     * @param partitioned If the query contains partitioned tables.
+     */
+    public void partitioned(boolean partitioned) {
+        this.partitioned = partitioned;
+    }
+
+    /**
+     * @return {@code true} If the query contains partitioned tables.
+     */
+    public boolean isPartitioned() {
+        return partitioned;
+    }
+
+    /**
+     * @return Single node to execute the query on or {@code null} if need to execute on all the nodes.
+     */
+    public UUID node() {
+        return node;
+    }
+
+    /**
+     * @param node Single node to execute the query on or {@code null} if need to execute on all the nodes.
+     * @return {@code this}.
+     */
+    public GridCacheSqlQuery node(UUID node) {
+        this.node = node;
+
+        return this;
+    }
+
+    /**
+     * @param allParams All parameters.
+     * @return Parameters only for this query.
+     */
+    public Object[] parameters(Object[] allParams) {
+        if (F.isEmpty(paramIdxs))
+            return EMPTY_PARAMS;
+
+        assert !F.isEmpty(allParams);
+
+        int maxIdx = paramIdxs[paramIdxs.length - 1];
+
+        Object[] res = new Object[maxIdx + 1];
+
+        for (int i = 0; i < paramIdxs.length; i++) {
+            int idx = paramIdxs[i];
+
+            res[idx] = allParams[idx];
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Derived partitions.
+     */
+    public Object[] derivedPartitions() {
+        return derivedPartitions;
+    }
+
+    /**
+     * @param derivedPartitions Derived partitions.
+     * @return {@code this}.
+     */
+    public GridCacheSqlQuery derivedPartitions(Object[] derivedPartitions) {
+        this.derivedPartitions = derivedPartitions;
+
+        return this;
     }
 }

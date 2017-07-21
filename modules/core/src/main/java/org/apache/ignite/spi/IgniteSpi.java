@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface defines life-cycle of SPI implementation. Every SPI implementation should implement
@@ -59,11 +59,11 @@ public interface IgniteSpi {
      * This method is called to start SPI. After this method returns
      * successfully kernel assumes that SPI is fully operational.
      *
-     * @param gridName Name of grid instance this SPI is being started for
-     *    ({@code null} for default grid).
+     * @param igniteInstanceName Name of Ignite instance this SPI is being started for
+     *    ({@code null} for default Ignite instance).
      * @throws IgniteSpiException Throws in case of any error during SPI start.
      */
-    public void spiStart(@Nullable String gridName) throws IgniteSpiException;
+    public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
 
     /**
      * Callback invoked when SPI context is initialized. SPI implementation
@@ -106,4 +106,18 @@ public interface IgniteSpi {
      * @throws IgniteSpiException Thrown in case of any error during SPI stop.
      */
     public void spiStop() throws IgniteSpiException;
+
+    /**
+     * Client node disconnected callback.
+     *
+     * @param reconnectFut Future that will be completed when client reconnected.
+     */
+    public void onClientDisconnected(IgniteFuture<?> reconnectFut);
+
+    /**
+     * Client node reconnected callback.
+     *
+     * @param clusterRestarted {@code True} if all cluster nodes restarted while client was disconnected.
+     */
+    public void onClientReconnected(boolean clusterRestarted);
 }

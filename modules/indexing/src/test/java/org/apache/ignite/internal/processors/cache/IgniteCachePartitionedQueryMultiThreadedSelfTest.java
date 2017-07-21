@@ -17,28 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.Externalizable;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for partitioned cache queries.
@@ -59,8 +68,8 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -104,7 +113,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll();
+            grid(i).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -131,7 +140,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         final PersonObj p3 = new PersonObj("Mike", 1800, "Bachelor");
         final PersonObj p4 = new PersonObj("Bob", 1900, "Bachelor");
 
-        final IgniteCache<UUID, PersonObj> cache0 = grid(0).cache(null);
+        final IgniteCache<UUID, PersonObj> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -207,7 +216,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     }
 
     /** Test class. */
-    private static class PersonObj implements Externalizable {
+    private static class PersonObj {
         /** */
         @GridToStringExclude
         private UUID id = UUID.randomUUID();
@@ -263,22 +272,6 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         /** @return Degree. */
         String degree() {
             return degree;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeUuid(out, id);
-            U.writeString(out, name);
-            out.writeInt(salary);
-            U.writeString(out, degree);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readUuid(in);
-            name = U.readString(in);
-            salary = in.readInt();
-            degree = U.readString(in);
         }
 
         /** {@inheritDoc} */

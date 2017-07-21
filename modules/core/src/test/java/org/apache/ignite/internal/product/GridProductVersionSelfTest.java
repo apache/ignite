@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.product;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
-import static org.junit.Assert.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP;
+import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Versions test.
@@ -48,21 +50,21 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertEquals(0, ver.revisionTimestamp());
         assertArrayEquals(new byte[20], ver.revisionHash());
 
-        ver = IgniteProductVersion.fromString("1.2.3-rc1-4-DEV");
+        ver = IgniteProductVersion.fromString("1.2.3.b1-4-DEV");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
-        assertEquals("rc1", ver.stage());
+        assertEquals("b1", ver.stage());
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[20], ver.revisionHash());
 
-        ver = IgniteProductVersion.fromString("1.2.3-GA1-4-DEV");
+        ver = IgniteProductVersion.fromString("1.2.3.final-4-DEV");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
-        assertEquals("GA1", ver.stage());
+        assertEquals("final", ver.stage());
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[20], ver.revisionHash());
 
@@ -94,6 +96,16 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(new byte[]{24, -27, -89, -20, -98, 50, 2, 18, 106, 105, -68, 35, 26, 107, -106, 91, -63, -41, 61, -18},
             ver.revisionHash());
 
+        ver = IgniteProductVersion.fromString("1.2.3.b1-4-18e5a7ec9e3202126a69bc231a6b965bc1d73dee");
+
+        assertEquals(1, ver.major());
+        assertEquals(2, ver.minor());
+        assertEquals(3, ver.maintenance());
+        assertEquals("b1", ver.stage());
+        assertEquals(4, ver.revisionTimestamp());
+        assertArrayEquals(new byte[]{24, -27, -89, -20, -98, 50, 2, 18, 106, 105, -68, 35, 26, 107, -106, 91, -63, -41, 61, -18},
+            ver.revisionHash());
+
         ver = IgniteProductVersion.fromString("1.2.3-rc1-4-18e5a7ec9e3202126a69bc231a6b965bc1d73dee");
 
         assertEquals(1, ver.major());
@@ -114,12 +126,12 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(new byte[]{24, -27, -89, -20, -98, 50, 2, 18, 106, 105, -68, 35, 26, 107, -106, 91, -63, -41, 61, -18},
             ver.revisionHash());
 
-        ver = IgniteProductVersion.fromString("1.2.3-rc1-SNAPSHOT-4-18e5a7ec9e3202126a69bc231a6b965bc1d73dee");
+        ver = IgniteProductVersion.fromString("1.2.3.b1-SNAPSHOT-4-18e5a7ec9e3202126a69bc231a6b965bc1d73dee");
 
         assertEquals(1, ver.major());
         assertEquals(2, ver.minor());
         assertEquals(3, ver.maintenance());
-        assertEquals("rc1-SNAPSHOT", ver.stage());
+        assertEquals("b1-SNAPSHOT", ver.stage());
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[]{24, -27, -89, -20, -98, 50, 2, 18, 106, 105, -68, 35, 26, 107, -106, 91, -63, -41, 61, -18},
             ver.revisionHash());

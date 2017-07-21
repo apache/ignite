@@ -17,17 +17,25 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * IGFS task which can be executed on the grid using one of {@code IgniteFs.execute()} methods. Essentially IGFS task
@@ -45,7 +53,7 @@ import java.util.*;
  * <p>
  * Finally all generated jobs are sent to Grid nodes for execution.
  * <p>
- * As with regular {@code GridComputeTask} you can define your own logic for results handling and reduce step.
+ * As with regular {@code ComputeTask} you can define your own logic for results handling and reduce step.
  * <p>
  * Here is an example of such a task:
  * <pre name="code" class="java">
@@ -58,10 +66,10 @@ import java.util.*;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *     public Integer reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *         Integer total = 0;
  *
- *         for (GridComputeJobResult res : results) {
+ *         for (ComputeJobResult res : results) {
  *             Integer cnt = res.getData();
  *
  *             // Null can be returned for non-existent file in case we decide to ignore such situations.

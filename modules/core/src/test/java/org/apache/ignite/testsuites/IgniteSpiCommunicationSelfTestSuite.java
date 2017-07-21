@@ -17,8 +17,27 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.communication.tcp.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConfigSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedShmemTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryAckSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySslSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiShmemSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSmallBuffersSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiStartStopSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpFailureDetectionSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpNoDelayOffSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpSelfTest;
+import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
 
 /**
  * Test suite for all communication SPIs.
@@ -32,9 +51,16 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Communication SPI Test Suite");
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryAckSelfTest.class));
+        suite.addTest(new TestSuite(IgniteTcpCommunicationRecoveryAckClosureSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoverySelfTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoverySslSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConcurrentConnectSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiConcurrentConnectSslSelfTest.class));
+
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiSslSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiSslSmallBuffersSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpNoDelayOffSelfTest.class));
@@ -45,7 +71,13 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpCommunicationSpiMultithreadedSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiMultithreadedShmemTest.class));
 
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class));
+
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConfigSelfTest.class));
+
+        suite.addTest(new TestSuite(TcpCommunicationSpiFaultyClientTest.class));
+        suite.addTest(new TestSuite(TcpCommunicationSpiDropNodesTest.class));
 
         return suite;
     }

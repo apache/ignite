@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -79,10 +82,10 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
      * @param ctx Cache context.
      * @return Map entry unwrapping internal key and value.
      */
-    public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx) {
+    public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx, final boolean keepBinary) {
         return new Map.Entry<K, V>() {
             @Override public K getKey() {
-                return key.value(ctx.cacheObjectContext(), false);
+                return (K)ctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
             }
 
             @Override public V setValue(V val) {
@@ -90,9 +93,14 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
             }
 
             @Override public V getValue() {
-                return val != null ? val.<V>value(ctx.cacheObjectContext(), false) : null;
+                return (V)ctx.cacheObjectContext().unwrapBinaryIfNeeded(val, keepBinary, false);
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -150,11 +158,11 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
 
         }
 
-        return true;
+        return reader.afterMessageRead(DataStreamerEntry.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 95;
     }
 

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.tests.p2p.startcache;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.UUID;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Organization class.

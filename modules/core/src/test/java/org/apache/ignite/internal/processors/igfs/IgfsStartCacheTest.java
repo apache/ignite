@@ -17,25 +17,32 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.io.*;
-import java.util.concurrent.*;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.util.concurrent.Callable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  *
@@ -61,32 +68,30 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
         if (igfs) {
             FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-            igfsCfg.setDataCacheName("dataCache");
-            igfsCfg.setMetaCacheName("metaCache");
             igfsCfg.setName("igfs");
             igfsCfg.setDefaultMode(PRIMARY);
             igfsCfg.setFragmentizerEnabled(false);
 
-            CacheConfiguration dataCacheCfg = new CacheConfiguration();
+            CacheConfiguration dataCacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-            dataCacheCfg.setName("dataCache");
             dataCacheCfg.setCacheMode(PARTITIONED);
             dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
             dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
             dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(1));
 
-            CacheConfiguration metaCacheCfg = new CacheConfiguration();
+            CacheConfiguration metaCacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-            metaCacheCfg.setName("metaCache");
             metaCacheCfg.setCacheMode(REPLICATED);
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
-            dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+            metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-            cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
+            igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+            igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
             cfg.setFileSystemConfiguration(igfsCfg);
         }
 
-        cfg.setGridName("node-" + idx);
+        cfg.setIgniteInstanceName("node-" + idx);
 
         return cfg;
     }
@@ -104,11 +109,14 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     public void testCacheStart() throws Exception {
         Ignite g0 = G.start(config(true, 0));
 
-        checkIgfsCaches(g0);
+        String dataCacheName = ((IgniteEx)g0).igfsx("igfs").configuration().getDataCacheConfiguration().getName();
+        String metaCacheName = ((IgniteEx)g0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();
+
+        checkIgfsCaches(g0, dataCacheName, metaCacheName);
 
         Ignite g1 = G.start(config(false, 1));
 
-        checkIgfsCaches(g1);
+        checkIgfsCaches(g1, dataCacheName, metaCacheName);
 
         IgniteFileSystem igfs = g0.fileSystem("igfs");
 
@@ -124,11 +132,13 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
 
     /**
      * @param ignite Ignite.
+     * @param dataCacheName Data cache name.
+     * @param metaCacheName Meta cache name.
      */
-    private void checkIgfsCaches(final Ignite ignite) {
+    private void checkIgfsCaches(final Ignite ignite, final String dataCacheName, final String metaCacheName) {
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ignite.cache("dataCache");
+                ignite.cache(dataCacheName);
 
                 return null;
             }
@@ -136,14 +146,14 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ignite.cache("metaCache");
+                ignite.cache(metaCacheName);
 
                 return null;
             }
         }, IllegalStateException.class, null);
 
-        checkCache(((IgniteKernal)ignite).internalCache("dataCache"));
-        checkCache(((IgniteKernal)ignite).internalCache("metaCache"));
+        checkCache(((IgniteKernal)ignite).internalCache(dataCacheName));
+        checkCache(((IgniteKernal)ignite).internalCache(metaCacheName));
     }
 
     /**
@@ -152,7 +162,7 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     private void checkCache(GridCacheAdapter cache) {
         assertNotNull(cache);
         assertFalse(cache.context().userCache());
-        assertFalse(cache.context().systemTx());
+        assertTrue(cache.context().systemTx());
         assertEquals(SYSTEM_POOL, cache.context().ioPolicy());
     }
 }

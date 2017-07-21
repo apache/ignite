@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs.split;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.igfs.mapreduce.records.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.nio.charset.*;
+import java.nio.charset.Charset;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
+import org.apache.ignite.igfs.mapreduce.records.IgfsByteDelimiterRecordResolver;
+import org.apache.ignite.igfs.mapreduce.records.IgfsStringDelimiterRecordResolver;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * String delimiter split resolver self-test.

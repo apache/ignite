@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Enumeration of all supported caching modes. Cache mode is specified in {@link org.apache.ignite.configuration.CacheConfiguration}

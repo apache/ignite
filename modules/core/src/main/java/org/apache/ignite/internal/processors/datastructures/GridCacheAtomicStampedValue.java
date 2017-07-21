@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Atomic stamped value.
  */
 
-public final class GridCacheAtomicStampedValue<T, S> implements GridCacheInternal, GridPeerDeployAware,
-    Externalizable {
+public final class GridCacheAtomicStampedValue<T, S> extends AtomicDataStructureValue implements GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,6 +56,11 @@ public final class GridCacheAtomicStampedValue<T, S> implements GridCacheInterna
      */
     public GridCacheAtomicStampedValue() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.ATOMIC_STAMPED;
     }
 
     /**

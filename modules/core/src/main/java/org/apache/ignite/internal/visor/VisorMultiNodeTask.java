@@ -17,17 +17,24 @@
 
 package org.apache.ignite.internal.visor;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logFinish;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logMapped;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
 
 /**
  * Base class for Visor tasks intended to query data from a multiple node.
@@ -62,14 +69,21 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
 
         start = U.currentTimeMillis();
 
-        debug = arg.debug();
+        debug = arg.isDebug();
 
-        taskArg = arg.argument();
+        taskArg = arg.getArgument();
 
         if (debug)
             logStart(ignite.log(), getClass(), start);
 
         return map0(subgrid, arg);
+    }
+
+    /**
+     * @return Collection of nodes IDs where jobs should be mapped.
+     */
+    protected Collection<UUID> jobNodes(VisorTaskArgument<A> arg) {
+        return arg.getNodes();
     }
 
     /**
@@ -81,7 +95,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      * @throws IgniteException If mapping could not complete successfully.
      */
     protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
-        Collection<UUID> nodeIds = arg.nodes();
+        Collection<UUID> nodeIds = jobNodes(arg);
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
 

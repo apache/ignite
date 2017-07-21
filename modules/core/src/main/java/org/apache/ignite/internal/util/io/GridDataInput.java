@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.util.io;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Extended data input.

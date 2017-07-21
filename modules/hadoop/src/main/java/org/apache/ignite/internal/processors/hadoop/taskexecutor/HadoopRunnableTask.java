@@ -17,18 +17,28 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.hadoop.counter.*;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
+import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMultimap;
+import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
+import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.*;
-import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.*;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.COMBINER_HASHMAP_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_COMBINER_NO_SORTING;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
+import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.COMBINE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
 
 /**
  * Runnable task.
@@ -41,7 +51,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
     private final IgniteLogger log;
 
     /** */
-    private final HadoopJob job;
+    private final HadoopJobEx job;
 
     /** Task to run. */
     private final HadoopTaskInfo info;
@@ -74,7 +84,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
      * @param info Task info.
      * @param nodeId Node id.
      */
-    protected HadoopRunnableTask(IgniteLogger log, HadoopJob job, GridUnsafeMemory mem, HadoopTaskInfo info,
+    protected HadoopRunnableTask(IgniteLogger log, HadoopJobEx job, GridUnsafeMemory mem, HadoopTaskInfo info,
         UUID nodeId) {
         this.nodeId = nodeId;
         this.log = log.getLogger(HadoopRunnableTask.class);
@@ -112,7 +122,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
 
     /**
      * Implements actual task running.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException On error.
      */
     void call0() throws IgniteCheckedException {
         execStartTs = U.currentTimeMillis();
@@ -134,7 +144,15 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
             runTask(perfCntr);
 
             if (info.type() == MAP && job.info().hasCombiner()) {
-                ctx.taskInfo(new HadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(), info.attempt(), null));
+                // Switch to combiner.
+                HadoopTaskInfo combineTaskInfo = new HadoopTaskInfo(COMBINE, info.jobId(), info.taskNumber(),
+                    info.attempt(), null);
+
+                // Mapper and combiner share the same index.
+                if (ctx.taskInfo().hasMapperIndex())
+                    combineTaskInfo.mapperIndex(ctx.taskInfo().mapperIndex());
+
+                ctx.taskInfo(combineTaskInfo);
 
                 try {
                     runTask(perfCntr);

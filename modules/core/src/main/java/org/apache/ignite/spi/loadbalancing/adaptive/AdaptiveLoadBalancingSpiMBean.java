@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management MBean for {@link AdaptiveLoadBalancingSpi} SPI.

@@ -17,16 +17,21 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.executor.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import javax.management.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import javax.management.MBeanServer;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeLoadBalancer;
+import org.apache.ignite.compute.ComputeTaskContinuousMapper;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridLoggerProxy;
+import org.apache.ignite.internal.executor.GridExecutorService;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Controls what classes should be excluded from marshalling by default.
@@ -36,7 +41,7 @@ public final class MarshallerExclusions {
      * Classes that must be included in serialization. All marshallers must
      * included these classes.
      * <p>
-     * Note that this list supercedes {@link #EXCL_CLASSES}.
+     * Note that this list supersedes {@link #EXCL_CLASSES}.
      */
     private static final Class<?>[] INCL_CLASSES = new Class[] {
         // Ignite classes.
@@ -52,7 +57,7 @@ public final class MarshallerExclusions {
      * Excluded grid classes from serialization. All marshallers must omit
      * these classes. Fields of these types should be serialized as {@code null}.
      * <p>
-     * Note that {@link #INCL_CLASSES} supercedes this list.
+     * Note that {@link #INCL_CLASSES} supersedes this list.
      */
     private static final Class<?>[] EXCL_CLASSES;
 

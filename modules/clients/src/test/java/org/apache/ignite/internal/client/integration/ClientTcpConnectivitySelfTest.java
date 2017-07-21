@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.client.integration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.util.typedef.G;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests the REST client-server TCP connectivity with various configurations.

@@ -17,17 +17,16 @@
 
 package org.apache.ignite.java8.examples;
 
-//import org.apache.ignite.examples.java8.computegrid.failover.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Checkpoint examples self test.
  */
 public class CheckpointExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8 
+     * TODO: IGNITE-711 next example(s) should be implemented for java 8
      * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *  
+     *
      * Starts remote nodes before each test.
      *
      * Note: using beforeTestsStarted() to start nodes only once won't work.

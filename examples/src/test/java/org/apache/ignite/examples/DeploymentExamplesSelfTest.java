@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.misc.deployment.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.misc.deployment.DeploymentExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Deployment examples self test.

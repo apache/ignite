@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.util.nodestart;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.File;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Host data.

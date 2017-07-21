@@ -1,0 +1,300 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_impl.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignite.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignition.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\handle_registry.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_environment.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_external_memory.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\transactions\transactions.cpp">
+      <Filter>Code\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\transactions\transaction.cpp">
+      <Filter>Code\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_target.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\query\query_batch.cpp">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp">
+      <Filter>Code\impl\cache\query\continuous</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp">
+      <Filter>Code\impl\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\compute\compute_impl.cpp">
+      <Filter>Code\impl\compute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\compute\cancelable_impl.cpp">
+      <Filter>Code\impl\compute</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\operations.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_configuration.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignition.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\handle_registry.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_sql.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_text.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_scan.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_sql_fields.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_cursor.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_row.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_external_memory.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h">
+      <Filter>Code\impl\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transactions.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transaction.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h">
+      <Filter>Code\impl\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_batch.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query_handle.h">
+      <Filter>Code\cache\query\continuous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query.h">
+      <Filter>Code\cache\query\continuous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_handle_impl.h">
+      <Filter>Code\impl\cache\query\continuous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_listener.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_impl.h">
+      <Filter>Code\impl\cache\query\continuous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\mutable_cache_entry.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\module_manager.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h">
+      <Filter>Code\impl\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_binding.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_binding_impl.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_binding_context.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_argument.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_filter.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_base.h">
+      <Filter>Code\impl\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_holder.h">
+      <Filter>Code\impl\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\bindings.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\helpers.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\compute\compute.h">
+      <Filter>Code\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_impl.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\compute\compute_func.h">
+      <Filter>Code\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\cancelable_impl.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_job_holder.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_job_result.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_task_holder.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\single_job_compute_task_holder.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\multiple_job_compute_task_holder.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{91873c79-a64f-4786-ab25-d03ef2db9dc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl">
+      <UniqueIdentifier>{9bede404-e1b1-44d6-b54d-e9b2441c5f13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache">
+      <UniqueIdentifier>{b013b0f6-c4b8-4b88-89bc-8b394971788e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache">
+      <UniqueIdentifier>{8b7e32c0-e222-4f3a-af31-19df380c369f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache\query">
+      <UniqueIdentifier>{4658a0ff-0d2d-45a6-b8de-93eeec0cc081}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache\query">
+      <UniqueIdentifier>{b6e57294-120a-46f2-b0ad-c3595e2cf789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\interop">
+      <UniqueIdentifier>{ef4515c8-aa3d-44d4-b53d-26d18f465903}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\binary">
+      <UniqueIdentifier>{25234d34-541b-4f6c-b42a-cc96ee33a928}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\transactions">
+      <UniqueIdentifier>{d6f8a3d2-db0e-45ff-9f39-d1f1fa8771f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\transactions">
+      <UniqueIdentifier>{146fe661-0ad3-4d51-83a3-fce8a897e84d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache\query\continuous">
+      <UniqueIdentifier>{2056dfc8-4ced-4658-b2b7-a8c81a7ef797}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache\query\continuous">
+      <UniqueIdentifier>{d633f819-7b30-4e26-81ec-f708d1c1ff8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache\event">
+      <UniqueIdentifier>{e03c3690-ff22-4c78-83a0-b77cebb7f980}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cluster">
+      <UniqueIdentifier>{f5b54635-91a1-447e-923a-1b4608d7e5bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache\event">
+      <UniqueIdentifier>{9c5e9732-755a-4553-8926-b4cf3b6abaf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\compute">
+      <UniqueIdentifier>{f1b7ced1-0e6e-4e07-a5b6-04b076797c6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\compute">
+      <UniqueIdentifier>{ef20cfe1-cd30-429d-a241-575696df8399}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

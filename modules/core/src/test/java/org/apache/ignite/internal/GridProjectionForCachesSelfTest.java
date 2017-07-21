@@ -17,21 +17,27 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for {@link ClusterGroup#forCacheNodes(String)} method.
@@ -47,17 +53,19 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
-        if (gridName.equals(getTestGridName(0)))
-            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestGridName(0)), false));
-        else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
-            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestGridName(2), getTestGridName(3)), true));
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
+            ccfgs.add(cacheConfiguration(DEFAULT_CACHE_NAME, new AttributeFilter(getTestIgniteInstanceName(0)), false));
+        else if (igniteInstanceName.equals(getTestIgniteInstanceName(2)) ||
+            igniteInstanceName.equals(getTestIgniteInstanceName(3)))
+            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestIgniteInstanceName(2),
+                getTestIgniteInstanceName(3)), true));
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
@@ -80,7 +88,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(
-        @Nullable String cacheName,
+        @NotNull String cacheName,
         IgnitePredicate<ClusterNode> nodeFilter,
         boolean nearEnabled
     ) {
@@ -106,8 +114,8 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         grid(1).createNearCache(CACHE_NAME, new NearCacheConfiguration());
 
-        grid(2).cache(null);
-        grid(3).cache(null);
+        grid(2).cache(DEFAULT_CACHE_NAME);
+        grid(3).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -124,10 +132,18 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCacheNodes(null);
+        final ClusterGroup prj = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
         assertNotNull(prj);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return prj.nodes().size() == 3;
+            }
+        }, 5000);
+
         assertEquals(3, prj.nodes().size());
+
         assertTrue(prj.nodes().contains(grid(0).localNode()));
         assertFalse(prj.nodes().contains(grid(1).localNode()));
         assertTrue(prj.nodes().contains(grid(2).localNode()));
@@ -139,9 +155,16 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForNamedCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
+        final ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
-        assert prj != null;
+        assertNotNull(prj);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return prj.nodes().size() == 3;
+            }
+        }, 5000);
+
         assertEquals("Invalid projection: " + prj.nodes(), 3, prj.nodes().size());
         assert !prj.nodes().contains(grid(0).localNode());
         assert prj.nodes().contains(grid(1).localNode());
@@ -154,7 +177,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDataCaches() throws Exception {
-        ClusterGroup prj = ignite.cluster().forDataNodes(null);
+        ClusterGroup prj = ignite.cluster().forDataNodes(DEFAULT_CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 1;
@@ -292,10 +315,10 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            String gridName = node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+            String igniteInstanceName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, gridName))
+                if (F.eq(attr, igniteInstanceName))
                     return true;
             }
 

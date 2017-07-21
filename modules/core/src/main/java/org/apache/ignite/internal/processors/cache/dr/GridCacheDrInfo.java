@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.dr;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache DR info used as argument in PUT cache internal interfaces.
@@ -32,6 +36,9 @@ public class GridCacheDrInfo implements Externalizable {
 
     /** Value. */
     private CacheObject val;
+
+    /** Entry processor. */
+    private EntryProcessor proc;
 
     /** DR version. */
     private GridCacheVersion ver;
@@ -58,10 +65,47 @@ public class GridCacheDrInfo implements Externalizable {
     }
 
     /**
+     * Constructor.
+     *
+     * @param ver Version.
+     */
+    public GridCacheDrInfo(GridCacheVersion ver) {
+        this.ver = ver;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param proc Entry processor.
+     * @param ver Version.
+     */
+    public GridCacheDrInfo(EntryProcessor proc, GridCacheVersion ver) {
+        assert proc != null;
+        assert ver != null;
+
+        this.proc = proc;
+        this.ver = ver;
+    }
+
+    /**
      * @return Value.
      */
     public CacheObject value() {
         return val;
+    }
+
+    /**
+     * @return Entry processor.
+     */
+    public EntryProcessor entryProcessor() {
+        return proc;
+    }
+
+    /**
+     * @return Value (entry processor or cache object.
+     */
+    public Object valueEx() {
+        return val == null ? proc : val;
     }
 
     /**
@@ -85,13 +129,13 @@ public class GridCacheDrInfo implements Externalizable {
         return CU.EXPIRE_TIME_ETERNAL;
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         assert false;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         assert false;
     }
 

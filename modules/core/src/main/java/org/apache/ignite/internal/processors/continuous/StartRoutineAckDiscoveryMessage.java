@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -34,19 +37,48 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private final Map<UUID, IgniteCheckedException> errs;
 
+    /** */
+    @GridToStringExclude
+    private final Map<Integer, T2<Long, Long>> updateCntrs;
+
+    /** */
+    @GridToStringExclude
+    private final Map<UUID, Map<Integer, T2<Long, Long>>> updateCntrsPerNode;
+
     /**
      * @param routineId Routine id.
      * @param errs Errs.
+     * @param cntrs Partition counters.
+     * @param cntrsPerNode Partition counters per node.
      */
-    public StartRoutineAckDiscoveryMessage(UUID routineId, Map<UUID, IgniteCheckedException> errs) {
+    public StartRoutineAckDiscoveryMessage(UUID routineId,
+        Map<UUID, IgniteCheckedException> errs,
+        Map<Integer, T2<Long, Long>> cntrs,
+        Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode) {
         super(routineId);
 
         this.errs = new HashMap<>(errs);
+        this.updateCntrs = cntrs;
+        this.updateCntrsPerNode = cntrsPerNode;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
+    }
+
+    /**
+     * @return Update counters for partitions.
+     */
+    public Map<Integer, T2<Long, Long>> updateCounters() {
+        return updateCntrs;
+    }
+
+    /**
+     * @return Update counters for partitions per each node.
+     */
+    public Map<UUID, Map<Integer, T2<Long, Long>>> updateCountersPerNode() {
+        return updateCntrsPerNode;
     }
 
     /**

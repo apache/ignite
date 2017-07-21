@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.visor.compute;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
 
 /**
  * Holder class to store information in node local map between data collector task executions.
@@ -55,7 +55,7 @@ public class VisorComputeMonitoringHolder {
                 cleanupStopped = false;
             }
 
-            listenVisor.put(visorKey, true);
+            listenVisor.put(visorKey, Boolean.TRUE);
 
             ignite.events().enableLocal(VISOR_TASK_EVTS);
         }
@@ -68,7 +68,7 @@ public class VisorComputeMonitoringHolder {
      * @return {@code true} if task events should remain enabled.
      */
     private boolean tryDisableEvents(IgniteEx ignite) {
-        if (!listenVisor.values().contains(true)) {
+        if (!listenVisor.values().contains(Boolean.TRUE)) {
             listenVisor.clear();
 
             ignite.events().disableLocal(VISOR_TASK_EVTS);
@@ -103,7 +103,7 @@ public class VisorComputeMonitoringHolder {
                 synchronized (listenVisor) {
                     if (tryDisableEvents(ignite)) {
                         for (String visorKey : listenVisor.keySet())
-                            listenVisor.put(visorKey, false);
+                            listenVisor.put(visorKey, Boolean.FALSE);
 
                         scheduleCleanupJob(ignite);
                     }

@@ -17,11 +17,18 @@
 
 package org.apache.ignite.testframework;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility classloader that has ability to load classes from external resources.

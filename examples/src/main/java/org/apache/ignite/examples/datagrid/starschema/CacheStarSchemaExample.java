@@ -17,15 +17,21 @@
 
 package org.apache.ignite.examples.datagrid.starschema;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
@@ -48,13 +54,16 @@ import java.util.concurrent.*;
  */
 public class CacheStarSchemaExample {
     /** Partitioned cache name. */
-    private static final String PARTITIONED_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Partitioned";
+    private static final String FACT_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Fact";
 
     /** Replicated cache name. */
-    private static final String REPLICATED_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Replicated";
+    private static final String DIM_STORE_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "DimStore";
+
+    /** Replicated cache name. */
+    private static final String DIM_PROD_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "DimProd";
 
     /** ID generator. */
-    private static int idGen = (int)System.currentTimeMillis();
+    private static int idGen;
 
     /** DimStore data. */
     private static Map<Integer, DimStore> dataStore = new HashMap<>();
@@ -69,32 +78,37 @@ public class CacheStarSchemaExample {
      */
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-
             System.out.println();
             System.out.println(">>> Cache star schema example started.");
 
-            CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>(PARTITIONED_CACHE_NAME);
-
+            CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>(FACT_CACHE_NAME);
             factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
-            factCacheCfg.setIndexedTypes(
-                Integer.class, FactPurchase.class
-            );
+            factCacheCfg.setIndexedTypes(Integer.class, FactPurchase.class);
 
-            CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>(REPLICATED_CACHE_NAME);
+            CacheConfiguration<Integer, DimStore> dimStoreCacheCfg = new CacheConfiguration<>(DIM_STORE_CACHE_NAME);
+            dimStoreCacheCfg.setCacheMode(CacheMode.REPLICATED);
+            dimStoreCacheCfg.setIndexedTypes(Integer.class, DimStore.class);
 
-            dimCacheCfg.setCacheMode(CacheMode.REPLICATED);
-            dimCacheCfg.setIndexedTypes(
-                Integer.class, DimStore.class,
-                Integer.class, DimProduct.class
-            );
+            CacheConfiguration<Integer, DimProduct> dimProdCacheCfg = new CacheConfiguration<>(DIM_PROD_CACHE_NAME);
+            dimProdCacheCfg.setCacheMode(CacheMode.REPLICATED);
+            dimProdCacheCfg.setIndexedTypes(Integer.class, DimProduct.class);
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, FactPurchase> factCache = ignite.getOrCreateCache(factCacheCfg);
-                 IgniteCache<Integer, Object> dimCache = ignite.getOrCreateCache(dimCacheCfg)) {
-                populateDimensions(dimCache);
+                 IgniteCache<Integer, DimStore> dimStoreCache = ignite.getOrCreateCache(dimStoreCacheCfg);
+                 IgniteCache<Integer, DimProduct> dimProdCache = ignite.getOrCreateCache(dimProdCacheCfg)) {
+
+                populateDimensions(dimStoreCache, dimProdCache);
                 populateFacts(factCache);
 
                 queryStorePurchases();
                 queryProductPurchases();
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(FACT_CACHE_NAME);
+                ignite.destroyCache(DIM_STORE_CACHE_NAME);
+                ignite.destroyCache(DIM_PROD_CACHE_NAME);
             }
         }
     }
@@ -102,17 +116,19 @@ public class CacheStarSchemaExample {
     /**
      * Populate cache with {@code 'dimensions'} which in our case are
      * {@link DimStore} and {@link DimProduct} instances.
-     * @param dimCache Cache to populate.
+     * @param dimStoreCache Cache of the DimStores to populate.
+     * @param dimProdCache Cache of the DimProducts to populate.
      *
      * @throws IgniteException If failed.
      */
-    private static void populateDimensions(Cache<Integer, Object> dimCache) throws IgniteException {
+    private static void populateDimensions(Cache<Integer, DimStore> dimStoreCache,
+        Cache<Integer, DimProduct> dimProdCache) throws IgniteException {
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
 
         // Populate stores.
-        dimCache.put(store1.getId(), store1);
-        dimCache.put(store2.getId(), store2);
+        dimStoreCache.put(store1.getId(), store1);
+        dimStoreCache.put(store2.getId(), store2);
 
         dataStore.put(store1.getId(), store1);
         dataStore.put(store2.getId(), store2);
@@ -123,7 +139,7 @@ public class CacheStarSchemaExample {
 
             DimProduct product = new DimProduct(id, "Product" + i, i + 1, (i + 1) * 10);
 
-            dimCache.put(id, product);
+            dimProdCache.put(id, product);
 
             dataProduct.put(id, product);
         }
@@ -154,7 +170,7 @@ public class CacheStarSchemaExample {
      * @throws IgniteException If failed.
      */
     private static void queryStorePurchases() {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(FACT_CACHE_NAME);
 
         // All purchases for store1.
         // ========================
@@ -162,7 +178,7 @@ public class CacheStarSchemaExample {
         // Create cross cache query to get all purchases made at store1.
         QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(new SqlQuery(
             FactPurchase.class,
-            "from \"" + REPLICATED_CACHE_NAME + "\".DimStore, \"" + PARTITIONED_CACHE_NAME + "\".FactPurchase "
+            "from \"" + DIM_STORE_CACHE_NAME + "\".DimStore, \"" + FACT_CACHE_NAME + "\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimStore.name=?").setArgs("Store1"));
 
         printQueryResults("All purchases made at store1:", storePurchases.getAll());
@@ -177,7 +193,7 @@ public class CacheStarSchemaExample {
      * @throws IgniteException If failed.
      */
     private static void queryProductPurchases() {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(FACT_CACHE_NAME);
 
         // All purchases for certain product made at store2.
         // =================================================
@@ -192,8 +208,8 @@ public class CacheStarSchemaExample {
         // for specified products.
         QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(new SqlQuery(
             FactPurchase.class,
-            "from \"" + REPLICATED_CACHE_NAME + "\".DimStore, \"" + REPLICATED_CACHE_NAME + "\".DimProduct, " +
-                "\"" + PARTITIONED_CACHE_NAME + "\".FactPurchase "
+            "from \"" + DIM_STORE_CACHE_NAME + "\".DimStore, \"" + DIM_PROD_CACHE_NAME + "\".DimProduct, " +
+                "\"" + FACT_CACHE_NAME + "\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId "
                 + "and DimStore.name=? and DimProduct.id in(?, ?, ?)")
             .setArgs("Store2", p1.getId(), p2.getId(), p3.getId()));

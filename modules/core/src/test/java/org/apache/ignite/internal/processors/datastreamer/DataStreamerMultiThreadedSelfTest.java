@@ -17,23 +17,25 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for DataStreamer.
@@ -46,8 +48,8 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     private boolean dynamicCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -90,6 +92,8 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopIgnitesDynamicCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1602");
+
         dynamicCache = true;
 
         startStopIgnites();
@@ -101,7 +105,7 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     private void startStopIgnites() throws Exception {
         for (int attempt = 0; attempt < 3; ++attempt) {
             log.info("Iteration: " + attempt);
-            
+
             final Ignite ignite = startGrid(0);
 
             Set<IgniteFuture> futs = new HashSet<>();
@@ -120,9 +124,7 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
             if (dynamicCache)
                 ignite.getOrCreateCache(cacheConfiguration());
 
-            try (final DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(null)) {
-                dataLdr.maxRemapCount(0);
-
+            try (final DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
                 Random rnd = new Random();
 
                 long endTime = U.currentTimeMillis() + 15_000;

@@ -17,26 +17,38 @@
 
 package org.apache.ignite.loadtests.communication;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.loadtests.util.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.loadtests.util.GridCumulativeAverage;
+import org.apache.ignite.testframework.GridLoadTestUtils;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.LongAdder8;
+import org.jsr166.ThreadLocalRandom8;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.testframework.GridLoadTestUtils.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.testframework.GridLoadTestUtils.appendLineToFile;
+import static org.apache.ignite.testframework.GridLoadTestUtils.startDaemon;
 
 /**
  * By default this benchmarks uses original Ignite configuration
@@ -228,7 +240,7 @@ public class GridIoManagerBenchmark {
         GridMessageListener lsnr = new GridMessageListener() {
             private ClusterNode node;
 
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (node == null)
                     node = g.context().discovery().node(nodeId);
 
@@ -237,7 +249,7 @@ public class GridIoManagerBenchmark {
                 testMsg.bytes(null);
 
                 try {
-                    io.send(node, TEST_TOPIC, testMsg, PUBLIC_POOL);
+                    io.sendToCustomTopic(node, TEST_TOPIC, testMsg, PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     e.printStackTrace();
@@ -281,7 +293,7 @@ public class GridIoManagerBenchmark {
                     else
                         sem.acquire();
 
-                    io.send(
+                    io.sendToCustomTopic(
                         dst,
                         TEST_TOPIC,
                         new GridTestMessage(msgId, testHeavyMsgs ? arrs[rnd.nextInt(arrs.length)] : null),
@@ -324,7 +336,7 @@ public class GridIoManagerBenchmark {
      */
     private static class SenderMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             msgCntr.increment();
 
             if (testLatency)

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Task input.

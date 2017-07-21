@@ -17,10 +17,10 @@
 
 package org.apache.ignite.logger.log4j;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.log4j.*;
+import junit.framework.TestCase;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.log4j.BasicConfigurator;
 
 /**
  * Log4j initialized test.

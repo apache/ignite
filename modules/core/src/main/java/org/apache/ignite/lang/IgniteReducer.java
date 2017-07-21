@@ -17,10 +17,9 @@
 
 package org.apache.ignite.lang;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines generic reducer that collects multiple values and reduces them into one.

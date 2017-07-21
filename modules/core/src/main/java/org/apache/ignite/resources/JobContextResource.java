@@ -17,7 +17,11 @@
 
 package org.apache.ignite.resources;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeJobContext} instance.
@@ -43,7 +47,7 @@ import java.lang.annotation.*;
  *     ...
  *     private ComputeJobContext jobCtx;
  *     ...
- *     &#64;IgniteJobContextResource
+ *     &#64;JobContextResource
  *     public void setJobContext(ComputeJobContext jobCtx) {
  *          this.jobCtx = jobCtx;
  *     }

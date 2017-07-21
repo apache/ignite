@@ -17,12 +17,15 @@
 
 package org.apache.ignite.mesos;
 
-import junit.framework.*;
-import org.apache.ignite.mesos.resource.*;
-import org.apache.mesos.*;
-
-import java.util.*;
-import java.util.regex.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Pattern;
+import junit.framework.TestCase;
+import org.apache.ignite.mesos.resource.ResourceProvider;
+import org.apache.mesos.Protos;
+import org.apache.mesos.SchedulerDriver;
 
 /**
  * Scheduler tests.
@@ -108,7 +111,6 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         assertEquals(offer.getId(), declinedOffer);
     }
-
 
     /**
      * @throws Exception If failed.
@@ -297,6 +299,43 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         assertNotNull(mock.declinedOffer);
         assertEquals(offer.getId(), mock.declinedOffer);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteFramework() throws Exception {
+        final String mesosUserValue = "userAAAAA";
+        final String mesosRoleValue = "role1";
+
+        IgniteFramework igniteFramework = new IgniteFramework() {
+            @Override protected String getUser() {
+                return mesosUserValue;
+            }
+
+            @Override protected String getRole() {
+                return mesosRoleValue;
+            }
+        };
+
+        Protos.FrameworkInfo info = igniteFramework.getFrameworkInfo();
+
+        String actualUserValue = info.getUser();
+        String actualRoleValue = info.getRole();
+
+        assertEquals(actualUserValue, mesosUserValue);
+        assertEquals(actualRoleValue, mesosRoleValue);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMesosRoleValidation() throws Exception {
+        List<String> failedRoleValues = Arrays.asList("", ".", "..", "-testRole",
+            "test/Role", "test\\Role", "test Role", null);
+
+        for (String failedRoleValue : failedRoleValues)
+            assertFalse(IgniteFramework.isRoleValid(failedRoleValue));
     }
 
     /**

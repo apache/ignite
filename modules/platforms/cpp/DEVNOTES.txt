@@ -1,0 +1,82 @@
+Apache Ignite C++ Build Instructions
+====================================
+Here you can find instruction on how to build Apache Ignite C++ core library and
+stand-alone node binary. To build examples you need to build and install core Apache
+Ignite library then refer to $IGNITE_HOME/platforms/cpp/example/README.txt for
+further instructions.
+
+For details on ODBC driver installation and usage please refer to
+$IGNITE_HOME/platforms/cpp/odbc/README.txt.
+
+Building on Linux With Autotools
+----------------------------------
+
+Common Requirements:
+
+ * GCC, g++, autotools, automake, and libtool must be installed
+ * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
+ * JAVA_HOME environment variable must be set pointing to Java installation directory.
+ * IGNITE_HOME environment variable must be set to Ignite installation directory.
+ * To build ODBC driver you need to install ODBC Driver Manager on you system.
+   Apache Ignite has been tested with UnixODBC. Make sure that you install development
+   version of the driver manager which contains header files that are necessary for
+   building a driver.
+
+Building the Apache Ignite C++ components:
+ * Navigate to the directory $IGNITE_HOME/platforms/cpp
+ * Execute the following commands one by one to build the project:
+    * libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
+    * ./configure
+    * make
+
+Among standard included by autotools options configure script also include following
+Ignite-specific options:
+ * --enable-odbc - build included ODBC driver. Disabled by default.
+ * --enable-core - build Ignite core library. Enabled by default.
+ * --enable-node - build stand-alone node executable. Enabled by default.
+ 
+If you only need to build ODBC driver and do not want to build anything else you may just
+use configure script with the following arguments:
+ ./configure --enable-odbc --disable-core --disable-node
+
+With the config like that you should not have any ignite dependencies as jvm.dll installed
+to build ODBC driver.
+
+NOTE: You may want to use "make install" command to install Ignite libraries and headers
+for your operation system. Note however that this action may require superuser privileges.
+
+Building on Windows with Visual Studio (tm)
+----------------------------------
+
+Common Requirements:
+
+ * Microsoft Visual Studio (tm) 2010 or later
+ * Windows SDK 7.1
+ * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
+ * JAVA_HOME environment variable must be set pointing to Java installation directory.
+ * IGNITE_HOME environment variable must be set to Ignite installation directory.
+
+Building binaries:
+
+ * Open and build %IGNITE_HOME%\platforms\cpp\project\vs\ignite.sln (or ignite_86.sln if
+   you are running 32-bit platform).
+ * If you want to build ODBC driver then you should explicitly build it as it is disabled
+   in the solution file by default. In IDE it can be done by clicking on the ODBC project
+   with the right mouse button and choosing "Build" option.
+   
+Building installers:
+ * Install WiX Toolset if you do not have it yet.
+ * Add WiX Toolset "bin" directory to your PATH environmental variable.
+ * Build ODBC drivers: Release|x64 for 64-bit version and Release|Win32 for 32-bit version.
+ * Open terminal and navigate to the directory $IGNITE_HOME/platforms/cpp/odbc/install
+ * Execute the following commands one by one to build 32-bit driver:
+    * candle.exe ignite-odbc-x86.wxs
+    * light.exe -ext WixUIExtension ignite-odbc-x86.wixobj
+ * Execute the following commands one by one to build 64-bit driver:
+    * candle.exe ignite-odbc-amd64.wxs
+    * light.exe -ext WixUIExtension ignite-odbc-amd64.wixobj
+
+Building in later versions of Visual Studio:
+ * Open project\vs\ignite.sln or project\vs\ignite_86.sln in Visual Studio
+ * You will be prompted to "Update VC++ Compiler and Libraries", click "Update"
+ * Build the solution.

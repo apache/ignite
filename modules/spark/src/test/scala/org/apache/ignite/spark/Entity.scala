@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spark
 
-import org.apache.ignite.spark.IgniteRddSpec.ScalarCacheQuerySqlField
+import org.apache.ignite.spark.IgniteRDDSpec.ScalarCacheQuerySqlField
 
 class Entity (
     @ScalarCacheQuerySqlField(index = true) val id: Int,

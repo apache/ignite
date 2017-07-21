@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util.nodestart;
 
-import org.apache.ignite.cluster.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.cluster.ClusterStartNodeResult;
 
 /**
  * SSH-based node starter, returns tuple which contains hostname, success flag and error message

@@ -17,30 +17,32 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * Task that returns collection of cache data nodes IDs.
  */
 @GridInternal
-public class VisorCacheNodesTask extends VisorOneNodeTask<String, Collection<UUID>> {
+public class VisorCacheNodesTask extends VisorOneNodeTask<VisorCacheNodesTaskArg, Collection<UUID>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheNodesJob job(String arg) {
+    @Override protected VisorCacheNodesJob job(VisorCacheNodesTaskArg arg) {
         return new VisorCacheNodesJob(arg, debug);
     }
 
     /**
      * Job that collects cluster group for specified cache.
      */
-    private static class VisorCacheNodesJob extends VisorJob<String, Collection<UUID>> {
+    private static class VisorCacheNodesJob extends VisorJob<VisorCacheNodesTaskArg, Collection<UUID>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -50,13 +52,13 @@ public class VisorCacheNodesTask extends VisorOneNodeTask<String, Collection<UUI
          * @param cacheName Cache name to clear.
          * @param debug Debug flag.
          */
-        private VisorCacheNodesJob(String cacheName, boolean debug) {
+        private VisorCacheNodesJob(VisorCacheNodesTaskArg cacheName, boolean debug) {
             super(cacheName, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<UUID> run(String cacheName) {
-            Collection<ClusterNode> nodes = ignite.cluster().forDataNodes(cacheName).nodes();
+        @Override protected Collection<UUID> run(VisorCacheNodesTaskArg arg) {
+            Collection<ClusterNode> nodes = ignite.cluster().forDataNodes(arg.getCacheName()).nodes();
 
             Collection<UUID> res = new ArrayList<>(nodes.size());
 

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.client.router;
 
-import org.apache.ignite.mxbean.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.mxbean.MXBeanDescription;
 
 /**
  * MBean interface for TCP router.

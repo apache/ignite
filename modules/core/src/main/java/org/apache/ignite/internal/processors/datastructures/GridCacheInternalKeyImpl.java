@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Key is used for caching cache data structures.
@@ -31,17 +35,23 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     private static final long serialVersionUID = 0L;
 
     /** Name of cache data structure. */
+    @AffinityKeyMapped
     private String name;
+
+    /** */
+    private String grpName;
 
     /**
      * Default constructor.
      *
-     * @param name - Name of cache data structure.
+     * @param name Name of cache data structure.
+     * @param grpName Cache group name.
      */
-    public GridCacheInternalKeyImpl(String name) {
-        assert !F.isEmpty(name);
+    public GridCacheInternalKeyImpl(String name, String grpName) {
+        assert !F.isEmpty(name) : name;
 
         this.name = name;
+        this.grpName = grpName;
     }
 
     /**
@@ -52,19 +62,36 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     }
 
     /** {@inheritDoc} */
-    @AffinityKeyMapped
     @Override public String name() {
         return name;
     }
 
     /** {@inheritDoc} */
+    @Override public String groupName() {
+        return grpName;
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return name.hashCode();
+        int result = name != null ? name.hashCode() : 0;
+
+        result = 31 * result + (grpName != null ? grpName.hashCode() : 0);
+
+        return result;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return this == obj || (obj instanceof GridCacheInternalKey && name.equals(((GridCacheInternalKey)obj).name()));
+        if (this == obj)
+            return true;
+
+        if (obj instanceof GridCacheInternalKeyImpl) {
+            GridCacheInternalKeyImpl other = (GridCacheInternalKeyImpl)obj;
+
+            return F.eq(name, other.name) && F.eq(grpName, other.grpName);
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -75,11 +102,13 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);
+        U.writeString(out, grpName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         name = U.readString(in);
+        grpName = U.readString(in);
     }
 
     /** {@inheritDoc} */

@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.h2.value.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.h2.value.Value;
 
-import javax.cache.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.fillArray;
 
 /**
  * Page result.
@@ -37,13 +40,16 @@ public class GridResultPage {
     private final UUID src;
 
     /** */
-    protected final GridQueryNextPageResponse res;
+    private final GridQueryNextPageResponse res;
 
     /** */
     private final int rowsInPage;
 
     /** */
     private Iterator<Value[]> rows;
+
+    /** */
+    private boolean last;
 
     /**
      * @param ctx Kernal context.
@@ -116,10 +122,28 @@ public class GridResultPage {
     }
 
     /**
-     * @return {@code true} If this is a dummy last page for all the sources.
+     * @return {@code true} If this is either a real last page for a source or
+     *      a dummy terminating page with no rows.
      */
     public boolean isLast() {
-        return false;
+        return last;
+    }
+
+    /**
+     * @return {@code true} If it is a dummy last page.
+     */
+    public boolean isDummyLast() {
+        return last && res == null;
+    }
+
+    /**
+     * @param last Last page for a source.
+     * @return {@code this}.
+     */
+    public GridResultPage setLast(boolean last) {
+        this.last = last;
+
+        return this;
     }
 
     /**
@@ -147,6 +171,13 @@ public class GridResultPage {
      */
     public UUID source() {
         return src;
+    }
+
+    /**
+     * @return Segment ID.
+     */
+    public int segmentId() {
+        return res.segmentId();
     }
 
     /**

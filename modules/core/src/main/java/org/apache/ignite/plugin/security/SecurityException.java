@@ -17,8 +17,8 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Common security exception for the grid.

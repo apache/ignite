@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.cache;
 
-import org.apache.ignite.internal.util.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.internal.util.GridLeanMap;
 
 /**
  * Grid cache metrics for rest.

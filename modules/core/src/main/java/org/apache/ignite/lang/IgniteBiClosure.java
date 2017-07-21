@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lang;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Defines generic closure with two parameters. Bi-Closure is a simple executable which

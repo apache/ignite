@@ -17,12 +17,17 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class to implement discovery messages.
@@ -40,13 +45,25 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** */
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
+    /** */
+    protected static final int CLIENT_ACK_FLAG_POS = 4;
+
+    /** */
+    protected static final int FORCE_FAIL_FLAG_POS = 8;
+
     /** Sender of the message (transient). */
     private transient UUID sndNodeId;
 
     /** Message ID. */
     private IgniteUuid id;
 
-    /** Verifier node ID. */
+    /**
+     * Verifier node ID.
+     * Node can mark the messages as verified for rest of nodes to apply the
+     * changes this message is issued for, i.e. node added message, node failed or
+     * left message are processed by other nodes only after coordinator
+     * verification.
+     */
     private UUID verifierNodeId;
 
     /** Topology version. */
@@ -58,6 +75,10 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
 
     /** Pending message index. */
     private short pendingIdx;
+
+    /** */
+    @GridToStringInclude
+    private Set<UUID> failedNodes;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
@@ -73,6 +94,24 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     protected TcpDiscoveryAbstractMessage(UUID creatorNodeId) {
         id = IgniteUuid.fromUuid(creatorNodeId);
+    }
+
+    /**
+     * @param msg Message.
+     */
+    protected TcpDiscoveryAbstractMessage(TcpDiscoveryAbstractMessage msg) {
+        this.id = msg.id;
+        this.verifierNodeId = msg.verifierNodeId;
+        this.topVer = msg.topVer;
+        this.flags = msg.flags;
+        this.pendingIdx = msg.pendingIdx;
+    }
+
+    /**
+     * @return {@code True} if need use trace logging for this message (to reduce amount of logging with debug level).
+     */
+    public boolean traceLogLevel() {
+        return false;
     }
 
     /**
@@ -175,6 +214,24 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /**
+     * Get force fail node flag.
+     *
+     * @return Force fail node flag.
+     */
+    public boolean force() {
+        return getFlag(FORCE_FAIL_FLAG_POS);
+    }
+
+    /**
+     * Sets force fail node flag.
+     *
+     * @param force Force fail node flag.
+     */
+    public void force(boolean force) {
+        setFlag(FORCE_FAIL_FLAG_POS, force);
+    }
+
+    /**
      * @return Pending message index.
      */
     public short pendingIndex() {
@@ -222,8 +279,36 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         return false;
     }
 
+    /**
+     * Adds node ID to the failed nodes list.
+     *
+     * @param nodeId Node ID.
+     */
+    public void addFailedNode(UUID nodeId) {
+        assert nodeId != null;
+
+        if (failedNodes == null)
+            failedNodes = new HashSet<>();
+
+        failedNodes.add(nodeId);
+    }
+
+    /**
+     * @param failedNodes Failed nodes.
+     */
+    public void failedNodes(@Nullable Set<UUID> failedNodes) {
+        this.failedNodes = failedNodes;
+    }
+
+    /**
+     * @return Failed nodes IDs.
+     */
+    @Nullable public Collection<UUID> failedNodes() {
+        return failedNodes;
+    }
+
     /** {@inheritDoc} */
-    @Override public final boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;
         else if (obj instanceof TcpDiscoveryAbstractMessage)

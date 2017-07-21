@@ -17,23 +17,30 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import java.net.InetSocketAddress;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.sql.DataSource;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
-import javax.sql.*;
-import java.net.*;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static java.sql.Connection.*;
+import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
 
 /**
  * JDBC-based IP finder.
@@ -52,24 +59,6 @@ import static java.sql.Connection.*;
  * The database will contain 1 table which will hold IP addresses.
  */
 public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
-    /** Query to get addresses. */
-    public static final String GET_ADDRS_QRY = "select hostname, port from tbl_addrs";
-
-    /** Query to register address. */
-    public static final String REG_ADDR_QRY = "insert into tbl_addrs values (?, ?)";
-
-    /** Query to unregister address. */
-    public static final String UNREG_ADDR_QRY = "delete from tbl_addrs where hostname = ? and port = ?";
-
-    /** Query to create addresses table. */
-    public static final String CREATE_ADDRS_TABLE_QRY =
-        "create table if not exists tbl_addrs (" +
-        "hostname VARCHAR(1024), " +
-        "port INT)";
-
-    /** Query to check database validity. */
-    public static final String CHK_QRY = "select count(*) from tbl_addrs";
-
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -88,12 +77,41 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     @GridToStringExclude
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
+    /** Table name. */
+    private final String addrTableName;
+
+    /** Query to get addresses. */
+    private final String getAddrsQry;
+
+    /** Query to register address. */
+    private final String regAddrQry;
+
+    /** Query to unregister address. */
+    private final String unregAddrQry;
+
+    /** Query to create addresses table. */
+    private final String createAddrsTableQry;
+
+    /** Query to check database validity. */
+    private final String chkQry;
+
     /**
      * Constructor.
      */
     public TcpDiscoveryJdbcIpFinder() {
-        setShared(true);
+		this(new BasicJdbcIpFinderDialect());
     }
+
+	public TcpDiscoveryJdbcIpFinder(JdbcIpFinderDialect jdbcDialect) {
+		setShared(true);
+
+        this.addrTableName = jdbcDialect.tableName();
+        this.getAddrsQry = "select hostname, port from " + addrTableName;
+        this.regAddrQry = "insert into " + addrTableName + " values (?, ?)";
+        this.unregAddrQry = "delete from " + addrTableName + " where hostname = ? and port = ?";
+        this.createAddrsTableQry = "create table " + addrTableName + " (hostname VARCHAR(1024), port INT)";
+        this.chkQry = "select count(*) from " + addrTableName;
+	}
 
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
@@ -110,7 +128,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-            stmt = conn.prepareStatement(GET_ADDRS_QRY);
+            stmt = conn.prepareStatement(getAddrsQry);
 
             rs = stmt.executeQuery();
 
@@ -152,8 +170,8 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-            stmtUnreg = conn.prepareStatement(UNREG_ADDR_QRY);
-            stmtReg = conn.prepareStatement(REG_ADDR_QRY);
+            stmtUnreg = conn.prepareStatement(unregAddrQry);
+            stmtReg = conn.prepareStatement(regAddrQry);
 
             for (InetSocketAddress addr : addrs) {
                 stmtUnreg.setString(1, addr.getAddress().getHostAddress());
@@ -211,7 +229,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-            stmt = conn.prepareStatement(UNREG_ADDR_QRY);
+            stmt = conn.prepareStatement(unregAddrQry);
 
             for (InetSocketAddress addr : addrs) {
                 stmt.setString(1, addr.getAddress().getHostAddress());
@@ -245,10 +263,13 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
      * Data source should be fully configured and ready-to-use.
      *
      * @param dataSrc Data source.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setDataSource(DataSource dataSrc) {
+    public TcpDiscoveryJdbcIpFinder setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
+
+        return this;
     }
 
     /**
@@ -257,10 +278,13 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * @param initSchema {@code True} if DB schema should be initialized by Ignite (default behaviour),
      *      {code @false} if schema was explicitly created by user.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setInitSchema(boolean initSchema) {
+    public TcpDiscoveryJdbcIpFinder setInitSchema(boolean initSchema) {
         this.initSchema = initSchema;
+
+        return this;
     }
 
     /**
@@ -284,8 +308,6 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             Connection conn = null;
 
-            Statement stmt = null;
-
             boolean committed = false;
 
             try {
@@ -295,12 +317,38 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
                 conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-                // Create tbl_addrs.
-                stmt = conn.createStatement();
+                DatabaseMetaData dbm = conn.getMetaData();
 
-                stmt.executeUpdate(CREATE_ADDRS_TABLE_QRY);
+                // Many JDBC implementations support an 'if not exists' clause
+                // in the create statement which will check and create atomically.
+                // However not all databases support it, for example Oracle,
+                // so we do not use it.
+                try (ResultSet tables = dbm.getTables(null, null, addrTableName, null)) {
+                    if (!tables.next()) {
+                        // Table does not exist
+                        // Create tbl_addrs.
+                        try (Statement stmt = conn.createStatement()) {
+                            stmt.executeUpdate(createAddrsTableQry);
 
-                conn.commit();
+                            conn.commit();
+                        }
+                        catch (SQLException e) {
+                            // Due to a race condition, the table may have been
+                            // created since we tested above for its existence.
+                            // We must ignore the exception if this is the
+                            // cause.
+                            // However different JDBC driver implementations may
+                            // return different codes and messages in the
+                            // exception, so the safest way to determine if this
+                            // exception is to be ignored is to test again to
+                            // see if the table has been created.
+                            try (ResultSet tablesAgain = dbm.getTables(null, null, addrTableName, null)) {
+                                if (!tablesAgain.next())
+                                    throw e;
+                            }
+                        }
+                    }
+                }
 
                 committed = true;
 
@@ -316,7 +364,6 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
                 if (!committed)
                     U.rollbackConnectionQuiet(conn);
 
-                U.closeQuiet(stmt);
                 U.closeQuiet(conn);
 
                 initLatch.countDown();
@@ -351,7 +398,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
             // Check if tbl_addrs exists and database initialized properly.
             stmt = conn.createStatement();
 
-            stmt.execute(CHK_QRY);
+            stmt.execute(chkQry);
         }
         catch (SQLException e) {
             throw new IgniteSpiException("IP finder has not been properly initialized.", e);
@@ -360,6 +407,13 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
             U.closeQuiet(stmt);
             U.closeQuiet(conn);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryJdbcIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /** {@inheritDoc} */

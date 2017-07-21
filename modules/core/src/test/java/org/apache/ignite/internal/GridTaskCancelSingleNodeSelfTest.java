@@ -17,20 +17,32 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskMapAsync;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
+import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
+import static org.apache.ignite.events.EventType.EVT_JOB_REJECTED;
+import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 
 /**
  * Test for task cancellation issue.
@@ -70,11 +82,18 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cancelled = new AtomicInteger();
         final AtomicInteger rejected = new AtomicInteger();
 
+        final AtomicBoolean jobStarted = new AtomicBoolean();
+
         grid().events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 info("Received event: " + evt);
 
                 switch (evt.type()) {
+                    case EVT_JOB_STARTED:
+                        jobStarted.set(true);
+
+                        break;
+
                     case EVT_JOB_FINISHED:
                         finished.incrementAndGet();
 
@@ -96,13 +115,9 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, EVT_JOB_FINISHED, EVT_JOB_CANCELLED, EVT_JOB_REJECTED);
+        }, EVT_JOB_STARTED, EVT_JOB_FINISHED, EVT_JOB_CANCELLED, EVT_JOB_REJECTED);
 
-        IgniteCompute comp = grid().compute().withAsync();
-
-        comp.execute(TestTask.class, null);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = grid().compute().executeAsync(TestTask.class, null);
 
         if (timeoutBeforeCancel > 0L)
             Thread.sleep(timeoutBeforeCancel);
@@ -111,14 +126,22 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 3; i++) {
             try {
-            if (timeoutBeforeCancel == 0L)
-                assert (finished.get() == 0 && cancelled.get() == 0 && rejected.get() == 0) :
-                    "Failed on iteration [i=" + i + ", finished=" + finished.get() +
-                    ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']';
-            else
-                assert (finished.get() == 1 && cancelled.get() == 1 && rejected.get() == 0) :
-                    "Failed on iteration [i=" + i + ", finished=" + finished.get() +
-                        ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']';
+                if (timeoutBeforeCancel == 0L) {
+                    if (jobStarted.get())
+                        assertTrue("Failed on iteration [i=" + i + ", finished=" + finished.get() +
+                            ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']',
+                            finished.get() == 1 && cancelled.get() == 1 && rejected.get() == 0);
+                    else {
+                        // job can be rejected if was concurrently cancelled before started
+                        assertTrue("Failed on iteration [i=" + i + ", finished=" + finished.get() +
+                                ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']',
+                            finished.get() == 0 && cancelled.get() == 0 && rejected.get() <= 1);
+                    }
+                }
+                else
+                    assertTrue("Failed on iteration [i=" + i + ", finished=" + finished.get() +
+                        ", cancelled=" + cancelled.get() + ", rejected=" + rejected.get() + ']',
+                        finished.get() == 1 && cancelled.get() == 1 && rejected.get() == 0);
             }
             catch (AssertionError e) {
                 info("Check failed: " + e.getMessage());
@@ -134,7 +157,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         try {
             fut.get();
 
-            assert false;
+            fail();
         }
         catch (IgniteFutureCancelledException e) {
             info("Caught expected exception: " + e);

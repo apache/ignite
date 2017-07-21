@@ -17,7 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  *
@@ -37,9 +40,27 @@ public class TcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<Tcp
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "ackTimeout", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "maxAckTimeout", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "reconnectCount", 0);
-        checkNegativeSpiProperty(new TcpDiscoverySpi(), "heartbeatFrequency", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "threadPriority", -1);
-        checkNegativeSpiProperty(new TcpDiscoverySpi(), "maxMissedHeartbeats", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "statisticsPrintFrequency", 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalPortRange() throws Exception {
+        try {
+            IgniteConfiguration cfg = getConfiguration();
+
+            TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+            spi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+            spi.setLocalPortRange(0);
+            cfg.setDiscoverySpi(spi);
+
+            startGrid(cfg.getIgniteInstanceName(), cfg);
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }

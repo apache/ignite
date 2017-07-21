@@ -17,24 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.lang.reflect.Array;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.lang.reflect.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.CLEAR_ALL_SPLIT_THRESHOLD;
 
 /**
  * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
@@ -71,17 +75,17 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer>[] cachesReplicated;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfgLoc = new CacheConfiguration();
+        CacheConfiguration ccfgLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgLoc.setName(CACHE_LOCAL);
         ccfgLoc.setCacheMode(LOCAL);
         ccfgLoc.setWriteSynchronizationMode(FULL_SYNC);
         ccfgLoc.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgPartitioned = new CacheConfiguration();
+        CacheConfiguration ccfgPartitioned = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgPartitioned.setName(CACHE_PARTITIONED);
         ccfgPartitioned.setCacheMode(PARTITIONED);
@@ -91,11 +95,11 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         ccfgPartitioned.setNearConfiguration(nearCfg);
 
-        ccfgPartitioned.setNodeFilter(new AttributeFilter(getTestGridName(0)));
+        ccfgPartitioned.setNodeFilter(new AttributeFilter(getTestIgniteInstanceName(0)));
 
         ccfgPartitioned.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgColocated = new CacheConfiguration();
+        CacheConfiguration ccfgColocated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgColocated.setName(CACHE_COLOCATED);
         ccfgColocated.setCacheMode(PARTITIONED);
@@ -103,7 +107,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgColocated.setWriteSynchronizationMode(FULL_SYNC);
         ccfgColocated.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgReplicated = new CacheConfiguration();
+        CacheConfiguration ccfgReplicated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgReplicated.setName(CACHE_REPLICATED);
         ccfgReplicated.setCacheMode(REPLICATED);
@@ -364,10 +368,10 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            String gridName = node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+            String igniteInstanceName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, gridName))
+                if (F.eq(attr, igniteInstanceName))
                     return true;
             }
 

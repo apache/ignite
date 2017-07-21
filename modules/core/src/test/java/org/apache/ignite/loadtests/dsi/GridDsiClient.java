@@ -17,19 +17,31 @@
 
 package org.apache.ignite.loadtests.dsi;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridFileLock;
+import org.apache.ignite.testframework.GridLoadTestUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -102,7 +114,7 @@ public class GridDsiClient implements Callable {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
-        IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode())).withAsync();
+        IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode()));
 
         while (!finish.get()) {
             try {
@@ -110,9 +122,8 @@ public class GridDsiClient implements Callable {
 
                 long submitTime1 = t0;
 
-                comp.execute(GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
-
-                ComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.future();
+                ComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.executeAsync(
+                    GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -120,9 +131,8 @@ public class GridDsiClient implements Callable {
 
                 submitTime1 = System.currentTimeMillis();
 
-                comp.execute(GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
-
-                ComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.future();
+                ComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.executeAsync(
+                    GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -260,7 +270,7 @@ public class GridDsiClient implements Callable {
                             String terminalId = String.valueOf(++tid);
 
                             // Server partition cache.
-                            if (!srvrId.equals(g.cluster().mapKeyToNode("PARTITIONED_CACHE", terminalId).id()))
+                            if (!srvrId.equals(g.affinity("PARTITIONED_CACHE").mapKeyToNode(terminalId).id()))
                                 continue;
 
                             if (terminalsPerSrv < srvMaxNoTerminals) {

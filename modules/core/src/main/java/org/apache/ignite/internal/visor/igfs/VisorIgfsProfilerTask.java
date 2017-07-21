@@ -17,26 +17,46 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
-import java.io.*;
-import java.nio.charset.*;
-import java.nio.file.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.igfs.common.IgfsLogger.*;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.DELIM_FIELD;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.HDR;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_CLOSE_IN;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_CLOSE_OUT;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_OPEN_IN;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_OPEN_OUT;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_RANDOM_READ;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveIgfsProfilerLogsDir;
 
 /**
  * Task that parse hadoop profiler logs.
  */
 @GridInternal
-public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<VisorIgfsProfilerEntry>> {
+public class VisorIgfsProfilerTask extends VisorOneNodeTask<VisorIgfsProfilerTaskArg, List<VisorIgfsProfilerEntry>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -119,10 +139,15 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
         };
 
+    /** {@inheritDoc} */
+    @Override protected VisorIgfsProfilerJob job(VisorIgfsProfilerTaskArg arg) {
+        return new VisorIgfsProfilerJob(arg, debug);
+    }
+
     /**
      * Job that do actual profiler work.
      */
-    private static class VisorIgfsProfilerJob extends VisorJob<String, Collection<VisorIgfsProfilerEntry>> {
+    private static class VisorIgfsProfilerJob extends VisorJob<VisorIgfsProfilerTaskArg, List<VisorIgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -153,13 +178,17 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         private static final int LOG_COL_TOTAL_BYTES = 19;
 
         /** List of log entries that should be parsed. */
-        private static final Set<Integer> LOG_TYPES = F.asSet(
-            TYPE_OPEN_IN,
-            TYPE_OPEN_OUT,
-            TYPE_RANDOM_READ,
-            TYPE_CLOSE_IN,
-            TYPE_CLOSE_OUT
-        );
+        private static final Set<Integer> LOG_TYPES;
+
+        static {
+            LOG_TYPES = new HashSet<>();
+
+            LOG_TYPES.add(TYPE_OPEN_IN);
+            LOG_TYPES.add(TYPE_OPEN_OUT);
+            LOG_TYPES.add(TYPE_RANDOM_READ);
+            LOG_TYPES.add(TYPE_CLOSE_IN);
+            LOG_TYPES.add(TYPE_CLOSE_OUT);
+        }
 
         /**
          * Create job with given argument.
@@ -167,22 +196,24 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param arg IGFS name.
          * @param debug Debug flag.
          */
-        private VisorIgfsProfilerJob(String arg, boolean debug) {
+        private VisorIgfsProfilerJob(VisorIgfsProfilerTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorIgfsProfilerEntry> run(String arg) {
+        @Override protected List<VisorIgfsProfilerEntry> run(VisorIgfsProfilerTaskArg arg) {
+            String name = arg.getIgfsName();
+
             try {
-                Path logsDir = resolveIgfsProfilerLogsDir(ignite.fileSystem(arg));
+                Path logsDir = resolveIgfsProfilerLogsDir(ignite.fileSystem(name));
 
                 if (logsDir != null)
-                    return parse(logsDir, arg);
-                else
-                    return Collections.emptyList();
+                    return parse(logsDir, name);
+
+                return Collections.emptyList();
             }
             catch (IOException | IllegalArgumentException e) {
-                throw new IgniteException("Failed to parse profiler logs for IGFS: " + arg, e);
+                throw new IgniteException("Failed to parse profiler logs for IGFS: " + name, e);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -400,15 +431,15 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @return Collection of parsed and aggregated entries.
          * @throws IOException if failed to read log file.
          */
-        private Collection<VisorIgfsProfilerEntry> parseFile(Path p) throws IOException {
-            Collection<VisorIgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
+        private List<VisorIgfsProfilerEntry> parseFile(Path p) throws IOException {
+            List<VisorIgfsProfilerParsedLine> parsedLines = new ArrayList<>(512);
 
             try (BufferedReader br = Files.newBufferedReader(p, Charset.forName("UTF-8"))) {
                 String line = br.readLine(); // Skip first line with columns header.
 
                 if (line != null) {
                     // Check file header.
-                    if (line.equalsIgnoreCase(HDR))
+                    if (HDR.equalsIgnoreCase(line))
                         line = br.readLine();
 
                     while (line != null) {
@@ -443,7 +474,7 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             }
 
             // Aggregate each group.
-            Collection<VisorIgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
+            List<VisorIgfsProfilerEntry> entries = new ArrayList<>(byStreamId.size());
 
             for (List<VisorIgfsProfilerParsedLine> lines : byStreamId.values()) {
                 VisorIgfsProfilerEntry entry = aggregateParsedLines(lines);
@@ -456,19 +487,19 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             Map<String, List<VisorIgfsProfilerEntry>> byPath = new HashMap<>();
 
             for (VisorIgfsProfilerEntry entry : entries) {
-                List<VisorIgfsProfilerEntry> grp = byPath.get(entry.path());
+                List<VisorIgfsProfilerEntry> grp = byPath.get(entry.getPath());
 
                 if (grp == null) {
                     grp = new ArrayList<>();
 
-                    byPath.put(entry.path(), grp);
+                    byPath.put(entry.getPath(), grp);
                 }
 
                 grp.add(entry);
             }
 
             // Aggregate by files.
-            Collection<VisorIgfsProfilerEntry> res = new ArrayList<>(byPath.size());
+            List<VisorIgfsProfilerEntry> res = new ArrayList<>(byPath.size());
 
             for (List<VisorIgfsProfilerEntry> lst : byPath.values())
                 res.add(VisorIgfsProfiler.aggregateIgfsProfilerEntries(lst));
@@ -482,8 +513,8 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
          * @param logDir Folder were log files located.
          * @return List of line with aggregated information by files.
          */
-        private Collection<VisorIgfsProfilerEntry> parse(Path logDir, String igfsName) throws IOException {
-            Collection<VisorIgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
+        private List<VisorIgfsProfilerEntry> parse(Path logDir, String igfsName) throws IOException {
+            List<VisorIgfsProfilerEntry> parsedFiles = new ArrayList<>(512);
 
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(logDir)) {
                 PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:igfs-log-" + igfsName + "-*.csv");
@@ -510,10 +541,5 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         @Override public String toString() {
             return S.toString(VisorIgfsProfilerJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorIgfsProfilerJob job(String arg) {
-        return new VisorIgfsProfilerJob(arg, debug);
     }
 }

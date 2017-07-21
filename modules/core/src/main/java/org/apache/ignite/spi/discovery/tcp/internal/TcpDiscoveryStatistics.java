@@ -17,16 +17,22 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.messages.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 
 /**
  * Statistics for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
@@ -84,6 +90,14 @@ public class TcpDiscoveryStatistics {
 
     /** Ring messages sent timestamps. */
     private final Map<IgniteUuid, Long> ringMsgsSndTs = new GridBoundedLinkedHashMap<>(1024);
+
+    /** */
+    @GridToStringInclude
+    private final Map<String, Long> avgMsgsAckTimes = new HashMap<>();
+
+    /** */
+    @GridToStringInclude
+    private final Map<String, Long> maxMsgsAckTimes = new HashMap<>();
 
     /** Average time messages is in queue. */
     private long avgMsgQueueTime;
@@ -256,7 +270,10 @@ public class TcpDiscoveryStatistics {
             if (maxMsgQueueTime < duration)
                 maxMsgQueueTime = duration;
 
-            avgMsgQueueTime = (avgMsgQueueTime * (totalReceivedMessages() -1)) / totalProcessedMessages();
+            int totalProcMsgs = totalProcessedMessages();
+
+            if (totalProcMsgs != 0)
+                avgMsgQueueTime = (avgMsgQueueTime * (totalProcMsgs - 1)) / totalProcMsgs;
         }
 
         msgsProcStartTs.put(msg.id(), U.currentTimeMillis());
@@ -275,7 +292,10 @@ public class TcpDiscoveryStatistics {
         if (startTs != null) {
             long duration = U.currentTimeMillis() - startTs;
 
-            avgMsgProcTime = (avgMsgProcTime * (totalProcessedMessages() - 1) + duration) / totalProcessedMessages();
+            int totalProcMsgs = totalProcessedMessages();
+
+            if (totalProcMsgs != 0)
+                avgMsgProcTime = (avgMsgProcTime * (totalProcMsgs - 1) + duration) / totalProcMsgs;
 
             if (duration > maxMsgProcTime) {
                 maxMsgProcTime = duration;
@@ -289,8 +309,7 @@ public class TcpDiscoveryStatistics {
 
     /**
      * Called by coordinator when ring message is sent.
-     *
-     * @param msg Sent message.
+     *  @param msg Sent message.
      * @param time Time taken to serialize message.
      */
     public synchronized void onMessageSent(TcpDiscoveryAbstractMessage msg, long time) {
@@ -298,7 +317,9 @@ public class TcpDiscoveryStatistics {
         assert time >= 0 : time;
 
         if (crdSinceTs.get() > 0 &&
+            (msg instanceof TcpDiscoveryCustomEventMessage) ||
             (msg instanceof TcpDiscoveryNodeAddedMessage) ||
+            (msg instanceof TcpDiscoveryNodeAddFinishedMessage) ||
             (msg instanceof TcpDiscoveryNodeLeftMessage) ||
             (msg instanceof TcpDiscoveryNodeFailedMessage)) {
             ringMsgsSndTs.put(msg.id(), U.currentTimeMillis());
@@ -316,7 +337,24 @@ public class TcpDiscoveryStatistics {
 
         sentMsgs.put(msg.getClass().getSimpleName(), ++cnt);
 
-        Long avgTime = F.addIfAbsent(avgMsgsSndTimes, msg.getClass().getSimpleName(), new Callable<Long>() {
+        addTimeInfo(avgMsgsSndTimes, maxMsgsSndTimes, msg, cnt, time);
+
+        addTimeInfo(avgMsgsAckTimes, maxMsgsAckTimes, msg, cnt, time);
+    }
+
+    /**
+     * @param avgTimes Average times.
+     * @param maxTimes Max times.
+     * @param msg Message.
+     * @param cnt Total message count.
+     * @param time Time.
+     */
+    private void addTimeInfo(Map<String, Long> avgTimes,
+        Map<String, Long> maxTimes,
+        TcpDiscoveryAbstractMessage msg,
+        int cnt,
+        long time) {
+        Long avgTime = F.addIfAbsent(avgTimes, msg.getClass().getSimpleName(), new Callable<Long>() {
             @Override public Long call() {
                 return 0L;
             }
@@ -326,9 +364,9 @@ public class TcpDiscoveryStatistics {
 
         avgTime = (avgTime * (cnt - 1) + time) / cnt;
 
-        avgMsgsSndTimes.put(msg.getClass().getSimpleName(), avgTime);
+        avgTimes.put(msg.getClass().getSimpleName(), avgTime);
 
-        Long maxTime = F.addIfAbsent(maxMsgsSndTimes, msg.getClass().getSimpleName(), new Callable<Long>() {
+        Long maxTime = F.addIfAbsent(maxTimes, msg.getClass().getSimpleName(), new Callable<Long>() {
             @Override public Long call() {
                 return 0L;
             }
@@ -337,7 +375,7 @@ public class TcpDiscoveryStatistics {
         assert maxTime != null;
 
         if (time > maxTime)
-            maxMsgsSndTimes.put(msg.getClass().getSimpleName(), time);
+            maxTimes.put(msg.getClass().getSimpleName(), time);
     }
 
     /**
@@ -395,7 +433,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onServerSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         if (maxSrvSockInitTime < initTime)
             maxSrvSockInitTime = initTime;
@@ -407,7 +446,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onClientSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         clientSockCreatedCnt++;
 
@@ -461,6 +501,13 @@ public class TcpDiscoveryStatistics {
      */
     public synchronized Map<String, Integer> receivedMessages() {
         return new HashMap<>(rcvdMsgs);
+    }
+
+    /**
+     * @return Sent messages counts (grouped by type).
+     */
+    public synchronized Map<String, Integer> sentMessages() {
+        return new HashMap<>(sentMsgs);
     }
 
     /**
@@ -611,6 +658,7 @@ public class TcpDiscoveryStatistics {
         avgClientSockInitTime = 0;
         avgMsgProcTime = 0;
         avgMsgQueueTime = 0;
+        avgMsgsAckTimes.clear();
         avgMsgsSndTimes.clear();
         avgRingMsgTime = 0;
         avgSrvSockInitTime = 0;
@@ -624,6 +672,7 @@ public class TcpDiscoveryStatistics {
         maxClientSockInitTime = 0;
         maxMsgProcTime = 0;
         maxMsgQueueTime = 0;
+        maxMsgsAckTimes.clear();
         maxMsgsSndTimes.clear();
         maxProcTimeMsgCls = null;
         maxRingMsgTime = 0;

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.cache.eviction;
 
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
+import javax.cache.Cache;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Evictable cache entry passed into {@link EvictionPolicy}.

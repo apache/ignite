@@ -17,13 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
-import java.io.*;
-import java.util.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.util.GridPartitionStateMap;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 
 /**
  * Partition map.
@@ -33,59 +42,77 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    private UUID nodeId;
+    protected UUID nodeId;
 
     /** Update sequence number. */
-    private long updateSeq;
+    protected long updateSeq;
+
+    /** Topology version. */
+    protected AffinityTopologyVersion top;
 
     /** */
-    private Map<Integer, GridDhtPartitionState> map;
+    protected GridPartitionStateMap map;
 
     /** */
     private volatile int moving;
-
-    /**
-     * @param nodeId Node ID.
-     * @param updateSeq Update sequence number.
-     */
-    public GridDhtPartitionMap(UUID nodeId, long updateSeq) {
-        assert nodeId != null;
-        assert updateSeq > 0;
-
-        this.nodeId = nodeId;
-        this.updateSeq = updateSeq;
-
-        map = new HashMap<>();
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param updateSeq Update sequence number.
-     * @param m Map to copy.
-     * @param onlyActive If {@code true}, then only active states will be included.
-     */
-    public GridDhtPartitionMap(UUID nodeId, long updateSeq, Map<Integer, GridDhtPartitionState> m, boolean onlyActive) {
-        assert nodeId != null;
-        assert updateSeq > 0;
-
-        this.nodeId = nodeId;
-        this.updateSeq = updateSeq;
-
-        map = U.newHashMap(m.size());
-
-        for (Map.Entry<Integer, GridDhtPartitionState> e : m.entrySet()) {
-            GridDhtPartitionState state = e.getValue();
-
-            if (!onlyActive || state.active())
-                put(e.getKey(), state);
-        }
-    }
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
     public GridDhtPartitionMap() {
         // No-op.
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param updateSeq Update sequence number.
+     * @param top Topology version.
+     * @param m Map to copy.
+     * @param onlyActive If {@code true}, then only active states will be included.
+     */
+    public GridDhtPartitionMap(UUID nodeId,
+        long updateSeq,
+        AffinityTopologyVersion top,
+        GridPartitionStateMap m,
+        boolean onlyActive) {
+        assert nodeId != null;
+        assert updateSeq > 0;
+
+        this.nodeId = nodeId;
+        this.updateSeq = updateSeq;
+        this.top = top;
+
+        map = new GridPartitionStateMap(m, onlyActive);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param updateSeq Update sequence number.
+     * @param top Topology version.
+     * @param map Map.
+     * @param moving Number of moving partitions.
+     */
+    private GridDhtPartitionMap(UUID nodeId,
+        long updateSeq,
+        AffinityTopologyVersion top,
+        GridPartitionStateMap map,
+        int moving) {
+        this.nodeId = nodeId;
+        this.updateSeq = updateSeq;
+        this.top = top;
+        this.map = map;
+        this.moving = moving;
+    }
+
+    /**
+     * @return Copy with empty partition state map.
+     */
+    public GridDhtPartitionMap emptyCopy() {
+        return new GridDhtPartitionMap(nodeId,
+            updateSeq,
+            top,
+            new GridPartitionStateMap(0),
+            0);
     }
 
     /**
@@ -151,7 +178,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     /**
      * @return Underlying map.
      */
-    public Map<Integer, GridDhtPartitionState> map() {
+    public GridPartitionStateMap map() {
         return map;
     }
 
@@ -171,16 +198,26 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
 
     /**
      * @param updateSeq New update sequence value.
+     * @param topVer Current topology version.
      * @return Old update sequence value.
      */
-    public long updateSequence(long updateSeq) {
+    public long updateSequence(long updateSeq, AffinityTopologyVersion topVer) {
         long old = this.updateSeq;
 
         assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
 
+        top = topVer;
+
         return old;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return top;
     }
 
     /** {@inheritDoc} */
@@ -205,17 +242,25 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet()) {
             int ordinal = entry.getValue().ordinal();
 
-            assert ordinal == (ordinal & 0x3);
-            assert entry.getKey() == (entry.getKey() & 0x3FFF);
+            assert ordinal == (ordinal & 0x7);
+            assert entry.getKey() < CacheConfiguration.MAX_PARTITIONS_COUNT : entry.getKey();
 
-            int coded = (ordinal << 14) | entry.getKey();
-
-            out.writeShort((short)coded);
+            out.writeByte(ordinal);
+            out.writeShort(entry.getKey());
 
             i++;
         }
 
         assert i == size;
+
+        if (top != null) {
+            out.writeLong(topologyVersion().topologyVersion());
+            out.writeInt(topologyVersion().minorTopologyVersion());
+        }
+        else {
+            out.writeLong(0);
+            out.writeInt(0);
+        }
     }
 
     /** {@inheritDoc} */
@@ -226,16 +271,20 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
 
         int size = in.readInt();
 
-        map = U.newHashMap(size);
+        map = new GridPartitionStateMap();
 
         for (int i = 0; i < size; i++) {
-            int entry = in.readShort() & 0xFFFF;
-
-            int part = entry & 0x3FFF;
-            int ordinal = entry >> 14;
+            int ordinal = in.readByte();
+            int part = in.readShort();
 
             put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }
+
+        long ver = in.readLong();
+        int minorVer = in.readInt();
+
+        if (ver != 0)
+            top = new AffinityTopologyVersion(ver, minorVer);
     }
 
     /** {@inheritDoc} */
@@ -257,11 +306,11 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @return Full string representation.
      */
     public String toFullString() {
-        return S.toString(GridDhtPartitionMap.class, this, "size", size(), "map", map.toString());
+        return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size(), "map", map.toString());
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPartitionMap.class, this, "size", size());
+        return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size());
     }
 }

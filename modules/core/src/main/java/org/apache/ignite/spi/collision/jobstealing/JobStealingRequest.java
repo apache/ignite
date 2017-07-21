@@ -17,11 +17,12 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Job stealing request.
@@ -52,6 +53,11 @@ public class JobStealingRequest implements Message {
      */
     int delta() {
         return delta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -95,11 +101,11 @@ public class JobStealingRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(JobStealingRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 82;
     }
 

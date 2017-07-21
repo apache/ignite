@@ -17,23 +17,45 @@
 
 package org.apache.ignite.loadtest;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.logger.*;
-import org.apache.log4j.*;
-import org.apache.log4j.varia.*;
-import org.springframework.beans.*;
-import org.springframework.context.*;
-import org.springframework.context.support.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.log4j.Appender;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
+import org.apache.log4j.varia.LevelRangeFilter;
+import org.apache.log4j.varia.NullAppender;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 /**
  * Single execution test.
@@ -66,9 +88,8 @@ public final class GridSingleExecutionTest {
             System.exit(1);
         }
         else if (args.length >= 2) {
-            for (IgniteConfiguration cfg: getConfigurations(args[1], args[0])) {
+            for (IgniteConfiguration cfg: getConfigurations(args[1], args[0]))
                 G.start(cfg);
-            }
         }
 
         boolean useSes = false;
@@ -81,12 +102,8 @@ public final class GridSingleExecutionTest {
         try {
             Ignite ignite = G.ignite();
 
-            IgniteCompute comp = ignite.compute().withAsync();
-
             // Execute Hello World task.
-            comp.execute(!useSes ? TestTask.class : TestSessionTask.class, null);
-
-            ComputeTaskFuture<Object> fut = comp.future();
+            ComputeTaskFuture<Object> fut = ignite.compute().executeAsync(!useSes ? TestTask.class : TestSessionTask.class, null);
 
             if (useSes) {
                 fut.getTaskSession().setAttribute("attr1", 1);
@@ -123,7 +140,7 @@ public final class GridSingleExecutionTest {
         // Configure output that should go to System.out
         RollingFileAppender fileApp;
 
-        String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
+        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
 
         try {
             fileApp = new RollingFileAppender(new PatternLayout(fmt), fileName);

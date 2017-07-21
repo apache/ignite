@@ -17,10 +17,13 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.session.*;
-import org.apache.ignite.testsuites.*;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.session.GridSessionCheckpointAbstractSelfTest;
+import org.apache.ignite.session.GridSessionCheckpointSelfTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
+import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
  * Grid session checkpoint self test using {@link S3CheckpointSpi}.
@@ -29,6 +32,7 @@ public class S3SessionCheckpointSelfTest extends GridSessionCheckpointAbstractSe
     /**
      * @throws Exception If failed.
      */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
     public void testS3Checkpoint() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 

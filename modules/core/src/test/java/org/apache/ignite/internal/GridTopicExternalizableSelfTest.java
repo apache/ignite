@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.util.UUID;
+import org.apache.ignite.GridTestIoUtils;
+import org.apache.ignite.IgniteExternalizableAbstractTest;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Grid topic externalization test.

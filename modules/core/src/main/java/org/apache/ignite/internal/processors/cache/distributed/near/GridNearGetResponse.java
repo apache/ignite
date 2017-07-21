@@ -17,26 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
+import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Get response.
  */
-public class GridNearGetResponse extends GridCacheMessage implements GridCacheDeployable,
+public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -82,21 +91,22 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
      * @param futId Future ID.
      * @param miniId Sub ID.
      * @param ver Version.
+     * @param addDepInfo Deployment info.
      */
     public GridNearGetResponse(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        GridCacheVersion ver
+        GridCacheVersion ver,
+        boolean addDepInfo
     ) {
         assert futId != null;
-        assert miniId != null;
-        assert ver != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.ver = ver;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -155,10 +165,8 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
         return topVer != null ? topVer : super.topologyVersion();
     }
 
-    /**
-     * @return Error.
-     */
-    public IgniteCheckedException error() {
+    /** {@inheritDoc} */
+    @Override public IgniteCheckedException error() {
         return err;
     }
 
@@ -181,8 +189,8 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 info.marshal(cctx);
         }
 
-        if (err != null)
-            errBytes = ctx.marshaller().marshal(err);
+        if (err != null && errBytes == null)
+            errBytes = U.marshal(ctx, err);
     }
 
     /** {@inheritDoc} */
@@ -196,8 +204,13 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 info.unmarshal(cctx, ldr);
         }
 
-        if (errBytes != null)
-            err = ctx.marshaller().unmarshal(errBytes, ldr);
+        if (errBytes != null && err == null)
+            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -331,11 +344,11 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridNearGetResponse.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 50;
     }
 

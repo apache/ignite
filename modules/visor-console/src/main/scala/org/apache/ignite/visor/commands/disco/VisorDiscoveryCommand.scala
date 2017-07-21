@@ -28,7 +28,7 @@ import org.apache.ignite.visor.visor._
 
 import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -42,7 +42,7 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * {{{
  * +---------------------------------------------------------------------------------------+
  * | disco | Prints topology change log as seen from the oldest node.                      |
- * |       | Timeframe for querying events can be specified in arguments.                  |
+ * |       | Time frame for querying events can be specified in arguments.                 |
  * |       |                                                                               |
  * |       | Note that this command depends on Ignite events.                              |
  * |       |                                                                               |
@@ -51,8 +51,9 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * |       | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |       | events on each node can also affect the functionality of this command.        |
  * |       |                                                                               |
- * |       | By default - all events are DISABLED and Ignite stores last 10,000 local      |
- * |       | events on each node. Both of these defaults can be changed in configuration.  |
+ * |       | By default - all events are DISABLED. But if events enabled then Ignite will  |
+ * |       | stores last 10,000 local events on each node.                                 |
+ * |       | Both of these defaults can be changed in configuration.                       |
  * +---------------------------------------------------------------------------------------+
  * }}}
  *
@@ -65,7 +66,7 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * ====Arguments====
  * {{{
  *     -t=<num>s|m|h|d
- *         Defines timeframe for querying events:
+ *         Defines time frame for querying events:
  *            =<num>s Events fired during last <num> seconds.
  *            =<num>m Events fired during last <num> minutes.
  *            =<num>h Events fired during last <num> hours.
@@ -106,7 +107,7 @@ class VisorDiscoveryCommand extends VisorConsoleCommand {
 
     /**
      * ===Command===
-     * Prints discovery events within specified timeframe.
+     * Prints discovery events within specified time frame.
      *
      * ===Examples===
      * <ex>disco "-r"</ex>
@@ -142,7 +143,7 @@ class VisorDiscoveryCommand extends VisorConsoleCommand {
                     try
                         cntOpt.fold(Int.MaxValue)(_.toInt)
                     catch {
-                        case e: NumberFormatException =>
+                        case _: NumberFormatException =>
                             scold("Invalid count: " + cntOpt.get)
 
                             return
@@ -183,9 +184,9 @@ class VisorDiscoveryCommand extends VisorConsoleCommand {
 
                 evts.take(cnt).foreach {
                     case de: VisorGridDiscoveryEvent =>
-                        t +=(formatDateTime(de.timestamp()), de.name(),
-                            nodeId8(de.evtNodeId()) + (if (de.isDaemon) "(daemon)" else ""),
-                            if (F.isEmpty(de.address())) NA else de.address())
+                        t +=(formatDateTime(de.getTimestamp), de.getName,
+                            nodeId8(de.getEventNodeId) + (if (de.isDaemon) "(daemon)" else ""),
+                            if (F.isEmpty(de.getAddress)) NA else de.getAddress)
                     case _ =>
                 }
 
@@ -215,12 +216,12 @@ class VisorDiscoveryCommand extends VisorConsoleCommand {
 
         if (nodeStartTime > System.currentTimeMillis() - tmFrame) {
             val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
-                node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
+                node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon, 0L)
 
             evts = Seq(root) ++ evts
         }
 
-        evts = evts.sortBy(_.timestamp())
+        evts = evts.sortBy(_.getTimestamp)
 
         if (reverse) evts.reverse else evts
     }
@@ -238,7 +239,7 @@ object VisorDiscoveryCommand {
         shortInfo = "Prints topology change log.",
         longInfo = List(
             "Prints topology change log as seen from the oldest node.",
-            "Timeframe for querying events can be specified in arguments.",
+            "Time frame for querying events can be specified in arguments.",
             " ",
             "Note that this command depends on Ignite events.",
             " ",
@@ -247,7 +248,7 @@ object VisorDiscoveryCommand {
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are disabled and Ignite stores last 10,000 local",
+            "By default - all events are disabled. But if events enabled then Ignite will stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(
@@ -256,7 +257,7 @@ object VisorDiscoveryCommand {
         ),
         args = List(
             "-t=<num>s|m|h|d" -> List(
-                "Defines timeframe for quering events:",
+                "Defines time frame for querying events:",
                 "   =<num>s Events fired during last <num> seconds.",
                 "   =<num>m Events fired during last <num> minutes.",
                 "   =<num>h Events fired during last <num> hours.",

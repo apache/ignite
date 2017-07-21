@@ -17,32 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
 public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTest {
     /** */
-    private volatile Integer failedKey;
+    private volatile boolean putFailed;
 
     /** */
-    private String maxCompletedTxCount;
+    private String maxCompletedTxCnt;
 
     /**
      */
@@ -52,7 +53,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        maxCompletedTxCount = System.getProperty(IGNITE_MAX_COMPLETED_TX_COUNT);
+        maxCompletedTxCnt = System.getProperty(IGNITE_MAX_COMPLETED_TX_COUNT);
 
         System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, String.valueOf(5));
 
@@ -64,10 +65,11 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -76,7 +78,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, maxCompletedTxCount != null ? maxCompletedTxCount : "");
+        System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, maxCompletedTxCnt != null ? maxCompletedTxCnt : "");
 
         super.afterTest();
     }
@@ -91,43 +93,44 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
         final AtomicInteger keyStart = new AtomicInteger();
 
+        final ConcurrentLinkedDeque<Integer> q = new ConcurrentLinkedDeque<>();
+
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int start = keyStart.getAndAdd(KEYS_PER_THREAD);
 
-                for (int i = 0; i < KEYS_PER_THREAD && failedKey == null; i++) {
+                for (int i = 0; i < KEYS_PER_THREAD && !putFailed; i++) {
                     int key = start + i;
 
                     try {
                         cache.put(key, 1);
                     }
                     catch (Exception e) {
-                        log.info("Put failed: " + e);
+                        log.info("Put failed [err=" + e + ", i=" + i + ']');
 
-                        failedKey = key;
+                        putFailed = true;
+
+                        q.add(key);
                     }
                 }
-
 
                 return null;
             }
         }, 10, "put-thread");
 
-        assertNotNull("Test failed to provoke 'missing commit version' error.", failedKey);
+        assertTrue("Test failed to provoke 'missing commit version' error.", putFailed);
 
-        log.info("Trying to update " + failedKey);
+        for (Integer key : q) {
+            log.info("Trying to update " + key);
 
-        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
+            IgniteFuture<?> fut = cache.putAsync(key, 2);
 
-        asyncCache.put(failedKey, 2);
-
-        IgniteFuture<?> fut = asyncCache.future();
-
-        try {
-            fut.get(5000);
-        }
-        catch (IgniteFutureTimeoutException ignore) {
-            fail("Put failed to finish in 5s.");
+            try {
+                fut.get(5000);
+            }
+            catch (IgniteFutureTimeoutException ignore) {
+                fail("Put failed to finish in 5s: " + key);
+            }
         }
     }
 }

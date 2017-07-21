@@ -17,11 +17,13 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.jetbrains.annotations.*;
-
-import java.net.*;
+import java.net.Socket;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * REST access configuration.
@@ -57,6 +59,12 @@ public class ConnectorConfiguration {
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
 
+    /** Default REST idle timeout for query cursor. */
+    private static final long DFLT_IDLE_QRY_CUR_TIMEOUT = 10 * 60 * 1000;
+
+    /** Default REST check frequency for idle query cursor. */
+    private static final long DFLT_IDLE_QRY_CUR_CHECK_FRQ = 60 * 1000;
+
     /** Jetty XML configuration path. */
     private String jettyPath;
 
@@ -81,6 +89,12 @@ public class ConnectorConfiguration {
     /** REST TCP receive buffer size. */
     private int rcvBufSize = DFLT_SOCK_BUF_SIZE;
 
+    /** REST idle timeout for query cursor. */
+    private long idleQryCurTimeout = DFLT_IDLE_QRY_CUR_TIMEOUT;
+
+    /** REST idle check frequency for query cursor. */
+    private long idleQryCurCheckFreq = DFLT_IDLE_QRY_CUR_CHECK_FRQ;
+
     /** REST TCP send queue limit. */
     private int sndQueueLimit;
 
@@ -98,6 +112,9 @@ public class ConnectorConfiguration {
 
     /** SSL context factory for rest binary server. */
     private GridSslContextFactory sslCtxFactory;
+
+    /** SSL context factory for rest binary server. */
+    private Factory<SSLContext> sslFactory;
 
     /** Port range */
     private int portRange = DFLT_PORT_RANGE;
@@ -141,6 +158,9 @@ public class ConnectorConfiguration {
         sslClientAuth = cfg.isSslClientAuth();
         sslCtxFactory = cfg.getSslContextFactory();
         sslEnabled = cfg.isSslEnabled();
+        sslFactory = cfg.getSslFactory();
+        idleQryCurTimeout = cfg.getIdleQueryCursorTimeout();
+        idleQryCurCheckFreq = cfg.getIdleQueryCursorCheckFrequency();
     }
 
     /**
@@ -149,9 +169,12 @@ public class ConnectorConfiguration {
      * accessing Ignite APIs remotely.
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
+     * @return {@code this} for chaining.
      */
-    public void setJettyPath(String jettyPath) {
+    public ConnectorConfiguration setJettyPath(String jettyPath) {
         this.jettyPath = jettyPath;
+
+        return this;
     }
 
     /**
@@ -175,9 +198,12 @@ public class ConnectorConfiguration {
      * Sets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
      * @param secretKey REST secret key.
+     * @return {@code this} for chaining.
      */
-    public void setSecretKey(@Nullable String secretKey) {
+    public ConnectorConfiguration setSecretKey(@Nullable String secretKey) {
         this.secretKey = secretKey;
+
+        return this;
     }
 
     /**
@@ -211,9 +237,12 @@ public class ConnectorConfiguration {
      * Sets host for TCP binary protocol server.
      *
      * @param host TCP host.
+     * @return {@code this} for chaining.
      */
-    public void setHost(String host) {
+    public ConnectorConfiguration setHost(String host) {
         this.host = host;
+
+        return this;
     }
 
     /**
@@ -231,9 +260,12 @@ public class ConnectorConfiguration {
      * Sets port for TCP binary protocol server.
      *
      * @param port TCP port.
+     * @return {@code this} for chaining.
      */
-    public void setPort(int port) {
+    public ConnectorConfiguration setPort(int port) {
         this.port = port;
+
+        return this;
     }
 
     /**
@@ -254,9 +286,12 @@ public class ConnectorConfiguration {
      *
      * @param noDelay {@code True} if option should be enabled.
      * @see #isNoDelay()
+     * @return {@code this} for chaining.
      */
-    public void setNoDelay(boolean noDelay) {
+    public ConnectorConfiguration setNoDelay(boolean noDelay) {
         this.noDelay = noDelay;
+
+        return this;
     }
 
     /**
@@ -276,9 +311,12 @@ public class ConnectorConfiguration {
      *
      * @param directBuf {@code True} if option should be enabled.
      * @see #isDirectBuffer()
+     * @return {@code this} for chaining.
      */
-    public void setDirectBuffer(boolean directBuf) {
+    public ConnectorConfiguration setDirectBuffer(boolean directBuf) {
         this.directBuf = directBuf;
+
+        return this;
     }
 
     /**
@@ -295,9 +333,12 @@ public class ConnectorConfiguration {
      *
      * @param sndBufSize Send buffer size.
      * @see #getSendBufferSize()
+     * @return {@code this} for chaining.
      */
-    public void setSendBufferSize(int sndBufSize) {
+    public ConnectorConfiguration setSendBufferSize(int sndBufSize) {
         this.sndBufSize = sndBufSize;
+
+        return this;
     }
 
     /**
@@ -314,9 +355,12 @@ public class ConnectorConfiguration {
      *
      * @param rcvBufSize Receive buffer size.
      * @see #getReceiveBufferSize()
+     * @return {@code this} for chaining.
      */
-    public void setReceiveBufferSize(int rcvBufSize) {
+    public ConnectorConfiguration setReceiveBufferSize(int rcvBufSize) {
         this.rcvBufSize = rcvBufSize;
+
+        return this;
     }
 
     /**
@@ -334,9 +378,12 @@ public class ConnectorConfiguration {
      *
      * @param sndQueueLimit REST TCP server send queue limit (0 for unlimited).
      * @see #getSendQueueLimit()
+     * @return {@code this} for chaining.
      */
-    public void setSendQueueLimit(int sndQueueLimit) {
+    public ConnectorConfiguration setSendQueueLimit(int sndQueueLimit) {
         this.sndQueueLimit = sndQueueLimit;
+
+        return this;
     }
 
     /**
@@ -354,9 +401,12 @@ public class ConnectorConfiguration {
      *
      * @param selectorCnt Number of selector threads for REST TCP server.
      * @see #getSelectorCount()
+     * @return {@code this} for chaining.
      */
-    public void setSelectorCount(int selectorCnt) {
+    public ConnectorConfiguration setSelectorCount(int selectorCnt) {
         this.selectorCnt = selectorCnt;
+
+        return this;
     }
 
     /**
@@ -376,9 +426,12 @@ public class ConnectorConfiguration {
      *
      * @param idleTimeout Idle timeout in milliseconds.
      * @see #getIdleTimeout()
+     * @return {@code this} for chaining.
      */
-    public void setIdleTimeout(long idleTimeout) {
+    public ConnectorConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
     }
 
     /**
@@ -400,9 +453,12 @@ public class ConnectorConfiguration {
      * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
      * @param sslEnabled {@code True} if SSL should be enabled.
+     * @return {@code this} for chaining.
      */
-    public void setSslEnabled(boolean sslEnabled) {
+    public ConnectorConfiguration setSslEnabled(boolean sslEnabled) {
         this.sslEnabled = sslEnabled;
+
+        return this;
     }
 
     /**
@@ -419,9 +475,12 @@ public class ConnectorConfiguration {
      * Sets flag indicating whether or not SSL client authentication is required.
      *
      * @param sslClientAuth Whether or not client authentication is required.
+     * @return {@code this} for chaining.
      */
-    public void setSslClientAuth(boolean sslClientAuth) {
+    public ConnectorConfiguration setSslClientAuth(boolean sslClientAuth) {
         this.sslClientAuth = sslClientAuth;
+
+        return this;
     }
 
     /**
@@ -429,7 +488,9 @@ public class ConnectorConfiguration {
      *
      * @return SslContextFactory instance.
      * @see GridSslContextFactory
+     * @deprecated Use {@link #getSslFactory()} instead.
      */
+    @Deprecated
     public GridSslContextFactory getSslContextFactory() {
         return sslCtxFactory;
     }
@@ -440,13 +501,45 @@ public class ConnectorConfiguration {
      * {@link #setSslEnabled(boolean)} is set to {@code true}.
      *
      * @param sslCtxFactory Instance of {@link GridSslContextFactory}
+     * @deprecated Use {@link #setSslFactory(Factory)} instead.
+     * @return {@code this} for chaining.
      */
-    public void setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+    @Deprecated
+    public ConnectorConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets context factory that will be used for creating a secure socket layer of rest binary server.
+     *
+     * @return SSL context factory instance.
+     * @see SslContextFactory
+     */
+    public Factory<SSLContext> getSslFactory() {
+        return sslFactory;
+    }
+
+    /**
+     * Sets instance of {@link Factory} that will be used to create an instance of {@code SSLContext}
+     * for Secure Socket Layer on TCP binary protocol. This factory will only be used if
+     * {@link #setSslEnabled(boolean)} is set to {@code true}.
+     *
+     * @param sslFactory Instance of {@link Factory}
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setSslFactory(Factory<SSLContext> sslFactory) {
+        this.sslFactory = sslFactory;
+
+        return this;
     }
 
     /**
      * Gets number of ports to try if configured port is already in use.
+     *
+     * If port range value is <tt>0</tt>, then implementation will try bind only to the port provided by
+     * {@link #setPort(int)} method and fail if binding to this port did not succeed.
      *
      * @return Number of ports to try.
      */
@@ -458,9 +551,12 @@ public class ConnectorConfiguration {
      * Sets number of ports to try if configured one is in use.
      *
      * @param portRange Port range.
+     * @return {@code this} for chaining.
      */
-    public void setPortRange(int portRange) {
+    public ConnectorConfiguration setPortRange(int portRange) {
         this.portRange = portRange;
+
+        return this;
     }
 
     /**
@@ -479,9 +575,12 @@ public class ConnectorConfiguration {
      *
      * @param threadPoolSize Thread pool size to use for processing of client messages.
      * @see #getThreadPoolSize()
+     * @return {@code this} for chaining.
      */
-    public void setThreadPoolSize(int threadPoolSize) {
+    public ConnectorConfiguration setThreadPoolSize(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
+
+        return this;
     }
 
     /**
@@ -511,8 +610,62 @@ public class ConnectorConfiguration {
      * access them from java code directly.
      *
      * @param interceptor Interceptor.
+     * @return {@code this} for chaining.
      */
-    public void setMessageInterceptor(ConnectorMessageInterceptor interceptor) {
+    public ConnectorConfiguration setMessageInterceptor(ConnectorMessageInterceptor interceptor) {
         msgInterceptor = interceptor;
+
+        return this;
+    }
+
+    /**
+     * Sets idle query cursors timeout.
+     *
+     * @param idleQryCurTimeout Idle query cursors timeout in milliseconds.
+     * @see #getIdleQueryCursorTimeout()
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setIdleQueryCursorTimeout(long idleQryCurTimeout) {
+        this.idleQryCurTimeout = idleQryCurTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets idle query cursors timeout in milliseconds.
+     * <p>
+     * This setting is used to reject open query cursors that is not used. If no fetch query request
+     * come within idle timeout, it will be removed on next check for old query cursors
+     * (see {@link #getIdleQueryCursorCheckFrequency()}).
+     *
+     * @return Idle query cursors timeout in milliseconds
+     */
+    public long getIdleQueryCursorTimeout() {
+        return idleQryCurTimeout;
+    }
+
+    /**
+     * Sets idle query cursor check frequency.
+     *
+     * @param idleQryCurCheckFreq Idle query check frequency in milliseconds.
+     * @see #getIdleQueryCursorCheckFrequency()
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setIdleQueryCursorCheckFrequency(long idleQryCurCheckFreq) {
+        this.idleQryCurCheckFreq = idleQryCurCheckFreq;
+
+        return this;
+    }
+
+    /**
+     * Gets idle query cursors check frequency.
+     * This setting is used to reject open query cursors that is not used.
+     * <p>
+     * Scheduler tries with specified period to close queries' cursors that are overtime.
+     *
+     * @return Idle query cursor check frequency in milliseconds.
+     */
+    public long getIdleQueryCursorCheckFrequency() {
+        return idleQryCurCheckFreq;
     }
 }

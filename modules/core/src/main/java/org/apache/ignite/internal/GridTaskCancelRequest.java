@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Request for cancelling tasks.
@@ -58,6 +59,11 @@ public class GridTaskCancelRequest implements Message {
      */
     public IgniteUuid sessionId() {
         return sesId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -101,11 +107,11 @@ public class GridTaskCancelRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridTaskCancelRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 5;
     }
 

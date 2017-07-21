@@ -17,17 +17,16 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.jetbrains.annotations.*;
-import org.springframework.context.*;
-
-import java.net.*;
+import java.net.URL;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContextImpl;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.context.ApplicationContext;
 
 /**
  * Factory methods to start Ignite with optional Spring application context, this context can be injected into
- * grid tasks and grid jobs using {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource}
+ * grid tasks and grid jobs using {@link org.apache.ignite.resources.SpringApplicationContextResource @SpringApplicationContextResource}
  * annotation.
  * <p>
  * You can also instantiate grid directly from Spring without using {@code Ignite}.
@@ -42,7 +41,7 @@ public class IgniteSpring {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @SpringApplicationContextResource} annotation.
      * @return Started grid.
      * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
@@ -58,7 +57,7 @@ public class IgniteSpring {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @SpringApplicationContextResource} annotation.
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
@@ -80,7 +79,7 @@ public class IgniteSpring {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @SpringApplicationContextResource} annotation.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws IgniteCheckedException If grid could not be started or configuration
@@ -88,7 +87,7 @@ public class IgniteSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(String springCfgPath, @Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return IgnitionEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx), null);
     }
 
     /**
@@ -112,6 +111,6 @@ public class IgniteSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl, @Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return IgnitionEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx), null);
     }
 }

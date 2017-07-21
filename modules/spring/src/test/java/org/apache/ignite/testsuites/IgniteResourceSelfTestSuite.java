@@ -17,8 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.resource.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.resource.GridLoggerInjectionSelfTest;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessorSelfTest;
+import org.apache.ignite.internal.processors.resource.GridServiceInjectionSelfTest;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  * Ignite resource injection test Suite.
@@ -30,11 +34,12 @@ public class IgniteResourceSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Resource Injection Test Suite");
+        TestSuite suite = new IgniteTestSuite("Ignite Resource Injection Test Suite");
 
-        suite.addTest(new TestSuite(GridResourceProcessorSelfTest.class));
-        suite.addTest(new TestSuite(GridLoggerInjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridServiceInjectionSelfTest.class));
+        suite.addTestSuite(GridResourceProcessorSelfTest.class);
+        suite.addTestSuite(GridLoggerInjectionSelfTest.class);
+        suite.addTestSuite(GridServiceInjectionSelfTest.class);
+        suite.addTestSuite(GridSpringResourceInjectionSelfTest.class);
 
         return suite;
     }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef.internal;
 
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 
 /**
  * Defines internal {@code typedef} for {@link GridPlainRunnable}. Since Java doesn't provide type aliases

@@ -17,17 +17,25 @@
 
 package org.apache.ignite.startup.servlet;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import javax.servlet.*;
-import java.net.*;
-import java.util.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * This class defines Ignite startup based on servlet context listener.
@@ -88,8 +96,8 @@ public class ServletContextListenerStartup implements ServletContextListener {
     /** Configuration file path parameter name. */
     public static final String IGNITE_CFG_FILE_PATH_PARAM = "IgniteConfigurationFilePath";
 
-    /** Names of started grids. */
-    private final Collection<String> gridNames = new ArrayList<>();
+    /** Names of started Ignite instances. */
+    private final Collection<String> igniteInstanceNames = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void contextInitialized(ServletContextEvent evt) {
@@ -146,7 +154,7 @@ public class ServletContextListenerStartup implements ServletContextListener {
 
                 synchronized (ServletContextListenerStartup.class) {
                     try {
-                        ignite = G.ignite(cfg.getGridName());
+                        ignite = G.ignite(cfg.getIgniteInstanceName());
                     }
                     catch (IgniteIllegalStateException ignored) {
                         ignite = IgnitionEx.start(new IgniteConfiguration(cfg), rsrcCtx);
@@ -155,12 +163,12 @@ public class ServletContextListenerStartup implements ServletContextListener {
 
                 // Check if grid is not null - started properly.
                 if (ignite != null)
-                    gridNames.add(ignite.name());
+                    igniteInstanceNames.add(ignite.name());
             }
         }
         catch (IgniteCheckedException e) {
             // Stop started grids only.
-            for (String name : gridNames)
+            for (String name : igniteInstanceNames)
                 G.stop(name, true);
 
             throw new IgniteException("Failed to start Ignite.", e);
@@ -170,7 +178,7 @@ public class ServletContextListenerStartup implements ServletContextListener {
     /** {@inheritDoc} */
     @Override public void contextDestroyed(ServletContextEvent evt) {
         // Stop started grids only.
-        for (String name: gridNames)
+        for (String name: igniteInstanceNames)
             G.stop(name, true);
     }
 

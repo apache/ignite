@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  * Test none rebalance mode.
@@ -31,8 +32,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -57,11 +58,11 @@ public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRemoveAll() throws Exception {
-        GridNearTransactionalCache cache = (GridNearTransactionalCache)((IgniteKernal)grid(0)).internalCache(null);
+        GridNearTransactionalCache cache = (GridNearTransactionalCache)((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
         for (GridDhtLocalPartition part : cache.dht().topology().localPartitions())
-            assertEquals(MOVING, part.state());
+            assertEquals(OWNING, part.state());
 
-        grid(0).cache(null).removeAll();
+        grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 }

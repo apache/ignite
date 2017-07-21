@@ -17,19 +17,43 @@
 
 package org.apache.ignite.internal.jdbc;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.math.*;
-import java.net.*;
-import java.sql.*;
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
-import java.util.*;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * JDBC result set implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 public class JdbcResultSet implements ResultSet {
     /** Task name. */
     private static final String TASK_NAME =
@@ -1478,16 +1502,22 @@ public class JdbcResultSet implements ResultSet {
      * @return Casted field value.
      * @throws SQLException In case of error.
      */
+    @SuppressWarnings("unchecked")
     private <T> T getTypedValue(int colIdx, Class<T> cls) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();
 
         try {
-            T val = cls == String.class ? (T)String.valueOf(curr.get(colIdx - 1)) : (T)curr.get(colIdx - 1);
+            Object val = curr.get(colIdx - 1);
 
             wasNull = val == null;
 
-            return val;
+            if (val == null)
+                return null;
+            else if (cls == String.class)
+                return (T)String.valueOf(val);
+            else
+                return (T)val;
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);

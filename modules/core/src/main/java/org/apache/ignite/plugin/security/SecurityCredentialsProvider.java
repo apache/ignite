@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Security credentials provider for specifying security credentials.

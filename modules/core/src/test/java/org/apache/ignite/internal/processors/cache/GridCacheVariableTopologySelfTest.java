@@ -17,25 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Affinity routing tests.
@@ -53,8 +58,8 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -125,7 +130,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() {
                 while (cnt++ < txCnt && !done.get()) {
-                    IgniteCache<Object, Object> cache = grid(0).cache(null);
+                    IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
                     if (cnt % logMod == 0)
                         info("Starting transaction: " + cnt);
@@ -139,10 +144,10 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (ClusterTopologyException e) {
-                        info("Caught topology exception: " + e);
+                    catch (TransactionRollbackException | ClusterTopologyException e) {
+                        info("Caught exception: " + e);
                     }
-                    catch (IgniteException e) {
+                    catch (CacheException | IgniteException e) {
                         if (X.hasCause(e, ClusterTopologyCheckedException.class))
                             info("Caught cache exception: " + e);
                         else
@@ -172,7 +177,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
         GridFuture<?> debugFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @SuppressWarnings({"UnusedDeclaration"})
             @Override public void run() {
-                Cache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
+                Cache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(DEFAULT_CACHE_NAME);
 
                 try {
                     Thread.sleep(15000);

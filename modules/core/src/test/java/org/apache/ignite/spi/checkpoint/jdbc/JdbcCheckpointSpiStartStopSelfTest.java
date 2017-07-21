@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.checkpoint.jdbc;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
-import org.hsqldb.jdbc.*;
+import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.hsqldb.jdbc.jdbcDataSource;
 
 /**
  * Grid jdbc checkpoint SPI start stop self test.

@@ -17,28 +17,29 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * Task that stop specified caches on specified node.
  */
 @GridInternal
-public class VisorCacheStopTask extends VisorOneNodeTask<String, Void> {
+public class VisorCacheStopTask extends VisorOneNodeTask<VisorCacheStopTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheStopJob job(String arg) {
+    @Override protected VisorCacheStopJob job(VisorCacheStopTaskArg arg) {
         return new VisorCacheStopJob(arg, debug);
     }
 
     /**
      * Job that stop specified caches.
      */
-    private static class VisorCacheStopJob extends VisorJob<String, Void> {
+    private static class VisorCacheStopJob extends VisorJob<VisorCacheStopTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -48,15 +49,20 @@ public class VisorCacheStopTask extends VisorOneNodeTask<String, Void> {
          * @param cacheName Cache name to clear.
          * @param debug Debug flag.
          */
-        private VisorCacheStopJob(String cacheName, boolean debug) {
+        private VisorCacheStopJob(VisorCacheStopTaskArg cacheName, boolean debug) {
             super(cacheName, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String cacheName) {
+        @Override protected Void run(VisorCacheStopTaskArg arg) {
+            String cacheName = arg.getCacheName();
+
             IgniteCache cache = ignite.cache(cacheName);
 
-            cache.close();
+            if (cache == null)
+                throw new IllegalStateException("Failed to find cache for name: " + cacheName);
+
+            cache.destroy();
 
             return null;
         }

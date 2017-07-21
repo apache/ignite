@@ -17,23 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.Callable;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.IgniteReflectionFactory;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.*;
-import javax.cache.integration.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 
 /**
  * Checks that exception is propagated to user when cache store throws an exception.
@@ -50,8 +57,8 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -100,7 +107,11 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         checkGetError(false, LOCAL);
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @param nearEnabled Near cache flag.
+     * @param cacheMode Cache mode.
+     * @throws Exception If failed.
+     */
     private void checkGetError(boolean nearEnabled, CacheMode cacheMode) throws Exception {
         this.nearEnabled = nearEnabled;
         this.cacheMode = cacheMode;
@@ -110,7 +121,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         try {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).cache(null).get(nearKey());
+                    grid(0).cache(DEFAULT_CACHE_NAME).get(nearKey());
 
                     return null;
                 }
@@ -128,7 +139,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             key = String.valueOf(i);
 
-            if (!grid(0).affinity(null).isPrimaryOrBackup(grid(0).localNode(), key))
+            if (!grid(0).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(0).localNode(), key))
                 break;
         }
 
@@ -140,14 +151,17 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("PublicInnerClass")
     public static class TestStore extends CacheStoreAdapter<Object, Object> {
+        /** {@inheritDoc} */
         @Override public Object load(Object key) {
             throw new IgniteException("Failed to get key from store: " + key);
         }
 
+        /** {@inheritDoc} */
         @Override public void write(Cache.Entry<?, ?> entry) {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void delete(Object key) {
             // No-op.
         }

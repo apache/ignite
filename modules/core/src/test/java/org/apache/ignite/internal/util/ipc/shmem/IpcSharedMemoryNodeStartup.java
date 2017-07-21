@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 
 /**
  *
@@ -54,22 +60,30 @@ public class IpcSharedMemoryNodeStartup {
 
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("partitioned");
         igfsCfg.setName("igfs");
 
+        CacheConfiguration metaCacheCfg = new CacheConfiguration();
+
+        metaCacheCfg.setName("partitioned");
+        metaCacheCfg.setCacheMode(PARTITIONED);
+        metaCacheCfg.setNearConfiguration(null);
+        metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        metaCacheCfg.setEvictionPolicy(null);
+        metaCacheCfg.setBackups(0);
+
+        CacheConfiguration dataCacheCfg = new CacheConfiguration();
+
+        dataCacheCfg.setName("partitioned");
+        dataCacheCfg.setCacheMode(PARTITIONED);
+        dataCacheCfg.setNearConfiguration(null);
+        dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        dataCacheCfg.setEvictionPolicy(null);
+        dataCacheCfg.setBackups(0);
+
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         cfg.setFileSystemConfiguration(igfsCfg);
-
-        CacheConfiguration cacheCfg = new CacheConfiguration();
-
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setBackups(0);
-
-        cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 

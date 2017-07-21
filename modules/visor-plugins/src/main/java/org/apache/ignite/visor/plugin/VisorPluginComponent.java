@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.plugin;
 
-import javax.swing.*;
+import javax.swing.JComponent;
 
 /**
  * Base interface for Visor components.

@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Tests for fields queries.
  */
 public class IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest extends IgniteCachePartitionedFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setPeerClassLoadingEnabled(true);
 

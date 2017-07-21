@@ -17,9 +17,9 @@
 
 package org.apache.ignite.p2p;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 
 /**
  * Private deployment mode test.

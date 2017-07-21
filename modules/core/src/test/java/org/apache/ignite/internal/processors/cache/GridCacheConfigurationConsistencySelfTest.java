@@ -17,39 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.fair.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.eviction.fifo.*;
-import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.cache.eviction.random.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.io.Serializable;
+import java.util.concurrent.Callable;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheInterceptorAdapter;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.eviction.EvictionFilter;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.*;
-import javax.cache.integration.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
+import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  *
@@ -60,7 +68,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private boolean cacheEnabled;
 
     /** */
-    private String cacheName;
+    private String cacheName = DEFAULT_CACHE_NAME;
 
     /** */
     private CacheMode cacheMode = REPLICATED;
@@ -92,8 +100,8 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (useStrLog) {
             strLog = new GridStringLogger(false, cfg.getGridLogger());
@@ -353,6 +361,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             },
@@ -373,7 +382,8 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictionPolicy(new RandomEvictionPolicy());
+                    cfg.setEvictionPolicy(new SortedEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             },
@@ -381,6 +391,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             }
@@ -425,42 +436,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
-                    return null;
-                }
-            }
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDifferentEvictSynchronized() throws Exception {
-        cacheMode = PARTITIONED;
-
-        checkSecondGridStartFails(
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictSynchronized(true);
-
-                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
-
-                    plc.setMaxSize(100);
-
-                    cfg.setEvictionPolicy(plc);
-                    return null;
-                }
-            },
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictSynchronized(false);
-
-                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
-
-                    plc.setMaxSize(100);
-
-                    cfg.setEvictionPolicy(plc);
                     return null;
                 }
             }
@@ -561,19 +536,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 return startGrid(2);
             }
         }, IgniteCheckedException.class, "Affinity partitions count mismatch");
-
-        // Different hash ID resolver.
-        RendezvousAffinityFunction aff0 = new RendezvousAffinityFunction(false, 100);
-
-        aff0.setHashIdResolver(new AffinityNodeIdHashResolver());
-
-        aff = aff0;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(2);
-            }
-        }, IgniteCheckedException.class, "Partitioned cache affinity hash ID resolver class mismatch");
     }
 
     /**
@@ -623,7 +585,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                nearCfg.setNearEvictionPolicy(new RandomEvictionPolicy());
+                nearCfg.setNearEvictionPolicy(new LruEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
 
@@ -663,6 +625,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setAffinity(new TestRendezvousAffinityFunction());
 
                 cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                cfg.setOnheapCacheEnabled(true);
 
                 cfg.setCacheStoreFactory(new IgniteCacheAbstractTest.TestStoreFactory());
                 cfg.setReadThrough(true);
@@ -681,6 +644,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setAffinity(new RendezvousAffinityFunction());
 
                 cfg.setEvictionPolicy(new LruEvictionPolicy());
+                cfg.setOnheapCacheEnabled(true);
 
                 cfg.setCacheStoreFactory(null);
 
@@ -789,23 +753,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testAffinityForReplicatedCache() throws Exception {
         cacheEnabled = true;
 
-        aff = new FairAffinityFunction(); // Check cannot use FairAffinityFunction.
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(1);
-            }
-        }, IgniteCheckedException.class, null);
-
-        aff = new RendezvousAffinityFunction(true); // Check cannot set 'excludeNeighbors' flag.
-        backups = Integer.MAX_VALUE;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(1);
-            }
-        }, IgniteCheckedException.class, null);
-
         aff = new RendezvousAffinityFunction(false, 100);
 
         startGrid(1);
@@ -862,49 +809,9 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }, IgniteCheckedException.class, null);
     }
 
-    /** */
-    private static class TestStore implements CacheStore<Object,Object> {
-        /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<Object, Object> loadAll(Iterable<?> keys) throws CacheLoaderException {
-            return Collections.emptyMap();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<?, ?> entry) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void delete(Object key) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void deleteAll(Collection<?> keys) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sessionEnd(boolean commit) {
-            // No-op.
-        }
-    }
-
+    /**
+     *
+     */
     private static class TestRendezvousAffinityFunction extends RendezvousAffinityFunction {
         /**
          * Empty constructor required by {@link Externalizable}.
@@ -941,6 +848,10 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         // No-op, just different class.
     }
 
+    /**
+     *
+     */
     private static class TestCacheDefaultAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper {
+        // No-op, just different class.
     }
 }

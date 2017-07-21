@@ -17,33 +17,46 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests correct cache stopping.
  */
 public class GridCacheStopSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-257");
-    }
+    /** */
+    private static final String EXPECTED_MSG = "Cache has been closed or destroyed";
 
     /** */
-    private static final String EXPECTED_MSG = "Grid is in invalid state to perform this operation. " +
-        "It either not started yet or has already being or have stopped";
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private boolean atomic;
@@ -52,22 +65,23 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     private boolean replicated;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
-        disc.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+        disc.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disc);
 
-        CacheConfiguration ccfg  = new CacheConfiguration();
+        CacheConfiguration ccfg  = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(replicated ? REPLICATED : PARTITIONED);
 
-        ccfg.setAtomicityMode(atomic ? ATOMIC : TRANSACTIONAL);
+        if (!replicated)
+            ccfg.setBackups(1);
 
-        ccfg.setSwapEnabled(true);
+        ccfg.setAtomicityMode(atomic ? ATOMIC : TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -121,6 +135,112 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testStopMultithreaded() throws Exception {
+        try {
+            startGrid(0);
+
+            for (int i = 0; i < 5; i++) {
+                log.info("Iteration: " + i);
+
+                startGridsMultiThreaded(1, 3);
+
+                final AtomicInteger threadIdx = new AtomicInteger(0);
+
+                final IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        int idx = threadIdx.getAndIncrement();
+
+                        IgniteKernal node = (IgniteKernal)ignite(idx % 3 + 1);
+
+                        IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
+
+                        while (true) {
+                            try {
+                                cacheOperations(node, cache);
+                            }
+                            catch (Exception ignored) {
+                                if (node.isStopping())
+                                    break;
+                            }
+                        }
+
+                        return null;
+                    }
+                }, 20, "tx-node-stop-thread");
+
+                IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        IgniteKernal node = (IgniteKernal)ignite(0);
+
+                        IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
+
+                        while (!fut1.isDone()) {
+                            try {
+                                cacheOperations(node, cache);
+                            }
+                            catch (Exception ignore) {
+                                // No-op.
+                            }
+                        }
+
+                        return null;
+                    }
+                }, 2, "tx-thread");
+
+                Thread.sleep(3000);
+
+                final AtomicInteger nodeIdx = new AtomicInteger(1);
+
+                GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        int idx = nodeIdx.getAndIncrement();
+
+                        log.info("Stop node: " + idx);
+
+                        ignite(idx).close();
+
+                        return null;
+                    }
+                }, 3, "stop-node");
+
+                fut1.get();
+                fut2.get();
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @param node Node.
+     * @param cache Cache.
+     */
+    private void cacheOperations(Ignite node, IgniteCache<Integer, Integer> cache) {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt(1000);
+
+        cache.put(key, key);
+
+        cache.get(key);
+
+        try (Transaction tx = node.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            cache.put(key, key);
+
+            tx.commit();
+        }
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.put(key, key);
+
+            tx.commit();
+        }
+    }
+
+    /**
      * @param startTx If {@code true} starts transactions.
      * @throws Exception If failed.
      */
@@ -134,12 +254,14 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch readyLatch = new CountDownLatch(PUT_THREADS);
 
-            final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache);
 
-            assertEquals(atomic ? ATOMIC : TRANSACTIONAL, cache.getConfiguration(CacheConfiguration.class).getAtomicityMode());
-            assertEquals(replicated ? REPLICATED : PARTITIONED, cache.getConfiguration(CacheConfiguration.class).getCacheMode());
+            CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+            assertEquals(atomic ? ATOMIC : TRANSACTIONAL, ccfg.getAtomicityMode());
+            assertEquals(replicated ? REPLICATED : PARTITIONED, ccfg.getCacheMode());
 
             Collection<IgniteInternalFuture<?>> putFuts = new ArrayList<>();
 
@@ -148,28 +270,35 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
                 putFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        if (startTx) {
-                            try (Transaction tx = grid(0).transactions().txStart()) {
-                                cache.put(key, key);
+                        try {
+                            if (startTx) {
+                                TransactionConcurrency concurrency = key % 2 == 0 ? OPTIMISTIC : PESSIMISTIC;
 
+                                try (Transaction tx = grid(0).transactions().txStart(concurrency, REPEATABLE_READ)) {
+                                    cache.put(key, key);
+
+                                    readyLatch.countDown();
+
+                                    stopLatch.await();
+
+                                    tx.commit();
+                                }
+                            }
+                            else {
                                 readyLatch.countDown();
 
                                 stopLatch.await();
 
-                                tx.commit();
+                                cache.put(key, key);
                             }
                         }
-                        else {
-                            readyLatch.countDown();
-
-                            stopLatch.await();
-
-                            cache.put(key, key);
+                        catch (CacheException | IgniteException | IllegalStateException e) {
+                            log.info("Ignore error: " + e);
                         }
 
                         return null;
                     }
-                }));
+                }, "cache-thread"));
             }
 
             readyLatch.await();
@@ -178,26 +307,18 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             stopGrid(0);
 
-            for (IgniteInternalFuture<?> fut : putFuts) {
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    if (!e.getMessage().startsWith(EXPECTED_MSG))
-                        e.printStackTrace();
-
-                    assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().startsWith(EXPECTED_MSG));
-                }
-            }
+            for (IgniteInternalFuture<?> fut : putFuts)
+                fut.get();
 
             try {
                 cache.put(1, 1);
             }
             catch (IllegalStateException e) {
-                if (!e.getMessage().startsWith(EXPECTED_MSG))
+                if (!X.hasCause(e, CacheStoppedException.class)) {
                     e.printStackTrace();
 
-                assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().startsWith(EXPECTED_MSG));
+                    fail("Unexpected exception: " + e);
+                }
             }
         }
     }

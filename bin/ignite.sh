@@ -90,7 +90,11 @@ fi
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
 if [ -z "$JVM_OPTS" ] ; then
-    JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+    if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+    else
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+    fi
 fi
 
 #
@@ -121,6 +125,15 @@ ENABLE_ASSERTIONS="1"
 #
 if [ "${ENABLE_ASSERTIONS}" = "1" ]; then
     JVM_OPTS="${JVM_OPTS} -ea"
+fi
+
+#
+# If this is a Hadoop edition, and HADOOP_HOME set, add the native library location:
+#
+if [ -d "${IGNITE_HOME}/libs/ignite-hadoop/" ] && [ -n "${HADOOP_HOME}" ] && [ -d "${HADOOP_HOME}/lib/native/" ]; then
+   if [[ "${JVM_OPTS}${JVM_XOPTS}" != *-Djava.library.path=* ]]; then
+      JVM_OPTS="${JVM_OPTS} -Djava.library.path=${HADOOP_HOME}/lib/native/"
+   fi
 fi
 
 #

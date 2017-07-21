@@ -17,10 +17,13 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs;
 
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 
 /**
  * GridTcpDiscoverySharedFsIpFinder test.
@@ -52,5 +55,26 @@ public class TcpDiscoverySharedFsIpFinderSelfTest
         finder.setPath(tmpFile.getAbsolutePath());
 
         return finder;
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testUniqueNames() throws Exception {
+        InetSocketAddress node1 = new InetSocketAddress("10.7.7.7", 4343);
+        InetAddress ia = InetAddress.getByAddress("localhost", new byte[] {10, 7, 7, 7});
+        InetSocketAddress node2 = new InetSocketAddress(ia, 4343);
+
+        List<InetSocketAddress> initAddrs = Arrays.asList(node1, node2);
+
+        finder.registerAddresses(initAddrs);
+
+        assertEquals("Wrong collection size", 1, finder.getRegisteredAddresses().size());
+
+        finder.unregisterAddresses(initAddrs);
+
+        assertEquals("Wrong collection size", 0, finder.getRegisteredAddresses().size());
+
+        finder.close();
     }
 }

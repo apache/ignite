@@ -17,14 +17,19 @@
 
 package org.apache.ignite.tools;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.util.antgar.*;
-import org.apache.tools.ant.*;
-
-import java.io.*;
-import java.util.zip.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Project;
 
 /**
  * Tests for Ant task generating GAR file.

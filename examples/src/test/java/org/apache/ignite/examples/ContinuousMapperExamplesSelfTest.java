@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.computegrid.ComputeContinuousMapperExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * ContinuousMapperExample self test.

@@ -17,17 +17,18 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.C2;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
 /**
  * Tests grid embedded future use cases.

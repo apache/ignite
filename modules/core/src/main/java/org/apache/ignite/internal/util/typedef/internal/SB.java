@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef.internal;
 
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * Defines internal {@code typedef} for {@link GridStringBuilder}. Since Java doesn't provide type aliases

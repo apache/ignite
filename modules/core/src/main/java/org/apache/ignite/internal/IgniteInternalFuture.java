@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
@@ -69,6 +71,16 @@ public interface IgniteInternalFuture<R> {
     public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
 
     /**
+     * Synchronously waits for completion of the computation and returns computation result ignoring interrupts.
+     *
+     * @return Computation result.
+     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation
+     *     was cancelled.
+     * @throws IgniteCheckedException If computation failed.
+     */
+    public R getUninterruptibly() throws IgniteCheckedException;
+
+    /**
      * Cancels this future.
      *
      * @return {@code True} if future was canceled (i.e. was not finished prior to this call).
@@ -91,21 +103,6 @@ public interface IgniteInternalFuture<R> {
     public boolean isCancelled();
 
     /**
-     * Gets start time for this future.
-     *
-     * @return Start time for this future.
-     */
-    public long startTime();
-
-    /**
-     * Gets duration in milliseconds between start of the future and current time if future
-     * is not finished, or between start and finish of this future.
-     *
-     * @return Time in milliseconds this future has taken to execute.
-     */
-    public long duration();
-
-    /**
      * Registers listener closure to be asynchronously notified whenever future completes.
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
@@ -120,6 +117,16 @@ public interface IgniteInternalFuture<R> {
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
+
+    /**
+     * Make a chained future to convert result of this future (when complete) into a new format.
+     * It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
+     * @param exec Executor to run callback.
+     * @return Chained future that finishes after this future completes and done callback is called.
+     */
+    public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb, Executor exec);
 
     /**
      * @return Error value if future has already been completed with error.

@@ -17,16 +17,20 @@
 
 package org.apache.ignite.jdbc;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
-
-import java.sql.*;
-import java.util.concurrent.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.concurrent.Callable;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Connection test.
@@ -48,10 +52,10 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     private static final String HOST = "127.0.0.1";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(CUSTOM_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -63,7 +67,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        if (!gridName.endsWith("0"))
+        if (!igniteInstanceName.endsWith("0"))
             clientCfg.setPort(CUSTOM_PORT);
 
         cfg.setConnectorConfiguration(clientCfg);
@@ -76,7 +80,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String name) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String name) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
@@ -87,8 +91,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

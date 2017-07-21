@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 
 /**
  * Tests for DUAL_SYNC mode.

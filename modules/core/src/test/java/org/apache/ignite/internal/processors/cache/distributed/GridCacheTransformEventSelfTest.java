@@ -17,31 +17,48 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
-import org.eclipse.jetty.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 
-import javax.cache.processor.*;
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Test for TRANSFORM events recording.
@@ -56,9 +73,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
-
-    /** Closure name. */
-    private static final String CLO_NAME = Transformer.class.getName();
 
     /** Key 1. */
     private Integer key1;
@@ -81,7 +95,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** Caches. */
     private IgniteCache<Integer, Integer>[] caches;
 
-    /** Recorded events.*/
+    /** Recorded events. */
     private ConcurrentHashSet<CacheEvent> evts;
 
     /** Cache mode. */
@@ -97,8 +111,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private TransactionIsolation txIsolation;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -109,14 +123,13 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         tCfg.setDefaultTxConcurrency(txConcurrency);
         tCfg.setDefaultTxIsolation(txIsolation);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(BACKUP_CNT);
@@ -163,7 +176,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         evts = new ConcurrentHashSet<>();
 
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT, true);
+
+        if (cacheMode == REPLICATED)
+            awaitPartitionMapExchange();
 
         ignites = new Ignite[GRID_CNT];
         ids = new UUID[GRID_CNT];
@@ -457,13 +473,25 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         caches[0].invoke(key1, new Transformer());
 
-        checkEventNodeIdsStrict(primaryIdsForKeys(key1));
+        checkEventNodeIdsStrict(Transformer.class.getName(), primaryIdsForKeys(key1));
 
         assert evts.isEmpty();
 
         caches[0].invokeAll(keys, new Transformer());
 
-        checkEventNodeIdsStrict(primaryIdsForKeys(key1, key2));
+        checkEventNodeIdsStrict(Transformer.class.getName(), primaryIdsForKeys(key1, key2));
+
+        assert evts.isEmpty();
+
+        caches[0].invoke(key1, new TransformerWithInjection());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), primaryIdsForKeys(key1));
+
+        assert evts.isEmpty();
+
+        caches[0].invokeAll(keys, new TransformerWithInjection());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), primaryIdsForKeys(key1, key2));
     }
 
     /**
@@ -472,7 +500,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param txConcurrency TX concurrency.
      * @param txIsolation TX isolation.
-     *
      * @throws Exception If failed.
      */
     private void checkTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
@@ -485,13 +512,29 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         System.out.println("AFTER: " + evts.size());
 
-        checkEventNodeIdsStrict(idsForKeys(key1));
+        checkEventNodeIdsStrict(Transformer.class.getName(), idsForKeys(key1));
 
         assert evts.isEmpty();
 
         caches[0].invokeAll(keys, new Transformer());
 
-        checkEventNodeIdsStrict(idsForKeys(key1, key2));
+        checkEventNodeIdsStrict(Transformer.class.getName(), idsForKeys(key1, key2));
+
+        assert evts.isEmpty();
+
+        System.out.println("BEFORE: " + evts.size());
+
+        caches[0].invoke(key1, new TransformerWithInjection());
+
+        System.out.println("AFTER: " + evts.size());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), idsForKeys(key1));
+
+        assert evts.isEmpty();
+
+        caches[0].invokeAll(keys, new TransformerWithInjection());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), idsForKeys(key1, key2));
     }
 
     /**
@@ -552,9 +595,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /**
      * Ensure that events were recorded on the given nodes.
      *
+     * @param cClsName Entry processor class name.
      * @param ids Event IDs.
      */
-    private void checkEventNodeIdsStrict(UUID... ids) {
+    private void checkEventNodeIdsStrict(String cClsName, UUID... ids) {
         if (ids == null)
             assertTrue(evts.isEmpty());
         else {
@@ -565,7 +609,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
                 for (CacheEvent evt : evts) {
                     if (F.eq(id, evt.node().id())) {
-                        assertEquals(CLO_NAME, evt.closureClassName());
+                        assertEquals(cClsName, evt.closureClassName());
 
                         foundEvt = evt;
 
@@ -600,6 +644,24 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private static class Transformer implements EntryProcessor<Integer, Integer, Void>, Serializable {
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            e.setValue(e.getValue() + 1);
+
+            return null;
+        }
+    }
+
+    /**
+     * Transform closure.
+     */
+    private static class TransformerWithInjection implements EntryProcessor<Integer, Integer, Void>, Serializable {
+        /** */
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            assert ignite != null;
+
             e.setValue(e.getValue() + 1);
 
             return null;

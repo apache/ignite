@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Generic map with an upper bound. Once map reaches its maximum capacity,

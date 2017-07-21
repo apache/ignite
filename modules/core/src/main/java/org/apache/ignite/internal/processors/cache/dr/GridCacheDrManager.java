@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.dr;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dr.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheManager;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Replication manager class which processes all replication events.
@@ -42,6 +44,7 @@ public interface GridCacheDrManager extends GridCacheManager {
      * @param expireTime Expire time.
      * @param ver Version.
      * @param drType Replication type.
+     * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
     public void replicate(KeyCacheObject key,
@@ -49,16 +52,17 @@ public interface GridCacheDrManager extends GridCacheManager {
         long ttl,
         long expireTime,
         GridCacheVersion ver,
-        GridDrType drType)throws IgniteCheckedException;
+        GridDrType drType,
+        AffinityTopologyVersion topVer)throws IgniteCheckedException;
 
     /**
-     * Process partitions "before exchange" event.
+     * Process partitions exchange event.
      *
      * @param topVer Topology version.
      * @param left {@code True} if exchange has been caused by node leave.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
+    public void onExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
 
     /**
      * @return {@code True} is DR is enabled.

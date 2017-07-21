@@ -17,14 +17,15 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.resources.CacheNameResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Test store that generates objects on demand.

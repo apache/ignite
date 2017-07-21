@@ -17,16 +17,28 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Externalizable;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.internal.AsyncSupportAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -86,28 +98,23 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) {
-        return cluster.mapKeysToNodes(cacheName, keys);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) {
-        return cluster.mapKeyToNode(cacheName, key);
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterStartNodeResult> startNodes(File file,
         boolean restart,
         int timeout,
         int maxConn)
     {
         try {
-            return saveOrGet(cluster.startNodesAsync(file, restart, timeout, maxConn));
+            return saveOrGet(cluster.startNodesAsync0(file, restart, timeout, maxConn));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart,
+        int timeout, int maxConn) throws IgniteException {
+        return cluster.startNodesAsync(file, restart, timeout, maxConn);
     }
 
     /** {@inheritDoc} */
@@ -119,11 +126,18 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
         int maxConn)
     {
         try {
-            return saveOrGet(cluster.startNodesAsync(hosts, dflts, restart, timeout, maxConn));
+            return saveOrGet(cluster.startNodesAsync0(hosts, dflts, restart, timeout, maxConn));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
+        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts,
+        boolean restart, int timeout, int maxConn) throws IgniteException {
+        return cluster.startNodesAsync(hosts, dflts, restart, timeout, maxConn);
     }
 
     /** {@inheritDoc} */
@@ -287,6 +301,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+        return cluster.clientReconnectFuture();
+    }
+
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cluster = (IgniteClusterImpl)in.readObject();
     }
@@ -294,14 +313,5 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(cluster);
-    }
-
-    /**
-     * @return Cluster async instance.
-     *
-     * @throws ObjectStreamException If failed.
-     */
-    protected Object readResolve() throws ObjectStreamException {
-        return cluster.withAsync();
     }
 }

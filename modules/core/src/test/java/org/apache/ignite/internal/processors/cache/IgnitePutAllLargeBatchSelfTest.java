@@ -17,20 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
  * Tests putAll method with large number of keys.
@@ -46,19 +53,19 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     private int backups = 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Test cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -152,7 +159,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         try {
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             int keyCnt = 200;
 
@@ -162,7 +169,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             // Create readers if near cache is enabled.
             for (int g = 1; g < 2; g++) {
                 for (int i = 30; i < 70; i++)
-                    ((IgniteKernal)grid(g)).getCache(null).get(i);
+                    ((IgniteKernal)grid(g)).getCache(DEFAULT_CACHE_NAME).get(i);
             }
 
             info(">>> Starting test tx.");
@@ -184,7 +191,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < GRID_CNT; g++) {
                 IgniteKernal k = (IgniteKernal)grid(g);
 
-                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache();
+                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
                 assertEquals(0, cacheAdapter.context().tm().idMapSize());
 
@@ -211,12 +218,12 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             }
 
             for (int g = 0; g < GRID_CNT; g++) {
-                IgniteCache<Object, Object> checkCache =grid(g).cache(null);
+                IgniteCache<Object, Object> checkCache =grid(g).cache(DEFAULT_CACHE_NAME);
 
                 ClusterNode checkNode = grid(g).localNode();
 
                 for (int i = 0; i < keyCnt; i++) {
-                    if (grid(g).affinity(null).isPrimaryOrBackup(checkNode, i))
+                    if (grid(g).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(checkNode, i))
                         assertEquals(i * i, checkCache.localPeek(i, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
                 }
             }
@@ -277,7 +284,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         try {
             Map<Integer, Integer> checkMap = new HashMap<>();
 
-            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             for (int r = 0; r < 3; r++) {
                 for (int i = 0; i < 10; i++) {

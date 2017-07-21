@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.GridAtomicInteger;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Checks that number of concurrent asynchronous operations is limited when configuration parameter is set.
@@ -38,8 +36,8 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cCfg = super.cacheConfiguration(igniteInstanceName);
 
         cCfg.setMaxConcurrentAsyncOperations(MAX_CONCURRENT_ASYNC_OPS);
 
@@ -58,13 +56,7 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
 
             cnt.incrementAndGet();
 
-            IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
-
-            cacheAsync.put("key" + i, i);
-
-            IgniteFuture<?> fut = cacheAsync.future();
-
-            fut.listen(new CI1<IgniteFuture<?>>() {
+            jcache().putAsync("key" + i, i).listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> t) {
                     cnt.decrementAndGet();
 

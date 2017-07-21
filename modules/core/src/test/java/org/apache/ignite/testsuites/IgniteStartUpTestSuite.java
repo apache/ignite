@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.startup.cmdline.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.startup.cmdline.GridCommandLineTransformerSelfTest;
 
 /**
  * Loaders self-test suite.

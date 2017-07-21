@@ -17,8 +17,8 @@
 
 package org.apache.ignite.lang;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Future computation cannot be retrieved because it was cancelled.

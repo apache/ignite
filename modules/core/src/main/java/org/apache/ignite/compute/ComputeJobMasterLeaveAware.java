@@ -17,7 +17,7 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Annotation for handling master node leave during job execution.

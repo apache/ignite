@@ -17,14 +17,18 @@
 
 package org.apache.ignite.logger.java;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.logging.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+import java.util.logging.FileHandler;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
+import java.util.logging.StreamHandler;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * File logging handler which skips all the messages until node ID is set.
@@ -76,7 +80,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      *
      * @param nodeId Node id.
      */
-    public void nodeId(UUID nodeId) throws IgniteCheckedException, IOException {
+    public void nodeId(UUID nodeId, String workDir) throws IgniteCheckedException, IOException {
         if (delegate != null)
             return;
 
@@ -87,7 +91,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
         if (ptrn == null)
             ptrn = "ignite-%{id8}.%g.log";
 
-        ptrn = new File(logDirectory(), ptrn.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
+        ptrn = new File(logDirectory(workDir), ptrn.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
 
         int limit = getIntProperty(clsName + ".limit", 0);
 
@@ -129,10 +133,12 @@ public final class JavaLoggerFileHandler extends StreamHandler {
     /**
      * Resolves logging directory.
      *
+     * @param workDir Work directory.
      * @return Logging directory.
      */
-    private static File logDirectory() throws IgniteCheckedException {
-        return !F.isEmpty(U.IGNITE_LOG_DIR) ? new File(U.IGNITE_LOG_DIR) : U.resolveWorkDirectory("log", false);
+    private static File logDirectory(String workDir) throws IgniteCheckedException {
+        return !F.isEmpty(U.IGNITE_LOG_DIR) ? new File(U.IGNITE_LOG_DIR) :
+            U.resolveWorkDirectory(workDir, "log", false);
     }
 
     /**

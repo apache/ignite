@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 
 /**
  * Interface for all processors.

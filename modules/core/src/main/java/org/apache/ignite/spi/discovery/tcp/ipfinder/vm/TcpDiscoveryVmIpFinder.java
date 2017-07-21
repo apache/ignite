@@ -17,18 +17,23 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
-import java.net.*;
-import java.util.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_DISCOVERY_ADDRESSES;
 
 /**
  * IP Finder which works only with pre-configured list of IP addresses specified
@@ -124,11 +129,12 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * @param addrs Known nodes addresses.
      * @throws IgniteSpiException If any error occurs.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public synchronized void setAddresses(Collection<String> addrs) throws IgniteSpiException {
+    public synchronized TcpDiscoveryVmIpFinder setAddresses(Collection<String> addrs) throws IgniteSpiException {
         if (F.isEmpty(addrs))
-            return;
+            return this;
 
         Collection<InetSocketAddress> newAddrs = new LinkedHashSet<>();
 
@@ -136,6 +142,8 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
             newAddrs.addAll(address(ipStr));
 
         this.addrs = newAddrs;
+
+        return this;
     }
 
     /**
@@ -253,6 +261,13 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
         this.addrs = new LinkedHashSet<>(this.addrs);
 
         this.addrs.removeAll(addrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryVmIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /** {@inheritDoc} */

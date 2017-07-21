@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Key for system utility cache.
@@ -27,8 +27,8 @@ public abstract class GridCacheUtilityKey<K extends GridCacheUtilityKey> impleme
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked") @Override
-    public final boolean equals(Object obj) {
+    @SuppressWarnings("unchecked")
+    @Override public final boolean equals(Object obj) {
         return obj == this || obj != null && obj.getClass() == getClass() && equalsx((K)obj);
     }
 

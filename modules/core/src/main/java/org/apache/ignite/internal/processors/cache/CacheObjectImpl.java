@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -46,20 +49,37 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         cpy = cpy && needCopy(ctx);
 
         try {
+            GridKernalContext kernalCtx = ctx.kernalContext();
+
+            IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
+
             if (cpy) {
                 if (valBytes == null) {
                     assert val != null;
 
-                    valBytes = ctx.processor().marshal(ctx, val);
+                    valBytes = proc.marshal(ctx, val);
                 }
 
-                return (T)ctx.processor().unmarshal(ctx, valBytes,
-                    val == null ? ctx.kernalContext().config().getClassLoader() : val.getClass().getClassLoader());
+                ClassLoader clsLdr;
+
+                if (val != null)
+                    clsLdr = val.getClass().getClassLoader();
+                else if (kernalCtx.config().isPeerClassLoadingEnabled())
+                    clsLdr = kernalCtx.cache().context().deploy().globalLoader();
+                else
+                    clsLdr = null;
+
+                return (T)proc.unmarshal(ctx, valBytes, clsLdr);
             }
 
             if (val != null)
@@ -67,7 +87,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             assert valBytes != null;
 
-            Object val = ctx.processor().unmarshal(ctx, valBytes, ctx.kernalContext().config().getClassLoader());
+            Object val = proc.unmarshal(ctx, valBytes, kernalCtx.config().isPeerClassLoadingEnabled() ?
+                kernalCtx.cache().context().deploy().globalLoader() : null);
 
             if (ctx.storeValue())
                 this.val = val;
@@ -77,19 +98,18 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshall object.", e);
         }
-
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.processor().marshal(ctx, val);
+            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
 
         return valBytes;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
         if (valBytes == null)
@@ -97,15 +117,20 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
         if (val == null && ctx.storeValue())
-            val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, valBytes, ldr);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
         return 89;
     }
 

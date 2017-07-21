@@ -17,14 +17,23 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.File;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.CFG;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.HOST;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.IGNITE_HOME;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.KEY;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.NODES;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.PASSWD;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.PORT;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.SCRIPT;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.UNAME;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 
 /**
  * Tests for {@link org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils}.

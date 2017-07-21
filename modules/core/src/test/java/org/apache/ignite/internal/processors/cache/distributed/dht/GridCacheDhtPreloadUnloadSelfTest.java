@@ -17,22 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 
 /**
  * Test large cache counts.
@@ -77,8 +83,8 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -125,7 +131,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
             int cnt = 1000;
 
-            populate(grid(0).<Integer, String>cache(null), cnt);
+            populate(grid(0).<Integer, String>cache(DEFAULT_CACHE_NAME), cnt);
 
             int gridCnt = 2;
 
@@ -152,7 +158,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
             int cnt = 1000;
 
-            populate(grid(0).<Integer, String>cache(null), cnt);
+            populate(grid(0).<Integer, String>cache(DEFAULT_CACHE_NAME), cnt);
 
             int gridCnt = 2;
 
@@ -167,10 +173,10 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             Thread.sleep(wait);
 
             for (int i = 0; i < gridCnt; i++)
-                info("Grid size [i=" + i + ", size=" + grid(i).cache(null).localSize() + ']');
+                info("Grid size [i=" + i + ", size=" + grid(i).cache(DEFAULT_CACHE_NAME).localSize() + ']');
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).cache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
                 // Nothing should be unloaded since nodes are backing up each other.
                 assertEquals(cnt, c.localSize(CachePeekMode.ALL));
@@ -197,7 +203,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             boolean err = false;
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).cache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
                 if (c.localSize() >= cnt)
                     err = true;
@@ -210,10 +216,10 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < gridCnt; i++)
-            info("Grid size [i=" + i + ", size=" + grid(i).cache(null).localSize() + ']');
+            info("Grid size [i=" + i + ", size=" + grid(i).cache(DEFAULT_CACHE_NAME).localSize() + ']');
 
         for (int i = 0; i < gridCnt; i++) {
-            IgniteCache<Integer, String> c = grid(i).cache(null);
+            IgniteCache<Integer, String> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
             assert c.localSize() < cnt;
         }
@@ -231,7 +237,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
             int cnt = 1000;
 
-            populate(grid(0).<Integer, String>cache(null), cnt);
+            populate(grid(0).<Integer, String>cache(DEFAULT_CACHE_NAME), cnt);
 
             int gridCnt = 3;
 
@@ -239,7 +245,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
                 for (int j = 0; j <= i; j++)
-                    info("Grid size [i=" + i + ", size=" + grid(j).cache(null).localSize() + ']');
+                    info("Grid size [i=" + i + ", size=" + grid(j).cache(DEFAULT_CACHE_NAME).localSize() + ']');
             }
 
             long wait = 3000;
@@ -265,10 +271,10 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) {
                     if (evt == LifecycleEventType.AFTER_NODE_START) {
-                        IgniteCache<Integer, String> c = ignite.cache(null);
+                        IgniteCache<Integer, String> c = ignite.cache(DEFAULT_CACHE_NAME);
 
                         if (c.putIfAbsent(-1, "true")) {
-                            populate(ignite.<Integer, String>cache(null), cnt);
+                            populate(ignite.<Integer, String>cache(DEFAULT_CACHE_NAME), cnt);
 
                             info(">>> POPULATED GRID <<<");
                         }
@@ -282,7 +288,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
                 for (int j = 0; j < i; j++)
-                    info("Grid size [i=" + i + ", size=" + grid(j).cache(null).localSize() + ']');
+                    info("Grid size [i=" + i + ", size=" + grid(j).cache(DEFAULT_CACHE_NAME).localSize() + ']');
             }
 
             long wait = 3000;

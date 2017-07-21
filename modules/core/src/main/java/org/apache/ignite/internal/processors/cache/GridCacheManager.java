@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Interface for cache managers.
@@ -35,8 +36,9 @@ public interface GridCacheManager<K, V> {
      * Stops manager.
      *
      * @param cancel Cancel flag.
+     * @param destroy Cache destroy flag.
      */
-    public void stop(boolean cancel);
+    public void stop(boolean cancel, boolean destroy);
 
     /**
      * @throws IgniteCheckedException If failed.
@@ -47,6 +49,11 @@ public interface GridCacheManager<K, V> {
      * @param cancel Cancel flag.
      */
     public void onKernalStop(boolean cancel);
+
+    /**
+     * @param reconnectFut Reconnect future.
+     */
+    public void onDisconnected(IgniteFuture<?> reconnectFut);
 
     /**
      * Prints memory statistics (sizes of internal data structures, etc.).

@@ -17,14 +17,23 @@
 
 package org.apache.ignite.testframework.junits;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.ExecutorService;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridKernalGatewayImpl;
+import org.apache.ignite.internal.GridLoggerProxy;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test context.
@@ -33,22 +42,47 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     /**
      * @param log Logger to use in context config.
      */
-    public GridTestKernalContext(IgniteLogger log) throws IgniteCheckedException {
+    public GridTestKernalContext(IgniteLogger log) {
+        this(log, new IgniteConfiguration());
+
+        try {
+            add(new IgnitePluginProcessor(this, config(), Collections.<PluginProvider>emptyList()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IllegalStateException("Must not fail for empty plugins list.", e);
+        }
+    }
+
+    /**
+     * @param log Logger to use in context config.
+     * @param cfg Configuration to use in Test
+     */
+    public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) {
         super(new GridLoggerProxy(log, null, null, null),
-            new IgniteKernal(null),
-            new IgniteConfiguration(),
-            new GridKernalGatewayImpl(null),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            U.allPluginProviders());
+                new IgniteKernal(null),
+                cfg,
+                new GridKernalGatewayImpl(null),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                U.allPluginProviders()
+        );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
+        GridTestUtils.setFieldValue(grid(), "ctx", this);
 
         config().setGridLogger(log);
     }
@@ -79,11 +113,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridTestKernalContext.class, this, super.toString());
-    }
-
     /**
      * Sets system executor service.
      *
@@ -93,7 +122,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this.sysExecSvc = sysExecSvc;
     }
 
-
     /**
      * Sets executor service.
      *
@@ -101,5 +129,10 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void setExecutorService(ExecutorService execSvc){
         this.execSvc = execSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridTestKernalContext.class, this, super.toString());
     }
 }

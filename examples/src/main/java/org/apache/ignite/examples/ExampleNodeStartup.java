@@ -17,7 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 
 /**
  * Starts up an empty node with example compute configuration.

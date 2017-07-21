@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.jobmetrics.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessorLoadTest;
 
 /**
  * Job metrics self test suite.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.P1;
 
 /**
  * Filter for event consume test.

@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ThreadLocalRandom8;
 
 /**
  *
@@ -154,7 +156,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testForceClose() throws Exception {
-        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 
@@ -195,7 +197,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadAfterClose() throws Exception {
-        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 
@@ -233,7 +235,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWriteAfterClose() throws Exception {
-        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 

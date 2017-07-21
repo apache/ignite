@@ -17,17 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests for local transactions.
@@ -207,78 +219,98 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws Exception If failed.
      */
     public void testOptimisticSerializableConsistency() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-582");
+        final IgniteCache<Integer, Long> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        final IgniteCache<Integer, Long> cache = grid(0).cache(null);
-
-        final int THREADS = 2;
+        final int THREADS = 3;
 
         final int ITERATIONS = 100;
 
-        final int key = 0;
+        for (int key0 = 100_000; key0 < 100_000 + 20; key0++) {
+            final int key = key0;
 
-        cache.put(key, 0L);
+            cache.put(key, 0L);
 
-        List<IgniteInternalFuture<Collection<Long>>> futs = new ArrayList<>(THREADS);
+            List<IgniteInternalFuture<Collection<Long>>> futs = new ArrayList<>(THREADS);
 
-        for (int i = 0; i < THREADS; i++) {
-            futs.add(GridTestUtils.runAsync(new Callable<Collection<Long>>() {
-                @Override public Collection<Long> call() throws Exception {
-                    Collection<Long> res = new ArrayList<>();
+            for (int i = 0; i < THREADS; i++) {
+                futs.add(GridTestUtils.runAsync(new Callable<Collection<Long>>() {
+                    @Override public Collection<Long> call() throws Exception {
+                        Collection<Long> res = new ArrayList<>();
 
-                    for (int i = 0; i < ITERATIONS; i++) {
-                        while (true) {
-                            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                                long val = cache.get(key);
+                        for (int i = 0; i < ITERATIONS; i++) {
+                            while (true) {
+                                try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                                    long val = cache.get(key);
 
-                                cache.put(key, val + 1);
+                                    cache.put(key, val + 1);
 
-                                tx.commit();
+                                    tx.commit();
 
-                                assertTrue(res.add(val + 1));
+                                    assertTrue(res.add(val + 1));
+
+                                    break;
+                                }
+                                catch (TransactionOptimisticException ignored) {
+                                    // Retry.
+                                }
+                            }
+                        }
+
+                        return res;
+                    }
+                }));
+            }
+
+            long total = 0;
+
+            List<Collection<Long>> cols = new ArrayList<>(THREADS);
+
+            for (IgniteInternalFuture<Collection<Long>> fut : futs) {
+                Collection<Long> col = fut.get();
+
+                assertEquals(ITERATIONS, col.size());
+
+                total += col.size();
+
+                cols.add(col);
+            }
+
+            log.info("Cache value: " + cache.get(key));
+
+            Set<Long> duplicates = new HashSet<>();
+
+            for (Collection<Long> col1 : cols) {
+                for (Long val1 : col1) {
+                    for (Collection<Long> col2 : cols) {
+                        if (col1 == col2)
+                            continue;
+
+                        for (Long val2 : col2) {
+                            if (val1.equals(val2)) {
+                                duplicates.add(val2);
 
                                 break;
                             }
-                            catch(TransactionOptimisticException e) {
-                                log.info("Got error, will retry: " + e);
-                            }
-                        }
-                    }
-
-                    return res;
-                }
-            }));
-        }
-
-        List<Collection<Long>> cols = new ArrayList<>(THREADS);
-
-        for (IgniteInternalFuture<Collection<Long>> fut : futs) {
-            Collection<Long> col = fut.get();
-
-            assertEquals(ITERATIONS, col.size());
-
-            cols.add(col);
-        }
-
-        Set<Long> duplicates = new HashSet<>();
-
-        for (Collection<Long> col1 : cols) {
-            for (Long val1 : col1) {
-                for (Collection<Long> col2 : cols) {
-                    if (col1 == col2)
-                        continue;
-
-                    for (Long val2 : col2) {
-                        if (val1.equals(val2)) {
-                            duplicates.add(val2);
-
-                            break;
                         }
                     }
                 }
             }
-        }
 
-        assertTrue("Found duplicated values: " + duplicates, duplicates.isEmpty());
+            assertTrue("Found duplicated values: " + duplicates, duplicates.isEmpty());
+
+            assertEquals((long)THREADS * ITERATIONS, total);
+
+            // Try to update one more time to make sure cache is in consistent state.
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                long val = cache.get(key);
+
+                cache.put(key, val);
+
+                tx.commit();
+            }
+
+            for (int i = 0; i < gridCount(); i++)
+                assertEquals(total, grid(i).cache(DEFAULT_CACHE_NAME).get(key));
+        }
     }
 }

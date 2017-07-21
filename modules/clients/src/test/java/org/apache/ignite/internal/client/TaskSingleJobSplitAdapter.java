@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 
 /**
  * Adapter for {@link org.apache.ignite.compute.ComputeTaskSplitAdapter}

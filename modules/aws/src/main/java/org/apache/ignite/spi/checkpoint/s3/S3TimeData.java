@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Helper class that keeps checkpoint expiration date inside to track and delete

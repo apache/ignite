@@ -1,0 +1,290 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E2DEA693-F2EA-43C2-A813-053378F6E4DB}</ProjectGuid>
+    <RootNamespace>core</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OptimizeReferences>false</OptimizeReferences>
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OptimizeReferences>false</OptimizeReferences>
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(JAVA_HOME)\lib\jvm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\cache\cache.h" />
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry.h" />
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h" />
+    <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h" />
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event.h" />
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_filter.h" />
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_listener.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query_handle.h" />
+    <ClInclude Include="..\..\include\ignite\cache\mutable_cache_entry.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_cursor.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_row.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_scan.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_sql.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_sql_fields.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_text.h" />
+    <ClInclude Include="..\..\include\ignite\compute\compute.h" />
+    <ClInclude Include="..\..\include\ignite\compute\compute_func.h" />
+    <ClInclude Include="..\..\include\ignite\ignite_binding_context.h" />
+    <ClInclude Include="..\..\include\ignite\ignite.h" />
+    <ClInclude Include="..\..\include\ignite\ignite_configuration.h" />
+    <ClInclude Include="..\..\include\ignite\ignition.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\bindings.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_argument.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_base.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_holder.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_batch.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_handle_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\cancelable_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_job_holder.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_job_result.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_task_holder.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\multiple_job_compute_task_holder.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\single_job_compute_task_holder.h" />
+    <ClInclude Include="..\..\include\ignite\impl\helpers.h" />
+    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h" />
+    <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\handle_registry.h" />
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_external_memory.h" />
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h" />
+    <ClInclude Include="..\..\include\ignite\impl\ignite_binding_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\module_manager.h" />
+    <ClInclude Include="..\..\include\ignite\impl\operations.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h" />
+    <ClInclude Include="..\..\include\ignite\ignite_binding.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\ignite.cpp" />
+    <ClCompile Include="..\..\src\ignition.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\query\query_batch.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\compute\cancelable_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\compute\compute_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\ignite_environment.cpp" />
+    <ClCompile Include="..\..\src\impl\ignite_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\handle_registry.cpp" />
+    <ClCompile Include="..\..\src\impl\interop\interop_external_memory.cpp" />
+    <ClCompile Include="..\..\src\impl\interop\interop_target.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp" />
+    <ClCompile Include="..\..\src\transactions\transaction.cpp" />
+    <ClCompile Include="..\..\src\transactions\transactions.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">
+      <Project>{4f15669b-92eb-49f0-b774-8f19bae0b960}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">
+      <Project>{b63f2e01-5157-4719-8491-0e1c7cd3b701}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\jni\project\vs\jni.vcxproj">
+      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -17,266 +17,64 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsOutputStream;
+import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
-    /** IGFS block size. */
-    protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
-
-    /** Default block size (32Mb). */
-    protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
-
-    /** Default repeat count. */
-    protected static final int REPEAT_CNT = 5;
-
-    /** Concurrent operations count. */
-    protected static final int OPS_CNT = 16;
-
-    /** Amount of blocks to prefetch. */
-    protected static final int PREFETCH_BLOCKS = 1;
-
-    /** Amount of sequential block reads before prefetch is triggered. */
-    protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
-
-    /** Primary file system REST endpoint configuration map. */
-    protected static final IgfsIpcEndpointConfiguration PRIMARY_REST_CFG;
-
-    /** Secondary file system REST endpoint configuration map. */
-    protected static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
-
-    /** Directory. */
-    protected static final IgfsPath DIR = new IgfsPath("/dir");
-
-    /** Sub-directory. */
-    protected static final IgfsPath SUBDIR = new IgfsPath(DIR, "subdir");
-
-    /** Another sub-directory in the same directory. */
-    protected static final IgfsPath SUBDIR2 = new IgfsPath(DIR, "subdir2");
-
-    /** Sub-directory of the sub-directory. */
-    protected static final IgfsPath SUBSUBDIR = new IgfsPath(SUBDIR, "subsubdir");
-
-    /** File. */
-    protected static final IgfsPath FILE = new IgfsPath(SUBDIR, "file");
-
-    /** Another file in the same directory. */
-    protected static final IgfsPath FILE2 = new IgfsPath(SUBDIR, "file2");
-
-    /** Other directory. */
-    protected static final IgfsPath DIR_NEW = new IgfsPath("/dirNew");
-
-    /** Other subdirectory. */
-    protected static final IgfsPath SUBDIR_NEW = new IgfsPath(DIR_NEW, "subdirNew");
-
-    /** Other sub-directory of the sub-directory. */
-    protected static final IgfsPath SUBSUBDIR_NEW = new IgfsPath(SUBDIR_NEW, "subsubdirNew");
-
-    /** Other file. */
-    protected static final IgfsPath FILE_NEW = new IgfsPath(SUBDIR_NEW, "fileNew");
-
-    /** Default data chunk (128 bytes). */
-    protected static final byte[] chunk = createChunk(128);
-
-    /** Primary IGFS. */
-    protected static IgfsImpl igfs;
-
-    /** Secondary IGFS */
-    protected static IgfsSecondaryFileSystem igfsSecondaryFileSystem;
-
-    /** Secondary file system lower layer "backdoor" wrapped in UniversalFileSystemAdapter: */
-    protected static UniversalFileSystemAdapter igfsSecondary;
-
-    /** IGFS mode. */
-    protected final IgfsMode mode;
-
-    /** Dual mode flag. */
-    protected final boolean dual;
-
-    /** Memory mode. */
-    protected final CacheMemoryMode memoryMode;
-
-    static {
-        PRIMARY_REST_CFG = new IgfsIpcEndpointConfiguration();
-
-        PRIMARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
-        PRIMARY_REST_CFG.setPort(10500);
-
-        SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
-
-        SECONDARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
-        SECONDARY_REST_CFG.setPort(11500);
-    }
-
+@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
+public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     /**
      * Constructor.
      *
      * @param mode IGFS mode.
      */
     protected IgfsAbstractSelfTest(IgfsMode mode) {
-        this(mode, ONHEAP_TIERED);
-    }
-
-    protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
-        assert mode != null && mode != PROXY;
-
-        this.mode = mode;
-        this.memoryMode = memoryMode;
-
-        dual = mode != PRIMARY;
-    }
-
-    private static byte[] createChunk(int length) {
-        byte[] chunk = new byte[length];
-
-        for (int i = 0; i < chunk.length; i++)
-            chunk[i] = (byte)i;
-
-        return chunk;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        igfsSecondaryFileSystem = createSecondaryFileSystemStack();
-
-        Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG);
-
-        igfs = (IgfsImpl) ignite.fileSystem("igfs");
-    }
-
-    protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
-        Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "igfs-secondary", PRIMARY, null,
-            SECONDARY_REST_CFG);
-
-        IgfsEx secondaryIgfsImpl = (IgfsEx) igniteSecondary.fileSystem("igfs-secondary");
-
-        igfsSecondary = new IgfsExUniversalFileSystemAdapter(secondaryIgfsImpl);
-
-        return secondaryIgfsImpl.asSecondary();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        clear(igfs, igfsSecondary);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        G.stopAll(true);
-    }
-
-    /**
-     * Start grid with IGFS.
-     *
-     * @param gridName Grid name.
-     * @param igfsName IGFS name
-     * @param mode IGFS mode.
-     * @param secondaryFs Secondary file system (optional).
-     * @param restCfg Rest configuration string (optional).
-     * @return Started grid instance.
-     * @throws Exception If failed.
-     */
-    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
-        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
-        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
-
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
-        igfsCfg.setName(igfsName);
-        igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
-        igfsCfg.setDefaultMode(mode);
-        igfsCfg.setIpcEndpointConfiguration(restCfg);
-        igfsCfg.setSecondaryFileSystem(secondaryFs);
-        igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
-        igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
-
-        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
-
-        dataCacheCfg.setName("dataCache");
-        dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setNearConfiguration(null);
-        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
-        dataCacheCfg.setBackups(0);
-        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setMemoryMode(memoryMode);
-        dataCacheCfg.setOffHeapMaxMemory(0);
-
-        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
-
-        metaCacheCfg.setName("metaCache");
-        metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        cfg.setGridName(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
-
-        cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setFileSystemConfiguration(igfsCfg);
-
-        cfg.setLocalHost("127.0.0.1");
-        cfg.setConnectorConfiguration(null);
-
-        return G.start(cfg);
-    }
-
-    /**
-     * Execute provided task in a separate thread.
-     *
-     * @param task Task to execute.
-     * @return Result.
-     */
-    protected static <T> IgniteInternalFuture<T> execute(final Callable<T> task) {
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<>();
-
-        new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    fut.onDone(task.call());
-                }
-                catch (Throwable e) {
-                    fut.onDone(e);
-                }
-            }
-        }).start();
-
-        return fut;
+        super(mode);
     }
 
     /**
@@ -285,7 +83,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExists() throws Exception {
-        create(igfs.asSecondary(), paths(DIR), null);
+        create(igfs, paths(DIR), null);
 
         checkExist(igfs, igfsSecondary, DIR);
     }
@@ -396,7 +194,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsPath file1 = new IgfsPath("/file1");
         IgfsPath file2 = new IgfsPath("/file2");
 
-        create(igfs.asSecondary(), null, paths(file1));
+        create(igfs, null, paths(file1));
 
         igfs.rename(file1, file2);
 
@@ -428,7 +226,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsPath dir1 = new IgfsPath("/dir1");
         IgfsPath dir2 = new IgfsPath("/dir2");
 
-        create(igfs.asSecondary(), paths(dir1), null);
+        create(igfs, paths(dir1), null);
 
         igfs.rename(dir1, dir2);
 
@@ -457,9 +255,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveFileDestinationRoot() throws Exception {
-        create(igfs.asSecondary(), paths(DIR, SUBDIR), paths(FILE));
+        create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        igfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, IgfsPath.ROOT);
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + FILE.name()));
         checkNotExist(igfs, igfsSecondary, FILE);
@@ -549,9 +347,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMoveDirectoryDestinationRoot() throws Exception {
-        create(igfs.asSecondary(), paths(DIR, SUBDIR, SUBSUBDIR), null);
+        create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
-        igfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, IgfsPath.ROOT);
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
         checkNotExist(igfs, igfsSecondary, SUBSUBDIR);
@@ -565,7 +363,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMoveDirectorySourceParentRoot() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
-        create(igfs.asSecondary(), paths(DIR_NEW, SUBDIR_NEW, dir), null);
+        create(igfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
 
         igfs.rename(dir, SUBDIR_NEW);
 
@@ -644,8 +442,59 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testMkdirs() throws Exception {
+        if (!propertiesSupported())
+            return;
+
         Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+
+        igfs.mkdirs(new IgfsPath("/x"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/x"));
+
+        igfs.mkdirs(new IgfsPath("/k/l"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+
+        igfs.mkdirs(new IgfsPath("/x/y"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
+
+        igfs.mkdirs(new IgfsPath("/a/b/c/d"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d"));
+
+        igfs.mkdirs(new IgfsPath("/a/b/c/d/e"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d/e"));
+
+        create(igfs, null, new IgfsPath[] { new IgfsPath("/d/f") }); // "f" is a file.
+        checkExist(igfs, igfsSecondary, new IgfsPath("/d/f"));
+        assertTrue(igfs.info(new IgfsPath("/d/f")).isFile());
+
+        try {
+            igfs.mkdirs(new IgfsPath("/d/f"), null);
+
+            fail("IgfsParentNotDirectoryException expected.");
+        }
+        catch (IgfsParentNotDirectoryException ignore) {
+            // No-op.
+        }
+        catch (IgfsException e) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw e;
+        }
+
+        try {
+            igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
+
+            fail("IgfsParentNotDirectoryException expected.");
+        }
+        catch (IgfsParentNotDirectoryException ignore) {
+            // No-op.
+        }
+        catch (IgfsException e) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw e;
+        }
 
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -654,12 +503,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         // Ensure that directory was created and properties are propagated.
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        if (dual)
-            // Check only permissions because user and group will always be present in Hadoop Fs.
-            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
+        if (permissionsSupported()) {
+            if (dual)
+                // Check only permissions because user and group will always be present in Hadoop Fs.
+                assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(SUBSUBDIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -667,19 +519,26 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testMkdirsParentRoot() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         igfs.mkdirs(DIR, props);
 
         checkExist(igfs, igfsSecondary, DIR);
 
-        if (dual)
-            // check permission only since Hadoop Fs will always have user and group:
-            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(DIR.toString()).get(PROP_PERMISSION));
+        if (permissionsSupported()) {
+            if (dual)
+                // check permission only since Hadoop Fs will always have user and group:
+                assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(DIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(DIR).properties().get(PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(DIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -721,9 +580,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             boolean ok = igfs.delete(SUBDIR, false);
 
             assertFalse(ok);
-        } catch (IgfsDirectoryNotEmptyException idnee) {
-            // ok, expected
-            U.debug("Expected: " + idnee);
+        }
+        catch (IgfsDirectoryNotEmptyException ignore) {
+            // No-op, expected.
         }
 
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
@@ -734,7 +593,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testUpdate() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
@@ -752,7 +615,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testUpdateParentRoot() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfs, paths(DIR), null);
@@ -780,54 +647,42 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * Ensure that formatting is not propagated to the secondary file system.
-     * 
-     * TODO: IGNITE-586.
      *
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
     public void testFormat() throws Exception {
-        // Test works too long and fails.
-        fail("https://issues.apache.org/jira/browse/IGNITE-586");
-        
-        IgniteKernal grid = (IgniteKernal)G.ignite("grid");
-        GridCacheAdapter cache = grid.internalCache("dataCache");
+        if (mode == PROXY)
+            return;
+
+        final GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
+
+        assert dataCache != null;
+
+        int size0 = dataCache.size(new CachePeekMode[] {CachePeekMode.ALL});
+        assert size0 == 0 : "Initial data cache size = " + size0;
 
         if (dual)
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));
 
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        try (IgfsOutputStream os = igfs.append(FILE, false)) {
+        try (IgfsOutputStream os = igfs.create(FILE, true)) {
             os.write(new byte[10 * 1024 * 1024]);
         }
+
+        awaitFileClose(igfs, FILE);
 
         if (dual)
             checkExist(igfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
 
         checkExist(igfs, DIR, SUBDIR, FILE);
 
-        assert igfs.info(FILE).length() == 10 * 1024 * 1024;
+        assertEquals(10 * 1024 * 1024, igfs.info(FILE).length());
 
-        int size = cache.size();
-        int primarySize = cache.primarySize();
-        int primaryKeySetSize = cache.primaryKeySet().size();
+        assert dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
 
-        int primaryPartSize = 0;
-
-        for (int p : cache.affinity().primaryPartitions(grid.localNode())) {
-            Set set = cache.entrySet(p);
-
-            if (set != null)
-                primaryPartSize += set.size();
-        }
-
-        assert size > 0;
-        assert primarySize > 0;
-        assert primarySize == primaryKeySetSize;
-        assert primarySize == primaryPartSize;
-
-        igfs.format();
+        igfs.clear();
 
         // Ensure format is not propagated to the secondary file system.
         if (dual) {
@@ -839,27 +694,66 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         // Ensure entries deletion in the primary file system.
         checkNotExist(igfs, DIR, SUBDIR, FILE);
 
-        int sizeNew = cache.size();
-        int primarySizeNew = cache.primarySize();
-        int primaryKeySetSizeNew = cache.primaryKeySet().size();
-
-        int primaryPartSizeNew = 0;
-
-        for (int p : cache.affinity().primaryPartitions(grid.localNode())) {
-            Set set = cache.entrySet(p);
-
-            if (set != null) {
-                for (Object entry : set)
-                    System.out.println(entry);
-
-                primaryPartSizeNew += set.size();
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) == 0;
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
+                }
             }
-        }
+        }, 10_000)) {
+            Iterable<? extends GridCacheEntryEx> entries = dataCache.allEntries();
 
-        assert sizeNew == 0;
-        assert primarySizeNew == 0;
-        assert primaryKeySetSizeNew == 0;
-        assert primaryPartSizeNew == 0;
+            for (GridCacheEntryEx e: entries) {
+                X.println("deleted = " + e.deleted());
+                X.println("detached = " + e.detached());
+                X.println("info = " + e.info());
+                X.println("k = " + e.key() + ", v = " + e.valueBytes());
+            }
+
+            assert false;
+        }
+    }
+
+    /**
+     * Tests that root directory properties persist afetr the #format() operation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRootPropertiesPersistAfterFormat() throws Exception {
+        if(!propertiesSupported())
+            return;
+
+        if (mode != PRIMARY && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
+            // In case of Hadoop dual mode only user name, group name, and permission properties are updated,
+            // an arbitrary named property is just ignored:
+            checkRootPropertyUpdate("foo", "moo", null);
+            checkRootPropertyUpdate(IgfsUtils.PROP_PERMISSION, "0777", "0777");
+        }
+        else {
+            checkRootPropertyUpdate("foo", "moo", "moo");
+            checkRootPropertyUpdate(IgfsUtils.PROP_PERMISSION, "0777", "0777");
+        }
+    }
+
+    /**
+     * Check root property update.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
+        igfs.update(IgfsPath.ROOT, Collections.singletonMap(prop, setVal));
+
+        igfs.clear();
+
+        IgfsFile file = igfs.info(IgfsPath.ROOT);
+
+        assert file != null;
+
+        Map<String,String> props = file.properties();
+
+        assertEquals(expGetVal, props.get(prop));
     }
 
     /**
@@ -870,8 +764,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testOpen() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, true, chunk);
+        createFile(igfs, FILE, true, chunk);
 
+        checkFileContent(igfs, FILE, chunk);
+
+        // Read again when the whole file is in memory.
         checkFileContent(igfs, FILE, chunk);
     }
 
@@ -889,8 +786,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     is = igfs.open(FILE);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(is);
                 }
 
@@ -900,16 +796,196 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Test setTimes operation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetTimes() throws Exception {
+        createFile(igfs, FILE, true, chunk);
+
+        checkExist(igfs, igfsSecondary, DIR);
+        checkExist(igfs, igfsSecondary, SUBDIR);
+        checkExist(igfs, igfsSecondary, FILE);
+
+        checkSetTimes(SUBDIR);
+        checkSetTimes(FILE);
+
+        try {
+            igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
+
+            fail("Exception is not thrown for missing file.");
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Check setTimes logic for path.
+     *
+     * @param path Path.
+     * @throws Exception If failed.
+     */
+    private void checkSetTimes(IgfsPath path) throws Exception {
+        if (timesSupported()) {
+
+            IgfsFile info = igfs.info(path);
+            T2<Long, Long> secondaryTimes = dual ? igfsSecondary.times(path.toString()) : null;
+
+            assert info != null;
+
+            // Change nothing.
+            igfs.setTimes(path, -1, -1);
+
+            IgfsFile newInfo = igfs.info(path);
+
+            assert newInfo != null;
+
+            assertEquals(info.accessTime(), newInfo.accessTime());
+            assertEquals(info.modificationTime(), newInfo.modificationTime());
+
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+                assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
+                assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
+            }
+
+            // Change only access time.
+            igfs.setTimes(path, -1, info.accessTime() + 1000);
+
+            newInfo = igfs.info(path);
+
+            assert newInfo != null;
+
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
+            assertEquals(info.modificationTime(), newInfo.modificationTime());
+
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
+                assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
+            }
+
+            // Change only modification time.
+            igfs.setTimes(path, info.modificationTime() + 1000, -1);
+
+            newInfo = igfs.info(path);
+
+            assert newInfo != null;
+
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 1000, newInfo.modificationTime());
+
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
+            }
+
+            // Change both.
+            igfs.setTimes(path, info.modificationTime() + 2000, info.accessTime() + 2000);
+
+            newInfo = igfs.info(path);
+
+            assert newInfo != null;
+
+            assertEquals(info.accessTime() + 2000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 2000, newInfo.modificationTime());
+
+            if (dual) {
+                T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
+
+                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get1());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
+            }
+        }
+    }
+
+    /**
      * Test regular create.
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"ConstantConditions", "EmptyTryBlock", "UnusedDeclaration"})
     public void testCreate() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs.asSecondary(), FILE, true, chunk);
+        createFile(igfs, FILE, true, chunk);
 
         checkFile(igfs, igfsSecondary, FILE, chunk);
+
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/r"), false)) {
+            checkExist(igfs, igfsSecondary, new IgfsPath("/r"));
+            assert igfs.info(new IgfsPath("/r")).isFile();
+        }
+
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {
+            checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+            assert igfs.info(new IgfsPath("/k/l")).isFile();
+        }
+
+        try {
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException ignored) {
+            // No-op.
+        }
+
+        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+        assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+        try {
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException ignored) {
+            // okay
+        }
+        checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
+        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+        assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+        try {
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException ignored) {
+            // okay
+        }
+        checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
+        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+        assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+        igfs.mkdirs(new IgfsPath("/x/y"), null);
+        try {
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException ignored) {
+            // okay
+        }
+
+        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
+        assert igfs.info(new IgfsPath("/x/y")).isDirectory();
+
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/f")).isFile();
+        }
+
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/z/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/z/f")).isFile();
+        }
+
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/z/t/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/z/t/f")).isFile();
+        }
+
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f")).isFile();
+        }
     }
 
     /**
@@ -920,7 +996,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testCreateParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        createFile(igfs.asSecondary(), file, true, chunk);
+        createFile(igfs, file, true, chunk);
 
         checkFile(igfs, igfsSecondary, file, chunk);
     }
@@ -931,6 +1007,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateNoClose() throws Exception {
+        if (mode != PRIMARY)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
@@ -941,8 +1020,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 try {
                     os1 = igfs.create(FILE, true);
                     os2 = igfs.create(FILE, true);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -958,6 +1036,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateRenameNoClose() throws Exception {
+        if (dual)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
@@ -980,6 +1061,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateRenameParentNoClose() throws Exception {
+        if (dual)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         IgfsOutputStream os = null;
@@ -1002,28 +1086,52 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteNoClose() throws Exception {
+        if (mode != PRIMARY)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+        IgfsOutputStream os = null;
 
+        IgniteUuid id = null;
+
+        try {
+            os = igfs.create(FILE, false);
+
+            id = igfs.context().meta().fileId(FILE);
+
+            assert id != null;
+
+            boolean del = igfs.delete(FILE, false);
+
+            assertTrue(del);
+            assertFalse(igfs.exists(FILE));
+            // The id still exists in meta cache since
+            // it is locked for writing and just moved to TRASH.
+            // Delete worker cannot delete it for that reason:
+            assertTrue(igfs.context().meta().exists(id));
+
+            os.write(chunk);
+
+            os.close();
+        }
+        finally {
+            U.closeQuiet(os);
+        }
+
+        final IgniteUuid id0 = id;
+
+        // Delete worker should delete the file once its output stream is finally closed:
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
                 try {
-                    os = igfs.create(FILE, true);
-
-                    igfs.format();
-
-                    os.write(chunk);
-
-                    os.close();
+                    return !igfs.context().meta().exists(id0);
                 }
-                finally {
-                    U.closeQuiet(os);
+                catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
                 }
-
-                return null;
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+        }, 5_000L);
     }
 
     /**
@@ -1032,31 +1140,52 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteParentNoClose() throws Exception {
+        if (mode != PRIMARY)
+            return;
+
         create(igfs, paths(DIR, SUBDIR), null);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+        IgfsOutputStream os = null;
 
+        IgniteUuid id = null;
+
+        try {
+            os = igfs.create(FILE, false);
+
+            id = igfs.context().meta().fileId(FILE);
+
+            assert id != null;
+
+            boolean del = igfs.delete(SUBDIR, true);
+
+            assertTrue(del);
+            assertFalse(igfs.exists(FILE));
+            // The id still exists in meta cache since
+            // it is locked for writing and just moved to TRASH.
+            // Delete worker cannot delete it for that reason:
+            assertTrue(igfs.context().meta().exists(id));
+
+            os.write(chunk);
+
+            os.close();
+        }
+        finally {
+            U.closeQuiet(os);
+        }
+
+        final IgniteUuid id0 = id;
+
+        // Delete worker should delete the file once its output stream is finally closed:
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
                 try {
-                    os = igfs.create(FILE, true);
-
-                    IgniteUuid id = igfs.context().meta().fileId(FILE);
-
-                    igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
-
-                    while (igfs.context().meta().exists(id))
-                        U.sleep(100);
-
-                    os.close();
+                    return !igfs.context().meta().exists(id0);
                 }
-                finally {
-                    U.closeQuiet(os);
+                catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
                 }
-
-                return null;
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+        }, 5_000L);
     }
 
     /**
@@ -1065,6 +1194,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateUpdateNoClose() throws Exception {
+        if (dual)
+            return;
+
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1084,6 +1219,41 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Checks simple write.
+     *
+     * @throws Exception On error.
+     */
+    public void testSimpleWrite() throws Exception {
+        IgfsPath path = new IgfsPath("/file1");
+
+        IgfsOutputStream os = igfs.create(path, 128, true/*overwrite*/, null, 0, 256, null);
+
+        os.write(chunk);
+
+        os.close();
+
+        assert igfs.exists(path);
+        checkFileContent(igfs, path, chunk);
+
+        os = igfs.create(path, 128, true/*overwrite*/, null, 0, 256, null);
+
+        assert igfs.exists(path);
+
+        os.write(chunk);
+
+        assert igfs.exists(path);
+
+        os.write(chunk);
+
+        assert igfs.exists(path);
+
+        os.close();
+
+        assert igfs.exists(path);
+        checkFileContent(igfs, path, chunk, chunk);
+    }
+
+    /**
      * Ensure consistency of data during file creation.
      *
      * @throws Exception If failed.
@@ -1092,17 +1262,17 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         final AtomicInteger ctr = new AtomicInteger();
         final AtomicReference<Exception> err = new AtomicReference<>();
 
-        int threadCnt = 10;
+        final int threadCnt = 10;
 
         multithreaded(new Runnable() {
             @Override public void run() {
                 int idx = ctr.incrementAndGet();
 
-                IgfsPath path = new IgfsPath("/file" + idx);
+                final IgfsPath path = new IgfsPath("/file" + idx);
 
                 try {
                     for (int i = 0; i < REPEAT_CNT; i++) {
-                        IgfsOutputStream os = igfs.create(path, 128, true, null, 0, 256, null);
+                        IgfsOutputStream os = igfs.create(path, 128, true/*overwrite*/, null, 0, 256, null);
 
                         os.write(chunk);
 
@@ -1111,7 +1281,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         assert igfs.exists(path);
                     }
 
-                    awaitFileClose(igfs.asSecondary(), path);
+                    awaitFileClose(igfs, path);
 
                     checkFileContent(igfs, path, chunk);
                 }
@@ -1138,11 +1308,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfs.create(FILE, false).close();
 
-        int threadCnt = 5;
+        int threadCnt = 50;
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @SuppressWarnings("ThrowFromFinallyBlock")
             @Override public void run() {
-                while (!stop.get()) {
+                while (!stop.get() && err.get() == null) {
                     IgfsOutputStream os = null;
 
                     try {
@@ -1150,27 +1321,31 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         os.write(chunk);
 
-                        U.sleep(50);
-
                         os.close();
 
                         createCtr.incrementAndGet();
                     }
-                    catch (IgniteInterruptedCheckedException | IgniteException ignore) {
-                        try {
-                            U.sleep(10);
-                        }
-                        catch (IgniteInterruptedCheckedException ignored) {
-                            // nO-op.
-                        }
+                    catch (IgniteException ignored) {
+                        // No-op.
                     }
                     catch (IOException e) {
-                        // We can ignore concurrent deletion exception since we override the file.
-                        if (!e.getMessage().startsWith("File was concurrently deleted"))
-                            err.compareAndSet(null, e);
+                        err.compareAndSet(null, e);
+
+                        Throwable[] chain = X.getThrowables(e);
+
+                        Throwable cause = chain[chain.length - 1];
+
+                        System.out.println("Failed due to IOException exception. Cause:");
+                        cause.printStackTrace(System.out);
                     }
                     finally {
-                        U.closeQuiet(os);
+                        if (os != null)
+                            try {
+                                os.close();
+                            }
+                            catch (IOException ioe) {
+                                throw new IgniteException(ioe);
+                            }
                     }
                 }
             }
@@ -1178,7 +1353,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         long startTime = U.currentTimeMillis();
 
-        while (createCtr.get() < 50 && U.currentTimeMillis() - startTime < 60 * 1000)
+        while (err.get() == null
+                && createCtr.get() < 500
+                && U.currentTimeMillis() - startTime < 60 * 1000)
             U.sleep(100);
 
         stop.set(true);
@@ -1187,8 +1364,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         awaitFileClose(igfs.asSecondary(), FILE);
 
-        if (err.get() != null)
+        if (err.get() != null) {
+            X.println("Test failed: rethrowing first error: " + err.get());
+
             throw err.get();
+        }
 
         checkFileContent(igfs, FILE, chunk);
     }
@@ -1198,14 +1378,140 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"TryFinallyCanBeTryWithResources", "EmptyTryBlock"})
     public void testAppend() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
+            assert igfs.exists(SUBDIR);
 
-        appendFile(igfs, FILE, chunk);
+            createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
 
-        checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
+            checkFile(igfs, igfsSecondary, FILE, chunk);
+
+            appendFile(igfs, FILE, chunk);
+
+            checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
+
+            // Test create via append:
+            IgfsPath path2 = FILE2;
+
+            IgfsOutputStream os = null;
+
+            try {
+                os = igfs.append(path2, true/*create*/);
+
+                writeFileChunks(os, chunk);
+            } finally {
+                U.closeQuiet(os);
+
+                awaitFileClose(igfs, path2);
+            }
+
+            try {
+                os = igfs.append(path2, false/*create*/);
+
+                writeFileChunks(os, chunk);
+            } finally {
+                U.closeQuiet(os);
+
+                awaitFileClose(igfs, path2);
+            }
+
+            checkFile(igfs, igfsSecondary, path2, chunk, chunk);
+
+            // Negative append (create == false):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/should-not-be-created"), false)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException ignored) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
+
+            // Positive mkdirs via append:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/k/l"), true)) {
+                checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+                assert igfs.info(new IgfsPath("/k/l")).isFile();
+            }
+
+            // Negative append (file is immediate parent):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/k/l/m"), true)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException ignored) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
+            checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+            assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+            // Negative append (file is in the parent chain):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/k/l/m/n/o/p"), true)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException ignored) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
+            checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+            assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+            // Negative append (target is a directory):
+            igfs.mkdirs(new IgfsPath("/x/y"), null);
+            checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
+            assert igfs.info(new IgfsPath("/x/y")).isDirectory();
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y"), true)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException ignored) {
+                // okay
+            }
+
+            // Positive append with create
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/f")).isFile();
+            }
+
+            // Positive append with create & 1 mkdirs:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/z/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/z/f")).isFile();
+            }
+
+            // Positive append with create & 2 mkdirs:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/z/t/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/z/t/f")).isFile();
+            }
+
+            // Positive mkdirs create & many mkdirs:
+            try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f"), true)) {
+                assert igfs.info(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f")).isFile();
+            }
+
+            // Negative mkdirs via append (create == false):
+            try {
+                try (IgfsOutputStream ignored = igfs.append(new IgfsPath("/d1/d2/d3/f"), false)) {
+                    // No-op.
+                }
+
+                fail("Exception expected");
+            } catch (IgniteException ignored) {
+                // okay
+            }
+            checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
+        }
     }
 
     /**
@@ -1214,13 +1520,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendParentRoot() throws Exception {
-        IgfsPath file = new IgfsPath("/" + FILE.name());
+        if (appendSupported()) {
+            IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        createFile(igfs, file, true, BLOCK_SIZE, chunk);
+            createFile(igfs, file, true, BLOCK_SIZE, chunk);
 
-        appendFile(igfs, file, chunk);
+            appendFile(igfs, file, chunk);
 
-        checkFile(igfs, igfsSecondary, file, chunk, chunk);
+            checkFile(igfs, igfsSecondary, file, chunk, chunk);
+        }
     }
 
     /**
@@ -1229,27 +1537,32 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (mode != PRIMARY)
+            return;
 
-        createFile(igfs.asSecondary(), FILE, false);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os1 = null;
-                IgfsOutputStream os2 = null;
+            createFile(igfs, FILE, false);
 
-                try {
-                    os1 = igfs.append(FILE, false);
-                    os2 = igfs.append(FILE, false);
+            GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    IgfsOutputStream os1 = null;
+                    IgfsOutputStream os2 = null;
+
+                    try {
+                        os1 = igfs.append(FILE, false);
+                        os2 = igfs.append(FILE, false);
+                    } finally {
+                        U.closeQuiet(os1);
+                        U.closeQuiet(os2);
+                    }
+
+                    return null;
                 }
-                finally {
-                    U.closeQuiet(os1);
-                    U.closeQuiet(os2);
-                }
-
-                return null;
-            }
-        }, IgniteException.class, null);
+            }, IgniteException.class, null);
+        }
     }
 
     /**
@@ -1258,21 +1571,25 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (dual)
+            return;
 
-        createFile(igfs.asSecondary(), FILE, false);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        IgfsOutputStream os = null;
+            createFile(igfs, FILE, false);
 
-        try {
-            os = igfs.append(FILE, false);
+            IgfsOutputStream os = null;
 
-            igfs.rename(FILE, FILE2);
+            try {
+                os = igfs.append(FILE, false);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
+                igfs.rename(FILE, FILE2);
+
+                os.close();
+            } finally {
+                U.closeQuiet(os);
+            }
         }
     }
 
@@ -1282,21 +1599,25 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendRenameParentNoClose() throws Exception {
-        create(igfs.asSecondary(), paths(DIR, SUBDIR), null);
+        if (dual)
+            return;
 
-        createFile(igfs.asSecondary(), FILE, false);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        IgfsOutputStream os = null;
+            createFile(igfs, FILE, false);
 
-        try {
-            os = igfs.append(FILE, false);
+            IgfsOutputStream os = null;
 
-            igfs.rename(SUBDIR, SUBDIR2);
+            try {
+                os = igfs.append(FILE, false);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
+                igfs.rename(SUBDIR, SUBDIR2);
+
+                os.close();
+            } finally {
+                U.closeQuiet(os);
+            }
         }
     }
 
@@ -1306,30 +1627,53 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (mode != PRIMARY)
+            return;
 
-        createFile(igfs.asSecondary(), FILE, false);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+            createFile(igfs, FILE, false);
 
-                try {
-                    os = igfs.append(FILE, false);
+            IgfsOutputStream os = null;
+            IgniteUuid id = null;
 
-                    igfs.format();
+            try {
+                id = igfs.context().meta().fileId(FILE);
 
-                    os.write(chunk);
+                os = igfs.append(FILE, false);
 
-                    os.close();
-                }
-                finally {
-                    U.closeQuiet(os);
-                }
+                boolean del = igfs.delete(FILE, false);
 
-                return null;
+                assertTrue(del);
+                assertFalse(igfs.exists(FILE));
+                assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
+                // it is locked for writing and just moved to TRASH.
+                // Delete worker cannot delete it for that reason.
+
+                os.write(chunk);
+
+                os.close();
+            } finally {
+                U.closeQuiet(os);
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+
+            assert id != null;
+
+            final IgniteUuid id0 = id;
+
+            // Delete worker should delete the file once its output stream is finally closed:
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override
+                public boolean apply() {
+                    try {
+                        return !igfs.context().meta().exists(id0);
+                    } catch (IgniteCheckedException ice) {
+                        throw new IgniteException(ice);
+                    }
+                }
+            }, 5_000L);
+        }
     }
 
     /**
@@ -1338,35 +1682,53 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteParentNoClose() throws Exception {
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (mode != PRIMARY)
+            return;
 
-        createFile(igfs.asSecondary(), FILE, false);
+        if (appendSupported()) {
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+            createFile(igfs, FILE, false);
 
-                try {
-                    IgniteUuid id = igfs.context().meta().fileId(FILE);
+            IgfsOutputStream os = null;
+            IgniteUuid id = null;
 
-                    os = igfs.append(FILE, false);
+            try {
+                id = igfs.context().meta().fileId(FILE);
 
-                    igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
+                os = igfs.append(FILE, false);
 
-                    for (int i = 0; i < 100 && igfs.context().meta().exists(id); i++)
-                        U.sleep(100);
+                boolean del = igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
 
-                    os.write(chunk);
+                assertTrue(del);
+                assertFalse(igfs.exists(FILE));
+                assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
+                // it is locked for writing and just moved to TRASH.
+                // Delete worker cannot delete it for that reason.
 
-                    os.close();
-                }
-                finally {
-                    U.closeQuiet(os);
-                }
+                os.write(chunk);
 
-                return null;
+                os.close();
+            } finally {
+                U.closeQuiet(os);
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+
+            assert id != null;
+
+            final IgniteUuid id0 = id;
+
+            // Delete worker should delete the file once its output stream is finally closed:
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override
+                public boolean apply() {
+                    try {
+                        return !igfs.context().meta().exists(id0);
+                    } catch (IgniteCheckedException ice) {
+                        throw new IgniteException(ice);
+                    }
+                }
+            }, 5_000L);
+        }
     }
 
     /**
@@ -1375,23 +1737,28 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendUpdateNoClose() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
+        if (dual)
+            return;
 
-        create(igfs, paths(DIR, SUBDIR), null);
+        if (appendSupported()) {
+            Map<String, String> props = properties("owner", "group", "0555");
 
-        createFile(igfs.asSecondary(), FILE, false);
+            create(igfs, paths(DIR, SUBDIR), null);
 
-        IgfsOutputStream os = null;
+            createFile(igfs, FILE, false);
 
-        try {
-            os = igfs.append(FILE, false);
+            IgfsOutputStream os = null;
 
-            igfs.update(FILE, props);
+            try {
+                os = igfs.append(FILE, false);
 
-            os.close();
-        }
-        finally {
-            U.closeQuiet(os);
+                if (permissionsSupported())
+                    igfs.update(FILE, props);
+
+                os.close();
+            } finally {
+                U.closeQuiet(os);
+            }
         }
     }
 
@@ -1401,47 +1768,49 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendConsistency() throws Exception {
-        final AtomicInteger ctr = new AtomicInteger();
-        final AtomicReference<Exception> err = new AtomicReference<>();
+        if (appendSupported()) {
+            final AtomicInteger ctr = new AtomicInteger();
+            final AtomicReference<Exception> err = new AtomicReference<>();
 
-        int threadCnt = 10;
+            int threadCnt = 10;
 
-        for (int i = 0; i < threadCnt; i++)
-            createFile(igfs.asSecondary(), new IgfsPath("/file" + i), false);
+            for (int i = 0; i < threadCnt; i++)
+                createFile(igfs, new IgfsPath("/file" + i), false);
 
-        multithreaded(new Runnable() {
-            @Override public void run() {
-                int idx = ctr.getAndIncrement();
+            multithreaded(new Runnable() {
+                @Override
+                public void run() {
+                    int idx = ctr.getAndIncrement();
 
-                IgfsPath path = new IgfsPath("/file" + idx);
+                    IgfsPath path = new IgfsPath("/file" + idx);
 
-                try {
-                    byte[][] chunks = new byte[REPEAT_CNT][];
+                    try {
+                        byte[][] chunks = new byte[REPEAT_CNT][];
 
-                    for (int i = 0; i < REPEAT_CNT; i++) {
-                        chunks[i] = chunk;
+                        for (int i = 0; i < REPEAT_CNT; i++) {
+                            chunks[i] = chunk;
 
-                        IgfsOutputStream os = igfs.append(path, false);
+                            IgfsOutputStream os = igfs.append(path, false);
 
-                        os.write(chunk);
+                            os.write(chunk);
 
-                        os.close();
+                            os.close();
 
-                        assert igfs.exists(path);
+                            assert igfs.exists(path);
+                        }
+
+                        awaitFileClose(igfs, path);
+
+                        checkFileContent(igfs, path, chunks);
+                    } catch (IOException | IgniteCheckedException e) {
+                        err.compareAndSet(null, e); // Log the very first error.
                     }
-
-                    awaitFileClose(igfs.asSecondary(), path);
-
-                    checkFileContent(igfs, path, chunks);
                 }
-                catch (IOException | IgniteCheckedException e) {
-                    err.compareAndSet(null, e); // Log the very first error.
-                }
-            }
-        }, threadCnt);
+            }, threadCnt);
 
-        if (err.get() != null)
-            throw err.get();
+            if (err.get() != null)
+                throw err.get();
+        }
     }
 
     /**
@@ -1450,68 +1819,71 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendConsistencyMultithreaded() throws Exception {
-        final AtomicBoolean stop = new AtomicBoolean();
+        if (appendSupported()) {
+            final AtomicBoolean stop = new AtomicBoolean();
 
-        final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
-        final AtomicReference<Exception> err = new AtomicReference<>();
+            final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
+            final AtomicReference<Exception> err = new AtomicReference<>();
 
-        igfs.create(FILE, false).close();
+            igfs.create(FILE, false).close();
 
-        int threadCnt = 5;
+            int threadCnt = 50;
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                while (!stop.get()) {
-                    IgfsOutputStream os = null;
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+                @SuppressWarnings("ThrowFromFinallyBlock")
+                @Override
+                public void run() {
+                    while (!stop.get() && err.get() == null) {
+                        IgfsOutputStream os = null;
 
-                    try {
-                        os = igfs.append(FILE, false);
-
-                        os.write(chunk);
-
-                        U.sleep(50);
-
-                        os.close();
-
-                        chunksCtr.incrementAndGet();
-                    }
-                    catch (IgniteInterruptedCheckedException | IgniteException ignore) {
                         try {
-                            U.sleep(10);
+                            os = igfs.append(FILE, false);
+
+                            os.write(chunk);
+
+                            os.close();
+
+                            chunksCtr.incrementAndGet();
+                        } catch (IgniteException ignore) {
+                            // No-op.
+                        } catch (IOException e) {
+                            err.compareAndSet(null, e);
+                        } finally {
+                            if (os != null)
+                                try {
+                                    os.close();
+                                } catch (IOException ioe) {
+                                    throw new IgniteException(ioe);
+                                }
                         }
-                        catch (IgniteInterruptedCheckedException ignored) {
-                            // nO-op.
-                        }
-                    }
-                    catch (IOException e) {
-                        err.compareAndSet(null, e);
-                    }
-                    finally {
-                        U.closeQuiet(os);
                     }
                 }
+            }, threadCnt);
+
+            long startTime = U.currentTimeMillis();
+
+            while (err.get() == null
+                && chunksCtr.get() < 50 && U.currentTimeMillis() - startTime < 60 * 1000)
+                U.sleep(100);
+
+            stop.set(true);
+
+            fut.get();
+
+            awaitFileClose(igfs, FILE);
+
+            if (err.get() != null) {
+                X.println("Test failed: rethrowing first error: " + err.get());
+
+                throw err.get();
             }
-        }, threadCnt);
 
-        long startTime = U.currentTimeMillis();
+            byte[][] data = new byte[chunksCtr.get()][];
 
-        while (chunksCtr.get() < 50 && U.currentTimeMillis() - startTime < 60 * 1000)
-            U.sleep(100);
+            Arrays.fill(data, chunk);
 
-        stop.set(true);
-
-        fut.get();
-
-        awaitFileClose(igfs.asSecondary(), FILE);
-
-        if (err.get() != null)
-            throw err.get();
-
-        byte[][] data = new byte[chunksCtr.get()][];
-
-        Arrays.fill(data, chunk);
-
-        checkFileContent(igfs, FILE, data);
+            checkFileContent(igfs, FILE, data);
+        }
     }
 
     /**
@@ -1778,9 +2150,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        igfs.delete(SUBDIR, true);
-
-                        return true;
+                        return igfs.delete(SUBDIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -1793,9 +2163,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        igfs.delete(SUBSUBDIR, true);
-
-                        return true;
+                        return igfs.delete(SUBSUBDIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -1819,18 +2187,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksRename() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, OPS_CNT, 0, 0, 0, 0);
-            }
-            finally {
-                info(">>>>>> Start deadlock test");
-
-                clear(igfs, igfsSecondary);
-
-                info(">>>>>> End deadlock test");
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, 0, 0, 0, 0);
     }
 
     /**
@@ -1839,14 +2196,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksDelete() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, OPS_CNT, 0, 0, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+         checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, 0, 0);
     }
 
     /**
@@ -1855,14 +2205,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksUpdate() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, 0, OPS_CNT, 0, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, UPDATE_CNT, 0, 0);
     }
 
     /**
@@ -1871,14 +2214,34 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksMkdirs() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, 0, 0, OPS_CNT, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+         checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, MKDIRS_CNT, 0);
+    }
+
+    /**
+     * Ensure that deadlocks do not occur during concurrent delete & rename operations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlocksDeleteRename() throws Exception {
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, 0, 0);
+    }
+
+    /**
+     * Ensure that deadlocks do not occur during concurrent delete & rename operations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlocksDeleteMkdirsRename() throws Exception {
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
+    }
+
+    /**
+     * Ensure that deadlocks do not occur during concurrent delete & rename operations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlocksDeleteMkdirs() throws Exception {
+        checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -1887,14 +2250,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksCreate() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, 0, 0, 0, OPS_CNT);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, 0, 0, CREATE_CNT);
     }
 
     /**
@@ -1903,9 +2259,37 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocks() throws Exception {
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
+    }
+
+    /**
+     * Invokes {@link #checkDeadlocks(int, int, int, int, int, int, int, int, int)} for
+     *  {@link #REPEAT_CNT} times.
+     *
+     * @param lvlCnt Total levels in folder hierarchy.
+     * @param childrenDirPerLvl How many children directories to create per level.
+     * @param childrenFilePerLvl How many children file to create per level.
+     * @param primaryLvlCnt How many levels will exist in the primary file system before check start.
+     * @param renCnt How many renames to perform.
+     * @param delCnt How many deletes to perform.
+     * @param updateCnt How many updates to perform.
+     * @param mkdirsCnt How many directory creations to perform.
+     * @param createCnt How many file creations to perform.
+     * @throws Exception If failed.
+     */
+    private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
+        int primaryLvlCnt, int renCnt, int delCnt,
+        int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
+        if (relaxedConsistency())
+            return;
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
-                checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
+                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
+                    updateCnt, mkdirsCnt, createCnt);
+
+                if (i % 10 == 0)
+                    X.println(" - " + i);
             }
             finally {
                 clear(igfs, igfsSecondary);
@@ -1930,9 +2314,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public void checkDeadlocks(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
-        int primaryLvlCnt, int renCnt, int delCnt,
-        int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
+    private void checkDeadlocks(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
+        int primaryLvlCnt, int renCnt, int delCnt, int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
         assert childrenDirPerLvl > 0;
 
         // First define file system structure.
@@ -1941,7 +2324,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         Queue<IgniteBiTuple<Integer, IgfsPath>> queue = new ArrayDeque<>();
 
-        queue.add(F.t(0, new IgfsPath())); // Add root directory.
+        queue.add(F.t(0, IgfsPath.ROOT)); // Add root directory.
 
         while (!queue.isEmpty()) {
             IgniteBiTuple<Integer, IgfsPath> entry = queue.poll();
@@ -1974,9 +2357,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Now as we have all paths defined, plan operations on them.
-        final Random rand = new Random(U.currentTimeMillis());
+        final Random rand = new Random(SEED);
 
-        int totalOpCnt = renCnt + delCnt + updateCnt + mkdirsCnt + createCnt;
+        final int totalOpCnt = renCnt + delCnt + updateCnt + mkdirsCnt + createCnt;
+
+        if (totalOpCnt == 0)
+            throw new RuntimeException("Operations count is zero.");
 
         final CyclicBarrier barrier = new CyclicBarrier(totalOpCnt);
 
@@ -2130,7 +2516,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             threads.add(new Thread(r));
         }
 
-        // Create folder structure.
+        // Create file/directory structure.
         for (int i = 0; i < lvlCnt; i++) {
             int lvl = i + 1;
 
@@ -2150,485 +2536,5 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             thread.start();
 
         U.joinThreads(threads, null);
-    }
-
-    /**
-     * Create the given directories and files in the given IGFS.
-     *
-     * @param igfs IGFS.
-     * @param dirs Directories.
-     * @param files Files.
-     * @throws Exception If failed.
-     */
-    public static void create(IgfsImpl igfs, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files) throws Exception {
-        create(igfs.asSecondary(), dirs, files);
-    }
-
-    /**
-     * Create the given directories and files in the given IGFS.
-     *
-     * @param igfs IGFS.
-     * @param dirs Directories.
-     * @param files Files.
-     * @throws Exception If failed.
-     */
-    public static void create(IgfsSecondaryFileSystem igfs, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files)
-        throws Exception {
-        if (dirs != null) {
-            for (IgfsPath dir : dirs)
-                igfs.mkdirs(dir);
-        }
-
-        if (files != null) {
-            for (IgfsPath file : files) {
-                OutputStream os = igfs.create(file, true);
-
-                os.close();
-            }
-        }
-    }
-
-    public void create(UniversalFileSystemAdapter uni, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files) throws Exception {
-        if (dirs != null) {
-            for (IgfsPath dir : dirs)
-                uni.mkdirs(dir.toString());
-        }
-
-        if (files != null) {
-            for (IgfsPath file : files)
-                try (OutputStream os = uni.openOutputStream(file.toString(), false)) {
-                    // noop
-                }
-        }
-    }
-
-    /**
-     * Create the file in the given IGFS and write provided data chunks to it.
-     *
-     * @param igfs IGFS.
-     * @param file File.
-     * @param overwrite Overwrite flag.
-     * @param chunks Data chunks.
-     * @throws IOException In case of IO exception.
-     */
-    protected static void createFile(IgfsSecondaryFileSystem igfs, IgfsPath file, boolean overwrite, @Nullable byte[]... chunks)
-        throws IOException {
-        OutputStream os = null;
-
-        try {
-            os = igfs.create(file, overwrite);
-
-            writeFileChunks(os, chunks);
-        }
-        finally {
-            U.closeQuiet(os);
-
-            awaitFileClose(igfs, file);
-        }
-    }
-
-    /**
-     * Create the file in the given IGFS and write provided data chunks to it.
-     *
-     * @param file File.
-     * @param overwrite Overwrite flag.
-     * @param chunks Data chunks.
-     * @throws IOException In case of IO exception.
-     */
-    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, boolean overwrite, @Nullable byte[]... chunks)
-        throws IOException {
-        OutputStream os = null;
-
-        try {
-            os = uni.openOutputStream(file.toString(), false);
-
-            writeFileChunks(os, chunks);
-        }
-        finally {
-            U.closeQuiet(os);
-
-            IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
-            if (igfsEx != null)
-                awaitFileClose(igfsEx.asSecondary(), file);
-        }
-    }
-
-    /**
-     * Create the file in the given IGFS and write provided data chunks to it.
-     *
-     * @param igfs IGFS.
-     * @param file File.
-     * @param overwrite Overwrite flag.
-     * @param blockSize Block size.
-     * @param chunks Data chunks.
-     * @throws Exception If failed.
-     */
-    protected void createFile(IgfsImpl igfs, IgfsPath file, boolean overwrite, long blockSize,
-        @Nullable byte[]... chunks) throws Exception {
-        IgfsOutputStream os = null;
-
-        try {
-            os = igfs.create(file, 256, overwrite, null, 0, blockSize, null);
-
-            writeFileChunks(os, chunks);
-        }
-        finally {
-            U.closeQuiet(os);
-
-            awaitFileClose(igfs.asSecondary(), file);
-        }
-    }
-
-    /**
-     * Append to the file in the given IGFS provided data chunks.
-     *
-     * @param igfs IGFS.
-     * @param file File.
-     * @param chunks Data chunks.
-     * @throws Exception If failed.
-     */
-    protected void appendFile(IgfsImpl igfs, IgfsPath file, @Nullable byte[]... chunks)
-        throws Exception {
-        IgfsOutputStream os = null;
-
-        try {
-            os = igfs.append(file, false);
-
-            writeFileChunks(os, chunks);
-        }
-        finally {
-            U.closeQuiet(os);
-
-            awaitFileClose(igfs.asSecondary(), file);
-        }
-    }
-
-    /**
-     * Write provided data chunks to the file output stream.
-     *
-     * @param os Output stream.
-     * @param chunks Data chunks.
-     * @throws IOException If failed.
-     */
-    protected static void writeFileChunks(OutputStream os, @Nullable byte[]... chunks) throws IOException {
-        if (chunks != null && chunks.length > 0) {
-            for (byte[] chunk : chunks)
-                os.write(chunk);
-        }
-    }
-
-    /**
-     * Await for previously opened output stream to close. This is achieved by requesting dummy update on the file.
-     *
-     * @param igfs IGFS.
-     * @param file File.
-     */
-    public static void awaitFileClose(IgfsSecondaryFileSystem igfs, IgfsPath file) {
-        try {
-            igfs.update(file, Collections.singletonMap("prop", "val"));
-        }
-        catch (IgniteException ignore) {
-            // No-op.
-        }
-    }
-
-    /**
-     * Ensure that the given paths exist in the given IGFSs.
-     *
-     * @param igfs First IGFS.
-     * @param igfsSecondary Second IGFS.
-     * @param paths Paths.
-     * @throws Exception If failed.
-     */
-    protected void checkExist(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath... paths) throws Exception {
-        checkExist(igfs, paths);
-
-        if (dual)
-            checkExist(igfsSecondary, paths);
-    }
-
-    /**
-     * Ensure that the given paths exist in the given IGFS.
-     *
-     * @param igfs IGFS.
-     * @param paths Paths.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void checkExist(IgfsImpl igfs, IgfsPath... paths) throws IgniteCheckedException {
-        for (IgfsPath path : paths) {
-            assert igfs.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + igfs.name() +
-                ", path=" + path + ']';
-            assert igfs.exists(path) : "Path doesn't exist [igfs=" + igfs.name() + ", path=" + path + ']';
-        }
-    }
-
-    /**
-     * Ensure that the given paths exist in the given IGFS.
-     *
-     * @param uni filesystem.
-     * @param paths Paths.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void checkExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws IgniteCheckedException {
-        IgfsEx ex = uni.getAdapter(IgfsEx.class);
-        for (IgfsPath path : paths) {
-            if (ex != null)
-                assert ex.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + ex.name() +
-                    ", path=" + path + ']';
-
-            try {
-                assert uni.exists(path.toString()) : "Path doesn't exist [igfs=" + uni.name() + ", path=" + path + ']';
-            } catch (IOException ioe) {
-                throw new IgniteCheckedException(ioe);
-            }
-        }
-    }
-
-    /**
-     * Ensure that the given paths don't exist in the given IGFSs.
-     *
-     * @param igfs First IGFS.
-     * @param igfsSecondary Second IGFS.
-     * @param paths Paths.
-     * @throws Exception If failed.
-     */
-    protected void checkNotExist(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath... paths)
-        throws Exception {
-        checkNotExist(igfs, paths);
-
-        if (dual)
-            checkNotExist(igfsSecondary, paths);
-    }
-
-    /**
-     * Ensure that the given paths don't exist in the given IGFS.
-     *
-     * @param igfs IGFS.
-     * @param paths Paths.
-     * @throws Exception If failed.
-     */
-    protected void checkNotExist(IgfsImpl igfs, IgfsPath... paths) throws Exception {
-        for (IgfsPath path : paths) {
-            assert igfs.context().meta().fileId(path) == null : "Path exists [igfs=" + igfs.name() + ", path=" +
-                path + ']';
-            assert !igfs.exists(path) : "Path exists [igfs=" + igfs.name() + ", path=" + path + ']';
-        }
-    }
-
-    /**
-     * Ensure that the given paths don't exist in the given IGFS.
-     *
-     * @param uni secondary FS.
-     * @param paths Paths.
-     * @throws Exception If failed.
-     */
-    protected void checkNotExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws Exception {
-        IgfsEx ex = uni.getAdapter(IgfsEx.class);
-        for (IgfsPath path : paths) {
-            if (ex != null)
-                assert ex.context().meta().fileId(path) == null : "Path exists [igfs=" + ex.name() + ", path=" +
-                    path + ']';
-
-            assert !uni.exists(path.toString()) : "Path exists [igfs=" + uni.name() + ", path=" + path + ']';
-        }
-    }
-
-    /**
-     * Ensure that the given file exists in the given IGFSs and that it has exactly the same content as provided in the
-     * "data" parameter.
-     *
-     * @param igfs First IGFS.
-     * @param igfsSecondary Second IGFS.
-     * @param file File.
-     * @param chunks Expected data.
-     * @throws Exception If failed.
-     */
-    protected void checkFile(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath file,
-        @Nullable byte[]... chunks) throws Exception {
-        checkExist(igfs, file);
-        checkFileContent(igfs, file, chunks);
-
-        if (dual) {
-            checkExist(igfsSecondary, file);
-            checkFileContent(igfsSecondary, file.toString(), chunks);
-        }
-    }
-
-    /**
-     * Ensure that the given file has exactly the same content as provided in the "data" parameter.
-     *
-     * @param igfs IGFS.
-     * @param file File.
-     * @param chunks Expected data.
-     * @throws IOException In case of IO exception.
-     * @throws IgniteCheckedException In case of Grid exception.
-     */
-    protected void checkFileContent(IgfsImpl igfs, IgfsPath file, @Nullable byte[]... chunks)
-        throws IOException, IgniteCheckedException {
-        if (chunks != null && chunks.length > 0) {
-            IgfsInputStream is = null;
-
-            try {
-                is = igfs.open(file);
-
-                int chunkIdx = 0;
-
-                for (byte[] chunk : chunks) {
-                    byte[] buf = new byte[chunk.length];
-
-                    is.readFully(0, buf);
-
-                    assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + igfs.name() + ", chunkIdx=" + chunkIdx +
-                        ", expected=" + Arrays.toString(chunk) + ", actual=" + Arrays.toString(buf) + ']';
-
-                    chunkIdx++;
-                }
-
-                is.close();
-            }
-            finally {
-                U.closeQuiet(is);
-            }
-        }
-    }
-
-    /**
-     * Ensure that the given file has exactly the same content as provided in the "data" parameter.
-     *
-     * @param uni FS.
-     * @param path File.
-     * @param chunks Expected data.
-     * @throws IOException In case of IO exception.
-     * @throws IgniteCheckedException In case of Grid exception.
-     */
-    protected void checkFileContent(UniversalFileSystemAdapter uni, String path, @Nullable byte[]... chunks)
-        throws IOException, IgniteCheckedException {
-        if (chunks != null && chunks.length > 0) {
-            InputStream is = null;
-
-            try {
-                is = uni.openInputStream(path);
-
-                int chunkIdx = 0;
-
-                int read;
-                for (byte[] chunk: chunks) {
-                    byte[] buf = new byte[chunk.length];
-
-                    read = is.read(buf);
-
-                    assert read == chunk.length : "Chunk #" + chunkIdx + " was not read fully.";
-                    assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + uni.name() + ", chunkIdx=" + chunkIdx +
-                        ", expected=" + Arrays.toString(chunk) + ", actual=" + Arrays.toString(buf) + ']';
-
-                    chunkIdx++;
-                }
-
-                is.close();
-            }
-            finally {
-                U.closeQuiet(is);
-            }
-        }
-    }
-
-    /**
-     * Create map with properties.
-     *
-     * @param username User name.
-     * @param grpName Group name.
-     * @param perm Permission.
-     * @return Map with properties.
-     */
-    protected Map<String, String> properties(@Nullable String username, @Nullable String grpName,
-        @Nullable String perm) {
-        Map<String, String> props = new HashMap<>();
-
-        if (username != null)
-            props.put(PROP_USER_NAME, username);
-
-        if (grpName != null)
-            props.put(PROP_GROUP_NAME, grpName);
-
-        if (perm != null)
-            props.put(PROP_PERMISSION, perm);
-
-        return props;
-    }
-
-    /**
-     * Convenient method to group paths.
-     *
-     * @param paths Paths to group.
-     * @return Paths as array.
-     */
-    protected IgfsPath[] paths(IgfsPath... paths) {
-        return paths;
-    }
-
-    /**
-     * Safely clear IGFSs.
-     *
-     * @param igfs First IGFS.
-     * @param igfsSecondary Second IGFS.
-     * @throws Exception If failed.
-     */
-    protected void clear(IgniteFileSystem igfs, UniversalFileSystemAdapter igfsSecondary) throws Exception {
-        clear(igfs);
-
-        if (dual)
-            clear(igfsSecondary);
-    }
-
-    /**
-     * Clear particular IGFS.
-     *
-     * @param igfs IGFS.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public static void clear(IgniteFileSystem igfs) throws Exception {
-        Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
-
-        workerMapFld.setAccessible(true);
-
-        // Wait for all workers to finish.
-        Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
-
-        for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
-            entry.getValue().cancel();
-            entry.getValue().await();
-        }
-
-        // Clear igfs.
-        igfs.format();
-    }
-
-    /**
-     * Clear particular {@link UniversalFileSystemAdapter}.
-     *
-     * @param uni IGFS.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public static void clear(UniversalFileSystemAdapter uni) throws Exception {
-        IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
-
-        if (igfsEx != null) {
-            Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
-
-            workerMapFld.setAccessible(true);
-
-            // Wait for all workers to finish.
-            Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
-
-            for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
-                entry.getValue().cancel();
-                entry.getValue().await();
-            }
-        }
-
-        // Clear the filesystem:
-        uni.format();
     }
 }

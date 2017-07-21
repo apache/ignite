@@ -17,8 +17,9 @@
 
 package org.apache.ignite.mxbean;
 
-import javax.management.*;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
+import javax.management.JMException;
 
 /**
  * This interface defines JMX view on kernal.
@@ -74,7 +75,7 @@ public interface IgniteMXBean {
     public long getUpTime();
 
     /**
-     * Gets a collection of formatted user-defined attributes added to this node.
+     * Gets a list of formatted user-defined attributes added to this node.
      * <p>
      * Note that grid will add all System properties and environment properties
      * to grid node attributes also. SPIs may also add node attributes that are
@@ -83,7 +84,7 @@ public interface IgniteMXBean {
      * @return User defined attributes for this node.
      */
     @MXBeanDescription("Collection of formatted user-defined attributes added to this node.")
-    public Collection<String> getUserAttributesFormatted();
+    public List<String> getUserAttributesFormatted();
 
     /**
      * Gets a formatted instance of logger that is in grid.
@@ -148,7 +149,7 @@ public interface IgniteMXBean {
      *      with Ignite.
      */
     @MXBeanDescription("String representation of lifecycle beans.")
-    public Collection<String> getLifecycleBeansFormatted();
+    public List<String> getLifecycleBeansFormatted();
 
     /**
      * This method allows manually remove the checkpoint with given {@code key}.
@@ -183,6 +184,27 @@ public interface IgniteMXBean {
         "String presentation of node ID. See java.util.UUID class for details."
     )
     public boolean pingNode(String nodeId);
+
+    /**
+     * @param active Activate/DeActivate flag.
+     */
+    @MXBeanDescription(
+        "Execute activate or deactivate process."
+    )
+    @MXBeanParametersNames(
+        "active"
+    )
+    public void active(boolean active);
+
+    /**
+     * Checks if Ignite grid is active. If Ignite grid is not active return {@code False}.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     */
+    @MXBeanDescription(
+        "Checks Ignite grid is active or is not active."
+    )
+    public boolean active();
 
     /**
      * Makes the best attempt to undeploy a task from the whole grid. Note that this
@@ -289,14 +311,6 @@ public interface IgniteMXBean {
     public String getCollisionSpiFormatted();
 
     /**
-     * Gets a formatted instance of configured swapspace SPI implementations.
-     *
-     * @return Grid swapspace SPI implementations.
-     */
-    @MXBeanDescription("Formatted instance of configured swapspace SPI implementations.")
-    public String getSwapSpaceSpiFormatted();
-
-    /**
      * Gets a formatted instance of fully configured event SPI implementation.
      *
      * @return Grid event SPI implementation.
@@ -365,4 +379,54 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Prints last suppressed errors.")
     public void printLastErrors();
+
+    /**
+     * Dumps debug information for the current node.
+     */
+    @MXBeanDescription("Dumps debug information for the current node.")
+    public void dumpDebugInfo();
+
+    /**
+     * Runs IO latency test against all remote server nodes in cluster.
+     *
+     * @param warmup Warmup duration in milliseconds.
+     * @param duration Test duration in milliseconds.
+     * @param threads Thread count.
+     * @param maxLatency Max latency in nanoseconds.
+     * @param rangesCnt Ranges count in resulting histogram.
+     * @param payLoadSize Payload size in bytes.
+     * @param procFromNioThread {@code True} to process requests in NIO threads.
+     */
+    @MXBeanDescription("Runs IO latency test against all remote server nodes in cluster.")
+    @MXBeanParametersNames(
+        {
+            "warmup",
+            "duration",
+            "threads",
+            "maxLatency",
+            "rangesCnt",
+            "payLoadSize",
+            "procFromNioThread"
+        }
+    )
+    @MXBeanParametersDescriptions(
+        {
+            "Warmup duration (millis).",
+            "Test duration (millis).",
+            "Threads count.",
+            "Maximum latency expected (nanos).",
+            "Ranges count for histogram.",
+            "Payload size (bytes).",
+            "Process requests in NIO-threads flag."
+        }
+    )
+    void runIoTest(
+        long warmup,
+        long duration,
+        int threads,
+        long maxLatency,
+        int rangesCnt,
+        int payLoadSize,
+        boolean procFromNioThread
+    );
 }

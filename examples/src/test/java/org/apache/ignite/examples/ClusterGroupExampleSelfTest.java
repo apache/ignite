@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.cluster.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.computegrid.cluster.ClusterGroupExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  *

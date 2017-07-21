@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.checkpoint.jdbc;
 
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management bean that provides general administrative and configuration information

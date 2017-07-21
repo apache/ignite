@@ -17,17 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
-import java.util.concurrent.locks.*;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Collection of near local locks acquired by a thread on one topology version.
@@ -42,18 +47,24 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
     /** Pending candidates. */
     @GridToStringInclude
-    private final Map<KeyCacheObject, Deque<GridCacheMvccCandidate>> cands = new HashMap<>();
+    private final Map<IgniteTxKey, Deque<GridCacheMvccCandidate>> cands = new HashMap<>();
 
     /** Span lock release future. */
     @GridToStringExclude
-    private final GridFutureAdapter<Object> releaseFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Object> releaseFut;
 
     /**
      * @param topVer Topology version.
      * @param cand Candidate.
      */
-    public GridCacheExplicitLockSpan(AffinityTopologyVersion topVer, GridCacheMvccCandidate cand) {
+    public GridCacheExplicitLockSpan(final AffinityTopologyVersion topVer, final GridCacheMvccCandidate cand) {
         this.topVer = topVer;
+
+        releaseFut = new GridFutureAdapter<Object>() {
+            @Override public String toString() {
+                return "ExplicitLockSpan [topVer=" + topVer + ", firstCand=" + cand + "]";
+            }
+        };
 
         ensureDeque(cand.key()).addFirst(cand);
     }
@@ -73,7 +84,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
             if (cands.isEmpty())
                 return false;
 
-            assert this.topVer.equals(this.topVer);
+            assert this.topVer.equals(topVer);
 
             Deque<GridCacheMvccCandidate> deque = ensureDeque(cand.key());
 
@@ -133,7 +144,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * @param ver Version (or {@code null} if any candidate should be removed.)
      * @return Removed candidate if matches given parameters.
      */
-    public GridCacheMvccCandidate removeCandidate(KeyCacheObject key, @Nullable GridCacheVersion ver) {
+    public GridCacheMvccCandidate removeCandidate(IgniteTxKey key, @Nullable GridCacheVersion ver) {
         lock();
 
         try {
@@ -183,7 +194,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      *
      * @param key Key.
      */
-    public void markOwned(KeyCacheObject key) {
+    public void markOwned(IgniteTxKey key) {
         lock();
 
         try {
@@ -206,7 +217,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * @param ver Version to lookup (if {@code null} - return any).
      * @return Last added explicit lock candidate, if any, or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate candidate(KeyCacheObject key, @Nullable final GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key, @Nullable final GridCacheVersion ver) {
         lock();
 
         try {
@@ -253,7 +264,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * @param key Key to look up.
      * @return Deque.
      */
-    private Deque<GridCacheMvccCandidate> ensureDeque(KeyCacheObject key) {
+    private Deque<GridCacheMvccCandidate> ensureDeque(IgniteTxKey key) {
         Deque<GridCacheMvccCandidate> deque = cands.get(key);
 
         if (deque == null) {

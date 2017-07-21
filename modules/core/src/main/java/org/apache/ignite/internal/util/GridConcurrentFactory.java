@@ -17,20 +17,13 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.jsr166.*;
-
-import java.util.concurrent.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import java.util.concurrent.ConcurrentMap;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Concurrent map factory.
  */
 public class GridConcurrentFactory {
-    /** Default concurrency level. */
-    private static final int CONCURRENCY_LEVEL = IgniteSystemProperties.getInteger(IGNITE_MAP_CONCURRENCY_LEVEL, 256);
-
     /**
      * Ensure singleton.
      */
@@ -44,7 +37,6 @@ public class GridConcurrentFactory {
      * @return New concurrent map.
      */
     public static <K, V> ConcurrentMap<K, V> newMap() {
-        return new ConcurrentHashMap8<>(16 * CONCURRENCY_LEVEL, 0.75f, CONCURRENCY_LEVEL);
+        return new ConcurrentHashMap8<>();
     }
-
 }

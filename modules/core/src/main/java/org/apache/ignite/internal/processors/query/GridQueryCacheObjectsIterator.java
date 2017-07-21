@@ -17,33 +17,37 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
-import java.util.*;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Deserializes portable objects if needed.
+ * Deserializes binary objects if needed.
  */
 public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoCloseable {
     /** */
     private final Iterator<List<?>> iter;
 
     /** */
-    private final GridCacheContext<?,?> cctx;
+    private final CacheObjectValueContext cacheObjValCtx;
 
     /** */
-    private final boolean keepPortable;
+    private final boolean keepBinary;
 
     /**
      * @param iter Iterator.
-     * @param cctx Cache context.
-     * @param keepPortable Keep portable.
+     * @param cacheObjValCtx Cache object context.
+     * @param keepBinary Keep binary.
      */
-    public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, GridCacheContext<?,?> cctx, boolean keepPortable) {
+    public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, CacheObjectValueContext cacheObjValCtx,
+        boolean keepBinary) {
         this.iter = iter;
-        this.cctx = cctx;
-        this.keepPortable = keepPortable;
+        this.cacheObjValCtx = cacheObjValCtx;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -60,7 +64,8 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public List<?> next() {
-        return (List<?>)cctx.unwrapPortablesIfNeeded((Collection<Object>)iter.next(), keepPortable);
+        return ((List<?>)CacheObjectUtils.unwrapBinariesIfNeeded(
+            cacheObjValCtx, (Collection<Object>)iter.next(), keepBinary));
     }
 
     /** {@inheritDoc} */

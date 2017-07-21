@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Simple extension over {@link org.apache.ignite.lang.IgniteBiTuple} for pair of objects of the same type.

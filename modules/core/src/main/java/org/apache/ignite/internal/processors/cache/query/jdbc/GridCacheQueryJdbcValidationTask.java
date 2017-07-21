@@ -17,16 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.query.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Task to validate connection. Checks that cache with provided name exists in grid.
@@ -36,14 +40,15 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize,
-        @Nullable final String cacheName) {
-        // Register big data usage.
-        return F.asSet(new ComputeJobAdapter() {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, @Nullable final String cacheName) {
+        return Collections.singleton(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;
 
             @Override public Object execute() {
+                if (cacheName == null)
+                    return true;
+
                 GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
 
                 for (ClusterNode n : ignite.cluster().nodes())

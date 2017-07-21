@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.*;
+import org.h2.util.StatementBuilder;
+import org.h2.util.StringUtils;
 
 /**
  * Operation type.
@@ -30,7 +31,7 @@ public enum GridSqlOperationType {
     MULTIPLY(2, new BiExpressionSqlGenerator("*")),
     DIVIDE(2, new BiExpressionSqlGenerator("/")),
     MODULUS(2, new BiExpressionSqlGenerator("%")),
-    NEGATE(1, new PrefixSqlGenerator("-")),
+    NEGATE(1, new PrefixSqlGenerator("-", true)),
 
     // from org.h2.expression.Comparison
     EQUAL(2, new BiExpressionSqlGenerator("=")),
@@ -46,7 +47,7 @@ public enum GridSqlOperationType {
     IS_NULL(1, new SuffixSqlGenerator("IS NULL")),
     IS_NOT_NULL(1, new SuffixSqlGenerator("IS NOT NULL")),
 
-    NOT(1, new PrefixSqlGenerator("NOT")),
+    NOT(1, new PrefixSqlGenerator("NOT", true)),
 
     // from org.h2.expression.ConditionAndOr
     AND(2, new BiExpressionSqlGenerator("AND")),
@@ -57,6 +58,7 @@ public enum GridSqlOperationType {
     LIKE(2, new BiExpressionSqlGenerator("LIKE")),
 
     IN(-1, new ConditionInSqlGenerator()),
+    EXISTS(1, new PrefixSqlGenerator("EXISTS", false)),
 
     ;
     /** */
@@ -70,6 +72,8 @@ public enum GridSqlOperationType {
      * @param sqlGenerator sqlGenerator.
      */
     GridSqlOperationType(int childrenCnt, SqlGenerator sqlGenerator) {
+        assert childrenCnt > 0 || sqlGenerator instanceof ConditionInSqlGenerator : childrenCnt;
+
         this.childrenCnt = childrenCnt;
         this.sqlGenerator = sqlGenerator;
     }
@@ -116,7 +120,7 @@ public enum GridSqlOperationType {
 
         /** {@inheritDoc} */
         @Override public String getSql(GridSqlOperation operation) {
-            assert operation.opType().childrenCnt == 2;
+            assert operation.operationType().childrenCnt == 2;
 
             return '(' + operation.child(0).getSQL() + " " + delim + " " + operation.child(1).getSQL() + ')';
         }
@@ -129,7 +133,7 @@ public enum GridSqlOperationType {
 
         /** {@inheritDoc} */
         @Override public String getSql(GridSqlOperation operation) {
-            assert operation.opType().childrenCnt == 2;
+            assert operation.operationType().childrenCnt == 2;
 
             return "(INTERSECTS(" + operation.child(0).getSQL() + ", " + operation.child(1).getSQL() + "))";
         }
@@ -142,18 +146,32 @@ public enum GridSqlOperationType {
         /** */
         private final String text;
 
+        /** */
+        private final boolean addSpace;
+
         /**
          * @param text Text.
+         * @param addSpace Add space char after the prefix.
          */
-        private PrefixSqlGenerator(String text) {
+        private PrefixSqlGenerator(String text, boolean addSpace) {
             this.text = text;
+            this.addSpace = addSpace;
         }
 
         /** {@inheritDoc} */
         @Override public String getSql(GridSqlOperation operation) {
-            assert operation.opType().childrenCnt == 1;
+            assert operation.operationType().childrenCnt == 1;
 
-            return '(' + text + ' ' + operation.child().getSQL() + ')';
+            StringBuilder b = new StringBuilder();
+
+            b.append('(').append(text);
+
+            if (addSpace)
+                b.append(' ');
+
+            b.append(operation.child(0).getSQL()).append(')');
+
+            return b.toString();
         }
     }
 
@@ -173,9 +191,9 @@ public enum GridSqlOperationType {
 
         /** {@inheritDoc} */
         @Override public String getSql(GridSqlOperation operation) {
-            assert operation.opType().childrenCnt == 1;
+            assert operation.operationType().childrenCnt == 1;
 
-            return '(' + operation.child().getSQL() + ' ' + text + ')';
+            return '(' + operation.child(0).getSQL() + ' ' + text + ')';
         }
     }
 

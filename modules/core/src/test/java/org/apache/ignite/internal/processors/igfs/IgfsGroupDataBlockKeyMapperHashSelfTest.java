@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Tests for {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper} hash.
@@ -133,4 +132,3 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
             (prevPart == 0 && part == totalParts - 1);
     }
 }
-

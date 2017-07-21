@@ -17,34 +17,53 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.checkpoint.cache.*;
-import org.apache.ignite.spi.checkpoint.jdbc.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.hsqldb.jdbc.*;
-import org.jetbrains.annotations.*;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CheckpointEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
+import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hsqldb.jdbc.jdbcDataSource;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.compute.ComputeTaskSessionScope.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.compute.ComputeTaskSessionScope.GLOBAL_SCOPE;
+import static org.apache.ignite.compute.ComputeTaskSessionScope.SESSION_SCOPE;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_LOADED;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_REMOVED;
+import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_SAVED;
 
 /**
  *
@@ -115,10 +134,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        assert gridName != null;
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        assert igniteInstanceName != null;
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -126,7 +145,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (gridName.contains("cache")) {
+        if (igniteInstanceName.contains("cache")) {
             String cacheName = "test-checkpoints";
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -142,7 +161,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             cfg.setCheckpointSpi(spi);
         }
-        else if (gridName.contains("jdbc")) {
+        else if (igniteInstanceName.contains("jdbc")) {
             JdbcCheckpointSpi spi = new JdbcCheckpointSpi();
 
             jdbcDataSource ds = new jdbcDataSource();
@@ -165,16 +184,16 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @throws Exception If test failed.
      */
-    protected void doTest(String gridName) throws Exception {
+    protected void doTest(String igniteInstanceName) throws Exception {
         final AtomicInteger savedCnt = new AtomicInteger();
         final AtomicInteger loadedCnt = new AtomicInteger();
         final AtomicInteger rmvCnt = new AtomicInteger();
 
         try {
-            Ignite ignite = startGrid(gridName);
+            Ignite ignite = startGrid(igniteInstanceName);
 
             ignite.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
@@ -214,23 +233,23 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 checkpoints(ignite).sessionIds();
         }
         finally {
-            stopGrid(gridName);
+            stopGrid(igniteInstanceName);
         }
 
         assertEquals(8, savedCnt.get());
         assertEquals(10, loadedCnt.get());
 
-        if ("jdbc".equals(gridName))
+        if ("jdbc".equals(igniteInstanceName))
             assertEquals(5, rmvCnt.get());
         else
             assertEquals(6, rmvCnt.get());
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @throws Exception If test failed.
      */
-    protected void doMultiNodeTest(String gridName) throws Exception {
+    protected void doMultiNodeTest(String igniteInstanceName) throws Exception {
         startLatch = new CountDownLatch(3);
 
         read1Latch = new CountDownLatch(1);
@@ -245,9 +264,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         rmvLatch = new CountDownLatch(1);
 
         try {
-            startGrid(gridName + 1);
+            startGrid(igniteInstanceName + 1);
 
-            Ignite ignite = startGrid(gridName);
+            Ignite ignite = startGrid(igniteInstanceName);
 
             ComputeTaskFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
 
@@ -256,8 +275,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             fut.get();
 
             for (Ignite g : G.allGrids()) {
-                assert checkCheckpointManager(g) : "Session IDs got stuck after task completion [grid=" + g.name() +
-                    ", sesIds=" + checkpoints(g).sessionIds() + ']';
+                assert checkCheckpointManager(g) :
+                    "Session IDs got stuck after task completion [igniteInstanceName=" + g.name() +
+                        ", sesIds=" + checkpoints(g).sessionIds() + ']';
             }
         }
         finally {

@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.managers.loadbalancer;
 
-import org.apache.ignite.compute.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import org.apache.ignite.compute.ComputeLoadBalancer;
 
 /**
  * This adapter allows for graceful exception when load balancer gets marshalled.

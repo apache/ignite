@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.computegrid.montecarlo;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * This class provides a simple model for a credit contract (or a loan). It is basically

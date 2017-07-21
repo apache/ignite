@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener passed in to the {@link GridNioServer} that will be notified on client events.

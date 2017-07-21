@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
 
 /**
  * Callable instance that should never be deployed or injected.

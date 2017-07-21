@@ -17,11 +17,11 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.EOFException;
+import java.io.IOException;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Decorator for regular {@link org.apache.ignite.igfs.IgfsInputStream} which streams only data within the given range.

@@ -17,12 +17,15 @@
 
 package org.apache.ignite.igfs.secondary;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Secondary file system interface.
@@ -42,8 +45,8 @@ public interface IgfsSecondaryFileSystem {
      * will not be affected. Other properties will be added or overwritten. Passed properties with {@code null} values
      * will be removed from the stored properties or ignored if they don't exist in the file info.
      * <p>
-     * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes only the following properties will be propagated
-     * to the secondary file system:
+     * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes with Hadoop secondary file system only the
+     * following properties will be updated on the secondary file system:
      * <ul>
      * <li>{@code usrName} - file owner name;</li>
      * <li>{@code grpName} - file owner group;</li>
@@ -109,7 +112,7 @@ public interface IgfsSecondaryFileSystem {
      * Lists file paths under the specified path.
      *
      * @param path Path to list files under.
-     * @return List of files under the specified path.
+     * @return List of paths under the specified path.
      * @throws IgniteException In case of error.
      * @throws org.apache.ignite.igfs.IgfsPathNotFoundException If path doesn't exist.
      */
@@ -193,16 +196,28 @@ public interface IgfsSecondaryFileSystem {
     public long usedSpaceSize() throws IgniteException;
 
     /**
-     * Gets the implementation specific properties of file system.
+     * Set times for the given path.
      *
-     * @return Map of properties.
+     * @param path Path.
+     * @param modificationTime Modification time.
+     * @param accessTime Access time.
+     * @throws IgniteException If failed.
      */
-    public Map<String,String> properties();
+    public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException;
 
-
-    /**
-     * Closes the secondary file system.
-     * @throws IgniteException in case of an error.
+     /**
+     * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
+     * particular block location length is greater than this value, block locations will be split into smaller
+     * chunks.
+     *
+     * @param path File path to get affinity for.
+     * @param start Position in the file to start affinity resolution from.
+     * @param len Size of data in the file to resolve affinity for.
+     * @param maxLen Maximum length of a single returned block location length.
+     * @return Affinity block locations.
+     * @throws IgniteException In case of error.
+     * @throws IgfsPathNotFoundException If path doesn't exist.
      */
-    public void close() throws IgniteException;
+    public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen)
+        throws IgniteException;
 }

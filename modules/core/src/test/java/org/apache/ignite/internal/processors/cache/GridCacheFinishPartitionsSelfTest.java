@@ -17,23 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Abstract class for cache tests.
@@ -61,8 +67,8 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -83,9 +89,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
         String key = "key";
         String val = "value";
 
-        IgniteCache<String, String> cache = grid.cache(null);
+        IgniteCache<String, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
-        int keyPart = grid.<String, String>internalCache().context().affinity().partition(key);
+        int keyPart = grid.<String, String>internalCache(DEFAULT_CACHE_NAME).context().affinity().partition(key);
 
         cache.put(key, val);
 
@@ -126,7 +132,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 if (barrier.await() == 0)
                     start.set(System.currentTimeMillis());
 
-                IgniteCache<String, String> cache = grid(0).cache(null);
+                IgniteCache<String, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
                 Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -164,7 +170,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     public void testMvccFinishPartitions() throws Exception {
         String key = "key";
 
-        int keyPart = grid.internalCache().context().affinity().partition(key);
+        int keyPart = grid.internalCache(DEFAULT_CACHE_NAME).context().affinity().partition(key);
 
         // Wait for tx-enlisted partition.
         long waitTime = runLock(key, keyPart, F.asList(keyPart));
@@ -188,22 +194,25 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testMvccFinishKeys() throws Exception {
-        IgniteCache<String, Integer> cache = grid(0).cache(null);
+        IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";
 
             cache.get(key);
 
-            GridCacheAdapter<String, Integer> internal = grid.internalCache();
+            GridCacheAdapter<String, Integer> internal = grid.internalCache(DEFAULT_CACHE_NAME);
 
             KeyCacheObject cacheKey = internal.context().toCacheKeyObject(key);
 
             IgniteInternalFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(cacheKey),
+                internal.context().cacheId(),
                 new AffinityTopologyVersion(2));
 
             IgniteInternalFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
-                Collections.singletonList(cacheKey), new AffinityTopologyVersion(2));
+                Collections.singletonList(cacheKey),
+                internal.context().cacheId(),
+                new AffinityTopologyVersion(2));
 
             assert !nearFut.isDone();
             assert !dhtFut.isDone();
@@ -226,7 +235,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteCache<Integer, String> cache = grid.cache(null);
+        IgniteCache<Integer, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(key);
 
@@ -284,7 +293,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteCache<String, String> cache = grid.cache(null);
+        IgniteCache<String, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(key);
 

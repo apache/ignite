@@ -17,19 +17,25 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.commons.collections.*;
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Test shared memory endpoints crash detection.
@@ -49,10 +55,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     @Override protected void afterTestsStopped() throws Exception {
         // Start and stop server endpoint to let GC worker
         // make a run and cleanup resources.
-
-        U.setWorkDirectory(null, U.getIgniteHome());
-
-        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
+        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
 
         new IgniteTestResources().inject(srv);
 
@@ -68,10 +71,8 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testIgfsServerClientInteractionsUponClientKilling() throws Exception {
-        U.setWorkDirectory(null, U.getIgniteHome());
-
         // Run server endpoint.
-        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
+        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
 
         new IgniteTestResources().inject(srv);
 
@@ -112,6 +113,8 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1386");
+
         Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);

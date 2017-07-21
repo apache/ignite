@@ -17,16 +17,17 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
@@ -56,11 +57,11 @@ import java.util.*;
  * </pre>
  * Here is how a grid instance can be configured from Spring XML configuration file. The
  * example below configures a grid instance with additional user attributes
- * (see {@link org.apache.ignite.cluster.ClusterNode#attributes()}) and specifies a grid name:
+ * (see {@link org.apache.ignite.cluster.ClusterNode#attributes()}) and specifies a Ignite instance name:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
- *     &lt;property name="gridName" value="grid"/&gt;
+ *     &lt;property name="igniteInstanceName" value="grid"/&gt;
  *     &lt;property name="userAttributes"&gt;
  *         &lt;map&gt;
  *             &lt;entry key="group" value="worker"/&gt;
@@ -174,12 +175,12 @@ public class Ignition {
     }
 
     /**
-     * Gets states of named grid. If name is {@code null}, then state of
-     * default no-name grid is returned.
+     * Gets states of named Ignite instance. If name is {@code null}, then state of
+     * default no-name Ignite instance is returned.
      *
-     * @param name Grid name. If name is {@code null}, then state of
-     *      default no-name grid is returned.
-     * @return Grid state.
+     * @param name Ignite instance name. If name is {@code null}, then state of
+     *      default no-name Ignite instance is returned.
+     * @return Ignite instance state.
      */
     public static IgniteState state(@Nullable String name) {
         return IgnitionEx.state(name);
@@ -201,13 +202,13 @@ public class Ignition {
     }
 
     /**
-     * Stops named grid. If {@code cancel} flag is set to {@code true} then
+     * Stops named Ignite instance. If {@code cancel} flag is set to {@code true} then
      * all jobs currently executing on local node will be interrupted. If
-     * grid name is {@code null}, then default no-name grid will be stopped.
-     * If wait parameter is set to {@code true} then grid will wait for all
+     * Ignite instance name is {@code null}, then default no-name Ignite instance will be stopped.
+     * If wait parameter is set to {@code true} then Ignite instance will wait for all
      * tasks to be finished.
      *
-     * @param name Grid name. If {@code null}, then default no-name grid will
+     * @param name Ignite instance name. If {@code null}, then default no-name Ignite instance will
      *      be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
      *      by calling {@link org.apache.ignite.compute.ComputeJob#cancel()} method. Note that just like with
@@ -215,12 +216,12 @@ public class Ignition {
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
      *      jobs running on it before stopping.
-     * @return {@code true} if named grid instance was indeed found and stopped,
+     * @return {@code true} if named Ignite instance was indeed found and stopped,
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel) {
-        return IgnitionEx.stop(name, cancel);
+        return IgnitionEx.stop(name, cancel, false);
     }
 
     /**
@@ -308,7 +309,7 @@ public class Ignition {
     }
 
     /**
-     * Starts grid with given configuration. Note that this method is no-op if grid with the name
+     * Starts grid with given configuration. Note that this method will throw an exception if grid with the name
      * provided in given configuration is already started.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
@@ -394,6 +395,23 @@ public class Ignition {
     public static Ignite start(InputStream springCfgStream) throws IgniteException {
         try {
             return IgnitionEx.start(springCfgStream);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+
+    /**
+     * Gets or starts new grid instance if it hasn't been started yet.
+     *
+     * @param cfg Grid configuration. This cannot be {@code null}.
+     * @return Grid instance.
+     * @throws IgniteException If grid could not be started.
+     */
+    public static Ignite getOrStart(IgniteConfiguration cfg) throws IgniteException {
+        try {
+            return IgnitionEx.start(cfg, false);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -496,23 +514,35 @@ public class Ignition {
     }
 
     /**
-     * Gets an named grid instance. If grid name is {@code null} or empty string,
-     * then default no-name grid will be returned. Note that caller of this method
+     * Gets a named Ignite instance. If Ignite instance name is {@code null} or empty string,
+     * then default no-name Ignite instance will be returned. Note that caller of this method
      * should not assume that it will return the same instance every time.
      * <p>
-     * Note that Java VM can run multiple grid instances and every grid instance (and its
-     * node) can belong to a different grid. Grid name defines what grid a particular grid
-     * instance (and correspondingly its node) belongs to.
+     * The name allows having multiple Ignite instances with different names within the same Java VM.
      *
-     * @param name Grid name to which requested grid instance belongs to. If {@code null},
-     *      then grid instance belonging to a default no-name grid will be returned.
-     * @return An instance of named grid. This method never returns
-     *      {@code null}.
-     * @throws IgniteIllegalStateException Thrown if default grid was not properly
-     *      initialized or grid instance was stopped or was not started.
+     * @param name Ignite instance name. If {@code null}, then a default no-name
+     *      Ignite instance will be returned.
+     * @return A named Ignite instance. This method never returns {@code null}.
+     * @throws IgniteIllegalStateException Thrown if default Ignite instance was not properly
+     *      initialized or Ignite instance was stopped or was not started.
      */
     public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
         return IgnitionEx.grid(name);
+    }
+
+    /**
+     * This method is used to address a local {@link Ignite} instance, principally from closure.
+     * <p>
+     * According to contract this method has to be called only under {@link IgniteThread}.
+     * An {@link IllegalArgumentException} will be thrown otherwise.
+     *
+     * @return A current {@link Ignite} instance to address from closure.
+     * @throws IgniteIllegalStateException Thrown if grid was not properly
+     *      initialized or grid instance was stopped or was not started
+     * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
+     */
+    public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
+        return IgnitionEx.localIgnite();
     }
 
     /**

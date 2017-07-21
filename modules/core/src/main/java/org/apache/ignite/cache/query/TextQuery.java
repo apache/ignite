@@ -17,11 +17,11 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import javax.cache.*;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query for Lucene based fulltext search.
@@ -76,7 +76,7 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @return {@code this} For chaining.
      */
     public TextQuery<K, V> setType(Class<?> type) {
-        return setType(GridQueryProcessor.typeName(type));
+        return setType(QueryUtils.typeName(type));
     }
 
     /**

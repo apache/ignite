@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import junit.framework.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.connection.*;
-import org.apache.ignite.internal.processors.rest.handlers.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.client.GridClientCacheFlag;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.util.typedef.F;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.client.GridClientCacheFlag.*;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
 
 /**
  * Tests conversions between GridClientCacheFlag.
@@ -36,7 +37,7 @@ public class ClientCacheFlagsCodecTest extends TestCase {
      */
     public void testEncodingDecodingFullness() {
         for (GridClientCacheFlag f : GridClientCacheFlag.values()) {
-            if (f == KEEP_PORTABLES)
+            if (f == KEEP_BINARIES)
                 continue;
 
             int bits = GridClientConnection.encodeCacheFlags(Collections.singleton(f));
@@ -70,7 +71,7 @@ public class ClientCacheFlagsCodecTest extends TestCase {
 
         boolean out = GridCacheCommandHandler.parseCacheFlags(bits);
 
-        int length = flagSet.contains(KEEP_PORTABLES) ? flagSet.size() - 1 : flagSet.size();
+        int length = flagSet.contains(KEEP_BINARIES) ? flagSet.size() - 1 : flagSet.size();
 
         assertEquals(length > 0, out);
     }

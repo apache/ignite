@@ -17,23 +17,52 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.jetbrains.annotations.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.Date;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterResponse;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
+import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.internal.util.nio.GridNioParser;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.*;
-import java.nio.charset.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BOOLEAN_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_ARR_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.DATE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.DOUBLE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.FLAGS_LENGTH;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.FLOAT_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.HDR_LEN;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_HANDSHAKE_RES_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_REQ_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.INT_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.LONG_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.MEMCACHE_REQ_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.MEMCACHE_RES_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.SERIALIZED_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage.RESP_REQ_FLAG;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.PARSER_STATE;
 
 /**
  * Parser for extended memcache protocol. Handles parsing and encoding activity.
@@ -75,6 +104,11 @@ public class GridTcpRestParser implements GridNioParser {
 
                     break;
 
+                case RESP_REQ_FLAG:
+                    state.packetType(GridClientPacketType.REDIS);
+
+                    break;
+
                 case IGNITE_REQ_FLAG:
                     // Skip header.
                     buf.get();
@@ -112,6 +146,11 @@ public class GridTcpRestParser implements GridNioParser {
 
                 break;
 
+            case REDIS:
+                res = GridRedisProtocolParser.readArray(buf);
+
+                break;
+
             case IGNITE_HANDSHAKE:
                 res = parseHandshake(buf, state);
 
@@ -144,6 +183,8 @@ public class GridTcpRestParser implements GridNioParser {
 
         if (msg instanceof GridMemcachedMessage)
             return encodeMemcache((GridMemcachedMessage)msg);
+        else if (msg instanceof GridRedisMessage)
+            return ((GridRedisMessage)msg).getResponse();
         else if (msg instanceof GridClientPingPacket)
             return ByteBuffer.wrap(GridClientPingPacket.PING_PACKET);
         else if (msg instanceof GridClientHandshakeRequest) {
@@ -424,8 +465,8 @@ public class GridTcpRestParser implements GridNioParser {
      * @param intBuf Intermediate buffer to read bytes from and to save remaining bytes to.
      * @param size Number of bytes to read.
      * @return Resulting byte array or {@code null}, if both buffers contain less bytes
-     *         than required. In case of non-null result, the intermediate buffer is empty.
-     *         In case of {@code null} result, the input buffer is empty (read fully).
+     * than required. In case of non-null result, the intermediate buffer is empty.
+     * In case of {@code null} result, the input buffer is empty (read fully).
      * @throws IOException If IO error occurs.
      */
     @Nullable private byte[] statefulRead(ByteBuffer buf, ByteArrayOutputStream intBuf, int size) throws IOException {
@@ -480,7 +521,8 @@ public class GridTcpRestParser implements GridNioParser {
      * @throws IOException On marshaller error.
      * @throws IgniteCheckedException If no marshaller was defined for the session.
      */
-    protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) throws IOException, IgniteCheckedException {
+    protected GridClientMessage parseClientMessage(GridNioSession ses,
+        ParserState state) throws IOException, IgniteCheckedException {
         GridClientMessage msg;
 
         if (routerClient) {
@@ -571,8 +613,8 @@ public class GridTcpRestParser implements GridNioParser {
         assert res.size() == HDR_LEN;
 
         if (flagsLen > 0) {
-            res.add((short) keyFlags);
-            res.add((short) valFlags);
+            res.add((short)keyFlags);
+            res.add((short)valFlags);
         }
 
         assert msg.key() == null || msg.key() instanceof byte[];
@@ -596,7 +638,8 @@ public class GridTcpRestParser implements GridNioParser {
      * @throws IOException If parsing failed.
      * @throws IgniteCheckedException If deserialization failed.
      */
-    private GridClientMessage assemble(GridNioSession ses, GridMemcachedMessage req) throws IOException, IgniteCheckedException {
+    private GridClientMessage assemble(GridNioSession ses,
+        GridMemcachedMessage req) throws IOException, IgniteCheckedException {
         byte[] extras = req.extras();
 
         // First, decode key and value, if any
@@ -692,7 +735,7 @@ public class GridTcpRestParser implements GridNioParser {
         assert bytes != null;
 
         if ((flags & SERIALIZED_FLAG) != 0)
-            return jdkMarshaller.unmarshal(bytes, null);
+            return U.unmarshal(jdkMarshaller, bytes, null);
 
         int masked = flags & 0xff00;
 
@@ -739,17 +782,17 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BOOLEAN_FLAG;
         }
         else if (obj instanceof Integer) {
-            data = U.intToBytes((Integer) obj);
+            data = U.intToBytes((Integer)obj);
 
             flags |= INT_FLAG;
         }
         else if (obj instanceof Long) {
-            data = U.longToBytes((Long) obj);
+            data = U.longToBytes((Long)obj);
 
             flags |= LONG_FLAG;
         }
         else if (obj instanceof Date) {
-            data = U.longToBytes(((Date) obj).getTime());
+            data = U.longToBytes(((Date)obj).getTime());
 
             flags |= DATE_FLAG;
         }
@@ -759,12 +802,12 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_FLAG;
         }
         else if (obj instanceof Float) {
-            data = U.intToBytes(Float.floatToIntBits((Float) obj));
+            data = U.intToBytes(Float.floatToIntBits((Float)obj));
 
             flags |= FLOAT_FLAG;
         }
         else if (obj instanceof Double) {
-            data = U.longToBytes(Double.doubleToLongBits((Double) obj));
+            data = U.longToBytes(Double.doubleToLongBits((Double)obj));
 
             flags |= DOUBLE_FLAG;
         }
@@ -774,7 +817,7 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_ARR_FLAG;
         }
         else {
-            jdkMarshaller.marshal(obj, out);
+            U.marshal(jdkMarshaller, obj, out);
 
             flags |= SERIALIZED_FLAG;
         }

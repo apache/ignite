@@ -20,6 +20,7 @@
 ::
 
 @echo off
+Setlocal EnableDelayedExpansion
 
 if "%OS%" == "Windows_NT"  setlocal
 
@@ -118,8 +119,8 @@ if %ERRORLEVEL% neq 0 (
 ::
 :: Process 'restart'.
 ::
-set RANDOM_NUMBER_COMMAND="%JAVA_HOME%\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator
-for /f "usebackq tokens=*" %%i in (`"%RANDOM_NUMBER_COMMAND%"`) do set RANDOM_NUMBER=%%i
+set RANDOM_NUMBER_COMMAND="!JAVA_HOME!\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator
+for /f "usebackq tokens=*" %%i in (`!RANDOM_NUMBER_COMMAND!`) do set RANDOM_NUMBER=%%i
 
 set RESTART_SUCCESS_FILE="%IGNITE_HOME%\work\ignite_success_%RANDOM_NUMBER%"
 set RESTART_SUCCESS_OPT=-DIGNITE_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
@@ -132,7 +133,7 @@ set RESTART_SUCCESS_OPT=-DIGNITE_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 :: This is executed if -nojmx is not specified
 ::
 if not "%NO_JMX%" == "1" (
-    for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp %CP% org.apache.ignite.internal.util.portscanner.GridJmxPortFinder"') do (
+    for /F "tokens=*" %%A in ('""!JAVA_HOME!\bin\java" -cp %CP% org.apache.ignite.internal.util.portscanner.GridJmxPortFinder"') do (
         set JMX_PORT=%%A
     )
 )
@@ -158,7 +159,12 @@ if "%JMX_PORT%" == "" (
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
-if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[7]\." > nul
+if %ERRORLEVEL% equ 0 (
+    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
+) else (
+    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m
+)
 
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
@@ -176,6 +182,11 @@ if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX
 :: Uncomment to set preference to IPv4 stack.
 ::
 :: set JVM_OPTS=%JVM_OPTS% -Djava.net.preferIPv4Stack=true
+
+::
+:: Uncomment to enable reverse DNS lookup.
+::
+:: set JVM_OPTS=%JVM_OPTS% -Dsun.net.spi.nameservice.provider.1=default -Dsun.net.spi.nameservice.provider.2=dns,sun
 
 ::
 :: Assertions are disabled by default since version 3.5.

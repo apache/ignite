@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Grid job metrics processor load test.

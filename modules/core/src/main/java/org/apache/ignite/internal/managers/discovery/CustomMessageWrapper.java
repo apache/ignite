@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.spi.discovery.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *

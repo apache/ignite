@@ -17,24 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Cache + Deployment test.
@@ -43,37 +49,37 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Name for grid without cache. */
-    private static final String GRID_NAME = "grid-no-cache";
+    /** Name for Ignite instance without cache. */
+    protected static final String IGNITE_INSTANCE_NAME = "grid-no-cache";
 
     /** First test task name. */
-    private static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask1";
+    protected static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask1";
 
     /** Second test task name. */
-    private static final String TEST_TASK_2 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask2";
+    protected static final String TEST_TASK_2 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask2";
 
     /** Third test task name. */
-    private static final String TEST_TASK_3 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask3";
+    protected static final String TEST_TASK_3 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask3";
 
     /** Test value 1. */
-    private static final String TEST_KEY = "org.apache.ignite.tests.p2p.CacheDeploymentTestKey";
+    protected static final String TEST_KEY = "org.apache.ignite.tests.p2p.CacheDeploymentTestKey";
 
     /** Test value 1. */
-    private static final String TEST_VALUE_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
+    protected static final String TEST_VALUE_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
 
     /** Test value 2. */
-    private static final String TEST_VALUE_2 = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue2";
+    protected static final String TEST_VALUE_2 = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue2";
 
     /** */
-    private DeploymentMode depMode;
+    protected DeploymentMode depMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
 
-        if (GRID_NAME.equals(gridName))
+        if (IGNITE_INSTANCE_NAME.equals(igniteInstanceName))
             cfg.setCacheConfiguration();
         else
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -106,6 +112,16 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * Checks whether a cache should be undeployed in SHARED or CONTINUOUS modes.
+     *
+     * @param g Ignite node.
+     * @return {@code true} if the cache has to be undeployed, {@code false} otherwise.
+     */
+    protected boolean isCacheUndeployed(Ignite g) {
+        return !(g.configuration().getMarshaller() instanceof BinaryMarshaller);
+    }
+
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
     public void testDeployment() throws Exception {
@@ -115,7 +131,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -141,7 +157,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -152,7 +168,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -176,7 +192,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -187,23 +203,24 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
-            stopGrid(GRID_NAME);
+            stopGrid(IGNITE_INSTANCE_NAME);
 
             for (int i = 0; i < 10; i++) {
-                if (g1.cache(null).localSize() == 0 && g2.cache(null).localSize() == 0)
+                if (g1.cache(DEFAULT_CACHE_NAME).localSize() == 0 && g2.cache(DEFAULT_CACHE_NAME).localSize() == 0)
                     break;
 
                 U.sleep(500);
             }
 
-            assertEquals(0, g1.cache(null).localSize());
-            assertEquals(0, g2.cache(null).localSize());
+            assertEquals(0, g1.cache(DEFAULT_CACHE_NAME).localSize());
+
+            assertEquals(isCacheUndeployed(g1) ? 0 : 1, g2.cache(DEFAULT_CACHE_NAME).localSize());
 
             startGrid(3);
         }
@@ -215,13 +232,25 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
     public void testDeployment4() throws Exception {
+        doDeployment4(false);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    public void testDeployment4BackupLeavesGrid() throws Exception {
+        doDeployment4(true);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    private void doDeployment4(boolean backupLeavesGrid) throws Exception {
         try {
             depMode = CONTINUOUS;
 
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             info("Started grids:");
             info("g0: " + g0.cluster().localNode().id());
@@ -237,19 +266,18 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()) &&
+                    g1.affinity(DEFAULT_CACHE_NAME).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
                     break;
             }
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
-            stopGrid(GRID_NAME);
+            stopGrid(IGNITE_INSTANCE_NAME);
 
-            assert g1.cache(null).localSize(CachePeekMode.ALL) == 1;
-            assert g1.cache(null).localSize(CachePeekMode.ALL) == 1;
+            assertEquals(1, g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL));
 
-            assert g2.cache(null).localSize(CachePeekMode.ALL) == 1;
-            assert g2.cache(null).localSize(CachePeekMode.ALL) == 1;
+            assertEquals(1, g2.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL));
 
             startGrid(3);
         }
@@ -284,11 +312,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info("Key: " + key);
 
-            IgniteCache<Object, Object> cache = g0.cache(null);
+            IgniteCache<Object, Object> cache = g0.cache(DEFAULT_CACHE_NAME);
 
             assert cache != null;
 
-            cache.put(key, Arrays.asList(val1Cls.newInstance()));
+            cache.put(key, new ArrayList<>(Arrays.asList(val1Cls.newInstance())));
 
             info(">>>>>>> First put completed.");
 
@@ -333,7 +361,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -366,7 +394,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -392,11 +420,76 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g = startGrid(0);
 
-            g.cache(null).put(0, valCls.newInstance());
+            g.cache(DEFAULT_CACHE_NAME).put(0, valCls.newInstance());
 
             info("Added value to cache 0.");
 
             startGrid(1);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheUndeploymentSharedMode() throws Exception {
+        testCacheUndeployment(SHARED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheUndeploymentContMode() throws Exception {
+        testCacheUndeployment(CONTINUOUS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testCacheUndeployment(DeploymentMode depMode) throws Exception {
+        ClassLoader ldr = getExternalClassLoader();
+
+        Class valCls = ldr.loadClass(TEST_VALUE_1);
+        Class taskCls = ldr.loadClass(TEST_TASK_2);
+
+        try {
+            this.depMode = depMode;
+
+            Ignite g0 = startGrid(0);
+            Ignite g1 = startGrid(1);
+
+            for (int i = 0; i < 20; i++)
+                g0.cache(DEFAULT_CACHE_NAME).put(i, valCls.newInstance());
+
+            assert g0.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
+            assert g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
+
+            g0.compute(g0.cluster().forRemotes()).execute(taskCls, g1.cluster().localNode());
+
+            stopGrid(0);
+
+            if (depMode == SHARED && isCacheUndeployed(g1)) {
+                for (int i = 0; i < 10; i++) {
+                    if (g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) == 0)
+                        break;
+
+                    Thread.sleep(500);
+                }
+
+                assertEquals(0, g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL));
+            }
+            else {
+                for (int i = 0; i < 4; i++) {
+                    if (g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) == 0)
+                        break;
+
+                    Thread.sleep(500);
+                }
+
+                assert g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) > 0 : "Cache undeployed unexpectadly";
+            }
         }
         finally {
             stopAllGrids();
@@ -415,15 +508,18 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
      * @return Key with described properties.
      * @throws IllegalStateException if such a key could not be found after 10000 iterations.
      */
-    private int getNextKey(int start, Ignite g, ClusterNode primary, ClusterNode backup, ClusterNode near) {
+    private int getNextKey(int start, Ignite g, ClusterNode primary, ClusterNode backup, ClusterNode near)
+        throws Exception {
+        awaitPartitionMapExchange();
+
         info("Primary: " + primary);
         info("Backup: " + backup);
         info("Near: " + near);
 
         for (int i = start; i < start + 10000; i++) {
-            if (g.affinity(null).isPrimary(primary, i) && g.affinity(null).isBackup(backup, i)) {
-                assert !g.affinity(null).isPrimary(near, i) : "Key: " + i;
-                assert !g.affinity(null).isBackup(near, i) : "Key: " + i;
+            if (g.affinity(DEFAULT_CACHE_NAME).isPrimary(primary, i) && g.affinity(DEFAULT_CACHE_NAME).isBackup(backup, i)) {
+                assert !g.affinity(DEFAULT_CACHE_NAME).isPrimary(near, i) : "Key: " + i;
+                assert !g.affinity(DEFAULT_CACHE_NAME).isBackup(near, i) : "Key: " + i;
 
                 return i;
             }

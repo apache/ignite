@@ -17,16 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
-import java.nio.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
@@ -124,11 +132,10 @@ public class TxEntryValueHolder implements Message {
     }
 
     /**
-     * @param sharedCtx Shared cache context.
      * @param ctx Cache context.
      * @throws org.apache.ignite.IgniteCheckedException If marshaling failed.
      */
-    public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx)
+    public void marshal(GridCacheContext<?, ?> ctx)
         throws IgniteCheckedException {
         if (hasWriteVal && val != null)
             val.prepareMarshal(ctx.cacheObjectContext());
@@ -142,6 +149,11 @@ public class TxEntryValueHolder implements Message {
     public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (hasWriteVal && val != null)
             val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -222,11 +234,11 @@ public class TxEntryValueHolder implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(TxEntryValueHolder.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 101;
     }
 

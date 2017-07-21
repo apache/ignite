@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * TCP communication SPI config test.
@@ -43,5 +45,27 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "ackSendThreshold", 0);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "ackSendThreshold", -1);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "unacknowledgedMessagesBufferSize", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionsPerNode", 0);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionsPerNode", -1);
+        checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectionsPerNode", Integer.MAX_VALUE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalPortRange() throws Exception {
+        try {
+            IgniteConfiguration cfg = getConfiguration();
+
+            TcpCommunicationSpi spi = new TcpCommunicationSpi();
+
+            spi.setLocalPortRange(0);
+            cfg.setCommunicationSpi(spi);
+
+            startGrid(cfg.getIgniteInstanceName(), cfg);
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }

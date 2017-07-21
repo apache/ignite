@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.internal.util.tostring.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
 /**
  * Class to store query results returned by remote nodes. It's required to fully

@@ -17,11 +17,15 @@
 
 package org.apache.ignite.loadtests.offheap;
 
-import org.apache.ignite.internal.util.offheap.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import org.apache.ignite.internal.util.offheap.GridOffHeapEvictListener;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests off-heap map.
@@ -38,7 +42,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
         new HashMap<>(LOAD_CNT);
 
     /** Unsafe map. */
-    private GridOffHeapMap<String> map;
+    private GridOffHeapMap map;
 
     /** */
     protected float load = 0.75f;
@@ -90,7 +94,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      * @return New map.
      */
-    protected abstract <K> GridOffHeapMap<K> newMap();
+    protected abstract GridOffHeapMap newMap();
 
     /**
      * @param key Key.

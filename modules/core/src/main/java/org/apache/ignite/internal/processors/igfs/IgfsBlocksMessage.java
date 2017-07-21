@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * IGFS write blocks message.
@@ -81,6 +82,11 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
      */
     public Map<IgfsBlockKey, byte[]> blocks() {
         return blocks;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -158,11 +164,11 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsBlocksMessage.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 66;
     }
 

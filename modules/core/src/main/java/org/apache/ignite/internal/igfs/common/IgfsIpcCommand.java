@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.igfs.common;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Grid file system commands to call remotely.
@@ -81,7 +82,10 @@ public enum IgfsIpcCommand {
     WRITE_BLOCK,
 
     /** Server response. */
-    CONTROL_RESPONSE;
+    CONTROL_RESPONSE,
+
+    /** Mode resolver request */
+    MODE_RESOLVER;
 
     /** All values */
     private static final List<IgfsIpcCommand> ALL = Arrays.asList(values());

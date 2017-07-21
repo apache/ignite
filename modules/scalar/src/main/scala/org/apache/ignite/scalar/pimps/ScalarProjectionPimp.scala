@@ -375,11 +375,9 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
         IgniteFuture[java.util.Collection[R]] = {
-        val comp = value.ignite().compute(forPredicate(p)).withAsync()
+        val comp = value.ignite().compute(forPredicate(p))
 
-        comp.call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
-
-        comp.future()
+        comp.callAsync[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
     }
 
     /**
@@ -435,11 +433,9 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
-        val comp = value.ignite().compute(forPredicate(p)).withAsync()
+        val comp = value.ignite().compute(forPredicate(p))
 
-        comp.run(toJavaCollection(s, (f: Run) => toRunnable(f)))
-
-        comp.future()
+        comp.runAsync(toJavaCollection(s, (f: Run) => toRunnable(f)))
     }
 
     /**
@@ -494,11 +490,9 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
     def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
         assert(s != null && r != null)
 
-        val comp = value.ignite().compute(forPredicate(p)).withAsync()
+        val comp = value.ignite().compute(forPredicate(p))
 
-        comp.call(toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
-
-        comp.future()
+        comp.callAsync(toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
     }
 
     /**
@@ -579,7 +573,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * All default SPI implementations configured for this grid instance will be
      * used (i.e. failover, load balancing, collision resolution, etc.).
      * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement `GridComputeTask` which will provide you with full control over the execution.
+     * you should implement `ComputeTask` which will provide you with full control over the execution.
      *
      * Notice that `Runnable` and `Callable` implementations must support serialization as required
      * by the configured marshaller. For example, JDK marshaller will require that implementations would
@@ -616,7 +610,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * not block and returns immediately with future. All default SPI implementations
      * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
      * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement `GridComputeTask` which will provide you with full control over the execution.
+     * you should implement `ComputeTask` which will provide you with full control over the execution.
      *
      * Note that class `GridAbsClosure` implements `Runnable` and class `GridOutClosure`
      * implements `Callable` interface. Note also that class `GridFunc` and typedefs provide rich
@@ -648,10 +642,8 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): IgniteFuture[_] = {
-        val comp = value.ignite().compute(forPredicate(p)).withAsync()
+        val comp = value.ignite().compute(forPredicate(p))
 
-        comp.affinityRun(cacheName, affKey, toRunnable(r))
-
-        comp.future()
+        comp.affinityRunAsync(cacheName, affKey, toRunnable(r))
     }
 }

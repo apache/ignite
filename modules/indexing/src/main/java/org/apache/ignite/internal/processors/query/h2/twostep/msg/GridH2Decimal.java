@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.h2.value.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.h2.value.Value;
+import org.h2.value.ValueDecimal;
 
-import java.math.*;
-import java.nio.*;
+import static org.h2.util.StringUtils.convertBytesToHex;
 
 /**
  * H2 Decimal.
@@ -119,16 +123,21 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Decimal.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -10;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return scale + "_" + convertBytesToHex(b);
     }
 }

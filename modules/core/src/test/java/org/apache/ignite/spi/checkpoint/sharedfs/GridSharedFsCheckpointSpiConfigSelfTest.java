@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.util.*;
+import java.util.LinkedList;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Grid shared file system checkpoint SPI config self test.

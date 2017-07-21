@@ -17,11 +17,14 @@
 
 package org.apache.ignite.compute.gridify;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.compute.gridify.aop.*;
-
-import java.io.*;
-import java.lang.annotation.*;
+import java.io.Serializable;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
 
 /**
  * {@code Gridify} annotation is the main way to grid-enable existing code.
@@ -89,7 +92,7 @@ import java.lang.annotation.*;
  *        }));
  *    }
  *
- *    public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *    public Integer reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *        return results.size() - 1 + F.sum(F.&lt;Integer&gt;jobResults(results));
  *    }
  * }
@@ -181,7 +184,17 @@ public @interface Gridify {
     /**
      * Name of the grid to use. By default, no-name default grid is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named grids.
+     *
+     * @deprecated Use {@link #igniteInstanceName()}. Nonempty {@link #igniteInstanceName()} takes precedence.
      */
     @SuppressWarnings({"JavaDoc"})
+    @Deprecated
     String gridName() default "";
+
+    /**
+     * Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
+     * Refer to {@link org.apache.ignite.Ignition} for information about named Ignite instances.
+     */
+    @SuppressWarnings({"JavaDoc"})
+    String igniteInstanceName() default "";
 }

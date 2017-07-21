@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.locks.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Tests for {@link GridToStringBuilder}.
@@ -51,7 +54,13 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         IgniteLogger log = log();
 
-        log.info(obj.toStringWithAdditional());
+        String manual = obj.toStringWithAdditionalManual();
+        log.info(manual);
+
+        String automatic = obj.toStringWithAdditionalAutomatic();
+        log.info(automatic);
+
+        assert manual.equals(automatic);
     }
 
     /**
@@ -114,7 +123,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * Test class.
      */
-    private class TestClass1 {
+    private static class TestClass1 {
         /** */
         @SuppressWarnings("unused")
         @GridToStringOrder(0)
@@ -126,6 +135,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         /** */
         @SuppressWarnings("unused")
+        @GridToStringInclude(sensitive = true)
         private long longVar;
 
         /** */
@@ -177,7 +187,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             buf.append("id=").append(id).append(", ");
             buf.append("uuidVar=").append(uuidVar).append(", ");
             buf.append("intVar=").append(intVar).append(", ");
-            buf.append("longVar=").append(longVar).append(", ");
+            if (S.INCLUDE_SENSITIVE)
+                buf.append("longVar=").append(longVar).append(", ");
             buf.append("boolVar=").append(boolVar).append(", ");
             buf.append("byteVar=").append(byteVar).append(", ");
             buf.append("name=").append(name).append(", ");
@@ -197,10 +208,23 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         }
 
         /**
-         * @return String with additional parameters.
+         * @return Automatic string with additional parameters.
          */
-        String toStringWithAdditional() {
-            return S.toString(TestClass1.class, this, "newParam1", 1, "newParam2", 2);
+        String toStringWithAdditionalAutomatic() {
+            return S.toString(TestClass1.class, this, "newParam1", 1, false, "newParam2", 2, true);
+        }
+
+        /**
+         * @return Manual string with additional parameters.
+         */
+        String toStringWithAdditionalManual() {
+            StringBuilder s = new StringBuilder(toStringManual());
+            s.setLength(s.length() - 1);
+            s.append(", newParam1=").append(1);
+            if (S.INCLUDE_SENSITIVE)
+                s.append(", newParam2=").append(2);
+            s.append(']');
+            return s.toString();
         }
     }
 }

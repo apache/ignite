@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.checkpoint.cache;
 
-import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.spi.checkpoint.GridCheckpointSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Grid cache checkpoint SPI self test.

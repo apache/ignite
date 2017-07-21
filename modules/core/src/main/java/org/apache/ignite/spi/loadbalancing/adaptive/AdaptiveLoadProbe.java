@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Pluggable implementation of node load probing. Implementations
@@ -46,7 +46,7 @@ import org.apache.ignite.cluster.*;
  *     }
  *
  *     // Calculate load based on number of active and waiting jobs.
- *     public double getLoad(GridNode node, int jobsSentSinceLastUpdate) {
+ *     public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
  *         GridNodeMetrics metrics = node.getMetrics();
  *
  *         if (useAvg) {

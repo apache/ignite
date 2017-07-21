@@ -17,27 +17,40 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
-import javax.sql.*;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import javax.sql.DataSource;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.LongAdder8;
 
 /**
  * {@link CacheStore} implementation backed by JDBC. This implementation
@@ -75,22 +88,22 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /**
      * Default create table query
-     * (value is <tt>create table if not exists ENTRIES (key other primary key, val other)</tt>).
+     * (value is <tt>create table if not exists ENTRIES (akey binary primary key, val binary)</tt>).
      */
     public static final String DFLT_CREATE_TBL_QRY = "create table if not exists ENTRIES " +
-        "(key binary primary key, val binary)";
+        "(akey binary primary key, val binary)";
 
-    /** Default load entry query (value is <tt>select * from ENTRIES where key=?</tt>). */
-    public static final String DFLT_LOAD_QRY = "select * from ENTRIES where key=?";
+    /** Default load entry query (value is <tt>select * from ENTRIES where akey=?</tt>). */
+    public static final String DFLT_LOAD_QRY = "select * from ENTRIES where akey=?";
 
-    /** Default update entry query (value is <tt>select * from ENTRIES where key=?</tt>). */
-    public static final String DFLT_UPDATE_QRY = "update ENTRIES set val=? where key=?";
+    /** Default update entry query (value is <tt>select * from ENTRIES where akey=?</tt>). */
+    public static final String DFLT_UPDATE_QRY = "update ENTRIES set val=? where akey=?";
 
-    /** Default insert entry query (value is <tt>insert into ENTRIES (key, val) values (?, ?)</tt>). */
-    public static final String DFLT_INSERT_QRY = "insert into ENTRIES (key, val) values (?, ?)";
+    /** Default insert entry query (value is <tt>insert into ENTRIES (akey, val) values (?, ?)</tt>). */
+    public static final String DFLT_INSERT_QRY = "insert into ENTRIES (akey, val) values (?, ?)";
 
-    /** Default delete entry query (value is <tt>delete from ENTRIES where key=?</tt>). */
-    public static final String DFLT_DEL_QRY = "delete from ENTRIES where key=?";
+    /** Default delete entry query (value is <tt>delete from ENTRIES where akey=?</tt>). */
+    public static final String DFLT_DEL_QRY = "delete from ENTRIES where akey=?";
 
     /** Connection attribute name. */
     private static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
@@ -239,7 +252,10 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         V val = entry.getValue();
 
         if (log.isDebugEnabled())
-            log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
+            log.debug(S.toString("Store put",
+                "key", key, true,
+                "val", val, true,
+                "tx", tx, false));
 
         Connection conn = null;
 
@@ -547,7 +563,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return marsh.marshal(obj);
+        return U.marshal(marsh, obj);
     }
 
     /**
@@ -562,7 +578,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return marsh.unmarshal(bytes, getClass().getClassLoader());
+        return U.unmarshal(marsh, bytes, getClass().getClassLoader());
     }
 
     /**

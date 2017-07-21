@@ -17,16 +17,18 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.transactions.*;
+import java.io.Serializable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.transactions.Transaction;
 
-import java.io.*;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Demonstrates how to use cache transactions.
@@ -56,7 +58,8 @@ public class CacheTransactionExample {
 
             cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            try (IgniteCache<Integer, Account> cache = ignite.getOrCreateCache(cfg, new NearCacheConfiguration<Integer, Account>())) {
+            // Auto-close cache at the end of the example.
+            try (IgniteCache<Integer, Account> cache = ignite.getOrCreateCache(cfg)) {
                 // Initialize.
                 cache.put(1, new Account(1, 100));
                 cache.put(2, new Account(1, 200));
@@ -76,6 +79,10 @@ public class CacheTransactionExample {
                 System.out.println(">>> " + cache.get(2));
 
                 System.out.println(">>> Cache transaction example finished.");
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

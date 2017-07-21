@@ -17,11 +17,11 @@
 
 package org.apache.ignite.events;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Grid discovery event.
@@ -113,9 +113,9 @@ public class DiscoveryEvent extends EventAdapter {
     /**
      * Gets node that caused this event to be generated. It is potentially different from the node
      * on which this event was recorded. For example, node {@code A} locally recorded the event that a remote node
-     * {@code B} joined the topology. In this case this method will return ID of {@code B}.
+     * {@code B} joined the topology. In this case this method will return node {@code B}.
      *
-     * @return Event node ID.
+     * @return Event node.
      */
     public ClusterNode eventNode() {
         return evtNode;

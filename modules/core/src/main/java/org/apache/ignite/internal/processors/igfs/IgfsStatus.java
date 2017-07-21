@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * IGFS response for status request.

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -67,11 +69,6 @@ public interface GridCommunicationClient {
     public void release();
 
     /**
-     * @return {@code True} if client was reserved.
-     */
-    public boolean reserved();
-
-    /**
      * Gets idle time of this client.
      *
      * @return Idle time of this client.
@@ -92,15 +89,22 @@ public interface GridCommunicationClient {
     public void sendMessage(byte[] data, int len) throws IgniteCheckedException;
 
     /**
-     * @param nodeId Node ID (provided only if versions of local and remote nodes are different).
+     * @param nodeId Remote node ID. Provided only for sync clients.
      * @param msg Message to send.
+     * @param c Ack closure.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if should try to resend message.
      */
-    public boolean sendMessage(@Nullable UUID nodeId, Message msg) throws IgniteCheckedException;
+    public boolean sendMessage(@Nullable UUID nodeId, Message msg, @Nullable IgniteInClosure<IgniteException> c)
+        throws IgniteCheckedException;
 
     /**
      * @return {@code True} if send is asynchronous.
      */
     public boolean async();
+
+    /**
+     * @return Connection index.
+     */
+    public int connectionIndex();
 }

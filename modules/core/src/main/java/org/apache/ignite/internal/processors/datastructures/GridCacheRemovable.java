@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.jetbrains.annotations.*;
-
 /**
  * Provides callback for marking object as removed.
  */
@@ -31,7 +29,7 @@ public interface GridCacheRemovable {
     public boolean onRemoved();
 
     /**
-     * @param err Error which cause data structure to become invalid.
+     *
      */
-    public void onInvalid(@Nullable Exception err);
+    public void needCheckNotRemoved();
 }

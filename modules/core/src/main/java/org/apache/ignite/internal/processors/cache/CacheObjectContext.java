@@ -17,21 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cacheobject.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class CacheObjectContext {
+@SuppressWarnings("TypeMayBeWeakened")
+public class CacheObjectContext implements CacheObjectValueContext {
     /** */
     private GridKernalContext kernalCtx;
 
     /** */
-    private IgniteCacheObjectProcessor proc;
+    private String cacheName;
 
     /** */
     private AffinityKeyMapper dfltAffMapper;
@@ -43,45 +50,48 @@ public class CacheObjectContext {
     private boolean storeVal;
 
     /** */
-    private boolean p2pEnabled;
+    private boolean addDepInfo;
 
     /**
      * @param kernalCtx Kernal context.
      * @param dfltAffMapper Default affinity mapper.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
+     * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
      */
     public CacheObjectContext(GridKernalContext kernalCtx,
+        String cacheName,
         AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
-        boolean storeVal) {
+        boolean storeVal,
+        boolean addDepInfo) {
         this.kernalCtx = kernalCtx;
-        this.p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
+        this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
-
-        proc = kernalCtx.cacheObjects();
+        this.addDepInfo = addDepInfo;
     }
 
     /**
-     * @return {@code True} if peer class loading is enabled.
+     * @return Cache name.
      */
-    public boolean p2pEnabled() {
-        return p2pEnabled;
+    public String cacheName() {
+        return cacheName;
     }
 
-    /**
-     * @return Copy on get flag.
-     */
-    public boolean copyOnGet() {
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean copyOnGet() {
         return cpyOnGet;
     }
 
-    /**
-     * @return {@code True} if should store unmarshalled value in cache.
-     */
-    public boolean storeValue() {
+    /** {@inheritDoc} */
+    @Override public boolean storeValue() {
         return storeVal;
     }
 
@@ -92,39 +102,26 @@ public class CacheObjectContext {
         return dfltAffMapper;
     }
 
-    /**
-     * @return Kernal context.
-     */
-    public GridKernalContext kernalContext() {
+    /** {@inheritDoc} */
+    @Override public GridKernalContext kernalContext() {
         return kernalCtx;
     }
 
-    /**
-     * @return Processor.
-     */
-    public IgniteCacheObjectProcessor processor() {
-        return proc;
+    /** {@inheritDoc} */
+    @Override public boolean binaryEnabled() {
+        return false;
     }
 
     /**
-     * Unwraps object.
-     *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return o;
-    }
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+        if (o == null)
+            return null;
 
-    /**
-     * Unwraps collection.
-     *
-     * @param col Collection to unwrap.
-     * @param keepPortable Keep portable flag.
-     * @return Unwrapped collection.
-     */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        return col;
+        return CacheObjectUtils.unwrapBinaryIfNeeded(this, o, keepBinary, cpy);
     }
 }

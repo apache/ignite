@@ -17,9 +17,8 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.compute.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.compute.ComputeJobResult;
 
 /**
  * Convenient {@link IgfsTask} adapter with empty reduce step. Use this adapter in case you are not interested in

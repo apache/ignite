@@ -17,21 +17,26 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.managers.loadbalancer.*;
-import org.apache.ignite.logger.java.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.thread.*;
-import org.springframework.context.*;
-import org.springframework.context.support.*;
-
-import javax.management.*;
-import java.io.*;
-import java.lang.management.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import javax.management.MBeanServer;
+import org.apache.ignite.GridTestJobContext;
+import org.apache.ignite.GridTestTaskSession;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeLoadBalancer;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerAdapter;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
 
 /**
  * Marshaller resource bean.

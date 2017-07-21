@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache.eviction;
 
+import java.io.Serializable;
+import javax.cache.Cache;
 import org.apache.ignite.configuration.CacheConfiguration;
-
-import javax.cache.*;
-import java.io.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when

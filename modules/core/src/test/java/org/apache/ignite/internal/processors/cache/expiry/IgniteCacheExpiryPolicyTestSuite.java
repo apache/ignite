@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import junit.framework.*;
-import org.apache.ignite.cache.store.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.cache.store.IgniteCacheExpiryStoreLoadSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerNotificationTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerExpiredEventsTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheExpireAndUpdateConsistencyTest;
 
 /**
  *
@@ -31,11 +34,11 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Expiry Policy Test Suite");
 
+        suite.addTestSuite(IgniteCacheLargeValueExpireTest.class);
+
         suite.addTestSuite(IgniteCacheAtomicLocalExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicWithStoreExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicReplicatedExpiryPolicyTest.class);
 
         suite.addTestSuite(IgniteCacheTxLocalExpiryPolicyTest.class);
@@ -51,6 +54,14 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTtlCleanupSelfTest.class);
 
         suite.addTestSuite(IgniteCacheClientNearCacheExpiryTest.class);
+
+        suite.addTestSuite(IgniteCacheEntryListenerExpiredEventsTest.class);
+
+        suite.addTestSuite(IgniteCacheExpireAndUpdateConsistencyTest.class);
+
+        // Eager ttl expiration tests.
+        suite.addTestSuite(GridCacheTtlManagerNotificationTest.class);
+        suite.addTestSuite(IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class);
 
         return suite;
     }

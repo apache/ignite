@@ -17,9 +17,8 @@
 
 package org.apache.ignite.compute.gridify;
 
-import org.apache.ignite.*;
-
-import java.lang.annotation.*;
+import java.lang.annotation.Annotation;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * This interface defines an interceptor apply for {@link Gridify} annotation. Interceptor

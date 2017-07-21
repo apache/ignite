@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.Collection;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -52,7 +51,7 @@ public class IpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIdsGet() throws Exception {
-        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 

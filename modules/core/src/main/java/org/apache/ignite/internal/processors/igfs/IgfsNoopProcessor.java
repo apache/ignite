@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.mapreduce.IgfsJob;
+import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.apache.ignite.internal.util.typedef.X;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Nop Ignite file system processor implementation.
@@ -44,7 +46,7 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> IGFS processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> IGFS processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   igfsCacheSize: " + 0);
     }
 
@@ -54,12 +56,12 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfs(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfs(String name) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override public Collection<IpcServerEndpoint> endpoints(String name) {
         return Collections.emptyList();
     }
 
@@ -67,5 +69,15 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long length, IgfsRecordResolver recRslv) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op
     }
 }

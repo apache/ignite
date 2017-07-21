@@ -17,12 +17,11 @@
 
 package org.apache.ignite.services;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Managed service configuration. In addition to deploying managed services by
@@ -56,27 +55,27 @@ public class ServiceConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Service name. */
-    private String name;
+    protected String name;
 
     /** Service instance. */
     @GridToStringExclude
     private Service svc;
 
     /** Total count. */
-    private int totalCnt;
+    protected int totalCnt;
 
     /** Max per-node count. */
-    private int maxPerNodeCnt;
+    protected int maxPerNodeCnt;
 
     /** Cache name. */
-    private String cacheName;
+    protected String cacheName;
 
     /** Affinity key. */
-    private Object affKey;
+    protected Object affKey;
 
     /** Node filter. */
     @GridToStringExclude
-    private IgnitePredicate<ClusterNode> nodeFilter;
+    protected IgnitePredicate<ClusterNode> nodeFilter;
 
     /**
      * Gets service name.
@@ -95,9 +94,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is mandatory when deploying a service.
      *
      * @param name Service name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public ServiceConfiguration setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -117,9 +119,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is mandatory when deploying a service.
      *
      * @param svc Service instance.
+     * @return {@code this} for chaining.
      */
-    public void setService(Service svc) {
+    public ServiceConfiguration setService(Service svc) {
         this.svc = svc;
+
+        return this;
     }
 
     /**
@@ -139,9 +144,12 @@ public class ServiceConfiguration implements Serializable {
      * At least one of {@code getTotalCount()} or {@link #getMaxPerNodeCount()} values must be positive.
      *
      * @param totalCnt Total number of deployed service instances in the cluster, {@code 0} for unlimited.
+     * @return {@code this} for chaining.
      */
-    public void setTotalCount(int totalCnt) {
+    public ServiceConfiguration setTotalCount(int totalCnt) {
         this.totalCnt = totalCnt;
+
+        return this;
     }
 
     /**
@@ -161,9 +169,12 @@ public class ServiceConfiguration implements Serializable {
      * At least one of {@code getMaxPerNodeCount()} or {@link #getTotalCount()} values must be positive.
      *
      * @param maxPerNodeCnt Maximum number of deployed service instances on each node, {@code 0} for unlimited.
+     * @return {@code this} for chaining.
      */
-    public void setMaxPerNodeCount(int maxPerNodeCnt) {
+    public ServiceConfiguration setMaxPerNodeCount(int maxPerNodeCnt) {
         this.maxPerNodeCnt = maxPerNodeCnt;
+
+        return this;
     }
 
     /**
@@ -183,9 +194,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is optional and is set only when deploying service based on key-affinity.
      *
      * @param cacheName Cache name, possibly {@code null}.
+     * @return {@code this} for chaining.
      */
-    public void setCacheName(String cacheName) {
+    public ServiceConfiguration setCacheName(String cacheName) {
         this.cacheName = cacheName;
+
+        return this;
     }
 
     /**
@@ -205,9 +219,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is optional and is set only when deploying service based on key-affinity.
      *
      * @param affKey Affinity key, possibly {@code null}.
+     * @return {@code this} for chaining.
      */
-    public void setAffinityKey(Object affKey) {
+    public ServiceConfiguration setAffinityKey(Object affKey) {
         this.affKey = affKey;
+
+        return this;
     }
 
     /**
@@ -229,9 +246,12 @@ public class ServiceConfiguration implements Serializable {
      * nodes in the grid, based on configuration.
      *
      * @param nodeFilter Node filter used to filter nodes on which the service will be deployed, possibly {@code null}.
+     * @return {@code this} for chaining.
      */
-    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+    public ServiceConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+
+        return this;
     }
 
     /** {@inheritDoc} */

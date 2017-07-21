@@ -17,18 +17,24 @@
 
 package org.apache.ignite.compute.gridify.aop.aspectj;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.compute.gridify.aop.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.aspectj.lang.*;
-import org.aspectj.lang.annotation.*;
-import org.aspectj.lang.reflect.*;
+import java.lang.reflect.Method;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.gridify.Gridify;
+import org.apache.ignite.compute.gridify.GridifyArgument;
+import org.apache.ignite.compute.gridify.GridifyInterceptor;
+import org.apache.ignite.compute.gridify.GridifyRuntimeException;
+import org.apache.ignite.compute.gridify.aop.GridifyArgumentAdapter;
+import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 
-import java.lang.reflect.*;
-
-import static org.apache.ignite.IgniteState.*;
+import static org.apache.ignite.IgniteState.STARTED;
 
 /**
  * AspectJ aspect that cross-cuts on all methods grid-enabled with
@@ -61,13 +67,16 @@ public class GridifyAspectJAspect {
         // Since annotations in Java don't allow 'null' as default value
         // we have accept an empty string and convert it here.
         // NOTE: there's unintended behavior when user specifies an empty
-        // string as intended grid name.
-        // NOTE: the 'ann.gridName() == null' check is added to mitigate
+        // string as intended Ignite instance name.
+        // NOTE: the 'ann.igniteInstanceName() == null' check is added to mitigate
         // annotation bugs in some scripting languages (e.g. Groovy).
-        String gridName = F.isEmpty(ann.gridName()) ? null : ann.gridName();
+        String igniteInstanceName = F.isEmpty(ann.igniteInstanceName()) ? ann.gridName() : ann.igniteInstanceName();
 
-        if (G.state(gridName) != STARTED)
-            throw new IgniteCheckedException("Grid is not locally started: " + gridName);
+        if (F.isEmpty(igniteInstanceName))
+            igniteInstanceName = null;
+
+        if (G.state(igniteInstanceName) != STARTED)
+            throw new IgniteCheckedException("Grid is not locally started: " + igniteInstanceName);
 
         // Initialize defaults.
         GridifyArgument arg = new GridifyArgumentAdapter(mtd.getDeclaringClass(), mtd.getName(),
@@ -85,7 +94,7 @@ public class GridifyAspectJAspect {
         }
 
         try {
-            Ignite ignite = G.ignite(gridName);
+            Ignite ignite = G.ignite(igniteInstanceName);
 
             // If task class was specified.
             if (!ann.taskClass().equals(GridifyDefaultTask.class)) {

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.timeout;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * All objects that can timeout should implement this interface.

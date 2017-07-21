@@ -17,9 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.swing.*;
+import javax.swing.JOptionPane;
+import org.apache.ignite.internal.util.typedef.G;
 
 /**
  * Starts test node.

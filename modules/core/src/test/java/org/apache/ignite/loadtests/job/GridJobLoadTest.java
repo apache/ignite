@@ -17,17 +17,22 @@
 
 package org.apache.ignite.loadtests.job;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.springframework.beans.factory.*;
-import org.springframework.context.support.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 /**
  * Tests task/job behavior under load.
@@ -176,12 +181,12 @@ public class GridJobLoadTest implements Runnable {
     /**
      * Starts new grid node.
      *
-     * @param gridName name of new node.
+     * @param igniteInstanceName name of new node.
      * @param springCfg file with spring configuration to use for this node.
      * @return a grid instance local to new node {@link org.apache.ignite.Ignition#start(org.apache.ignite.configuration.IgniteConfiguration)}.
      * @throws Exception if node run failed.
      */
-    protected Ignite startNode(String gridName, File springCfg) throws Exception {
+    protected Ignite startNode(String igniteInstanceName, File springCfg) throws Exception {
         assert springCfg != null;
 
         ListableBeanFactory springCtx = new FileSystemXmlApplicationContext(
@@ -194,7 +199,7 @@ public class GridJobLoadTest implements Runnable {
 
         IgniteConfiguration cfg = (IgniteConfiguration)cfgMap.values().iterator().next();
 
-        cfg.setGridName(gridName + "-" + getNextNodeNum());
+        cfg.setIgniteInstanceName(igniteInstanceName + "-" + getNextNodeNum());
 
         return G.start(cfg);
     }

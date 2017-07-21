@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -68,6 +69,8 @@ class CacheLockImpl<K, V> implements Lock {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
+            checkTx();
+
             delegate.lockAll(keys, 0);
 
             incrementLockCounter();
@@ -101,6 +104,8 @@ class CacheLockImpl<K, V> implements Lock {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
+            checkTx();
+
             boolean res = delegate.lockAll(keys, -1);
 
             if (res)
@@ -127,6 +132,8 @@ class CacheLockImpl<K, V> implements Lock {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
+            checkTx();
+
             IgniteInternalFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
 
             try {
@@ -195,6 +202,16 @@ class CacheLockImpl<K, V> implements Lock {
     /** {@inheritDoc} */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Verifies there is no ongoing user transaction.
+     *
+     * @throws CacheException
+     */
+    private void checkTx() throws CacheException {
+        if (delegate.context().tm().inUserTx())
+            throw new CacheException("Explicit lock can't be acquired within a transaction.");
     }
 
     /** {@inheritDoc} */

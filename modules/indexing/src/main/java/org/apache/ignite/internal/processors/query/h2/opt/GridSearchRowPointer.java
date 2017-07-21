@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.h2.result.*;
+import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointer;
+import org.h2.result.SearchRow;
 
 /**
  * Search row which supports pointer operations.

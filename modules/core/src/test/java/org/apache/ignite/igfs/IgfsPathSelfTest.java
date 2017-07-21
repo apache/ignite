@@ -17,25 +17,30 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Externalizable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link IgfsPath} self test.
  */
 public class IgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final Marshaller marshaller = new OptimizedMarshaller();
+    private final Marshaller marshaller;
+
+    /** Ctor. */
+    public IgfsPathSelfTest() throws IgniteCheckedException {
+        marshaller = createStandaloneBinaryMarshaller();
+    }
 
     /**
      * Test public methods of igfs path.
@@ -96,12 +101,6 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
         String pathStr = "///";
         URI uri = URI.create(pathStr);
         IgfsPath path = new IgfsPath(uri);
-
-        assertNotNull(new IgfsPath(uri));
-        assertNotNull(new IgfsPath(pathStr));
-        assertNotNull(new IgfsPath("/"));
-        assertNotNull(new IgfsPath(path, pathStr));
-        assertNotNull(new IgfsPath());
 
         Class nullUri = URI.class;
         Class nullStr = String.class;

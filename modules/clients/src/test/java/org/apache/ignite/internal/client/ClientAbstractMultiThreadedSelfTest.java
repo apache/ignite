@@ -17,29 +17,44 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -140,8 +155,8 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setLocalHost(HOST);
 
@@ -165,7 +180,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         c.setDiscoverySpi(disco);
 
-        c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
+        c.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(PARTITIONED_ASYNC_BACKUP_CACHE_NAME),
             cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
 
@@ -177,31 +192,35 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setAffinity(new RendezvousAffinityFunction());
 
         cfg.setAtomicityMode(TRANSACTIONAL);
 
-        if (cacheName == null)
-            cfg.setCacheMode(LOCAL);
-        else if (PARTITIONED_CACHE_NAME.equals(cacheName)) {
-            cfg.setCacheMode(PARTITIONED);
+        switch (cacheName) {
+            case DEFAULT_CACHE_NAME:
+                cfg.setCacheMode(LOCAL);
+                break;
+            case PARTITIONED_CACHE_NAME:
+                cfg.setCacheMode(PARTITIONED);
 
-            cfg.setBackups(0);
-        }
-        else if (PARTITIONED_ASYNC_BACKUP_CACHE_NAME.equals(cacheName)) {
-            cfg.setCacheMode(PARTITIONED);
+                cfg.setBackups(0);
+                break;
+            case PARTITIONED_ASYNC_BACKUP_CACHE_NAME:
+                cfg.setCacheMode(PARTITIONED);
 
-            cfg.setBackups(1);
+                cfg.setBackups(1);
+                break;
+            default:
+                cfg.setCacheMode(REPLICATED);
+                break;
         }
-        else
-            cfg.setCacheMode(REPLICATED);
 
         cfg.setName(cacheName);
 
-        if (cacheName != null && !cacheName.contains("async"))
+        if (!DEFAULT_CACHE_NAME.equals(cacheName) && !cacheName.contains("async"))
             cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;
@@ -240,8 +259,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         final ConcurrentLinkedQueue<String> execQueue = new ConcurrentLinkedQueue<>();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 long processed;
 
                 while ((processed = cnt.getAndIncrement()) < taskExecutionCount()) {

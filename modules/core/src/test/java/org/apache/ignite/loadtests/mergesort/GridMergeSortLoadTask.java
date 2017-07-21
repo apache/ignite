@@ -17,13 +17,21 @@
 
 package org.apache.ignite.loadtests.mergesort;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
 
 /**
  * A task that performs distributed Merge Sort.
@@ -68,12 +76,8 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
                     // Future is null before holdcc() is called and
                     // not null after callcc() is called.
                     if (fut == null) {
-                        IgniteCompute comp = ignite.compute().withAsync();
-
                         // Launch the recursive child task asynchronously.
-                        comp.execute(new GridMergeSortLoadTask(), arr);
-
-                        fut = comp.future();
+                        fut = ignite.compute().executeAsync(new GridMergeSortLoadTask(), arr);
 
                         // Add a listener to the future, that will resume the
                         // parent task once the child one is completed.
@@ -185,4 +189,3 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
         return ret;
     }
 }
-

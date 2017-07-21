@@ -17,7 +17,7 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Serializable object used for {@link Object} replacement.

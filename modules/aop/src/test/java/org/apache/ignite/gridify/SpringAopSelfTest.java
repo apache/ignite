@@ -17,8 +17,8 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.compute.gridify.aop.spring.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.compute.gridify.aop.spring.GridifySpringEnhancer;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Spring AOP test.
@@ -31,7 +31,7 @@ public class SpringAopSelfTest extends AbstractAopTest {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "TestAopTargetInterface";
     }
 

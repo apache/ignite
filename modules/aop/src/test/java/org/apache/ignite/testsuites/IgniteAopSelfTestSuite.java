@@ -17,12 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.gridify.*;
-import org.apache.ignite.testframework.*;
-import org.test.gridify.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.gridify.BasicAopSelfTest;
+import org.apache.ignite.gridify.GridifySetToXXXNonSpringAopSelfTest;
+import org.apache.ignite.gridify.GridifySetToXXXSpringAopSelfTest;
+import org.apache.ignite.gridify.NonSpringAopSelfTest;
+import org.apache.ignite.gridify.SpringAopSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.test.gridify.ExternalNonSpringAopSelfTest;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * AOP test suite.

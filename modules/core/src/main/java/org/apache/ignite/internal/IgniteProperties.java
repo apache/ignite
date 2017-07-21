@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Ignite properties holder.

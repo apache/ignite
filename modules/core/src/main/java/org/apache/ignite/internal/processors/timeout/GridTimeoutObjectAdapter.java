@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.timeout;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Default implementation for {@link GridTimeoutObject}.

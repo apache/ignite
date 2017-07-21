@@ -17,11 +17,14 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-
-import javax.cache.processor.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
  * This example demonstrates some of the cache rich API capabilities.
@@ -47,9 +50,14 @@ public class CacheApiExample {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // Demonstrate atomic map operations.
                 atomicMapOperations(cache);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

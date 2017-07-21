@@ -17,45 +17,70 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.h2.api.*;
-import org.h2.command.ddl.*;
-import org.h2.engine.*;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.h2.table.*;
+import java.util.ArrayList;
+import java.util.HashSet;
 
-import java.util.*;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
+import org.apache.ignite.internal.util.typedef.F;
+import org.h2.command.ddl.CreateTableData;
+import org.h2.engine.Session;
+import org.h2.index.Index;
+import org.h2.index.IndexType;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SortOrder;
+import org.h2.table.Column;
+import org.h2.table.IndexColumn;
+import org.h2.table.TableBase;
+import org.h2.table.TableFilter;
+import org.h2.table.TableType;
 
 /**
  * Merge table for distributed queries.
  */
 public class GridMergeTable extends TableBase {
     /** */
-    private final ArrayList<Index> idxs = new ArrayList<>(1);
-
-    /** */
-    private final GridMergeIndex idx;
+    private ArrayList<Index> idxs;
 
     /**
      * @param data Data.
      */
     public GridMergeTable(CreateTableData data) {
         super(data);
+    }
 
-        idx = new GridMergeIndexUnsorted(this, "merge_scan");
+    /**
+     * @param idxs Indexes.
+     */
+    public void indexes(ArrayList<Index> idxs) {
+        assert !F.isEmpty(idxs);
 
-        idxs.add(idx);
+        this.idxs = idxs;
+    }
+
+    /**
+     * @return Merge index.
+     */
+    public GridMergeIndex getMergeIndex() {
+        return (GridMergeIndex)idxs.get(idxs.size() - 1); // Sorted index must be the last.
+    }
+
+    /**
+     * @param idx Index.
+     * @return Scan index.
+     */
+    public static GridH2ScanIndex<GridMergeIndex> createScanIndex(GridMergeIndex idx) {
+        return new ScanIndex(idx);
     }
 
     /** {@inheritDoc} */
-    @Override public void lock(Session session, boolean exclusive, boolean force) {
-        // No-op.
+    @Override public boolean lock(Session session, boolean exclusive, boolean force) {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
-        idx.close(ses);
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -90,13 +115,13 @@ public class GridMergeTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return EXTERNAL_TABLE_ENGINE;
+    @Override public TableType getTableType() {
+        return TableType.EXTERNAL_TABLE_ENGINE;
     }
 
     /** {@inheritDoc} */
-    @Override public GridMergeIndex getScanIndex(Session session) {
-        return idx;
+    @Override public Index getScanIndex(Session session) {
+        return idxs.get(0); // Must be always at 0.
     }
 
     /** {@inheritDoc} */
@@ -136,12 +161,12 @@ public class GridMergeTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        return idx.getRowCount(ses);
+        return getScanIndex(ses).getRowCount(ses);
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return idx.getRowCountApproximation();
+        return getScanIndex(null).getRowCountApproximation();
     }
 
     /** {@inheritDoc} */
@@ -155,32 +180,22 @@ public class GridMergeTable extends TableBase {
     }
 
     /**
-     * Engine.
+     * Scan index wrapper.
      */
-    public static class Engine implements TableEngine {
-        /** */
-        private static ThreadLocal<GridMergeTable> createdTbl = new ThreadLocal<>();
-
+    private static class ScanIndex extends GridH2ScanIndex<GridMergeIndex> {
         /**
-         * @return Created table.
+         * @param delegate Delegate.
          */
-        public static GridMergeTable getCreated() {
-            GridMergeTable tbl = createdTbl.get();
-
-            assert tbl != null;
-
-            createdTbl.remove();
-
-            return tbl;
+        public ScanIndex(GridMergeIndex delegate) {
+            super(delegate);
         }
 
         /** {@inheritDoc} */
-        @Override public Table createTable(CreateTableData data) {
-            GridMergeTable tbl = new GridMergeTable(data);
+        @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
+            SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+            long rows = getRowCountApproximation();
 
-            createdTbl.set(tbl);
-
-            return tbl;
+            return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
         }
     }
 }

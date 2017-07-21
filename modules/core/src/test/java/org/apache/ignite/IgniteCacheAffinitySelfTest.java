@@ -17,19 +17,24 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.fair.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for {@link GridAffinityProcessor.CacheAffinityProxy}.
@@ -37,9 +42,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     /** Initial grid count. */
     private int GRID_CNT = 3;
-
-    /** Cache name */
-    private final String CACHE1 = "Fair";
 
     /** Cache name */
     private final String CACHE2 = "Rendezvous";
@@ -50,23 +52,19 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache0 = cacheConfiguration(null);
-
-        CacheConfiguration cache1 = cacheConfiguration(null);
-        cache1.setName(CACHE1);
-        cache1.setAffinity(new FairAffinityFunction());
 
         CacheConfiguration cache2 = cacheConfiguration(null);
         cache2.setName(CACHE2);
         cache2.setAffinity(new RendezvousAffinityFunction());
 
-        if (gridName.contains("0"))
+        if (igniteInstanceName.contains("0"))
             cfg.setCacheConfiguration(cache0);
         else
-            cfg.setCacheConfiguration(cache0, cache1, cache2);
+            cfg.setCacheConfiguration(cache0, cache2);
 
         return cfg;
     }
@@ -86,17 +84,10 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
         return new NearCacheConfiguration();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        fail("Enable when https://issues.apache.org/jira/browse/IGNITE-647 is fixed.");
-    }
-
     /**
      * @throws Exception if failed.
      */
     public void testAffinity() throws Exception {
-        fail("Enable when https://issues.apache.org/jira/browse/IGNITE-647 is fixed.");
-
         checkAffinity();
 
         stopGrid(gridCount() - 1);
@@ -113,9 +104,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
      * Check CacheAffinityProxy methods.
      */
     private void checkAffinity() {
-        checkAffinity(grid(0).affinity(null), internalCache(1, null).affinity());
-        checkAffinity(grid(0).affinity(CACHE1), internalCache(1, CACHE1).affinity());
-        checkAffinity(grid(0).affinity(CACHE1), internalCache(1, CACHE1).affinity());
+        checkAffinity(grid(0).affinity(DEFAULT_CACHE_NAME), internalCache(1, DEFAULT_CACHE_NAME).affinity());
         checkAffinity(grid(0).affinity(CACHE2), internalCache(1, CACHE2).affinity());
     }
 

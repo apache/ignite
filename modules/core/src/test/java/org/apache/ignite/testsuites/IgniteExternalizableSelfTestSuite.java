@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.GridTopicExternalizableSelfTest;
 
 /**
  * Externalizable self-test suite.

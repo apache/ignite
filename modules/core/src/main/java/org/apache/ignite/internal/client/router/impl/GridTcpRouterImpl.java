@@ -17,25 +17,37 @@
 
 package org.apache.ignite.internal.client.router.impl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.router.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.nio.ssl.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.logger.java.*;
-import org.jetbrains.annotations.*;
-
-import javax.management.*;
-import javax.net.ssl.*;
-import java.lang.management.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.nio.*;
-import java.util.*;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteOrder;
+import java.util.Collection;
+import java.util.UUID;
+import javax.management.JMException;
+import javax.management.ObjectName;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.router.GridTcpRouter;
+import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
+import org.apache.ignite.internal.client.router.GridTcpRouterMBean;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioParser;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioServerListener;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper class for router process.
@@ -157,6 +169,32 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 "are in use) [firstPort=" + cfg.getPort() + ", lastPort=" + (cfg.getPort() + cfg.getPortRange()) +
                 ", addr=" + hostAddr + ']');
 
+        registerMBean();
+    }
+
+    /**
+     * Stops this router.
+     */
+    @Override public void stop() {
+        if (srv != null)
+            srv.stop();
+
+        if (client != null)
+            client.stop(true);
+
+        unregisterMBean();
+
+        if (log.isInfoEnabled())
+            log.info("TCP router successfully stopped.");
+    }
+
+    /**
+     * Try to register MBean.
+     */
+    private void registerMBean() {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
         try {
             ObjectName objName = U.registerMBean(
                 ManagementFactory.getPlatformMBeanServer(),
@@ -177,28 +215,23 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
     }
 
     /**
-     * Stops this router.
+     * Unregister MBean.
      */
-    @Override public void stop() {
-        if (srv != null)
-            srv.stop();
+    private void unregisterMBean() {
+        if (mbeanName == null)
+            return;
 
-        if (client != null)
-            client.stop(true);
+        assert !U.IGNITE_MBEANS_DISABLED;
 
-        if (mbeanName != null)
-            try {
-                ManagementFactory.getPlatformMBeanServer().unregisterMBean(mbeanName);
+        try {
+            ManagementFactory.getPlatformMBeanServer().unregisterMBean(mbeanName);
 
-                if (log.isDebugEnabled())
-                    log.debug("Unregistered MBean: " + mbeanName);
-            }
-            catch (JMException e) {
-                U.error(log, "Failed to unregister MBean.", e);
-            }
-
-        if (log.isInfoEnabled())
-            log.info("TCP router successfully stopped.");
+            if (log.isDebugEnabled())
+                log.debug("Unregistered MBean: " + mbeanName);
+        }
+        catch (JMException e) {
+            U.error(log, "Failed to unregister MBean.", e);
+        }
     }
 
     /**
@@ -223,12 +256,12 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
             // This name is required to be unique in order to avoid collisions with
             // ThreadWorkerGroups running in the same JVM by other routers/nodes.
-            String gridName = "router-" + id;
+            String igniteInstanceName = "router-" + id;
 
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, log);
+                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, false, ByteOrder.nativeOrder(), log);
 
                 sslFilter.wantClientAuth(wantClientAuth);
 
@@ -245,7 +278,8 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 .listener(lsnr)
                 .logger(log)
                 .selectorCount(Runtime.getRuntime().availableProcessors())
-                .gridName(gridName)
+                .igniteInstanceName(igniteInstanceName)
+                .serverName("router")
                 .tcpNoDelay(tcpNoDelay)
                 .directBuffer(false)
                 .byteOrder(ByteOrder.nativeOrder())

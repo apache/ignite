@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.eviction.fifo;
 
-import org.apache.ignite.mxbean.*;
+import org.apache.ignite.mxbean.MXBeanDescription;
 
 /**
  * MBean for {@code FIFO} eviction policy.
@@ -74,6 +74,8 @@ public interface FifoEvictionPolicyMBean {
 
     /**
      * Sets maximum allowed cache size in bytes.
+     *
+     * @param maxMemSize Maximum memory size.
      */
     @MXBeanDescription("Set maximum allowed cache size in bytes.")
     public void setMaxMemorySize(long maxMemSize);

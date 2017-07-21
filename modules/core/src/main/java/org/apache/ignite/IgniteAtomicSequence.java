@@ -17,7 +17,7 @@
 
 package org.apache.ignite;
 
-import java.io.*;
+import java.io.Closeable;
 
 /**
  * This interface provides a rich API for working with distributed atomic sequence.
@@ -26,19 +26,16 @@ import java.io.*;
  * Distributed atomic sequence includes the following main functionality:
  * <ul>
  * <li>
- * Method {@link #get()} synchronously gets current value from atomic sequence.
+ * Method {@link #get()} gets current value from atomic sequence.
  * </li>
  * <li>
- * Various {@code get..(..)} methods synchronously get current value from atomic sequence
+ * Various {@code get..(..)} methods get current value from atomic sequence
  * and increase atomic sequences value.
  * </li>
  * <li>
- * Various {@code add..(..)} {@code increment(..)} methods synchronously increase atomic sequences value
+ * Various {@code add..(..)} {@code increment(..)} methods increase atomic sequences value
  * and return increased value.
  * </li>
- * </ul>
- * All previously described methods have asynchronous analogs.
- * <ul>
  * <li>
  * Method {@link #batchSize(int size)} sets batch size of current atomic sequence.
  * </li>

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.loadtests.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.Date;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridFileLock;
+import org.apache.ignite.testframework.GridLoadTestUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Benchmark for cache {@code putx()} and {@code get()} operations.

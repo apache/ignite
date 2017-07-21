@@ -17,23 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.fifo.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Collections;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest.ObjectValue;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * GG-4368
@@ -46,8 +47,8 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
     protected Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -55,20 +56,18 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setSwapSpaceSpi(new NoopSwapSpaceSpi());
-
         CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(SYNC);
-        cc.setSwapEnabled(true);
         cc.setNearConfiguration(new NearCacheConfiguration());
 
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(1000);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setIndexedTypes(
@@ -94,7 +93,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testQuery() throws Exception {
-        IgniteCache<Integer, ObjectValue> cache = ignite.cache(null);
+        IgniteCache<Integer, ObjectValue> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int cnt = 10;
 
@@ -110,6 +109,6 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         SqlQuery<Integer, ObjectValue> qry =
             new SqlQuery(ObjectValue.class, "intVal >= ? order by intVal");
 
-        assertEquals(0, cache.query(qry.setArgs(0)).getAll().size());
+        assertEquals(10, cache.query(qry.setArgs(0)).getAll().size());
     }
 }

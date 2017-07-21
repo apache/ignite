@@ -17,9 +17,9 @@
 
 package org.apache.ignite.compute.gridify;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Predicate node filter.

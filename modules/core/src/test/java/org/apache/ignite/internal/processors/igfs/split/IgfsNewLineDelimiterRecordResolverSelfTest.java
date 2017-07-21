@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs.split;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.igfs.mapreduce.records.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
+import org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver;
+import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver.*;
+import static org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver.SYM_CR;
+import static org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver.SYM_LF;
 
 /**
  * New line split resolver self test.

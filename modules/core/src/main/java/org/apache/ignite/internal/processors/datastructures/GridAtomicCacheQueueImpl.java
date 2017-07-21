@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import javax.cache.processor.*;
-import java.util.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT;
 
 /**
  * {@link org.apache.ignite.IgniteQueue} implementation using atomic cache.
  */
 public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** */
-    private static final long RETRY_TIMEOUT = 3000;
+    private static final long RETRY_TIMEOUT = Integer.getInteger(IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT, 10000);
 
     /**
      * @param queueName Queue name.
@@ -52,26 +57,9 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             checkRemoved(idx);
 
-            int cnt = 0;
+            QueueItemKey key = itemKey(idx);
 
-            GridCacheQueueItemKey key = itemKey(idx);
-
-            while (true) {
-                try {
-                    cache.getAndPut(key, item);
-
-                    break;
-                }
-                catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to put queue item, will retry [err=" + e + ", idx=" + idx + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
+            cache.getAndPut(key, item);
 
             return true;
         }
@@ -92,43 +80,24 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                 checkRemoved(idx);
 
-                GridCacheQueueItemKey key = itemKey(idx);
+                QueueItemKey key = itemKey(idx);
 
-                int cnt = 0;
+                T data = (T)cache.getAndRemove(key);
 
-                long stop = 0;
+                if (data != null)
+                    return data;
 
-                while (true) {
-                    try {
-                        T data = (T)cache.getAndRemove(key);
+                long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
-                        if (data != null)
-                            return data;
+                while (U.currentTimeMillis() < stop) {
+                    data = (T)cache.getAndRemove(key);
 
-                        if (stop == 0)
-                            stop = U.currentTimeMillis() + RETRY_TIMEOUT;
-
-                        while (U.currentTimeMillis() < stop ) {
-                            data = (T)cache.getAndRemove(key);
-
-                            if (data != null)
-                                return data;
-                        }
-
-                        break;
-                    }
-                    catch (CachePartialUpdateCheckedException e) {
-                        if (cnt++ == MAX_UPDATE_RETRIES)
-                            throw e;
-                        else {
-                            U.warn(log, "Failed to remove queue item, will retry [err=" + e + ']');
-
-                            U.sleep(RETRY_DELAY);
-                        }
-                    }
+                    if (data != null)
+                        return data;
                 }
 
-                U.warn(log, "Failed to get item, will retry poll [queue=" + queueName + ", idx=" + idx + ']');
+                U.warn(log, "Failed to get item due to poll timeout [queue=" + queueName + ", idx=" + idx + "]. " +
+                    "Poll timeout can be redefined by 'IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT' system property.");
             }
         }
         catch (IgniteCheckedException e) {
@@ -149,7 +118,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             checkRemoved(idx);
 
-            Map<GridCacheQueueItemKey, T> putMap = new HashMap<>();
+            Map<QueueItemKey, T> putMap = new HashMap<>();
 
             for (T item : items) {
                 putMap.put(itemKey(idx), item);
@@ -157,24 +126,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                 idx++;
             }
 
-            int cnt = 0;
-
-            while (true) {
-                try {
-                    cache.putAll(putMap);
-
-                    break;
-                }
-                catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add items, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
+            cache.putAll(putMap);
 
             return true;
         }
@@ -191,36 +143,16 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
         if (idx != null) {
             checkRemoved(idx);
 
-            GridCacheQueueItemKey key = itemKey(idx);
+            QueueItemKey key = itemKey(idx);
 
-            int cnt = 0;
+            if (cache.remove(key))
+                return;
 
-            long stop = 0;
+            long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
-            while (true) {
-                try {
-                    if (cache.remove(key))
-                        return;
-
-                    if (stop == 0)
-                        stop = U.currentTimeMillis() + RETRY_TIMEOUT;
-
-                    while (U.currentTimeMillis() < stop ) {
-                        if (cache.remove(key))
-                            return;
-                    }
-
-                    break;
-                }
-                catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add items, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
+            while (U.currentTimeMillis() < stop) {
+                if (cache.remove(key))
+                    return;
             }
 
             U.warn(log, "Failed to remove item, [queue=" + queueName + ", idx=" + idx + ']');
@@ -235,21 +167,6 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Nullable private Long transformHeader(EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long> c)
         throws IgniteCheckedException {
-        int cnt = 0;
-
-        while (true) {
-            try {
-                return (Long)cache.invoke(queueKey, c).get();
-            }
-            catch (CachePartialUpdateCheckedException e) {
-                if (cnt++ == MAX_UPDATE_RETRIES)
-                    throw e;
-                else {
-                    U.warn(log, "Failed to update queue header, will retry [err=" + e + ']');
-
-                    U.sleep(RETRY_DELAY);
-                }
-            }
-        }
+        return (Long)cache.invoke(queueKey, c).get();
     }
 }

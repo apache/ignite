@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.offheap.unsafe.GridOffheapSnapTreeSelfTest;
 
 /**
  * Indexing SPI tests.

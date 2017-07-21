@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 
 /**
  * Simple injector which wraps ComputeJobContext resource object.
  */
 public class GridResourceJobContextInjector extends GridResourceBasicInjector<ComputeJobContext> {
     /**
-     * Creates GridComputeJobContext injector.
+     * Creates ComputeJobContext injector.
      *
-     * @param rsrc GridComputeJobContext resource to inject.
+     * @param rsrc ComputeJobContext resource to inject.
      */
     GridResourceJobContextInjector(ComputeJobContext rsrc) {
         super(rsrc);

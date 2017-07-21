@@ -17,10 +17,12 @@
 
 package org.apache.ignite.spi.failover;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-
-import java.util.*;
+import java.util.List;
+import java.util.Random;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Failover test context.
@@ -65,5 +67,15 @@ public class GridFailoverTestContext implements FailoverContext {
     /** {@inheritDoc} */
     @Override public ClusterNode getBalancedNode(List<ClusterNode> grid) {
         return grid.get(RAND.nextInt(grid.size()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String affinityCacheName() {
+        return null;
     }
 }

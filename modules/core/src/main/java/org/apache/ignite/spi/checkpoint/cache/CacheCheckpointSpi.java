@@ -17,19 +17,27 @@
 
 package org.apache.ignite.spi.checkpoint.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
-import org.jetbrains.annotations.*;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiContext;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.checkpoint.CheckpointListener;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
+import org.jetbrains.annotations.Nullable;
 
-import javax.cache.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 
 /**
  * This class defines cache-based implementation for checkpoint SPI.
@@ -88,13 +96,13 @@ import static org.apache.ignite.events.EventType.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, CacheCheckpointSpiMBean {
+public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Default cache name (value is <tt>checkpoints</tt>). */
     public static final String DFLT_CACHE_NAME = "checkpoints";
 
@@ -117,19 +125,26 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
      * If cache name is not provided {@link #DFLT_CACHE_NAME} is used.
      *
      * @param cacheName Cache name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setCacheName(String cacheName) {
+    public CacheCheckpointSpi setCacheName(String cacheName) {
         this.cacheName = cacheName;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getCacheName() {
+    /**
+     * Gets cache name to be used by this SPI..
+     *
+     * @return Cache name to be used by this SPI.
+     */
+    public String getCacheName() {
         return cacheName;
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(cacheName), "!F.isEmpty(cacheName)");
 
         // Start SPI start stopwatch.
@@ -139,7 +154,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         if (log.isDebugEnabled())
             log.debug(configInfo("cacheName", cacheName));
 
-        registerMBean(gridName, this, CacheCheckpointSpiMBean.class);
+        registerMBean(igniteInstanceName, new CacheCheckpointSpiMBeanImpl(this), CacheCheckpointSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -240,7 +255,29 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     }
 
     /** {@inheritDoc} */
+    @Override public CacheCheckpointSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheCheckpointSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for CacheCheckpointSpi.
+     */
+    private class CacheCheckpointSpiMBeanImpl extends IgniteSpiMBeanAdapter implements CacheCheckpointSpiMBean {
+        /** {@inheritDoc} */
+        CacheCheckpointSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getCacheName() {
+            return CacheCheckpointSpi.this.getCacheName();
+        }
     }
 }

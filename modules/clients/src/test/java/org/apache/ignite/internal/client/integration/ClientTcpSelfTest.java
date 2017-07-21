@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.client.integration;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.ssl.*;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 
 /**
  * Tests TCP protocol.

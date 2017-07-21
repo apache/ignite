@@ -1,0 +1,29 @@
+Ignite Web Console Instructions
+======================================
+
+How to deploy locally:
+
+1. Install locally MongoDB (version >=3.2.x) follow instructions from site http://docs.mongodb.org/manual/installation.
+2. Install locally NodeJS (version >=6.5.x) using installer from site https://nodejs.org/en/download/current for your OS.
+3. Change directory to '$IGNITE_HOME/modules/web-console/backend' and
+ run "npm install --no-optional" for download backend dependencies.
+4. Change directory to '$IGNITE_HOME/modules/web-console/frontend' and
+ run "npm install --no-optional" for download frontend dependencies.
+5. Build ignite-web-agent module follow instructions from 'modules/web-console/web-agent/README.txt'.
+6. Copy ignite-web-agent-<version>.zip from '$IGNITE_HOME/modules/web-console/web-agent/target'
+ to '$IGNITE_HOME/modules/web-console/backend/agent_dists' folder.
+
+Steps 1 - 6 should be executed once.
+
+How to run console in development mode:
+
+1. Configure MongoDB to run as service or in terminal change dir to $MONGO_INSTALL_DIR/server/3.2/bin
+  and start MongoDB by executing "mongod".
+
+2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/backend'.
+   If needed run "npm install --no-optional" (if dependencies changed) and run "npm start" to start backend.
+
+3. In new terminal change directory to '$IGNITE_HOME/modules/web-console/frontend'.
+  If needed run "npm install --no-optional" (if dependencies changed) and start webpack in development mode "npm run dev".
+
+4. In browser open: http://localhost:9000

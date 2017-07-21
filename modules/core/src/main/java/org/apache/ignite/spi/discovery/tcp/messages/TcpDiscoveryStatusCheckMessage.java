@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.internal.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 /**
  * Message sent by node to its next to ensure that next node and
@@ -63,6 +63,17 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
+     * @param msg Message to copy.
+     */
+    public TcpDiscoveryStatusCheckMessage(TcpDiscoveryStatusCheckMessage msg) {
+        super(msg);
+
+        this.creatorNode = msg.creatorNode;
+        this.failedNodeId = msg.failedNodeId;
+        this.status = msg.status;
+    }
+
+    /**
      * Gets creator node.
      *
      * @return Creator node.
@@ -96,6 +107,21 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      */
     public void status(int status) {
         this.status = status;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        // NOTE!
+        // Do not call super. As IDs will differ, but we can ignore this.
+
+        if (!(obj instanceof TcpDiscoveryStatusCheckMessage))
+            return false;
+
+        TcpDiscoveryStatusCheckMessage other = (TcpDiscoveryStatusCheckMessage)obj;
+
+        return F.eqNodes(other.creatorNode, creatorNode) &&
+            F.eq(other.failedNodeId, failedNodeId) &&
+            status == other.status;
     }
 
     /** {@inheritDoc} */

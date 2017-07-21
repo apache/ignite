@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache manager shared across all caches.
  */
-public interface GridCacheSharedManager <K, V> {
+public interface GridCacheSharedManager<K, V> {
     /**
      * Starts manager.
      *
@@ -39,14 +40,14 @@ public interface GridCacheSharedManager <K, V> {
     public void stop(boolean cancel);
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onKernalStart() throws IgniteCheckedException;
-
-    /**
      * @param cancel Cancel flag.
      */
     public void onKernalStop(boolean cancel);
+
+    /**
+     * @param reconnectFut Reconnect future.
+     */
+    public void onDisconnected(IgniteFuture<?> reconnectFut);
 
     /**
      * Prints memory statistics (sizes of internal data structures, etc.).

@@ -17,11 +17,29 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.*;
-import org.apache.ignite.examples.datagrid.starschema.*;
-import org.apache.ignite.examples.datagrid.store.dummy.*;
-import org.apache.ignite.examples.datastructures.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.datagrid.CacheAffinityExample;
+import org.apache.ignite.examples.datagrid.CacheEntryProcessorExample;
+import org.apache.ignite.examples.datagrid.CacheApiExample;
+import org.apache.ignite.examples.datagrid.CacheContinuousQueryExample;
+import org.apache.ignite.examples.datagrid.CacheDataStreamerExample;
+import org.apache.ignite.examples.datagrid.CachePutGetExample;
+import org.apache.ignite.examples.datagrid.CacheQueryDdlExample;
+import org.apache.ignite.examples.datagrid.CacheQueryDmlExample;
+import org.apache.ignite.examples.datagrid.CacheQueryExample;
+import org.apache.ignite.examples.datagrid.CacheTransactionExample;
+import org.apache.ignite.examples.datagrid.MemoryPoliciesExample;
+import org.apache.ignite.examples.datagrid.starschema.CacheStarSchemaExample;
+import org.apache.ignite.examples.datagrid.store.CacheLoadOnlyStoreExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicLongExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicReferenceExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicSequenceExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicStampedExample;
+import org.apache.ignite.examples.datastructures.IgniteCountDownLatchExample;
+import org.apache.ignite.examples.datastructures.IgniteQueueExample;
+import org.apache.ignite.examples.datastructures.IgniteLockExample;
+import org.apache.ignite.examples.datastructures.IgniteSemaphoreExample;
+import org.apache.ignite.examples.datastructures.IgniteSetExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Cache examples self test.
@@ -32,6 +50,13 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheAffinityExample() throws Exception {
         CacheAffinityExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheEntryProcessorExample() throws Exception {
+        CacheEntryProcessorExample.main(EMPTY_ARGS);
     }
 
     /**
@@ -72,6 +97,20 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCacheSemaphoreExample() throws Exception {
+        IgniteSemaphoreExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheLockExample() throws Exception {
+        IgniteLockExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCacheQueueExample() throws Exception {
         IgniteQueueExample.main(EMPTY_ARGS);
     }
@@ -86,15 +125,22 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCacheDummyStoreExample() throws Exception {
-        CacheDummyStoreExample.main(EMPTY_ARGS);
+    public void testCacheQueryExample() throws Exception {
+        CacheQueryExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testCacheQueryExample() throws Exception {
-        CacheQueryExample.main(EMPTY_ARGS);
+    public void testCacheQueryDmlExample() throws Exception {
+        CacheQueryDmlExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheQueryDdlExample() throws Exception {
+        CacheQueryDdlExample.main(EMPTY_ARGS);
     }
 
     /**
@@ -137,5 +183,19 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheContinuousQueryExample() throws Exception {
         CacheContinuousQueryExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheLoadOnlyStoreExample() throws Exception {
+        CacheLoadOnlyStoreExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMemoryPolicyExample() throws Exception {
+        MemoryPoliciesExample.main(EMPTY_ARGS);
     }
 }

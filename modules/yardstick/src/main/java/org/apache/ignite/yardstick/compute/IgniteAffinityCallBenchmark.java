@@ -17,11 +17,10 @@
 
 package org.apache.ignite.yardstick.compute;
 
-import org.apache.ignite.yardstick.*;
-import org.apache.ignite.yardstick.compute.model.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.compute.model.NoopCallable;
 
 /**
  * Ignite benchmark that performs affinity call operations.

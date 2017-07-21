@@ -17,7 +17,7 @@
 
 package org.apache.ignite.logger.log4j;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
  * Interface for those loggers and appenders that evaluate their file paths lazily.

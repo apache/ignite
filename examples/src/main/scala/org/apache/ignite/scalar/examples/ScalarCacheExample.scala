@@ -49,8 +49,12 @@ object ScalarCacheExample extends App {
 
             basicOperations()
         }
+        catch {
+            case e: Throwable =>
+                e.printStackTrace();
+        }
         finally {
-            cache.close()
+            cache.destroy()
         }
     }
 
@@ -78,13 +82,20 @@ object ScalarCacheExample extends App {
         // Put one more value.
         c += (3.toString -> 11)
 
-        // Get with option...
-        c.opt(44.toString) match {
-            case Some(v) => sys.error("Should never happen.")
-            case None => println("Correct")
+        try {
+            c.opt(44.toString) match {
+                case Some(v) => sys.error("Should never happen.")
+                case _ => println("Correct")
+            }
+        }
+        catch {
+            case e: Throwable =>
+                e.printStackTrace()
         }
 
+
         // Print all values.
+        println("Print all values.")
         c.iterator() foreach println
     }
 

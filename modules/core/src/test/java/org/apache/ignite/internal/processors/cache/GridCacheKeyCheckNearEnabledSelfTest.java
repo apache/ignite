@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  * Tests for key check for near cache.

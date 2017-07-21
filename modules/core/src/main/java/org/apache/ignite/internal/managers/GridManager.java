@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.managers;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 
 /**
  * This interface defines life-cycle for kernal manager. Managers provide layer of indirection

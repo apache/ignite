@@ -17,12 +17,17 @@
 
 package org.apache.ignite.examples.streaming.wordcount.socket;
 
-import org.apache.ignite.examples.*;
-import org.apache.ignite.examples.streaming.wordcount.*;
-import org.apache.ignite.stream.socket.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.streaming.wordcount.QueryWords;
+import org.apache.ignite.stream.socket.SocketStreamer;
 
 /**
  * Example demonstrates streaming of data from external components into Ignite cache.

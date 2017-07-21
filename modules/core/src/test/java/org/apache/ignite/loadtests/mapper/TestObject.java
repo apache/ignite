@@ -17,9 +17,8 @@
 
 package org.apache.ignite.loadtests.mapper;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Test object.

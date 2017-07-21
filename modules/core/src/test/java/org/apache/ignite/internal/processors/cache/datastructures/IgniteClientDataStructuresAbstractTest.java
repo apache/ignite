@@ -17,17 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteLock;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSemaphore;
+import org.apache.ignite.IgniteSet;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -40,10 +50,10 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     private static final int NODE_CNT = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODE_CNT - 1))) {
             cfg.setClientMode(true);
 
             if (!clientDiscovery())
@@ -51,6 +61,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         }
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
     }
@@ -77,12 +89,22 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
      */
     public void testSequence() throws Exception {
         Ignite clientNode = clientIgnite();
-
         Ignite srvNode = serverNode();
 
-        assertNull(clientNode.atomicSequence("seq1", 1L, false));
+        testSequence(clientNode, srvNode);
+        testSequence(srvNode, clientNode);
+    }
 
-        try (IgniteAtomicSequence seq = clientNode.atomicSequence("seq1", 1L, true)) {
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testSequence(Ignite creator, Ignite other) throws Exception {
+        assertNull(creator.atomicSequence("seq1", 1L, false));
+        assertNull(other.atomicSequence("seq1", 1L, false));
+
+        try (IgniteAtomicSequence seq = creator.atomicSequence("seq1", 1L, true)) {
             assertNotNull(seq);
 
             assertEquals(1L, seq.get());
@@ -91,13 +113,13 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             assertEquals(2L, seq.get());
 
-            IgniteAtomicSequence seq0 = srvNode.atomicSequence("seq1", 1L, false);
+            IgniteAtomicSequence seq0 = other.atomicSequence("seq1", 1L, false);
 
             assertNotNull(seq0);
         }
 
-        assertNull(clientNode.atomicSequence("seq1", 1L, false));
-        assertNull(srvNode.atomicSequence("seq1", 1L, false));
+        assertNull(creator.atomicSequence("seq1", 1L, false));
+        assertNull(other.atomicSequence("seq1", 1L, false));
     }
 
     /**
@@ -105,12 +127,22 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
      */
     public void testAtomicLong() throws Exception {
         Ignite clientNode = clientIgnite();
-
         Ignite srvNode = serverNode();
 
-        assertNull(clientNode.atomicLong("long1", 1L, false));
+        testAtomicLong(clientNode, srvNode);
+        testAtomicLong(srvNode, clientNode);
+    }
 
-        try (IgniteAtomicLong cntr = clientNode.atomicLong("long1", 1L, true)) {
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testAtomicLong(Ignite creator, Ignite other) throws Exception {
+        assertNull(creator.atomicLong("long1", 1L, false));
+        assertNull(other.atomicLong("long1", 1L, false));
+
+        try (IgniteAtomicLong cntr = creator.atomicLong("long1", 1L, true)) {
             assertNotNull(cntr);
 
             assertEquals(1L, cntr.get());
@@ -119,7 +151,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             assertEquals(2L, cntr.get());
 
-            IgniteAtomicLong cntr0 = srvNode.atomicLong("long1", 1L, false);
+            IgniteAtomicLong cntr0 = other.atomicLong("long1", 1L, false);
 
             assertNotNull(cntr0);
 
@@ -130,8 +162,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
             assertEquals(3L, cntr.get());
         }
 
-        assertNull(clientNode.atomicLong("long1", 1L, false));
-        assertNull(srvNode.atomicLong("long1", 1L, false));
+        assertNull(creator.atomicLong("long1", 1L, false));
+        assertNull(other.atomicLong("long1", 1L, false));
     }
 
     /**
@@ -139,14 +171,24 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
      */
     public void testSet() throws Exception {
         Ignite clientNode = clientIgnite();
-
         Ignite srvNode = serverNode();
 
-        assertNull(clientNode.set("set1", null));
+        testSet(clientNode, srvNode);
+        testSet(srvNode, clientNode);
+    }
+
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testSet(Ignite creator, Ignite other) throws Exception {
+        assertNull(creator.set("set1", null));
+        assertNull(other.set("set1", null));
 
         CollectionConfiguration colCfg = new CollectionConfiguration();
 
-        try (IgniteSet<Integer> set = clientNode.set("set1", colCfg)) {
+        try (IgniteSet<Integer> set = creator.set("set1", colCfg)) {
             assertNotNull(set);
 
             assertEquals(0, set.size());
@@ -157,7 +199,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             assertTrue(set.contains(1));
 
-            IgniteSet<Integer> set0 = srvNode.set("set1", null);
+            IgniteSet<Integer> set0 = other.set("set1", null);
 
             assertTrue(set0.contains(1));
 
@@ -167,6 +209,9 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             assertFalse(set.contains(1));
         }
+
+        assertNull(creator.set("set1", null));
+        assertNull(other.set("set1", null));
     }
 
     /**
@@ -174,12 +219,22 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
      */
     public void testLatch() throws Exception {
         Ignite clientNode = clientIgnite();
+        Ignite srvNode = serverNode();
 
-        final Ignite srvNode = serverNode();
+        testLatch(clientNode, srvNode);
+        testLatch(srvNode, clientNode);
+    }
 
-        assertNull(clientNode.countDownLatch("latch1", 1, true, false));
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testLatch(Ignite creator, final Ignite other) throws Exception {
+        assertNull(creator.countDownLatch("latch1", 1, true, false));
+        assertNull(other.countDownLatch("latch1", 1, true, false));
 
-        try (IgniteCountDownLatch latch = clientNode.countDownLatch("latch1", 1, true, true)) {
+        try (IgniteCountDownLatch latch = creator.countDownLatch("latch1", 1, true, true)) {
             assertNotNull(latch);
 
             assertEquals(1, latch.count());
@@ -188,7 +243,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
                 @Override public Object call() throws Exception {
                     U.sleep(1000);
 
-                    IgniteCountDownLatch latch0 = srvNode.countDownLatch("latch1", 1, true, false);
+                    IgniteCountDownLatch latch0 = other.countDownLatch("latch1", 1, true, false);
 
                     assertEquals(1, latch0.count());
 
@@ -210,6 +265,133 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             fut.get();
         }
+
+        assertNull(creator.countDownLatch("latch1", 1, true, false));
+        assertNull(other.countDownLatch("latch1", 1, true, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSemaphore() throws Exception {
+        Ignite clientNode = clientIgnite();
+        Ignite srvNode = serverNode();
+
+        testSemaphore(clientNode, srvNode);
+        testSemaphore(srvNode, clientNode);
+    }
+
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testSemaphore(Ignite creator, final Ignite other) throws Exception {
+        assertNull(creator.semaphore("semaphore1", 1, true, false));
+        assertNull(other.semaphore("semaphore1", 1, true, false));
+
+        try (IgniteSemaphore semaphore = creator.semaphore("semaphore1", -1, true, true)) {
+            assertNotNull(semaphore);
+
+            assertEquals(-1, semaphore.availablePermits());
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    U.sleep(1000);
+
+                    IgniteSemaphore semaphore0 = other.semaphore("semaphore1", -1, true, false);
+
+                    assertEquals(-1, semaphore0.availablePermits());
+
+                    log.info("Release semaphore.");
+
+                    semaphore0.release(2);
+
+                    return null;
+                }
+            });
+
+            log.info("Acquire semaphore.");
+
+            assertTrue(semaphore.tryAcquire(1, 5000, TimeUnit.MILLISECONDS));
+
+            log.info("Finished wait.");
+
+            fut.get();
+
+            assertEquals(0, semaphore.availablePermits());
+        }
+
+        assertNull(creator.semaphore("semaphore1", 1, true, false));
+        assertNull(other.semaphore("semaphore1", 1, true, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLock() throws Exception {
+        Ignite clientNode = clientIgnite();
+        Ignite srvNode = serverNode();
+
+        testReentrantLock(clientNode, srvNode);
+        testReentrantLock(srvNode, clientNode);
+    }
+
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testReentrantLock(Ignite creator, final Ignite other) throws Exception {
+        assertNull(creator.reentrantLock("lock1", true, false, false));
+        assertNull(other.reentrantLock("lock1", true, false, false));
+
+        try (IgniteLock lock = creator.reentrantLock("lock1", true, false, true)) {
+            assertNotNull(lock);
+
+            assertFalse(lock.isLocked());
+
+            final Semaphore semaphore = new Semaphore(0);
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    IgniteLock lock0 = other.reentrantLock("lock1", true, false, false);
+
+                    lock0.lock();
+
+                    assertTrue(lock0.isLocked());
+
+                    semaphore.release();
+
+                    U.sleep(1000);
+
+                    log.info("Release reentrant lock.");
+
+                    lock0.unlock();
+
+                    return null;
+                }
+            });
+
+            semaphore.acquire();
+
+            log.info("Try acquire lock.");
+
+            assertTrue(lock.tryLock(5000, TimeUnit.MILLISECONDS));
+
+            log.info("Finished wait.");
+
+            fut.get();
+
+            assertTrue(lock.isLocked());
+
+            lock.unlock();
+
+            assertFalse(lock.isLocked());
+        }
+
+        assertNull(creator.reentrantLock("lock1", true, false, false));
+        assertNull(other.reentrantLock("lock1", true, false, false));
     }
 
     /**
@@ -217,14 +399,22 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
      */
     public void testQueue() throws Exception {
         Ignite clientNode = clientIgnite();
+        Ignite srvNode = serverNode();
 
-        final Ignite srvNode = serverNode();
+        testQueue(clientNode, srvNode);
+        testQueue(srvNode, clientNode);
+    }
 
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testQueue(Ignite creator, final Ignite other) throws Exception {
+        assertNull(creator.queue("q1", 0, null));
+        assertNull(other.queue("q1", 0, null));
 
-        assertNull(clientNode.queue("q1", 0, null));
-
-        try (IgniteQueue<Integer> queue = clientNode.queue("q1", 0, colCfg)) {
+        try (IgniteQueue<Integer> queue = creator.queue("q1", 0, new CollectionConfiguration())) {
             assertNotNull(queue);
 
             queue.add(1);
@@ -235,7 +425,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
                 @Override public Object call() throws Exception {
                     U.sleep(1000);
 
-                    IgniteQueue<Integer> queue0 = srvNode.queue("q1", 0, null);
+                    IgniteQueue<Integer> queue0 = other.queue("q1", 0, null);
 
                     assertEquals(0, queue0.size());
 
@@ -255,6 +445,9 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             fut.get();
         }
+
+        assertNull(creator.queue("q1", 0, null));
+        assertNull(other.queue("q1", 0, null));
     }
 
     /**

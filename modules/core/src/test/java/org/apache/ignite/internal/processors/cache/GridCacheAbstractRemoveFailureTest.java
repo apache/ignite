@@ -17,33 +17,65 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.*;
-import org.jsr166.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jsr166.ConcurrentHashMap8;
 
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests that removes are not lost when topology changes.
  */
-public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstractSelfTest {
+public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstractTest {
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** */
     private static final int GRID_CNT = 3;
 
     /** Keys count. */
-    private static final int KEYS_CNT = 10000;
+    private static final int KEYS_CNT = 10_000;
 
     /** Test duration. */
     private static final long DUR = 90 * 1000L;
@@ -57,36 +89,21 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
     /** Start delay. */
     private static final T2<Integer, Integer> START_DELAY = new T2<>(2000, 5000);
 
-    /** Node kill lock (used to prevent killing while cache data is compared). */
-    private final Lock killLock = new ReentrantLock();
-
     /** */
-    private CountDownLatch assertLatch;
-
-    /** */
-    private CountDownLatch updateLatch;
-
-    /** Caches comparison request flag. */
-    private volatile boolean cmp;
-
-    /** */
-    private String sizePropVal;
+    private static String sizePropVal;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER).setForceServerMode(true);
 
-        if (testClientNode() && getTestGridName(0).equals(gridName))
+        if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
-        return cfg;
-    }
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -95,6 +112,8 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         sizePropVal = System.getProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
 
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
+
+        startGrids(GRID_CNT);
     }
 
     /** {@inheritDoc} */
@@ -102,15 +121,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         super.afterTestsStopped();
 
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startGrids(gridCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
@@ -118,6 +129,21 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
     @Override protected long getTestTimeout() {
         return DUR + 60_000;
     }
+
+    /**
+     * @return Cache mode.
+     */
+    protected abstract CacheMode cacheMode();
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected abstract CacheAtomicityMode atomicityMode();
+
+    /**
+     * @return Near cache configuration.
+     */
+    protected abstract NearCacheConfiguration nearCache();
 
     /**
      * @return {@code True} if test updates from client node.
@@ -130,9 +156,55 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
-        assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
+        putAndRemove(DUR, null, null);
+    }
 
-        final IgniteCache<Integer, Integer> sndCache0 = grid(0).cache(null);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAndRemovePessimisticTx() throws Exception {
+        if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
+            return;
+
+        putAndRemove(30_000, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAndRemoveOptimisticSerializableTx() throws Exception {
+        if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
+            return;
+
+        putAndRemove(30_000, OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @param duration Test duration.
+     * @param txConcurrency Transaction concurrency if test explicit transaction.
+     * @param txIsolation Transaction isolation if test explicit transaction.
+     * @throws Exception If failed.
+     */
+    private void putAndRemove(long duration,
+        final TransactionConcurrency txConcurrency,
+        final TransactionIsolation txIsolation) throws Exception {
+        assertEquals(testClientNode(), (boolean) grid(0).configuration().isClientMode());
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        ccfg.setCacheMode(cacheMode());
+
+        if (cacheMode() == PARTITIONED)
+            ccfg.setBackups(1);
+
+        ccfg.setAtomicityMode(atomicityMode());
+        ccfg.setNearConfiguration(nearCache());
+
+        final IgniteCache<Integer, Integer> sndCache0 = grid(0).createCache(ccfg);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -143,9 +215,15 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         // Expected values in cache.
         final Map<Integer, GridTuple<Integer>> expVals = new ConcurrentHashMap8<>();
 
+        final AtomicReference<CyclicBarrier> cmp = new AtomicReference<>();
+
         IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
+                Thread.currentThread().setName("update-thread");
+
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                IgniteTransactions txs = sndCache0.unwrap(Ignite.class).transactions();
 
                 while (!stop.get()) {
                     for (int i = 0; i < 100; i++) {
@@ -156,14 +234,54 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
                         while (true) {
                             try {
                                 if (put) {
-                                    sndCache0.put(key, i);
+                                    boolean failed = false;
 
-                                    expVals.put(key, F.t(i));
+                                    if (txConcurrency != null) {
+                                        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+                                            sndCache0.put(key, i);
+
+                                            tx.commit();
+                                        }
+                                        catch (CacheException | IgniteException e) {
+                                            if (!X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                                                log.error("Unexpected error: " + e);
+
+                                                throw e;
+                                            }
+
+                                            failed = true;
+                                        }
+                                    }
+                                    else
+                                        sndCache0.put(key, i);
+
+                                    if (!failed)
+                                        expVals.put(key, F.t(i));
                                 }
                                 else {
-                                    sndCache0.remove(key);
+                                    boolean failed = false;
 
-                                    expVals.put(key, F.<Integer>t(null));
+                                    if (txConcurrency != null) {
+                                        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+                                            sndCache0.remove(key);
+
+                                            tx.commit();
+                                        }
+                                        catch (CacheException | IgniteException e) {
+                                            if (!X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                                                log.error("Unexpected error: " + e);
+
+                                                throw e;
+                                            }
+
+                                            failed = true;
+                                        }
+                                    }
+                                    else
+                                        sndCache0.remove(key);
+
+                                    if (!failed)
+                                        expVals.put(key, F.<Integer>t(null));
                                 }
 
                                 break;
@@ -181,10 +299,14 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
 
                     cntr.addAndGet(100);
 
-                    if (cmp) {
-                        assertLatch.countDown();
+                    CyclicBarrier barrier = cmp.get();
 
-                        updateLatch.await();
+                    if (barrier != null) {
+                        log.info("Wait data check.");
+
+                        barrier.await(60_000, TimeUnit.MILLISECONDS);
+
+                        log.info("Finished wait data check.");
                     }
                 }
 
@@ -194,16 +316,21 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
 
         IgniteInternalFuture<?> killFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
+                Thread.currentThread().setName("restart-thread");
+
                 while (!stop.get()) {
                     U.sleep(random(KILL_DELAY.get1(), KILL_DELAY.get2()));
 
-                    killLock.lock();
+                    killAndRestart(stop);
 
-                    try {
-                        killAndRestart(stop);
-                    }
-                    finally {
-                        killLock.unlock();
+                    CyclicBarrier barrier = cmp.get();
+
+                    if (barrier != null) {
+                        log.info("Wait data check.");
+
+                        barrier.await(60_000, TimeUnit.MILLISECONDS);
+
+                        log.info("Finished wait data check.");
                     }
                 }
 
@@ -212,7 +339,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         });
 
         try {
-            long stopTime = DUR + U.currentTimeMillis() ;
+            long stopTime = duration + U.currentTimeMillis() ;
 
             long nextAssert = U.currentTimeMillis() + ASSERT_FREQ;
 
@@ -232,31 +359,41 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
                 log.info("Operations/second: " + opsPerSecond);
 
                 if (U.currentTimeMillis() >= nextAssert) {
-                    updateLatch = new CountDownLatch(1);
+                    CyclicBarrier barrier = new CyclicBarrier(3, new Runnable() {
+                        @Override public void run() {
+                            try {
+                                cmp.set(null);
 
-                    assertLatch = new CountDownLatch(1);
+                                log.info("Checking cache content.");
 
-                    cmp = true;
+                                assertCacheContent(expVals);
 
-                    killLock.lock();
+                                log.info("Finished check cache content.");
+                            }
+                            catch (Throwable e) {
+                                log.error("Unexpected error: " + e, e);
+
+                                throw e;
+                            }
+                        }
+                    });
+
+                    log.info("Start cache content check.");
+
+                    cmp.set(barrier);
 
                     try {
-                        if (!assertLatch.await(60_000, TimeUnit.MILLISECONDS))
-                            throw new IgniteCheckedException("Failed to suspend thread executing updates.");
-
-                        log.info("Checking cache content.");
-
-                        assertCacheContent(expVals);
-
-                        nextAssert = System.currentTimeMillis() + ASSERT_FREQ;
+                        barrier.await(60_000, TimeUnit.MILLISECONDS);
                     }
-                    finally {
-                        killLock.unlock();
+                    catch (TimeoutException e) {
+                        U.dumpThreads(log);
 
-                        updateLatch.countDown();
-
-                        U.sleep(500);
+                        fail("Failed to check cache content: " + e);
                     }
+
+                    log.info("Cache content check done.");
+
+                    nextAssert = System.currentTimeMillis() + ASSERT_FREQ;
                 }
             }
         }
@@ -269,18 +406,17 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         updateFut.get();
 
         log.info("Test finished. Update errors: " + errCntr.get());
-
     }
 
     /**
      * @param stop Stop flag.
      * @throws Exception If failed.
      */
-    void killAndRestart(AtomicBoolean stop) throws Exception {
+    private void killAndRestart(AtomicBoolean stop) throws Exception {
         if (stop.get())
             return;
 
-        int idx = random(1, gridCount() + 1);
+        int idx = random(1, GRID_CNT + 1);
 
         log.info("Killing node " + idx);
 
@@ -288,22 +424,21 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
 
         U.sleep(random(START_DELAY.get1(), START_DELAY.get2()));
 
-        if (stop.get())
-            return;
-
         log.info("Restarting node " + idx);
 
         startGrid(idx);
+
+        if (stop.get())
+            return;
 
         U.sleep(1000);
     }
 
     /**
      * @param expVals Expected values in cache.
-     * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
-    private void assertCacheContent(Map<Integer, GridTuple<Integer>> expVals) throws Exception {
+    private void assertCacheContent(Map<Integer, GridTuple<Integer>> expVals) {
         assert !expVals.isEmpty();
 
         Collection<Integer> failedKeys = new HashSet<>();
@@ -311,7 +446,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = grid(i);
 
-            IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             for (Map.Entry<Integer, GridTuple<Integer>> expVal : expVals.entrySet()) {
                 Integer val = cache.get(expVal.getKey());

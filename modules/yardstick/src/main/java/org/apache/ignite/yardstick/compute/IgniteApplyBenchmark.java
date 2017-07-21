@@ -17,12 +17,16 @@
 
 package org.apache.ignite.yardstick.compute;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.yardstick.*;
-import org.yardstickframework.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs apply operations.

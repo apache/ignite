@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryMetrics;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.lang.IgniteReducer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Main API for configuring and executing cache queries.
@@ -266,15 +271,6 @@ public interface CacheQuery<T> {
     public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
-     * Executes the query the same way as {@link #execute(Object...)} method but transforms result remotely.
-     *
-     * @param rmtTransform Remote transformer.
-     * @param args Optional arguments.
-     * @return Future for the query result.
-     */
-    public <R> CacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args);
-
-    /**
      * Gets metrics for this query.
      *
      * @return Query metrics.
@@ -285,4 +281,9 @@ public interface CacheQuery<T> {
      * Resets metrics for this query.
      */
     public void resetMetrics();
+
+    /**
+     * @return Scan query iterator.
+     */
+    public GridCloseableIterator executeScanQuery() throws IgniteCheckedException;
 }

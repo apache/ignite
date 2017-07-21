@@ -17,7 +17,7 @@
 
 package org.apache.ignite.loadtests.job;
 
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.G;
 
 /**
  *

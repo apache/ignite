@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  *

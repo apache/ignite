@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.services.*;
-import org.jsr166.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Dummy service.

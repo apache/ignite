@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenience class representing mutable tuple of a single value.
@@ -30,8 +33,6 @@ import java.util.*;
  * This class doesn't provide any synchronization for multi-threaded access
  * and it is responsibility of the user of this class to provide outside
  * synchronization, if needed.
- * @see GridFunc#t1()
- * @see GridFunc#t(Object)
  */
 public class GridTuple<V> implements Iterable<V>, Cloneable, Externalizable {
     /** */

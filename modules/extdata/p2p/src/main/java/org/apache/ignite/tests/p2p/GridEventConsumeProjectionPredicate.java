@@ -17,8 +17,8 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.PN;
 
 /**
  * Projection predicate for event consume test.

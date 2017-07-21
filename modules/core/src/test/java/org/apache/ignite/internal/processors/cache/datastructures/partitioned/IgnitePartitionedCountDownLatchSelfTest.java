@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchAbstractSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
@@ -29,5 +29,10 @@ public class IgnitePartitionedCountDownLatchSelfTest extends IgniteCountDownLatc
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testLatch() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1793");
     }
 }

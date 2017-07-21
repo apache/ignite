@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.transactions.*;
+import java.io.IOException;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.transactions.Transaction;
 
-import javax.cache.*;
-import java.io.*;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -38,24 +38,13 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (!gridName.endsWith("0"))
-            cfg.getCacheConfiguration()[0].setRebalanceDelay(-1); // Allows to check GridDhtLockRequest fail.
-
-        return cfg;
-    }
-
     /**
      * Sends put with optimistic lock and handles fail.
      */
-    protected void failOptimistic() {
+    private void failOptimistic() {
         IgniteCache<Object, Object> cache = jcache(0);
 
         try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-
             cache.put(new TestKey(String.valueOf(++key)), "");
 
             tx.commit();
@@ -72,12 +61,10 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
     /**
      * Sends put with pessimistic lock and handles fail.
      */
-    protected void failPessimictic() {
+    private void failPessimictic() {
         IgniteCache<Object, Object> cache = jcache(0);
 
-        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC,
-            REPEATABLE_READ)) {
-
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(new TestKey(String.valueOf(++key)), "");
 
             assert false : "p2p marshalling failed, but error response was not sent";

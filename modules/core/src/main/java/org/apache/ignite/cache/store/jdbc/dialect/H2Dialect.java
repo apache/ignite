@@ -17,22 +17,23 @@
 
 package org.apache.ignite.cache.store.jdbc.dialect;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * A dialect compatible with the H2 database.
  */
 public class H2Dialect extends BasicJdbcDialect {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public boolean hasMerge() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
-        Collection<String> uniqCols) {
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
         Collection<String> cols = F.concat(false, keyCols, uniqCols);
 
         return String.format("MERGE INTO %s (%s) KEY (%s) VALUES(%s)", fullTblName, mkString(cols, ","),

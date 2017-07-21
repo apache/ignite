@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache change batch.
@@ -32,55 +33,34 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Discovery custom message ID. */
+    private IgniteUuid id = IgniteUuid.randomUuid();
+
     /** Change requests. */
     @GridToStringInclude
     private Collection<DynamicCacheChangeRequest> reqs;
 
-    /** Client nodes map. Used in discovery data exchange. */
-    @GridToStringInclude
-    private Map<String, Map<UUID, Boolean>> clientNodes;
+    /** Cache updates to be executed on exchange. */
+    private transient ExchangeActions exchangeActions;
 
-    /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    /** */
+    private boolean startCaches;
+
+    /** Restarting caches. */
+    private Set<String> restartingCaches;
 
     /**
      * @param reqs Requests.
      */
-    public DynamicCacheChangeBatch(
-        Collection<DynamicCacheChangeRequest> reqs
-    ) {
+    public DynamicCacheChangeBatch(Collection<DynamicCacheChangeRequest> reqs) {
+        assert !F.isEmpty(reqs) : reqs;
+
         this.reqs = reqs;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
-    }
-
-    /**
-     * @return Collection of change requests.
-     */
-    public Collection<DynamicCacheChangeRequest> requests() {
-        return reqs;
-    }
-
-    /**
-     * @return Client nodes map.
-     */
-    public Map<String, Map<UUID, Boolean>> clientNodes() {
-        return clientNodes;
-    }
-
-    /**
-     * @param clientNodes Client nodes map.
-     */
-    public void clientNodes(Map<String, Map<UUID, Boolean>> clientNodes) {
-        this.clientNodes = clientNodes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean incrementMinorTopologyVersion() {
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -91,6 +71,66 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * @return Collection of change requests.
+     */
+    public Collection<DynamicCacheChangeRequest> requests() {
+        return reqs;
+    }
+
+    /**
+     * @return {@code True} if request should trigger partition exchange.
+     */
+    public boolean exchangeNeeded() {
+        return exchangeActions != null;
+    }
+
+    /**
+     * @return Cache updates to be executed on exchange.
+     */
+    ExchangeActions exchangeActions() {
+        return exchangeActions;
+    }
+
+    /**
+     * @param exchangeActions Cache updates to be executed on exchange.
+     */
+    void exchangeActions(ExchangeActions exchangeActions) {
+        assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
+
+        this.exchangeActions = exchangeActions;
+    }
+
+    /**
+     * @return {@code True} if required to start all caches on client node.
+     */
+    public boolean startCaches() {
+        return startCaches;
+    }
+
+    /**
+     * @param restartingCaches Restarting caches.
+     */
+    public DynamicCacheChangeBatch restartingCaches(Set<String> restartingCaches) {
+        this.restartingCaches = restartingCaches;
+
+        return this;
+    }
+
+    /**
+     * @return Set of restarting caches.
+     */
+    public Set<String> restartingCaches() {
+        return restartingCaches;
+    }
+
+    /**
+     * @param startCaches {@code True} if required to start all caches on client node.
+     */
+    public void startCaches(boolean startCaches) {
+        this.startCaches = startCaches;
     }
 
     /** {@inheritDoc} */

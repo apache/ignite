@@ -17,10 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.spi.failover.jobstealing.*;
-import org.apache.ignite.spi.failover.never.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpiConfigSelfTest;
+import org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpiSelfTest;
+import org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpiStartStopSelfTest;
+import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiConfigSelfTest;
+import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiOneNodeSelfTest;
+import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiSelfTest;
+import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiStartStopSelfTest;
+import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiSelfTest;
+import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiStartStopSelfTest;
 
 /**
  * Failover SPI self-test suite.

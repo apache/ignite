@@ -17,19 +17,53 @@
 
 package org.apache.ignite.internal.jdbc;
 
-import org.apache.ignite.internal.client.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.Executor;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.GridClientFutureTimeoutException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.sql.ResultSet.*;
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.IgniteJdbcDriver.*;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_HOST;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_PORT;
 
 /**
  * JDBC connection implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 public class JdbcConnection implements Connection {
     /** Validation task name. */
     private static final String VALID_TASK_NAME =
@@ -76,6 +110,15 @@ public class JdbcConnection implements Connection {
             GridClientConfiguration cfg = new GridClientConfiguration(props);
 
             cfg.setServers(Collections.singleton(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT)));
+
+            String user = props.getProperty("user");
+            String passwd = props.getProperty("password");
+
+            if (!F.isEmpty(user)) {
+                SecurityCredentials creds = new SecurityCredentials(user, passwd);
+
+                cfg.setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(creds));
+            }
 
             // Disable all fetching and caching for metadata.
             cfg.setEnableMetricsCache(false);

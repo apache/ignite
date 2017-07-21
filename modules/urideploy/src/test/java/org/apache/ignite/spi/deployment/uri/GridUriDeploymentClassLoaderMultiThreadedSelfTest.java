@@ -17,13 +17,12 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
-
-import java.net.*;
-import java.util.concurrent.*;
+import java.net.URL;
+import java.util.concurrent.Callable;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid URI deployment class loader self test.

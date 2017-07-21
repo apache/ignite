@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.client.router;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.integration.*;
-import org.apache.ignite.internal.client.router.impl.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.integration.ClientAbstractSelfTest;
+import org.apache.ignite.internal.client.router.impl.GridTcpRouterImpl;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.logger.log4j.Log4JLogger;
 
 /**
  * Abstract base class for http routing tests.

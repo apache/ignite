@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.client.router;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.integration.*;
-import org.apache.ignite.internal.client.router.impl.*;
-import org.apache.ignite.logger.log4j.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.integration.ClientAbstractMultiNodeSelfTest;
+import org.apache.ignite.internal.client.router.impl.GridTcpRouterImpl;
+import org.apache.ignite.logger.log4j.Log4JLogger;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTest.*;
+import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTest.ROUTER_LOG_CFG;
 
 /**
  *

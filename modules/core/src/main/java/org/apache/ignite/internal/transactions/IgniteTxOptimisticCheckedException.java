@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Exception thrown whenever grid transactions fail optimistically.

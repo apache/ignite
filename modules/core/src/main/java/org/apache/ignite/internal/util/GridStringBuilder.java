@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 /**
  * Optimized string builder with better API.
@@ -419,6 +422,44 @@ public class GridStringBuilder implements Serializable {
      */
     public GridStringBuilder i(int off, double d) {
         return i(off, String.valueOf(d));
+    }
+
+    /**
+     * Appends given long value as a hex string to this string builder.
+     *
+     * @param val Value to append.
+     * @return This builder for chaining method calls.
+     */
+    public GridStringBuilder appendHex(long val) {
+        String hex = Long.toHexString(val);
+
+        int len = hex.length();
+
+        for (int i = 0; i < 16 - len; i++)
+            a('0');
+
+        a(hex);
+
+        return this;
+    }
+
+    /**
+     * Appends given long value as a hex string to this string builder.
+     *
+     * @param val Value to append.
+     * @return This builder for chaining method calls.
+     */
+    public GridStringBuilder appendHex(int val) {
+        String hex = Integer.toHexString(val);
+
+        int len = hex.length();
+
+        for (int i = 0; i < 8 - len; i++)
+            a('0');
+
+        a(hex);
+
+        return this;
     }
 
     /**

@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -57,8 +58,12 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
     @Override public boolean apply(GridCacheEntryEx e) {
         CacheObject val = peekVisibleValue(e);
 
-        return F.eq(this.val.value(e.context().cacheObjectContext(), false),
-            CU.value(val, e.context(), false));
+        GridCacheContext cctx = e.context();
+
+        Object thisVal = CU.value(this.val, cctx, false);
+        Object cacheVal = CU.value(val, cctx, false);
+
+        return F.eq(thisVal, cacheVal);
     }
 
     /** {@inheritDoc} */
@@ -118,11 +123,11 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         }
 
-        return true;
+        return reader.afterMessageRead(CacheEntryPredicateContainsValue.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 98;
     }
 

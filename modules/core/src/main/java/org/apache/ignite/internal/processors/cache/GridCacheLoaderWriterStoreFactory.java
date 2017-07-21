@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.store.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.configuration.*;
-import javax.cache.integration.*;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
+import org.apache.ignite.cache.store.CacheStore;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -55,5 +55,19 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
         CacheWriter<K, V> writer = writerFactory == null ? null : writerFactory.create();
 
         return new GridCacheLoaderWriterStore<>(ldr, writer);
+    }
+
+    /**
+     * @return Loader factory.
+     */
+    Factory<CacheLoader<K, V>> loaderFactory() {
+        return ldrFactory;
+    }
+
+    /**
+     * @return Writer factory.
+     */
+    Factory<CacheWriter<K, V>> writerFactory() {
+        return writerFactory;
     }
 }

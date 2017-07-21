@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.plugin.segmentation.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Possible states of {@link org.apache.ignite.Ignition}. You can register a listener for

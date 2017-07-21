@@ -17,10 +17,15 @@
 
 package org.apache.ignite.spi.collision;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.compute.ComputeJobSibling;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
+import org.apache.ignite.compute.ComputeTaskSessionScope;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Test collision task session.

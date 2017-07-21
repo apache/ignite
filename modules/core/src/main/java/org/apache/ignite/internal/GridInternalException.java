@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * When log debug mode is disabled this exception should be logged in short form - without stack trace.

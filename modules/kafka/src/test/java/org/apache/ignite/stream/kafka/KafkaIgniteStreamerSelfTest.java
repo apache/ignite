@@ -17,29 +17,36 @@
 
 package org.apache.ignite.stream.kafka;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import kafka.consumer.ConsumerConfig;
+import kafka.message.MessageAndMetadata;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.stream.StreamMultipleTupleExtractor;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
-import kafka.consumer.*;
-import kafka.producer.*;
-import kafka.serializer.*;
-import kafka.utils.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.stream.kafka.KafkaEmbeddedBroker.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests {@link KafkaStreamer}.
  */
 public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Embedded Kafka. */
-    private KafkaEmbeddedBroker embeddedBroker;
+    private TestKafkaBroker embeddedBroker;
 
     /** Count. */
     private static final int CNT = 100;
@@ -69,12 +76,12 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
-        embeddedBroker = new KafkaEmbeddedBroker();
+        embeddedBroker = new TestKafkaBroker();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid().cache(null).clear();
+        grid().cache(DEFAULT_CACHE_NAME).clear();
 
         embeddedBroker.shutdown();
     }
@@ -108,7 +115,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
         Collections.shuffle(subnet);
 
-        List<KeyedMessage<String, String>> messages = new ArrayList<>(CNT);
+        List<ProducerRecord<String, String>> messages = new ArrayList<>(CNT);
 
         Map<String, String> keyValMap = new HashMap<>();
 
@@ -119,14 +126,12 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             String msg = runtime + VALUE_URL + ip;
 
-            messages.add(new KeyedMessage<>(topic, ip, msg));
+            messages.add(new ProducerRecord<>(topic, ip, msg));
 
             keyValMap.put(ip, msg);
         }
 
-        Producer<String, String> producer = embeddedBroker.sendMessages(messages);
-
-        producer.close();
+        embeddedBroker.sendMessages(messages);
 
         return keyValMap;
     }
@@ -141,11 +146,11 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
      */
     private void consumerStream(String topic, Map<String, String> keyValMap)
         throws TimeoutException, InterruptedException {
-        KafkaStreamer<String, String, String> kafkaStmr = null;
+        KafkaStreamer<String, String> kafkaStmr = null;
 
         Ignite ignite = grid();
 
-        try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(null)) {
+        try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
@@ -153,7 +158,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr = new KafkaStreamer<>();
 
             // Get the cache.
-            IgniteCache<String, String> cache = ignite.cache(null);
+            IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             // Set Ignite instance.
             kafkaStmr.setIgnite(ignite);
@@ -168,13 +173,29 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr.setThreads(4);
 
             // Set the consumer configuration.
-            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(getZKAddress(), "groupX"));
+            kafkaStmr.setConsumerConfig(
+                createDefaultConsumerConfig(embeddedBroker.getZookeeperAddress(), "groupX"));
 
-            // Set the decoders.
-            StringDecoder strDecoder = new StringDecoder(new VerifiableProperties());
+            kafkaStmr.setMultipleTupleExtractor(
+                new StreamMultipleTupleExtractor<MessageAndMetadata<byte[], byte[]>, String, String>() {
+                @Override public Map<String, String> extract(MessageAndMetadata<byte[], byte[]> msg) {
+                    Map<String, String> entries = new HashMap<>();
 
-            kafkaStmr.setKeyDecoder(strDecoder);
-            kafkaStmr.setValueDecoder(strDecoder);
+                    try {
+                        String key = new String(msg.key());
+                        String val = new String(msg.message());
+
+                        // Convert the message into number of cache entries with same key or dynamic key from actual message.
+                        // For now using key as cache entry key and value as cache entry value - for test purpose.
+                        entries.put(key, val);
+                    }
+                    catch (Exception ex) {
+                        fail("Unexpected error." + ex);
+                    }
+
+                    return entries;
+                }
+            });
 
             // Start kafka streamer.
             kafkaStmr.start();
@@ -189,9 +210,10 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
+            ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
-            latch.await();
+            // Checks all events successfully processed in 10 seconds.
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));

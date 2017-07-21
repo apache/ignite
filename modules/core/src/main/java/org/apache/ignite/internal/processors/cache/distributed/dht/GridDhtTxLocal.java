@@ -17,29 +17,46 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.transactions.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.TransactionState.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
+import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
 /**
  * Replicated user transaction.
@@ -55,21 +72,25 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     private IgniteUuid nearFutId;
 
     /** Near future ID. */
-    private IgniteUuid nearMiniId;
+    private int nearMiniId;
 
     /** Near future ID. */
     private IgniteUuid nearFinFutId;
 
     /** Near future ID. */
-    private IgniteUuid nearFinMiniId;
+    private int nearFinMiniId;
 
     /** Near XID. */
     private GridCacheVersion nearXidVer;
 
+    /** Future updater. */
+    private static final AtomicReferenceFieldUpdater<GridDhtTxLocal, GridDhtTxPrepareFuture> PREP_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocal.class, GridDhtTxPrepareFuture.class, "prepFut");
+
     /** Future. */
+    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
-    private final AtomicReference<GridDhtTxPrepareFuture> prepFut =
-        new AtomicReference<>();
+    private volatile GridDhtTxPrepareFuture prepFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -96,10 +117,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
+        AffinityTopologyVersion topVer,
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
         IgniteUuid nearFutId,
-        IgniteUuid nearMiniId,
+        int nearMiniId,
         long nearThreadId,
         boolean implicit,
         boolean implicitSingle,
@@ -111,6 +133,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
@@ -129,14 +152,14 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             timeout,
             invalidate,
             storeEnabled,
+            onePhaseCommit,
             txSize,
             subjId,
             taskNameHash);
 
-        assert cctx != null;
         assert nearNodeId != null;
         assert nearFutId != null;
-        assert nearMiniId != null;
+        assert nearMiniId != 0;
         assert nearXidVer != null;
 
         this.nearNodeId = nearNodeId;
@@ -150,6 +173,10 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         assert !F.eq(xidVer, nearXidVer);
 
         initResult();
+
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
+        topologyVersion(topVer);
     }
 
     /** {@inheritDoc} */
@@ -204,11 +231,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteUuid nearMiniId() {
-        return nearMiniId;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean dht() {
         return true;
     }
@@ -233,16 +255,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /**
-     * @return Near future mini ID.
-     */
-    public IgniteUuid nearFinishMiniId() {
-        return nearFinMiniId;
-    }
-
-    /**
      * @param nearFinMiniId Near future mini ID.
      */
-    public void nearFinishMiniId(IgniteUuid nearFinMiniId) {
+    public void nearFinishMiniId(int nearFinMiniId) {
         this.nearFinMiniId = nearFinMiniId;
     }
 
@@ -250,7 +265,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     @Override @Nullable protected IgniteInternalFuture<Boolean> addReader(long msgId, GridDhtCacheEntry cached,
         IgniteTxEntry entry, AffinityTopologyVersion topVer) {
         // Don't add local node as reader.
-        if (!cctx.localNodeId().equals(nearNodeId)) {
+        if (entry.addReader() && !cctx.localNodeId().equals(nearNodeId)) {
             GridCacheContext cacheCtx = cached.context();
 
             while (true) {
@@ -277,76 +292,22 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> prepareAsync() {
-        if (optimistic()) {
-            assert isSystemInvalidate();
+    @Override public IgniteInternalFuture<?> salvageTx() {
+        systemInvalidate(true);
 
-            return prepareAsync(
-                null,
-                null,
-                Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
-                0,
-                nearMiniId,
-                null,
-                true,
-                null);
+        state(PREPARED);
+
+        if (state() == PREPARING) {
+            if (log.isDebugEnabled())
+                log.debug("Ignoring transaction in PREPARING state as it is currently handled " +
+                    "by another thread: " + this);
+
+            return null;
         }
 
-        // For pessimistic mode we don't distribute prepare request.
-        GridDhtTxPrepareFuture fut = prepFut.get();
+        setRollbackOnly();
 
-        if (fut == null) {
-            // Future must be created before any exception can be thrown.
-            if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture(
-                cctx,
-                this,
-                nearMiniId,
-                Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
-                true,
-                needReturnValue(),
-                null)))
-                return prepFut.get();
-        }
-        else
-            // Prepare was called explicitly.
-            return fut;
-
-        if (!state(PREPARING)) {
-            if (setRollbackOnly()) {
-                if (timedOut())
-                    fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + this));
-                else
-                    fut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() +
-                        ", tx=" + this + ']'));
-            }
-            else
-                fut.onError(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare [state=" + state()
-                    + ", tx=" + this + ']'));
-
-            return fut;
-        }
-
-        try {
-            userPrepare();
-
-            if (!state(PREPARED)) {
-                setRollbackOnly();
-
-                fut.onError(new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
-                    ", tx=" + this + ']'));
-
-                return fut;
-            }
-
-            fut.complete();
-
-            return fut;
-        }
-        catch (IgniteCheckedException e) {
-            fut.onError(e);
-
-            return fut;
-        }
+        return rollbackDhtLocalAsync();
     }
 
     /**
@@ -359,44 +320,47 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param nearMiniId Near mini future ID.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this is last prepare request.
-     * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsync(
-        @Nullable Iterable<IgniteTxEntry> reads,
-        @Nullable Iterable<IgniteTxEntry> writes,
+    public final IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsync(
+        @Nullable Collection<IgniteTxEntry> reads,
+        @Nullable Collection<IgniteTxEntry> writes,
         Map<IgniteTxKey, GridCacheVersion> verMap,
         long msgId,
-        IgniteUuid nearMiniId,
+        int nearMiniId,
         Map<UUID, Collection<UUID>> txNodes,
-        boolean last,
-        Collection<UUID> lastBackups
+        boolean last
     ) {
         // In optimistic mode prepare still can be called explicitly from salvageTx.
-        GridDhtTxPrepareFuture fut = prepFut.get();
+        GridDhtTxPrepareFuture fut = prepFut;
+
+        long timeout = remainingTime();
 
         if (fut == null) {
             init();
 
             // Future must be created before any exception can be thrown.
-            if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture(
+            if (!PREP_FUT_UPD.compareAndSet(this, null, fut = new GridDhtTxPrepareFuture(
                 cctx,
                 this,
+                timeout,
                 nearMiniId,
                 verMap,
                 last,
-                needReturnValue(),
-                lastBackups))) {
-                GridDhtTxPrepareFuture f = prepFut.get();
+                needReturnValue()))) {
+                GridDhtTxPrepareFuture f = prepFut;
 
-                assert f.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
+                assert f.nearMiniId() == nearMiniId : "Wrong near mini id on existing future " +
                     "[futMiniId=" + f.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + f + ']';
+
+                if (timeout == -1)
+                    f.onError(timeoutException());
 
                 return chainOnePhasePrepare(f);
             }
         }
         else {
-            assert fut.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
+            assert fut.nearMiniId() == nearMiniId : "Wrong near mini id on existing future " +
                 "[futMiniId=" + fut.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + fut + ']';
 
             // Prepare was called explicitly.
@@ -407,8 +371,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (!state(PREPARING)) {
                 if (state() == PREPARED && isSystemInvalidate())
                     fut.complete();
+
                 if (setRollbackOnly()) {
-                    if (timedOut())
+                    if (timeout == -1)
                         fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +
                             this));
                     else
@@ -424,15 +389,17 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         }
 
         try {
-            if (reads != null)
+            if (reads != null) {
                 for (IgniteTxEntry e : reads)
                     addEntry(msgId, e);
+            }
 
-            if (writes != null)
+            if (writes != null) {
                 for (IgniteTxEntry e : writes)
                     addEntry(msgId, e);
+            }
 
-            userPrepare();
+            userPrepare(null);
 
             // Make sure to add future before calling prepare on it.
             cctx.mvcc().addFuture(fut);
@@ -449,197 +416,159 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             setRollbackOnly();
 
             fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + this, e));
-
-            try {
-                rollback();
-            }
-            catch (IgniteTxOptimisticCheckedException e1) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e1 + ']');
-
-                fut.onError(e);
-            }
-            catch (IgniteCheckedException e1) {
-                U.error(log, "Failed to rollback transaction: " + this, e1);
-            }
         }
 
         return chainOnePhasePrepare(fut);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
-    @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
+    /**
+     * @param commit Commit flag.
+     * @param prepFut Prepare future.
+     * @param fut Finish future.
+     */
+    private void finishTx(boolean commit, @Nullable IgniteInternalFuture prepFut, GridDhtTxFinishFuture fut) {
+        assert prepFut == null || prepFut.isDone();
+
+        boolean primarySync = syncMode() == PRIMARY_SYNC;
+
+        IgniteCheckedException err = null;
+
+        if (!commit && prepFut != null) {
+            try {
+                prepFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to prepare transaction [tx=" + this + ", e=" + e + ']');
+            }
+            finally {
+                prepFut = null;
+            }
+        }
+
+        try {
+            if (prepFut != null)
+                prepFut.get(); // Check for errors.
+
+            boolean finished = localFinish(commit);
+
+            if (!finished)
+                err = new IgniteCheckedException("Failed to finish transaction [commit=" + commit +
+                    ", tx=" + CU.txString(this) + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to finish transaction [commit=" + commit + ", tx=" + this + ']', e);
+
+            err = e;
+        }
+
+        if (primarySync)
+            sendFinishReply(err);
+
+        if (err != null)
+            fut.rollbackOnError(err);
+        else
+            fut.finish(commit);
+    }
+
+    /**
+     * @return Commit future.
+     */
+    public IgniteInternalFuture<IgniteInternalTx> commitDhtLocalAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing dht local tx: " + this);
 
-        // In optimistic mode prepare was called explicitly.
-        if (pessimistic())
-            prepareAsync();
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, true);
 
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
-        cctx.mvcc().addFuture(fut);
-
-        GridDhtTxPrepareFuture prep = prepFut.get();
+        GridDhtTxPrepareFuture prep = prepFut;
 
         if (prep != null) {
-            if (prep.isDone()) {
-                try {
-                    prep.get(); // Check for errors of a parent future.
-
-                    if (finish(true))
-                        fut.finish();
-                    else
-                        fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
-                }
-                catch (IgniteTxOptimisticCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to optimistically prepare transaction [tx=" + this + ", e=" + e + ']');
-
-                    fut.onError(e);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to prepare transaction: " + this, e);
-
-                    fut.onError(e);
-                }
-            }
-            else
+            if (prep.isDone())
+                finishTx(true, prep, fut);
+            else {
                 prep.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
-                        try {
-                            f.get(); // Check for errors of a parent future.
-
-                            if (finish(true))
-                                fut.finish();
-                            else
-                                fut.onError(new IgniteCheckedException("Failed to commit transaction: " +
-                                    CU.txString(GridDhtTxLocal.this)));
-                        }
-                        catch (IgniteTxOptimisticCheckedException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
-
-                            fut.onError(e);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to prepare transaction: " + this, e);
-
-                            fut.onError(e);
-                        }
+                        finishTx(true, f, fut);
                     }
                 });
+            }
         }
         else {
             assert optimistic();
 
-            try {
-                if (finish(true))
-                    fut.finish();
-                else
-                    fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
-            }
-            catch (IgniteTxOptimisticCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
-
-                fut.onError(e);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to commit transaction: " + this, e);
-
-                fut.onError(e);
-            }
+            finishTx(true, null, fut);
         }
 
         return fut;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
+        return commitDhtLocalAsync();
     }
 
     /** {@inheritDoc} */
     @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture fut) {
         assert optimistic();
 
-        prepFut.compareAndSet(fut, null);
+        PREP_FUT_UPD.compareAndSet(this, fut, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
-        GridDhtTxPrepareFuture prepFut = this.prepFut.get();
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rollbackDhtLocal() throws IgniteCheckedException {
+        rollbackDhtLocalAsync().get();
+    }
 
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
+    /**
+     * @return Rollback future.
+     */
+    public IgniteInternalFuture<IgniteInternalTx> rollbackDhtLocalAsync() {
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false);
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
-        if (prepFut == null) {
-            try {
-                if (finish(false) || state() == UNKNOWN)
-                    fut.finish();
-                else
-                    fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
-            }
-            catch (IgniteTxOptimisticCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
+        GridDhtTxPrepareFuture prepFut = this.prepFut;
 
-                fut.onError(e);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to rollback transaction (will make the best effort to rollback remote nodes): " +
-                    this, e);
-
-                fut.onError(e);
-            }
-        }
-        else {
+        if (prepFut != null) {
             prepFut.complete();
 
             prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
-                    try {
-                        f.get(); // Check for errors of a parent future.
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to prepare or rollback transaction [tx=" + this + ", e=" + e + ']');
-                    }
-
-                    try {
-                        if (finish(false) || state() == UNKNOWN)
-                            fut.finish();
-                        else
-                            fut.onError(new IgniteCheckedException("Failed to commit transaction: " +
-                                CU.txString(GridDhtTxLocal.this)));
-
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to gracefully rollback transaction: " + CU.txString(GridDhtTxLocal.this),
-                            e);
-
-                        fut.onError(e);
-                    }
+                    finishTx(false, f, fut);
                 }
             });
         }
+        else
+            finishTx(false, null, fut);
 
         return fut;
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
+        return rollbackDhtLocalAsync();
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean finish(boolean commit) throws IgniteCheckedException {
+    @Override public boolean localFinish(boolean commit) throws IgniteCheckedException {
         assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate()
             || onePhaseCommit() || state() == PREPARED :
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
             ", sysInvalidate=" + isSystemInvalidate() + ", state=" + state() + ']';
 
-        assert nearMiniId != null;
+        assert nearMiniId != 0;
 
-        return super.finish(commit);
+        return super.localFinish(commit);
     }
 
     /** {@inheritDoc} */
-    @Override protected void sendFinishReply(boolean commit, @Nullable Throwable err) {
+    @Override protected void sendFinishReply(@Nullable Throwable err) {
         if (nearFinFutId != null) {
             if (nearNodeId.equals(cctx.localNodeId())) {
                 if (log.isDebugEnabled())
@@ -648,35 +577,55 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 return;
             }
 
-            GridNearTxFinishResponse res = new GridNearTxFinishResponse(nearXidVer, threadId, nearFinFutId,
-                nearFinMiniId, err);
+            GridNearTxFinishResponse res = new GridNearTxFinishResponse(
+                -1,
+                nearXidVer,
+                threadId,
+                nearFinFutId,
+                nearFinMiniId,
+                err);
 
             try {
                 cctx.io().send(nearNodeId, res, ioPolicy());
+
+                if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                    cctx.txFinishMessageLogger().debug("Sent near finish response [txId=" + nearXidVersion() +
+                        ", dhtTxId=" + xidVersion() +
+                        ", node=" + nearNodeId + ']');
+                }
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Node left before sending finish response (transaction was committed) [node=" +
-                        nearNodeId + ", res=" + res + ']');
+                if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                    cctx.txFinishMessageLogger().debug("Failed to send near finish response, node left [txId=" + nearXidVersion() +
+                        ", dhtTxId=" + xidVersion() +
+                        ", node=" + nearNodeId() + ']');
+                }
             }
             catch (Throwable ex) {
-                U.error(log, "Failed to send finish response to node (transaction was " +
-                    (commit ? "committed" : "rolledback") + ") [node=" + nearNodeId + ", res=" + res + ']', ex);
+                U.error(log, "Failed to send finish response to node [txId=" + nearXidVersion() +
+                    ", txState=" + state() +
+                    ", dhtTxId=" + xidVersion() +
+                    ", node=" + nearNodeId +
+                    ", res=" + res + ']', ex);
 
                 if (ex instanceof Error)
                     throw (Error)ex;
             }
         }
         else {
-            if (log.isDebugEnabled())
-                log.debug("Will not send finish reply because sender node has not sent finish request yet: " + this);
+            if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                cctx.txFinishMessageLogger().debug("Will not send finish reply because sender node has not sent finish " +
+                    "request yet [txId=" + nearXidVersion() +
+                    ", dhtTxId=" + xidVersion() +
+                    ", node=" + nearNodeId() + ']');
+            }
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
-        return prepFut.get();
+        return prepFut;
     }
 
     /** {@inheritDoc} */

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.loadtests.discovery;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -40,7 +41,7 @@ public class GridGcTimeoutTest {
     public static void main(String[] args) {
         Ignite g = G.start(U.resolveIgniteUrl(CFG_PATH));
 
-        IgniteDataStreamer<Long, String> ldr = g.dataStreamer(null);
+        IgniteDataStreamer<Long, String> ldr = g.dataStreamer("default");
 
         ldr.perNodeBufferSize(16 * 1024);
 

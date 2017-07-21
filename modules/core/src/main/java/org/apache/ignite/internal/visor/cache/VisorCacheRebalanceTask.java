@@ -17,32 +17,34 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * Pre-loads caches. Made callable just to conform common pattern.
  */
 @GridInternal
-public class VisorCacheRebalanceTask extends VisorOneNodeTask<Set<String>, Void> {
+public class VisorCacheRebalanceTask extends VisorOneNodeTask<VisorCacheRebalanceTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCachesRebalanceJob job(Set<String> arg) {
+    @Override protected VisorCachesRebalanceJob job(VisorCacheRebalanceTaskArg arg) {
         return new VisorCachesRebalanceJob(arg, debug);
     }
 
     /**
      * Job that rebalance caches.
      */
-    private static class VisorCachesRebalanceJob extends VisorJob<Set<String>, Void> {
+    private static class VisorCachesRebalanceJob extends VisorJob<VisorCacheRebalanceTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -50,17 +52,17 @@ public class VisorCacheRebalanceTask extends VisorOneNodeTask<Set<String>, Void>
          * @param arg Caches names.
          * @param debug Debug flag.
          */
-        private VisorCachesRebalanceJob(Set<String> arg, boolean debug) {
+        private VisorCachesRebalanceJob(VisorCacheRebalanceTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Set<String> cacheNames) {
+        @Override protected Void run(VisorCacheRebalanceTaskArg arg) {
             try {
                 Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
                 for (IgniteInternalCache c : ignite.cachesx()) {
-                    if (cacheNames.contains(c.name()))
+                    if (arg.getCacheNames().contains(c.name()))
                         futs.add(c.rebalance());
                 }
 

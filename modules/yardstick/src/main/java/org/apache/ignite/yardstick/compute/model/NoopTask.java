@@ -17,12 +17,19 @@
 
 package org.apache.ignite.yardstick.compute.model;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Assigns {@link NoopJob} job for each node.

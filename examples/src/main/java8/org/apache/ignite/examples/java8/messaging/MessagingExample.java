@@ -17,11 +17,14 @@
 
 package org.apache.ignite.examples.java8.messaging;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.examples.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
 
 /**
  * Example that demonstrates how to exchange messages between nodes. Use such
@@ -51,13 +54,8 @@ public final class MessagingExample {
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2)) {
-                System.out.println();
-                System.out.println(">>> Please start at least 2 cluster nodes to run example.");
-                System.out.println();
-
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
-            }
 
             System.out.println();
             System.out.println(">>> Messaging example started.");

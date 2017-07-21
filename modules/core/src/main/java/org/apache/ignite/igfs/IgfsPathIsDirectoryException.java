@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception indicating that path is directory, while it is expected to be a file.

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Ignite Java client API.
@@ -93,6 +94,15 @@ public interface GridClient extends AutoCloseable {
      * @see GridClientCompute
      */
     public GridClientCompute compute();
+
+    /**
+     * Get client cluster state projection, for perform activate/deactivate operation on cluster.
+     *
+     * @return Cluster state projection.
+     *
+     * @see GridClientClusterState
+     */
+    public GridClientClusterState state();
 
     /**
      * Adds topology listener. Remote grid topology is refreshed every

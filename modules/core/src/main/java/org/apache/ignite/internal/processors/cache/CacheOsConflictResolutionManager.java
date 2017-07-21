@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * OS conflict resolver manager.
@@ -37,7 +38,7 @@ public class CacheOsConflictResolutionManager<K ,V> implements CacheConflictReso
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
+    @Override public void stop(boolean cancel, boolean destroy) {
         // No-op.
     }
 
@@ -53,6 +54,11 @@ public class CacheOsConflictResolutionManager<K ,V> implements CacheConflictReso
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         // No-op.
     }
 }

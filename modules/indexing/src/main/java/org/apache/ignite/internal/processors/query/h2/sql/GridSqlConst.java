@@ -17,12 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.value.*;
+import java.util.Collections;
+import org.h2.expression.ValueExpression;
+import org.h2.value.Value;
+import org.h2.value.ValueBoolean;
+import org.h2.value.ValueNull;
 
 /**
  * Constant value.
  */
-public class GridSqlConst extends GridSqlElement implements GridSqlValue {
+public class GridSqlConst extends GridSqlElement {
+    /** */
+    public static final GridSqlElement NULL = new GridSqlConst(ValueNull.INSTANCE)
+        .resultType(GridSqlType.fromExpression(ValueExpression.getNull()));
+
+    /** */
+    public static final GridSqlConst TRUE = (GridSqlConst)new GridSqlConst(ValueBoolean.get(true))
+        .resultType(GridSqlType.BOOLEAN);
+
     /** */
     private final Value val;
 
@@ -30,6 +42,8 @@ public class GridSqlConst extends GridSqlElement implements GridSqlValue {
      * @param val Value.
      */
     public GridSqlConst(Value val) {
+        super(Collections.<GridSqlAst>emptyList());
+
         this.val = val;
     }
 

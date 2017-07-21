@@ -17,24 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Next page response.
  */
+@IgniteCodeGeneratingFail
 public class GridQueryNextPageResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     private long qryReqId;
+
+    /** */
+    private int segmentId;
 
     /** */
     private int qry;
@@ -68,6 +76,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /**
      * @param qryReqId Query request ID.
+     * @param segmentId Index segment ID.
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
@@ -75,12 +84,13 @@ public class GridQueryNextPageResponse implements Message {
      * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
      */
-    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows, int cols,
+    public GridQueryNextPageResponse(long qryReqId, int segmentId, int qry, int page, int allRows, int cols,
         Collection<Message> vals, Collection<?> plainRows) {
         assert vals != null ^ plainRows != null;
         assert cols > 0 : cols;
 
         this.qryReqId = qryReqId;
+        this.segmentId = segmentId;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
@@ -94,6 +104,13 @@ public class GridQueryNextPageResponse implements Message {
      */
     public long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @return Index segment ID.
+     */
+    public int segmentId() {
+        return segmentId;
     }
 
     /**
@@ -139,8 +156,8 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryNextPageResponse.class, this);
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -193,6 +210,12 @@ public class GridQueryNextPageResponse implements Message {
 
             case 6:
                 if (!writer.writeMessage("retry", retry))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeInt("segmentId", segmentId))
                     return false;
 
                 writer.incrementState();
@@ -266,19 +289,26 @@ public class GridQueryNextPageResponse implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                segmentId = reader.readInt("segmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
-        return true;
+        return reader.afterMessageRead(GridQueryNextPageResponse.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 109;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /**
@@ -293,5 +323,12 @@ public class GridQueryNextPageResponse implements Message {
      */
     public void retry(AffinityTopologyVersion retry) {
         this.retry = retry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryNextPageResponse.class, this,
+            "valsSize", vals != null ? vals.size() : 0,
+            "rowsSize", plainRows != null ? plainRows.size() : 0);
     }
 }

@@ -41,13 +41,13 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
     /**
      * Creates grid configuration for provided grid host.
      *
-     * @param name Grid name.
+     * @param name Ignite instance name.
      * @return Grid configuration.
      */
     override def config(name: String): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setIgniteInstanceName(name)
         cfg.setLocalHost("127.0.0.1")
 
         val discoSpi: TcpDiscoverySpi = new TcpDiscoverySpi()
@@ -124,7 +124,7 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
 
         it("should print error messages on incorrect alerts") {
             try {
-                matchOut(visor.alert("-r -t=5"), "Alert.+registered.")
+                checkOut(visor.alert("-r -t=5"), "No predicates have been provided in args")
 
                 checkOut(visor.alert("-r -UNKNOWN_KEY=lt20"), "Invalid argument")
 

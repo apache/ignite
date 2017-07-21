@@ -17,17 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 
 /**
  * Cache attributes.
@@ -43,16 +48,17 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @param cfg Cache configuration.
+     *
      */
     public GridCacheAttributes(CacheConfiguration cfg) {
         ccfg = cfg;
     }
 
     /**
-     * Public no-arg constructor for {@link Externalizable}.
+     * @return Cache group name.
      */
-    public GridCacheAttributes() {
-        // No-op.
+    public String groupName() {
+        return ccfg.getGroupName();
     }
 
     /**
@@ -140,18 +146,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return Affinity hash ID resolver class name.
-     */
-    public String affinityHashIdResolverClassName() {
-        AffinityFunction aff = ccfg.getAffinity();
-
-        if (aff instanceof RendezvousAffinityFunction)
-            return className(((RendezvousAffinityFunction)aff).getHashIdResolver());
-
-        return null;
-    }
-
-    /**
      * @return Eviction filter class name.
      */
     public String evictionFilterClassName() {
@@ -186,30 +180,12 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Transaction manager lookup class name.
+     * @deprecated Transaction manager lookup must be configured in 
+     *  {@link TransactionConfiguration#getTxManagerLookupClassName()}.
      */
+    @Deprecated
     public String transactionManagerLookupClassName() {
         return ccfg.getTransactionManagerLookupClassName();
-    }
-
-    /**
-     * @return {@code True} if swap enabled.
-     */
-    public boolean swapEnabled() {
-        return ccfg.isSwapEnabled();
-    }
-
-    /**
-     * @return Flag indicating whether eviction is synchronized.
-     */
-    public boolean evictSynchronized() {
-        return ccfg.isEvictSynchronized();
-    }
-
-    /**
-     * @return Maximum eviction overflow ratio.
-     */
-    public float evictMaxOverflowRatio() {
-        return ccfg.getEvictMaxOverflowRatio();
     }
 
     /**
@@ -290,10 +266,31 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Write coalescing flag.
+     */
+    public boolean writeBehindCoalescing() {
+        return ccfg.getWriteBehindCoalescing();
+    }
+
+    /**
      * @return Interceptor class name.
      */
     public String interceptorClassName() {
         return className(ccfg.getInterceptor());
+    }
+
+    /**
+     * @return Node filter class name.
+     */
+    String nodeFilterClassName() {
+        return className(ccfg.getNodeFilter());
+    }
+
+    /**
+     * @return Topology validator class name.
+     */
+    String topologyValidatorClassName() {
+        return className(ccfg.getTopologyValidator());
     }
 
     /**

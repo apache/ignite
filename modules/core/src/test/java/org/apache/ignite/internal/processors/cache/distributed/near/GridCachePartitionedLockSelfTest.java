@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.log4j.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheLockAbstractTest;
+import org.apache.log4j.Level;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Test cases for multi-threaded tests.
@@ -33,11 +33,11 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
     private static final boolean CACHE_DEBUG = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         if (CACHE_DEBUG)
             resetLog4j(Level.DEBUG, true, GridCacheProcessor.class.getPackage().getName());
 
-        return super.getConfiguration(gridName);
+        return super.getConfiguration(igniteInstanceName);
     }
 
     /** {@inheritDoc} */

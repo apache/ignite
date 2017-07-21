@@ -17,17 +17,25 @@
 
 package org.apache.ignite.examples.streaming.wordcount.socket;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.examples.streaming.wordcount.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.stream.*;
-import org.apache.ignite.stream.socket.*;
+import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.util.Map;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.AffinityUuid;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.apache.ignite.examples.streaming.wordcount.CacheConfig;
+import org.apache.ignite.examples.streaming.wordcount.QueryWords;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
+import org.apache.ignite.stream.socket.SocketMessageConverter;
+import org.apache.ignite.stream.socket.SocketStreamer;
 
 /**
  * Example demonstrates streaming of data from external components into Ignite cache.
@@ -62,63 +70,64 @@ public class WordsSocketStreamerServer {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
 
-        Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
+        CacheConfiguration<AffinityUuid, String> cfg = CacheConfig.wordCache();
 
-        if (!ExamplesUtils.hasServerNodes(ignite)) {
-            ignite.close();
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
 
-            return;
-        }
+            if (!ExamplesUtils.hasServerNodes(ignite))
+                return;
 
-        // The cache is configured with sliding window holding 1 second of the streaming data.
-        IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(CacheConfig.wordCache());
+            // The cache is configured with sliding window holding 1 second of the streaming data.
+            try (IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(cfg)) {
 
-        IgniteDataStreamer<AffinityUuid, String> stmr = ignite.dataStreamer(stmCache.getName());
+                IgniteDataStreamer<AffinityUuid, String> stmr = ignite.dataStreamer(stmCache.getName());
 
-        InetAddress addr = InetAddress.getLocalHost();
+                InetAddress addr = InetAddress.getLocalHost();
 
-        // Configure socket streamer
-        SocketStreamer<String, AffinityUuid, String> sockStmr = new SocketStreamer<>();
+                // Configure socket streamer
+                SocketStreamer<String, AffinityUuid, String> sockStmr = new SocketStreamer<>();
 
-        sockStmr.setAddr(addr);
+                sockStmr.setAddr(addr);
 
-        sockStmr.setPort(PORT);
+                sockStmr.setPort(PORT);
 
-        sockStmr.setDelimiter(DELIM);
+                sockStmr.setDelimiter(DELIM);
 
-        sockStmr.setIgnite(ignite);
+                sockStmr.setIgnite(ignite);
 
-        sockStmr.setStreamer(stmr);
+                sockStmr.setStreamer(stmr);
 
-        // Converter from zero-terminated string to Java strings.
-        sockStmr.setConverter(new SocketMessageConverter<String>() {
-            @Override public String convert(byte[] msg) {
-                try {
-                    return new String(msg, "ASCII");
-                }
-                catch (UnsupportedEncodingException e) {
-                    throw new IgniteException(e);
-                }
+                // Converter from zero-terminated string to Java strings.
+                sockStmr.setConverter(new SocketMessageConverter<String>() {
+                    @Override public String convert(byte[] msg) {
+                        try {
+                            return new String(msg, "ASCII");
+                        }
+                        catch (UnsupportedEncodingException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                });
+
+                sockStmr.setSingleTupleExtractor(new StreamSingleTupleExtractor<String, AffinityUuid, String>() {
+                    @Override public Map.Entry<AffinityUuid, String> extract(String word) {
+                        // By using AffinityUuid we ensure that identical
+                        // words are processed on the same cluster node.
+                        return new IgniteBiTuple<>(new AffinityUuid(word), word);
+                    }
+                });
+
+                sockStmr.start();
             }
-        });
+            catch (IgniteException e) {
+                System.err.println("Streaming server didn't start due to an error: ");
 
-        sockStmr.setTupleExtractor(new StreamTupleExtractor<String, AffinityUuid, String>() {
-            @Override public Map.Entry<AffinityUuid, String> extract(String word) {
-                // By using AffinityUuid we ensure that identical
-                // words are processed on the same cluster node.
-                return new IgniteBiTuple<>(new AffinityUuid(word), word);
+                e.printStackTrace();
             }
-        });
-
-        try {
-            sockStmr.start();
-        }
-        catch (IgniteException e) {
-            System.err.println("Streaming server didn't start due to an error: ");
-
-            e.printStackTrace();
-
-            ignite.close();
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(cfg.getName());
+            }
         }
     }
 }

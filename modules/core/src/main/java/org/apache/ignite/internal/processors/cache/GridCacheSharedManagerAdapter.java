@@ -17,23 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Convenience adapter for cache managers.
  */
 public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManager<K, V> {
+    /** */
+    private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
+
     /** Context. */
     protected GridCacheSharedContext<K, V> cctx;
 
     /** Logger. */
     protected IgniteLogger log;
 
+    /** Diagnostic logger. */
+    protected IgniteLogger diagnosticLog;
+
     /** Starting flag. */
     private final AtomicBoolean starting = new AtomicBoolean(false);
+
+    /** */
+    private final AtomicBoolean stop = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override public final void start(GridCacheSharedContext<K, V> cctx) throws IgniteCheckedException {
@@ -45,6 +55,8 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
+
+        diagnosticLog = cctx.logger(DIAGNOSTIC_LOG_CATEGORY);
 
         start0();
 
@@ -75,7 +87,7 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
     /** {@inheritDoc} */
     @Override public final void stop(boolean cancel) {
-        if (!starting.get())
+        if (!starting.get() || !stop.compareAndSet(false, true))
             // Ignoring attempt to stop manager that has never been started.
             return;
 
@@ -86,18 +98,17 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /**
+     * @return {@code true} If this component is stopping.
+     */
+    protected final boolean isStopping() {
+        return stop.get();
+    }
+
+    /**
      * @param cancel Cancel flag.
      */
     protected void stop0(boolean cancel) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public final void onKernalStart() throws IgniteCheckedException {
-        onKernalStart0();
-
-        if (log != null && log.isDebugEnabled())
-            log.debug(kernalStartInfo());
     }
 
     /** {@inheritDoc} */
@@ -113,16 +124,14 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void onKernalStart0() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
      * @param cancel Cancel flag.
      */
     protected void onKernalStop0(boolean cancel) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         // No-op.
     }
 

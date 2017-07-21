@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.GridCacheDaemonNodeAbstractSelfTest;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Tests local cache with daemon node.
@@ -30,35 +29,5 @@ public class GridCacheDaemonNodeLocalSelfTest extends GridCacheDaemonNodeAbstrac
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testMapKeyToNode() throws Exception {
-        try {
-            // Start normal nodes.
-            Ignite g1 = startGridsMultiThreaded(3);
-
-            // Start daemon node.
-            daemon = true;
-
-            Ignite g2 = startGrid(4);
-
-            for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
-                // Call mapKeyToNode for normal node.
-                g1.cluster().mapKeyToNode(null, i);
-
-                try {
-                    g2.cluster().mapKeyToNode(null, i);
-
-                    assert false;
-                }
-                catch (IgniteException e) {
-                    info("Caught expected exception: " + e);
-                }
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.loadtests.gridify;
 
-import org.apache.ignite.compute.gridify.*;
+import org.apache.ignite.compute.gridify.Gridify;
 
 /**
  * Gridify load test job target.

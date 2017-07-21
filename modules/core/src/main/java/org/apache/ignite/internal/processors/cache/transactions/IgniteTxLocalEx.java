@@ -17,16 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.processor.*;
-import java.util.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Local transaction API.
@@ -43,11 +36,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     @Nullable public Throwable commitError();
 
     /**
-     * @param e Commit error.
-     */
-    public void commitError(Throwable e);
-
-    /**
      * @throws IgniteCheckedException If commit failed.
      */
     public void userCommit() throws IgniteCheckedException;
@@ -58,116 +46,11 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     public void userRollback() throws IgniteCheckedException;
 
     /**
-     * @param cacheCtx Cache context.
-     * @param keys Keys to get.
-     * @param cached Cached entry if this method is called from entry wrapper
-     *      Cached entry is passed if and only if there is only one key in collection of keys.
-     * @param deserializePortable Deserialize portable flag.
-     * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects
-     * @param skipStore Skip store flag.
-     * @return Future for this get.
-     */
-    public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
-        GridCacheContext cacheCtx,
-        Collection<KeyCacheObject> keys,
-        @Nullable GridCacheEntryEx cached,
-        boolean deserializePortable,
-        boolean skipVals,
-        boolean keepCacheObjects,
-        boolean skipStore);
-
-    /**
-     * @param cacheCtx Cache context.
-     * @param map Map to put.
-     * @param retval Flag indicating whether a value should be returned.
-     * @param cached Cached entry, if any. Will be provided only if map has size 1.
-     * @param filter Filter.
-     * @param ttl Time to live for entry. If negative, leave unchanged.
-     * @return Future for put operation.
-     */
-    public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
-        GridCacheContext cacheCtx,
-        Map<? extends K, ? extends V> map,
-        boolean retval,
-        @Nullable GridCacheEntryEx cached,
-        long ttl,
-        CacheEntryPredicate[] filter);
-
-    /**
-     * @param cacheCtx Cache context.
-     * @param map Entry processors map.
-     * @param invokeArgs Optional arguments for entry processor.
-     * @return Transform operation future.
-     */
-    public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
-        GridCacheContext cacheCtx,
-        Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
-        Object... invokeArgs);
-
-    /**
-     * @param cacheCtx Cache context.
-     * @param keys Keys to remove.
-     * @param retval Flag indicating whether a value should be returned.
-     * @param cached Cached entry, if any. Will be provided only if size of keys collection is 1.
-     * @param filter Filter.
-     * @return Future for asynchronous remove.
-     */
-    public <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync(
-        GridCacheContext cacheCtx,
-        Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx cached,
-        boolean retval,
-        CacheEntryPredicate[] filter);
-
-    /**
-     * @param cacheCtx Cache context.
-     * @param drMap DR map to put.
-     * @return Future for DR put operation.
-     */
-    public IgniteInternalFuture<?> putAllDrAsync(
-        GridCacheContext cacheCtx,
-        Map<KeyCacheObject, GridCacheDrInfo> drMap);
-
-    /**
-     * @param cacheCtx Cache context.
-     * @param drMap DR map.
-     * @return Future for asynchronous remove.
-     */
-    public IgniteInternalFuture<?> removeAllDrAsync(
-        GridCacheContext cacheCtx,
-        Map<KeyCacheObject, GridCacheVersion> drMap);
-
-    /**
-     * @return Return value for
-     */
-    public GridCacheReturn implicitSingleResult();
-
-    /**
      * Finishes transaction (either commit or rollback).
      *
      * @param commit {@code True} if commit, {@code false} if rollback.
      * @return {@code True} if state has been changed.
      * @throws IgniteCheckedException If finish failed.
      */
-    public boolean finish(boolean commit) throws IgniteCheckedException;
-
-    /**
-     * @param cacheCtx  Cache context.
-     * @param readThrough Read through flag.
-     * @param async if {@code True}, then loading will happen in a separate thread.
-     * @param keys Keys.
-     * @param c Closure.
-     * @param deserializePortable Deserialize portable flag.
-     * @param skipVals Skip values flag.
-     * @return Future with {@code True} value if loading took place.
-     */
-    public IgniteInternalFuture<Boolean> loadMissing(
-        GridCacheContext cacheCtx,
-        boolean readThrough,
-        boolean async,
-        Collection<KeyCacheObject> keys,
-        boolean deserializePortable,
-        boolean skipVals,
-        IgniteBiInClosure<KeyCacheObject, Object> c);
+    public boolean localFinish(boolean commit) throws IgniteCheckedException;
 }

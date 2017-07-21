@@ -17,26 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Unit tests for dht entry.
@@ -49,8 +54,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -64,7 +69,6 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -120,7 +124,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Near cache.
      */
     private IgniteCache<Integer, String> near(Ignite g) {
-        return g.cache(null);
+        return g.cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -129,7 +133,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
 
     /**
@@ -170,6 +174,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         // Get value on other node.
         assertEquals(val, near1.get(key));
+
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 != null;
 
@@ -215,6 +222,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         // Get value on other node.
         assertEquals(val, near1.get(key));
+
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 != null;
 
@@ -262,12 +272,15 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         // Get value on other node.
         assertEquals(val, near1.get(key));
 
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
+
         assert e0 != null;
 
         assert e0.readers().contains(other.id());
         assert e1 == null || e1.readers().isEmpty();
 
-        assert !e0.evictInternal(false, dht0.context().versions().next(), null);
+        assert !e0.evictInternal(dht0.context().versions().next(), null, false);
 
         assertEquals(1, near0.localSize(CachePeekMode.ALL));
         assertEquals(1, dht0.localSize(null));
@@ -275,7 +288,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         assertEquals(1, near1.localSize(CachePeekMode.ALL));
         assertEquals(0, dht1.localSize(null));
 
-        assert !e0.evictInternal(true, dht0.context().versions().next(), null);
+        assert !e0.evictInternal(dht0.context().versions().next(), null, false);
 
         assertEquals(1, near0.localSize(CachePeekMode.ALL));
         assertEquals(1, dht0.localSize(null));
@@ -289,7 +302,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return For the given key pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
-        Affinity<Integer> aff = grid(0).affinity(null);
+        Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         int part = aff.partition(key);
 

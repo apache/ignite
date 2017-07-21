@@ -17,22 +17,27 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Externalizable;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link IgfsFileInfo} test case.
+ * {@link IgfsEntryInfo} test case.
  */
 public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final Marshaller marshaller = new OptimizedMarshaller();
+    private final Marshaller marshaller;
+
+    /** Ctor. */
+    public IgfsFileInfoSelfTest() throws IgniteCheckedException {
+        marshaller = createStandaloneBinaryMarshaller();
+    }
+
 
     /**
      * Test node info serialization.
@@ -42,25 +47,12 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     public void testSerialization() throws Exception {
         marshaller.setContext(new MarshallerContextTestImpl());
 
-        final int max = Integer.MAX_VALUE;
-
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @SuppressWarnings("deprecation") // Suppress due to default constructor should never be used directly.
             @Nullable @Override public Object call() throws IgniteCheckedException {
-                for (int i = 0; i < 10000; i++) {
-                    testSerialization(new IgfsFileInfo());
-                    testSerialization(new IgfsFileInfo());
-                    testSerialization(new IgfsFileInfo(true, null));
-                    testSerialization(new IgfsFileInfo(false, null));
-
-                    IgfsFileInfo rndInfo = new IgfsFileInfo(rnd.nextInt(max), null, false, null);
-
-                    testSerialization(rndInfo);
-                    testSerialization(new IgfsFileInfo(rndInfo, rnd.nextInt(max)));
-                    testSerialization(new IgfsFileInfo(rndInfo, F.asMap("desc", String.valueOf(rnd.nextLong()))));
-                }
+                testSerialization(IgfsUtils.createDirectory(IgniteUuid.randomUuid()));
 
                 return null;
             }
@@ -73,7 +65,7 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      * @param info Node info to test serialization for.
      * @throws IgniteCheckedException If failed.
      */
-    public void testSerialization(IgfsFileInfo info) throws IgniteCheckedException {
+    public void testSerialization(IgfsEntryInfo info) throws IgniteCheckedException {
         assertEquals(info, mu(info));
     }
 

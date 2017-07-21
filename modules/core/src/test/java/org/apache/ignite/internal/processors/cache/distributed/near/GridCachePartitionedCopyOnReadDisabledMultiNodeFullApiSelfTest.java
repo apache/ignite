@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  *
@@ -25,8 +25,8 @@ import org.apache.ignite.configuration.*;
 public class GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest
     extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         assert ccfg.isCopyOnRead();
 

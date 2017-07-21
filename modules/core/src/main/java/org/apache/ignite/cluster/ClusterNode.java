@@ -17,13 +17,17 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface representing a single cluster node. Use {@link #attribute(String)} or
@@ -83,9 +87,8 @@ import java.util.*;
  * <h1 class="header">Cluster Node Metrics</h1>
  * Cluster node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update
- * is often directly related to the heartbeat exchange between nodes. So if, for example,
- * default {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} is used,
- * the metrics data will be updated every {@code 2} seconds by default.
+ * is controlled by  {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+ * The metrics data will be updated every {@code 2} seconds by default.
  * <p>
  * Grid node metrics provide information that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
@@ -141,9 +144,9 @@ public interface ClusterNode {
      * method and use it during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
-     * Node metrics are updated with some delay which is directly related to heartbeat
-     * frequency. For example, when used with default
-     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} the update will happen every {@code 2} seconds.
+     * Node metrics are updated with some delay which is controlled by
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+     * By default the update will happen every {@code 2} seconds.
      *
      * @return Runtime metrics snapshot for this node.
      */

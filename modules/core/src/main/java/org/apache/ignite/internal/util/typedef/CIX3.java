@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.lang.GridInClosure3X;
 
 /**
  * Defines {@code alias} for {@link GridInClosure3X} by extending it. Since Java doesn't provide type aliases

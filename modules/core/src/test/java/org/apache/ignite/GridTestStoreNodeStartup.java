@@ -17,9 +17,9 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.swing.*;
+import javax.swing.JOptionPane;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P2;
 
 /**
  * Starts test node.
@@ -40,7 +40,7 @@ public class GridTestStoreNodeStartup {
         try {
             Ignite g = G.start("modules/core/src/test/config/spring-cache-teststore.xml");
 
-            g.cache(null).loadCache(new P2<Object, Object>() {
+            g.cache("test-cache").loadCache(new P2<Object, Object>() {
                 @Override public boolean apply(Object o, Object o1) {
                     System.out.println("Key=" + o + ", Val=" + o1);
 

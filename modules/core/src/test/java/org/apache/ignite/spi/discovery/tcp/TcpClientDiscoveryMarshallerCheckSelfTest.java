@@ -17,14 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
@@ -34,15 +34,15 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
-        if (gridName.endsWith("0"))
+        if (igniteInstanceName.endsWith("0"))
             cfg.setMarshaller(new JdkMarshaller());
         else {
             cfg.setClientMode(true);
 
-            cfg.setMarshaller(new OptimizedMarshaller());
+            cfg.setMarshaller(new BinaryMarshaller());
         }
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.gce.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinderSelfTest;
 
 /**
  * Google Compute Engine integration tests.

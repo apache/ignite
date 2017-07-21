@@ -17,10 +17,10 @@
 
 package org.apache.ignite.loadtests.direct.newnodes;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  *
@@ -33,13 +33,6 @@ public class GridSingleSplitsNewNodesMulticastLoadTest extends GridSingleSplitsN
 
         assert discoSpi instanceof TcpDiscoverySpi : "Wrong default SPI implementation.";
 
-        ((TcpDiscoverySpi)discoSpi).setHeartbeatFrequency(getHeartbeatFrequency());
-
         return discoSpi;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int getHeartbeatFrequency() {
-        return 3000;
     }
 }

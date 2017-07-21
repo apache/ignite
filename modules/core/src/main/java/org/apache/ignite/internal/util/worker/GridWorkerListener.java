@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.worker;
 
-import java.util.*;
+import java.util.EventListener;
 
 /**
  * This interface defines worker listener.

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteReducer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Future composed of multiple inner futures.
+ * Compound future with reducer which accepts and produces results of the same type.
  */
 public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
     /** */
@@ -37,10 +36,9 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
     }
 
     /**
-     * @param ctx Context.
      * @param rdc Reducer.
      */
-    public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc) {
+    public GridCompoundIdentityFuture(@Nullable IgniteReducer<T, T> rdc) {
         super(rdc);
     }
 

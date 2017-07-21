@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface mostly for Near to DHT version mapping.

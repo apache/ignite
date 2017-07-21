@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Set item key.
  */
-public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
+public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +37,7 @@ public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     private IgniteUuid setId;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object item;
 
     /**
@@ -54,27 +56,23 @@ public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
         this.item = item;
     }
 
-    /**
-     * @return Set UUID.
-     */
-    public IgniteUuid setId() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid setId() {
         return setId;
     }
 
-    /**
-     * @return Set item.
-     */
-    public Object item() {
+    /** {@inheritDoc} */
+    @Override public Object item() {
         return item;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = setId.hashCode();
+        int res = setId.hashCode();
 
-        result = 31 * result + item.hashCode();
+        res = 31 * res + item.hashCode();
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

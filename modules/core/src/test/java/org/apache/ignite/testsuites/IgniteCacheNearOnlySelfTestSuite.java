@@ -17,9 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheClientOnlySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyTopologySelfTest;
 
 /**
  * Test suite for near-only cache.

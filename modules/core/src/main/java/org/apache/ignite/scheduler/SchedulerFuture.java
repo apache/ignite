@@ -17,10 +17,14 @@
 
 package org.apache.ignite.scheduler;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteScheduler;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
 
 /**
  * Future for cron-based scheduled execution. This future is returned
@@ -90,7 +94,8 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      *
      * @param cnt Array length.
      * @param start Start timestamp.
-     * @return Array of the next execution times in milliseconds.
+     * @return Array of the next execution times in milliseconds or an empty array if there is no next execution time
+     *         scheduled.
      * @throws IgniteException Thrown in case of any errors.
      */
     public long[] nextExecutionTimes(int cnt, long start) throws IgniteException;
@@ -112,7 +117,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
     /**
      * Gets next execution time of scheduled task.
      *
-     * @return Next execution time in milliseconds.
+     * @return Next execution time in milliseconds or {@code 0} if there is no next execution time.
      * @throws IgniteException Thrown in case of any errors.
      */
     public long nextExecutionTime() throws IgniteException;

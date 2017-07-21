@@ -17,13 +17,16 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.io.*;
-import java.nio.*;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 /**
  * Base class for all communication messages.
  */
 public interface Message extends Serializable {
+    /** Direct type size in bytes. */
+    public int DIRECT_TYPE_SIZE = 2;
+
     /**
      * Writes this message to provided byte buffer.
      *
@@ -47,7 +50,7 @@ public interface Message extends Serializable {
      *
      * @return Message type.
      */
-    public byte directType();
+    public short directType();
 
     /**
      * Gets fields count.
@@ -55,4 +58,9 @@ public interface Message extends Serializable {
      * @return Fields count.
      */
     public byte fieldsCount();
+
+    /**
+     * Method called when ack message received.
+     */
+    public void onAckReceived();
 }

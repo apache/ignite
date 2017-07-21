@@ -17,10 +17,10 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Context attached to every job executed on the grid. Note that unlike
@@ -38,7 +38,7 @@ import java.util.*;
  * all context attributes set on one node will be available on any other node
  * this job travels to.
  * <p>
- * You can also use {@code GridComputeJobContext} to communicate between SPI's and jobs.
+ * You can also use {@code ComputeJobContext} to communicate between SPI's and jobs.
  * For example, if you need to cancel an actively running job from {@link org.apache.ignite.spi.collision.CollisionSpi}
  * you may choose to set some context attribute on the job to mark the fact
  * that a job was cancelled by grid and not by a user. Context attributes can

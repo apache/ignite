@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Base class for various tests for byte array values.
@@ -29,12 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommonAbstractTest {
     /** Regular cache name. */
     protected static final String CACHE_REGULAR = "cache";
-
-    /** Offheap cache name. */
-    protected static final String CACHE_OFFHEAP = "cache_offheap";
-
-    /** Offheap tiered cache name. */
-    protected static final String CACHE_OFFHEAP_TIERED = "cache_offheap_tiered";
 
     /** Key 1. */
     protected static final Integer KEY_1 = 1;
@@ -49,8 +43,8 @@ public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommo
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

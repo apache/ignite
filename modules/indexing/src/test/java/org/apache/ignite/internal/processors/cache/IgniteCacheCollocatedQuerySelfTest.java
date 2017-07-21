@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.AffinityUuid;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  */
@@ -64,8 +65,8 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -78,7 +79,6 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setBackups(1);
         cacheCfg.setIndexedTypes(
             AffinityUuid.class, Purchase.class
@@ -103,7 +103,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite(0).cache(null).removeAll();
+        ignite(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /**
@@ -119,7 +119,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * Correct affinity.
      */
     public void testColocatedQueryRight() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(null);
+        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 
@@ -146,7 +146,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * Correct affinity.
      */
     public void testColocatedQueryWrong() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(null);
+        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 
@@ -206,4 +206,3 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
         }
     }
 }
-

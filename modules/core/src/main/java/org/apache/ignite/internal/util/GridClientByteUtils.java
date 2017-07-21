@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.util;
 
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.UUID;
 
 /**
  * Primitive to byte array and backward conversions.

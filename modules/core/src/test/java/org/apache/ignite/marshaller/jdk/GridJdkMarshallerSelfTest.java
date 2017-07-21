@@ -17,8 +17,9 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * JDK marshaller self test.

@@ -17,18 +17,20 @@
 
 package org.apache.ignite.startup.servlet;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import javax.servlet.*;
-import javax.servlet.http.*;
-import java.net.*;
-import java.util.*;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * This class defines servlet-based Ignite startup. This startup can be used to start Ignite
@@ -119,7 +121,7 @@ public class ServletStartup extends HttpServlet {
     private static final String cfgFilePathParam = "cfgFilePath";
 
     /** */
-    private Collection<String> gridNames = new ArrayList<>();
+    private Collection<String> igniteInstanceNames = new ArrayList<>();
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
@@ -157,12 +159,12 @@ public class ServletStartup extends HttpServlet {
 
                 // Test if grid is not null - started properly.
                 if (ignite != null)
-                    gridNames.add(ignite.name());
+                    igniteInstanceNames.add(ignite.name());
             }
         }
         catch (IgniteCheckedException e) {
             // Stop started grids only.
-            for (String name: gridNames)
+            for (String name: igniteInstanceNames)
                 G.stop(name, true);
 
             throw new ServletException("Failed to start Ignite.", e);
@@ -174,7 +176,7 @@ public class ServletStartup extends HttpServlet {
     /** {@inheritDoc} */
     @Override public void destroy() {
         // Stop started grids only.
-        for (String name: gridNames)
+        for (String name: igniteInstanceNames)
             G.stop(name, true);
 
         loaded = false;

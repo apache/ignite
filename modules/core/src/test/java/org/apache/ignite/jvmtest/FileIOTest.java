@@ -17,12 +17,13 @@
 
 package org.apache.ignite.jvmtest;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.util.Arrays;
+import java.util.UUID;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Java file IO test.

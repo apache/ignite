@@ -17,33 +17,33 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.lang.*;
-
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * Task for collecting next page previously executed SQL or SCAN query.
  */
 @GridInternal
-public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<String, Integer>, VisorQueryResult> {
+public class VisorQueryNextPageTask extends VisorOneNodeTask<VisorQueryNextPageTaskArg, VisorQueryResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryNextPageJob job(IgniteBiTuple<String, Integer> arg) {
+    @Override protected VisorQueryNextPageJob job(VisorQueryNextPageTaskArg arg) {
         return new VisorQueryNextPageJob(arg, debug);
     }
 
     /**
      * Job for collecting next page previously executed SQL or SCAN query.
      */
-    private static class VisorQueryNextPageJob extends VisorJob<IgniteBiTuple<String, Integer>, VisorQueryResult> {
+    private static class VisorQueryNextPageJob extends VisorJob<VisorQueryNextPageTaskArg, VisorQueryResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -53,13 +53,13 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorQueryNextPageJob(IgniteBiTuple<String, Integer> arg, boolean debug) {
+        private VisorQueryNextPageJob(VisorQueryNextPageTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) {
-            return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
+        @Override protected VisorQueryResult run(VisorQueryNextPageTaskArg arg) {
+            return arg.getQueryId().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
         }
 
         /**
@@ -68,19 +68,19 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
          * @param arg Query name and page size.
          * @return Query result with next page.
          */
-        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) {
+        private VisorQueryResult nextSqlPage(VisorQueryNextPageTaskArg arg) {
             long start = U.currentTimeMillis();
 
             ConcurrentMap<String, VisorQueryCursor<List<?>>> storage = ignite.cluster().nodeLocalMap();
 
-            String qryId = arg.get1();
+            String qryId = arg.getQueryId();
 
             VisorQueryCursor<List<?>> cur = storage.get(qryId);
 
             if (cur == null)
                 throw new IgniteException("SQL query results are expired.");
 
-            List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.get2());
+            List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.getPageSize());
 
             boolean hasMore = cur.hasNext();
 
@@ -92,7 +92,8 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
                 cur.close();
             }
 
-            return new VisorQueryResult(nextRows, hasMore, U.currentTimeMillis() - start);
+            return new VisorQueryResult(ignite.localNode().id(), qryId, null, nextRows, hasMore,
+                U.currentTimeMillis() - start);
         }
 
         /**
@@ -101,19 +102,19 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
          * @param arg Query name and page size.
          * @return Next page with data.
          */
-        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) {
+        private VisorQueryResult nextScanPage(VisorQueryNextPageTaskArg arg) {
             long start = U.currentTimeMillis();
 
             ConcurrentMap<String, VisorQueryCursor<Cache.Entry<Object, Object>>> storage = ignite.cluster().nodeLocalMap();
 
-            String qryId = arg.get1();
+            String qryId = arg.getQueryId();
 
             VisorQueryCursor<Cache.Entry<Object, Object>> cur = storage.get(qryId);
 
             if (cur == null)
                 throw new IgniteException("Scan query results are expired.");
 
-            List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.get2());
+            List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.getPageSize());
 
             boolean hasMore = cur.hasNext();
 
@@ -125,7 +126,8 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
                 cur.close();
             }
 
-            return new VisorQueryResult(rows, hasMore, U.currentTimeMillis() - start);
+            return new VisorQueryResult(ignite.localNode().id(), qryId, null, rows, hasMore,
+                U.currentTimeMillis() - start);
         }
 
         /** {@inheritDoc} */

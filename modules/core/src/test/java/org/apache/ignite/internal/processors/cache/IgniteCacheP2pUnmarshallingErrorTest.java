@@ -17,21 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.cache.*;
-import java.io.*;
-import java.util.concurrent.atomic.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTest {
     /** Allows to change behavior of readExternal method. */
-    protected static AtomicInteger readCnt = new AtomicInteger();
+    protected static final AtomicInteger readCnt = new AtomicInteger();
+
+    /** Allows to change behavior of readExternal method. */
+    protected static final AtomicInteger valReadCnt = new AtomicInteger();
 
     /** Iterable key. */
     protected static int key = 0;
@@ -52,44 +62,159 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.PRIMARY;
-    }
-
-    /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
         }
 
+        if (getTestIgniteInstanceName(10).equals(igniteInstanceName)) {
+            CacheConfiguration cc = cfg.getCacheConfiguration()[0];
+            cc.setRebalanceDelay(-1);
+        }
+
         return cfg;
     }
 
-    /** Test key 1. */
-    public static class TestKey implements Externalizable {
+    /**
+     * Sends put atomically and handles fail.
+     *
+     * @param k Key.
+     */
+    protected void failAtomicPut(int k) {
+        try {
+            jcache(0).put(new TestKey(String.valueOf(k)), "");
+
+            assert false : "p2p marshalling failed, but error response was not sent";
+        }
+        catch (CacheException e) {
+            assert X.hasCause(e, IOException.class);
+        }
+
+        assert readCnt.get() == 0; //ensure we have read count as expected.
+    }
+
+    /**
+     * Sends get atomically and handles fail.
+     *
+     * @param k Key.
+     */
+    protected void failGetAll(int k) {
+        try {
+            Set<Object> keys = F.<Object>asSet(new TestKey(String.valueOf(k)));
+
+            jcache(0).getAll(keys);
+
+            assert false : "p2p marshalling failed, but error response was not sent";
+        }
+        catch (CacheException e) {
+            assert X.hasCause(e, IOException.class);
+        }
+    }
+
+    /**
+     * Sends get atomically and handles fail.
+     *
+     * @param k Key.
+     */
+    protected void failGet(int k) {
+        try {
+            jcache(0).get(new TestKey(String.valueOf(k)));
+
+            assert false : "p2p marshalling failed, but error response was not sent";
+        }
+        catch (CacheException e) {
+            assert X.hasCause(e, IOException.class);
+        }
+    }
+
+    /**
+     * Tests that correct response will be sent to client node in case of unmarshalling failed.
+     *
+     * @throws Exception If failed.
+     */
+    public void testResponseMessageOnUnmarshallingFailed() throws Exception {
+        // GridNearAtomicFullUpdateRequest unmarshalling failed test.
+        readCnt.set(1);
+
+        failAtomicPut(++key);
+
+        // Check that cache is empty.
+        readCnt.set(Integer.MAX_VALUE);
+
+        assert jcache(0).get(new TestKey(String.valueOf(key))) == null;
+
+        // GridDhtAtomicUpdateRequest unmarshalling failed test.
+        readCnt.set(2);
+
+        failAtomicPut(++key);
+
+        // Check that cache is not empty.
+        readCnt.set(Integer.MAX_VALUE);
+
+        assert jcache(0).get(new TestKey(String.valueOf(key))) != null;
+
+        // GridNearGetRequest unmarshalling failed test.
+        readCnt.set(1);
+
+        failGetAll(++key);
+
+        // GridNearGetResponse unmarshalling failed test.
+        readCnt.set(Integer.MAX_VALUE);
+
+        jcache(0).put(new TestKey(String.valueOf(++key)), "");
+
+        readCnt.set(2);
+
+        failGetAll(key);
+
+        readCnt.set(Integer.MAX_VALUE);
+        valReadCnt.set(Integer.MAX_VALUE);
+
+        jcache(0).put(new TestKey(String.valueOf(++key)), new TestValue());
+
+        assertNotNull(new TestKey(String.valueOf(key)));
+
+        // GridNearSingleGetRequest unmarshalling failed.
+        readCnt.set(1);
+
+        failGet(key);
+
+        // GridNearSingleGetRequest unmarshalling failed.
+        valReadCnt.set(1);
+        readCnt.set(2);
+
+        failGet(key);
+    }
+
+    /**
+     * Test key.
+     */
+    protected static class TestKey implements Externalizable {
         /** Field. */
         @QuerySqlField(index = true)
         private String field;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public TestKey() {
+            // No-op.
+        }
 
         /**
          * @param field Test key 1.
          */
         public TestKey(String field) {
             this.field = field;
-        }
-
-        /** Test key 1. */
-        public TestKey() {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -124,77 +249,25 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     }
 
     /**
-     * Sends put atomically and handles fail.
-     *
-     * @param k Key.
+     * Test value.
      */
-    protected void failAtomicPut(int k) {
-        try {
-            jcache(0).put(new TestKey(String.valueOf(k)), "");
-
-            assert false : "p2p marshalling failed, but error response was not sent";
-        }
-        catch (CacheException e) {
-            assert X.hasCause(e, IOException.class);
+    protected static class TestValue implements Externalizable {
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public TestValue() {
+            // No-op.
         }
 
-        assert readCnt.get() == 0; //ensure we have read count as expected.
-    }
-
-    /**
-     * Sends get atomically and handles fail.
-     *
-     * @param k Key.
-     */
-    protected void failAtomicGet(int k) {
-        try {
-            jcache(0).get(new TestKey(String.valueOf(k)));
-
-            assert false : "p2p marshalling failed, but error response was not sent";
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            // No-op.
         }
-        catch (CacheException e) {
-            assert X.hasCause(e, IOException.class);
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            if (valReadCnt.decrementAndGet() <= 0)
+                throw new IOException("Class can not be unmarshalled.");
         }
-    }
-
-    /**
-     * Tests that correct response will be sent to client node in case of unmarshalling failed.
-     *
-     * @throws Exception If failed.
-     */
-    public void testResponseMessageOnUnmarshallingFailed() throws Exception {
-        //GridNearAtomicUpdateRequest unmarshalling failed test
-        readCnt.set(1);
-
-        failAtomicPut(++key);
-
-        //Check that cache is empty.
-        readCnt.set(Integer.MAX_VALUE);
-
-        assert jcache(0).get(new TestKey(String.valueOf(key))) == null;
-
-        //GridDhtAtomicUpdateRequest unmarshalling failed test
-        readCnt.set(2);
-
-        failAtomicPut(++key);
-
-        //Check that cache is not empty.
-        readCnt.set(Integer.MAX_VALUE);
-
-        assert jcache(0).get(new TestKey(String.valueOf(key))) != null;
-
-        //GridNearGetRequest unmarshalling failed test
-        readCnt.set(1);
-
-        failAtomicGet(++key);
-
-        //GridNearGetResponse unmarshalling failed test
-        readCnt.set(Integer.MAX_VALUE);
-
-        jcache(0).put(new TestKey(String.valueOf(++key)), "");
-
-        readCnt.set(2);
-
-        failAtomicGet(key);
     }
 }

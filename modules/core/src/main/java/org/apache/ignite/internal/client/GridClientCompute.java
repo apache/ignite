@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.balancer.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A compute projection of grid client. Contains various methods for task execution, full and partial (per node)
@@ -413,7 +414,7 @@ public interface GridClientCompute {
     public GridClientFuture<List<GridClientNode>> refreshTopologyAsync(boolean includeAttrs, boolean includeMetrics);
 
     /**
-     * Sets keep portables flag for the next task execution in the current thread.
+     * Sets keep binary flag for the next task execution in the current thread.
      */
-    public GridClientCompute withKeepPortables();
+    public GridClientCompute withKeepBinaries();
 }

@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Test cases for multi-threaded tests.
@@ -80,7 +84,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMarshalUnmarshalCandidate() throws Exception {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx parent = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -91,12 +95,13 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
             version(1),
             123,
             version(2),
-            123,
             /*local*/false,
             /*reentry*/false,
             true,
             false,
             false,
+            false,
+            null,
             false
         );
 
@@ -111,7 +116,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * Tests remote candidates.
      */
     public void testRemotes() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -124,14 +129,14 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver4 = version(4);
         GridCacheVersion ver5 = version(5);
 
-        entry.addRemote(node1, 1, ver1, 0, false, true);
+        entry.addRemote(node1, 1, ver1, true);
 
         Collection<GridCacheMvccCandidate> cands = entry.remoteMvccSnapshot();
 
         assert cands.size() == 1;
         assert cands.iterator().next().version().equals(ver1);
 
-        entry.addRemote(node2, 5, ver5, 0, false, true);
+        entry.addRemote(node2, 5, ver5, true);
 
         cands = entry.remoteMvccSnapshot();
 
@@ -142,7 +147,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         // Check order.
         checkOrder(cands, ver1, ver5);
 
-        entry.addRemote(node1, 3, ver3, 0, false, true);
+        entry.addRemote(node1, 3, ver3, true);
 
         cands = entry.remoteMvccSnapshot();
 
@@ -157,7 +162,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         checkDone(entry.candidate(ver3));
 
-        entry.addRemote(node1, 2, ver2, 0, false, true);
+        entry.addRemote(node1, 2, ver2, true);
 
         cands = entry.remoteMvccSnapshot();
 
@@ -169,8 +174,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         checkOrder(cands, ver1, ver5, ver3, ver2);
 
         entry.orderCompleted(
-            new GridCacheVersion(1, 0, 2, 0, 0),
-            Arrays.asList(new GridCacheVersion(1, 0, 3, 4, 0), ver2, new GridCacheVersion(1, 0, 5, 6, 0)),
+            new GridCacheVersion(1, 2, 0, 0),
+            Arrays.asList(new GridCacheVersion(1, 3, 4, 0), ver2, new GridCacheVersion(1, 5, 6, 0)),
             Collections.<GridCacheVersion>emptyList()
         );
 
@@ -192,7 +197,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         checkDone(entry.candidate(ver5));
 
-        entry.addRemote(node1, 4, ver4, 0, false, true);
+        entry.addRemote(node1, 4, ver4, true);
 
         cands = entry.remoteMvccSnapshot();
 
@@ -262,7 +267,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * Tests that orderOwned does not reorder owned locks.
      */
     public void testNearRemoteWithOwned() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -273,10 +278,10 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver3 = version(3);
         GridCacheVersion ver4 = version(4);
 
-        GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, 0, false, true);
-        GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, 0, false, true);
-        GridCacheMvccCandidate c3 = entry.addRemote(node1, 1, ver3, 0, false, true);
-        GridCacheMvccCandidate c4 = entry.addRemote(node1, 1, ver4, 0, false, true);
+        GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, true);
+        GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, true);
+        GridCacheMvccCandidate c3 = entry.addRemote(node1, 1, ver3, true);
+        GridCacheMvccCandidate c4 = entry.addRemote(node1, 1, ver4, true);
 
         GridCacheMvccCandidate[] candArr = new GridCacheMvccCandidate[] {c1, c2, c3, c4};
 
@@ -304,7 +309,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * Tests that orderOwned does not reorder owned locks.
      */
     public void testNearRemoteWithOwned1() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -317,12 +322,12 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver5 = version(5);
         GridCacheVersion ver6 = version(6);
 
-        GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, 0, false, true);
-        GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, 0, false, true);
-        GridCacheMvccCandidate c3 = entry.addRemote(node1, 1, ver3, 0, false, true);
-        GridCacheMvccCandidate c4 = entry.addRemote(node1, 1, ver4, 0, false, true);
-        GridCacheMvccCandidate c5 = entry.addRemote(node1, 1, ver5, 0, false, true);
-        GridCacheMvccCandidate c6 = entry.addRemote(node1, 1, ver6, 0, false, true);
+        GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, true);
+        GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, true);
+        GridCacheMvccCandidate c3 = entry.addRemote(node1, 1, ver3, true);
+        GridCacheMvccCandidate c4 = entry.addRemote(node1, 1, ver4, true);
+        GridCacheMvccCandidate c5 = entry.addRemote(node1, 1, ver5, true);
+        GridCacheMvccCandidate c6 = entry.addRemote(node1, 1, ver6, true);
 
         GridCacheMvccCandidate[] candArr = new GridCacheMvccCandidate[] {c1, c2, c3, c4, c5, c6};
 
@@ -350,7 +355,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * Tests that orderOwned does not reorder owned locks.
      */
     public void testNearRemoteWithOwned2() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -364,13 +369,13 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver5 = version(5);
         GridCacheVersion ver6 = version(6);
 
-        GridCacheMvccCandidate c0 = entry.addRemote(node1, 1, ver0, 0, false, true);
-        GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, 0, false, true);
-        GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, 0, false, true);
-        GridCacheMvccCandidate c3 = entry.addRemote(node1, 1, ver3, 0, false, true);
-        GridCacheMvccCandidate c4 = entry.addRemote(node1, 1, ver4, 0, false, true);
-        GridCacheMvccCandidate c5 = entry.addRemote(node1, 1, ver5, 0, false, true);
-        GridCacheMvccCandidate c6 = entry.addRemote(node1, 1, ver6, 0, false, true);
+        GridCacheMvccCandidate c0 = entry.addRemote(node1, 1, ver0, true);
+        GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, true);
+        GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, true);
+        GridCacheMvccCandidate c3 = entry.addRemote(node1, 1, ver3, true);
+        GridCacheMvccCandidate c4 = entry.addRemote(node1, 1, ver4, true);
+        GridCacheMvccCandidate c5 = entry.addRemote(node1, 1, ver5, true);
+        GridCacheMvccCandidate c6 = entry.addRemote(node1, 1, ver6, true);
 
         GridCacheMvccCandidate[] candArr = new GridCacheMvccCandidate[] {c0, c1, c2, c3, c4, c5, c6};
 
@@ -398,7 +403,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * Tests remote candidates.
      */
     public void testLocal() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -472,7 +477,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * Tests assignment of local candidates when remote exist.
      */
     public void testLocalWithRemote() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -481,7 +486,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver2 = version(2);
         GridCacheVersion ver3 = version(3);
 
-        entry.addRemote(nodeId, 1, ver2, 0, false, true);
+        entry.addRemote(nodeId, 1, ver2, true);
 
         entry.addLocal(3, ver3, 0, false, true);
 
@@ -508,7 +513,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseInTheMiddle() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -524,15 +529,15 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver7 = version(7);
         GridCacheVersion ver8 = version(8);
 
-        entry.addRemote(node1, 1, ver1, 0, false, true);
-        entry.addRemote(node2, 2, ver2, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
-        entry.addRemote(node1, 5, ver5, 0, false, true);
-        entry.addRemote(node2, 7, ver7, 0, false, true);
-        entry.addRemote(node2, 8, ver8, 0, false, true);
+        entry.addRemote(node1, 1, ver1, true);
+        entry.addRemote(node2, 2, ver2, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
+        entry.addRemote(node1, 5, ver5, true);
+        entry.addRemote(node2, 7, ver7, true);
+        entry.addRemote(node2, 8, ver8, true);
 
-        GridCacheMvccCandidate doomed = entry.addRemote(node2, 6, ver6, 0, false, true);
+        GridCacheMvccCandidate doomed = entry.addRemote(node2, 6, ver6, true);
 
         // No reordering happens.
         checkOrder(entry.remoteMvccSnapshot(), ver1, ver2, ver3, ver4, ver5, ver7, ver8, ver6);
@@ -561,7 +566,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithCompletedBaseInTheMiddle() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -576,13 +581,13 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver6 = version(6);
         GridCacheVersion ver7 = version(7);
 
-        entry.addRemote(node1, 1, ver1, 0, false, true);
-        entry.addRemote(node2, 2, ver2, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
-        entry.addRemote(node1, 5, ver5, 0, false, true);
-        entry.addRemote(node2, 6, ver6, 0, false, true);
-        entry.addRemote(node2, 7, ver7, 0, false, true);
+        entry.addRemote(node1, 1, ver1, true);
+        entry.addRemote(node2, 2, ver2, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
+        entry.addRemote(node1, 5, ver5, true);
+        entry.addRemote(node2, 6, ver6, true);
+        entry.addRemote(node2, 7, ver7, true);
 
         List<GridCacheVersion> committed = Arrays.asList(ver4, ver6, ver2);
 
@@ -603,7 +608,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedTwiceWithBaseInTheMiddle() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -618,13 +623,13 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver6 = version(6);
         GridCacheVersion ver7 = version(7);
 
-        entry.addRemote(node1, 1, ver1, 0, false, true);
-        entry.addRemote(node2, 2, ver2, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
-        entry.addRemote(node1, 5, ver5, 0, false, true);
-        entry.addRemote(node2, 6, ver6, 0, false, true);
-        entry.addRemote(node2, 7, ver7, 0, false, true);
+        entry.addRemote(node1, 1, ver1, true);
+        entry.addRemote(node2, 2, ver2, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
+        entry.addRemote(node1, 5, ver5, true);
+        entry.addRemote(node2, 6, ver6, true);
+        entry.addRemote(node2, 7, ver7, true);
 
         List<GridCacheVersion> completed = Arrays.asList(ver4, ver6);
 
@@ -649,7 +654,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseInTheMiddleNoChange() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -664,11 +669,11 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver6 = version(6);
         GridCacheVersion ver7 = version(7);
 
-        entry.addRemote(node1, 1, ver1, 0, false, false);
-        entry.addRemote(node2, 2, ver2, 0, false, false);
-        entry.addRemote(node1, 3, ver3, 0, false, false);
-        entry.addRemote(node2, 4, ver4, 0, false, false);
-        entry.addRemote(node1, 5, ver5, 0, false, false);
+        entry.addRemote(node1, 1, ver1, false);
+        entry.addRemote(node2, 2, ver2, false);
+        entry.addRemote(node1, 3, ver3, false);
+        entry.addRemote(node2, 4, ver4, false);
+        entry.addRemote(node1, 5, ver5, false);
 
         List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
 
@@ -688,7 +693,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseInTheBeginning() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -703,13 +708,13 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver6 = version(6);
         GridCacheVersion ver7 = version(7);
 
-        entry.addRemote(node1, 1, ver1, 0, false, false);
-        entry.addRemote(node2, 2, ver2, 0, false, false);
-        entry.addRemote(node1, 3, ver3, 0, false, false);
-        entry.addRemote(node2, 4, ver4, 0, false, false);
-        entry.addRemote(node1, 5, ver5, 0, false, false);
-        entry.addRemote(node2, 6, ver6, 0, false, false);
-        entry.addRemote(node2, 7, ver7, 0, false, false);
+        entry.addRemote(node1, 1, ver1, false);
+        entry.addRemote(node2, 2, ver2, false);
+        entry.addRemote(node1, 3, ver3, false);
+        entry.addRemote(node2, 4, ver4, false);
+        entry.addRemote(node1, 5, ver5, false);
+        entry.addRemote(node2, 6, ver6, false);
+        entry.addRemote(node2, 7, ver7, false);
 
         List<GridCacheVersion> committed = Arrays.asList(ver4, ver6, ver3);
 
@@ -730,7 +735,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * This case should never happen, nevertheless we need to test for it.
      */
     public void testCompletedWithBaseInTheBeginningNoChange() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -745,11 +750,11 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver6 = version(6);
         GridCacheVersion ver7 = version(7);
 
-        entry.addRemote(node1, 1, ver1, 0, false, false);
-        entry.addRemote(node2, 2, ver2, 0, false, false);
-        entry.addRemote(node1, 3, ver3, 0, false, false);
-        entry.addRemote(node2, 4, ver4, 0, false, false);
-        entry.addRemote(node1, 5, ver5, 0, false, false);
+        entry.addRemote(node1, 1, ver1, false);
+        entry.addRemote(node2, 2, ver2, false);
+        entry.addRemote(node1, 3, ver3, false);
+        entry.addRemote(node2, 4, ver4, false);
+        entry.addRemote(node1, 5, ver5, false);
 
         List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
 
@@ -769,7 +774,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * This case should never happen, nevertheless we need to test for it.
      */
     public void testCompletedWithBaseInTheEndNoChange() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -784,11 +789,11 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver6 = version(6);
         GridCacheVersion ver7 = version(7);
 
-        entry.addRemote(node1, 1, ver1, 0, false, false);
-        entry.addRemote(node2, 2, ver2, 0, false, false);
-        entry.addRemote(node1, 3, ver3, 0, false, false);
-        entry.addRemote(node2, 4, ver4, 0, false, false);
-        entry.addRemote(node1, 5, ver5, 0, false, false);
+        entry.addRemote(node1, 1, ver1, false);
+        entry.addRemote(node2, 2, ver2, false);
+        entry.addRemote(node1, 3, ver3, false);
+        entry.addRemote(node2, 4, ver4, false);
+        entry.addRemote(node1, 5, ver5, false);
 
         List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
 
@@ -808,7 +813,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseNotPresentInTheMiddle() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -824,12 +829,12 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver7 = version(7);
 
         // Don't add version 2.
-        entry.addRemote(node1, 1, ver1, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
-        entry.addRemote(node1, 5, ver5, 0, false, true);
-        entry.addRemote(node2, 6, ver6, 0, false, true);
-        entry.addRemote(node2, 7, ver7, 0, false, true);
+        entry.addRemote(node1, 1, ver1, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
+        entry.addRemote(node1, 5, ver5, true);
+        entry.addRemote(node2, 6, ver6, true);
+        entry.addRemote(node2, 7, ver7, true);
 
         List<GridCacheVersion> committed = Arrays.asList(ver6, ver4);
 
@@ -849,7 +854,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseNotPresentInTheMiddleNoChange() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -865,9 +870,9 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver7 = version(7);
 
         // Don't add versions 2, 5, 6, 7.
-        entry.addRemote(node1, 1, ver1, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
+        entry.addRemote(node1, 1, ver1, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
 
         List<GridCacheVersion> committed = Arrays.asList(ver6, ver5, ver7);
 
@@ -884,7 +889,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseNotPresentInTheBeginning() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -900,12 +905,12 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver7 = version(7);
 
         // Don't add version 1.
-        entry.addRemote(node1, 2, ver2, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
-        entry.addRemote(node1, 5, ver5, 0, false, true);
-        entry.addRemote(node2, 6, ver6, 0, false, true);
-        entry.addRemote(node2, 7, ver7, 0, false, true);
+        entry.addRemote(node1, 2, ver2, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
+        entry.addRemote(node1, 5, ver5, true);
+        entry.addRemote(node2, 6, ver6, true);
+        entry.addRemote(node2, 7, ver7, true);
 
         List<GridCacheVersion> committed = Arrays.asList(ver4, ver6, ver3);
 
@@ -925,7 +930,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseNotPresentInTheBeginningNoChange() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -941,12 +946,12 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver7 = version(7);
 
         // Don't add version 6, 7
-        entry.addRemote(node1, 2, ver2, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
-        entry.addRemote(node1, 5, ver5, 0, false, true);
-        entry.addRemote(node1, 6, ver6, 0, false, true);
-        entry.addRemote(node1, 7, ver7, 0, false, true);
+        entry.addRemote(node1, 2, ver2, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
+        entry.addRemote(node1, 5, ver5, true);
+        entry.addRemote(node1, 6, ver6, true);
+        entry.addRemote(node1, 7, ver7, true);
 
         List<GridCacheVersion> committed = Arrays.asList(ver2, ver3);
 
@@ -966,7 +971,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testCompletedWithBaseNotPresentInTheEndNoChange() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -982,10 +987,10 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver7 = version(7);
 
         // Don't add version 5, 6, 7
-        entry.addRemote(node1, 1, ver1, 0, false, true);
-        entry.addRemote(node1, 2, ver2, 0, false, true);
-        entry.addRemote(node1, 3, ver3, 0, false, true);
-        entry.addRemote(node2, 4, ver4, 0, false, true);
+        entry.addRemote(node1, 1, ver1, true);
+        entry.addRemote(node1, 2, ver2, true);
+        entry.addRemote(node1, 3, ver3, true);
+        entry.addRemote(node2, 4, ver4, true);
 
         List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
 
@@ -1003,7 +1008,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * Test local and remote candidates together.
      */
     public void testLocalAndRemote() {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
 
@@ -1016,7 +1021,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver4 = version(4);
         GridCacheVersion ver5 = version(5);
 
-        entry.addRemote(node1, 1, ver1, 0, false, false);
+        entry.addRemote(node1, 1, ver1, false);
         entry.addLocal(2, ver2, 0, true, true);
 
         Collection<GridCacheMvccCandidate> cands = entry.remoteMvccSnapshot();
@@ -1024,7 +1029,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         assert cands.size() == 1;
         assert cands.iterator().next().version().equals(ver1);
 
-        entry.addRemote(node2, 5, ver5, 0, false, false);
+        entry.addRemote(node2, 5, ver5, false);
 
         cands = entry.remoteMvccSnapshot();
 
@@ -1035,7 +1040,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         checkOrder(cands, ver1, ver5);
         checkOrder(entry.localCandidates(true), ver2);
 
-        entry.addRemote(node1, 3, ver3, 0, false, true);
+        entry.addRemote(node1, 3, ver3, true);
         entry.addLocal(4, ver4, 0, /*reenter*/true, false);
 
         cands = entry.remoteMvccSnapshot();
@@ -1048,7 +1053,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         entry.orderCompleted(
             ver2 /*local version.*/,
-            Arrays.asList(new GridCacheVersion(1, 0, 1, 2, 0), ver3, new GridCacheVersion(1, 0, 5, 6, 0)),
+            Arrays.asList(new GridCacheVersion(1, 1, 2, 0), ver3, new GridCacheVersion(1, 5, 6, 0)),
             Collections.<GridCacheVersion>emptyList()
         );
 
@@ -1131,7 +1136,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     public void testMultipleLocalAndRemoteLocks1() throws Exception {
         UUID nodeId = UUID.randomUUID();
 
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1169,11 +1174,11 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         linkCandidates(ctx, c13, c33);
 
-        entry2.addRemote(nodeId, 3, ver2, 0, false, true);
+        entry2.addRemote(nodeId, 3, ver2, true);
 
         checkLocal(entry2.candidate(ver1), ver1, true, false, false);
 
-        entry3.addRemote(nodeId, 3, ver2, 0, false, false);
+        entry3.addRemote(nodeId, 3, ver2, false);
 
         entry3.readyLocal(ver3);
 
@@ -1202,7 +1207,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testMultipleLocalAndRemoteLocks2() throws Exception {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1240,11 +1245,11 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         linkCandidates(ctx, c13, c33);
 
-        entry2.addRemote(UUID.randomUUID(), 3, ver1, 0, false, true);
+        entry2.addRemote(UUID.randomUUID(), 3, ver1, true);
 
         checkLocal(entry2.candidate(ver2), ver2, true, false, false);
 
-        entry3.addRemote(UUID.randomUUID(), 3, ver1, 0, false, true);
+        entry3.addRemote(UUID.randomUUID(), 3, ver1, true);
 
         entry3.readyLocal(ver3);
 
@@ -1289,7 +1294,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testMultipleLocalLocks() throws Exception {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1330,7 +1335,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ObjectEquality"})
     public void testUsedCandidates() throws Exception {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1345,13 +1350,19 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         ctx.mvcc().addNext(ctx, c1);
 
+        ctx.mvcc().contextReset();
+
         GridCacheMvccCandidate c2 = entry.addLocal(2, ver2, 0, true, false);
 
         ctx.mvcc().addNext(ctx, c2);
 
+        ctx.mvcc().contextReset();
+
         GridCacheMvccCandidate c3 = entry.addLocal(3, ver3, 0, true, true);
 
         ctx.mvcc().addNext(ctx, c3);
+
+        ctx.mvcc().contextReset();
 
         checkLocal(entry.candidate(ver1), ver1, false, false, false);
         checkLocal(entry.candidate(ver2), ver2, false, false, false);
@@ -1367,9 +1378,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.removeLock(ver2);
 
         assert c3 != null;
-        assert c3.previous() == c2;
         assert c2 != null;
-        assert c2.previous() == c1;
 
         checkLocal(c2, ver2, false, false, false, true);
 
@@ -1378,18 +1387,13 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         entry.removeLock(ver1);
 
-        assert c3.previous() == c2;
-        assert c2.previous() == c1;
-
         checkLocal(entry.candidate(ver3), ver3, true, true, false);
 
         GridCacheMvccCandidate c4 = entry.addLocal(4, ver4, 0, true, true);
 
         ctx.mvcc().addNext(ctx, c4);
 
-        assert c3.previous() == null;
         assert c4 != null;
-        assert c4.previous() == c3;
     }
 
     /**
@@ -1398,7 +1402,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     public void testReverseOrder1() {
         UUID id = UUID.randomUUID();
 
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1417,7 +1421,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         checkLocal(c1k1, ver2, true, true, false);
 
-        GridCacheMvccCandidate c2k1 = entry1.addRemote(id, 2, ver1, 0, false, true);
+        GridCacheMvccCandidate c2k1 = entry1.addRemote(id, 2, ver1, true);
 
         // Force recheck of assignments.
         entry1.recheckLock();
@@ -1433,7 +1437,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         assert c1k2.previous() == c1k1;
 
-        GridCacheMvccCandidate c2k2 = entry2.addRemote(id, 3, ver1, 0, false, true);
+        GridCacheMvccCandidate c2k2 = entry2.addRemote(id, 3, ver1, true);
 
         entry2.readyLocal(c1k2);
 
@@ -1451,7 +1455,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     public void testReverseOrder2() throws Exception {
         UUID id = UUID.randomUUID();
 
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1475,8 +1479,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         checkLocal(v3k2, ver3, false, false, false);
 
         // Remote locks.
-        GridCacheMvccCandidate v2k1 = entry1.addRemote(id, 3, ver2, 0, false, false);
-        GridCacheMvccCandidate v2k2 = entry2.addRemote(id, 3, ver2, 0, false, false);
+        GridCacheMvccCandidate v2k1 = entry1.addRemote(id, 3, ver2, false);
+        GridCacheMvccCandidate v2k2 = entry2.addRemote(id, 3, ver2, false);
 
         checkRemote(v2k1, ver2, false, false);
         checkRemote(v2k2, ver2, false, false);
@@ -1511,7 +1515,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReverseOrder3() throws Exception {
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1561,7 +1565,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     public void testReverseOrder4() throws Exception {
         UUID id = UUID.randomUUID();
 
-        GridCacheAdapter<String, String> cache = grid.internalCache();
+        GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
         GridCacheContext<String, String> ctx = cache.context();
 
@@ -1598,7 +1602,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         checkLocal(v1k1, ver1, true, false, false);
         checkLocal(v1k2, ver1, true, false, false);
 
-        GridCacheMvccCandidate v2k2 = entry2.addRemote(id, 5, ver2, 0, false, false);
+        GridCacheMvccCandidate v2k2 = entry2.addRemote(id, 5, ver2, false);
 
         checkRemote(v2k2, ver2, false, false);
 
@@ -1615,12 +1619,13 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @return Version.
      */
     private GridCacheVersion version(int order) {
-        return new GridCacheVersion(1, 0, order, order, 0);
+        return new GridCacheVersion(1, order, order, 0);
     }
 
     /**
      * Links candidates.
      *
+     * @param ctx Cache context.
      * @param cands Candidates.
      * @throws Exception If failed.
      */
@@ -1629,7 +1634,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         multithreaded(new Runnable() {
             @Override public void run() {
                 for (GridCacheMvccCandidate cand : cands) {
-                    boolean b = grid.<String, String>internalCache().context().mvcc().addNext(ctx, cand);
+                    boolean b = grid.<String, String>internalCache(DEFAULT_CACHE_NAME).context().mvcc().addNext(ctx, cand);
 
                     assert b;
                 }
@@ -1646,7 +1651,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @param vers Ordered versions.
      */
     private void checkOrder(Collection<GridCacheMvccCandidate> cands, GridCacheVersion... vers) {
-        assert cands.size() == vers.length;
+        assertEquals(vers.length, cands.size());
 
         int i = 0;
 
@@ -1667,9 +1672,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         StringBuilder buf = new StringBuilder(eol);
 
-        for (Object obj : objs) {
+        for (Object obj : objs)
             buf.append(obj.toString()).append(eol);
-        }
 
         return buf.toString();
     }
@@ -1683,9 +1687,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         StringBuilder buf = new StringBuilder(eol);
 
-        for (Object obj : objs) {
+        for (Object obj : objs)
             buf.append(obj.toString()).append(eol);
-        }
 
         return buf.toString();
     }
@@ -1831,20 +1834,12 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Empty collection.
-     */
-    private Collection<GridCacheVersion> empty() {
-        return Collections.emptyList();
-    }
-
-    /**
      * @param cands Candidates to print.
      */
     private void info(Iterable<GridCacheMvccCandidate> cands) {
         info("Collection of candidates: ");
 
-        for (GridCacheMvccCandidate c : cands) {
+        for (GridCacheMvccCandidate c : cands)
             info(">>> " + c);
-        }
     }
 }

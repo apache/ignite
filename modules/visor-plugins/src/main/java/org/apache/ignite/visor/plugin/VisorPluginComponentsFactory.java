@@ -17,8 +17,8 @@
 
 package org.apache.ignite.visor.plugin;
 
-import javax.swing.*;
-import java.util.*;
+import java.util.List;
+import javax.swing.JPanel;
 
 /**
  * Factory for creating ready Visor UI blocks like nodes panel, log panel, etc.

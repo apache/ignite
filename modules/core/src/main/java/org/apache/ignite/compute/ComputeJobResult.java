@@ -17,10 +17,10 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 
 /**
  * Result of remote job which gets passed into {@link ComputeTask#result(ComputeJobResult, List)}

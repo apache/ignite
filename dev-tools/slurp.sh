@@ -24,7 +24,7 @@
 #
 # Default branch name. Need to use last version of "jiraslurp" scripts.
 #
-DEFAULT_BRANCH='ignite-sprint-5'
+DEFAULT_BRANCH='master'
 
 #
 # TC URL. It is 10.30.0.229 for public TC from agents.
@@ -56,7 +56,7 @@ echo "<"$(date + "%D - %H:%M:%S")"> Starting task triggering"
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
 # Useful settings
-#cd /home/teamcity/jobs/incubator-ignite/
+#cd /home/teamcity/jobs/ignite/
 #
 #export JAVA_HOME=<java_home>
 #export PATH=$PATH:<gradle_path>

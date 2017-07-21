@@ -17,10 +17,11 @@
 
 package org.apache.ignite.loadtests.mapper;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.swing.*;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.typedef.G;
 
 /**
  * Starts up an empty node with cache configuration.

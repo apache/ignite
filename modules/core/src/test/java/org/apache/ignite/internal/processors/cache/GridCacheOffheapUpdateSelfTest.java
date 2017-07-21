@@ -17,33 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Check for specific support issue.
  */
 public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setNearConfiguration(null);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setOffHeapMaxMemory(0);
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -57,14 +60,14 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrids(2);
 
-            IgniteCache<Object, Object> rmtCache = ignite.cache(null);
+            IgniteCache<Object, Object> rmtCache = ignite.cache(DEFAULT_CACHE_NAME);
 
             int key = 0;
 
-            while (!ignite.affinity(null).isPrimary(grid(1).localNode(), key))
+            while (!ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(grid(1).localNode(), key))
                 key++;
 
-            IgniteCache<Object, Object> locCache = grid(1).cache(null);
+            IgniteCache<Object, Object> locCache = grid(1).cache(DEFAULT_CACHE_NAME);
 
             try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 locCache.putIfAbsent(key, 0);
@@ -100,7 +103,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite grid = startGrid(0);
 
-            IgniteCache<Object, Object> cache = grid.cache(null);
+            IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, 0);
@@ -110,7 +113,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             for (int i = 0; i < 30; i++)
-                grid(1).cache(null).put(i, 10);
+                grid(1).cache(DEFAULT_CACHE_NAME).put(i, 10);
 
             // Find a key that does not belong to started node anymore.
             int key = 0;
@@ -118,7 +121,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
             ClusterNode locNode = grid.cluster().localNode();
 
             for (;key < 30; key++) {
-                if (!grid.affinity(null).isPrimary(locNode, key) && !grid.affinity(null).isBackup(locNode, key))
+                if (!grid.affinity(DEFAULT_CACHE_NAME).isPrimary(locNode, key) && !grid.affinity(DEFAULT_CACHE_NAME).isBackup(locNode, key))
                     break;
             }
 

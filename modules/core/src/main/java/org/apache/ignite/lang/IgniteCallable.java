@@ -17,8 +17,8 @@
 
 package org.apache.ignite.lang;
 
-import java.io.*;
-import java.util.concurrent.*;
+import java.io.Serializable;
+import java.util.concurrent.Callable;
 
 /**
  * Grid-aware adapter for {@link Callable} implementations. It adds {@link Serializable} interface

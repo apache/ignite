@@ -17,30 +17,52 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.yardstick.cache.model.*;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.yardstick.cache.model.SampleValue;
+import org.yardstickframework.BenchmarkConfiguration;
 
-import java.util.*;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.doInTransaction;
 
 /**
  * Ignite benchmark that performs transactional put and get operations.
  */
-public class IgnitePutGetTxBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgnitePutGetTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** */
+    private IgniteTransactions txs;
+
+    /** */
+    private Callable<Void> clo;
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        txs = ignite().transactions();
+
+        clo = new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                IgniteCache<Integer, Object> cache = cacheForOperation();
+
+                int key = nextRandom(0, args.range() / 2);
+
+                Object val = cache.get(key);
+
+                if (val != null)
+                    key = nextRandom(args.range() / 2, args.range());
+
+                cache.put(key, new SampleValue(key));
+
+                return null;
+            }
+        };
+    }
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(0, args.range() / 2);
-
-        try (Transaction tx = ignite().transactions().txStart()) {
-            Object val = cache.get(key);
-
-            if (val != null)
-                key = nextRandom(args.range() / 2, args.range());
-
-            cache.put(key, new SampleValue(key));
-
-            tx.commit();
-        }
+        doInTransaction(txs, args.txConcurrency(), args.txIsolation(), clo);
 
         return true;
     }

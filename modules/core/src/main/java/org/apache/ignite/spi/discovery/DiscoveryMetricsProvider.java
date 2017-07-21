@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.tostring.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 
 /**
  * Provides metrics to discovery SPI. It is responsibility of discovery SPI

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.jsr166.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Performance tests added to compare the same functionality in .Net.

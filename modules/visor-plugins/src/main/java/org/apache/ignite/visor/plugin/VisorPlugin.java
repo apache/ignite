@@ -17,7 +17,9 @@
 
 package org.apache.ignite.visor.plugin;
 
-import ro.fortsoft.pf4j.*;
+import ro.fortsoft.pf4j.Plugin;
+import ro.fortsoft.pf4j.PluginException;
+import ro.fortsoft.pf4j.PluginWrapper;
 
 /**
  * Base class for Visor plugins.

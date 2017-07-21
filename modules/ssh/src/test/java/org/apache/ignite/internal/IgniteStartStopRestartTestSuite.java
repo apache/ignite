@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import junit.framework.*;
+import junit.framework.TestSuite;
 
 /**
  * Start nodes tests.
@@ -37,4 +37,3 @@ public class IgniteStartStopRestartTestSuite {
         return suite;
     }
 }
-

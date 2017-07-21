@@ -17,15 +17,16 @@
 
 package org.apache.ignite.events;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_CREATED;
+import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
+import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_RENAMED;
 
 /**
  * IGFS event.

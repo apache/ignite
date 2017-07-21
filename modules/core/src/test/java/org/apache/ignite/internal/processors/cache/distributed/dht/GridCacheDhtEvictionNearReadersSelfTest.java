@@ -17,27 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.fifo.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 
 /**
  * Tests for dht cache eviction.
@@ -55,8 +63,8 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -68,20 +76,15 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
-        cacheCfg.setEvictSynchronized(true);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(1);
-
-        // Set eviction queue size explicitly.
-        cacheCfg.setEvictSynchronizedKeyBufferSize(1);
-        cacheCfg.setEvictMaxOverflowRatio(0);
 
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(10);
 
         cacheCfg.setEvictionPolicy(plc);
+        cacheCfg.setOnheapCacheEnabled(true);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
@@ -151,7 +154,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings({"unchecked"})
     private GridNearCacheAdapter<Integer, String> near(Ignite g) {
-        return (GridNearCacheAdapter)((IgniteKernal)g).internalCache();
+        return (GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -160,7 +163,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
 
     /**
@@ -168,7 +171,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        return grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
+        return grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
     }
 
     /**
@@ -255,7 +258,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
             waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Get value on other node, it should be loaded to near cache.
-        assertEquals(val, nearOther.get(key, true));
+        assertEquals(val, nearOther.get(key, true, false));
 
         entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
         entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
@@ -269,7 +272,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         // Evict on primary node.
         // It will trigger dht eviction and eviction on backup node.
-        grid(primary).cache(null).localEvict(Collections.<Object>singleton(key));
+        grid(primary).cache(DEFAULT_CACHE_NAME).localEvict(Collections.<Object>singleton(key));
 
         futOther.get(3000);
         futBackup.get(3000);

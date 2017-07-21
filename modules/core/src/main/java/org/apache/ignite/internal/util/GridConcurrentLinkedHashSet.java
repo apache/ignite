@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
  * Concurrent linked set implementation.
@@ -123,9 +121,6 @@ public class GridConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        // TODO GG-4788
-        return ((ConcurrentLinkedHashMap)map()).policy() != SINGLE_Q ?
-            S.toString(GridConcurrentLinkedHashSet.class, this) :
-            S.toString(GridConcurrentLinkedHashSet.class, this, "elements", map().keySet());
+        return S.toString(GridConcurrentLinkedHashSet.class, this, "elements", map().keySet());
     }
 }

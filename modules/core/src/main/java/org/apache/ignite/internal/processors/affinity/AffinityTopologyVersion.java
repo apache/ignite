@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -69,6 +73,15 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
+     * @return Topology version with incremented minor version.
+     */
+    public AffinityTopologyVersion nextMinorVersion() {
+        assert topVer > 0;
+
+        return new AffinityTopologyVersion(topVer, minorTopVer + 1);
+    }
+
+    /**
      * @return Topology version.
      */
     public long topologyVersion() {
@@ -90,6 +103,11 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
             return Integer.compare(minorTopVer, o.minorTopVer);
 
         return cmp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -177,11 +195,11 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
         }
 
-        return true;
+        return reader.afterMessageRead(AffinityTopologyVersion.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 111;
     }
 

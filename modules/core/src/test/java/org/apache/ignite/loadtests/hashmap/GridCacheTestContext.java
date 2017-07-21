@@ -17,23 +17,38 @@
 
 package org.apache.ignite.loadtests.hashmap;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.jta.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.cache.store.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.plugin.*;
-import org.apache.ignite.testframework.junits.*;
+import java.util.IdentityHashMap;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
+import org.apache.ignite.internal.processors.cache.CacheOsConflictResolutionManager;
+import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
+import org.apache.ignite.internal.processors.cache.GridCacheEventManager;
+import org.apache.ignite.internal.processors.cache.GridCacheEvictionManager;
+import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedTtlCleanupManager;
+import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
+import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
+import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
+import org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryManager;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
+import org.apache.ignite.internal.processors.cache.store.CacheOsStoreManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 
-import java.util.*;
-
-import static org.apache.ignite.testframework.junits.GridAbstractTest.*;
+import static org.apache.ignite.testframework.junits.GridAbstractTest.defaultCacheConfiguration;
 
 /**
  * Cache test context.
@@ -52,28 +67,35 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new IgniteTxManager(),
                 new GridCacheVersionManager(),
                 new GridCacheMvccManager(),
+                null,
+                null,
+                new IgniteCacheDatabaseSharedManager(),
+                new IgniteCacheSnapshotManager(),
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),
+                new CacheAffinitySharedManager<K, V>(),
                 new GridCacheIoManager(),
+                new GridCacheSharedTtlCleanupManager(),
+                new CacheNoopJtaManager(),
                 null
             ),
             defaultCacheConfiguration(),
+            null,
             CacheType.USER,
+            AffinityTopologyVersion.ZERO,
             true,
             true,
             new GridCacheEventManager(),
-            new GridCacheSwapManager(false),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),
             new GridCacheLocalQueryManager<K, V>(),
             new CacheContinuousQueryManager(),
-            new GridCacheAffinityManager(),
             new CacheDataStructuresManager(),
             new GridCacheTtlManager(),
             new GridOsCacheDrManager(),
-            new CacheNoopJtaManager(),
             new CacheOsConflictResolutionManager<K, V>(),
-            new CachePluginManager(ctx, new CacheConfiguration())
+            new CachePluginManager(ctx, new CacheConfiguration()),
+            new GridCacheAffinityManager()
         );
 
         store().initialize(null, new IdentityHashMap<CacheStore, ThreadLocal>());

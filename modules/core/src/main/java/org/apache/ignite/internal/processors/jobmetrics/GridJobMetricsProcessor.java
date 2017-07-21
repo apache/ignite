@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jsr166.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteReducer;
+import org.jsr166.ThreadLocalRandom8;
 
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL;
 
 /**
  * Processes job metrics.
@@ -109,7 +108,13 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
      * Resets metrics.
      */
     public void reset() {
+        InternalMetrics prevMetrics = metrics;
+
         metrics = new InternalMetrics();
+
+        // Preserve totalIdleTime, because it is used for busy / idle time calculations.
+        if (prevMetrics != null)
+            metrics.totalIdleTime = prevMetrics.totalIdleTime;
     }
 
     /**
@@ -207,7 +212,8 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Job metrics processor processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Job metrics processor processor memory stats [igniteInstanceName=" +
+            ctx.igniteInstanceName() + ']');
     }
 
     /**
@@ -318,9 +324,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         /** */
         private GridJobMetricsSnapshot lastSnapshot;
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public boolean collect(GridJobMetricsSnapshot s) {
             assert s != null;
 

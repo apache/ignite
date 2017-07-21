@@ -17,36 +17,39 @@
 
 package org.apache.ignite.internal.visor.file;
 
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.internal.visor.log.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.log.VisorLogFile;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.LOG_FILES_COUNT_LIMIT;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.matchedFiles;
 
 /**
  * Get list files matching filter.
  */
 @GridInternal
-public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<String, String>, Collection<VisorLogFile>> {
+public class VisorLatestTextFilesTask extends VisorOneNodeTask<VisorLatestTextFilesTaskArg, Collection<VisorLogFile>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorLatestTextFilesJob job(IgniteBiTuple<String, String> arg) {
+    @Override protected VisorLatestTextFilesJob job(VisorLatestTextFilesTaskArg arg) {
         return new VisorLatestTextFilesJob(arg, debug);
     }
 
     /**
      * Job that gets list of files.
      */
-    private static class VisorLatestTextFilesJob extends VisorJob<IgniteBiTuple<String, String>, Collection<VisorLogFile>> {
+    private static class VisorLatestTextFilesJob extends VisorJob<VisorLatestTextFilesTaskArg, Collection<VisorLogFile>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -54,14 +57,14 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<Str
          * @param arg Folder and regexp.
          * @param debug Debug flag.
          */
-        private VisorLatestTextFilesJob(IgniteBiTuple<String, String> arg, boolean debug) {
+        private VisorLatestTextFilesJob(VisorLatestTextFilesTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Collection<VisorLogFile> run(final IgniteBiTuple<String, String> arg) {
-            String path = arg.get1();
-            String regexp = arg.get2();
+        @Nullable @Override protected Collection<VisorLogFile> run(final VisorLatestTextFilesTaskArg arg) {
+            String path = arg.getPath();
+            String regexp = arg.getRegexp();
 
             assert path != null;
             assert regexp != null;

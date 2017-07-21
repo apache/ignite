@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.client.util;
 
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test for Java hash codes calculations - SHOULD BE PORTED to other languages.

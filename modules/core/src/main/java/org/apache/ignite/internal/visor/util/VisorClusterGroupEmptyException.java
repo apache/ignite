@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.util;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.cluster.ClusterGroupEmptyException;
 
 /**
  * Exception to throw from Visor tasks in case of empty topology.

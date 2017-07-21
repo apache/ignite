@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.springframework.context.*;
-
-import java.io.*;
-import java.lang.reflect.*;
+import java.io.Serializable;
+import java.lang.reflect.Modifier;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.SpringResource;
+import org.springframework.context.ApplicationContext;
+import org.springframework.util.StringUtils;
 
 /**
  * Spring bean injector implementation works with resources provided
@@ -60,10 +60,8 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
                 field.getField());
         }
 
-        String name = ann.resourceName();
-
         if (springCtx != null) {
-            Object bean = springCtx.getBean(name);
+            Object bean = getBeanByResourceAnnotation(ann);
 
             GridResourceUtils.inject(field.getField(), target, bean);
         }
@@ -79,10 +77,8 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         if (mtd.getMethod().getParameterTypes().length != 1)
             throw new IgniteCheckedException("Method injection setter must have only one parameter: " + mtd.getMethod());
 
-        String name = ann.resourceName();
-
         if (springCtx != null) {
-            Object bean = springCtx.getBean(name);
+            Object bean = getBeanByResourceAnnotation(ann);
 
             GridResourceUtils.inject(mtd.getMethod(), target, bean);
         }
@@ -96,5 +92,35 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridResourceSpringBeanInjector.class, this);
+    }
+
+    /**
+     * Retrieves from {@link #springCtx} the bean specified by {@link SpringResource} annotation.
+     *
+     * @param annotation {@link SpringResource} annotation instance from field or method.
+     * @return Bean object retrieved from spring context.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Object getBeanByResourceAnnotation(SpringResource annotation) throws IgniteCheckedException {
+        assert springCtx != null;
+
+        String beanName = annotation.resourceName();
+        Class<?> beanCls = annotation.resourceClass();
+
+        boolean oneParamSet = !StringUtils.isEmpty(beanName) ^ beanCls != SpringResource.DEFAULT.class;
+
+        if (!oneParamSet) {
+            throw new IgniteCheckedException("Either bean name or its class must be specified in @SpringResource, " +
+                "but not both");
+        }
+
+        Object bean;
+
+        if (!StringUtils.isEmpty(beanName))
+            bean = springCtx.getBean(beanName);
+        else
+            bean = springCtx.getBean(beanCls);
+
+        return bean;
     }
 }

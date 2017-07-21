@@ -17,8 +17,8 @@
 
 package org.apache.ignite.logger;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Logger which does not output anything.

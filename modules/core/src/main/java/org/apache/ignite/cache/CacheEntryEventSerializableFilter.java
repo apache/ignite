@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import javax.cache.event.*;
-import java.io.*;
+import java.io.Serializable;
+import javax.cache.event.CacheEntryEventFilter;
 
 /**
  * This filter adds {@link Serializable} interface to {@link javax.cache.event.CacheEntryEventFilter} object.

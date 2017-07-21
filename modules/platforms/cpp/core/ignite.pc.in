@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: ignite
+Description: Apache Ignite C++.
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lignite

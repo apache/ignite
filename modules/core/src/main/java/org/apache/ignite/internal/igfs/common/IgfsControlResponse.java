@@ -17,17 +17,37 @@
 
 package org.apache.ignite.internal.igfs.common;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsCorruptedFileException;
+import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsInvalidHdfsVersionException;
+import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.IgfsPathSummary;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
+import org.apache.ignite.internal.processors.igfs.IgfsInputStreamDescriptor;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
+import org.apache.ignite.internal.processors.igfs.IgfsStatus;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.CONTROL_RESPONSE;
 
 /**
  * IGFS path command response.
@@ -95,6 +115,9 @@ public class IgfsControlResponse extends IgfsMessage {
 
     /** Response is a path summary. */
     public static final int RES_TYPE_IGFS_PATH_SUMMARY = 12;
+
+    /** Response is a path summary. */
+    public static final int RES_TYPE_MODE_RESOLVER = 13;
 
     /** Message header size. */
     public static final int RES_HEADER_SIZE = 9;
@@ -233,6 +256,15 @@ public class IgfsControlResponse extends IgfsMessage {
      */
     public void status(IgfsStatus res) {
         resType = RES_TYPE_STATUS;
+
+        this.res = res;
+    }
+
+    /**
+     * @param res Status response.
+     */
+    public void modeResolver(IgfsModeResolver res) {
+        resType = RES_TYPE_MODE_RESOLVER;
 
         this.res = res;
     }
@@ -406,6 +438,7 @@ public class IgfsControlResponse extends IgfsMessage {
             case RES_TYPE_IGFS_FILE:
             case RES_TYPE_IGFS_STREAM_DESCRIPTOR:
             case RES_TYPE_HANDSHAKE:
+            case RES_TYPE_MODE_RESOLVER:
             case RES_TYPE_STATUS: {
                 out.writeBoolean(res != null);
 
@@ -474,13 +507,8 @@ public class IgfsControlResponse extends IgfsMessage {
             case RES_TYPE_IGFS_PATH: {
                 boolean hasVal = in.readBoolean();
 
-                if (hasVal) {
-                    IgfsPath path = new IgfsPath();
-
-                    path.readExternal(in);
-
-                    res = path;
-                }
+                if (hasVal)
+                    res = IgfsUtils.readPath(in);
 
                 break;
             }
@@ -585,13 +613,8 @@ public class IgfsControlResponse extends IgfsMessage {
                 if (size >= 0) {
                     paths = new ArrayList<>(size);
 
-                    for (int i = 0; i < size; i++) {
-                        IgfsPath path = new IgfsPath();
-
-                        path.readExternal(in);
-
-                        paths.add(path);
-                    }
+                    for (int i = 0; i < size; i++)
+                        paths.add(IgfsUtils.readPath(in));
                 }
 
                 res = paths;
@@ -617,6 +640,20 @@ public class IgfsControlResponse extends IgfsMessage {
                 }
 
                 res = locations;
+
+                break;
+            }
+
+            case RES_TYPE_MODE_RESOLVER: {
+                boolean hasVal = in.readBoolean();
+
+                if (hasVal) {
+                    IgfsModeResolver msg = new IgfsModeResolver();
+
+                    msg.readExternal(in);
+
+                    res = msg;
+                }
 
                 break;
             }

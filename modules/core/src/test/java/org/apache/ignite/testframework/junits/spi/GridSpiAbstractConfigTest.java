@@ -17,11 +17,12 @@
 
 package org.apache.ignite.testframework.junits.spi;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for SPI configuration tests.
@@ -93,7 +94,7 @@ public abstract class GridSpiAbstractConfigTest<T extends IgniteSpi> extends Gri
                 if (!(spi instanceof DiscoverySpi))
                     spi.getNodeAttributes();
 
-                spi.spiStart(getTestGridName());
+                spi.spiStart(getTestIgniteInstanceName());
             }
             catch (IgniteSpiException e) {
                 info("SPI start thrown exception: " + e);

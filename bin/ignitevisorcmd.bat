@@ -20,6 +20,7 @@
 ::
 
 @echo off
+Setlocal EnableDelayedExpansion
 
 if "%OS%" == "Windows_NT"  setlocal
 

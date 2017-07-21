@@ -17,24 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.lang.ref.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 
 /**
  *
@@ -50,8 +57,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     private boolean cancel;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -308,7 +315,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -349,8 +356,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
-                    IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -358,9 +364,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(val));
 
-                    cacheAsync.putIfAbsent(0, val);
-
-                    cacheAsync.future().get();
+                    cache.putIfAbsentAsync(0, val).get();
                 }
                 finally {
                     G.stop(g.name(), cancel);
@@ -385,8 +389,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
-                    IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -397,9 +400,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                         refs.add(new WeakReference<Object>(val));
 
-                        cacheAsync.putIfAbsent(0, val);
-
-                        futs.add(cacheAsync.future());
+                        futs.add(cache.putIfAbsentAsync(0, val));
                     }
 
                     for (IgniteFuture<?> fut : futs)
@@ -428,7 +429,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -465,8 +466,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
-                    IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -477,9 +477,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                         refs.add(new WeakReference<Object>(val));
 
-                        cacheAsync.put(i, val);
-
-                        cacheAsync.future().get();
+                        cache.putAsync(i, val).get();
                     }
 
                     tx.commit();

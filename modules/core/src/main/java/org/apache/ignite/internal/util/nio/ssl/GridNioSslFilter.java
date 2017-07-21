@@ -17,15 +17,26 @@
 
 package org.apache.ignite.internal.util.nio.ssl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.nio.GridNioException;
+import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
+import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 
-import javax.net.ssl.*;
-import java.io.*;
-import java.nio.*;
-
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
 /**
  * Implementation of SSL filter using {@link SSLEngine}
@@ -52,6 +63,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** SSL context to use. */
     private SSLContext sslCtx;
 
+    /** Order. */
+    private ByteOrder order;
+
+    /** Allocate direct buffer or heap buffer. */
+    private boolean directBuf;
+
     /** Whether SSLEngine should use client mode. */
     private boolean clientMode;
 
@@ -62,13 +79,17 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * Creates SSL filter.
      *
      * @param sslCtx SSL context.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
      * @param log Logger to use.
      */
-    public GridNioSslFilter(SSLContext sslCtx, IgniteLogger log) {
+    public GridNioSslFilter(SSLContext sslCtx, boolean directBuf, ByteOrder order, IgniteLogger log) {
         super("SSL filter");
 
         this.log = log;
         this.sslCtx = sslCtx;
+        this.directBuf = directBuf;
+        this.order = order;
     }
 
     /**
@@ -134,28 +155,61 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         if (log.isDebugEnabled())
             log.debug("Remote client connected, creating SSL handler and performing initial handshake: " + ses);
 
-        SSLEngine engine = sslCtx.createSSLEngine();
+        SSLEngine engine;
 
-        engine.setUseClientMode(clientMode);
+        boolean handshake;
 
-        if (!clientMode) {
-            engine.setWantClientAuth(wantClientAuth);
+        GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
 
-            engine.setNeedClientAuth(needClientAuth);
+        if (sslMeta == null) {
+            engine = sslCtx.createSSLEngine();
+
+            engine.setUseClientMode(clientMode);
+
+            if (!clientMode) {
+                engine.setWantClientAuth(wantClientAuth);
+
+                engine.setNeedClientAuth(needClientAuth);
+            }
+
+            if (enabledCipherSuites != null)
+                engine.setEnabledCipherSuites(enabledCipherSuites);
+
+            if (enabledProtos != null)
+                engine.setEnabledProtocols(enabledProtos);
+
+            sslMeta = new GridSslMeta();
+
+            ses.addMeta(SSL_META.ordinal(), sslMeta);
+
+            handshake = true;
+        }
+        else {
+            engine = sslMeta.sslEngine();
+
+            assert engine != null;
+
+            handshake = false;
         }
 
-        if (enabledCipherSuites != null)
-            engine.setEnabledCipherSuites(enabledCipherSuites);
-
-        if (enabledProtos != null)
-            engine.setEnabledProtocols(enabledProtos);
-
         try {
-            GridNioSslHandler hnd = new GridNioSslHandler(this, ses, engine, log);
+            GridNioSslHandler hnd = new GridNioSslHandler(this,
+                ses,
+                engine,
+                directBuf,
+                order,
+                log,
+                handshake,
+                sslMeta.encodedBuffer());
 
-            ses.addMeta(SSL_HANDLER.ordinal(), hnd);
+            sslMeta.handler(hnd);
 
             hnd.handshake();
+
+            ByteBuffer alreadyDecoded = sslMeta.decodedBuffer();
+
+            if (alreadyDecoded != null)
+                proceedMessageReceived(ses, alreadyDecoded);
         }
         catch (SSLException e) {
             U.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
@@ -182,7 +236,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex)
+        throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
@@ -228,9 +283,14 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+    @Override public GridNioFuture<?> onSessionWrite(
+        GridNioSession ses,
+        Object msg,
+        boolean fut,
+        IgniteInClosure<IgniteException> ackC
+    ) throws IgniteCheckedException {
         if (directMode)
-            return proceedSessionWrite(ses, msg);
+            return proceedSessionWrite(ses, msg, fut, ackC);
 
         ByteBuffer input = checkMessage(ses, msg);
 
@@ -249,13 +309,13 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             if (hnd.isHandshakeFinished()) {
                 hnd.encrypt(input);
 
-                return hnd.writeNetBuffer();
+                return hnd.writeNetBuffer(ackC);
             }
             else {
                 if (log.isDebugEnabled())
                     log.debug("Write request received during handshake, scheduling deferred write: " + ses);
 
-                return hnd.deferredWrite(input);
+                return hnd.deferredWrite(input, ackC);
             }
         }
         catch (SSLException e) {
@@ -327,11 +387,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
      */
-    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd) throws IgniteCheckedException {
+    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd)
+        throws IgniteCheckedException {
         try {
             hnd.closeOutbound();
 
-            hnd.writeNetBuffer();
+            hnd.writeNetBuffer(null);
         }
         catch (SSLException e) {
             U.warn(log, "Failed to shutdown SSL session gracefully (will force close) [ex=" + e + ", ses=" + ses + ']');
@@ -357,7 +418,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @return SSL handler.
      */
     private GridNioSslHandler sslHandler(GridNioSession ses) {
-        GridNioSslHandler hnd = ses.meta(SSL_HANDLER.ordinal());
+        GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
+
+        assert sslMeta != null;
+
+        GridNioSslHandler hnd = sslMeta.handler();
 
         if (hnd == null)
             throw new IgniteException("Failed to process incoming message (received message before SSL handler " +
@@ -381,38 +446,5 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 "chain?) [ses=" + ses + ", msgClass=" + msg.getClass().getName() +  ']');
 
         return (ByteBuffer)msg;
-    }
-
-    /**
-     * Expands the given byte buffer to the requested capacity.
-     *
-     * @param original Original byte buffer.
-     * @param cap Requested capacity.
-     * @return Expanded byte buffer.
-     */
-    public static ByteBuffer expandBuffer(ByteBuffer original, int cap) {
-        ByteBuffer res = ByteBuffer.allocate(cap);
-
-        original.flip();
-
-        res.put(original);
-
-        return res;
-    }
-
-    /**
-     * Copies the given byte buffer.
-     *
-     * @param original Byte buffer to copy.
-     * @return Copy of the original byte buffer.
-     */
-    public static ByteBuffer copy(ByteBuffer original) {
-        ByteBuffer cp = ByteBuffer.allocate(original.remaining());
-
-        cp.put(original);
-
-        cp.flip();
-
-        return cp;
     }
 }

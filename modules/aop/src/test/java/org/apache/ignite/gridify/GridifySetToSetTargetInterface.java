@@ -17,9 +17,12 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.compute.gridify.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.ignite.compute.gridify.GridifySetToSet;
 
 /**
  * Test set-to-set target interface.
@@ -31,7 +34,7 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
     public Collection<Long> findPrimes(Collection<Long> input);
 
     /**
@@ -40,7 +43,7 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget", threshold = 2)
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget", threshold = 2)
     public Collection<Long> findPrimesWithoutSplitSize(Collection<Long> input);
 
     /**
@@ -49,7 +52,7 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget")
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget")
     public Collection<Long> findPrimesWithoutSplitSizeAndThreshold(Collection<Long> input);
 
     /**
@@ -58,7 +61,7 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget")
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget")
     public Collection<Long> findPrimesInListWithoutSplitSizeAndThreshold(List<Long> input);
 
     /**
@@ -68,7 +71,7 @@ public interface GridifySetToSetTargetInterface {
      * @return Prime numbers.
      */
     @SuppressWarnings({"CollectionDeclaredAsConcreteClass"})
-    @GridifySetToSet(gridName = "GridifySetToSetTarget")
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget")
     public Collection<Long> findPrimesInArrayListWithoutSplitSizeAndThreshold(ArrayList<Long> input);
 
     /**
@@ -77,7 +80,7 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
     public Long[] findPrimesInArray(Long[] input);
 
     /**
@@ -86,7 +89,7 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
     public long[] findPrimesInPrimitiveArray(long[] input);
 
     /**
@@ -95,7 +98,7 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
     public Iterator<Long> findPrimesWithIterator(Iterator<Long> input);
 
     /**
@@ -104,6 +107,6 @@ public interface GridifySetToSetTargetInterface {
      * @param input Input collection.
      * @return Prime numbers.
      */
-    @GridifySetToSet(gridName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
+    @GridifySetToSet(igniteInstanceName = "GridifySetToSetTarget", threshold = 2, splitSize = 2)
     public Enumeration<Long> findPrimesWithEnumeration(Enumeration<Long> input);
 }

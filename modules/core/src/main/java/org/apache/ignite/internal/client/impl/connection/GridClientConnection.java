@@ -17,14 +17,25 @@
 
 package org.apache.ignite.internal.client.impl.connection;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
-
-import javax.net.ssl.*;
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.internal.client.GridClientCacheFlag;
+import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientDataMetrics;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFuture;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.impl.GridClientDataMetricsAdapter;
+import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
+import org.apache.ignite.internal.client.impl.GridClientFutureCallback;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Facade for all possible network communications between client and server. Introduced to hide
@@ -302,13 +313,30 @@ public abstract class GridClientConnection {
      * @param taskName Task name.
      * @param arg Task argument.
      * @param destNodeId Destination node ID.
-     * @param keepPortables Keep portables flag.
+     * @param keepBinaries Keep binary flag.
      * @return Task execution result.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
     public abstract <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId,
-        boolean keepPortables) throws GridClientConnectionResetException, GridClientClosedException;
+        boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
+
+    /**
+     * Change grid global state.
+     *
+     * @param active Active.
+     * @param destNodeId Destination node id.
+     */
+    public abstract GridClientFuture<?> changeState(boolean active, UUID destNodeId)
+            throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Get current grid state.
+     *
+     * @param destNodeId Destination node id.
+     */
+    public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
      * Gets node by node ID.

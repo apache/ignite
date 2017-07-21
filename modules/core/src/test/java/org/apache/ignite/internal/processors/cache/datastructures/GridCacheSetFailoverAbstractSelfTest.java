@@ -17,20 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.datastructures.SetItemKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Set failover tests.
@@ -82,8 +89,6 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testNodeRestart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-170");
-
         IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 
         final int ITEMS = 10_000;
@@ -170,8 +175,9 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
             Set<IgniteUuid> setIds = new HashSet<>();
 
             for (int i = 0; i < gridCount(); i++) {
-                Iterator<GridCacheEntryEx> entries =
-                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                GridCacheAdapter cache = grid(i).context().cache().internalCache(DEFAULT_CACHE_NAME);
+
+                Iterator<GridCacheMapEntry> entries = cache.map().entries(cache.context().cacheId()).iterator();
 
                 while (entries.hasNext()) {
                     GridCacheEntryEx entry = entries.next();
@@ -179,8 +185,8 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                     if (entry.hasValue()) {
                         cnt++;
 
-                        if (entry.key() instanceof GridCacheSetItemKey) {
-                            GridCacheSetItemKey setItem = (GridCacheSetItemKey)entry.key();
+                        if (entry.key() instanceof SetItemKey) {
+                            SetItemKey setItem = (SetItemKey)entry.key();
 
                             if (setIds.add(setItem.setId()))
                                 log.info("Unexpected set item [setId=" + setItem.setId() +

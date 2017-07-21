@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.tools.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.tools.GridToolsSelfTest;
 
 /**
  * Tools self-test suite.

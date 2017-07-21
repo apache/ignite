@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.eviction.sorted;
 
-import org.apache.ignite.mxbean.*;
+import org.apache.ignite.mxbean.MXBeanDescription;
 
 /**
  * MBean for sorted eviction policy.

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.managers.deployment.protocol.gg;
 
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Connection implementation for custom protocol.

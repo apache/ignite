@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.*;
-
-import javax.cache.processor.*;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
 
 /**
  * Local atomic cache metrics test with tck specific.
@@ -29,7 +30,7 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
      * @throws Exception If failed.
      */
     public void testEntryProcessorRemove() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 20);
 
@@ -44,66 +45,66 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
             }
         });
 
-        assertEquals(1L, cache.metrics().getCachePuts());
+        assertEquals(1L, cache.localMetrics().getCachePuts());
 
         assertEquals(20, result);
-        assertEquals(1L, cache.metrics().getCacheHits());
-        assertEquals(100.0f, cache.metrics().getCacheHitPercentage());
-        assertEquals(0L, cache.metrics().getCacheMisses());
-        assertEquals(0f, cache.metrics().getCacheMissPercentage());
-        assertEquals(1L, cache.metrics().getCachePuts());
-        assertEquals(1L, cache.metrics().getCacheRemovals());
-        assertEquals(0L, cache.metrics().getCacheEvictions());
-        assert cache.metrics().getAveragePutTime() >= 0;
-        assert cache.metrics().getAverageGetTime() >= 0;
-        assert cache.metrics().getAverageRemoveTime() >= 0;
+        assertEquals(1L, cache.localMetrics().getCacheHits());
+        assertEquals(100.0f, cache.localMetrics().getCacheHitPercentage());
+        assertEquals(0L, cache.localMetrics().getCacheMisses());
+        assertEquals(0f, cache.localMetrics().getCacheMissPercentage());
+        assertEquals(1L, cache.localMetrics().getCachePuts());
+        assertEquals(1L, cache.localMetrics().getCacheRemovals());
+        assertEquals(0L, cache.localMetrics().getCacheEvictions());
+        assert cache.localMetrics().getAveragePutTime() >= 0;
+        assert cache.localMetrics().getAverageGetTime() >= 0;
+        assert cache.localMetrics().getAverageRemoveTime() >= 0;
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheStatistics() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 10);
 
-        assertEquals(0, cache.metrics().getCacheRemovals());
-        assertEquals(1, cache.metrics().getCachePuts());
+        assertEquals(0, cache.localMetrics().getCacheRemovals());
+        assertEquals(1, cache.localMetrics().getCachePuts());
 
         cache.remove(1);
 
-        assertEquals(0, cache.metrics().getCacheHits());
-        assertEquals(1, cache.metrics().getCacheRemovals());
-        assertEquals(1, cache.metrics().getCachePuts());
+        assertEquals(0, cache.localMetrics().getCacheHits());
+        assertEquals(1, cache.localMetrics().getCacheRemovals());
+        assertEquals(1, cache.localMetrics().getCachePuts());
 
         cache.remove(1);
 
-        assertEquals(0, cache.metrics().getCacheHits());
-        assertEquals(0, cache.metrics().getCacheMisses());
-        assertEquals(1, cache.metrics().getCacheRemovals());
-        assertEquals(1, cache.metrics().getCachePuts());
+        assertEquals(0, cache.localMetrics().getCacheHits());
+        assertEquals(0, cache.localMetrics().getCacheMisses());
+        assertEquals(1, cache.localMetrics().getCacheRemovals());
+        assertEquals(1, cache.localMetrics().getCachePuts());
 
         cache.put(1, 10);
         assertTrue(cache.remove(1, 10));
 
-        assertEquals(1, cache.metrics().getCacheHits());
-        assertEquals(0, cache.metrics().getCacheMisses());
-        assertEquals(2, cache.metrics().getCacheRemovals());
-        assertEquals(2, cache.metrics().getCachePuts());
+        assertEquals(1, cache.localMetrics().getCacheHits());
+        assertEquals(0, cache.localMetrics().getCacheMisses());
+        assertEquals(2, cache.localMetrics().getCacheRemovals());
+        assertEquals(2, cache.localMetrics().getCachePuts());
 
         assertFalse(cache.remove(1, 10));
 
-        assertEquals(1, cache.metrics().getCacheHits());
-        assertEquals(1, cache.metrics().getCacheMisses());
-        assertEquals(2, cache.metrics().getCacheRemovals());
-        assertEquals(2, cache.metrics().getCachePuts());
+        assertEquals(1, cache.localMetrics().getCacheHits());
+        assertEquals(1, cache.localMetrics().getCacheMisses());
+        assertEquals(2, cache.localMetrics().getCacheRemovals());
+        assertEquals(2, cache.localMetrics().getCachePuts());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testConditionReplace() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         long hitCount = 0;
         long missCount = 0;
@@ -114,18 +115,18 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
         ++missCount;
         assertFalse(result);
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         assertNull(cache.localPeek(1));
 
         cache.put(1, 10);
         ++putCount;
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         assertNotNull(cache.localPeek(1));
 
@@ -135,25 +136,25 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
         ++hitCount;
         ++putCount;
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         result = cache.replace(1, 40, 50);
 
         assertFalse(result);
         ++hitCount;
 
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
-        assertEquals(missCount, cache.metrics().getCacheMisses());
+        assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        assertEquals(putCount, cache.localMetrics().getCachePuts());
+        assertEquals(missCount, cache.localMetrics().getCacheMisses());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutIfAbsent() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         long hitCount = 0;
         long missCount = 0;
@@ -164,15 +165,15 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
         ++putCount;
         assertTrue(result);
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.localMetrics().getCacheMisses());
+        assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         result = cache.putIfAbsent(1, 1);
 
         assertFalse(result);
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
-        assertEquals(missCount, cache.metrics().getCacheMisses());
+        assertEquals(hitCount, cache.localMetrics().getCacheHits());
+        assertEquals(putCount, cache.localMetrics().getCachePuts());
+        assertEquals(missCount, cache.localMetrics().getCacheMisses());
     }
 }

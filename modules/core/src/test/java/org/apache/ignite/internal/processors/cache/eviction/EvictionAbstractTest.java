@@ -17,35 +17,46 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.EvictionFilter;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.util.typedef.C2;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest.EvictionPolicyProxy.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
+import static org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest.EvictionPolicyProxy.proxy;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Base class for eviction tests.
@@ -63,12 +74,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
     /** Near enabled flag. */
     protected boolean nearEnabled;
-
-    /** Evict backup sync. */
-    protected boolean evictSync;
-
-    /** Evict near sync. */
-    protected boolean evictNearSync = true;
 
     /** Policy max. */
     protected int plcMax = 10;
@@ -92,17 +97,15 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     protected EvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
         cc.setEvictionPolicy(createPolicy(plcMax));
-        cc.setEvictSynchronized(evictSync);
-        cc.setSwapEnabled(false);
+        cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
-        cc.setStartSize(plcMax);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (nearEnabled) {
@@ -477,7 +480,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         try {
             Ignite ignite = startGrid();
 
-            IgniteCache<Object, Object> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             int cnt = 500;
 
@@ -592,7 +595,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /** @return Policy. */
     @SuppressWarnings({"unchecked"})
     protected T policy() {
-        return (T)grid().cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
+        return (T)grid().cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -601,7 +604,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      */
     @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
-        return (T)grid(i).cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
+        return (T)grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -610,7 +613,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        CacheConfiguration cfg = grid(i).cache(null).getConfiguration(CacheConfiguration.class);
+        CacheConfiguration cfg = grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -695,7 +698,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         nearEnabled = true;
         nearMax = 3;
         plcMax = 10;
-        evictNearSync = true;
         syncCommit = true;
 
         gridCnt = 2;
@@ -708,19 +710,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         mode = PARTITIONED;
         nearEnabled = false;
         plcMax = 100;
-        evictSync = false;
-
-        gridCnt = 2;
-
-        checkPartitionedMultiThreaded();
-    }
-
-    /** @throws Exception If failed. */
-    public void testPartitionedNearDisabledBackupSyncMultiThreaded() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = false;
-        plcMax = 100;
-        evictSync = true;
 
         gridCnt = 2;
 
@@ -732,19 +721,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         mode = PARTITIONED;
         nearEnabled = true;
         plcMax = 10;
-        evictSync = false;
-
-        gridCnt = 2;
-
-        checkPartitionedMultiThreaded();
-    }
-
-    /** @throws Exception If failed. */
-    public void testPartitionedNearEnabledBackupSyncMultiThreaded() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = true;
-        plcMax = 10;
-        evictSync = true;
 
         gridCnt = 2;
 
@@ -768,7 +744,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(DEFAULT_CACHE_NAME);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -804,7 +780,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
                 if (plcMax > 0) {
                     for (int i = 0; i < gridCnt; i++) {
-                        int actual = colocated(i).size();
+                        int actual = colocated(i).map().internalSize();
 
                         assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
                             actual <= endSize + (plcMaxMemSize > 0 ? 1 : plcBatchSize));
@@ -837,7 +813,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
                         IgniteEx grid = grid(rand.nextInt(2));
 
-                        IgniteCache<Integer, String> cache = grid.cache(null);
+                        IgniteCache<Integer, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
@@ -997,15 +973,16 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
         /**
          * @param plc Policy.
+         * @return Policy proxy.
          */
         public static EvictionPolicyProxy proxy(EvictionPolicy plc) {
             return new EvictionPolicyProxy(plc);
         }
 
         /**
-         * Get current size.
+         * @return Get current size.
          */
-        public int getCurrentSize() {
+        int getCurrentSize() {
             try {
                 return (Integer)plc.getClass().getDeclaredMethod("getCurrentSize").invoke(plc);
             }
@@ -1015,11 +992,11 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /**
-         * Current memory size.
+         * @return Current memory size.
          */
-        public long getCurrentMemorySize() {
+        long getCurrentMemorySize() {
             try {
-                return (Long)plc.getClass().getDeclaredMethod("getCurrentMemorySize").invoke(plc);
+                return (Long)plc.getClass().getMethod("getCurrentMemorySize").invoke(plc);
             }
             catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -1027,7 +1004,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /**
-         * Current queue.
+         * @return Current queue.
          */
         public Collection<EvictableEntry> queue() {
             try {
@@ -1045,7 +1022,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             try {
                 plc.getClass()
-                    .getDeclaredMethod("onEntryAccessed", boolean.class, EvictableEntry.class)
+                    .getMethod("onEntryAccessed", boolean.class, EvictableEntry.class)
                     .invoke(plc, rmv, entry);
             }
             catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {

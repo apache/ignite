@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 
 /**
  * Node validation.
@@ -57,7 +58,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                     ", rmtNodeAddrs=" + U.addressesAsString(node) +
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
 
-                LT.warn(log, null, errMsg);
+                LT.warn(log, errMsg);
 
                 // Always output in debug.
                 if (log.isDebugEnabled())

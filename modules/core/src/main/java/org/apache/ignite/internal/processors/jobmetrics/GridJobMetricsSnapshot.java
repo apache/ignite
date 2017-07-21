@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Job metrics snapshot.

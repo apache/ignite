@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Lock request message.
@@ -50,9 +55,10 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedUnlockRequest(int cacheId, int keyCnt) {
-        super(keyCnt);
+    public GridDistributedUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
+        super(keyCnt, addDepInfo);
 
         this.cacheId = cacheId;
     }
@@ -76,6 +82,11 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         keys.add(key);
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -89,6 +100,11 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txLockMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -138,11 +154,11 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDistributedUnlockRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 27;
     }
 

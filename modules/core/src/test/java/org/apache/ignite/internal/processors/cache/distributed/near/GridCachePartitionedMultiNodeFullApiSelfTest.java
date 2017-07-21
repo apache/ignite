@@ -17,23 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.F;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePeekMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CachePeekMode.BACKUP;
+import static org.apache.ignite.cache.CachePeekMode.NEAR;
+import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -45,8 +50,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cc = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cc = super.cacheConfiguration(igniteInstanceName);
 
         cc.setRebalanceMode(SYNC);
 
@@ -74,14 +79,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteCache<Object, Object> c0 = grid(0).cache(null);
-        IgniteCache<Object, Object> c1 = grid(1).cache(null);
+        IgniteCache<Object, Object> c0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> c1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         c0.putAll(putMap);
 
-        atomicClockModeDelay(c0);
-
-        c1.removeAll(putMap.keySet());
+        c1.removeAll(new HashSet<>(putMap.keySet()));
 
         for (int i = 0; i < size; i++) {
             assertNull(c0.get(i));
@@ -103,8 +106,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        IgniteCache<Object, Object> prj0 = grid(0).cache(null);
-        IgniteCache<Object, Object> prj1 = grid(1).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> prj1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         prj0.putAll(putMap);
 
@@ -135,91 +138,31 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
 
-        int size = 10;
+        final int size = 10;
 
-        IgniteCache<Object, Object> chache0 = grid(0).cache(null);
+        IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
 
-            chache0.put(i, i);
+            cache0.put(i, i);
 
             info("Finished putting value [i=" + i + ']');
         }
 
-        for (int i = 0; i < gridCount(); i++) {
-            assertEquals(0, context(i).tm().idMapSize());
-
-            IgniteCache<Object, Object> cache = grid(i).cache(null);
-            ClusterNode node = grid(i).localNode();
-
-            for (int k = 0; k < size; k++) {
-                if (affinity(cache).isPrimaryOrBackup(node, k))
-                    assertEquals("Check failed for node: " + node.id(), k,
-                        cache.localPeek(k, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
-            }
-        }
+        for (int i = 0; i < gridCount(); i++)
+            executeOnLocalOrRemoteJvm(i, new CheckAffinityTask(size));
 
         for (int i = 0; i < size; i++) {
             info("Putting value 2 [i=" + i + ']');
 
-            assertEquals(i, chache0.getAndPutIfAbsent(i, i * i));
+            assertEquals(i, cache0.getAndPutIfAbsent(i, i * i));
 
             info("Finished putting value 2 [i=" + i + ']');
         }
 
         for (int i = 0; i < size; i++)
-            assertEquals(i, chache0.get(i));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testUnswapShort() throws Exception {
-        if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
-            return;
-
-        final AtomicInteger swapEvts = new AtomicInteger(0);
-        final AtomicInteger unswapEvts = new AtomicInteger(0);
-
-        for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    info("Received event: " + evt);
-
-                    switch (evt.type()) {
-                        case EVT_CACHE_OBJECT_SWAPPED:
-                            swapEvts.incrementAndGet();
-
-                            break;
-                        case EVT_CACHE_OBJECT_UNSWAPPED:
-                            unswapEvts.incrementAndGet();
-
-                            break;
-                    }
-
-                    return true;
-                }
-            }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
-        }
-
-        jcache().put("key", 1);
-
-        for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
-                jcache(i).localEvict(Collections.singleton("key"));
-
-                assert jcache(i).localPeek("key", ONHEAP) == null;
-
-                assert jcache(i).get("key") == 1;
-
-                assert swapEvts.get() == 1 : "Swap events: " + swapEvts.get();
-
-                assert unswapEvts.get() == 1 : "Unswap events: " + unswapEvts.get();
-
-                break;
-            }
-        }
+            assertEquals(i, cache0.get(i));
     }
 
     /**
@@ -236,11 +179,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
             boolean nearEnabled = nearEnabled(c);
 
             if (nearEnabled)
-                assertTrue(((IgniteKernal)ignite(i)).internalCache().context().isNear());
+                executeOnLocalOrRemoteJvm(i, new IsNearTask());
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            Affinity<Object> aff = ignite(i).affinity(null);
+            Affinity<Object> aff = ignite(i).affinity(DEFAULT_CACHE_NAME);
 
             info("Affinity nodes [nodes=" + F.nodeIds(aff.mapKeyToPrimaryAndBackups("key")) +
                 ", locNode=" + ignite(i).cluster().localNode().id() + ']');
@@ -274,12 +217,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             IgniteCache<String, Integer> c = jcache(i);
 
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isBackup(grid(i).localNode(), "key")) {
                 assert c.localPeek("key", NEAR) == null;
 
                 assert c.localPeek("key", PRIMARY, BACKUP) == 1;
             }
-            else if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
+            else if (!grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), "key")) {
                 // Initialize near reader.
                 assertEquals((Integer)1, jcache(i).get("key"));
 
@@ -306,7 +249,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
 
-            if (!ignite.configuration().isClientMode()) {
+            if (!Boolean.TRUE.equals(ignite.configuration().isClientMode())) {
                 if (ignite0 == null)
                     ignite0 = ignite;
                 else if (ignite1 == null)
@@ -326,15 +269,15 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Generating keys for test [nodes=" + ignite0.name() + ", " + ignite1.name() + ", " + ignite2.name() + ']');
 
-        IgniteCache<String, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<String, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         int val = 0;
 
         for (int i = 0; i < 10_000 && keys.size() < 5; i++) {
             String key = String.valueOf(i);
 
-            if (ignite(0).affinity(null).isPrimary(ignite0.localNode(), key) &&
-                ignite(0).affinity(null).isBackup(ignite1.localNode(), key)) {
+            if (ignite(0).affinity(DEFAULT_CACHE_NAME).isPrimary(ignite0.localNode(), key) &&
+                ignite(0).affinity(DEFAULT_CACHE_NAME).isBackup(ignite1.localNode(), key)) {
                 keys.add(key);
 
                 cache0.put(key, val++);
@@ -345,7 +288,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Finished generating keys for test.");
 
-        IgniteCache<String, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<String, Integer> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         assertEquals(Integer.valueOf(0), cache2.get(keys.get(0)));
         assertEquals(Integer.valueOf(1), cache2.get(keys.get(1)));
@@ -353,7 +296,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(0, cache0.localSize(NEAR));
         assertEquals(5, cache0.localSize(CachePeekMode.ALL) - cache0.localSize(NEAR));
 
-        IgniteCache<String, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<String, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         assertEquals(0, cache1.localSize(NEAR));
         assertEquals(5, cache1.localSize(CachePeekMode.ALL) - cache1.localSize(NEAR));
@@ -361,7 +304,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         boolean nearEnabled = cache2.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null;
 
         assertEquals(nearEnabled ? 2 : 0, cache2.localSize(NEAR));
-        assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
+
+        if (cacheMode() != REPLICATED)
+            assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
     }
 
     /**
@@ -396,9 +341,10 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
             }
         };
 
-        info("All affinity nodes: " + affinityNodes());
+        if (!isMultiJvm())
+            info("All affinity nodes: " + affinityNodes());
 
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 
@@ -447,6 +393,45 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (cacheMode() == PARTITIONED) {
             assertFalse(affinity(cache).isBackup(other, key));
             assertFalse(affinity(cache).isPrimaryOrBackup(other, key));
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CheckAffinityTask extends TestIgniteIdxRunnable {
+        /** Size. */
+        private final int size;
+
+        /**
+         * @param size Size.
+         */
+        public CheckAffinityTask(int size) {
+            this.size = size;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run(int idx) throws Exception {
+            assertEquals(0, ((IgniteKernal)ignite).<String, Integer>internalCache(DEFAULT_CACHE_NAME).context().tm().idMapSize());
+
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+            ClusterNode node = ((IgniteKernal)ignite).localNode();
+
+            for (int k = 0; k < size; k++) {
+                if (affinity(cache).isPrimaryOrBackup(node, k))
+                    assertEquals("Check failed for node: " + node.id(), k,
+                        cache.localPeek(k, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IsNearTask extends TestIgniteIdxRunnable {
+        /** {@inheritDoc} */
+        @Override public void run(int idx) throws Exception {
+            assertTrue(((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context().isNear());
         }
     }
 }

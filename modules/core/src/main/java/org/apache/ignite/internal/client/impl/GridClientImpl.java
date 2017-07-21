@@ -17,24 +17,53 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.client.impl.connection.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientData;
+import org.apache.ignite.internal.client.GridClientDataAffinity;
+import org.apache.ignite.internal.client.GridClientDataConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientPartitionAffinity;
+import org.apache.ignite.internal.client.GridClientPredicate;
+import org.apache.ignite.internal.client.GridClientTopologyListener;
+import org.apache.ignite.internal.client.GridServerUnreachableException;
+import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
+import org.apache.ignite.internal.client.balancer.GridClientRandomBalancer;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerOsImpl;
+import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import javax.net.ssl.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.logging.*;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
 /**
  * Client implementation.
@@ -76,6 +105,9 @@ public class GridClientImpl implements GridClient {
 
     /** Main compute projection. */
     private final GridClientComputeImpl compute;
+
+    /** Cluster state projection. */
+    private final GridClientClusterStateImpl clusterState;
 
     /** Data projections. */
     private ConcurrentMap<Object, GridClientDataImpl> dataMap = new ConcurrentHashMap<>();
@@ -184,6 +216,8 @@ public class GridClientImpl implements GridClient {
 
             compute = new GridClientComputeImpl(this, null, null, cfg.getBalancer());
 
+            clusterState = new GridClientClusterStateImpl(this, null, null, cfg.getBalancer());
+
             if (log.isLoggable(Level.INFO))
                 log.info("Client started [id=" + id + ", protocol=" + cfg.getProtocol() + ']');
 
@@ -277,6 +311,11 @@ public class GridClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public GridClientCompute compute() {
         return compute;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientClusterState state() {
+        return clusterState;
     }
 
     /** {@inheritDoc} */

@@ -17,21 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Near cache lock response.
@@ -46,7 +47,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     private Collection<GridCacheVersion> pending;
 
     /** */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** DHT versions. */
     @GridToStringInclude
@@ -78,20 +79,22 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param cnt Count.
      * @param err Error.
      * @param clientRemapVer {@code True} if client node should remap lock request.
+     * @param addDepInfo Deployment info.
      */
     public GridNearLockResponse(
         int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         boolean filterRes,
         int cnt,
         Throwable err,
-        AffinityTopologyVersion clientRemapVer
+        AffinityTopologyVersion clientRemapVer,
+        boolean addDepInfo
     ) {
-        super(cacheId, lockVer, futId, cnt, err);
+        super(cacheId, lockVer, futId, cnt, err, addDepInfo);
 
-        assert miniId != null;
+        assert miniId != 0;
 
         this.miniId = miniId;
         this.clientRemapVer = clientRemapVer;
@@ -131,7 +134,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -230,7 +233,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -290,7 +293,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 14:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -307,11 +310,11 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridNearLockResponse.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 52;
     }
 

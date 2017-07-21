@@ -17,11 +17,11 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Supported security permissions within grid. Permissions
- * are specified on per-cache or per-task level.
+ * are specified on per-cache, per-task or per-service level.
  */
 public enum SecurityPermission {
     /** Cache {@code read} permission. */
@@ -45,14 +45,26 @@ public enum SecurityPermission {
     /** Events {@code disable} permission. */
     EVENTS_DISABLE,
 
-    /** Common visor tasks permission. */
+    /** Common visor view tasks permission. */
     ADMIN_VIEW,
 
     /** Visor cache read (query) permission. */
     ADMIN_QUERY,
 
     /** Visor cache load permission. */
-    ADMIN_CACHE;
+    ADMIN_CACHE,
+
+    /** Visor admin operations permissions. */
+    ADMIN_OPS,
+
+    /** Service deploy permission. */
+    SERVICE_DEPLOY,
+
+    /** Service cancel permission. */
+    SERVICE_CANCEL,
+
+    /** Service invoke permission. */
+    SERVICE_INVOKE;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

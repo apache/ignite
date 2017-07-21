@@ -17,22 +17,36 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.handlers.*;
-import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.lang.reflect.*;
-import java.util.*;
+import javax.cache.processor.EntryProcessorException;
 
 /**
  * Tests command handler directly.
@@ -51,25 +65,36 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+        disco.setJoinTimeout(5000);
 
         // Cache config.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(CacheMode.LOCAL);
 
+        cacheCfg.setAtomicityMode(atomicityMode());
+
         // Grid config.
         IgniteConfiguration cfg = super.getConfiguration();
 
-        cfg.setLocalHost("localhost");
+        cfg.setLocalHost("127.0.0.1");
 
         ConnectorConfiguration clnCfg = new ConnectorConfiguration();
-        clnCfg.setHost("localhost");
+        clnCfg.setHost("127.0.0.1");
 
         cfg.setConnectorConfiguration(clnCfg);
         cfg.setDiscoverySpi(disco);
         cfg.setCacheConfiguration(cacheCfg); // Add 'null' cache configuration.
 
         return cfg;
+    }
+
+    /**
+     *
+     * @return CacheAtomicityMode for the cache.
+     */
+    protected CacheAtomicityMode atomicityMode(){
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**
@@ -81,6 +106,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         GridRestCommandHandler hnd = new TestableCacheCommandHandler(grid().context(), "getAsync");
 
         GridRestCacheRequest req = new GridRestCacheRequest();
+
+        req.cacheName(DEFAULT_CACHE_NAME);
 
         req.command(GridRestCommand.CACHE_GET);
 
@@ -137,6 +164,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             info("Got expected exception: " + e);
 
+            e.printStackTrace();
+
             assertTrue(e.getMessage().startsWith("Incompatible types"));
         }
     }
@@ -151,12 +180,14 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @return Resulting value in cache.
      * @throws IgniteCheckedException In case of any grid exception.
      */
-    private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException {
+    private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException, EntryProcessorException {
         GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
 
         String key = UUID.randomUUID().toString();
 
         GridRestCacheRequest req = new GridRestCacheRequest();
+
+        req.cacheName(DEFAULT_CACHE_NAME);
 
         req.command(append ? GridRestCommand.CACHE_APPEND : GridRestCommand.CACHE_PREPEND);
 
@@ -172,7 +203,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
             jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
-            assertTrue("Expects succeed.", (Boolean)hnd.handleAsync(req).get().getResponse());
+            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
         }
         finally {
             res = (T)jcache().getAndRemove(key);

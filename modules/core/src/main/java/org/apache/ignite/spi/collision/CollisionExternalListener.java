@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.collision;
 
-import java.util.*;
+import java.util.EventListener;
 
 /**
  * Listener to be set on {@link CollisionSpi} for notification of external

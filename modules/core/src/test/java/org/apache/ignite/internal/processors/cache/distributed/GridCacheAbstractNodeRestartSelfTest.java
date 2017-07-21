@@ -17,25 +17,45 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test node restart.
@@ -70,6 +90,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static final int DFLT_RETRIES = 10;
 
     /** */
+    private static final int LOG_FREQ = 1000;
+
+    /** */
     private static final Random RAND = new Random();
 
     /** */
@@ -77,6 +100,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
     /** Preload mode. */
     protected CacheRebalanceMode rebalancMode = ASYNC;
+
+    /** */
+    protected boolean evict = false;
 
     /** */
     protected int rebalancBatchSize = DFLT_BATCH_SIZE;
@@ -97,8 +123,10 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+
+        ((TcpCommunicationSpi)c.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         // Discovery.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -111,15 +139,43 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         c.setDiscoverySpi(disco);
 
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        if (evict) {
+            LruEvictionPolicy plc = new LruEvictionPolicy();
+
+            plc.setMaxSize(100);
+
+            ccfg.setEvictionPolicy(plc);
+            ccfg.setOnheapCacheEnabled(true);
+        }
+
+        c.setCacheConfiguration(ccfg);
+
         return c;
     }
 
+    /**
+     * @return Cache configuration.
+     */
+    protected abstract CacheConfiguration cacheConfiguration();
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
+
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
@@ -128,6 +184,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
         rebalancMode = ASYNC;
+        evict = false;
         rebalancBatchSize = DFLT_BATCH_SIZE;
         nodeCnt = DFLT_NODE_CNT;
         keyCnt = DFLT_KEY_CNT;
@@ -150,7 +207,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    private void startGrids() throws  Exception {
+    private void startGrids() throws Exception {
         for (int i = 0; i < nodeCnt; i++) {
             startGrid(i);
 
@@ -244,6 +301,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 30000;
 
@@ -259,10 +317,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 30000;
 
-        checkRestartWithTx(duration, 1, 1);
+        checkRestartWithTx(duration, 1, 1, 3);
     }
 
     /**
@@ -274,6 +333,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 30000;
 
@@ -289,10 +349,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 30000;
 
-        checkRestartWithTx(duration, 1, 1);
+        checkRestartWithTx(duration, 1, 1, 3);
     }
 
     /**
@@ -304,6 +365,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 60000;
 
@@ -319,10 +381,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 60000;
 
-        checkRestartWithTx(duration, 2, 2);
+        checkRestartWithTx(duration, 2, 2, 3);
     }
 
     /**
@@ -334,6 +397,23 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
+
+        long duration = 60000;
+
+        checkRestartWithPut(duration, 2, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithPutFourNodesOneBackupsOffheapEvict() throws Throwable {
+        backups = 1;
+        nodeCnt = 4;
+        keyCnt = 10;
+        partitions = 29;
+        rebalancMode = ASYNC;
+        evict = true;
 
         long duration = 60000;
 
@@ -349,10 +429,27 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 60000;
 
-        checkRestartWithTx(duration, 2, 2);
+        checkRestartWithTx(duration, 2, 2, 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithTxFourNodesOneBackupsOffheapEvict() throws Throwable {
+        backups = 1;
+        nodeCnt = 4;
+        keyCnt = 100_000;
+        partitions = 29;
+        rebalancMode = ASYNC;
+        evict = true;
+
+        long duration = 30_000;
+
+        checkRestartWithTx(duration, 2, 2, 100);
     }
 
     /**
@@ -364,6 +461,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
@@ -379,10 +477,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
-        checkRestartWithTx(duration, 3, 3);
+        checkRestartWithTx(duration, 3, 3, 3);
     }
 
     /**
@@ -394,6 +493,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
@@ -409,10 +509,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
-        checkRestartWithTx(duration, 4, 4);
+        checkRestartWithTx(duration, 4, 4, 3);
     }
 
     /**
@@ -424,6 +525,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
@@ -439,10 +541,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
-        checkRestartWithTx(duration, 5, 5);
+        checkRestartWithTx(duration, 5, 5, 3);
     }
 
     /**
@@ -454,6 +557,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
@@ -469,6 +573,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = 10;
         partitions = 29;
         rebalancMode = ASYNC;
+        evict = false;
 
         long duration = 90000;
 
@@ -481,7 +586,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param restartThreads Restart threads count.
      * @throws Exception If failed.
      */
-    public void checkRestartWithPut(long duration, int putThreads, int restartThreads) throws Throwable {
+    private void checkRestartWithPut(long duration, int putThreads, int restartThreads) throws Throwable {
         final long endTime = System.currentTimeMillis() + duration;
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
@@ -491,8 +596,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         Collection<Thread> threads = new LinkedList<>();
 
         try {
-            final int logFreq = 20;
-
             final AtomicInteger putCntr = new AtomicInteger();
 
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
@@ -505,7 +608,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting put thread...");
+                            info("Starting put thread: " + gridIdx);
+
+                            Thread.currentThread().setName("put-worker-" + grid(gridIdx).name());
 
                             IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
 
@@ -519,9 +624,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     // It is ok if primary node leaves grid.
                                 }
 
+                                cache.get(key);
+
                                 int c = putCntr.incrementAndGet();
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Put iteration [cnt=" + c + ", key=" + key + ']');
                             }
                         }
@@ -546,7 +653,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting restart thread...");
+                            info("Starting restart thread: " + gridIdx);
 
                             int cnt = 0;
 
@@ -561,7 +668,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = ++cnt;
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Restart iteration: " + c);
                             }
                         }
@@ -593,9 +700,13 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param duration Test duration.
      * @param putThreads Put threads count.
      * @param restartThreads Restart threads count.
+     * @param txKeys Keys per transaction.
      * @throws Exception If failed.
      */
-    public void checkRestartWithTx(long duration, int putThreads, int restartThreads) throws Throwable {
+    private void checkRestartWithTx(long duration,
+        int putThreads,
+        int restartThreads,
+        final int txKeys) throws Throwable {
         if (atomicityMode() == ATOMIC)
             return;
 
@@ -608,13 +719,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         Collection<Thread> threads = new LinkedList<>();
 
         try {
-            final int logFreq = 20;
-
             final AtomicInteger txCntr = new AtomicInteger();
 
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
-
-            final int txKeys = 3;
 
             for (int i = 0; i < putThreads; i++) {
                 final int gridIdx = i;
@@ -624,9 +731,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting put thread...");
+                            info("Starting put thread: " + gridIdx);
 
                             Ignite ignite = grid(gridIdx);
+
+                            Thread.currentThread().setName("put-worker-" + ignite.name());
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
@@ -651,7 +760,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     try (Transaction tx = txs.txStart(txConcurrency(), REPEATABLE_READ)) {
                                         c = txCntr.incrementAndGet();
 
-                                        if (c % logFreq == 0) {
+                                        if (c % LOG_FREQ == 0) {
                                             info(">>> Tx iteration started [cnt=" + c +
                                                 ", keys=" + keys +
                                                 ", locNodeId=" + locNodeId + ']');
@@ -675,8 +784,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     // It is ok if primary node leaves grid.
                                 }
 
-                                if (c % logFreq == 0) {
+                                if (c % LOG_FREQ == 0) {
                                     info(">>> Tx iteration finished [cnt=" + c +
+                                        ", cacheSize=" + cache.localSize() +
                                         ", keys=" + keys +
                                         ", locNodeId=" + locNodeId + ']');
                                 }
@@ -705,17 +815,17 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting restart thread...");
+                            info("Starting restart thread: " + gridIdx);
 
                             int cnt = 0;
 
                             while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                stopGrid(gridIdx);
+                                stopGrid(getTestIgniteInstanceName(gridIdx), false, false);
                                 startGrid(gridIdx);
 
                                 int c = ++cnt;
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Restart iteration: " + c);
                             }
 
@@ -751,7 +861,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param restartThreads Restart threads count.
      * @throws Exception If failed.
      */
-    public void checkRestartWithTxPutAll(long duration, int putThreads, int restartThreads) throws Throwable {
+    private void checkRestartWithTxPutAll(long duration, int putThreads, int restartThreads) throws Throwable {
         if (atomicityMode() == ATOMIC)
             return;
 
@@ -764,8 +874,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         Collection<Thread> threads = new LinkedList<>();
 
         try {
-            final int logFreq = 20;
-
             final AtomicInteger txCntr = new AtomicInteger();
 
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
@@ -780,9 +888,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting put thread...");
+                            info("Starting put thread: " + gridIdx);
 
                             Ignite ignite = grid(gridIdx);
+
+                            Thread.currentThread().setName("put-worker-" + ignite.name());
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
@@ -804,7 +914,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     c = txCntr.incrementAndGet();
 
-                                    if (c % logFreq == 0)
+                                    if (c % LOG_FREQ == 0)
                                         info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
                                             "locNodeId=" + locNodeId + ']');
 
@@ -821,7 +931,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     // It is ok if primary node leaves grid.
                                 }
 
-                                if (c % logFreq == 0) {
+                                if (c % LOG_FREQ == 0) {
                                     info(">>> Tx iteration finished [cnt=" + c +
                                         ", keys=" + keys + ", " +
                                         "locNodeId=" + locNodeId + ']');
@@ -849,7 +959,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting restart thread...");
+                            info("Starting restart thread: " + gridIdx);
 
                             int cnt = 0;
 
@@ -859,7 +969,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = ++cnt;
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Restart iteration: " + c);
                             }
                         }

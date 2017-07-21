@@ -14,8 +14,10 @@
 
 package org.jsr166;
 
-import java.io.*;
-import java.util.concurrent.atomic.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * One or more variables that together maintain an initially zero

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Grid task command request.

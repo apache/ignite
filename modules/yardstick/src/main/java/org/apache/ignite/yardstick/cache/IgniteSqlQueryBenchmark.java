@@ -17,39 +17,42 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.yardstick.cache.model.*;
-import org.yardstickframework.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.yardstick.cache.model.Person;
+import org.yardstickframework.BenchmarkConfiguration;
 
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.yardstickframework.BenchmarkUtils.*;
+import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Ignite benchmark that performs query operations.
  */
-public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        println(cfg, "Populating query data...");
+        loadCachesData();
+    }
 
-        long start = System.nanoTime();
+    /** {@inheritDoc} */
+    @Override protected void loadCacheData(String cacheName) {
+        try (IgniteDataStreamer<Integer, Person> dataLdr = ignite().dataStreamer(cacheName)) {
+            for (int i = 0; i < args.range(); i++) {
+                if (i % 100 == 0 && Thread.currentThread().isInterrupted())
+                    break;
 
-        try (IgniteDataStreamer<Integer, Person> dataLdr = ignite().dataStreamer(cache.getName())) {
-            for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
                 dataLdr.addData(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
 
                 if (i % 100000 == 0)
                     println(cfg, "Populated persons: " + i);
             }
         }
-
-        println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -78,6 +81,8 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     private Collection<Cache.Entry<Integer, Object>> executeQuery(double minSalary, double maxSalary) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
+
         SqlQuery qry = new SqlQuery(Person.class, "salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);

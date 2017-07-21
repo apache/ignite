@@ -14,7 +14,7 @@
 
 package org.jsr166;
 
-import java.util.*;
+import java.util.Random;
 
 /**
  * A package-local class holding common representation and mechanics

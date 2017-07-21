@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache;
 
-import javax.cache.*;
+import javax.cache.CacheException;
 
 /**
  * Exception thrown when atomic operation timeout occurs.

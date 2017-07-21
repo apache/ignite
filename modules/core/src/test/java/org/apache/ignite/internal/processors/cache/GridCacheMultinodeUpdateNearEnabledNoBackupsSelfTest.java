@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * TODO: IGNITE-809.
+ *
  */
 public class GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest extends GridCacheMultinodeUpdateNearEnabledSelfTest {
     /** {@inheritDoc} */
@@ -29,11 +29,16 @@ public class GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest extends GridCa
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setBackups(0);
 
         return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testInvoke() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-809");
     }
 }

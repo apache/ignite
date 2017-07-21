@@ -17,27 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.checkpoint.noop.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests multi-update locks.
@@ -50,8 +52,8 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(name);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -110,7 +112,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
         try {
             IgniteKernal g = (IgniteKernal)grid(0);
 
-            GridCacheContext<Object, Object> cctx = g.internalCache().context();
+            GridCacheContext<Object, Object> cctx = g.internalCache(DEFAULT_CACHE_NAME).context();
 
             GridDhtCacheAdapter cache = nearEnabled ? cctx.near().dht() : cctx.colocated();
 
@@ -131,7 +133,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         started.set(true);
 
-                        IgniteCache<Object, Object> c = g4.cache(null);
+                        IgniteCache<Object, Object> c = g4.cache(DEFAULT_CACHE_NAME);
 
                         info(">>>> Checking tx in new grid.");
 
@@ -152,7 +154,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
                 assertFalse(started.get());
 
                 // Check we can proceed with transactions.
-                IgniteCache<Object, Object> cache0 = g.cache(null);
+                IgniteCache<Object, Object> cache0 = g.cache(DEFAULT_CACHE_NAME);
 
                 info(">>>> Checking tx commit.");
 

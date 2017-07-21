@@ -17,15 +17,19 @@
 
 package org.apache.ignite.testframework;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
+import org.apache.ignite.lang.IgniteProductVersion;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.lang.IgniteProductVersion.*;
+import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 /**
  * Test node.
@@ -49,8 +53,8 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     /** */
     private UUID id;
 
-    /** */
-    private Object consistentId = consistentIdCtr.incrementAndGet();
+    /** String objects as a consistent Id is closer to real case than Integer */
+    private Object consistentId = "Node_" + consistentIdCtr.incrementAndGet();
 
     /** */
     private ClusterMetrics metrics;
@@ -77,7 +81,8 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     /** */
     private void initAttributes() {
         attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, "10");
-        attrs.put(IgniteNodeAttributes.ATTR_GRID_NAME, "null");
+        attrs.put(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME, "null");
+        attrs.put(IgniteNodeAttributes.ATTR_CLIENT_MODE, false);
     }
 
     /**
@@ -96,6 +101,13 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
         assert id != null;
 
         return id;
+    }
+
+    /**
+     * @param consistentId Consistent ID.
+     */
+    public void consistentId(Object consistentId) {
+        this.consistentId = consistentId;
     }
 
     /** {@inheritDoc} */
@@ -242,13 +254,5 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     /** {@inheritDoc} */
     @Override public String toString() {
         return id.toString();
-//        StringBuilder buf = new StringBuilder();
-//
-//        buf.append(getClass().getSimpleName());
-//        buf.append(" [attrs=").append(attrs);
-//        buf.append(", id=").append(id);
-//        buf.append(']');
-//
-//        return buf.toString();
     }
 }

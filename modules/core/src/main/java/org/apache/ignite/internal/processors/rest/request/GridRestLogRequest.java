@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.request;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Grid command request of log file.
@@ -31,6 +32,13 @@ public class GridRestLogRequest extends GridRestRequest {
 
     /** To line, inclusive, indexing from 0, can exceed count of lines in log. */
     private int to = -1;
+
+    /**
+     * Constructor.
+     */
+    public GridRestLogRequest() {
+        command(GridRestCommand.LOG);
+    }
 
     /**
      * @return Path to log file.

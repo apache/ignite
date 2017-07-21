@@ -17,14 +17,19 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import javax.cache.*;
-import javax.cache.event.*;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
+import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * This examples demonstrates continuous query API.
@@ -50,6 +55,7 @@ public class CacheContinuousQueryExample {
             System.out.println();
             System.out.println(">>> Cache continuous query example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 int keyCnt = 20;
 
@@ -76,9 +82,13 @@ public class CacheContinuousQueryExample {
 
                 // This filter will be evaluated remotely on all nodes.
                 // Entry that pass this filter will be sent to the caller.
-                qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, String>() {
-                    @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
-                        return e.getKey() > 10;
+                qry.setRemoteFilterFactory(new Factory<CacheEntryEventFilter<Integer, String>>() {
+                    @Override public CacheEntryEventFilter<Integer, String> create() {
+                        return new CacheEntryEventFilter<Integer, String>() {
+                            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
+                                return e.getKey() > 10;
+                            }
+                        };
                     }
                 });
 
@@ -95,6 +105,10 @@ public class CacheContinuousQueryExample {
                     // Wait for a while while callback is notified about remaining puts.
                     Thread.sleep(2000);
                 }
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

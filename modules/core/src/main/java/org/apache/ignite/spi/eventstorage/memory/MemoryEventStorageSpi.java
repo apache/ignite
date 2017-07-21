@@ -17,19 +17,24 @@
 
 package org.apache.ignite.spi.eventstorage.memory;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.eventstorage.*;
-import org.jsr166.*;
+import java.util.Collection;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * In-memory {@link org.apache.ignite.spi.eventstorage.EventStorageSpi} implementation. All events are
@@ -84,14 +89,13 @@ import static org.apache.ignite.events.EventType.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.eventstorage.EventStorageSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStorageSpi,
-    MemoryEventStorageSpiMBean {
+public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStorageSpi {
     /** Default event time to live value in milliseconds (value is {@link Long#MAX_VALUE}). */
     public static final long DFLT_EXPIRE_AGE_MS = Long.MAX_VALUE;
 
@@ -127,14 +131,17 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
      * Sets filter for events to be recorded.
      *
      * @param filter Filter to use.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setFilter(IgnitePredicate<Event> filter) {
+    public MemoryEventStorageSpi setFilter(IgnitePredicate<Event> filter) {
         this.filter = filter;
+
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -147,7 +154,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
             log.debug(configInfo("expireCnt", expireCnt));
         }
 
-        registerMBean(gridName, this, MemoryEventStorageSpiMBean.class);
+        registerMBean(igniteInstanceName, new MemoryEventStorageSpiMBeanImpl(this), MemoryEventStorageSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -167,16 +174,37 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /**
+     * See {@link #setExpireAgeMs(long)}
+     *
+     * @return Event time-to-live.
+     */
+    public long getExpireAgeMs() {
+        return expireAgeMs;
+    }
+
+    /**
      * Sets events expiration time. All events that exceed this value
      * will be removed from the queue when next event comes.
      * <p>
      * If not provided, default value is {@link #DFLT_EXPIRE_AGE_MS}.
      *
      * @param expireAgeMs Expiration time in milliseconds.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setExpireAgeMs(long expireAgeMs) {
+    public MemoryEventStorageSpi setExpireAgeMs(long expireAgeMs) {
         this.expireAgeMs = expireAgeMs;
+
+        return this;
+    }
+
+    /**
+     * See {@link #setExpireCount(long)}
+     *
+     * @return Maximum event queue size.
+     */
+    public long getExpireCount() {
+        return expireCnt;
     }
 
     /**
@@ -185,29 +213,28 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
      * If not provided, default value {@link #DFLT_EXPIRE_COUNT} will be used.
      *
      * @param expireCnt Maximum queue size.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setExpireCount(long expireCnt) {
+    public MemoryEventStorageSpi setExpireCount(long expireCnt) {
         this.expireCnt = expireCnt;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getExpireAgeMs() {
-        return expireAgeMs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getExpireCount() {
-        return expireCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getQueueSize() {
+    /**
+     * Gets current queue size of the event queue.
+     *
+     * @return Current queue size of the event queue.
+     */
+    public long getQueueSize() {
         return evts.sizex();
     }
 
-    /** {@inheritDoc} */
-    @Override public void clearAll() {
+    /**
+     * Removes all events from the event queue.
+     */
+    public void clearAll() {
         evts.clear();
     }
 
@@ -274,7 +301,44 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /** {@inheritDoc} */
+    @Override public MemoryEventStorageSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MemoryEventStorageSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for MemoryEventStorageSpi.
+     */
+    private class MemoryEventStorageSpiMBeanImpl extends IgniteSpiMBeanAdapter implements MemoryEventStorageSpiMBean {
+        /** {@inheritDoc} */
+        MemoryEventStorageSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getExpireAgeMs() {
+            return MemoryEventStorageSpi.this.getExpireAgeMs();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getExpireCount() {
+            return MemoryEventStorageSpi.this.getExpireCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getQueueSize() {
+            return MemoryEventStorageSpi.this.getQueueSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clearAll() {
+            MemoryEventStorageSpi.this.clearAll();
+        }
     }
 }

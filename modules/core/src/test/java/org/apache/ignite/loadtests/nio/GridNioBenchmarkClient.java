@@ -17,12 +17,15 @@
 
 package org.apache.ignite.loadtests.nio;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  *
@@ -80,7 +83,7 @@ public class GridNioBenchmarkClient {
      */
     public void run() throws IOException, InterruptedException {
         for (int i = 0; i < connCnt; i++)
-            exec.submit(new ClientThread());
+            exec.execute(new ClientThread());
 
         Thread.sleep(5*60*1000);
 

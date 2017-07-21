@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.managers.collision;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.job.*;
-import org.apache.ignite.spi.collision.*;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.internal.GridJobSessionImpl;
+import org.apache.ignite.internal.processors.job.GridJobWorker;
+import org.apache.ignite.spi.collision.CollisionJobContext;
 
 /**
  * Adapter for {@link org.apache.ignite.spi.collision.CollisionJobContext}.

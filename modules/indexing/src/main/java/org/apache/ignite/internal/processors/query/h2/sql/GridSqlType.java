@@ -17,24 +17,55 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.expression.Expression;
+import org.h2.table.Column;
+import org.h2.value.Value;
+import org.h2.value.ValueBoolean;
+import org.h2.value.ValueDouble;
+import org.h2.value.ValueLong;
+
 /**
  * SQL Data type based on H2.
  */
-public class GridSqlType {
+public final class GridSqlType {
+    /** */
+    public static final GridSqlType UNKNOWN = new GridSqlType(Value.UNKNOWN, 0, 0, 0, null);
+
+    /** */
+    public static final GridSqlType BIGINT = new GridSqlType(Value.LONG, 0, ValueLong.PRECISION,
+        ValueLong.DISPLAY_SIZE, "BIGINT");
+
+    /** */
+    public static final GridSqlType DOUBLE = new GridSqlType(Value.DOUBLE, 0, ValueDouble.PRECISION,
+        ValueDouble.DISPLAY_SIZE, "DOUBLE");
+
+    /** */
+    public static final GridSqlType UUID = new GridSqlType(Value.UUID, 0, Integer.MAX_VALUE, 36, "UUID");
+
+    /** */
+    public static final GridSqlType BOOLEAN = new GridSqlType(Value.BOOLEAN, 0, ValueBoolean.PRECISION,
+        ValueBoolean.DISPLAY_SIZE, "BOOLEAN");
+
+    /** */
+    public static final GridSqlType RESULT_SET = new GridSqlType(Value.RESULT_SET, 0,
+        Integer.MAX_VALUE, Integer.MAX_VALUE, "");
+
     /** H2 type. */
-    private int type;
+    private final int type;
 
     /** */
-    private int scale;
+    private final int scale;
 
     /** */
-    private long precision;
+    private final long precision;
 
     /** */
-    private int displaySize;
+    private final int displaySize;
 
     /** */
-    private String sql;
+    private final String sql;
 
     /**
      * @param type H2 Type.
@@ -43,12 +74,36 @@ public class GridSqlType {
      * @param displaySize Display size.
      * @param sql SQL definition of the type.
      */
-    public GridSqlType(int type, int scale, long precision, int displaySize, String sql) {
+    private GridSqlType(int type, int scale, long precision, int displaySize, String sql) {
+        assert !F.isEmpty(sql) || type == Value.UNKNOWN || type == Value.RESULT_SET;
+
         this.type = type;
         this.scale = scale;
         this.precision = precision;
         this.displaySize = displaySize;
         this.sql = sql;
+    }
+
+    /**
+     * @param c Column to take type definition from.
+     * @return Type.
+     */
+    public static GridSqlType fromColumn(Column c) {
+        if (c.getName() != null)
+            c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
+
+        return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
+    }
+
+    /**
+     * @param e Expression to take type from.
+     * @return Type.
+     */
+    public static GridSqlType fromExpression(Expression e) {
+        if (e.getType() == Value.UNKNOWN)
+            return UNKNOWN;
+
+        return fromColumn(new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize()));
     }
 
     /**
@@ -90,5 +145,10 @@ public class GridSqlType {
      */
     public String sql() {
         return sql;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridSqlType.class, this);
     }
 }

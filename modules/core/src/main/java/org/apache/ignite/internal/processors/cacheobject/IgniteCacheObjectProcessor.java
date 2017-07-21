@@ -17,22 +17,31 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.jetbrains.annotations.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache objects processor.
  */
 public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
-     * @see GridComponent#onKernalStart()
+     * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUtilityCacheStarted() throws IgniteCheckedException;
+    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * @param typeName Type name.
@@ -66,22 +75,22 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     @Nullable public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx);
 
     /**
-     * Checks whether object is portable object.
+     * Checks whether object is binary object.
      *
      * @param obj Object to check.
-     * @return {@code True} if object is already a portable object, {@code false} otherwise.
+     * @return {@code True} if object is already a binary object, {@code false} otherwise.
      */
-    public boolean isPortableObject(Object obj);
+    public boolean isBinaryObject(Object obj);
 
     /**
-     * Checks whether given class is portable.
+     * Checks whether given class is binary.
      *
-     * @return {@code true} If portable objects are enabled.
+     * @return {@code true} If binary objects are enabled.
      */
-    public boolean isPortableEnabled();
+    public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg);
 
     /**
-     * @param obj Portable object to get field from.
+     * @param obj Binary object to get field from.
      * @param fieldName Field name.
      * @return Field value.
      */
@@ -102,7 +111,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException;
+    public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
@@ -111,7 +120,8 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If failed.
      */
-    public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
+    public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
+        throws IgniteCheckedException;
 
     /**
      * @param ccfg Cache configuration.
@@ -121,13 +131,17 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
-     * @param ctx Cache context.
+     * @param ctx Cache objects context.
+     * @param cctx Cache context if cache is available.
      * @param obj Key value.
      * @param userObj If {@code true} then given object is object provided by user and should be copied
      *        before stored in cache.
      * @return Cache key object.
      */
-    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj);
+    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx,
+        @Nullable GridCacheContext cctx,
+        Object obj,
+        boolean userObj);
 
     /**
      * @param ctx Cache context.
@@ -147,17 +161,48 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes);
 
     /**
-     * @param ctx Context.
-     * @param valPtr Value pointer.
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held.
+     * @param ctx Cache context.
+     * @param type Object type.
+     * @param bytes Object bytes.
      * @return Cache object.
-     * @throws IgniteCheckedException If failed.
      */
-    public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp) throws IgniteCheckedException;
+    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache context.
+     * @param buf Buffer to read from.
+     * @return Cache object.
+     */
+    public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf);
+
+    /**
+     * @param ctx Cache object context.
+     * @param buf Buffer.
+     * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
+     * @return Incomplete cache object.
+     * @throws IgniteCheckedException If fail.
+     */
+    public IncompleteCacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache object context.
+     * @param buf Buffer.
+     * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
+     * @return Incomplete cache object.
+     * @throws IgniteCheckedException If fail.
+     */
+    public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
 
     /**
      * @param obj Value.
      * @return {@code True} if object is of known immutable type.
      */
     public boolean immutable(Object obj);
+
+    /**
+     * @return Ignite binary interface.
+     */
+    public IgniteBinary binary();
 }

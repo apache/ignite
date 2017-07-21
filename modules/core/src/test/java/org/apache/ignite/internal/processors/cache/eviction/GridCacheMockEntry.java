@@ -17,22 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.util.*;
-
+import javax.cache.Cache;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Mock cache entry.
  */
 public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>, EvictableEntry<K, V> {
     /** */
-    private static final UUID META_KEY = UUID.randomUUID();
+    private static final int META_KEY = EntryKey.values().length; //+1 to maximum value (test only case)
 
     /** */
     @GridToStringInclude
@@ -74,8 +71,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
      *
      */
     private void onEvicted() {
-        for (UUID key : allMeta().keySet())
-            removeMeta(key);
+        removeAllMeta();
     }
 
     /** {@inheritDoc} */
@@ -89,7 +85,6 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /**
-     *
      * @return Evicted or not.
      */
     public boolean isEvicted() {
@@ -123,12 +118,12 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public <T> boolean replaceMeta(T curVal, T newVal) {
-        return replaceMeta(META_KEY,curVal, newVal);
+        return replaceMeta(META_KEY, curVal, newVal);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> clazz) {
-        if(clazz.isAssignableFrom(getClass()))
+        if (clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);
 
         throw new IllegalArgumentException();

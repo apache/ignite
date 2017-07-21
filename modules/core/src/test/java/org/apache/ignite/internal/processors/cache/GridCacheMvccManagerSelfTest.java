@@ -17,18 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests for {@link GridCacheMvccManager}.
@@ -41,15 +46,16 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
     private CacheMode mode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
         cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
@@ -95,7 +101,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(gridCnt);
 
-            IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             Transaction tx = ignite.transactions().txStart();
 
@@ -104,8 +110,8 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
             tx.commit();
 
             for (int i = 0; i < gridCnt; i++) {
-                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().localCandidates().isEmpty();
-                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().remoteCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME).context().mvcc().localCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME).context().mvcc().remoteCandidates().isEmpty();
             }
         }
         finally {

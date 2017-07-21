@@ -17,34 +17,84 @@
 
 package org.apache.ignite.internal.client.impl.connection;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.client.marshaller.jdk.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.nio.ssl.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.client.GridClientAuthenticationException;
+import org.apache.ignite.internal.client.GridClientCacheFlag;
+import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientDataMetrics;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFuture;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
+import org.apache.ignite.internal.client.impl.GridClientFutureCallback;
+import org.apache.ignite.internal.client.impl.GridClientNodeImpl;
+import org.apache.ignite.internal.client.impl.GridClientNodeMetricsAdapter;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeMetricsBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterResponse;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import javax.net.ssl.*;
-import java.io.*;
-import java.net.*;
-import java.nio.channels.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.logging.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.internal.client.GridClientCacheFlag.*;
-import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.*;
-import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
+import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.CONN_IDLE;
+import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.FAILED;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET_ALL;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.METRICS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.PREPEND;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.PUT_ALL;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.REPLACE;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV_ALL;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
  * This class performs request to grid over tcp protocol. Serialization is performed with marshaller
@@ -109,7 +159,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     private final GridClientMarshaller marsh;
 
     /** */
-    private final ThreadLocal<Boolean> keepPortablesMode;
+    private final ThreadLocal<Boolean> keepBinariesMode;
 
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
@@ -143,7 +193,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         Byte marshId,
         GridClientTopology top,
         Object cred,
-        ThreadLocal<Boolean> keepPortablesMode
+        ThreadLocal<Boolean> keepBinariesMode
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -152,7 +202,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
-        this.keepPortablesMode = keepPortablesMode;
+        this.keepBinariesMode = keepBinariesMode;
 
         SocketChannel ch = null;
         Socket sock = null;
@@ -180,7 +230,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             GridNioFuture<?> sslHandshakeFut = null;
 
             if (sslCtx != null) {
-                sslHandshakeFut = new GridNioFutureImpl<>();
+                sslHandshakeFut = new GridNioFutureImpl<>(null);
 
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
@@ -195,6 +245,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             if (marshId != null)
                 req.marshallerId(marshId);
             // marsh != null.
+            else if (marsh instanceof GridClientZipOptimizedMarshaller)
+                req.marshallerId(GridClientZipOptimizedMarshaller.ID);
             else if (marsh instanceof GridClientOptimizedMarshaller)
                 req.marshallerId(GridClientOptimizedMarshaller.ID);
             else if (marsh instanceof GridClientJdkMarshaller)
@@ -338,16 +390,16 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *
      * @param msg Message to request,
      * @param destId Destination node identifier.
-     * @param keepPortables Keep portables flag.
+     * @param keepBinaries Keep binary flag.
      * @return Response object.
      * @throws GridClientConnectionResetException If request failed.
      * @throws GridClientClosedException If client was closed.
      */
-    private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, UUID destId, boolean keepPortables)
+    private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, UUID destId, boolean keepBinaries)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert msg != null;
 
-        TcpClientFuture<R> res = new TcpClientFuture<>(false, keepPortables);
+        TcpClientFuture<R> res = new TcpClientFuture<>(false, keepBinaries);
 
         msg.destinationId(destId);
 
@@ -620,7 +672,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         req.keys((Iterable<Object>)keys);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
-        return makeRequest(req, destNodeId, flags.contains(KEEP_PORTABLES));
+        return makeRequest(req, destNodeId, flags.contains(KEEP_BINARIES));
     }
 
     /** {@inheritDoc} */
@@ -739,12 +791,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @Override public <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId,
-        final boolean keepPortables) throws GridClientConnectionResetException, GridClientClosedException {
+        final boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException {
         GridClientTaskRequest msg = new GridClientTaskRequest();
 
         msg.taskName(taskName);
         msg.argument(arg);
-        msg.keepPortables(keepPortables);
+        msg.keepBinaries(keepBinaries);
 
         return this.<GridClientTaskResultBean>makeRequest(msg, destNodeId).chain(
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {
@@ -753,6 +805,26 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                     return fut.get().getResult();
                 }
             });
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<?> changeState(boolean active, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        GridClientStateRequest msg = new GridClientStateRequest();
+
+        msg.active(active);
+
+        return makeRequest(msg, destNodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<Boolean> currentState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        GridClientStateRequest msg = new GridClientStateRequest();
+
+        msg.requestCurrentState();
+
+        return makeRequest(msg, destNodeId);
     }
 
     /** {@inheritDoc} */
@@ -874,29 +946,20 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             .nodeId(nodeBean.getNodeId())
             .consistentId(nodeBean.getConsistentId())
             .tcpAddresses(nodeBean.getTcpAddresses())
-            .tcpPort(nodeBean.getTcpPort());
+            .tcpPort(nodeBean.getTcpPort())
+            .order(nodeBean.getOrder());
 
         Map<String, GridClientCacheMode> caches = new HashMap<>();
 
         if (nodeBean.getCaches() != null) {
-            for (Map.Entry<String, String> e : nodeBean.getCaches().entrySet()) {
+            for (GridClientCacheBean cacheBean : nodeBean.getCaches()) {
                 try {
-                    caches.put(e.getKey(), GridClientCacheMode.valueOf(e.getValue()));
+                    caches.put(cacheBean.getName(), cacheBean.getMode());
                 }
                 catch (IllegalArgumentException ignored) {
                     log.warning("Invalid cache mode received from remote node (will ignore) [srv=" + serverAddress() +
-                        ", cacheName=" + e.getKey() + ", cacheMode=" + e.getValue() + ']');
+                        ", cacheName=" + cacheBean.getName() + ", cacheMode=" + cacheBean.getMode() + ']');
                 }
-            }
-        }
-
-        if (nodeBean.getDefaultCacheMode() != null) {
-            try {
-                caches.put(null, GridClientCacheMode.valueOf(nodeBean.getDefaultCacheMode()));
-            }
-            catch (IllegalArgumentException ignored) {
-                log.warning("Invalid cache mode received for default cache from remote node (will ignore) [srv="
-                    + serverAddress() + ", cacheMode=" + nodeBean.getDefaultCacheMode() + ']');
             }
         }
 
@@ -990,8 +1053,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         /** Flag indicating if connected message is a forwarded. */
         private final boolean forward;
 
-        /** Keep portables flag. */
-        private final boolean keepPortables;
+        /** Keep binary flag. */
+        private final boolean keepBinaries;
 
         /** Pending message for this future. */
         private GridClientMessage pendingMsg;
@@ -1005,7 +1068,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          */
         private TcpClientFuture() {
             forward = false;
-            keepPortables = false;
+            keepBinaries = false;
         }
 
         /**
@@ -1013,9 +1076,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          *
          * @param forward Flag value.
          */
-        private TcpClientFuture(boolean forward, boolean keepPortables) {
+        private TcpClientFuture(boolean forward, boolean keepBinaries) {
             this.forward = forward;
-            this.keepPortables = keepPortables;
+            this.keepBinaries = keepBinaries;
         }
 
         /**
@@ -1054,10 +1117,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         }
 
         /**
-         * @return Keep portables flag.
+         * @return Keep binary flag.
          */
-        public boolean keepPortables() {
-            return keepPortables;
+        public boolean keepBinaries() {
+            return keepBinaries;
         }
 
         /** {@inheritDoc} */

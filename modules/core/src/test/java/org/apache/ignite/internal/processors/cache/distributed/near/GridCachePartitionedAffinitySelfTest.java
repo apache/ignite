@@ -17,29 +17,38 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 
 /**
  * Partitioned affinity test.
@@ -59,7 +68,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -72,7 +81,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         spi.setIpFinder(ipFinder);
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(spi);
@@ -95,7 +104,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @return Affinity.
      */
     static Affinity<Object> affinity(Ignite ignite) {
-        return ignite.affinity(null);
+        return ignite.affinity(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -150,13 +159,13 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @param g Grid. */
     private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
-        X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
+        X.println(">>> " + dht(g.cache(DEFAULT_CACHE_NAME)).topology().partitionMap(false).toFullString());
     }
 
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
-        GridTestUtils.waitTopologyUpdate(null, BACKUPS, log());
+        GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }
 
     /** @throws Exception If failed. */
@@ -165,7 +174,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        IgniteCache<Integer, String> mc = mg.cache(null);
+        IgniteCache<Integer, String> mc = mg.cache(DEFAULT_CACHE_NAME);
 
         int keyCnt = 10;
 
@@ -180,7 +189,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
             if (failFlag.get())
                 fail("testAffinityWithPut failed.");
 
-            info("Before putting key [key=" + i + ", grid=" + mg.name() + ']');
+            info("Before putting key [key=" + i + ", igniteInstanceName=" + mg.name() + ']');
 
             mc.put(i, Integer.toString(i));
 
@@ -209,7 +218,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         /** */
         private int keyCnt;
 
-        /** Master grid name. */
+        /** Master Ignite instance name. */
         private String master;
 
         /** */
@@ -244,17 +253,17 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 //                            new Exception("Dumping stack on grid [" + grid.name() + ", evtHash=" +
 //                                System.identityHashCode(evt) + ']').printStackTrace(System.out);
 
-                            log.info(">>> Grid cache event [grid=" + ignite.name() + ", name=" + e.name() +
-                                ", key=" + e.key() + ", oldVal=" + e.oldValue() + ", newVal=" + e.newValue() +
-                                ']');
+                            log.info(">>> Grid cache event [igniteInstanceName=" + ignite.name() +
+                                ", name=" + e.name() + ", key=" + e.key() + ", oldVal=" + e.oldValue() +
+                                ", newVal=" + e.newValue() + ']');
 
                             evtCnt.incrementAndGet();
 
                             if (!ignite.name().equals(master) && evtCnt.get() > keyCnt * (BACKUPS + 1)) {
                                 failFlag.set(true);
 
-                                fail("Invalid put event count on grid [cnt=" + evtCnt.get() + ", grid=" +
-                                    ignite.name() + ']');
+                                fail("Invalid put event count on grid [cnt=" + evtCnt.get() +
+                                    ", igniteInstanceName=" + ignite.name() + ']');
                             }
 
                             Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.key());
@@ -270,7 +279,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
                         default:
                             failFlag.set(true);
 
-                            fail("Invalid cache event [grid=" + ignite + ", evt=" + evt + ']');
+                            fail("Invalid cache event [igniteInstanceName=" + ignite + ", evt=" + evt + ']');
                     }
 
                     return true;

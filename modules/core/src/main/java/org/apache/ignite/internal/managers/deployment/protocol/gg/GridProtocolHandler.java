@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.managers.deployment.protocol.gg;
 
-import org.apache.ignite.internal.managers.deployment.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 
 /**
  * Custom stream protocol handler implementation.

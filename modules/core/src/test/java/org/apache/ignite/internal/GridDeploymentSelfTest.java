@@ -17,21 +17,32 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
+import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 
 /**
  * Task deployment tests.
@@ -56,8 +67,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentSpi(depSpi = new TestDeploymentSpi());
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
@@ -100,7 +111,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeploy() throws Exception {
-        Ignite ignite = startGrid(getTestGridName());
+        Ignite ignite = startGrid(getTestIgniteInstanceName());
 
         try {
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
@@ -130,7 +141,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         // is configured, SPI should be ignored.
         p2pEnabled = false;
 
-        Ignite ignite = startGrid(getTestGridName());
+        Ignite ignite = startGrid(getTestIgniteInstanceName());
 
         try {
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
@@ -152,7 +163,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRedeploy() throws Exception {
-        Ignite ignite = startGrid(getTestGridName());
+        Ignite ignite = startGrid(getTestIgniteInstanceName());
 
         try {
             // Added to work with P2P.
@@ -247,8 +258,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"BusyWait"})
     public void testDeployOnTwoNodes() throws Exception {
-        Ignite ignite1 = startGrid(getTestGridName() + '1');
-        Ignite ignite2 = startGrid(getTestGridName() + '2');
+        Ignite ignite1 = startGrid(getTestIgniteInstanceName() + '1');
+        Ignite ignite2 = startGrid(getTestIgniteInstanceName() + '2');
 
         try {
             assert !ignite1.cluster().forRemotes().nodes().isEmpty() : ignite1.cluster().forRemotes();
@@ -289,7 +300,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeployEvents() throws Exception {
-        Ignite ignite = startGrid(getTestGridName());
+        Ignite ignite = startGrid(getTestIgniteInstanceName());
 
         try {
             DeploymentEventListener evtLsnr = new DeploymentEventListener();

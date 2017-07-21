@@ -16,17 +16,19 @@
  */
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cacheobject.*;
-
-import javax.cache.expiry.*;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 
 /**
  *
@@ -41,8 +43,8 @@ public class IgniteCacheTtlCleanupSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
@@ -57,13 +59,13 @@ public class IgniteCacheTtlCleanupSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testDeferredDeleteTtl() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null)
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME)
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 5)));
 
         int cnt = GridDhtLocalPartition.MAX_DELETE_QUEUE_SIZE / PART_NUM + 100;
 
         for (long i = 0; i < cnt; i++)
-            grid(0).cache(null).put(i * PART_NUM, i);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(i * PART_NUM, i);
 
         for (int i = 0; i < cnt; i++)
             cache.put(i * PART_NUM, i);
@@ -71,15 +73,15 @@ public class IgniteCacheTtlCleanupSelfTest extends GridCacheAbstractSelfTest {
         // Wait 5 seconds.
         Thread.sleep(6_000);
 
-        assertEquals(cnt, grid(0).cache(null).size());
+        assertEquals(cnt, grid(0).cache(DEFAULT_CACHE_NAME).size());
 
-        GridCacheAdapter<Object, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache(null);
+        GridCacheAdapter<Object, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
         IgniteCacheObjectProcessor cacheObjects = cacheAdapter.context().cacheObjects();
 
         CacheObjectContext cacheObjCtx = cacheAdapter.context().cacheObjectContext();
 
         for (int i = 0; i < 100; i++)
-            assertNull(cacheAdapter.map().getEntry(cacheObjects.toCacheKeyObject(cacheObjCtx, i, true)));
+            assertNull(cacheAdapter.map().getEntry(cacheAdapter.context(), cacheObjects.toCacheKeyObject(cacheObjCtx, null, i, true)));
     }
 }
