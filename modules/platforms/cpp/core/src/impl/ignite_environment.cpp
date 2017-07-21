@@ -66,6 +66,17 @@ namespace ignite
         };
 
         /*
+        * PlatformProcessor op codes.
+        */
+        struct ProcessorOp
+        {
+            enum Type
+            {
+                GET_BINARY_PROCESSOR = 21
+            };
+        };
+
+        /*
          * PlatformClusterGroup op codes.
          */
         struct ClusterGroupOp
@@ -309,7 +320,10 @@ namespace ignite
         {
             latch.CountDown();
 
-            jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
+            JniErrorInfo jniErr;
+
+            jobject binaryProc = Context()->TargetOutObject(proc.Get(), ProcessorOp::GET_BINARY_PROCESSOR, &jniErr);
+
             metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
 
             metaMgr->SetUpdater(metaUpdater);
@@ -384,21 +398,9 @@ namespace ignite
 
         jobject IgniteEnvironment::GetProcessorCompute(jobject proj)
         {
-            /*
-             *                JniErrorInfo jniErr;
-
-                jobject res = env.Get()->Context()->TargetOutObject(javaRef, opType, &jniErr);
-
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                return res;
-
-             */
-
             JniErrorInfo jniErr;
 
-            //jobject res = ctx.Get()->ProcessorCompute(proc.Get(), proj, &jniErr);
-            jobject res = ctx.Get()->TargetOutObject(proj, OperationCallback::PROJECTION_COMPUTE, &jniErr);
+            jobject res = ctx.Get()->TargetOutObject(proj, ClusterGroupOp::GET_COMPUTE, &jniErr);
 
             IgniteError err;
 
