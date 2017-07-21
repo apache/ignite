@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * TODO: add description
+ * Some {@link Map} related utils.
  */
 public class MapUtil {
     /** */

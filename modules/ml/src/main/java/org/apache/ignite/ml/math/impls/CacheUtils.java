@@ -43,6 +43,7 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Distribution-related misc. support.
@@ -133,6 +134,9 @@ public class CacheUtils {
      */
     @SuppressWarnings("unchecked")
     public static <K, V> double sparseSum(IgniteUuid matrixUuid, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
+
         Collection<Double> subSums = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             V v = ce.entry().getValue();
 
@@ -208,6 +212,9 @@ public class CacheUtils {
      */
     @SuppressWarnings("unchecked")
     public static <K, V> double sparseMin(IgniteUuid matrixUuid, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
+
         Collection<Double> mins = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             V v = ce.entry().getValue();
 
@@ -249,6 +256,9 @@ public class CacheUtils {
      */
     @SuppressWarnings("unchecked")
     public static <K, V> double sparseMax(IgniteUuid matrixUuid, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
+
         Collection<Double> maxes = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             V v = ce.entry().getValue();
 
@@ -334,6 +344,10 @@ public class CacheUtils {
      */
     @SuppressWarnings("unchecked")
     public static <K, V> void sparseMap(IgniteUuid matrixUuid, IgniteDoubleFunction<Double> mapper, String cacheName) {
+        A.notNull(matrixUuid, "matrixUuid");
+        A.notNull(cacheName, "cacheName");
+        A.notNull(mapper, "mapper");
+
         foreach(cacheName, (CacheEntry<K, V> ce) -> {
             K k = ce.entry().getKey();
 

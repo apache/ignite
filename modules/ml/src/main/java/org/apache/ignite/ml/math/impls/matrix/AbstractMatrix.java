@@ -280,10 +280,8 @@ public abstract class AbstractMatrix implements Matrix {
      * @param row Row index.
      */
     private void checkRowIndex(int row) {
-        if (row < 0 || row >= rowSize()) {
-            System.out.println("row size is " + rowSize() + "; wanted is " + row);
+        if (row < 0 || row >= rowSize())
             throw new RowIndexException(row);
-        }
     }
 
     /**
@@ -292,10 +290,8 @@ public abstract class AbstractMatrix implements Matrix {
      * @param col Column index.
      */
     private void checkColumnIndex(int col) {
-        if (col < 0 || col >= columnSize()) {
-            System.out.println("col size is " + columnSize() + "; wanted is " + col);
+        if (col < 0 || col >= columnSize())
             throw new ColumnIndexException(col);
-        }
     }
 
     /**
@@ -507,7 +503,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
         double res = dec.determinant();
         dec.destroy();
@@ -519,7 +515,7 @@ public abstract class AbstractMatrix implements Matrix {
         if (rowSize() != columnSize())
             throw new CardinalityException(rowSize(), columnSize());
 
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
 
         Matrix res = dec.solve(likeIdentity());

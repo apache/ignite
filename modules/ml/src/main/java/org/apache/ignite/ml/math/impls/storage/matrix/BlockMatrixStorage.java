@@ -325,7 +325,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /**
-     * TODO: WIP
+     * TODO: IGNITE-5646, WIP
      *
      * Get affinity key for the given id.
      */

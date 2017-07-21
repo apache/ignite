@@ -92,6 +92,9 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
      */
     @SuppressWarnings({"unchecked"})
     @Override public Matrix times(final Matrix mtx) {
+        if (mtx == null)
+            throw new IllegalArgumentException("The matrix should be not null.");
+
         if (columnSize() != mtx.rowSize())
             throw new CardinalityException(columnSize(), mtx.rowSize());
 
@@ -117,7 +120,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
                 return;
 
             // compute Cij locally on each node
-            // TODO: exec in parallel
+            // TODO: IGNITE:5114, exec in parallel
             locKeys.forEach(key -> {
                 long newBlockId = key.blockId();
                 BlockEntry blockC = null;
