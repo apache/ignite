@@ -147,9 +147,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** Nodes for the given topology version. */
         private volatile IList<IClusterNode> _nodes;
 
-        /** Processor. */
-        private readonly IUnmanagedTarget _proc;
-
         /** Compute. */
         private readonly Lazy<Compute> _comp;
 
@@ -165,22 +162,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="proc">Processor.</param>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, Marshaller marsh,
+        public ClusterGroupImpl(IUnmanagedTarget target, Marshaller marsh,
             Ignite ignite, Func<IClusterNode, bool> pred)
             : base(target, marsh)
         {
-            _proc = proc;
             _ignite = ignite;
             _pred = pred;
 
-            _comp = new Lazy<Compute>(() => 
-                new Compute(new ComputeImpl(UU.ProcessorCompute(proc, target), marsh, this, false)));
+            _comp = new Lazy<Compute>(() => ignite.GetCompute(this, false));
 
             _msg = new Lazy<Messaging>(() => new Messaging(UU.ProcessorMessage(proc, target), marsh, this));
 

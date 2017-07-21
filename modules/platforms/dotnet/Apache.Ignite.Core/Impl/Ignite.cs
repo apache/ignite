@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
@@ -235,6 +236,16 @@ namespace Apache.Ignite.Core.Impl
         public ICompute GetCompute()
         {
             return _prj.ForServers().GetCompute();
+        }
+
+        /// <summary>
+        /// Gets the compute.
+        /// </summary>
+        internal unsafe Compute.Compute GetCompute(ClusterGroupImpl clusterGroup, bool keepBinary)
+        {
+            var comp = DoOutInOp((int) Op.GetCompute, null, (s, o) => o, clusterGroup.Target.Target);
+
+            return new Compute.Compute(new ComputeImpl(comp, Marshaller, clusterGroup, keepBinary));
         }
 
         /** <inheritdoc /> */
@@ -590,7 +601,9 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
 
-            return new CacheAffinityImpl(UU.ProcessorAffinity(_proc, cacheName), _marsh, false, this);
+            var aff = DoOutOpObject((int) Op.GetAffinity, w => w.WriteString(cacheName));
+            
+            return new CacheAffinityImpl(aff, _marsh, false, this);
         }
 
         /** <inheritdoc /> */
