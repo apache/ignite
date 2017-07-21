@@ -15,40 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.statistics;
+package org.apache.ignite.ml.math.impls.storage.matrix;
+
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 
 /**
- * This class encapsulates calculating variance.
+ * Cache key for blocks in {@link SparseBlockDistributedMatrix}.
  */
-public class Variance {
-    /** */
-    private double mean;
+public interface BaseBlockMatrixKey {
+    /**
+     * @return block id.
+     */
+    public long blockId();
 
-    /** */
-    private long n;
+    /**
+     * @return matrix id.
+     */
+    public IgniteUuid matrixId();
 
-    /** */
-    private double m2;
-
-    /** */
-    public Variance() {
-        mean = 0;
-        n = 0;
-        m2 = 0;
-    }
-
-    /** */
-    public Variance update(Double x) {
-        n++;
-        double delta = x - mean;
-        mean += delta / n;
-        double delta2 = x - mean;
-        m2 += delta * delta2;
-        return this;
-    }
-
-    /** */
-    public double getResult() {
-        return m2;
-    }
+    /**
+     * @return key affinity key.
+     */
+    public IgniteUuid affinityKey();
 }

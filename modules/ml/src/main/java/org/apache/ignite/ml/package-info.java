@@ -15,40 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.statistics;
-
 /**
- * This class encapsulates calculating variance.
+ * <!-- Package description. -->
+ * Root ML package.
  */
-public class Variance {
-    /** */
-    private double mean;
-
-    /** */
-    private long n;
-
-    /** */
-    private double m2;
-
-    /** */
-    public Variance() {
-        mean = 0;
-        n = 0;
-        m2 = 0;
-    }
-
-    /** */
-    public Variance update(Double x) {
-        n++;
-        double delta = x - mean;
-        mean += delta / n;
-        double delta2 = x - mean;
-        m2 += delta * delta2;
-        return this;
-    }
-
-    /** */
-    public double getResult() {
-        return m2;
-    }
-}
+package org.apache.ignite.ml;
