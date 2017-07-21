@@ -104,6 +104,7 @@ import domainsValidation from './filters/domainsValidation.filter';
 import duration from './filters/duration.filter';
 import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
+import id8 from './filters/id8.filter';
 
 // Controllers
 import profile from 'Controllers/profile-controller';
@@ -254,6 +255,7 @@ angular
 .filter('duration', duration)
 .filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
+.filter('id8', id8)
 .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
     $translateProvider.translations('en', i18n);
     $translateProvider.preferredLanguage('en');
@@ -287,6 +289,20 @@ angular
     $root.$on('$stateChangeStart', () => {
         _.forEach(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
+
+    if (!$root.IgniteDemoMode) {
+        $root.$on('$stateChangeSuccess', (event, {name, unsaved}, params) => {
+            try {
+                if (unsaved)
+                    localStorage.removeItem('lastStateChangeSuccess');
+                else
+                    localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
+            }
+            catch (ignored) {
+                // No-op.
+            }
+        });
+    }
 }])
 .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
     ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
