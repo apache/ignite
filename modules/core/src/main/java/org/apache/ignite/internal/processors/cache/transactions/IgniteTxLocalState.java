@@ -41,4 +41,9 @@ public interface IgniteTxLocalState extends IgniteTxState {
      *
      */
     public void seal();
+
+    /**
+     *
+     */
+    public void unseal();
 }

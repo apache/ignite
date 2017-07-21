@@ -44,6 +44,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.UNDEFINED_THREAD_ID;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
+
 /**
  * Cache transaction proxy.
  */
@@ -98,6 +101,18 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * Enters a call.
      */
     private void enter() {
+        assert SUSPENDED != state();
+
+        enter0();
+    }
+
+    /**
+     * Enters a call without check for not {@code SUSPENDED} status.
+     */
+    private void enter0() {
+        assert (threadId() == Thread.currentThread().getId()) ||
+            (threadId() == UNDEFINED_THREAD_ID && state() == SUSPENDED);
+
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
@@ -201,6 +216,20 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             save(tx.state());
 
         return tx.state();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void suspend() throws IgniteException {
+        enter();
+
+        try {
+            cctx.suspendTx(tx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        } finally {
+            leave();
+        }
     }
 
     /** {@inheritDoc} */
@@ -329,6 +358,20 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             throw U.convertException(e);
         }
         finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() throws IgniteException {
+        enter0();
+
+        try {
+            cctx.resumeTx(tx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        } finally {
             leave();
         }
     }

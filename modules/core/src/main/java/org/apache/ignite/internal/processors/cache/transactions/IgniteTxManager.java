@@ -113,6 +113,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -128,6 +129,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Tx salvage timeout. */
     private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 100);
+
+    /** threadId for {@code SUSPENDED} transactions */
+    public static final long UNDEFINED_THREAD_ID = -1L;
 
     /** One phase commit deferred ack request timeout. */
     public static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -2237,6 +2241,81 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Collection<? extends IgniteInternalFuture<?>> values = deadlockDetectFuts.values();
 
         return (Collection<IgniteInternalFuture<?>>)values;
+    }
+
+    /**
+     * Suspends transaction.
+     * Please don't use directly. Use tx.suspend() instead.
+     *
+     * @param tx Transaction to be suspended.
+     *
+     * @see #resumeTx(GridNearTxLocal)
+     * @see GridNearTxLocal#suspend()
+     * @see GridNearTxLocal#resume()
+     */
+    public void suspendTx(final GridNearTxLocal tx) throws IgniteCheckedException {
+        assert tx != null;
+
+        if (!tx.suspendInProgress())
+            throw new IgniteCheckedException("Use suspendTx prohibited. Use tx.suspend() instead.");
+
+        clearThreadMap(tx);
+
+        transactionMap(tx).remove(tx.xidVersion(), tx);
+
+        tx.txTopForSuspension(txTop.get());
+
+        tx.state(SUSPENDED);
+
+        tx.threadId(UNDEFINED_THREAD_ID);
+    }
+
+    /**
+     * Resume transaction in current thread.
+     * Please don't use directly. Use tx.resume() instead.
+     *
+     * @param tx Transaction to be resumed.
+     *
+     * @see #suspendTx(GridNearTxLocal)
+     * @see GridNearTxLocal#suspend()
+     * @see GridNearTxLocal#resume()
+     */
+    public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        assert tx != null;
+        assert !tx.system() && !tx.pessimistic();
+        assert tx.threadId() == UNDEFINED_THREAD_ID;
+        assert !threadMap.containsValue(tx);
+        assert !transactionMap(tx).containsValue(tx);
+
+        if (!tx.resumeInProgress())
+            throw new IgniteCheckedException("Use resumeTx prohibited. Use tx.resume() instead.");
+
+        long threadId = Thread.currentThread().getId();
+
+        if (threadMap.containsKey(threadId))
+            throw new IgniteCheckedException("Thread already start a transaction.");
+
+        if (!sysThreadMap.isEmpty()) {
+            for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
+                if (!cacheCtx.systemTx())
+                    continue;
+
+                if (sysThreadMap.containsKey(new TxThreadKey(threadId, cacheCtx.cacheId())))
+                    throw new IgniteCheckedException("Thread already start system transaction.");
+            }
+        }
+
+        threadMap.put(threadId, tx);
+
+        ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
+
+        txIdMap.put(tx.xidVersion(), tx);
+
+        txTop.set(tx.txTopForSuspension());
+
+        tx.threadId(threadId);
+
+        tx.state(ACTIVE);
     }
 
     /**

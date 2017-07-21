@@ -147,7 +147,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
         if (jtaTm != null) {
             CacheJtaResource rsrc = this.rsrc.get();
 
-            if (rsrc == null || rsrc.isFinished()) {
+            if (rsrc == null || rsrc.isFinished() || rsrc.cacheTx().threadId() != Thread.currentThread().getId()) {
                 try {
                     Transaction jtaTx = jtaTm.getTransaction();
 

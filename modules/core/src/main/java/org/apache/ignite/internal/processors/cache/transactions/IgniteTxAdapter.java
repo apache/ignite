@@ -97,6 +97,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
  * Managed transaction adapter.
@@ -133,7 +134,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Thread ID. */
     @GridToStringInclude
-    protected long threadId;
+    protected volatile long threadId;
 
     /** Transaction start time. */
     @GridToStringInclude
@@ -977,10 +978,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             switch (state) {
                 case ACTIVE: {
-                    valid = false;
+                    valid = prev == SUSPENDED;
 
                     break;
-                } // Active is initial state and cannot be transitioned to.
+                }
                 case PREPARING: {
                     valid = prev == ACTIVE;
 
@@ -1025,15 +1026,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED;
+                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
 
                     break;
                 }
 
                 case ROLLING_BACK: {
-                    valid =
-                        prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
-                            prev == PREPARED || (prev == COMMITTING && local() && !dht());
+                    valid = prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
+                        prev == PREPARED || prev == SUSPENDED || (prev == COMMITTING && local() && !dht());
+
+                    break;
+                }
+
+                case SUSPENDED: {
+                    valid = prev == ACTIVE;
 
                     break;
                 }
@@ -1066,6 +1072,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             // Seal transactions maps.
             if (state != ACTIVE)
                 seal();
+            else if (prev == SUSPENDED)
+                unseal();
         }
 
         return valid;
@@ -2108,7 +2116,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         /** {@inheritDoc} */
         @Override public void seal() {
+            // No-op.
+        }
 
+        /** {@inheritDoc} */
+        @Override public void unseal() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
