@@ -27,7 +27,7 @@ public class PolymorphicServiceTopology implements GridServiceTopology {
      */
     PolymorphicServiceTopology(Map<UUID, Integer> nodeCntMap) {
         A.notNull(nodeCntMap, "nodeCntMap");
-        A.ensure(nodeCntMap.size() > 0, "nodeCntMap must not be empty");
+        A.ensure(nodeCntMap.size() > 1, "nodeCntMap must contain multiple items");
 
         this.nodeCntMap = nodeCntMap;
     }

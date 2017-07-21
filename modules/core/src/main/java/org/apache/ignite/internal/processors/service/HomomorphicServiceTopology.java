@@ -35,7 +35,7 @@ public class HomomorphicServiceTopology implements GridServiceTopology {
     HomomorphicServiceTopology(Collection<UUID> nodes, int cnt) {
         A.ensure(cnt > 0, "cnt must be positive");
         A.notNull(nodes, "nodes");
-        A.ensure(nodes.size() > 0, "nodes must not be empty");
+        A.ensure(nodes.size() > 1, "nodes must contain multiple items");
 
         this.cnt = cnt;
         this.nodes = nodes;

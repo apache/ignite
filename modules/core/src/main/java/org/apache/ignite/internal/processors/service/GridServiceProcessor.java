@@ -976,85 +976,87 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         assigns.topology(GridServiceTopologyFactory.get(n, cnt));
                     }
                 }
-                else if (totalCnt == 0 && maxPerNodeCnt > 0)
-                    assigns.topology(GridServiceTopologyFactory.get(nodes, maxPerNodeCnt));
                 else if (!nodes.isEmpty()) {
-                    int size = nodes.size();
+                    if (totalCnt == 0 && maxPerNodeCnt > 0)
+                        assigns.topology(GridServiceTopologyFactory.get(nodes, maxPerNodeCnt));
+                    else {
+                        int size = nodes.size();
 
-                    Map<UUID, Integer> cnts = new HashMap<>();
+                        Map<UUID, Integer> cnts = new HashMap<>();
 
-                    int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
-                    int remainder = totalCnt != 0 ? totalCnt % size : 0;
+                        int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
+                        int remainder = totalCnt != 0 ? totalCnt % size : 0;
 
-                    if (perNodeCnt >= maxPerNodeCnt && maxPerNodeCnt != 0) {
-                        perNodeCnt = maxPerNodeCnt;
-                        remainder = 0;
-                    }
+                        if (perNodeCnt >= maxPerNodeCnt && maxPerNodeCnt != 0) {
+                            perNodeCnt = maxPerNodeCnt;
+                            remainder = 0;
+                        }
 
-                    for (ClusterNode n : nodes)
-                        cnts.put(n.id(), perNodeCnt);
+                        for (ClusterNode n : nodes)
+                            cnts.put(n.id(), perNodeCnt);
 
-                    assert perNodeCnt >= 0;
-                    assert remainder >= 0;
+                        assert perNodeCnt >= 0;
+                        assert remainder >= 0;
 
-                    if (remainder > 0) {
-                        int cnt = perNodeCnt + 1;
+                        if (remainder > 0) {
+                            int cnt = perNodeCnt + 1;
 
-                        if (oldAssigns != null) {
-                            Collection<UUID> used = new HashSet<>();
+                            if (oldAssigns != null) {
+                                Collection<UUID> used = new HashSet<>();
 
-                            // Avoid redundant moving of services.
-                            for (Map.Entry<UUID, Integer> e : oldAssigns.topology()) {
-                                // Do not assign services to left nodes.
-                                if (ctx.discovery().node(e.getKey()) == null)
-                                    continue;
+                                // Avoid redundant moving of services.
+                                for (Map.Entry<UUID, Integer> e : oldAssigns.topology()) {
+                                    // Do not assign services to left nodes.
+                                    if (ctx.discovery().node(e.getKey()) == null)
+                                        continue;
 
-                                // If old count and new count match, then reuse the assignment.
-                                if (e.getValue() == cnt) {
-                                    cnts.put(e.getKey(), cnt);
+                                    // If old count and new count match, then reuse the assignment.
+                                    if (e.getValue() == cnt) {
+                                        cnts.put(e.getKey(), cnt);
 
-                                    used.add(e.getKey());
+                                        used.add(e.getKey());
 
-                                    if (--remainder == 0)
-                                        break;
+                                        if (--remainder == 0)
+                                            break;
+                                    }
+                                }
+
+                                if (remainder > 0) {
+                                    List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+
+                                    // Randomize.
+                                    Collections.shuffle(entries);
+
+                                    for (Map.Entry<UUID, Integer> e : entries) {
+                                        // Assign only the ones that have not been reused from previous assignments.
+                                        if (!used.contains(e.getKey())) {
+                                            if (e.getValue() < maxPerNodeCnt || maxPerNodeCnt == 0) {
+                                                e.setValue(e.getValue() + 1);
+
+                                                if (--remainder == 0)
+                                                    break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
-
-                            if (remainder > 0) {
+                            else {
                                 List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
                                 // Randomize.
                                 Collections.shuffle(entries);
 
                                 for (Map.Entry<UUID, Integer> e : entries) {
-                                    // Assign only the ones that have not been reused from previous assignments.
-                                    if (!used.contains(e.getKey())) {
-                                        if (e.getValue() < maxPerNodeCnt || maxPerNodeCnt == 0) {
-                                            e.setValue(e.getValue() + 1);
+                                    e.setValue(e.getValue() + 1);
 
-                                            if (--remainder == 0)
-                                                break;
-                                        }
-                                    }
+                                    if (--remainder == 0)
+                                        break;
                                 }
                             }
                         }
-                        else {
-                            List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
 
-                            // Randomize.
-                            Collections.shuffle(entries);
-
-                            for (Map.Entry<UUID, Integer> e : entries) {
-                                e.setValue(e.getValue() + 1);
-
-                                if (--remainder == 0)
-                                    break;
-                            }
-                        }
+                        assigns.topology(GridServiceTopologyFactory.get(cnts));
                     }
-
-                    assigns.topology(GridServiceTopologyFactory.get(cnts));
                 }
 
                 if (oldAssigns == null || !topologiesEqual(oldAssigns.topology(), assigns.topology()))
