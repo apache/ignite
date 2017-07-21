@@ -377,7 +377,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Assignment changes.
      * @return Changes.
      */
-    public Map<Integer, Map<Integer, List<UUID>>> assignmentChanges() {
+    public @Nullable Map<Integer, Map<Integer, List<UUID>>> assignmentChanges() {
         return assignmentChanges;
     }
 
@@ -588,8 +588,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
             crd2 = srvNodes.size() <= 1 ? null : srvNodes.get(1);
-
-            acked = true;
 
             if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
                 acked = !(crd2 != null && crd2.isLocal());
@@ -1262,14 +1260,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         boolean alive = cctx.discovery().alive(node);
 
-        if (!alive)
+        if (!alive || node.isLocal())
             return;
 
-        // Local not may become next coordinator.
-        if (node.isLocal())
-            return;
-
-        exchLog.info("Send ack: [exchId=" + exchangeId() + ", from=" + cctx.localNode() + ", to=" + node + ']');
+        if (log.isDebugEnabled())
+            log.debug("Sending ack: [topVer=" + topologyVersion() + ", from=" + cctx.localNode() + ", to=" + node + ']');
 
         GridDhtFinishExchangeAckMessage m = new GridDhtFinishExchangeAckMessage(exchangeId());
 
@@ -1565,20 +1560,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (isDone()) {
             if (resend) {
-                initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> f) {
-                        try {
-                            if (!f.get())
-                                return;
-                        } catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to initialize exchange future: " + this, e);
-
-                            return;
-                        }
-
-                        processMessage(node, msg);
-                    }
-                });
+                processMessage(node, msg);
 
                 return;
             }
@@ -1648,7 +1630,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         Map<Integer, Map<Integer, List<UUID>>> change = msg.assignmentChange();
 
         if (change != null && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)) {
-            // TODO optimize
             synchronized (mux) {
                 if (assignmentChanges == null)
                     assignmentChanges = U.newHashMap(change.size());
@@ -2039,8 +2020,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             log.debug("Received full partition map from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override
-            public void apply(IgniteInternalFuture<Boolean> f) {
+            @Override public void apply(IgniteInternalFuture<Boolean> f) {
                 try {
                     if (!f.get())
                         return;
@@ -2152,7 +2132,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         assert crd != null;
 
-        exchLog.info("onFinishExchangeMessage start [exchId=" + exchangeId() + ", from=" + node + ", local=" + cctx.localNode() + ']');
+        exchLog.info("onFinishExchangeMessage start [exchId=" + exchangeId() +
+            ", from=" + node + ", local=" + cctx.localNode() + ']');
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
@@ -2197,7 +2178,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
                     }
                 } finally {
-                    exchLog.info("onFinishExchangeMessage end [exchId=" + exchangeId() + ", from=" + node + ", local=" + cctx.localNode() + ']');
+                    exchLog.info("onFinishExchangeMessage end [exchId=" + exchangeId() +
+                        ", from=" + node + ", local=" + cctx.localNode() + ']');
 
                     leaveBusy();
                 }
@@ -2212,8 +2194,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param node Message sender node.
      */
     public void onFinishExchangeAckMessage(final ClusterNode node) {
-        exchLog.info("Ack onFinishExchangeAckMessage: [exchId=" + exchangeId() + ", from=" + node + ", to=" + cctx.localNode() + ']');
-
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
                 if (!enterBusy())
@@ -2223,12 +2203,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     synchronized (mux) {
                         boolean rmvd = notAcked.remove(node.id());
 
-                        exchLog.info("Ack received: [exchId=" + exchangeId() + ", from=" + node +
-                                ", to=" + cctx.localNode() + ", allAcked=" + acked + ']');
-
                         if (rmvd)
                             acked = notAcked.isEmpty();
                     }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Ack received: [exchId=" + exchangeId() + ", from=" + node +
+                            ", localNode=" + cctx.localNode() + ", acked=" + acked + ']');
                 } finally {
                     leaveBusy();
                 }
@@ -2285,8 +2266,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param node Left node.
      */
     public void onNodeLeft(final ClusterNode node) {
-        exchLog.info("onNodeLeft Node left: " + node.id() + " " + exchangeId());
-
         if ((acked && isDone()) || !enterBusy())
             return;
 
@@ -2321,7 +2300,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                                 // Update next coordinator only on non-coordinator nodes.
                                 if (crd != null && !crd.isLocal())
-                                    crd2 = srvNodes.size() <= 1 ? null : srvNodes.get(1); // TODO FIX copypaste.
+                                    crd2 = srvNodes.size() <= 1 ? null : srvNodes.get(1);
                             }
 
                             if (crd != null && crd.isLocal()) {
@@ -2335,8 +2314,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             crd0 = crd;
 
                             rmvd = notAcked.remove(node.id());
-
-                            exchLog.info("onNodeLeft ack: [exchId=" + exchangeId() + ", acked=" + node.id() + ']');
 
                             if (rmvd)
                                 acked = notAcked.isEmpty();
@@ -2354,23 +2331,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                                 resend = true;
 
-                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
-
-                                for (UUID nodeId : reqFrom) {
-                                    log.info("Send GridDhtPartitionsSingleRequest [nodeId=" + nodeId +
-                                        ", exchId=" + exchId + ']');
-
-                                    try {
-                                        // It is possible that some nodes finished exchange with previous coordinator.
-                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
-                                    } catch (ClusterTopologyCheckedException e) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
-                                                ", exchId=" + exchId + ']');
-                                    } catch (IgniteCheckedException e) {
-                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
-                                    }
-                                }
+                                sendPartitionsRequest(reqFrom);
                             }
 
                             return;
@@ -2405,25 +2366,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 return;
                             }
 
-                            if (crdChanged && reqFrom != null) {
-                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
-
-                                for (UUID nodeId : reqFrom) {
-                                    log.info("Send GridDhtPartitionsSingleRequest [nodeId=" + nodeId +
-                                        ", exchId=" + exchId + ']');
-
-                                    try {
-                                        // It is possible that some nodes finished exchange with previous coordinator.
-                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
-                                    } catch (ClusterTopologyCheckedException e) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
-                                                    ", exchId=" + exchId + ']');
-                                    } catch (IgniteCheckedException e) {
-                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
-                                    }
-                                }
-                            }
+                            if (crdChanged && reqFrom != null)
+                                sendPartitionsRequest(reqFrom);
 
                             for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
                                 processMessage(m.getKey(), m.getValue());
@@ -2444,6 +2388,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         finally {
             leaveBusy();
+        }
+    }
+
+    /** */
+    private void sendPartitionsRequest(Set<UUID> reqFrom) {
+        GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
+
+        for (UUID nodeId : reqFrom) {
+            try {
+                // It is possible that some nodes finished exchange with previous coordinator.
+                cctx.io().send(nodeId, req, SYSTEM_POOL);
+            } catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Node left during partition exchange [nodeId=" + nodeId +
+                        ", exchId=" + exchId + ']');
+            } catch (IgniteCheckedException e) {
+                U.error(log, "Failed to request partitions from node: " + nodeId, e);
+            }
         }
     }
 

@@ -1101,12 +1101,19 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Coordinator leaves without sending all {@link GridDhtFinishExchangeMessage} messages, exchange must be completed.
      *
      * @throws Exception
      */
-    public void testCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange() throws Exception {
-        //doTestCoordinatorLeaveAfterNodeLeavesBothNotFinishedExchange(1);
+    public void testBlockedFinishMsg7() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(5, 3, 2, 4);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testBlockedFinishMsg8() throws Exception {
+        doTestCoordLeaveBlockedFinishExchangeMessage(6, 3, 2, 4);
     }
 
 
