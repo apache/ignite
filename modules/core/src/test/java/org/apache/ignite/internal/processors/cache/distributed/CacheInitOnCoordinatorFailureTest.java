@@ -42,7 +42,7 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private final ExecutorService executor = Executors.newFixedThreadPool(2);
+    private final ExecutorService exec = Executors.newFixedThreadPool(2);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -71,7 +71,7 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
 
         final long destroyTimeout = 500;
 
-        final Runnable destroyCacheRunnable = new Runnable() {
+        final Runnable destroyRunnable = new Runnable() {
             @Override public void run() {
                 log().info("Awaiting " + destroyTimeout + " ms...");
 
@@ -85,17 +85,19 @@ public class CacheInitOnCoordinatorFailureTest extends GridCommonAbstractTest {
             }
         };
 
-        executor.submit(new Runnable() {
+        final Runnable createRunnable = new Runnable() {
             @Override public void run() {
                 log().info("Creating cache['" + cacheName + "']...");
 
-                executor.submit(destroyCacheRunnable);
+                exec.submit(destroyRunnable);
 
                 ignite.getOrCreateCache(cacheName);
 
                 log().info("Cache[" + cacheName + "] created.");
             }
-        });
+        };
+
+        exec.submit(createRunnable);
 
         final long completeTimeout = 2000;
 
