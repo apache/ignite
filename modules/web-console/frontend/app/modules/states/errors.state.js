@@ -31,13 +31,15 @@ angular
                 templateUrl: templateNotFoundPage,
                 metaTags: {
                     title: 'Page not found'
-                }
+                },
+                unsaved: true
             })
             .state('403', {
                 url: '/403',
                 templateUrl: templateNotAuthorizedPage,
                 metaTags: {
                     title: 'Not authorized'
-                }
+                },
+                unsaved: true
             });
     }]);
