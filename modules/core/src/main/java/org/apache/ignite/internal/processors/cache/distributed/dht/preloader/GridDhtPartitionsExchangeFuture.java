@@ -1857,8 +1857,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      */
     private void onAllReceived() {
+        if (!finishGuard.compareAndSet(false, true))
+            return;
+
         try {
             if (centralizedAff && resend) {
+                assert isDone();
+
                 Map<Integer, Map<Integer, List<UUID>>> map = assignmentChanges();
 
                 // No nodes have finished exchange, use local node's ready assignment.
@@ -2144,9 +2149,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert centralizedAff;
 
                     if (crd.equals(node)) {
-                        if (!finishGuard.compareAndSet(false, true))
-                            return;
-
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
                             crd.isLocal(),
                             msg);
@@ -2320,14 +2322,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         // Handle special case: some nodes haven't acked exchange finish.
-                        if (crd0 != null && isDone()) {
+                        if (isDone()) {
                             if (acked)
                                 return;
 
                             singleMsgs.clear();
 
-                            if (reqFrom != null) {
-                                assert crd.equals(crd2);
+                            if (crd0 != null && reqFrom != null) {
+                                assert crd0.equals(crd2);
 
                                 resend = true;
 
