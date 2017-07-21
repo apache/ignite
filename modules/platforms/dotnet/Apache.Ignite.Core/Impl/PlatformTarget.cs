@@ -300,19 +300,32 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
-        /// <param name="marsh">Marshaller to use, null to use current Ignite marshaller.</param>
         /// <returns>Resulting object.</returns>
-        protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action, Marshaller marsh = null)
+        protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
         {
-            marsh = marsh ?? _marsh;
-
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = marsh.StartMarshal(stream);
+                var writer = _marsh.StartMarshal(stream);
 
                 action(writer);
 
                 FinishMarshal(writer);
+
+                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
+            }
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="action">Action to be performed on the stream.</param>
+        /// <returns>Resulting object.</returns>
+        protected IUnmanagedTarget DoOutOpObject(int type, Action<IBinaryStream> action)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                action(stream);
 
                 return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
             }

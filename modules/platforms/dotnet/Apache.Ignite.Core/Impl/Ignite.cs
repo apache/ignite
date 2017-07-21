@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
@@ -471,8 +472,10 @@ namespace Apache.Ignite.Core.Impl
             IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
             configuration.Validate(Logger);
 
-            var cacheTarget = DoOutOpObject((int) op, w =>
+            var cacheTarget = DoOutOpObject((int) op, s =>
             {
+                var w = BinaryUtils.Marshaller.StartMarshal(s);
+
                 configuration.Write(w);
 
                 if (nearConfiguration != null)
@@ -484,7 +487,7 @@ namespace Apache.Ignite.Core.Impl
                 {
                     w.WriteBoolean(false);
                 }
-            }, BinaryUtils.Marshaller);
+            });
 
             return GetCache<TK, TV>(cacheTarget);
         }
