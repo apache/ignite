@@ -534,10 +534,10 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_GET_ATOMIC_REFERENCE: {
                 String name = reader.readString();
-                long memPtr = reader.readLong();
+                Object initVal = reader.readObjectDetached();
                 boolean create = reader.readBoolean();
 
-                return PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
+                return PlatformAtomicReference.createInstance(platformCtx, name, initVal, create);
             }
 
             case OP_GET_ATOMIC_SEQUENCE: {

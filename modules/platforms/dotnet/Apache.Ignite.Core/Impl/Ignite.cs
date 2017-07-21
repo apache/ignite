@@ -650,38 +650,14 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            var refTarget = GetAtomicReferenceUnmanaged(name, initialValue, create);
+            var refTarget = DoOutOpObject((int) Op.GetAtomicReference, w =>
+            {
+                w.WriteString(name);
+                w.WriteObject(initialValue);
+                w.WriteBoolean(create);
+            });
 
             return refTarget == null ? null : new AtomicReference<T>(refTarget, Marshaller, name);
-        }
-
-        /// <summary>
-        /// Gets the unmanaged atomic reference.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="initialValue">The initial value.</param>
-        /// <param name="create">Create flag.</param>
-        /// <returns>Unmanaged atomic reference, or null.</returns>
-        private IUnmanagedTarget GetAtomicReferenceUnmanaged<T>(string name, T initialValue, bool create)
-        {
-            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-
-            // Do not allocate memory when default is not used.
-            if (!create)
-                return UU.ProcessorAtomicReference(_proc, name, 0, false);
-            
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = Marshaller.StartMarshal(stream);
-
-                writer.Write(initialValue);
-
-                Marshaller.FinishMarshal(writer);
-
-                var memPtr = stream.SynchronizeOutput();
-
-                return UU.ProcessorAtomicReference(_proc, name, memPtr, true);
-            }
         }
 
         /** <inheritdoc /> */
