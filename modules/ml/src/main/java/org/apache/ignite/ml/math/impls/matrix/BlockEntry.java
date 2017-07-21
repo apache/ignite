@@ -15,40 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.statistics;
+package org.apache.ignite.ml.math.impls.matrix;
+
+import org.apache.ignite.ml.math.Matrix;
 
 /**
- * This class encapsulates calculating variance.
+ * Block for {@link SparseBlockDistributedMatrix}.
  */
-public class Variance {
-    /** */
-    private double mean;
+public final class BlockEntry extends SparseLocalOnHeapMatrix {
+    /** Max block size. */
+    public static final int MAX_BLOCK_SIZE = 32;
 
     /** */
-    private long n;
-
-    /** */
-    private double m2;
-
-    /** */
-    public Variance() {
-        mean = 0;
-        n = 0;
-        m2 = 0;
+    public BlockEntry() {
+        // No-op.
     }
 
     /** */
-    public Variance update(Double x) {
-        n++;
-        double delta = x - mean;
-        mean += delta / n;
-        double delta2 = x - mean;
-        m2 += delta * delta2;
-        return this;
+    public BlockEntry(int row, int col) {
+        super(row, col);
+
+        assert col <= MAX_BLOCK_SIZE;
+        assert row <= MAX_BLOCK_SIZE;
     }
 
     /** */
-    public double getResult() {
-        return m2;
+    public BlockEntry(Matrix mtx) {
+        assert mtx.columnSize() <= MAX_BLOCK_SIZE;
+        assert mtx.rowSize() <= MAX_BLOCK_SIZE;
+
+        setStorage(mtx.getStorage());
     }
+
 }
