@@ -48,7 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * Distribution-related misc. support.
  *
- * TODO: fix sparse key filters
+ * TODO: IGNITE-5102, fix sparse key filters
  */
 public class CacheUtils {
     /**

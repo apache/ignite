@@ -165,7 +165,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: wrong min/max, wait for fold/map fix
+     * TODO: IGNITE-5102, wrong min/max, wait for fold/map fix
      */
     public void testMinMax() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
