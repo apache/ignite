@@ -484,7 +484,7 @@ namespace Apache.Ignite.Core.Impl
                 {
                     w.WriteBoolean(false);
                 }
-            });
+            }, BinaryUtils.Marshaller);
 
             return GetCache<TK, TV>(cacheTarget);
         }
