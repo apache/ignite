@@ -352,6 +352,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     boolean last = stores.isEmpty();
 
                     writer.writeBoolean(last);
+
+                    if (last) {
+                        // Session object has been released on platform side, remove marker.
+                        ses.properties().remove(KEY_SES);
+                    }
                 }
             }, null);
         }
