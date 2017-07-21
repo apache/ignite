@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             try
             {
-                TestUtils.AssertHandleRegistryHasItems(Ignition.GetIgnite(), StoreCount, 1000);
+                TestUtils.AssertHandleRegistryHasItems(Ignition.GetIgnite(), 2, 1000);
             }
             finally 
             {
