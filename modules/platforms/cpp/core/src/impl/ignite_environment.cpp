@@ -61,7 +61,18 @@ namespace ignite
                 ON_START = 49,
                 ON_STOP = 50,
                 COMPUTE_TASK_LOCAL_JOB_RESULT = 60,
-                COMPUTE_JOB_EXECUTE_LOCAL = 61
+                COMPUTE_JOB_EXECUTE_LOCAL = 61,
+            };
+        };
+
+        /*
+         * PlatformClusterGroup op codes.
+         */
+        struct ClusterGroupOp
+        {
+            enum Type
+            {
+                GET_COMPUTE = 31
             };
         };
 
@@ -373,9 +384,21 @@ namespace ignite
 
         jobject IgniteEnvironment::GetProcessorCompute(jobject proj)
         {
+            /*
+             *                JniErrorInfo jniErr;
+
+                jobject res = env.Get()->Context()->TargetOutObject(javaRef, opType, &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                return res;
+
+             */
+
             JniErrorInfo jniErr;
 
-            jobject res = ctx.Get()->ProcessorCompute(proc.Get(), proj, &jniErr);
+            //jobject res = ctx.Get()->ProcessorCompute(proc.Get(), proj, &jniErr);
+            jobject res = ctx.Get()->TargetOutObject(proj, OperationCallback::PROJECTION_COMPUTE, &jniErr);
 
             IgniteError err;
 

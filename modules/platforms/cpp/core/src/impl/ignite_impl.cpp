@@ -24,11 +24,18 @@ namespace ignite
 {    
     namespace impl
     {
-        /** Operation: Get transactions. */
-        const int32_t OP_GET_TRANSACTIONS = 9;
-
-        /** Operation: Get cluster group. */
-        const int32_t OP_GET_CLUSTER_GROUP = 10;
+        /*
+         * PlatformProcessor op codes.
+         */
+        struct ProcessorOp
+        {
+            enum Type
+            {
+                GET_TRANSACTIONS = 9,
+                GET_CLUSTER_GROUP = 10,
+                GET_BINARY_PROCESSOR = 21
+            };
+        };
 
         IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
             InteropTarget(env, javaRef)
@@ -80,7 +87,7 @@ namespace ignite
         {
             SP_TransactionsImpl res;
 
-            jobject txJavaRef = InOpObject(OP_GET_TRANSACTIONS, err);
+            jobject txJavaRef = InOpObject(ProcessorOp::GET_TRANSACTIONS, err);
 
             if (txJavaRef)
                 res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
@@ -94,7 +101,7 @@ namespace ignite
 
             JniErrorInfo jniErr;
 
-            jobject clusterGroupJavaRef = InOpObject(OP_GET_CLUSTER_GROUP, err);
+            jobject clusterGroupJavaRef = InOpObject(ProcessorOp::GET_CLUSTER_GROUP, err);
 
             if (clusterGroupJavaRef)
                 res = cluster::SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, clusterGroupJavaRef));
