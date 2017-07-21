@@ -111,6 +111,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
             CacheStoreSession ses = grid.HandleRegistry.Get<CacheStoreSession>(sesId, true);
 
+            // Session cache name may change in cross-cache transaction.
+            // Single session is used for all stores in cross-cache transactions.
             ses.CacheName = rawReader.ReadString();
 
             _sesProxy.SetSession(ses);
@@ -223,11 +225,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         break;
 
                     case OpSesEnd:
-                        grid.HandleRegistry.Release(sesId);
+                    {
+                        var commit = rawReader.ReadBoolean();
+                        var last = rawReader.ReadBoolean();
 
-                        _store.SessionEnd(rawReader.ReadBoolean());
+                        if (last)
+                        {
+                            grid.HandleRegistry.Release(sesId);
+                        }
+
+                        _store.SessionEnd(commit);
 
                         break;
+                    }
 
                     default:
                         throw new IgniteException("Invalid operation type: " + opType);
