@@ -420,6 +420,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
     private long session() throws IgniteCheckedException {
+        // TODO: Track stores in KEY_SES somehow; call sessionEnd with a parameter (remove).
         Long sesPtr = (Long)ses.properties().get(KEY_SES);
 
         if (sesPtr == null) {
