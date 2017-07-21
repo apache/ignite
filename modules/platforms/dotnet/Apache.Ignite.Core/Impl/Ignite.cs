@@ -614,7 +614,12 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            var nativeLong = UU.ProcessorAtomicLong(_proc, name, initialValue, create);
+            var nativeLong = DoOutOpObject((int) Op.GetAtomicLong, w =>
+            {
+                w.WriteString(name);
+                w.WriteLong(initialValue);
+                w.WriteBoolean(create);
+            });
 
             if (nativeLong == null)
                 return null;
@@ -627,7 +632,12 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            var nativeSeq = UU.ProcessorAtomicSequence(_proc, name, initialValue, create);
+            var nativeSeq = DoOutOpObject((int) Op.GetAtomicSequence, w =>
+            {
+                w.WriteString(name);
+                w.WriteLong(initialValue);
+                w.WriteBoolean(create);
+            });
 
             if (nativeSeq == null)
                 return null;
