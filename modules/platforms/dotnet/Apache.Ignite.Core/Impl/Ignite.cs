@@ -552,8 +552,21 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
 
-            return new DataStreamerImpl<TK, TV>(UU.ProcessorDataStreamer(_proc, cacheName, false),
-                _marsh, cacheName, false);
+            return GetDataStreamer<TK, TV>(cacheName, false);
+        }
+
+        /// <summary>
+        /// Gets the data streamer.
+        /// </summary>
+        internal IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
+        {
+            var streamerTarget = DoOutOpObject((int) Op.GetDataStreamer, w =>
+            {
+                w.WriteString(cacheName);
+                w.WriteBoolean(keepBinary);
+            });
+
+            return new DataStreamerImpl<TK, TV>(streamerTarget, _marsh, cacheName, keepBinary);
         }
 
         /** <inheritdoc /> */
