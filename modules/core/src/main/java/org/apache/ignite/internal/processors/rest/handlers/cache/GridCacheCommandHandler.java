@@ -338,7 +338,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         if (cache == null)
             throw new IgniteCheckedException(
-                "Failed to find cache for given cache name (null for default cache): " + cacheName);
+                "Failed to find cache for given cache name: " + cacheName);
 
         return cache;
     }
@@ -756,7 +756,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         if (cache == null)
             throw new IgniteCheckedException(
-                "Failed to find cache for given cache name (null for default cache): " + cacheName);
+                "Failed to find cache for given cache name: " + cacheName);
 
         return cache;
     }

@@ -92,6 +92,7 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param op Operation to test.
      * @throws Exception If failed.
      */
     private void createCacheMultinode(final TestOp op) throws Exception {
@@ -135,6 +136,8 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
 
             for (String cache : ignite(0).cacheNames())
                 ignite(0).destroyCache(cache);
+
+            awaitPartitionMapExchange();
         }
     }
 
