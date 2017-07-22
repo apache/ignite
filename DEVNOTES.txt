@@ -94,7 +94,7 @@ Maven release plugin release:prepare goal can be used to make release tag.
 Deploy Ignite release candidate to maven repository and dev-svn, make tag:
 
    1) Deploy Ignite to maven repository, prepares sources and fabric edition binaries.
-      mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
+      mvn deploy -Papache-release,gpg,all-java,all-scala,licenses -Dignite.edition=fabric -DskipTests
 
    2) Javadoc generation:
       mvn initialize -Pjavadoc
@@ -104,6 +104,12 @@ Deploy Ignite release candidate to maven repository and dev-svn, make tag:
 
    4) Assembly Hadoop Accelerator:
       mvn initialize -Prelease -Dignite.edition=hadoop
+
+   5) Sign edition binaries
+      mvn initialize -Pgpg,sign-bin-artifacts
+
+   6) Prepare edition binaries
+      mvn initialize -Pdeploy-ignite-site
 
    Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
    created inside /target/bin folder when release profile is used.
