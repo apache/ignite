@@ -28,6 +28,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.builder.BinaryBuilderReader;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -1173,7 +1175,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static byte[] doReadByteArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readByteArray(len);
     }
@@ -1182,7 +1184,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static boolean[] doReadBooleanArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readBooleanArray(len);
     }
@@ -1191,7 +1193,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static short[] doReadShortArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readShortArray(len);
     }
@@ -1200,7 +1202,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static char[] doReadCharArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readCharArray(len);
     }
@@ -1209,7 +1211,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static int[] doReadIntArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readIntArray(len);
     }
@@ -1218,7 +1220,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static long[] doReadLongArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readLongArray(len);
     }
@@ -1227,7 +1229,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static float[] doReadFloatArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readFloatArray(len);
     }
@@ -1236,7 +1238,7 @@ public class BinaryUtils {
      * @return Value.
      */
     public static double[] doReadDoubleArray(BinaryInputStream in) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         return in.readDoubleArray(len);
     }
@@ -1246,7 +1248,8 @@ public class BinaryUtils {
      */
     public static BigDecimal doReadDecimal(BinaryInputStream in) {
         int scale = in.readInt();
-        byte[] mag = doReadByteArray(in);
+        int magLen = doReadUnsignedVarint(in);
+        byte[] mag = in.readByteArray(magLen);
 
         boolean negative = mag[0] < 0;
 
@@ -1266,7 +1269,8 @@ public class BinaryUtils {
      */
     public static String doReadString(BinaryInputStream in) {
         if (!in.hasArray()) {
-            byte[] arr = doReadByteArray(in);
+            int len = doReadUnsignedVarint(in);
+            byte[] arr = in.readByteArray(len);
 
             if (USE_STR_SERIALIZATION_VER_2)
                 return utf8BytesToStr(arr, 0, arr.length);
@@ -1274,7 +1278,7 @@ public class BinaryUtils {
                 return new String(arr, UTF_8);
         }
 
-        int strLen = in.readInt();
+        int strLen = doReadUnsignedVarint(in);
 
         int pos = in.position();
 
@@ -1337,7 +1341,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         BigDecimal[] arr = new BigDecimal[len];
 
@@ -1362,7 +1366,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static String[] doReadStringArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         String[] arr = new String[len];
 
@@ -1387,7 +1391,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static UUID[] doReadUuidArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         UUID[] arr = new UUID[len];
 
@@ -1412,7 +1416,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static Date[] doReadDateArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         Date[] arr = new Date[len];
 
@@ -1437,7 +1441,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static Timestamp[] doReadTimestampArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         Timestamp[] arr = new Timestamp[len];
 
@@ -1462,7 +1466,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         Time[] arr = new Time[len];
 
@@ -1498,7 +1502,10 @@ public class BinaryUtils {
             return new BinaryObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
-            byte[] arr = doReadByteArray(in);
+            int len = in.readInt();
+
+            byte[] arr = in.readByteArray(len);
+
             int start = in.readInt();
 
             BinaryObjectImpl binO = new BinaryObjectImpl(ctx, arr, start);
@@ -1688,7 +1695,7 @@ public class BinaryUtils {
      * @return Enum array.
      */
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         Object[] arr = (Object[])Array.newInstance(BinaryObject.class, len);
 
@@ -1727,7 +1734,7 @@ public class BinaryUtils {
      */
     public static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
         throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         Object[] arr = (Object[])Array.newInstance(cls, len);
 
@@ -1985,7 +1992,7 @@ public class BinaryUtils {
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
 
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
 
@@ -2359,7 +2366,7 @@ public class BinaryUtils {
             }
             else {
                 arr[position++] = (byte)(0xC0 | ((c >> 6) & 0x1F));
-                arr[position++] = (byte)(0x80 | (c  & 0x3F));
+                arr[position++] = (byte)(0x80 | (c & 0x3F));
             }
         }
 
@@ -2483,6 +2490,132 @@ public class BinaryUtils {
         }
 
         return mergedMap;
+    }
+
+    /**
+     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param in BinaryInputStream.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException If have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(BinaryInputStream in) throws BinaryObjectException {
+        int val = doReadUnsignedVarint(in.array(), in.position());
+
+        in.position(in.position() + sizeInUnsignedVarint(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from {@link BinaryBuilderReader} integer value which is presented in varint encoding.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param in BinaryBuilderReader.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException If have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(BinaryBuilderReader in) throws BinaryObjectException {
+        int val = doReadUnsignedVarint(in.array(), in.position());
+
+        in.position(in.position() + sizeInUnsignedVarint(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from given {@link ByteBuffer} integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param buf ByteBuffer.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException If have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(ByteBuffer buf) throws BinaryObjectException {
+        int val = doReadUnsignedVarint(buf.array(), buf.position());
+
+        buf.position(buf.position() + sizeInUnsignedVarint(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from given bytes array integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param arr Bytes array.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException If have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(byte[] arr, int off) throws BinaryObjectException {
+        int val = 0;
+        int bits = 0;
+        int b;
+
+        while (((b = arr[off++]) & 0x80) != 0) {
+            val |= (b & 0x7F) << bits;
+            bits += 7;
+
+            if (bits > 35)
+                throw new BinaryObjectException("Varint reading failed, sequence length is too long");
+        }
+
+        return val | (b << bits);
+    }
+
+    /**
+     * Reads via given pointer integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     *
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException If have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(long ptr, int off) throws BinaryObjectException {
+        int val = 0;
+        int bits = 0;
+        int b;
+
+        while (((b = BinaryPrimitives.readByte(ptr, off++)) & 0x80) != 0) {
+            val |= (b & 0x7F) << bits;
+            bits += 7;
+
+            if (bits > 35)
+                throw new BinaryObjectException("Varint reading failed, sequence length is too long");
+        }
+
+        return val | (b << bits);
+    }
+
+    /**
+     * Returns the encoded size of the given unsigned integer value.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param val Value to be encoded.
+     * @return Encoded size.
+     */
+    public static int sizeInUnsignedVarint(int val) {
+        if (val < 0)
+            return 5;
+
+        if (val <= Byte.MAX_VALUE)
+            return 1;
+
+        if (val <= 16383)
+            return 2;
+
+        if (val <= 2097151)
+            return 3;
+
+        if (val <= 268435455)
+            return 4;
+
+        return 5;
     }
 
     /**

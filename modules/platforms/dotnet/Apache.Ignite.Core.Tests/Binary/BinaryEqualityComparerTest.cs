@@ -102,22 +102,22 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsFalse(BinaryArrayEqualityComparer.Equals(obj5, obj6));
 
             // BinaryObject.GetHashCode.
-            Assert.AreEqual(1934949494, obj1.GetHashCode());
-            Assert.AreEqual(-2013102781, obj2.GetHashCode());
-            Assert.AreEqual(1424415317, obj3.GetHashCode());
-            Assert.AreEqual(1771330338, obj4.GetHashCode());
+            Assert.AreEqual(860484896, obj1.GetHashCode());
+            Assert.AreEqual(1207399917, obj2.GetHashCode());
+            Assert.AreEqual(567081889, obj3.GetHashCode());
+            Assert.AreEqual(913996910, obj4.GetHashCode());
             Assert.AreEqual(obj1.GetHashCode(), obj5.GetHashCode());
-            Assert.AreEqual(1934979285, BinaryArrayEqualityComparer.GetHashCode(obj6));
+            Assert.AreEqual(860514687, BinaryArrayEqualityComparer.GetHashCode(obj6));
 
             // Comparer.GetHashCode.
             Assert.AreEqual(2001751043, BinaryArrayEqualityComparer.GetHashCode(GetBinaryObject(0, null, 0)));
             Assert.AreEqual(194296580, BinaryArrayEqualityComparer.GetHashCode(GetBinaryObject(1, null, 0)));
-            Assert.AreEqual(1934949494, BinaryArrayEqualityComparer.GetHashCode(obj1));
-            Assert.AreEqual(-2013102781, BinaryArrayEqualityComparer.GetHashCode(obj2));
-            Assert.AreEqual(1424415317, BinaryArrayEqualityComparer.GetHashCode(obj3));
-            Assert.AreEqual(1771330338, BinaryArrayEqualityComparer.GetHashCode(obj4));
+            Assert.AreEqual(860484896, BinaryArrayEqualityComparer.GetHashCode(obj1));
+            Assert.AreEqual(1207399917, BinaryArrayEqualityComparer.GetHashCode(obj2));
+            Assert.AreEqual(567081889, BinaryArrayEqualityComparer.GetHashCode(obj3));
+            Assert.AreEqual(913996910, BinaryArrayEqualityComparer.GetHashCode(obj4));
             Assert.AreEqual(BinaryArrayEqualityComparer.GetHashCode(obj1), BinaryArrayEqualityComparer.GetHashCode(obj5));
-            Assert.AreEqual(1934979285, BinaryArrayEqualityComparer.GetHashCode(obj6));
+            Assert.AreEqual(860514687, BinaryArrayEqualityComparer.GetHashCode(obj6));
 
             // GetHashCode consistency.
             foreach (var obj in new[] {obj1, obj2, obj3, obj4, obj5, obj6})
