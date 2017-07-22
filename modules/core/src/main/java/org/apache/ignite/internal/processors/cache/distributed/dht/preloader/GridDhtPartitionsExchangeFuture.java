@@ -2025,7 +2025,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             log.debug("Received full partition map from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override public void apply(IgniteInternalFuture<Boolean> f) {
+            @Override
+            public void apply(IgniteInternalFuture<Boolean> f) {
                 try {
                     if (!f.get())
                         return;
@@ -2135,13 +2136,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     public void onFinishExchangeMessage(final ClusterNode node, final GridDhtFinishExchangeMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
 
-        assert crd != null;
-
         exchLog.info("onFinishExchangeMessage start [exchId=" + exchangeId() +
             ", from=" + node + ", local=" + cctx.localNode() + ']');
 
         onDiscoveryEvent(new IgniteRunnable() {
             @Override public void run() {
+                assert crd != null;
+
                 if (isDone() || !enterBusy())
                     return;
 
@@ -2197,7 +2198,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public void onFinishExchangeAckMessage(final ClusterNode node) {
         onDiscoveryEvent(new IgniteRunnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 if (!enterBusy())
                     return;
 
@@ -2211,7 +2213,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (log.isDebugEnabled())
                         log.debug("Ack received: [exchId=" + exchangeId() + ", from=" + node +
-                            ", localNode=" + cctx.localNode() + ", acked=" + acked + ']');
+                                ", localNode=" + cctx.localNode() + ", acked=" + acked + ']');
                 } finally {
                     leaveBusy();
                 }
@@ -2328,12 +2330,35 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             singleMsgs.clear();
 
-                            if (crd0 != null && reqFrom != null) {
+                            if (crd0 != null) {
                                 assert crd0.equals(crd2);
 
-                                resend = true;
+                                // Restart exchange.
+                                if (reqFrom != null) {
+                                    resend = true;
 
-                                sendPartitionsRequest(reqFrom);
+                                    sendPartitionsRequest(reqFrom);
+                                }
+                                else {
+                                    // Re-send finish message to clients, if any.
+                                    GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
+
+                                    ClusterNode n = crd2;
+
+                                    try {
+                                        Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
+                                                cctx.affinity().readyAssignmentChanges(GridDhtPartitionsExchangeFuture.this);
+
+                                        GridDhtFinishExchangeMessage msg =
+                                                new GridDhtFinishExchangeMessage(exchId, assignmentChange, m,
+                                                n == null ? null : n.id());
+
+                                        cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg,
+                                                GridIoPolicy.SYSTEM_POOL, null);
+                                    } catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to re-send finish message to clients: exchId=" + this, e);
+                                    }
+                                }
                             }
 
                             return;
