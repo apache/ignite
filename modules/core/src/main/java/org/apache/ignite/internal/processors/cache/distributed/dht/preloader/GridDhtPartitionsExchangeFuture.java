@@ -2284,6 +2284,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     try {
                         boolean crdChanged = false;
+                        boolean mayAck = false;
                         boolean allReceived = false;
                         Set<UUID> reqFrom = null;
 
@@ -2305,6 +2306,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 // Update next coordinator only on non-coordinator nodes.
                                 if (crd != null && !crd.isLocal())
                                     crd2 = srvNodes.size() <= 1 ? null : srvNodes.get(1);
+
+                                mayAck = crd != null && crd.equals(crd2) && crd.isLocal();
                             }
 
                             if (crd != null && crd.isLocal()) {
@@ -2324,40 +2327,35 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         // Handle special case: some nodes haven't acked exchange finish.
-                        if (isDone()) {
+                        if (isDone() && mayAck) {
                             if (acked)
                                 return;
 
                             singleMsgs.clear();
 
-                            if (crd0 != null) {
-                                assert crd0.equals(crd2);
+                            // Restart exchange.
+                            if (reqFrom != null) {
+                                resend = true;
 
-                                // Restart exchange.
-                                if (reqFrom != null) {
-                                    resend = true;
+                                sendPartitionsRequest(reqFrom);
+                            } else {
+                                // Re-send finish message to clients, if any.
+                                GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
 
-                                    sendPartitionsRequest(reqFrom);
-                                }
-                                else {
-                                    // Re-send finish message to clients, if any.
-                                    GridDhtPartitionsFullMessage m = createPartitionsMessage(null, true);
+                                ClusterNode n = crd2;
 
-                                    ClusterNode n = crd2;
+                                try {
+                                    Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
+                                            cctx.affinity().readyAssignmentChanges(GridDhtPartitionsExchangeFuture.this);
 
-                                    try {
-                                        Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
-                                                cctx.affinity().readyAssignmentChanges(GridDhtPartitionsExchangeFuture.this);
+                                    GridDhtFinishExchangeMessage msg =
+                                            new GridDhtFinishExchangeMessage(exchId, assignmentChange, m,
+                                                    n == null ? null : n.id());
 
-                                        GridDhtFinishExchangeMessage msg =
-                                                new GridDhtFinishExchangeMessage(exchId, assignmentChange, m,
-                                                n == null ? null : n.id());
-
-                                        cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg,
-                                                GridIoPolicy.SYSTEM_POOL, null);
-                                    } catch (IgniteCheckedException e) {
-                                        U.error(log, "Failed to re-send finish message to clients: exchId=" + this, e);
-                                    }
+                                    cctx.io().safeSend(discoCache.remoteNodesWithCaches(), msg,
+                                            GridIoPolicy.SYSTEM_POOL, null);
+                                } catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to re-send finish message to clients: exchId=" + this, e);
                                 }
                             }
 
