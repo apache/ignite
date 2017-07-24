@@ -35,17 +35,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Ensures stable behavior on fast create-destroy sequence for the same cache in a cluster.
- * As of v. 1.6 non-atomic multi-step cache initialization could fail sporadically.
  */
 public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder();
-
-    /** */
-    private static final int CACHE_COUNT_LOW_THRESHOLD = 5;
-
-    /** */
-    private static final int CACHE_COUNT_HIGH_THRESHOLD = 10;
 
     /** */
     private static final String CHECKPOINT_CACHE_NAME = "myCache";
@@ -65,11 +58,6 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        // This mojo prevents communication between nodes via shared memory, let 'em behave as in real network
-        if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi) {
-            ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-        }
-
         return cfg;
     }
 
@@ -78,11 +66,13 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
      */
     public void testCacheCreateInitDestroyRace() throws Exception {
         Ignition.setClientMode(false);
+
         startGrid(0);
         final Ignite ignite2 = startGrid(1);
         final Ignite ignite3 = startGrid(2);
 
         Ignition.setClientMode(true);
+
         final Ignite igniteClient = startGrid(3);
 
         final Set<String> existingCacheNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
@@ -92,10 +82,13 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
         // This thread generates "noise" to keep future queue in partition-exchanger filled
         final Thread noiseGenerator = new Thread(new Runnable() {
             @Override public void run() {
+                final int cacheCountLowThreshold = 5;
+                final int cacheCountHighThreshold = 10;
+
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         int cacheCount = existingCacheNames.size();
-                        if (cacheCount < CACHE_COUNT_LOW_THRESHOLD) {
+                        if (cacheCount < cacheCountLowThreshold) {
                             final String cacheName = UUID.randomUUID().toString();
                             new Thread(new Runnable() {
                                 @Override public void run() {
@@ -103,7 +96,7 @@ public class CacheCreateInitDestroyRaceSelfTest extends GridCommonAbstractTest {
                                     existingCacheNames.add(cacheName);
                                 }
                             }).start();
-                        } else if (cacheCount > CACHE_COUNT_HIGH_THRESHOLD) {
+                        } else if (cacheCount > cacheCountHighThreshold) {
                             noiseLatch.countDown();
                             new Thread(new Runnable() {
                                 @Override public void run() {
