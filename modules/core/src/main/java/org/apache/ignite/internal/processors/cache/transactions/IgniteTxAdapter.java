@@ -1070,10 +1070,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (valid) {
             // Seal transactions maps.
-            if (state != ACTIVE)
+            if (state != ACTIVE && state != SUSPENDED)
                 seal();
-            else if (prev == SUSPENDED)
-                unseal();
         }
 
         return valid;
@@ -2116,11 +2114,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         /** {@inheritDoc} */
         @Override public void seal() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unseal() {
             // No-op.
         }
 

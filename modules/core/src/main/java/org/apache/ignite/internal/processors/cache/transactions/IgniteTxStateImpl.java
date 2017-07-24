@@ -457,15 +457,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void unseal() {
-        if (readView != null)
-            readView.unseal();
-
-        if (writeView != null)
-            writeView.unseal();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
     }

@@ -346,11 +346,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         txState.seal();
     }
 
-    /** {@inheritDoc} */
-    @Override public void unseal() {
-        txState.unseal();
-    }
-
     /**
      * @param ret Result.
      */

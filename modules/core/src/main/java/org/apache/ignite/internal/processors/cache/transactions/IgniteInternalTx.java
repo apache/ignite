@@ -447,11 +447,6 @@ public interface IgniteInternalTx {
     public void seal();
 
     /**
-     * Un seals transaction for updates.
-     */
-    public void unseal();
-
-    /**
      * @param key Key for the entry.
      * @return Entry for the key (either from write set or read set).
      */
