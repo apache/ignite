@@ -274,6 +274,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     };
 
     /**
+     * @param log Ignite logger.
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
      * @param pageMem Page memory.
@@ -284,13 +285,15 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public FreeListImpl(
+        IgniteLogger log,
         int cacheId,
         String name,
         PageMemory pageMem,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
+        boolean initNew
+    ) throws IgniteCheckedException {
         super(cacheId, name, pageMem, BUCKETS, wal, metaPageId);
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
@@ -312,7 +315,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
         this.shift = shift;
 
-        init(metaPageId, initNew);
+        init(log, metaPageId, initNew);
     }
 
     /** {@inheritDoc} */

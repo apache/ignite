@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesLis
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Base format for all the page types.
@@ -503,5 +505,30 @@ public abstract class PageIO {
         }
 
         throw new IgniteCheckedException("Unknown page IO type: " + type);
+    }
+
+    /**
+     * Dumps a page as a binary byte array.
+     *
+     * @param pageAddr Page address.
+     * @param pageSize Page size.
+     * @return Page contents as a string.
+     */
+    public static String dumpPageBinary(long pageAddr, int pageSize) {
+        GridStringBuilder sb = new GridStringBuilder();
+
+        for (int i = 0; i < pageSize; i++) {
+            int b = GridUnsafe.getByte(pageAddr + i) & 0xFF;
+
+            if (b < 0x10)
+                sb.a('0');
+
+            sb.a(Integer.toHexString(b));
+
+            if (i < pageSize - 1)
+                sb.a(' ');
+        }
+
+        return sb.toString();
     }
 }

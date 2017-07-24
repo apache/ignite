@@ -333,7 +333,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        return new FreeListImpl(1, "freelist", pageMem, null, null, metaPageId, true);
+        return new FreeListImpl(log, 1, "freelist", pageMem, null, null, metaPageId, true);
     }
 
     /**

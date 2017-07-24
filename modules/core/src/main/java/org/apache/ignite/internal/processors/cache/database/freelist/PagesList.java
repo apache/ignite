@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -152,7 +153,11 @@ public abstract class PagesList extends DataStructure {
      * @param initNew {@code True} if new list if created, {@code false} if should be initialized from metadata.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void init(long metaPageId, boolean initNew) throws IgniteCheckedException {
+    protected final void init(
+        IgniteLogger log,
+        long metaPageId,
+        boolean initNew
+    ) throws IgniteCheckedException {
         if (metaPageId != 0L) {
             if (initNew) {
                 try (Page page = page(metaPageId)) {
@@ -181,6 +186,14 @@ public abstract class PagesList extends DataStructure {
                                 "Loop detected [next=" + U.hexLong(next0) + ", cur=" + U.hexLong(nextPageId) + ']';
 
                             nextPageId = next0;
+                        }
+                        catch (RuntimeException e) {
+                            U.error(log, "Failed to get page IO [cacheId=" + cacheId +
+                                ", metaPageId=" + U.hexLong(metaPageId) +
+                                ", pageId=" + U.hexLong(page.id()) +
+                                ", page={" + PageIO.dumpPageBinary(pageAddr, pageSize()) + "}]");
+
+                            throw e;
                         }
                         finally {
                             readUnlock(page, pageAddr);

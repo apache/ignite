@@ -46,19 +46,25 @@ public class SnapshotOperation implements Serializable {
     /** Additional parameter. */
     private final Object extraParam;
 
+    /** Optional list of dependent snapshot IDs. */
+    private final Set<Long> dependentSnapshotIds;
+
     /**
      * @param type Type.
      * @param snapshotId Snapshot id.
      * @param cacheNames Cache names.
-     * @param msg
+     * @param msg Message.
      * @param extraParam Additional parameter.
+     * @param dependentSnapshotIds Optional list of dependent snapshot IDs.
      */
-    public SnapshotOperation(SnapshotOperationType type, long snapshotId, Set<String> cacheNames, String msg, Object extraParam) {
+    public SnapshotOperation(SnapshotOperationType type, long snapshotId, Set<String> cacheNames, String msg,
+        Object extraParam, Set<Long> dependentSnapshotIds) {
         this.type = type;
         this.snapshotId = snapshotId;
         this.cacheNames = cacheNames;
         this.msg = msg;
         this.extraParam = extraParam;
+        this.dependentSnapshotIds = dependentSnapshotIds;
     }
 
     /**
@@ -100,17 +106,41 @@ public class SnapshotOperation implements Serializable {
         return extraParam;
     }
 
+    /**
+     * @return Optional dependent snapshot IDs.
+     */
+    public Set<Long> dependentSnapshotIds() {
+        return dependentSnapshotIds;
+    }
 
     /**
      * @param op Op.
      */
     public static Collection<File> getOptionalPathsParameter(SnapshotOperation op) {
-        assert (op.type() == SnapshotOperationType.CHECK ||
-                op.type() == SnapshotOperationType.RESTORE ||
+        assert (op.type() == SnapshotOperationType.RESTORE ||
                 op.type() == SnapshotOperationType.RESTORE_2_PHASE)
-            && (op.extraParameter() == null || op.extraParameter() instanceof Collection);
+            && (op.extraParameter() == null || op.extraParameter() instanceof Collection)
+            || (op.type() == SnapshotOperationType.CHECK &&
+                (op.extraParameter() == null || op.extraParameter() instanceof SnapshotCheckParameters));
+
+        if (op.type() == SnapshotOperationType.CHECK) {
+            if (op.extraParameter() == null)
+                return null;
+            else
+                return ((SnapshotCheckParameters)op.extraParameter()).optionalPaths();
+        }
 
         return (Collection<File>)op.extraParameter();
+    }
+
+    /**
+     * @param op Op.
+     */
+    public static boolean getSkipCrcParameter(SnapshotOperation op) {
+        assert op.type() == SnapshotOperationType.CHECK &&
+            (op.extraParameter() == null | op.extraParameter() instanceof SnapshotCheckParameters);
+
+        return op.extraParameter() != null && ((SnapshotCheckParameters)op.extraParameter()).skipCrc();
     }
 
     /**
@@ -131,9 +161,11 @@ public class SnapshotOperation implements Serializable {
         return (File)op.extraParameter();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
@@ -164,6 +196,7 @@ public class SnapshotOperation implements Serializable {
             ", cacheNames=" + cacheNames +
             ", msg='" + msg + '\'' +
             ", extraParam=" + extraParam +
+            ", dependentSnapshotIds=" + dependentSnapshotIds +
             '}';
     }
 }

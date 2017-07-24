@@ -19,12 +19,14 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.IgniteCache;
 
+import java.util.Collection;
+
 /**
  * Partition loss policy. Defines how cache will behave in a case when one or more partitions are lost
  * because of a node(s) failure.
  * <p>
  * All <code>*_SAFE</code> policies prevent a user from interaction with partial data in lost partitions until
- * {@link IgniteCache#resetLostPartitions()} method is called. <code>*_ALL</code> policies allow working with
+ * {@link org.apache.ignite.Ignite#resetLostPartitions(Collection)} ()} method is called. <code>*_ALL</code> policies allow working with
  * partial data in lost partitions.
  * <p>
  * <code>READ_ONLY_*</code> and <code>READ_WRITE_*</code> policies do not automatically change partition state
