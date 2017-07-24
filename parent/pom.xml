@@ -116,6 +116,10 @@
         <osgi.embed.transitive>false</osgi.embed.transitive>
         <osgi.fail.ok>false</osgi.fail.ok>
 
+
+        <!-- will be changed by profile activation. allows to combine profiles. -->
+        <java8.srcdir>${project.build.sourceDirectory}</java8.srcdir>
+        <java8.test.srcdir>${project.build.testSourceDirectory}</java8.test.srcdir>
     </properties>
 
     <groupId>org.apache.ignite</groupId>
@@ -546,6 +550,11 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -557,6 +566,37 @@
                     <source>1.7</source>
                     <target>1.7</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${java8.srcdir}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-tests</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${java8.test.srcdir}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -938,6 +978,8 @@
             </activation>
             <properties>
                 <javadoc.opts>-Xdoclint:none</javadoc.opts>
+                <java8.srcdir>${project.build.sourceDirectory}/../java8</java8.srcdir>
+                <java8.test.srcdir>${project.build.testSourceDirectory}/../java8</java8.test.srcdir>
             </properties>
             <build>
                 <plugins>

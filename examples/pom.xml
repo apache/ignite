@@ -111,11 +111,9 @@
     <properties>
         <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
-        <java8.folder>src/main/java</java8.folder>
         <spark.folder>src/main/java</spark.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
-        <java8.test.folder>src/test/java</java8.test.folder>
     </properties>
 
     <profiles>
@@ -222,31 +220,6 @@
         </profile>
 
         <profile>
-            <id>java8</id>
-
-            <properties>
-                <java8.folder>src/main/java8</java8.folder>
-                <java8.test.folder>src/test/java8</java8.test.folder>
-            </properties>
-
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <source>1.8</source>
-                            <target>1.8</target>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>lgpl</id>
 
             <properties>
@@ -284,7 +257,7 @@
                             <sources>
                                 <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
-                                <source>${java8.folder}</source>
+                                <source>${java8.srcdir}</source>
                                 <source>${spark.folder}</source>
                             </sources>
                         </configuration>
@@ -300,7 +273,7 @@
                             <sources>
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
-                                <source>${java8.test.folder}</source>
+                                <source>${java8.test.srcdir}</source>
                             </sources>
                         </configuration>
                     </execution>

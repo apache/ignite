@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
@@ -116,6 +115,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.Java8DateTimeApiUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -3152,6 +3152,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final GridQueryProperty[] props;
 
         /**
+         * Returns the field type for the specified field class.
+         *
+         * @param fieldCls Field class.
+         * @return Field type.
+         */
+        private int fieldType(Class fieldCls) {
+            int fieldType = DataType.getTypeFromClass(fieldCls);
+
+            if (fieldType == Value.JAVA_OBJECT) {
+                if (Java8DateTimeApiUtils.isLocalDateTime(fieldCls))
+                    fieldType = Value.TIMESTAMP;
+            }
+
+            return fieldType;
+        }
+
+        /**
          * @param type Type descriptor.
          * @param schema Schema.
          */
@@ -3175,7 +3192,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Class[] classes = allFields.values().toArray(new Class[fields.length]);
 
             for (int i = 0; i < fieldTypes.length; i++)
-                fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
+                fieldTypes[i] = fieldType(classes[i]);
 
             keyType = DataType.getTypeFromClass(type.keyClass());
             valType = DataType.getTypeFromClass(type.valueClass());
@@ -3276,6 +3293,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 case Value.TIMESTAMP:
                     if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
                         obj = new Timestamp(((java.util.Date) obj).getTime());
+
+                    if (Java8DateTimeApiUtils.isLocalDateTime(obj.getClass()))
+                        obj = Java8DateTimeApiUtils.localDateTimeToTimestamp(obj);
 
                     return ValueTimestamp.get((Timestamp)obj);
                 case Value.DECIMAL:
