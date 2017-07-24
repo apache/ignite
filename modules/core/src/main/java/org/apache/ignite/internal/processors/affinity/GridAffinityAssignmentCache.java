@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -280,20 +282,25 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
+        GridAffinityFunctionContextImpl afCtxt = new GridAffinityFunctionContextImpl(sorted, prevAssignment,
+            discoEvt, topVer, backups);
+
         if (prevAssignment != null && discoEvt != null) {
             boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
 
             if (!affNode)
                 assignment = prevAssignment;
             else
-                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                assignment = aff.assignPartitions(afCtxt);
         }
         else
-            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
-                topVer, backups));
+            assignment = aff.assignPartitions(afCtxt);
 
         assert assignment != null;
+
+        List<List<Integer>> dist = freqDistribution(assignment, sorted);
+
+        printDistribution(dist, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
 
         idealAssignment = assignment;
 
@@ -301,6 +308,89 @@ public class GridAffinityAssignmentCache {
             initialize(topVer, assignment);
 
         return assignment;
+    }
+
+    /**
+     * @param nodesParts Frequency distribution.
+     * @param cacheName
+     * @param localNodeID
+     * @param parts
+     */
+    private void printDistribution(Collection<List<Integer>> nodesParts, String cacheName, String localNodeID, int parts) {
+        if (nodesParts.size() != 0) {
+            log.info(" #### NODES COUNT:" + nodesParts.size());
+
+            int nodeNum = 0;
+
+            for (List<Integer> nodesPart : nodesParts) {
+                log.info("## Node " + nodeNum++ + ":");
+
+                int nr = 0;
+
+                for (int cnt : nodesPart) {
+                    int percentage = (int)Math.round((double)cnt / parts * 100);
+
+                    log.info("cacheName=" + cacheName + ", " + (nr == 0 ? "Primary" : "Backup") + " node=" + localNodeID +
+                        ", partitions count=" + cnt + " percentage of parts count=" + percentage + "% ");
+
+                    nr++;
+                }
+            }
+        }
+    }
+
+    /**
+     * The table with count of partitions on node:
+     *
+     * column 0 - primary partitions counts
+     * column 1 - backup#0 partitions counts
+     * etc
+     *
+     * Rows correspond to the nodes.
+     *
+     * @param partitionsByNodes Affinity result.
+     * @param nodes Topology.
+     * @return Frequency distribution: counts of partitions on node.
+     */
+    private static List<List<Integer>> freqDistribution(List<List<ClusterNode>> partitionsByNodes,
+        Collection<ClusterNode> nodes) {
+        List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
+
+        int backups = partitionsByNodes.get(0).size();
+
+        for (int i = 0; i < backups; ++i) {
+            Map<ClusterNode, AtomicInteger> nodeMap = new HashMap<>();
+
+            for (List<ClusterNode> partitionByNodes : partitionsByNodes) {
+                ClusterNode node = partitionByNodes.get(i);
+
+                if (node.isLocal()) {
+                    if (!nodeMap.containsKey(node))
+                        nodeMap.put(node, new AtomicInteger(1));
+                    else
+                        nodeMap.get(node).incrementAndGet();
+                }
+            }
+
+            nodeMaps.add(nodeMap);
+        }
+
+        List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
+        for (ClusterNode node : nodes) {
+            if (node.isLocal()) {
+                List<Integer> byBackups = new ArrayList<>(backups);
+
+                for (int j = 0; j < backups; ++j) {
+                    if (nodeMaps.get(j).get(node) == null)
+                        byBackups.add(0);
+                    else
+                        byBackups.add(nodeMaps.get(j).get(node).get());
+                }
+
+                byNodes.add(byBackups);
+            }
+        }
+        return byNodes;
     }
 
     /**
