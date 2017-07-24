@@ -72,7 +72,8 @@ namespace ignite
         {
             enum Type
             {
-                GET_BINARY_PROCESSOR = 21
+                GET_BINARY_PROCESSOR = 21,
+                RELEASE_START = 22
             };
         };
 
@@ -583,10 +584,8 @@ namespace ignite
         {
             if (proc.Get())
             {
-                //ctx.Get()->ProcessorReleaseStart(proc.Get());
-                // TODO
-                JniErrorInfo err;
-                ctx.Get()->TargetInLongOutLong(proc.Get(), 22, 0, &err);
+                JniErrorInfo jniErr;
+                ctx.Get()->TargetInLongOutLong(proc.Get(), ProcessorOp::RELEASE_START, 0, &jniErr);
             }
         }
 
