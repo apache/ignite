@@ -323,7 +323,8 @@ namespace ignite
 
         env.Get()->ProcessorReleaseStart();
 
-        IgniteImpl* impl = new IgniteImpl(env, javaRef);
+        // TODO: Get rid of IgnitionStart result - it is never used in .NET or C++.
+        IgniteImpl* impl = new IgniteImpl(env, static_cast<jobject>(env.Get()->GetProcessor()));
 
         return Ignite(impl);
     }
