@@ -547,77 +547,6 @@
         </profile>
 
         <profile>
-            <id>apache-release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <!-- skip default -->
-                                <id>source-release-assembly</id>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <skipAssembly>true</skipAssembly>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>source-release-assembly-ignite</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptors>
-                                        <descriptor>assembly/release-sources.xml</descriptor>
-                                    </descriptors>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <configuration>
-                                    <ascDirectory>${basedir}</ascDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-remote-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>process</goal>
-                                </goals>
-                                <configuration>
-                                    <!-- no <resourceBundle>, fix unexpected generation of
-                                       DEPENDENCIES, LICENSE, NOTICE files-->
-                                    <skip>true</skip>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>deploy-ignite-site</id>
             <build>
                 <plugins>
@@ -864,6 +793,54 @@
             <id>sign-bin-artifacts</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <!-- skip default -->
+                                <id>source-release-assembly</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <skipAssembly>true</skipAssembly>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>source-release-assembly-ignite</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                    <descriptors>
+                                        <descriptor>assembly/release-sources.xml</descriptor>
+                                    </descriptors>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-remote-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- no <resourceBundle>, fix unexpected generation of
+                                       DEPENDENCIES, LICENSE, NOTICE files-->
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
