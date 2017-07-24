@@ -5,7 +5,6 @@ IgniteIgnitionStart @2
 IgniteIgnitionEnvironmentPointer @4 
 IgniteIgnitionStop @5 
 IgniteIgnitionStopAll @6 
-IgniteProcessorReleaseStart @8 
 IgniteTargetInStreamOutObject @17 
 IgniteTargetInStreamOutLong @18 
 IgniteTargetOutStream @19 

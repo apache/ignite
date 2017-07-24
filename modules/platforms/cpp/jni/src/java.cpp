@@ -819,14 +819,6 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            void JniContext::ProcessorReleaseStart(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_releaseStart);
-
-                ExceptionCheck(env);
-            }
-
             long long JniContext::TargetInLongOutLong(jobject obj, int opType, long long val, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 

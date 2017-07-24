@@ -42,10 +42,6 @@ extern "C" {
         return ctx->IgnitionStopAll(cancel);
     }
 
-    void IGNITE_CALL IgniteProcessorReleaseStart(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProcessorReleaseStart(static_cast<jobject>(obj));
-    }
-
     long long IGNITE_CALL IgniteTargetInLongOutLong(gcj::JniContext* ctx, void* obj, int opType, long long val) {
         return ctx->TargetInLongOutLong(static_cast<jobject>(obj), opType, val);
     }

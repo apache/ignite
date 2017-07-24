@@ -30,8 +30,6 @@ extern "C" {
     bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* name, bool cancel);
     void IGNITE_CALL IgniteIgnitionStopAll(gcj::JniContext* ctx, bool cancel);
 
-    void IGNITE_CALL IgniteProcessorReleaseStart(gcj::JniContext* ctx, void* obj);
-
     long long IGNITE_CALL IgniteTargetInLongOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
     void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, long long inMemPtr, long long outMemPtr);

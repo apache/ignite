@@ -317,8 +317,6 @@ namespace ignite
                 void IgnitionStopAll(bool cancel);
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 
-                void ProcessorReleaseStart(jobject obj);
-
                 long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);

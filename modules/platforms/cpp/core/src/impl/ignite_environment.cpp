@@ -582,7 +582,12 @@ namespace ignite
         void IgniteEnvironment::ProcessorReleaseStart()
         {
             if (proc.Get())
-                ctx.Get()->ProcessorReleaseStart(proc.Get());
+            {
+                //ctx.Get()->ProcessorReleaseStart(proc.Get());
+                // TODO
+                JniErrorInfo err;
+                ctx.Get()->TargetInLongOutLong(proc.Get(), 22, 0, &err);
+            }
         }
 
         HandleRegistry& IgniteEnvironment::GetHandleRegistry()
