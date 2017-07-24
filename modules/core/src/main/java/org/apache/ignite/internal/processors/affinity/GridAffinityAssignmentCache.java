@@ -298,7 +298,11 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
+        String ignitePartDistribution = System.getProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+
+        if (Boolean.valueOf(ignitePartDistribution)) {
+            printDistribution(assignment, sorted, cacheOrGrpName, ctx.localNodeId().toString(), assignment.size());
+        }
 
         idealAssignment = assignment;
 

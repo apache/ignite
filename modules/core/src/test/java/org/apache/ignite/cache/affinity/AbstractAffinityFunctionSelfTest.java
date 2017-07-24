@@ -26,12 +26,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -65,6 +67,15 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     private void checkDistributionCalculation(boolean enabled) {
         System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(enabled));
 
+        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
+
+        GridTestUtils.setFieldValue(aff, "log", log);
+
+        List<ClusterNode> nodes = createBaseNodes(4);
+
+        assignPartitions(aff, nodes, null, 2, 0);
+
+        List<List<ClusterNode>> lst = assignPartitions(aff, nodes, null, 2, 1).get2();
 
     }
 
