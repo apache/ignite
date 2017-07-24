@@ -237,7 +237,6 @@ namespace ignite
                     jobject res = env.Get()->Context()->TargetInStreamOutObject(javaRef, opType, outInPtr, &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                    IgniteError::ThrowIfNeeded(err);
 
                     return res;
                 }
