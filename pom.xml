@@ -845,7 +845,7 @@
         </profile>
 
         <profile>
-            <id>sign-bin-artifacts</id>
+            <id>sign-artifacts</id>
             <build>
                 <plugins>
                     <plugin>
