@@ -93,12 +93,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    // OnStart receives the same InteropProcessor as here (just as another GlobalRef) and stores it.
-                    // Release current reference immediately.
-                    void* res = JNI.IgnitionStart(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
+                    // OnStart receives InteropProcessor referece and stores it.
+                    JNI.IgnitionStart(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
                         mem.SynchronizeOutput());
-
-                    JNI.Release(res);
                 }
                 finally
                 {

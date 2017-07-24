@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern int Reallocate(long memPtr, int cap);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStart")]
-        public static extern void* IgnitionStart(void* ctx, sbyte* cfgPath, sbyte* gridName, int factoryId, 
+        public static extern void IgnitionStart(void* ctx, sbyte* cfgPath, sbyte* gridName, int factoryId, 
             long dataPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStop")]
