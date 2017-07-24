@@ -88,13 +88,13 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <lucene.bundle.version>3.5.0_1</lucene.bundle.version>
-        <lucene.version>3.5.0</lucene.version>
+        <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
+        <lucene.version>5.5.2</lucene.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
-        <rocketmq.version>4.0.0-incubating</rocketmq.version>
+        <rocketmq.version>4.1.0-incubating</rocketmq.version>
         <scala210.jline.version>2.10.4</scala210.jline.version>
         <scala210.library.version>2.10.4</scala210.library.version>
         <scala211.library.version>2.11.7</scala211.library.version>
@@ -107,6 +107,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.6</zookeeper.version>
+        <javassist.version>3.20.0-GA</javassist.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>

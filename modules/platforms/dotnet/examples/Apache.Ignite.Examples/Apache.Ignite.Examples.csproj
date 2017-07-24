@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Compute\ClosureExample.cs" />
     <Compile Include="Compute\TaskExample.cs" />
+    <Compile Include="Compute\PeerAssemblyLoadingExample.cs" />
     <Compile Include="Datagrid\ContinuousQueryExample.cs" />
     <Compile Include="Datagrid\DataStreamerExample.cs" />
     <Compile Include="Datagrid\MultiTieredCacheExample.cs" />

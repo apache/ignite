@@ -78,7 +78,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -3626,6 +3626,66 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         }
 
         assertEquals(3, c);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataCleanup() throws Exception {
+        Ignite node = startGrid(0);
+
+        IgniteCache cache0 = node.createCache(cacheConfiguration(GROUP1, "c0", PARTITIONED, ATOMIC, 1, false));
+
+        for (int i = 0; i < 100; i++)
+            assertNull(cache0.get(i));
+
+        for (int i = 0; i < 100; i++)
+            cache0.put(i, i);
+
+        List<CacheConfiguration> ccfgs = new ArrayList<>();
+
+        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
+        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, true));
+        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, TRANSACTIONAL, 1, false));
+        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, TRANSACTIONAL, 1, true));
+
+        for (CacheConfiguration ccfg : ccfgs) {
+            IgniteCache cache = node.createCache(ccfg);
+
+            for (int i = 0; i < 100; i++)
+                assertNull(cache.get(i));
+
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
+
+            for (int i = 0; i < 100; i++)
+                assertEquals(i, cache.get(i));
+
+            node.destroyCache(ccfg.getName());
+
+            cache = node.createCache(ccfg);
+
+            for (int i = 0; i < 100; i++)
+                assertNull(cache.get(i));
+
+            node.destroyCache(ccfg.getName());
+        }
+
+        for (int i = 0; i < 100; i++)
+            assertEquals(i, cache0.get(i));
+
+        node.destroyCache(cache0.getName());
+
+        cache0 = node.createCache(cacheConfiguration(GROUP1, "c0", PARTITIONED, ATOMIC, 1, false));
+
+        for (int i = 0; i < 100; i++)
+            assertNull(cache0.get(i));
+
+        for (int i = 0; i < 100; i++)
+            cache0.put(i, i);
+
+        for (int i = 0; i < 100; i++)
+            assertEquals(i, cache0.get(i));
     }
 
     /**

@@ -41,6 +41,7 @@ import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfoClosure;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpCommunicationInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpExchangeInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpNodeBasicInfo;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpPendingCacheMessages;
 
 /**
  * Groups diagnostic closures by node/closure type.
@@ -192,6 +193,8 @@ public class IgniteDiagnosticPrepareContext {
                 dumpExchangeInfo(sb, ctx);
 
                 sb.append(U.nl());
+
+                dumpPendingCacheMessages(sb, ctx);
 
                 sb.append(commInfo.get(10_000));
 

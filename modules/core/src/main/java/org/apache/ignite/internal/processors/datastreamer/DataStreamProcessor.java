@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -82,7 +83,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     assert msg instanceof DataStreamerRequest;
 
                     processRequest(nodeId, (DataStreamerRequest)msg);
@@ -94,7 +95,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -340,7 +341,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
                 if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
-                    Exception err = new IgniteCheckedException(
+                    Exception err = new ClusterTopologyCheckedException(
                         "DataStreamer will retry data transfer at stable topology " +
                             "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
 

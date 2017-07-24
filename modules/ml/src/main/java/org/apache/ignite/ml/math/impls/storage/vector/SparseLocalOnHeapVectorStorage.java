@@ -47,10 +47,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         // No-op.
     }
 
-    /**
-     *
-     * @param map
-     */
+    /** */
     public SparseLocalOnHeapVectorStorage(Map<Integer, Double> map, boolean copy) {
         assert map.size() > 0;
 
@@ -58,11 +55,10 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
 
         if (map instanceof Int2DoubleRBTreeMap)
             acsMode = SEQUENTIAL_ACCESS_MODE;
+        else if (map instanceof Int2DoubleOpenHashMap)
+            acsMode = RANDOM_ACCESS_MODE;
         else
-            if (map instanceof Int2DoubleOpenHashMap)
-                acsMode = RANDOM_ACCESS_MODE;
-            else
-                acsMode = UNKNOWN_STORAGE_MODE;
+            acsMode = UNKNOWN_STORAGE_MODE;
 
         if (copy)
             switch (acsMode) {

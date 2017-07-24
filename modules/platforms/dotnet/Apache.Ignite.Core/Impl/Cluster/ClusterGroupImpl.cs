@@ -35,9 +35,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Messaging;
+    using Apache.Ignite.Core.Impl.PersistentStore;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -123,6 +125,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** */
         private const int OpMemoryMetricsByName = 27;
+
+        /** */
+        private const int OpSetActive = 28;
+
+        /** */
+        private const int OpIsActive = 29;
+
+        /** */
+        private const int OpGetPersistentStoreMetrics = 30;
 
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
@@ -587,6 +598,34 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             return DoOutInOp(OpMemoryMetricsByName, w => w.WriteString(memoryPolicyName),
                 stream => stream.ReadBool() ? new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
+        }
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        public void SetActive(bool isActive)
+        {
+            DoOutInOp(OpSetActive, isActive ? True : False);
+        }
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsActive()
+        {
+            return DoOutInOp(OpIsActive) == True;
+        }
+
+        /// <summary>
+        /// Gets the persistent store metrics.
+        /// </summary>
+        public IPersistentStoreMetrics GetPersistentStoreMetrics()
+        {
+            return DoInOp(OpGetPersistentStoreMetrics, stream =>
+                new PersistentStoreMetrics(Marshaller.StartUnmarshal(stream, false)));
         }
 
         /// <summary>

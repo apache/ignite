@@ -25,8 +25,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,33 +35,50 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ExchangeActions {
     /** */
-    private List<CacheGroupDescriptor> cacheGrpsToStart;
+    private List<CacheGroupActionData> cacheGrpsToStart;
 
     /** */
-    private List<CacheGroupDescriptor> cacheGrpsToStop;
+    private List<CacheGroupActionData> cacheGrpsToStop;
 
     /** */
-    private Map<String, ActionData> cachesToStart;
+    private Map<String, CacheActionData> cachesToStart;
 
     /** */
-    private Map<String, ActionData> clientCachesToStart;
+    private Map<String, CacheActionData> cachesToStop;
 
     /** */
-    private Map<String, ActionData> cachesToStop;
+    private Map<String, CacheActionData> cachesToResetLostParts;
 
     /** */
-    private Map<String, ActionData> cachesToClose;
+    private StateChangeRequest stateChangeReq;
 
-    /** */
-    private Map<String, ActionData> cachesToResetLostParts;
+    /**
+     * @param grpId Group ID.
+     * @return Always {@code true}, fails with assert error if inconsistent.
+     */
+    boolean checkStopRequestConsistency(int grpId) {
+        Boolean destroy = null;
 
-    /** */
-    private ClusterState newState;
+        // Check that caches associated with that group will be all stopped only or all destroyed.
+        for (CacheActionData action : cacheStopRequests()) {
+            if (action.descriptor().groupId() == grpId) {
+                if (destroy == null)
+                    destroy = action.request().destroy();
+                else {
+                    assert action.request().destroy() == destroy
+                        : "Both cache stop only and cache destroy request associated with one group in batch "
+                        + cacheStopRequests();
+                }
+            }
+        }
+
+        return true;
+    }
 
     /**
      * @return {@code True} if server nodes should not participate in exchange.
      */
-    boolean clientOnlyExchange() {
+    public boolean clientOnlyExchange() {
         return F.isEmpty(cachesToStart) &&
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cacheGrpsToStart) &&
@@ -69,57 +87,17 @@ public class ExchangeActions {
     }
 
     /**
-     * @param nodeId Local node ID.
-     * @return Close cache requests.
-     */
-    List<ActionData> closeRequests(UUID nodeId) {
-        List<ActionData> res = null;
-
-        if (cachesToClose != null) {
-            for (ActionData req : cachesToClose.values()) {
-                if (nodeId.equals(req.req.initiatingNodeId())) {
-                    if (res == null)
-                        res = new ArrayList<>(cachesToClose.size());
-
-                    res.add(req);
-                }
-            }
-        }
-
-        return res != null ? res : Collections.<ActionData>emptyList();
-    }
-
-    /**
      * @return New caches start requests.
      */
-    Collection<ActionData> cacheStartRequests() {
-        return cachesToStart != null ? cachesToStart.values() : Collections.<ActionData>emptyList();
-    }
-
-    /**
-     * @return Start cache requests.
-     */
-    Collection<ActionData> newAndClientCachesStartRequests() {
-        if (cachesToStart != null || clientCachesToStart != null) {
-            List<ActionData> res = new ArrayList<>();
-
-            if (cachesToStart != null)
-                res.addAll(cachesToStart.values());
-
-            if (clientCachesToStart != null)
-                res.addAll(clientCachesToStart.values());
-
-            return res;
-        }
-
-        return Collections.emptyList();
+    public Collection<CacheActionData> cacheStartRequests() {
+        return cachesToStart != null ? cachesToStart.values() : Collections.<CacheActionData>emptyList();
     }
 
     /**
      * @return Stop cache requests.
      */
-    Collection<ActionData> cacheStopRequests() {
-        return cachesToStop != null ? cachesToStop.values() : Collections.<ActionData>emptyList();
+    Collection<CacheActionData> cacheStopRequests() {
+        return cachesToStop != null ? cachesToStop.values() : Collections.<CacheActionData>emptyList();
     }
 
     /**
@@ -128,18 +106,30 @@ public class ExchangeActions {
     public void completeRequestFutures(GridCacheSharedContext ctx) {
         completeRequestFutures(cachesToStart, ctx);
         completeRequestFutures(cachesToStop, ctx);
-        completeRequestFutures(cachesToClose, ctx);
-        completeRequestFutures(clientCachesToStart, ctx);
         completeRequestFutures(cachesToResetLostParts, ctx);
+    }
+
+    /**
+     * @return {@code True} if starting system caches.
+     */
+    public boolean systemCachesStarting() {
+        if (cachesToStart != null) {
+            for (CacheActionData data : cachesToStart.values()) {
+                if (CU.isSystemCache(data.request().cacheName()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * @param map Actions map.
      * @param ctx Context.
      */
-    private void completeRequestFutures(Map<String, ActionData> map, GridCacheSharedContext ctx) {
+    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
         if (map != null) {
-            for (ActionData req : map.values())
+            for (CacheActionData req : map.values())
                 ctx.cache().completeCacheStartFuture(req.req, true, null);
         }
     }
@@ -169,7 +159,7 @@ public class ExchangeActions {
      */
     public boolean cacheStopped(int cacheId) {
         if (cachesToStop != null) {
-            for (ActionData cache : cachesToStop.values()) {
+            for (CacheActionData cache : cachesToStop.values()) {
                 if (cache.desc.cacheId() == cacheId)
                     return true;
             }
@@ -184,7 +174,7 @@ public class ExchangeActions {
      */
     public boolean cacheStarted(int cacheId) {
         if (cachesToStart != null) {
-            for (ActionData cache : cachesToStart.values()) {
+            for (CacheActionData cache : cachesToStart.values()) {
                 if (cache.desc.cacheId() == cacheId)
                     return true;
             }
@@ -194,34 +184,31 @@ public class ExchangeActions {
     }
 
     /**
-     * @param nodeId Local node ID.
-     * @return {@code True} if client cache was started.
+     * @param stateChange Cluster state change request.
      */
-    public boolean clientCacheStarted(UUID nodeId) {
-        if (clientCachesToStart != null) {
-            for (ActionData cache : clientCachesToStart.values()) {
-                if (nodeId.equals(cache.req.initiatingNodeId()))
-                    return true;
-            }
-        }
-
-        return false;
+    public void stateChangeRequest(StateChangeRequest stateChange) {
+        this.stateChangeReq = stateChange;
     }
 
     /**
-     * @param state New cluster state.
+     * @return {@code True} if has deactivate request.
      */
-    void newClusterState(ClusterState state) {
-        assert state != null;
-
-        newState = state;
+    public boolean deactivate() {
+        return stateChangeReq != null && !stateChangeReq.activate();
     }
 
     /**
-     * @return New cluster state if state change was requested.
+     * @return {@code True} if has activate request.
      */
-    @Nullable public ClusterState newClusterState() {
-        return newState;
+    public boolean activate() {
+        return stateChangeReq != null && stateChangeReq.activate();
+    }
+
+    /**
+     * @return Cluster state change request.
+     */
+    @Nullable public StateChangeRequest stateChangeRequest() {
+        return stateChangeReq;
     }
 
     /**
@@ -230,7 +217,7 @@ public class ExchangeActions {
      * @param desc Cache descriptor.
      * @return Actions map.
      */
-    private Map<String, ActionData> add(Map<String, ActionData> map,
+    private Map<String, CacheActionData> add(Map<String, CacheActionData> map,
         DynamicCacheChangeRequest req,
         DynamicCacheDescriptor desc) {
         assert req != null;
@@ -239,7 +226,7 @@ public class ExchangeActions {
         if (map == null)
             map = new HashMap<>();
 
-        ActionData old = map.put(req.cacheName(), new ActionData(req, desc));
+        CacheActionData old = map.put(req.cacheName(), new CacheActionData(req, desc));
 
         assert old == null : old;
 
@@ -260,30 +247,10 @@ public class ExchangeActions {
      * @param req Request.
      * @param desc Cache descriptor.
      */
-    void addClientCacheToStart(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
-        assert req.start() : req;
-
-        clientCachesToStart = add(clientCachesToStart, req, desc);
-    }
-
-    /**
-     * @param req Request.
-     * @param desc Cache descriptor.
-     */
-    void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+    public void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.stop() : req;
 
         cachesToStop = add(cachesToStop, req, desc);
-    }
-
-    /**
-     * @param req Request.
-     * @param desc Cache descriptor.
-     */
-    void addCacheToClose(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
-        assert req.close() : req;
-
-        cachesToClose = add(cachesToClose, req, desc);
     }
 
     /**
@@ -305,14 +272,14 @@ public class ExchangeActions {
         if (cacheGrpsToStart == null)
             cacheGrpsToStart = new ArrayList<>();
 
-        cacheGrpsToStart.add(grpDesc);
+        cacheGrpsToStart.add(new CacheGroupActionData(grpDesc));
     }
 
     /**
      * @return Cache groups to start.
      */
-    public List<CacheGroupDescriptor> cacheGroupsToStart() {
-        return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupDescriptor>emptyList();
+    public List<CacheGroupActionData> cacheGroupsToStart() {
+        return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupActionData>emptyList();
     }
 
     /**
@@ -321,8 +288,8 @@ public class ExchangeActions {
      */
     public boolean cacheGroupStarting(int grpId) {
         if (cacheGrpsToStart != null) {
-            for (CacheGroupDescriptor grp : cacheGrpsToStart) {
-                if (grp.groupId() == grpId)
+            for (CacheGroupActionData grp : cacheGrpsToStart) {
+                if (grp.desc.groupId() == grpId)
                     return true;
             }
         }
@@ -332,21 +299,22 @@ public class ExchangeActions {
 
     /**
      * @param grpDesc Group descriptor.
+     * @param destroy Destroy flag.
      */
-    void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
+    public void addCacheGroupToStop(CacheGroupDescriptor grpDesc, boolean destroy) {
         assert grpDesc != null;
 
         if (cacheGrpsToStop == null)
             cacheGrpsToStop = new ArrayList<>();
 
-        cacheGrpsToStop.add(grpDesc);
+        cacheGrpsToStop.add(new CacheGroupActionData(grpDesc, destroy));
     }
 
     /**
      * @return Cache groups to start.
      */
-    public List<CacheGroupDescriptor> cacheGroupsToStop() {
-        return cacheGrpsToStop != null ? cacheGrpsToStop : Collections.<CacheGroupDescriptor>emptyList();
+    public List<CacheGroupActionData> cacheGroupsToStop() {
+        return cacheGrpsToStop != null ? cacheGrpsToStop : Collections.<CacheGroupActionData>emptyList();
     }
 
     /**
@@ -355,8 +323,8 @@ public class ExchangeActions {
      */
     public boolean cacheGroupStopping(int grpId) {
         if (cacheGrpsToStop != null) {
-            for (CacheGroupDescriptor grp : cacheGrpsToStop) {
-                if (grp.groupId() == grpId)
+            for (CacheGroupActionData grp : cacheGrpsToStop) {
+                if (grp.desc.groupId() == grpId)
                     return true;
             }
         }
@@ -369,29 +337,28 @@ public class ExchangeActions {
      */
     public boolean empty() {
         return F.isEmpty(cachesToStart) &&
-            F.isEmpty(clientCachesToStart) &&
             F.isEmpty(cachesToStop) &&
-            F.isEmpty(cachesToClose) &&
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
-            F.isEmpty(cachesToResetLostParts);
+            F.isEmpty(cachesToResetLostParts) &&
+            stateChangeReq == null;
     }
 
     /**
      *
      */
-    static class ActionData {
+    public static class CacheActionData {
         /** */
-        private DynamicCacheChangeRequest req;
+        private final DynamicCacheChangeRequest req;
 
         /** */
-        private DynamicCacheDescriptor desc;
+        private final DynamicCacheDescriptor desc;
 
         /**
          * @param req Request.
          * @param desc Cache descriptor.
          */
-        ActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        CacheActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
             assert req != null;
             assert desc != null;
 
@@ -412,5 +379,69 @@ public class ExchangeActions {
         public DynamicCacheDescriptor descriptor() {
             return desc;
         }
+    }
+
+    /**
+     *
+     */
+    static class CacheGroupActionData {
+        /** */
+        private final CacheGroupDescriptor desc;
+
+        /** */
+        private final boolean destroy;
+
+        /**
+         * @param desc Group descriptor
+         * @param destroy Destroy flag
+         */
+        CacheGroupActionData(CacheGroupDescriptor desc, boolean destroy) {
+            assert desc != null;
+
+            this.desc = desc;
+            this.destroy = destroy;
+        }
+
+        /**
+         * @param desc Group descriptor
+         */
+        CacheGroupActionData(CacheGroupDescriptor desc) {
+            this(desc, false);
+        }
+
+        /**
+         * @return Group descriptor
+         */
+        public CacheGroupDescriptor descriptor() {
+            return desc;
+        }
+
+        /**
+         * @return Destroy flag
+         */
+        public boolean destroy() {
+            return destroy;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        Object startGrps = F.viewReadOnly(cacheGrpsToStart, new C1<CacheGroupActionData, String>() {
+            @Override public String apply(CacheGroupActionData data) {
+                return data.desc.cacheOrGroupName();
+            }
+        });
+        Object stopGrps = F.viewReadOnly(cacheGrpsToStop, new C1<CacheGroupActionData, String>() {
+            @Override public String apply(CacheGroupActionData data) {
+                return data.desc.cacheOrGroupName() + ", destroy=" + data.destroy;
+            }
+        });
+
+        return "ExchangeActions [startCaches=" + (cachesToStart != null ? cachesToStart.keySet() : null) +
+            ", stopCaches=" + (cachesToStop != null ? cachesToStop.keySet() : null) +
+            ", startGrps=" + startGrps +
+            ", stopGrps=" + stopGrps +
+            ", resetParts=" + (cachesToResetLostParts != null ? cachesToResetLostParts.keySet() : null) +
+            ", stateChangeRequest=" + stateChangeReq + ']';
     }
 }

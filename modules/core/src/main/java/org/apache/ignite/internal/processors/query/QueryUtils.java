@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -39,6 +40,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -419,10 +421,12 @@ public class QueryUtils {
         QueryTypeIdKey typeId;
         QueryTypeIdKey altTypeId = null;
 
+        int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
+
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
             processBinaryMeta(ctx, qryEntity, desc);
 
-            typeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            typeId = new QueryTypeIdKey(cacheName, valTypeId);
 
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
@@ -430,10 +434,19 @@ public class QueryUtils {
             String affField = null;
 
             // Need to setup affinity key for distributed joins.
-            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null)
-                affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
-            else if (cctx.config().getAffinityMapper() instanceof DynamicTableAffinityKeyMapper)
-                affField = ((DynamicTableAffinityKeyMapper)cctx.config().getAffinityMapper()).fieldName();
+            String keyType = qryEntity.getKeyType();
+
+            if (!cctx.customAffinityMapper() && keyType != null) {
+                if (coCtx != null) {
+                    CacheDefaultBinaryAffinityKeyMapper mapper =
+                        (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
+
+                    BinaryField field = mapper.affinityKeyField(keyType);
+
+                    if (field != null)
+                        affField = field.name();
+                }
+            }
 
             if (affField != null) {
                 if (!escape)
@@ -460,8 +473,10 @@ public class QueryUtils {
             }
 
             typeId = new QueryTypeIdKey(cacheName, valCls);
-            altTypeId = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(qryEntity.findValueType()));
+            altTypeId = new QueryTypeIdKey(cacheName, valTypeId);
         }
+
+        desc.typeId(valTypeId);
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
@@ -1041,6 +1056,9 @@ public class QueryUtils {
         Set<String> tblNames = new HashSet<>();
 
         for (DynamicCacheDescriptor desc : descs) {
+            if (F.eq(ccfg.getName(), desc.cacheName()))
+                continue;
+
             String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 

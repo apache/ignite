@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
+import java.util.Map;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.storage.matrix.MapWrapperStorage;
-
-import java.util.Map;
 
 /**
  * Vector wrapping a given map.

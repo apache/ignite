@@ -40,7 +40,7 @@ include /app/helpers/jade/mixins
                     +dropdown('Map reduce planner:', plannerModel + '.kind', '"MapReducePlanner"', 'true', 'Default', '[\
                         {value: "Weighted", label: "Weighted"},\
                         {value: "Custom", label: "Custom"},\
-                        {value: undefined, label: "Default"}\
+                        {value: null, label: "Default"}\
                     ]', 'Implementation of map reduce planner\
                     <ul>\
                         <li>Weighted - Planner which assigns mappers and reducers based on their "weights"</li>\

@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -313,10 +314,11 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                 cache.put(1, 1);
             }
             catch (IllegalStateException e) {
-                if (!e.getMessage().startsWith(EXPECTED_MSG))
+                if (!X.hasCause(e, CacheStoppedException.class)) {
                     e.printStackTrace();
 
-                assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().startsWith(EXPECTED_MSG));
+                    fail("Unexpected exception: " + e);
+                }
             }
         }
     }

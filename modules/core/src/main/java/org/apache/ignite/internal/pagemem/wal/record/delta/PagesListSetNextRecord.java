@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 
 /**
  *
@@ -29,12 +29,12 @@ public class PagesListSetNextRecord extends PageDeltaRecord {
     private final long nextPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param nextPageId Next page ID.
      */
-    public PagesListSetNextRecord(int cacheId, long pageId, long nextPageId) {
-        super(cacheId, pageId);
+    public PagesListSetNextRecord(int grpId, long pageId, long nextPageId) {
+        super(grpId, pageId);
 
         this.nextPageId = nextPageId;
     }
