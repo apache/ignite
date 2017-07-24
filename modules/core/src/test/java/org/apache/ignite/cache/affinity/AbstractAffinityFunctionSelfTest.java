@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -46,6 +47,27 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      * @return Affinity function.
      */
     protected abstract AffinityFunction affinityFunction();
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributionCalculationEnabled() throws Exception {
+        checkDistributionCalculation(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributionCalculationDisabled() throws Exception {
+        checkDistributionCalculation(false);
+    }
+
+    private void checkDistributionCalculation(boolean enabled) {
+        System.setProperty(IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, String.valueOf(enabled));
+
+
+    }
+
 
     /**
      * @throws Exception If failed.
