@@ -1895,7 +1895,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Map<Integer, List<List<ClusterNode>>> assignments = checkAffinity(3, topVer(3, 1), true);
 
-        checkServicesDeploy(ignite(0), assignments.get(CACHE_NAME1));
+        checkServicesDeploy(ignite(0), assignments.get(CU.cacheId(CACHE_NAME1)));
 
         stopGrid(0);
 
@@ -1906,7 +1906,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (primaryChanged)
             checkAffinity(2, topVer(4, 1), true);
 
-        checkServicesDeploy(ignite(1), assignments.get(CACHE_NAME1));
+        checkServicesDeploy(ignite(1), assignments.get(CU.cacheId(CACHE_NAME1)));
     }
 
     /**

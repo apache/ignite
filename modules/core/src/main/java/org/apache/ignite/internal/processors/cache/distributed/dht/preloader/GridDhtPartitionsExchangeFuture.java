@@ -2198,8 +2198,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public void onFinishExchangeAckMessage(final ClusterNode node) {
         onDiscoveryEvent(new IgniteRunnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (!enterBusy())
                     return;
 
