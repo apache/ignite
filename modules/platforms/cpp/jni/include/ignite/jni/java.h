@@ -348,9 +348,6 @@ namespace ignite
                 void ExceptionCheck(JNIEnv* env);
                 void ExceptionCheck(JNIEnv* env, JniErrorInfo* errInfo);
                 jobject LocalToGlobal(JNIEnv* env, jobject obj);
-                jobject ProcessorCache0(jobject proc, const char* name, jmethodID mthd, JniErrorInfo* errInfo);
-                jobject ProcessorCacheFromConfig0(jobject proc, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo);
-                jobject ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID);
             };
 
             JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
