@@ -211,14 +211,14 @@ namespace ignite
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
 
-                /**
-                * Get or create cache.
-                *
-                * @param name Cache name.
-                * @param err Error.
-                * @param op Operation code.
-                */
-                template<typename K, typename V>
+            /**
+            * Get or create cache.
+            *
+            * @param name Cache name.
+            * @param err Error.
+            * @param op Operation code.
+            */
+            template<typename K, typename V>
             cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
             {
                 SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
