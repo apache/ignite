@@ -414,6 +414,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CACHE_CLIENT = "IGNITE_CACHE_CLIENT";
 
     /**
+     * Property controlling distribution calculation flag.
+     */
+    public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
+
+    /**
      * Property controlling whether CacheManager will start grid with isolated IP finder when default URL
      * is passed in. This is needed to pass TCK tests which use default URL and assume isolated cache managers
      * for different class loaders.
@@ -636,6 +641,8 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT =
         "IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT";
+
+
 
     /**
      * Enforces singleton.
