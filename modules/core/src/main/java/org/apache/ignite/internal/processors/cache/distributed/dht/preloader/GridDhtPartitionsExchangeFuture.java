@@ -2327,8 +2327,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
 
                         // Handle special case: some nodes haven't acked exchange finish.
-                        if (isDone() && mayAck) {
-                            if (acked)
+                        if (isDone()) {
+                            if (!mayAck || acked)
                                 return;
 
                             singleMsgs.clear();
