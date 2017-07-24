@@ -345,9 +345,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                         catch (Exception ignored) {
                             // No-op.
                         }
-                        catch (AssertionError ignored) {
-                            // No-op.
-                        }
 
                         assertFalse(opSuc);
                     }
@@ -385,9 +382,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     opSuc = true;
                 }
                 catch (Exception ignored) {
-                    // No-op.
-                }
-                catch (AssertionError ignored) {
                     // No-op.
                 }
 
@@ -594,9 +588,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                             catch (Exception ignored) {
                                 // No-op.
                             }
-                            catch (AssertionError ignored) {
-                                // No-op.
-                            }
 
                             assertFalse(opSuc);
                         }
@@ -604,8 +595,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                 }
             }, 1, "th-commit-outer");
-
-
 
             assertEquals(expVal, jcache().get(1));
         }
