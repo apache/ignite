@@ -24,18 +24,6 @@ namespace ignite
 {    
     namespace impl
     {
-        /*
-         * PlatformProcessor op codes.
-         */
-        struct ProcessorOp
-        {
-            enum Type
-            {
-                GET_TRANSACTIONS = 9,
-                GET_CLUSTER_GROUP = 10,
-            };
-        };
-
         IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
             InteropTarget(env, javaRef)
         {

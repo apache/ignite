@@ -28,10 +28,28 @@
 #include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
 
+using namespace ignite::impl::interop;
+using namespace ignite::common::concurrent;
+using namespace ignite::impl::binary;
+using namespace ignite::binary;
+
 namespace ignite 
 {
     namespace impl 
     {
+        /*
+        * PlatformProcessor op codes.
+        */
+        struct ProcessorOp
+        {
+            enum Type
+            {
+                GET_CACHE = 1,
+                GET_TRANSACTIONS = 9,
+                GET_CLUSTER_GROUP = 10,
+            };
+        };
+
         /**
          * Ignite implementation.
          */
@@ -87,7 +105,15 @@ namespace ignite
             {
                 ignite::jni::java::JniErrorInfo jniErr;
 
-                jobject cacheJavaRef = env.Get()->Context()->ProcessorCache(javaRef, name, &jniErr);
+                SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
+                InteropMemory* mem0 = mem.Get();
+                InteropOutputStream out(mem0);
+                BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+                BinaryRawWriter rawWriter(&writer);
+
+                rawWriter.WriteString(name);
+
+                jobject cacheJavaRef = InStreamOutObject(ProcessorOp::GET_CACHE, *mem0);
 
                 if (!cacheJavaRef)
                 {
